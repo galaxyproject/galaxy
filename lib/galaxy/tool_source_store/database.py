@@ -22,6 +22,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
+from galaxy.managers.tool_source import static_tool_source_identity_hash
 from galaxy.model import (
     ToolIndexCache,
     ToolSource as ToolSourceModel,
@@ -112,6 +113,11 @@ class DatabaseToolSourceStore(ToolSourceStore):
             hash=tool_source.hash,
             source=source_data,
             source_class=tool_source.tool_source_class,
+            tool_id=tool_source.tool_id,
+            tool_version=tool_source.tool_version,
+            # Same "static" identity as galaxy.managers.tool_source.tool_source_identity_hash —
+            # store-backed sources never carry a dynamic tool.
+            identity_hash=static_tool_source_identity_hash(tool_source.tool_id, tool_source.tool_version),
         )
         session.add(model)
         session.flush()

@@ -67,11 +67,19 @@ def get_or_create_tool_source(session: Session, tool) -> ToolSource:
 
 def tool_source_identity_hash(tool: Any) -> str:
     dynamic_tool = getattr(tool, "dynamic_tool", None)
-    identity: tuple[str, ...]
     if dynamic_tool is not None and dynamic_tool.id is not None:
         identity = ("dynamic", str(dynamic_tool.id))
-    else:
-        identity = ("static", tool.id or "", tool.version or "")
+        return hashlib.sha256("\0".join(identity).encode("utf-8")).hexdigest()
+    return static_tool_source_identity_hash(tool.id, tool.version)
+
+
+def static_tool_source_identity_hash(tool_id: str | None, tool_version: str | None) -> str:
+    """Identity hash for a persisted source with no dynamic-tool linkage.
+
+    Shared with ``galaxy.tool_source_store`` writers, which persist
+    config-file tool sources and therefore always carry a static identity.
+    """
+    identity = ("static", tool_id or "", tool_version or "")
     return hashlib.sha256("\0".join(identity).encode("utf-8")).hexdigest()
 
 
