@@ -6,6 +6,13 @@ from galaxy.util import listify
 
 log = logging.getLogger(__name__)
 
+TOOLBOX_FILTERS_DEPRECATION_MESSAGE = (
+    "Toolbox filters are deprecated in Galaxy 26.1 and will be removed in a future release. "
+    "Toolbox filters only affect toolbox display and do not enforce access restrictions. "
+    "Use tool panel views for alternate toolbox layouts and TPV or dynamic job destinations "
+    "to enforce tool execution policy."
+)
+
 
 class FilterFactory:
     """
@@ -19,6 +26,7 @@ class FilterFactory:
         # Prepopulate dict containing filters that are always checked,
         # other filters that get checked depending on context.
         self.default_filters = dict(tool=[_not_hidden, _handle_authorization], section=[], label=[])
+        self.__deprecation_logged = False
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
         self.__base_modules = listify(
@@ -53,12 +61,18 @@ class FilterFactory:
     def __init_filters(self, key, filters, toolbox_filters, validate=None):
         for filter in filters:
             if validate is None or filter in validate or filter in self.default_filters:
+                self.__log_deprecation_warning()
                 filter_function = self.build_filter_function(filter)
                 if filter_function is not None:
                     toolbox_filters[key].append(filter_function)
             else:
                 log.warning("Refusing to load %s filter '%s' which is not defined in config", key, filter)
         return toolbox_filters
+
+    def __log_deprecation_warning(self):
+        if not self.__deprecation_logged:
+            log.warning(TOOLBOX_FILTERS_DEPRECATION_MESSAGE)
+            self.__deprecation_logged = True
 
     def build_filter_function(self, filter_name):
         """Obtain python function (importing a submodule if needed)

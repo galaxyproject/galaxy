@@ -5430,6 +5430,9 @@
 ~~~~~~~~~~~~~~~~
 
 :Description:
+    Deprecated in Galaxy 26.1 and will be removed in a future
+    release. Toolbox filters only affect toolbox display and do not
+    enforce access restrictions.
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     admins may use to restrict the tools to display.
@@ -5442,6 +5445,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
+    Deprecated in Galaxy 26.1 and will be removed in a future
+    release. Toolbox filters only affect toolbox display and do not
+    enforce access restrictions.
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     admins may use to restrict the tool labels to display.
@@ -5454,6 +5460,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
+    Deprecated in Galaxy 26.1 and will be removed in a future
+    release. Toolbox filters only affect toolbox display and do not
+    enforce access restrictions.
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     admins may use to restrict the tool sections to display.
@@ -5466,6 +5475,9 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
+    Deprecated in Galaxy 26.1 and will be removed in a future
+    release. Toolbox filters only affect toolbox display and do not
+    enforce access restrictions.
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tools to display.
@@ -5478,6 +5490,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
+    Deprecated in Galaxy 26.1 and will be removed in a future
+    release. Toolbox filters only affect toolbox display and do not
+    enforce access restrictions.
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tool sections to display.
@@ -5490,6 +5505,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
+    Deprecated in Galaxy 26.1 and will be removed in a future
+    release. Toolbox filters only affect toolbox display and do not
+    enforce access restrictions.
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tool labels to display.
@@ -5502,6 +5520,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
+    Deprecated in Galaxy 26.1 and will be removed in a future
+    release. Toolbox filters only affect toolbox display and do not
+    enforce access restrictions.
     The base module(s) that are searched for modules for toolbox
     filtering
     (https://galaxyproject.org/user-defined-toolbox-filters/)
@@ -6293,6 +6314,5 @@
     for user defined tools.
 :Default: ``false``
 :Type: bool
-
 
 

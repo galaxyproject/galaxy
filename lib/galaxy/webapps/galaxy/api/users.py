@@ -1131,7 +1131,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             {
                 "type": "hidden",
                 "name": "helptext",
-                "label": "In this section you may enable or disable Toolbox filters. Please contact your admin to configure filters as necessary.",
+                "label": (
+                    "Toolbox filters are deprecated in Galaxy 26.1 and will be removed in a future release. "
+                    "Toolbox filters only affect toolbox display and do not enforce access restrictions. "
+                    "Please contact your admin to configure filters as necessary."
+                ),
             }
         ]
         errors = {}

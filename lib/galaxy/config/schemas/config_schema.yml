@@ -4022,6 +4022,8 @@ mapping:
         type: str
         required: false
         desc: |
+          Deprecated in Galaxy 26.1 and will be removed in a future release.
+          Toolbox filters only affect toolbox display and do not enforce access restrictions.
           Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
           that admins may use to restrict the tools to display.
 
@@ -4029,6 +4031,8 @@ mapping:
         type: str
         required: false
         desc: |
+          Deprecated in Galaxy 26.1 and will be removed in a future release.
+          Toolbox filters only affect toolbox display and do not enforce access restrictions.
           Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
           that admins may use to restrict the tool labels to display.
 
@@ -4036,6 +4040,8 @@ mapping:
         type: str
         required: false
         desc: |
+          Deprecated in Galaxy 26.1 and will be removed in a future release.
+          Toolbox filters only affect toolbox display and do not enforce access restrictions.
           Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
           that admins may use to restrict the tool sections to display.
 
@@ -4044,6 +4050,8 @@ mapping:
         default: examples:restrict_upload_to_admins, examples:restrict_encode
         required: false
         desc: |
+          Deprecated in Galaxy 26.1 and will be removed in a future release.
+          Toolbox filters only affect toolbox display and do not enforce access restrictions.
           Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
           that users may use to restrict the tools to display.
 
@@ -4052,6 +4060,8 @@ mapping:
         default: examples:restrict_text
         required: false
         desc: |
+          Deprecated in Galaxy 26.1 and will be removed in a future release.
+          Toolbox filters only affect toolbox display and do not enforce access restrictions.
           Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
           that users may use to restrict the tool sections to display.
 
@@ -4060,6 +4070,8 @@ mapping:
         default: examples:restrict_upload_to_admins, examples:restrict_encode
         required: false
         desc: |
+          Deprecated in Galaxy 26.1 and will be removed in a future release.
+          Toolbox filters only affect toolbox display and do not enforce access restrictions.
           Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
           that users may use to restrict the tool labels to display.
 
@@ -4068,6 +4080,8 @@ mapping:
         default: galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
         required: false
         desc: |
+          Deprecated in Galaxy 26.1 and will be removed in a future release.
+          Toolbox filters only affect toolbox display and do not enforce access restrictions.
           The base module(s) that are searched for modules for toolbox filtering
           (https://galaxyproject.org/user-defined-toolbox-filters/) functions.
 

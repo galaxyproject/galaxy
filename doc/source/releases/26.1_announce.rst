@@ -4,3 +4,16 @@
 ===========================================================
 26.1 Galaxy Release
 ===========================================================
+
+Deprecations
+============
+
+Toolbox filters are deprecated in Galaxy 26.1 and will be removed in a future release.
+This includes the ``tool_filters``, ``tool_label_filters``, ``tool_section_filters``,
+``user_tool_filters``, ``user_tool_section_filters``, ``user_tool_label_filters``,
+and ``toolbox_filter_base_modules`` configuration options, as well as the user
+preference UI for toolbox filters.
+
+Toolbox filters only affect toolbox display and do not enforce access restrictions.
+Admins should use tool panel views for alternate toolbox layouts, and use TPV or
+dynamic job destinations for hard tool execution policy.
