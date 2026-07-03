@@ -144,6 +144,73 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
             )
 
 
+class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
+    """Toolbox reload under lazy mode — own class, reload mutates global state."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["use_lazy_toolbox"] = True
+
+    def test_base_tools_survive_toolbox_reload(self):
+        from galaxy.queue_worker import reload_toolbox
+
+        self._test_api_tools_show("cat1")
+        assert self._app.toolbox.get_tool("upload1") is not None
+        reload_toolbox(self._app)
+        self._test_api_tools_show("cat1")
+        self._test_api_tools_list()
+        assert self._app.toolbox.get_tool("upload1") is not None
+
+    def test_reload_sees_inline_repopulate_over_foreign_index(self):
+        # Another Galaxy instance sharing this database (the CI integration
+        # shards share one postgres DB) replaces the singleton tool_index row
+        # with its own, much smaller view, and the peer broadcast invalidates
+        # our store cache. A subsequent reload must serve THIS instance's
+        # tools from its inline repopulate, not the foreign index.
+        from typing import cast
+
+        from galaxy.model.scoped_session import galaxy_scoped_session
+        from galaxy.tool_source_store import ToolIndex
+        from galaxy.tool_source_store.database import DatabaseToolSourceStore
+
+        store = self._app.tool_source_store
+        assert store is not None
+        foreign_store = DatabaseToolSourceStore(cast(galaxy_scoped_session, self._app.model.context))
+        foreign_store.store_index(ToolIndex())
+        foreign_store.commit()
+        store.invalidate_index_cache()
+        # Drop one store row so the reload takes the inline-repopulate path.
+        upload_stored = store.get_by_tool_id("upload1")
+        assert upload_stored
+        store.delete(upload_stored[0].hash)
+        store.commit()
+
+        from galaxy.queue_worker import reload_toolbox
+
+        old_toolbox = self._app.toolbox
+        reload_toolbox(self._app)
+        assert self._app.toolbox is not old_toolbox
+
+        assert self._app.toolbox.get_tool("upload1") is not None
+        self._test_api_tools_show("cat1")
+        self._test_api_tools_list()
+
+    def test_reload_repopulates_inline_after_store_wipe(self):
+        store = self._app.tool_source_store
+        assert store is not None
+        for source_hash in list(store.list_all()):
+            store.delete(source_hash)
+        store.commit()
+        store.invalidate_index_cache()
+        from galaxy.queue_worker import reload_toolbox
+
+        reload_toolbox(self._app)
+        assert self._app.toolbox.get_tool("upload1") is not None
+        self._test_api_tools_show("cat1")
+        self._test_api_tools_list()
+
+
 class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
     """End-to-end coverage of LazyToolBox-served API behaviours.
 

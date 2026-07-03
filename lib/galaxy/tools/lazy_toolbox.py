@@ -487,6 +487,11 @@ class LazyToolBox(ToolBox):
             self._tool_index = self._store.load_index() or ToolIndex()
             if self._index_needs_population():
                 self._run_inline_populator()
+                # The populator writes through its own store instances; drop
+                # this store's cached index so the re-load below reads the
+                # index the populator just persisted rather than the (possibly
+                # foreign, shared-database) index cached two lines up.
+                self._store.invalidate_index_cache()
                 self._tool_index = self._store.load_index() or ToolIndex()
         else:
             self._tool_index = ToolIndex()
