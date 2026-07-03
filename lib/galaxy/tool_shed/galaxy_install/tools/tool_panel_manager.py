@@ -149,27 +149,31 @@ class ToolPanelManager:
             shed_tool_conf_dict["config_elems"] = config_elems
             self.app.toolbox.update_shed_config(shed_tool_conf_dict)
             self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
-            # Populator writes ``StoredToolSource`` + ``ToolIndexEntry`` +
-            # whoosh for every new tool file, then broadcasts
-            # ``reload_tool_source_cache`` so peer Galaxy processes refresh.
-            # ``create_tool`` raises on index miss, so this MUST run before
-            # ``load_item`` reaches the seam.
-            new_paths = _collect_new_tool_paths(elem_list, tool_path)
-            if new_paths:
-                from galaxy.tool_source_store.populator import populate_for_paths
+            # Lazy mode only: the populator writes ``StoredToolSource`` +
+            # ``ToolIndexEntry`` + whoosh for every new tool file, then
+            # broadcasts ``reload_tool_source_cache`` so peer Galaxy
+            # processes refresh. ``create_tool`` raises on index miss, so
+            # this MUST run before ``load_item`` reaches the seam. Eager
+            # deployments never touch the store here —
+            # ``invalidate_index_cache`` only exists on ``LazyToolBox``.
+            if getattr(self.app.config, "use_lazy_toolbox", False):
+                new_paths = _collect_new_tool_paths(elem_list, tool_path)
+                if new_paths:
+                    from galaxy.tool_source_store.populator import populate_for_paths
 
-                populate_for_paths(
-                    self.app.config,
-                    self.app.model.context,
-                    paths=new_paths,
-                    rebuild_whoosh=True,
-                )
-                # Refresh THIS process synchronously; the AMQP broadcast
-                # above only reaches peers asynchronously, but the install
-                # response should reflect the new tools immediately.
-                self.app.toolbox.invalidate_index_cache()
-            # Wire the new tools into the in-memory panel. ``create_tool``
-            # now finds them in the index and hands back ``LazyTool`` stubs.
+                    populate_for_paths(
+                        self.app.config,
+                        self.app.model.context,
+                        paths=new_paths,
+                        rebuild_whoosh=True,
+                    )
+                    # Refresh THIS process synchronously; the AMQP broadcast
+                    # above only reaches peers asynchronously, but the install
+                    # response should reflect the new tools immediately.
+                    self.app.toolbox.invalidate_index_cache()
+            # Wire the new tools into the in-memory panel. In lazy mode
+            # ``create_tool`` finds them in the index and hands back
+            # ``LazyTool`` stubs; in eager mode this parses as before.
             for config_elem in elem_list:
                 self.app.toolbox.load_item(
                     config_elem,
