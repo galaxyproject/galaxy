@@ -109,29 +109,7 @@ watch(
                 <GenericItem class="mr-2 w-100" :item-id="item.id" :item-src="item.src" />
             </div>
         </div>
-        <div
-            v-show="
-                props.canBrowse && props.currentVariant?.src !== 'hdca' && currentWorkflowTab === WorkflowRunTabs.create
-            ">
-            <Heading separator size="sm">
-                <FontAwesomeIcon :icon="faUpload" fixed-width />
-                Upload {{ props.currentVariant?.tooltip.toLocaleLowerCase() || "value(s)" }}
-            </Heading>
-            <div class="p-2">
-                <button
-                    class="btn btn-primary btn-sm"
-                    type="button"
-                    data-description="workflow form upload modal trigger"
-                    @click="onUploadForWorkflowInput">
-                    Upload from local files, links, or text
-                </button>
-                <div class="mt-2">
-                    <CollectionCreatorShowExtensions
-                        :extensions="props.extensions && props.extensions.filter((ext) => ext !== 'data')"
-                        upload />
-                </div>
-            </div>
-        </div>
+
         <div v-show="currentWorkflowTab === WorkflowRunTabs.create && props.currentVariant?.src === 'hdca'">
             <CollectionCreatorIndex
                 v-if="currentHistoryId && props.collectionType"

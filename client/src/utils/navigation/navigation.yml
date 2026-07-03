@@ -898,6 +898,8 @@ workflow_run:
   input:
     selectors:
       _: '[data-label="${label}"]'
+      upload: '${_} [data-description="upload"]'
+      upload_modal: '${_} [data-description="upload-modal"]'
       collection_tab_build_link: '${_} [data-description="collection create tab build"]'
 
     collection_builder:

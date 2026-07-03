@@ -181,16 +181,6 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             <BButton
                 v-g-tooltip.bottom.hover
                 class="d-flex flex-gapx-1 align-items-center"
-                data-description="upload"
-                :title="createTitle"
-                :pressed="props.workflowTab === 'create'"
-                @click="clickedTab('create')">
-                <FontAwesomeIcon :icon="faUpload" />
-                <span v-localize>Upload</span>
-            </BButton>
-            <BButton
-                v-g-tooltip.bottom.hover
-                class="d-flex flex-gapx-1 align-items-center"
                 data-description="upload-modal"
                 title="Upload data"
                 @click="onUpload">

@@ -220,6 +220,7 @@ async function handleStartClick() {
                             :selected="selectedMethod?.id === method.id"
                             :disabled="method.disabled"
                             :disabled-title="method.disabledTitle"
+                            :data-method-id="method.id"
                             @click="selectMethod(method)" />
                     </div>
                 </aside>
