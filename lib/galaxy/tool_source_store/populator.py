@@ -61,9 +61,6 @@ from galaxy.tool_source_store.index import (
 )
 from kombu import Connection
 from kombu.pools import producers
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
-from watchdog.observers.polling import PollingObserver
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes.registry import Registry
@@ -181,6 +178,13 @@ class ToolFileWatcher:
 
     def start(self):
         """Start watching for file changes."""
+        # ``watchdog`` is an optional dependency only needed for --watch mode;
+        # keep the import local so plain populate runs (and the galaxy-app
+        # package, which doesn't ship watchdog) can import this module.
+        from watchdog.events import FileSystemEventHandler
+        from watchdog.observers import Observer
+        from watchdog.observers.polling import PollingObserver
+
         observer_class = PollingObserver if self.use_polling else Observer
 
         class ToolFileHandler(FileSystemEventHandler):
