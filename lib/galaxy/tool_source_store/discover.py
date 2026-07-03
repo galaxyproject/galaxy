@@ -30,6 +30,10 @@ from galaxy.tool_util.toolbox.parser import (
     ToolConfItem,
     ToolConfSection,
 )
+from galaxy.util import (
+    listify,
+    parse_xml,
+)
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
@@ -275,6 +279,60 @@ def discover_tools_from_config(
         )
 
 
+def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[DiscoveredTool]:
+    """Yield the tool files referenced by data manager configs.
+
+    Data manager tools are loaded via ``DataManagers`` →
+    ``toolbox.load_hidden_tool`` rather than from any tool_conf, so the conf
+    walk misses them. Path and guid resolution mirror
+    :meth:`galaxy.tools.data_manager.manager.DataManager._load_from_element`.
+    """
+    conf_files = [f for f in listify(config.data_manager_config_file or "") if f]
+    if config.shed_data_manager_config_file:
+        conf_files.append(config.shed_data_manager_config_file)
+    for conf in conf_files:
+        if not os.path.exists(conf):
+            continue
+        try:
+            root = parse_xml(conf).getroot()
+        except Exception as e:
+            log.warning("Skipping data manager config %s: %s", conf, e)
+            continue
+        if root.tag != "data_managers":
+            continue
+        conf_tool_path = root.get("tool_path") or config.tool_path or "."
+        for dm_elem in root.findall("data_manager"):
+            tool_path = conf_tool_path
+            path = dm_elem.get("tool_file")
+            guid = None
+            if path is None:
+                tool_elem = dm_elem.find("tool")
+                if tool_elem is None:
+                    continue
+                path = tool_elem.get("file")
+                guid = tool_elem.get("guid")
+                shed_conf_file = dm_elem.get("shed_conf_file")
+                if shed_conf_file and os.path.exists(shed_conf_file):
+                    try:
+                        shed_tool_path = get_toolbox_parser(shed_conf_file).parse_tool_path()
+                        if shed_tool_path:
+                            tool_path = shed_tool_path
+                    except Exception as e:
+                        log.warning("Could not resolve tool_path from %s: %s", shed_conf_file, e)
+            if not path:
+                continue
+            yield DiscoveredTool(
+                path=os.path.abspath(os.path.join(tool_path, path)),
+                tool_conf=conf,
+                tool_path=tool_path,
+                guid=guid,
+                is_shed_tool=guid is not None,
+                # Data manager tools never appear in the panel; eager loads
+                # them via load_hidden_tool.
+                hidden=True,
+            )
+
+
 def discover_tools(
     config: "GalaxyAppConfiguration",
     include_bundled: bool = True,
@@ -349,6 +407,14 @@ def discover_tools(
             )
     except Exception as e:
         log.debug("Failed to enumerate hidden-lib tool paths: %s", e)
+
+    # Data manager tools — loaded post-boot via ``DataManagers``, not from
+    # any tool_conf.
+    for dm_tool in _iter_data_manager_tools(config):
+        if dm_tool.path in seen_paths or not os.path.exists(dm_tool.path):
+            continue
+        seen_paths.add(dm_tool.path)
+        yield dm_tool
 
     # Datatype converters. ``Registry.load_datatype_converters`` calls
     # ``toolbox.load_tool`` per converter after boot; strict

@@ -35,6 +35,7 @@ from galaxy.tool_source_store.index import (
 )
 from galaxy.tool_source_store.populator import populate_store_inline
 from galaxy.tool_util.id_util import extract_short_id_from_guid
+from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
@@ -209,6 +210,27 @@ class LazyTool:
             return self._overrides["old_id"]
         short = extract_short_id_from_guid(self._entry.id)
         return short or self._entry.id
+
+    @property
+    def tool_tags(self) -> list[str]:
+        # Mirror ``Tool.__init__``'s ``all_ids`` construction: the curated
+        # tag mapping is keyed purely by tool id, so the stub can answer
+        # ``AbstractToolBox.curated_tool_tags``'s full-toolbox sweep without
+        # materialising anything.
+        if "tool_tags" in self._overrides:
+            return self._overrides["tool_tags"]
+        tool_id = (self._entry.id or "").lower()
+        if not tool_id:
+            return []
+        all_ids = [tool_id]
+        old_id = self.old_id.lower()
+        if old_id and old_id != tool_id:
+            all_ids = [tool_id, tool_id.rsplit("/", 1)[0], old_id]
+        return curated_tool_tags(all_ids)
+
+    @tool_tags.setter
+    def tool_tags(self, value):
+        self._overrides["tool_tags"] = value
 
     @property
     def config_file(self) -> str | None:
@@ -757,7 +779,7 @@ class LazyToolBox(ToolBox):
                 return entry
         if config_file is None:
             return None
-        config_file_str = str(config_file)
+        config_file_str = os.path.abspath(str(config_file))
         # Exact source-path lookup against the store; ``source_path`` is set
         # by the bootstrap and the shed-install persistence hook.
         if self._store is not None:

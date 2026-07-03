@@ -123,6 +123,16 @@ def test_to_panel_entry_does_not_materialise():
     assert d["link"] == "/tool_runner?tool_id=bowtie2"
 
 
+def test_tool_tags_answered_without_materialise():
+    def boom(_e):
+        raise AssertionError(f"unexpected materialise for {_e.id!r}")
+
+    t = LazyTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
+    assert isinstance(t.tool_tags, list)
+    t.tool_tags = ["curated"]
+    assert t.tool_tags == ["curated"]
+
+
 def test_to_dict_materialises():
     calls: list[Any] = []
 

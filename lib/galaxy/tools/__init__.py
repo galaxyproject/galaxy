@@ -712,7 +712,7 @@ class ToolBox(AbstractToolBox):
         # here is exact (no regex shortcut, no ``sources[0]`` fallback that
         # could silently return a different tool's source).
         if stored is None:
-            stored = store.get_by_source_path(str(config_file))
+            stored = store.get_by_source_path(os.path.abspath(str(config_file)))
 
         if stored is None:
             return None
