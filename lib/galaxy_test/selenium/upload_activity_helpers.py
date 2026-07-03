@@ -40,6 +40,7 @@ from typing import (
     overload,
     TypedDict,
     TypeVar,
+    Union,
 )
 
 from .framework import NavigatesGalaxyMixin
@@ -72,33 +73,27 @@ class UploadMetadata(TypedDict, total=False):
 
 
 class UploadItem:
-    """Represents a single item staged for upload."""
-
-    def __init__(self, index: int, context: "UploadContext"):
+    def __init__(self, index: int, context: "_UploadStaging"):
         self.index = index
         self.context = context
 
     def set_name(self, name: str) -> "UploadItem":
-        """Set the name for this upload item."""
         input_field = self.context._row_name_input(self.index).wait_for_visible()
         input_field.clear()
         input_field.send_keys(name)
         return self
 
     def set_extension(self, extension: str) -> "UploadItem":
-        """Set the file format/extension for this upload item."""
         component = self.context._row_extension_select(self.index).wait_for_visible()
         self.context.driver_wrapper.select_set_value(component, extension)
         return self
 
     def set_dbkey(self, dbkey: str) -> "UploadItem":
-        """Set the reference genome/dbkey for this upload item."""
         component = self.context._row_dbkey_select(self.index).wait_for_visible()
         self.context.driver_wrapper.select_set_value(component, dbkey)
         return self
 
     def set_deferred(self, deferred: bool) -> "UploadItem":
-        """Set whether this upload should be deferred."""
         checkbox = self.context._row_deferred_checkbox(self.index)
         if checkbox is None:
             if deferred:
@@ -111,7 +106,6 @@ class UploadItem:
         return self
 
     def set_content(self, content: str) -> "UploadItem":
-        """Set per-item content text in methods that expose a row textarea."""
         if self.context._current_method_id != "paste-content":
             raise AssertionError("Per-item content editing is only available for the paste-content method")
 
@@ -128,84 +122,70 @@ class UploadItem:
         return self
 
     def start(self) -> None:
-        """Start the upload for this item (and any other staged items)."""
         self.context.start()
 
     def remove(self) -> None:
-        """Remove this item from the staged items list."""
         self.context._row_remove_button(self.index).wait_for_and_click()
 
     def to_list(self, name: str) -> "UploadItem":
-        """Configure staged uploads to be created as a list collection when started."""
         self.context.to_list(name)
         return self
 
     def to_paired_list(self, name: str) -> "UploadItem":
-        """Configure staged uploads to be created as a paired-list collection when started."""
         self.context.to_paired_list(name)
         return self
 
 
 class LocalUploadItem(UploadItem):
-    def stage_local_file(self, test_path: str, metadata: Optional["UploadMetadata"] = None) -> "LocalUploadItem":
-        """Stage another local file and return the new item."""
+    def stage_local_file(self, test_path: str, metadata: Optional[UploadMetadata] = None) -> "LocalUploadItem":
         return self.context.stage_local_file(test_path, metadata)
 
 
 class PasteContentUploadItem(UploadItem):
-    def stage_paste_content(
-        self, content: str, metadata: Optional["UploadMetadata"] = None
-    ) -> "PasteContentUploadItem":
-        """Stage another paste content and return the new item."""
+    def stage_paste_content(self, content: str, metadata: Optional[UploadMetadata] = None) -> "PasteContentUploadItem":
         return self.context.stage_paste_content(content, metadata)
 
 
 class RemoteFileUploadItem(UploadItem):
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
+        self, source_label: str, file_label: str, metadata: Optional[UploadMetadata] = None
     ) -> "RemoteFileUploadItem":
-        """Stage another remote file and return the new item."""
         return self.context.stage_remote_file(source_label, file_label, metadata)
 
 
 class DataLibraryUploadItem(UploadItem):
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> "DataLibraryUploadItem":
-        """Stage another data library dataset and return the new item."""
         return self.context.stage_data_library_dataset(library_label, dataset_label)
 
 
-class UploadContext:
-    def __init__(self, method_id: UploadMethodId, driver_wrapper: NavigatesGalaxyMixin):
+class _UploadStaging:
+    """Shared base for upload staging state and row/item helpers.
+
+    Common state and helpers used by both UploadContext (panel) and
+    UploadMethodModalContext (modal).  Subclasses provide the button
+    group via _button_group and may override _pre_start for
+    start-specific hooks.
+    """
+
+    def __init__(self, driver_wrapper: NavigatesGalaxyMixin):
         self.driver_wrapper = driver_wrapper
         self._item_count = 0
-        self._current_method_id: UploadMethodId | None = None
-        self._collection_config: tuple[str, CollectionType] | None = None
-
-        # Prefer opening upload from the current context; if unavailable,
-        # fall back to home and then a legacy preferences path if needed.
-        self._open_upload_activity(method_id)
-        self._select_method(method_id)
+        self._current_method_id: Optional[UploadMethodId] = None
 
     @property
     def components(self):
         """Access to component selectors."""
         return self.driver_wrapper.components
 
-    def stage_local_file(self, test_path: str, metadata: Optional["UploadMetadata"] = None) -> LocalUploadItem:
-        """Stage a local file for upload. Returns the new item."""
-        # Input is intentionally hidden (d-none), so do not wait for visible state
+    def stage_local_file(self, test_path: str, metadata: Optional[UploadMetadata] = None) -> LocalUploadItem:
         file_input = self.driver_wrapper.wait_for_selector("#local-file-input")
-
-        # Playwright needs element-handle file setting for hidden inputs.
         if self.driver_wrapper.backend_type == "playwright":
             file_input.element_handle.set_input_files(test_path)
         else:
             file_input.send_keys(test_path)
-
         return self._create_item(LocalUploadItem, metadata)
 
-    def stage_paste_content(self, content: str, metadata: Optional["UploadMetadata"] = None) -> PasteContentUploadItem:
-        """Stage text content for upload. Returns the new item."""
+    def stage_paste_content(self, content: str, metadata: Optional[UploadMetadata] = None) -> PasteContentUploadItem:
         if self._item_count > 0:
             self.components.upload_activity.add_another_dataset_button.wait_for_and_click()
 
@@ -216,11 +196,7 @@ class UploadContext:
 
         return self._create_item(PasteContentUploadItem, metadata)
 
-    def stage_paste_link(self, url: str, metadata: Optional["UploadMetadata"] = None) -> UploadItem:
-        """Stage a file link URL for upload. Returns the new item.
-
-        You cannot chain-stage multiple links with this method - use stage_paste_links instead. This is for single URLs only.
-        """
+    def stage_paste_link(self, url: str, metadata: Optional[UploadMetadata] = None) -> UploadItem:
         textarea = self.components.upload_activity.paste_textarea.wait_for_visible()
         textarea.click()
         textarea.send_keys(url)
@@ -228,23 +204,13 @@ class UploadContext:
 
         return self._create_item(UploadItem, metadata)
 
-    def stage_paste_links(self, url_metadata_pairs: list[tuple[str, Optional["UploadMetadata"]]]) -> "UploadContext":
-        """Stage multiple file link URLs for upload, each with optional metadata.
-
-        Args:
-            url_metadata_pairs: List of (url, metadata) tuples where metadata is optional.
-                Example: [(url1, {"name": "link1", "extension": "txt"}), (url2, None)]
-
-        Returns:
-            self for method chaining
-        """
+    def stage_paste_links(self, url_metadata_pairs: list[tuple[str, Optional[UploadMetadata]]]) -> "_UploadStaging":
         urls = [pair[0] for pair in url_metadata_pairs]
         textarea = self.components.upload_activity.paste_textarea.wait_for_visible()
         textarea.click()
         textarea.send_keys("\n".join(urls))
         self.components.upload_activity.add_urls_button.wait_for_and_click()
 
-        # Apply metadata to each item
         start_index = self._item_count
         for i, (_, metadata) in enumerate(url_metadata_pairs):
             if metadata is not None:
@@ -261,8 +227,7 @@ class UploadContext:
         self._item_count += len(url_metadata_pairs)
         return self
 
-    def _create_item(self, item_class: type[T], metadata: Optional["UploadMetadata"] = None) -> T:
-        """Create and optionally configure a new UploadItem."""
+    def _create_item(self, item_class: type[T], metadata: Optional[UploadMetadata] = None) -> T:
         if metadata is None:
             metadata = {}
 
@@ -280,38 +245,81 @@ class UploadContext:
 
         return item
 
+    def _row_number(self, index: int) -> int:
+        return index + 1
+
+    def _row_name_input(self, index: int):
+        row = self._row_number(index)
+        return self.components.upload_activity.row_name_input(row=row)
+
+    def _row_extension_select(self, index: int):
+        row = self._row_number(index)
+        return self.components.upload_activity.row_extension_select(row=row)
+
+    def _row_dbkey_select(self, index: int):
+        row = self._row_number(index)
+        return self.components.upload_activity.row_dbkey_select(row=row)
+
+    def _select_method(self, method_id: UploadMethodId) -> None:
+        if self._current_method_id == method_id:
+            return
+        self.components.upload_activity.method_card(method_id=method_id).wait_for_and_click()
+        self._current_method_id = method_id
+
+    @property
+    def _button_group(self):
+        raise NotImplementedError("Subclasses must provide _button_group")
+
+    def _pre_start(self) -> None:
+        pass
+
     def start(self) -> None:
-        """Execute the upload with all staged items."""
-        self._apply_collection_config()
-        self.components.upload_activity.start_button.wait_for_and_click()
+        self._pre_start()
+        self._button_group.start_button.wait_for_and_click()
 
     def cancel(self) -> None:
-        """Cancel all staged items without uploading."""
-        self.components.upload_activity.cancel_button.wait_for_and_click()
+        self._button_group.cancel_button.wait_for_and_click()
+
+    def _row_remove_button(self, index):
+        raise AssertionError("Item removal is not available for this upload context")
+
+    def _row_deferred_checkbox(self, index: int):
+        raise AssertionError("Deferred option is not available for this upload context")
+
+    def _row_deferred_label(self, index: int):
+        raise AssertionError("Deferred label is not available for this upload context")
+
+    def to_list(self, name: str) -> "_UploadStaging":
+        raise AssertionError("Collection creation is not available for this upload context")
+
+    def to_paired_list(self, name: str) -> "_UploadStaging":
+        raise AssertionError("Collection creation is not available for this upload context")
+
+
+class UploadContext(_UploadStaging):
+    def __init__(self, method_id: UploadMethodId, driver_wrapper: NavigatesGalaxyMixin):
+        self._collection_config: Optional[tuple[str, CollectionType]] = None
+        super().__init__(driver_wrapper)
+
+        self._open_upload_activity(method_id)
+        self._select_method(method_id)
+
+    @property
+    def _button_group(self):
+        return self.components.upload_activity
+
+    def _pre_start(self) -> None:
+        self._apply_collection_config()
 
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
+        self, source_label: str, file_label: str, metadata: Optional[UploadMetadata] = None
     ) -> RemoteFileUploadItem:
-        """Stage a single remote file via the remote-files upload method.
-
-        Args:
-            source_label: Display label of the remote file source (for example "Posix").
-            file_label: Display label of the file to stage from inside that source.
-            metadata: Optional dataset metadata to apply after staging.
-
-        Returns:
-            RemoteFileUploadItem for the staged remote file.
-        """
         if self._current_method_id != "remote-files":
             raise AssertionError("stage_remote_file is only available for the remote-files method")
 
-        # Navigate into the source by clicking its label
         self.components.upload_activity.remote_files_browser_label(label=source_label).wait_for_and_click()
-        # Wait for the file list to load and become visible
         self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_visible()
-        # Select the file by clicking its label (toggles selection)
         self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
-        # Click "Add Selected Files" button
         self.components.upload_activity.remote_files_add_selected.wait_for_and_click()
         return self._create_item(RemoteFileUploadItem, metadata)
 
@@ -319,7 +327,7 @@ class UploadContext:
         self,
         source_label: str,
         file_labels: list[str],
-        metadata_list: Optional[list[Optional["UploadMetadata"]]] = None,
+        metadata_list: Optional[list[Optional[UploadMetadata]]] = None,
     ) -> list[RemoteFileUploadItem]:
         if self._current_method_id != "remote-files":
             raise AssertionError("stage_remote_files is only available for the remote-files method")
@@ -329,18 +337,14 @@ class UploadContext:
                 f"metadata_list length ({len(metadata_list)}) must match file_labels length ({len(file_labels)})"
             )
 
-        # Navigate into the source by clicking its label
         self.components.upload_activity.remote_files_browser_label(label=source_label).wait_for_and_click()
 
-        # Select each file by clicking its label (toggles selection)
         for file_label in file_labels:
             self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_visible()
             self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
 
-        # Click "Add Selected Files" button once for all selected files
         self.components.upload_activity.remote_files_add_selected.wait_for_and_click()
 
-        # Create items for each staged file
         items: list[RemoteFileUploadItem] = []
         for i in range(len(file_labels)):
             metadata = metadata_list[i] if metadata_list else None
@@ -349,16 +353,6 @@ class UploadContext:
         return items
 
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
-        """Stage a single dataset from a data library via the data-library method.
-
-        Args:
-            library_label: Display name of the library to open.
-            dataset_label: Display name of the dataset to select and stage.
-            metadata: Optional dataset metadata to apply after staging.
-
-        Returns:
-            DataLibraryUploadItem for the staged library dataset.
-        """
         if self._current_method_id != "data-library":
             raise AssertionError("stage_data_library_dataset is only available for the data-library method")
 
@@ -368,7 +362,6 @@ class UploadContext:
         return self._create_item(DataLibraryUploadItem)
 
     def select_composite(self, composite_type: str) -> "UploadContext":
-        """Select composite datatype in the composite-file method."""
         if self._current_method_id != "composite-file":
             raise AssertionError("select_composite is only available for the composite-file method")
 
@@ -376,7 +369,6 @@ class UploadContext:
         return self
 
     def stage_composite_url_slot(self, slot: int, url: str) -> "UploadContext":
-        """Set a composite slot to URL mode and populate its URL."""
         if self._current_method_id != "composite-file":
             raise AssertionError("stage_composite_url_slot is only available for the composite-file method")
         if slot < 1:
@@ -389,7 +381,6 @@ class UploadContext:
         return self
 
     def stage_composite_paste_slot(self, slot: int, content: str) -> "UploadContext":
-        """Set a composite slot to paste mode and populate content."""
         if self._current_method_id != "composite-file":
             raise AssertionError("stage_composite_paste_slot is only available for the composite-file method")
         if slot < 1:
@@ -402,7 +393,6 @@ class UploadContext:
         return self
 
     def stage_composite_file_slot(self, slot: int, file_path: str) -> "UploadContext":
-        """Set a composite slot to local-file mode and attach a file path."""
         if self._current_method_id != "composite-file":
             raise AssertionError("stage_composite_file_slot is only available for the composite-file method")
         if slot < 1:
@@ -486,20 +476,16 @@ class UploadContext:
         input_target.wait_for_visible()
 
     def select_target_history(self, history_id: str) -> "UploadContext":
-        """Change the upload target history using the TargetHistorySelector UI."""
         self.components.upload_activity.target_history_change_link.wait_for_and_click()
         self.components.upload_activity.history_selector_modal_item(history_id=history_id).wait_for_and_click()
-        # Wait for modal to dismiss before proceeding
         self.components.upload_activity.history_selector_modal.wait_for_absent_or_hidden()
         return self
 
     def to_list(self, name: str) -> "UploadContext":
-        """Configure staged uploads to create a list collection on start."""
         self._set_collection_config(name=name, collection_type="list")
         return self
 
     def to_paired_list(self, name: str) -> "UploadContext":
-        """Configure staged uploads to create a paired-list collection on start."""
         self._set_collection_config(name=name, collection_type="list:paired")
         return self
 
@@ -527,28 +513,20 @@ class UploadContext:
         self.components.upload_activity.collection_type_select.select_by_value(collection_type)
 
     def activate_advanced_mode(self) -> "UploadContext":
-        """Backward-compatible alias for enabling advanced mode via the UI switch."""
         return self.set_advanced_mode(True)
 
     def set_advanced_mode(self, enabled: bool) -> "UploadContext":
-        """Set advanced mode state using the real upload panel switch control."""
         checkbox = self.components.upload_activity.advanced_mode_toggle_checkbox.wait_for_present()
         if checkbox.is_selected() != enabled:
-            # Match existing framework checkbox handling via JS click on the input.
             self.driver_wrapper.execute_script("arguments[0].click();", checkbox)
         return self
 
     def toggle_advanced_mode(self) -> "UploadContext":
-        """Toggle advanced mode using the real upload panel switch control."""
         checkbox = self.components.upload_activity.advanced_mode_toggle_checkbox.wait_for_present()
         self.driver_wrapper.execute_script("arguments[0].click();", checkbox)
         return self
 
     def select_target_object_store(self, object_store_id: str) -> "UploadContext":
-        """Select a target object store for this upload.
-
-        Note: Advanced mode must be enabled first for this selector to be visible.
-        """
         self.components.upload_activity.target_object_store_selector_dropdown.wait_for_and_click()
         self.components.upload_activity.target_object_store_selector_option(
             object_store_id=object_store_id
@@ -566,7 +544,6 @@ class UploadContext:
         if not method_card.is_absent and method_card.is_displayed:
             return
 
-        # Try from the current page first (embedded upload flows).
         if (
             not self.components.upload_activity.activity.is_absent
             and self.components.upload_activity.activity.is_displayed
@@ -575,7 +552,6 @@ class UploadContext:
             if not method_card.is_absent and method_card.is_displayed:
                 return
 
-        # Open from home using the new default activity.
         self.driver_wrapper.home()
         self.driver_wrapper.components.tools.activity.wait_for_visible()
 
@@ -587,7 +563,6 @@ class UploadContext:
             if not method_card.is_absent and method_card.is_displayed:
                 return
 
-        # Compatibility fallback if upload is grouped under preferences.
         if (
             not self.driver_wrapper.components.preferences.activity.is_absent
             and self.driver_wrapper.components.preferences.activity.is_displayed
@@ -597,22 +572,7 @@ class UploadContext:
 
         method_card.wait_for_visible()
 
-    def _row_number(self, index: int) -> int:
-        return index + 1
-
-    def _row_name_input(self, index: int):
-        row = self._row_number(index)
-        return self.components.upload_activity.row_name_input(row=row)
-
-    def _row_extension_select(self, index: int):
-        row = self._row_number(index)
-        return self.components.upload_activity.row_extension_select(row=row)
-
-    def _row_dbkey_select(self, index: int):
-        row = self._row_number(index)
-        return self.components.upload_activity.row_dbkey_select(row=row)
-
-    def _row_remove_button(self, index: int):
+    def _row_remove_button(self, index):
         row = self._row_number(index)
         return self.components.upload_activity.row_remove_button(row=row)
 
@@ -629,10 +589,20 @@ class UploadContext:
         return self.components.upload_activity.paste_links_row_deferred_label(row=row)
 
 
+class UploadMethodModalContext(_UploadStaging):
+    """Modal upload context for workflow form inputs."""
+
+    def __init__(self, method_id: UploadMethodId, driver_wrapper: NavigatesGalaxyMixin):
+        super().__init__(driver_wrapper)
+        self._select_method(method_id)
+
+    @property
+    def _button_group(self):
+        return self.components.upload_method_modal
+
+
 # Mode-specific context classes that provide restricted APIs
 class BaseUploadContext:
-    """Base context with common methods shared across all upload modes."""
-
     def __init__(self, context: UploadContext):
         self._context = context
 
@@ -640,21 +610,17 @@ class BaseUploadContext:
         self._context.start()
 
     def cancel(self) -> None:
-        """Cancel all staged items without uploading."""
         self._context.cancel()
 
     def select_target_history(self: TUploadContext, history_id: str) -> TUploadContext:
-        """Change the upload target history using the TargetHistorySelector UI."""
         self._context.select_target_history(history_id)
         return self
 
     def to_list(self, name: str) -> "BaseUploadContext":
-        """Configure staged uploads to create a list collection on start."""
         self._context.to_list(name)
         return self
 
     def to_paired_list(self, name: str) -> "BaseUploadContext":
-        """Configure staged uploads to create a paired-list collection on start."""
         self._context.to_paired_list(name)
         return self
 
@@ -678,68 +644,44 @@ class BaseUploadContext:
         return 0
 
     def activate_advanced_mode(self: TUploadContext) -> TUploadContext:
-        """Backward-compatible alias for enabling advanced mode via the UI switch."""
         self._context.activate_advanced_mode()
         return self
 
     def set_advanced_mode(self: TUploadContext, enabled: bool) -> TUploadContext:
-        """Set advanced mode state using the real upload panel switch control."""
         self._context.set_advanced_mode(enabled)
         return self
 
     def toggle_advanced_mode(self: TUploadContext) -> TUploadContext:
-        """Toggle advanced mode using the real upload panel switch control."""
         self._context.toggle_advanced_mode()
         return self
 
     def select_target_object_store(self: TUploadContext, object_store_id: str) -> TUploadContext:
-        """Select a target object store for this upload.
-
-        Note: Advanced mode must be activated first for this selector to be visible.
-        """
         self._context.select_target_object_store(object_store_id)
         return self
 
 
 class LocalFileContext(BaseUploadContext):
-    def stage_local_file(self, test_path: str, metadata: Optional["UploadMetadata"] = None) -> LocalUploadItem:
+    def stage_local_file(self, test_path: str, metadata: Optional[UploadMetadata] = None) -> LocalUploadItem:
         return self._context.stage_local_file(test_path, metadata)
 
 
 class PasteContentContext(BaseUploadContext):
-    def stage_paste_content(self, content: str, metadata: Optional["UploadMetadata"] = None) -> PasteContentUploadItem:
+    def stage_paste_content(self, content: str, metadata: Optional[UploadMetadata] = None) -> PasteContentUploadItem:
         return self._context.stage_paste_content(content, metadata)
 
 
 class PasteLinksContext(BaseUploadContext):
-    """Restricted context for paste link uploads only."""
-
-    def stage_paste_link(self, url: str, metadata: Optional["UploadMetadata"] = None) -> UploadItem:
-        """Stage a file link URL for upload. Returns the new item.
-
-        You cannot chain-stage multiple links with this method - use stage_paste_links instead. This is for single URLs only.
-        """
+    def stage_paste_link(self, url: str, metadata: Optional[UploadMetadata] = None) -> UploadItem:
         return self._context.stage_paste_link(url, metadata)
 
-    def stage_paste_links(
-        self, url_metadata_pairs: list[tuple[str, Optional["UploadMetadata"]]]
-    ) -> "PasteLinksContext":
-        """Stage multiple file link URLs for upload, each with optional metadata.
-
-        Args:
-            url_metadata_pairs: List of (url, metadata) tuples where metadata is optional.
-                Example: [(url1, {"name": "link1", "extension": "txt"}), (url2, None)]
-
-        Returns:
-            self for method chaining
-        """
+    def stage_paste_links(self, url_metadata_pairs: list[tuple[str, Optional[UploadMetadata]]]) -> "PasteLinksContext":
         self._context.stage_paste_links(url_metadata_pairs)
         return self
 
 
 class RemoteFilesContext(BaseUploadContext):
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
+        self, source_label: str, file_label: str, metadata: Optional[UploadMetadata] = None
     ) -> RemoteFileUploadItem:
         return self._context.stage_remote_file(source_label, file_label, metadata)
 
@@ -747,31 +689,26 @@ class RemoteFilesContext(BaseUploadContext):
         self,
         source_label: str,
         file_labels: list[str],
-        metadata_list: Optional[list[Optional["UploadMetadata"]]] = None,
+        metadata_list: Optional[list[Optional[UploadMetadata]]] = None,
     ) -> "RemoteFilesContext":
-        """Stage multiple remote files from the same source."""
         self._context.stage_remote_files(source_label, file_labels, metadata_list)
         return self
 
 
 class CompositeFileContext(BaseUploadContext):
     def select_composite(self, composite_type: str) -> "CompositeFileContext":
-        """Select composite datatype in the composite-file method."""
         self._context.select_composite(composite_type)
         return self
 
     def stage_composite_url_slot(self, slot: int, url: str) -> "CompositeFileContext":
-        """Set a composite slot to URL mode and populate its URL."""
         self._context.stage_composite_url_slot(slot, url)
         return self
 
     def stage_composite_paste_slot(self, slot: int, content: str) -> "CompositeFileContext":
-        """Set a composite slot to paste mode and populate content."""
         self._context.stage_composite_paste_slot(slot, content)
         return self
 
     def stage_composite_file_slot(self, slot: int, file_path: str) -> "CompositeFileContext":
-        """Set a composite slot to local-file mode and attach a file path."""
         self._context.stage_composite_file_slot(slot, file_path)
         return self
 
@@ -782,45 +719,11 @@ class DataLibraryContext(BaseUploadContext):
 
 
 class ExploreZipContext(BaseUploadContext):
-    """Fluent context for the explore-zip upload method.
-
-    This method opens the ZipImportWizard directly. Use the fluent API
-    to navigate through the wizard steps: explore a zip, select files,
-    and start importing.
-
-    Example usage::
-
-        # Explore a local zip and import a single file
-        (self.upload_context("explore-zip")
-            .explore_local_zip("example-bag.zip")
-            .expect_total_files(8)
-            .go_next()
-            .select_file("test-bag-fetch-http/data/README.txt")
-            .go_next()
-            .expect_files_to_import(1)
-            .start_import())
-
-        # Explore a remote zip URL
-        (self.upload_context("explore-zip")
-            .explore_remote_zip("https://example.com/archive.zip")
-            .wait_for_preview()
-            .expect_preview_title("My Archive"))
-    """
-
     @property
     def _wizard(self):
-        """Access the zip_import_wizard component selectors."""
         return self._context.driver_wrapper.components.zip_import_wizard
 
     def explore_local_zip(self, test_path: str) -> "ExploreZipContext":
-        """Select a local zip file to explore in the wizard.
-
-        Args:
-            test_path: Path to the zip file to explore.
-
-        Returns:
-            self for method chaining.
-        """
         file_input = self._wizard.local_file_input.wait_for_present()
         if self._context.driver_wrapper.backend_type == "playwright":
             file_input.element_handle.set_input_files(test_path)
@@ -829,150 +732,63 @@ class ExploreZipContext(BaseUploadContext):
         return self
 
     def explore_remote_zip(self, url: str) -> "ExploreZipContext":
-        """Enter a remote zip URL to explore in the wizard.
-
-        The URL is set atomically (not character-by-character) to avoid
-        triggering Vue's reactive watch on each keystroke, which would
-        cause partial URLs to be validated and emitted prematurely.
-
-        Args:
-            url: URL of the remote zip file.
-
-        Returns:
-            self for method chaining.
-        """
         url_input = self._wizard.remote_url_input.wait_for_visible()
         self._context.driver_wrapper.set_element_value(url_input, url)
         return self
 
     def go_next(self) -> "ExploreZipContext":
-        """Click the 'Next' button in the wizard.
-
-        Returns:
-            self for method chaining.
-        """
         self._wizard.wizard_next_button.wait_for_and_click()
         return self
 
     def start_import(self) -> "ExploreZipContext":
-        """Click the 'Import' button to start importing selected files.
-
-        Returns:
-            self for method chaining.
-        """
         self._wizard.wizard_import_button.wait_for_and_click()
         return self
 
     def select_file(self, file_path: str) -> "ExploreZipContext":
-        """Select a file entry in the wizard by its path.
-
-        Args:
-            file_path: The file path identifying the entry to select.
-
-        Returns:
-            self for method chaining.
-        """
         self._wizard.select_file(file_path=file_path).wait_for_and_click()
         return self
 
     def select_all_files(self) -> "ExploreZipContext":
-        """Select all files in the wizard using the select-all checkbox.
-
-        Returns:
-            self for method chaining.
-        """
         self._wizard.select_all_checkbox.wait_for_and_click()
         return self
 
     def search_for(self, query: str) -> "ExploreZipContext":
-        """Type a search query into the file search input.
-
-        Args:
-            query: The search string to filter files.
-
-        Returns:
-            self for method chaining.
-        """
         search_input = self._wizard.search_input.wait_for_visible()
         search_input.send_keys(query)
         self._context.driver_wrapper.sleep_for(self._context.driver_wrapper.wait_types.UX_RENDER)
         return self
 
     def get_visible_item_cards(self) -> list:
-        """Return all visible file item card elements.
-
-        Returns:
-            List of WebElement card elements currently visible in the selector.
-        """
         return self._context.driver_wrapper.find_elements_by_selector(".zip-file-selector .g-card")
 
     def wait_for_preview(self) -> "ExploreZipContext":
-        """Wait for the loading indicator to appear and then disappear.
-
-        Returns:
-            self for method chaining.
-        """
         loading_indicator = self._wizard.loading_indicator
         loading_indicator.wait_for_present()
         loading_indicator.wait_for_absent()
         return self
 
     def expect_total_files(self, count: int) -> "ExploreZipContext":
-        """Assert that the total number of files in the zip matches the expected count.
-
-        Args:
-            count: Expected number of files.
-
-        Returns:
-            self for method chaining.
-        """
         badge_text = self._wizard.zip_file_count_badge.wait_for_text()
         assert badge_text.startswith(f"{count}"), f"Expected {count} files but badge says: {badge_text}"
         return self
 
     def expect_files_to_import(self, count: int) -> "ExploreZipContext":
-        """Assert that the number of selected files to import matches the expected count.
-
-        Args:
-            count: Expected number of selected files.
-
-        Returns:
-            self for method chaining.
-        """
         badge_text = self._wizard.selected_files_to_import_count_badge.wait_for_text()
         assert badge_text.startswith(f"{count}"), f"Expected {count} files to import but badge says: {badge_text}"
         return self
 
     def expect_workflows_to_import(self, count: int) -> "ExploreZipContext":
-        """Assert that the number of selected workflows to import matches the expected count.
-
-        Args:
-            count: Expected number of selected workflows.
-
-        Returns:
-            self for method chaining.
-        """
         badge_text = self._wizard.selected_workflows_to_import_count_badge.wait_for_text()
         assert badge_text.startswith(f"{count}"), f"Expected {count} workflows to import but badge says: {badge_text}"
         return self
 
     def expect_preview_title(self, title: str) -> "ExploreZipContext":
-        """Assert that the preview title matches the expected title.
-
-        Args:
-            title: Expected preview title text.
-
-        Returns:
-            self for method chaining.
-        """
         title_text = self._wizard.preview_title.wait_for_text()
         assert title_text == title, f"Expected preview title '{title}' but got '{title_text}'"
         return self
 
 
 class RuleImportContext:
-    """Fluent helper for the standalone rule-based import wizard."""
-
     def __init__(self, driver_wrapper: NavigatesGalaxyMixin):
         self.driver_wrapper = driver_wrapper
         self.driver_wrapper.get("rules")
@@ -1019,7 +835,6 @@ class RuleImportContext:
             f'.selection-dialog-modal table tbody tr[aria-rowindex="{row}"] td[aria-colindex="1"]'
         )
         self.driver_wrapper.wait_for_selector_absent_or_hidden(".selection-dialog-modal")
-        # After the dataset is selected, advance the wizard to the rule builder step
         wizard = self.components.file_set_wizard
         wizard.wizard_next_button.wait_for_and_click()
         return self.wait_for_builder()
@@ -1068,33 +883,21 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
     @overload
     def upload_context(self, method_id: RuleImportContextId) -> RuleImportContext: ...
 
-    def upload_context(
-        self, method_id: UploadMethodId | RuleImportContextId
-    ) -> (
-        LocalFileContext
-        | PasteContentContext
-        | PasteLinksContext
-        | RemoteFilesContext
-        | CompositeFileContext
-        | DataLibraryContext
-        | ExploreZipContext
-        | RuleImportContext
-    ):
-        """Create an upload context for the specified method.
-
-        Args:
-            method_id: The upload method to use
-
-        Returns:
-            A mode-specific context object for staging and executing uploads.
-        """
+    def upload_context(self, method_id: Union[UploadMethodId, RuleImportContextId]) -> Union[
+        LocalFileContext,
+        PasteContentContext,
+        PasteLinksContext,
+        RemoteFilesContext,
+        CompositeFileContext,
+        DataLibraryContext,
+        ExploreZipContext,
+        RuleImportContext,
+    ]:
         if method_id == "rule":
             return RuleImportContext(self)
 
         base_context = UploadContext(method_id, self)
         context_class = _CONTEXT_CLASS_MAP[method_id]
-        # mypy cannot infer the return type here due to the dynamic mapping,
-        # but the overloads provide correct type hints for callers
         return context_class(base_context)  # type: ignore[return-value]
 
     def _rule_import_context(self) -> RuleImportContext:
@@ -1103,3 +906,6 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
             context = self.upload_context("rule")
             self._active_rule_import_context = context
         return context
+
+    def upload_via_modal(self, method_id: UploadMethodId) -> UploadMethodModalContext:
+        return UploadMethodModalContext(method_id, self)
