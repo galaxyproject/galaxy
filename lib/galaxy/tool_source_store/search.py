@@ -37,6 +37,7 @@ from whoosh.qparser import (
 from whoosh.scoring import BM25F
 from whoosh.writing import AsyncWriter
 
+from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.util import unicodify
 
 if TYPE_CHECKING:
@@ -111,6 +112,10 @@ def build_schema(tuning: ToolSearchTuning) -> Schema:
             analyzer=analysis.StemmingAnalyzer(),
         ),
         "labels": KEYWORD(field_boost=tuning.label_boost),
+        "tool_tags": TEXT(
+            field_boost=tuning.label_boost,
+            analyzer=analysis.KeywordAnalyzer(lowercase=True, commas=True),
+        ),
     }
     if tuning.enable_ngram_search:
         schema_conf["name"] = NGRAMWORDS(
@@ -168,6 +173,13 @@ def _entry_to_doc(entry: "ToolIndexEntry") -> dict | None:
         doc["stub"] = unicodify(entry.id)
     if entry.labels:
         doc["labels"] = unicodify(" ".join(entry.labels))
+    tool_id = (entry.id or "").lower()
+    all_ids = [tool_id]
+    if "/repos/" in tool_id:
+        short = tool_id.rsplit("/", 2)[-2]
+        all_ids = [tool_id, tool_id.rsplit("/", 1)[0], short]
+    if tags := curated_tool_tags(all_ids):
+        doc["tool_tags"] = unicodify(",".join(tags))
     return doc
 
 
@@ -248,6 +260,7 @@ class ToolWhooshIndex:
             "repository",
             "owner",
             "labels",
+            "tool_tags",
         ]
         parser = MultifieldParser(search_fields, schema=ix.schema, group=OrGroup)
         parsed = parser.parse(query)

@@ -157,6 +157,9 @@ class LazyTool:
             "get_configured_job_handler",  # job-runner handler routing
             # Job runner reads this on the tool to decide environment setup.
             "requires_galaxy_python_environment",
+            # Admin dependency-management endpoints (install_dependencies /
+            # uninstall_dependencies) drive the resolver view on the tool.
+            "_view",
         }
     )
 
@@ -369,12 +372,13 @@ class LazyTool:
 
     # --- strict fallthrough ---
     def __getattr__(self, name: str):
-        # Private/dunder attrs are never materialise triggers — surface as
-        # ``AttributeError`` so e.g. ``hasattr(tool, "__something__")`` stays cheap.
-        if name.startswith("_"):
-            raise AttributeError(name)
         if name in self._MATERIALIZE_OK:
             return getattr(self._materialize(), name)
+        # Other private/dunder attrs are never materialise triggers — surface
+        # as ``AttributeError`` so e.g. ``hasattr(tool, "__something__")``
+        # stays cheap.
+        if name.startswith("_"):
+            raise AttributeError(name)
         if _LAZY_TOOL_PERMISSIVE:
             log.warning(
                 "LazyTool.%r forced materialise of tool %r (LAZY_TOOL_PERMISSIVE=1); "

@@ -321,8 +321,16 @@ def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[Disco
                         log.warning("Could not resolve tool_path from %s: %s", shed_conf_file, e)
             if not path:
                 continue
+            resolved = os.path.abspath(os.path.join(tool_path, path))
+            if not os.path.exists(resolved):
+                # Mirror DataManagers.load_from_xml: fall back to resolving
+                # relative to the conf file (planemo-managed layouts).
+                fallback = os.path.abspath(os.path.join(os.path.dirname(conf), path))
+                if os.path.exists(fallback):
+                    resolved = fallback
+                    tool_path = os.path.dirname(conf)
             yield DiscoveredTool(
-                path=os.path.abspath(os.path.join(tool_path, path)),
+                path=resolved,
                 tool_conf=conf,
                 tool_path=tool_path,
                 guid=guid,
