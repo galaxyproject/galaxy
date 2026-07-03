@@ -439,26 +439,26 @@ SRR5681005\tinput\t\t
         history_id = self.current_history_id()
 
         base_url = self.dataset_populator.base64_url_for_bytes(b"hello world")
-        urls = [
-            f"{base_url}/SRR5680995_R1.fastq.gz",
-            f"{base_url}/SRR5680995_R2.fastq.gz",
-            f"{base_url}/SRR5680996_R1.fastq.gz",
-            f"{base_url}/SRR5680996_R2.fastq.gz",
-            f"{base_url}/SRR5680997_R1.fastq.gz",
-            f"{base_url}/SRR5680997_R2.fastq.gz",
-            f"{base_url}/SRR5681007_R1.fastq.gz",
-            f"{base_url}/SRR5681007_R2.fastq.gz",
-            f"{base_url}/SRR5681006_R1.fastq.gz",
-            f"{base_url}/SRR5681006_R2.fastq.gz",
-            f"{base_url}/SRR5680998_R1.fastq.gz",
-            f"{base_url}/SRR5680998_R2.fastq.gz",
-            f"{base_url}/SRR5681008_R1.fastq.gz",
-            f"{base_url}/SRR5681008_R2.fastq.gz",
-            f"{base_url}/SRR5681005_R1.fastq.gz",
-            f"{base_url}/SRR5681005_R2.fastq.gz",
-        ]
-        pasted_data = "\n".join(urls)
-        self.upload_context("paste-content").stage_paste_content(pasted_data).start()
+        self.upload_context("paste-links").stage_paste_links(
+            [
+                (f"{base_url}/SRR5680995_R1.fastq.gz", None),
+                (f"{base_url}/SRR5680995_R2.fastq.gz", None),
+                (f"{base_url}/SRR5680996_R1.fastq.gz", None),
+                (f"{base_url}/SRR5680996_R2.fastq.gz", None),
+                (f"{base_url}/SRR5680997_R1.fastq.gz", None),
+                (f"{base_url}/SRR5680997_R2.fastq.gz", None),
+                (f"{base_url}/SRR5681007_R1.fastq.gz", None),
+                (f"{base_url}/SRR5681007_R2.fastq.gz", None),
+                (f"{base_url}/SRR5681006_R1.fastq.gz", None),
+                (f"{base_url}/SRR5681006_R2.fastq.gz", None),
+                (f"{base_url}/SRR5680998_R1.fastq.gz", None),
+                (f"{base_url}/SRR5680998_R2.fastq.gz", None),
+                (f"{base_url}/SRR5681008_R1.fastq.gz", None),
+                (f"{base_url}/SRR5681008_R2.fastq.gz", None),
+                (f"{base_url}/SRR5681005_R1.fastq.gz", None),
+                (f"{base_url}/SRR5681005_R2.fastq.gz", None),
+            ]
+        ).start()
         self.history_panel_wait_for_and_select([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
         self.history_panel_build_list_of_pairs()
         self.collection_builder_set_name("inputaslist")
@@ -810,14 +810,14 @@ steps: {}
     def test_workflow_run_list_paired_or_unpaired_with_paired_list(self):
         history_id = self.current_history_id()
         uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("forward content", {"name": "foo_1.fasta"})
-        uploader.stage_paste_content("reverse content", {"name": "foo_2.fasta"})
+        uploader.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        uploader.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
         uploader.to_paired_list("my awesome paired list").start()
-        self.history_panel_wait_for_hid_ok(5)
+        self.history_panel_wait_for_hid_ok(1)
         self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
         self.workflow_run_submit()
-        self.history_panel_wait_for_hid_ok(6)
-        content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
+        self.history_panel_wait_for_hid_ok(4)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=4)
         assert content.strip() == "forward content\nreverse content"
 
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -826,14 +826,15 @@ steps: {}
     def test_workflow_run_list_paired_or_unpaired_with_flat_list(self):
         history_id = self.current_history_id()
         uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("forward content", {"name": "foo_1.fasta"})
-        uploader.stage_paste_content("reverse content", {"name": "foo_2.fasta"})
+        uploader.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        uploader.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
         uploader.to_list("my awesome flat list").start()
-        self.history_panel_wait_for_hid_ok(5)
+        self.history_panel_wait_for_hid_ok(1)
         self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
         self.workflow_run_submit()
-        self.history_panel_wait_for_hid_ok(6)
-        content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
+        self.history_panel_wait_for_hid_ok(4)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=4)
+        # TODO: why is this reversed? is this expected due to how the paired or unpaired list input works?
         assert content.strip() == "reverse content\nforward content"
 
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -842,9 +843,9 @@ steps: {}
     def test_workflow_run_list_paired_or_unpaired_with_mixed_list(self):
         history_id = self.current_history_id()
         uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("forward content", {"name": "foo_1.fasta"})
-        uploader.stage_paste_content("reverse content", {"name": "foo_2.fasta"})
-        uploader.stage_paste_content("unpaired content", {"name": "other.fasta"})
+        uploader.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        uploader.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        uploader.stage_paste_content("unpaired content\n", {"name": "other.fasta"})
         uploader.start()
         self.history_panel_wait_for_and_select([1, 2, 3])
         self.history_panel_build_list_of_paired_or_unpaireds()
@@ -865,8 +866,12 @@ steps: {}
         self._create_and_run_workflow_with_unique_name(WORKFLOW_SIMPLE_CAT_TWICE)
         workflow_run = self.components.workflow_run
         input = workflow_run.input._(label="input1")
-        input.upload.wait_for_and_click()
-        self._upload_hello_world_for_input(input)
+        input.upload_modal.wait_for_and_click()
+
+        # Upload via modal - fluent API using paste-links for URLs
+        url = self.dataset_populator.base64_url_for_string("hello world\n")
+        self.upload_via_modal("paste-links").stage_paste_link(url, {"name": "hello world.1.fastq"}).start()
+
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(2)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=2)
@@ -933,8 +938,8 @@ steps: {}
     def test_upload_list_paired_from_workflow(self):
         history_id = self.current_history_id()
         uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("hello world", {"name": "hello world.1.fastq"})
-        uploader.stage_paste_content("hello world", {"name": "hello world.2.fastq"})
+        uploader.stage_paste_content("hello world\n", {"name": "hello world.1.fastq"})
+        uploader.stage_paste_content("hello world\n", {"name": "hello world.2.fastq"})
         uploader.start()
         self.history_panel_wait_for_hid_ok(2)
 
@@ -958,9 +963,9 @@ steps: {}
     def test_upload_list_paired_or_unpaired_from_workflow(self):
         history_id = self.current_history_id()
         uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("forward content", {"name": "foo_1.fasta"})
-        uploader.stage_paste_content("reverse content", {"name": "foo_2.fasta"})
-        uploader.stage_paste_content("unpaired content", {"name": "other.fasta"})
+        uploader.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        uploader.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        uploader.stage_paste_content("unpaired content\n", {"name": "other.fasta"})
         uploader.start()
         self.history_panel_wait_for_hid_ok(3)
         self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
@@ -978,18 +983,6 @@ steps: {}
         self.history_panel_wait_for_hid_ok(8)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=8)
         assert content.strip() == "unpaired content\nreverse content\nforward content"
-
-    def _upload_hello_world_for_input(self, workflow_input, count=1, from_hid=1):
-        # assumes fresh history...
-        for i in range(count):
-            workflow_input.create_button.wait_for_and_click()
-            url = self.dataset_populator.base64_url_for_string("hello world")
-            workflow_input.paste_content(n=i).wait_for_and_send_keys(url)
-            workflow_input.title(n=i).wait_for_and_clear_and_send_keys(f"hello world.{i + 1}.fastq")
-
-        workflow_input.embedded_start_button.wait_for_and_click()
-        workflow_input.use_button_disabled.wait_for_absent()
-        workflow_input.use_button.wait_for_and_click()
 
     def _create_and_run_workflow_with_unique_name(
         self, workflow_contents: str, format: Literal["ga", "gxformat2"] = "gxformat2"
