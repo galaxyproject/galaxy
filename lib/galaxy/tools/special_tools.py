@@ -33,8 +33,7 @@ def hidden_lib_tool_paths() -> list[str]:
     """
     base = os.path.dirname(__file__)
     return [
-        os.path.abspath(os.path.join(base, p))
-        for p in (*SPECIAL_TOOLS.values(), *_EXTRA_HIDDEN_LIB_TOOLS.values())
+        os.path.abspath(os.path.join(base, p)) for p in (*SPECIAL_TOOLS.values(), *_EXTRA_HIDDEN_LIB_TOOLS.values())
     ]
 
 

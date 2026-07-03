@@ -44,9 +44,19 @@ from typing import (
     cast,
 )
 
+from kombu import Connection
+from kombu.pools import producers
+
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.datatypes.registry import Registry
+from galaxy.model import set_datatypes_registry
+from galaxy.model.mapping import init_models_from_config
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.queues import galaxy_exchange
 from galaxy.tool_source_store import (
     _build_default_store,
     build_named_store,
+    build_tool_source_store,
     ReadOnlyStoreError,
     StoredToolSource,
     ToolSourceStore,
@@ -59,16 +69,6 @@ from galaxy.tool_source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
-from kombu import Connection
-from kombu.pools import producers
-
-from galaxy.config import GalaxyAppConfiguration
-from galaxy.datatypes.registry import Registry
-from galaxy.model import set_datatypes_registry
-from galaxy.model.mapping import init_models_from_config
-from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.queues import galaxy_exchange
-from galaxy.tool_source_store import build_tool_source_store
 from galaxy.tool_source_store.search import (
     ToolSearchTuning,
     ToolWhooshIndex,

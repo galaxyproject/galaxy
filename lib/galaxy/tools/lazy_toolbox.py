@@ -19,8 +19,11 @@ from typing import (
 from uuid import UUID
 
 from cachetools import LRUCache
-from galaxy.tool_util.version import parse_version
 
+from galaxy.exceptions import (
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 from galaxy.tool_source_store import (
     StoredToolSource,
     ToolSourceStore,
@@ -31,16 +34,13 @@ from galaxy.tool_source_store.index import (
     ToolIndexEntry,
 )
 from galaxy.tool_source_store.populator import populate_store_inline
-from galaxy.exceptions import (
-    ObjectNotFound,
-    RequestParameterInvalidException,
-)
 from galaxy.tool_util.id_util import extract_short_id_from_guid
-from galaxy.tool_util.toolbox.base import ToolConfRepository
-from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
 from galaxy.tool_util.toolbox.panel import ToolSection
+from galaxy.tool_util.version import parse_version
+from galaxy.util.tool_version import remove_version_from_guid
 from . import (
     create_tool_from_source,
     ToolBox,
@@ -327,9 +327,7 @@ class LazyTool:
         from ``_tools_by_id``.
         """
         try:
-            return self._materialize().to_dict(
-                trans, link_details=link_details, tool_help=tool_help, **kw
-            )
+            return self._materialize().to_dict(trans, link_details=link_details, tool_help=tool_help, **kw)
         except Exception as e:
             log.warning("LazyTool.to_dict: materialise failed for %s, falling back to entry: %s", self.id, e)
             return self.to_panel_entry(trans)
@@ -864,9 +862,7 @@ class LazyToolBox(ToolBox):
 
         return tool
 
-    def _create_tool_from_stored_source(
-        self, stored: StoredToolSource, entry: ToolIndexEntry | None = None
-    ) -> "Tool":
+    def _create_tool_from_stored_source(self, stored: StoredToolSource, entry: ToolIndexEntry | None = None) -> "Tool":
         """Create a Tool object from stored source."""
         tool_source = get_tool_source(
             raw_tool_source=stored.raw_source,

@@ -1,7 +1,10 @@
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from typing import (
     TYPE_CHECKING,
 )
-from collections.abc import Callable, Iterable
 
 from galaxy.util.tool_version import remove_version_from_guid
 from .interface import ToolLineage

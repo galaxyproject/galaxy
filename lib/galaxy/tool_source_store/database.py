@@ -113,9 +113,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
     def get(self, hash: str) -> StoredToolSource | None:
         """Retrieve a tool source by hash."""
         with self._read_session() as session:
-            model = session.execute(
-                select(ToolSourceRecord).where(ToolSourceRecord.hash == hash)
-            ).scalar_one_or_none()
+            model = session.execute(select(ToolSourceRecord).where(ToolSourceRecord.hash == hash)).scalar_one_or_none()
             if not model:
                 return None
             return self._model_to_stored(model)
