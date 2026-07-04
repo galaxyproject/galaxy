@@ -1037,7 +1037,8 @@ class LazyToolBox(ToolBox):
         # removal. Every populate broadcasts an invalidation, so without
         # the lock a queue-worker invalidation can interleave — it reloads
         # the pre-removal index and re-registers the just-removed tool as
-        # a stub.
+        # a stub (observed as test_repository_uninstall resurrecting the
+        # tool right after the install's own broadcast).
         with self.app._toolbox_lock:
             try:
                 self._store.invalidate_index_cache()
@@ -1254,6 +1255,25 @@ class LazyToolBox(ToolBox):
             # ``rval.extend(self._tools_by_old_id[tool_id])``. Drop the
             # whole bucket for this tool_id to match the index removal.
             self._tools_by_old_id.pop(tool_id, None)
+            # The short-id bucket is keyed by ``old_id`` — for a shed guid
+            # that's the short tool id, not ``tool_id``. ``super()`` removes
+            # from it by object identity only, which misses when the bucket
+            # holds an earlier registration (stub or materialised instance)
+            # while ``_tools_by_id`` held a fresher one; the leftover then
+            # resurrects the uninstalled tool via the eager get_tool
+            # fall-through. Scrub every object belonging to this guid, but
+            # leave sibling installs (other guids, other versions) alone.
+            short_id = extract_short_id_from_guid(tool_id)
+            if short_id and short_id != tool_id:
+                bucket = self._tools_by_old_id.get(short_id)
+                if bucket:
+                    survivors = [
+                        t for t in bucket if getattr(t, "id", None) != tool_id and getattr(t, "guid", None) != tool_id
+                    ]
+                    if survivors:
+                        self._tools_by_old_id[short_id] = survivors
+                    else:
+                        del self._tools_by_old_id[short_id]
             # Mirror the cleanup in our short-id → guid map so a
             # subsequent ``has_tool``/``get_tool`` for the short id
             # doesn't resurrect a removed shed install. Both directions
@@ -1267,8 +1287,19 @@ class LazyToolBox(ToolBox):
                 if not _guids:
                     del self._shed_short_id_to_guids[_short]
             with self._cache_lock:
-                for key in [k for k in self._tool_object_cache.keys() if k.startswith(f"{tool_id}:")]:
-                    self._tool_object_cache.pop(key, None)
+                # Purge by cached identity, not by key prefix: the LRU is
+                # keyed by whatever id the caller resolved with, so the same
+                # tool can sit under both its guid and its short id
+                # ("collection_column_join:latest"). A guid-prefix purge
+                # leaves the short-id entry behind and get_tool serves the
+                # uninstalled tool straight from cache.
+                for key, cached in list(self._tool_object_cache.items()):
+                    if (
+                        key.startswith(f"{tool_id}:")
+                        or getattr(cached, "id", None) == tool_id
+                        or getattr(cached, "guid", None) == tool_id
+                    ):
+                        self._tool_object_cache.pop(key, None)
             if self._store is not None:
                 # The pops above are in-memory. The persisted singleton index
                 # still carries the entry, and any later cache invalidation
