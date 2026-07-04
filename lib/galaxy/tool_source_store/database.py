@@ -85,14 +85,45 @@ class DatabaseToolSourceStore(ToolSourceStore):
                 log.debug("read session close raised: %s", e)
 
     def store(self, tool_source: StoredToolSource) -> str:
-        """Store a tool source in the database."""
+        """Store a tool source in the database.
+
+        One row per ``source_path``: distinct files can expand to identical
+        content (same ``hash``), and each path must stay resolvable through
+        :meth:`get_by_source_path` — deduplicating on hash alone would leave
+        the second file's path pointing at nothing. A row whose path already
+        exists is updated in place when its content changed. Path-less
+        sources deduplicate on content hash.
+        """
         session = self._get_session()
 
-        existing = session.execute(
-            select(ToolSourceRecord.id).where(ToolSourceRecord.hash == tool_source.hash)
-        ).scalar_one_or_none()
-        if existing:
-            return tool_source.hash
+        if tool_source.source_path:
+            existing = (
+                session.execute(
+                    select(ToolSourceRecord).where(ToolSourceRecord.source_path == tool_source.source_path).limit(1)
+                )
+                .scalars()
+                .first()
+            )
+            if existing is not None:
+                if existing.hash != tool_source.hash:
+                    existing.hash = tool_source.hash
+                    existing.source = tool_source.raw_source
+                    existing.source_class = tool_source.tool_source_class
+                    existing.tool_id = tool_source.tool_id
+                    existing.tool_version = tool_source.tool_version
+                    existing.tool_dir = tool_source.tool_dir
+                    existing.stored_at = tool_source.stored_at
+                    existing.source_metadata = tool_source.metadata or None
+                    session.flush()
+                return tool_source.hash
+        else:
+            existing_id = (
+                session.execute(select(ToolSourceRecord.id).where(ToolSourceRecord.hash == tool_source.hash).limit(1))
+                .scalars()
+                .first()
+            )
+            if existing_id:
+                return tool_source.hash
 
         model = ToolSourceRecord(
             hash=tool_source.hash,
@@ -111,9 +142,17 @@ class DatabaseToolSourceStore(ToolSourceStore):
         return tool_source.hash
 
     def get(self, hash: str) -> StoredToolSource | None:
-        """Retrieve a tool source by hash."""
+        """Retrieve a tool source by hash.
+
+        Several rows can share a hash (one per source path with identical
+        expanded content); any of them carries the same source.
+        """
         with self._read_session() as session:
-            model = session.execute(select(ToolSourceRecord).where(ToolSourceRecord.hash == hash)).scalar_one_or_none()
+            model = (
+                session.execute(select(ToolSourceRecord).where(ToolSourceRecord.hash == hash).limit(1))
+                .scalars()
+                .first()
+            )
             if not model:
                 return None
             return self._model_to_stored(model)
@@ -135,21 +174,24 @@ class DatabaseToolSourceStore(ToolSourceStore):
     def exists(self, hash: str) -> bool:
         """Check if a tool source exists."""
         with self._read_session() as session:
-            result = session.execute(
-                select(ToolSourceRecord.id).where(ToolSourceRecord.hash == hash)
-            ).scalar_one_or_none()
+            result = (
+                session.execute(select(ToolSourceRecord.id).where(ToolSourceRecord.hash == hash).limit(1))
+                .scalars()
+                .first()
+            )
             return result is not None
 
     def delete(self, hash: str) -> bool:
-        """Delete a tool source by hash."""
+        """Delete all rows carrying this hash (one per source path)."""
         session = self._get_session()
 
-        model = session.execute(select(ToolSourceRecord).where(ToolSourceRecord.hash == hash)).scalar_one_or_none()
+        models = session.execute(select(ToolSourceRecord).where(ToolSourceRecord.hash == hash)).scalars().all()
 
-        if not model:
+        if not models:
             return False
 
-        session.delete(model)
+        for model in models:
+            session.delete(model)
         session.flush()
         return True
 

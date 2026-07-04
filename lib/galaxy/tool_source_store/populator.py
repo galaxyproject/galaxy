@@ -713,10 +713,15 @@ def populate_store_inline(
                 stored_at=datetime.now(timezone.utc),
             )
 
-            if incremental and target_store.exists(content_hash):
-                # Source already on disk in the store — skip the write but still
-                # return the parsed source so the index build sees this tool.
-                return ("skipped", d, store_name, stored, tool_source, None)
+            if incremental:
+                # Skip only when this *path* is already stored with this
+                # content. A bare content-hash check is wrong: distinct files
+                # can expand to identical content, and skipping the second
+                # one would leave its path unresolvable (the row keeps the
+                # first writer's ``source_path``).
+                prior = target_store.get_by_source_path(str(path))
+                if prior is not None and prior.hash == content_hash:
+                    return ("skipped", d, store_name, stored, tool_source, None)
 
             if not dry_run:
                 target_store.store(stored)

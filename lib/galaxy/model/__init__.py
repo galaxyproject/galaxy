@@ -1434,9 +1434,12 @@ class ToolSourceRecord(Base, Dictifiable, RepresentById):
 
     Deliberately separate from :class:`ToolSource`, whose rows are created
     per executed tool by the job-request path and whose ``source`` column
-    carries the raw source string contract that path deserializes. Store
-    rows are content-addressed by ``hash`` and carry populator metadata;
-    the populator may prune them freely without affecting job records.
+    carries the raw source string contract that path deserializes. The
+    populator keeps one row per ``source_path``; ``hash`` fingerprints the
+    expanded content and is deliberately non-unique — distinct files can
+    expand to identical content (``tools/data_source/upload.xml`` and its
+    ``test/functional/tools`` copy) yet each path must stay resolvable.
+    The populator may prune rows freely without affecting job records.
     """
 
     __tablename__ = "tool_source_record"
@@ -1445,7 +1448,7 @@ class ToolSourceRecord(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ("id", "hash", "tool_id", "tool_version", "create_time", "update_time")
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    hash: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    hash: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     source: Mapped[str] = mapped_column(Text().with_variant(mysql.LONGTEXT(), "mysql"), nullable=False)
     source_class: Mapped[str] = mapped_column(TrimmedString(255))
     tool_id: Mapped[str | None] = mapped_column(String(255), index=True)
