@@ -66,6 +66,12 @@ class ToolIndexEntry:
     # User-facing tags from ``<tool>`` config (distinct from ``labels``).
     # Surfaced for custom tool filters that bucket tools by tag.
     tags: list[str] = field(default_factory=list)
+    # ``<data_manager id="...">`` from the data manager conf that references
+    # this tool. The conf id and the tool XML id may differ;
+    # ``DataManagerTool.exec_after_process`` resolves the registry by conf
+    # id, so materialise must restore it (eager threads it through
+    # ``load_hidden_tool``).
+    data_manager_id: str | None = None
 
     # === Tests (for /api/tools/tests_summary) ===
     test_count: int = 0
@@ -159,6 +165,7 @@ class ToolIndexEntry:
             "require_login": self.require_login,
             "tool_type": self.tool_type,
             "tags": self.tags,
+            "data_manager_id": self.data_manager_id,
             "test_count": self.test_count,
             "requirements": self.requirements,
             "container_requirements": self.container_requirements,
@@ -202,6 +209,7 @@ class ToolIndexEntry:
             require_login=data.get("require_login", False),
             tool_type=data.get("tool_type", "default"),
             tags=data.get("tags", []),
+            data_manager_id=data.get("data_manager_id"),
             test_count=data.get("test_count", 0),
             requirements=data.get("requirements", []),
             container_requirements=data.get("container_requirements", []),

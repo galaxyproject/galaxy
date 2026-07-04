@@ -965,6 +965,13 @@ class LazyToolBox(ToolBox):
         # eager toolbox does and what callers consult via ``has_tool``
         # / ``get_tool`` and the ``_tools_by_id`` registry.
         kwds: dict[str, Any] = {"tool_dir": stored.tool_dir}
+        if entry and entry.data_manager_id:
+            # The registry is keyed by the ``<data_manager id>`` conf id,
+            # which may differ from the tool XML id.
+            # ``DataManagerTool.__init__`` falls back to the tool id when
+            # the kwd is missing and ``exec_after_process`` then can't find
+            # the manager — eager threads this through ``load_hidden_tool``.
+            kwds["data_manager_id"] = entry.data_manager_id
         if stored.tool_id and "/repos/" in stored.tool_id:
             kwds["guid"] = stored.tool_id
             # ``ToolConfRepository`` (lib/galaxy/tool_util/toolbox/base.py:87)
