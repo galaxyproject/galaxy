@@ -52,7 +52,7 @@ def upgrade():
     create_table(
         SOURCE_TABLE_NAME,
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("hash", sa.String(255), nullable=False, unique=True, index=True),
+        sa.Column("hash", sa.String(255), nullable=False, index=True),
         sa.Column("source", sa.Text().with_variant(mysql.LONGTEXT(), "mysql"), nullable=False),
         sa.Column("source_class", sa.String(255)),
         sa.Column("tool_id", sa.String(255), index=True),

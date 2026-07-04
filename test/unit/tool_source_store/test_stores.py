@@ -147,6 +147,65 @@ class TestDatabaseBackend:
                 app.model.context.commit()
 
 
+class TestDatabaseBackendPathRows:
+    """One row per source path — identical content must not swallow paths."""
+
+    def _stored(self, hash, path, raw='<tool id="upload1" version="1.1.7"/>'):
+        return StoredToolSource(
+            hash=hash,
+            tool_source_class="XmlToolSource",
+            raw_source=raw,
+            tool_id="upload1",
+            tool_version="1.1.7",
+            source_path=path,
+        )
+
+    def test_identical_content_keeps_row_per_source_path(self):
+        app = MockApp()
+        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
+        twin_hash = "twin_hash_per_path"
+        store.store(self._stored(twin_hash, "/galaxy/tools/data_source/upload.xml"))
+        store.store(self._stored(twin_hash, "/galaxy/test/functional/tools/upload.xml"))
+        app.model.context.commit()
+
+        first = store.get_by_source_path("/galaxy/tools/data_source/upload.xml")
+        second = store.get_by_source_path("/galaxy/test/functional/tools/upload.xml")
+        assert first is not None and first.hash == twin_hash
+        assert second is not None and second.hash == twin_hash
+
+        assert store.delete(twin_hash)
+        app.model.context.commit()
+        assert store.get_by_source_path("/galaxy/tools/data_source/upload.xml") is None
+        assert store.get_by_source_path("/galaxy/test/functional/tools/upload.xml") is None
+
+    def test_changed_content_updates_path_row_in_place(self):
+        app = MockApp()
+        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
+        path = "/galaxy/tools/edited.xml"
+        store.store(self._stored("edited_hash_v1", path, raw="<tool/>"))
+        app.model.context.commit()
+        store.store(self._stored("edited_hash_v2", path, raw="<tool><description/></tool>"))
+        app.model.context.commit()
+
+        row = store.get_by_source_path(path)
+        assert row is not None
+        assert row.hash == "edited_hash_v2"
+        assert not store.exists("edited_hash_v1")
+        store.delete("edited_hash_v2")
+        app.model.context.commit()
+
+    def test_pathless_sources_dedupe_on_hash(self):
+        app = MockApp()
+        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
+        store.store(self._stored("pathless_hash", None))
+        store.store(self._stored("pathless_hash", None))
+        app.model.context.commit()
+        assert store.exists("pathless_hash")
+        assert store.delete("pathless_hash")
+        app.model.context.commit()
+        assert not store.exists("pathless_hash")
+
+
 class TestSqlAlchemyBackend:
     """Tests for the sqlalchemy/sqlite backend."""
 
@@ -169,6 +228,24 @@ class TestSqlAlchemyBackend:
         assert store.count() >= 1
         assert store.delete("sa_test_hash_123")
         assert not store.exists("sa_test_hash_123")
+
+    def test_sqlalchemy_identical_content_keeps_row_per_source_path(self, tmp_path):
+        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "twins.sqlite"))
+        for path in ("/galaxy/tools/a/upload.xml", "/galaxy/tools/b/upload.xml"):
+            store.store(
+                StoredToolSource(
+                    hash="twin_hash",
+                    tool_source_class="XmlToolSource",
+                    raw_source="<tool/>",
+                    tool_id="upload1",
+                    tool_version="1.1.7",
+                    source_path=path,
+                )
+            )
+        assert store.get_by_source_path("/galaxy/tools/a/upload.xml") is not None
+        assert store.get_by_source_path("/galaxy/tools/b/upload.xml") is not None
+        assert store.delete("twin_hash")
+        assert store.get_by_source_path("/galaxy/tools/a/upload.xml") is None
 
     def test_sqlalchemy_store_persistence(self, tmp_path):
         path = str(tmp_path / "ts.sqlite")

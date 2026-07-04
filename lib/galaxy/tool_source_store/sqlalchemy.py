@@ -60,7 +60,11 @@ class _Base(DeclarativeBase):
 class _ToolSourceRow(_Base):
     __tablename__ = "tool_source"
 
-    hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    # One row per source path; ``hash`` fingerprints the expanded content
+    # and is non-unique — distinct files can expand to identical content
+    # yet each path must resolve through ``get_by_source_path``.
+    id: Mapped[int] = mapped_column(primary_key=True)
+    hash: Mapped[str] = mapped_column(String(64), index=True)
     tool_source_class: Mapped[str] = mapped_column(String(64))
     raw_source: Mapped[str] = mapped_column(Text)
     tool_id: Mapped[str | None] = mapped_column(String(255), index=True)
@@ -160,11 +164,38 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
     # --- ToolSourceStore: per-source ops --------------------------------
 
     def store(self, tool_source: StoredToolSource) -> str:
+        """Store a source; one row per ``source_path``, path-less sources
+        deduplicate on content hash (see :class:`_ToolSourceRow`)."""
         self._ensure_writable()
         with self._session() as session:
-            existing = session.get(_ToolSourceRow, tool_source.hash)
-            if existing is not None:
-                return tool_source.hash
+            if tool_source.source_path:
+                existing = (
+                    session.execute(
+                        select(_ToolSourceRow).where(_ToolSourceRow.source_path == tool_source.source_path).limit(1)
+                    )
+                    .scalars()
+                    .first()
+                )
+                if existing is not None:
+                    if existing.hash != tool_source.hash:
+                        existing.hash = tool_source.hash
+                        existing.tool_source_class = tool_source.tool_source_class
+                        existing.raw_source = tool_source.raw_source
+                        existing.tool_id = tool_source.tool_id
+                        existing.tool_version = tool_source.tool_version
+                        existing.tool_dir = tool_source.tool_dir
+                        existing.stored_at = tool_source.stored_at
+                        existing.extra_metadata = json.dumps(tool_source.metadata) if tool_source.metadata else None
+                        session.commit()
+                    return tool_source.hash
+            else:
+                existing = (
+                    session.execute(select(_ToolSourceRow).where(_ToolSourceRow.hash == tool_source.hash).limit(1))
+                    .scalars()
+                    .first()
+                )
+                if existing is not None:
+                    return tool_source.hash
             row = _ToolSourceRow(
                 hash=tool_source.hash,
                 tool_source_class=tool_source.tool_source_class,
@@ -182,22 +213,27 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def get(self, hash: str) -> StoredToolSource | None:
         with self._session() as session:
-            row = session.get(_ToolSourceRow, hash)
+            row = session.execute(select(_ToolSourceRow).where(_ToolSourceRow.hash == hash).limit(1)).scalars().first()
             if row is None:
                 return None
             return self._row_to_stored(row)
 
     def exists(self, hash: str) -> bool:
         with self._session() as session:
-            return session.get(_ToolSourceRow, hash) is not None
+            row = (
+                session.execute(select(_ToolSourceRow.id).where(_ToolSourceRow.hash == hash).limit(1)).scalars().first()
+            )
+            return row is not None
 
     def delete(self, hash: str) -> bool:
+        """Delete all rows carrying this hash (one per source path)."""
         self._ensure_writable()
         with self._session() as session:
-            row = session.get(_ToolSourceRow, hash)
-            if row is None:
+            rows = session.execute(select(_ToolSourceRow).where(_ToolSourceRow.hash == hash)).scalars().all()
+            if not rows:
                 return False
-            session.delete(row)
+            for row in rows:
+                session.delete(row)
             session.commit()
         return True
 
@@ -217,9 +253,11 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def get_by_source_path(self, source_path: str) -> StoredToolSource | None:
         with self._session() as session:
-            row = session.execute(
-                select(_ToolSourceRow).where(_ToolSourceRow.source_path == source_path)
-            ).scalar_one_or_none()
+            row = (
+                session.execute(select(_ToolSourceRow).where(_ToolSourceRow.source_path == source_path).limit(1))
+                .scalars()
+                .first()
+            )
             return self._row_to_stored(row) if row is not None else None
 
     def count(self) -> int:
