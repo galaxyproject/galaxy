@@ -213,6 +213,24 @@ class TestDatabaseBackendPathRows:
         assert reloaded.get("removable") is None
         assert "removable" not in reloaded.by_section.get("sec1", [])
 
+    def test_update_index_entry_reaches_versioned_lookups(self):
+        app = MockApp()
+        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
+        index = ToolIndex()
+        index.add_entry(ToolIndexEntry(id="dm_tool", version="1.0", name="DM"))
+        store.store_index(index)
+        app.model.context.commit()
+
+        store.update_index_entry(ToolIndexEntry(id="dm_tool", version="1.0", name="DM", data_manager_id="conf_id"))
+        app.model.context.commit()
+        store.invalidate_index_cache()
+
+        reloaded = store.load_index()
+        assert reloaded is not None
+        versioned = reloaded.get("dm_tool", "1.0")
+        assert versioned is not None
+        assert versioned.data_manager_id == "conf_id"
+
     def test_pathless_sources_dedupe_on_hash(self):
         app = MockApp()
         store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]

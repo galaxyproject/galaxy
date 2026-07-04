@@ -360,9 +360,14 @@ def test_create_tool_stamps_data_manager_conf_id_on_entry():
     box = _seam_box()
     e = _entry(id="dm_tool", tool_type="manage_data")
     box._tool_index.entries["dm_tool"] = e
+    # After a from_dict reload the per-version map holds a distinct object —
+    # the one job-time versioned lookups resolve. It must get the stamp too.
+    twin = _entry(id="dm_tool", tool_type="manage_data")
+    box._tool_index.entries_by_version["dm_tool"] = {twin.version or "": twin}
     tool = box.create_tool(config_file=None, guid="dm_tool", data_manager_id="test_data_manager")
     assert isinstance(tool, LazyTool)
     assert e.data_manager_id == "test_data_manager"
+    assert twin.data_manager_id == "test_data_manager"
     box._store.update_index_entry.assert_called_once_with(e)
 
 

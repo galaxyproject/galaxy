@@ -310,7 +310,11 @@ class DatabaseToolSourceStore(ToolSourceStore):
         if index is None:
             index = ToolIndex()
 
-        index.entries[entry.id] = entry
+        # add_entry keeps ``entries_by_version`` in step with ``entries`` —
+        # versioned lookups (``get(tool_id, tool_version)``, the job-time
+        # materialise path) read the per-version map, and the two maps are
+        # serialized independently.
+        index.add_entry(entry)
         index.invalidate_caches()
 
         # Update section mapping

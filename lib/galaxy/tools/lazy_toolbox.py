@@ -801,6 +801,13 @@ class LazyToolBox(ToolBox):
             # id and misses the registry. Persist so job-handler processes
             # materialising from the shared index see it too.
             entry.data_manager_id = data_manager_id
+            if self._tool_index is not None:
+                # After a from_dict reload the default and per-version maps
+                # hold distinct objects; the job-time materialise resolves
+                # through the per-version map, so stamp its twin too.
+                twin = self._tool_index.entries_by_version.get(entry.id, {}).get(entry.version or "")
+                if twin is not None and twin is not entry:
+                    twin.data_manager_id = data_manager_id
             if self._store is not None:
                 try:
                     self._store.update_index_entry(entry)
