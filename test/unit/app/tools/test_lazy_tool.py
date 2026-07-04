@@ -197,7 +197,7 @@ def test_allow_user_access_uses_index_data_without_materialise():
 
 
 def test_allow_user_access_blocks_non_admin_for_data_manager():
-    e = _entry(tool_type="data_manager", require_login=False)
+    e = _entry(tool_type="manage_data", require_login=False)
     t = _stub(e, is_admin=lambda u: False)
 
     class _U:
@@ -207,7 +207,7 @@ def test_allow_user_access_blocks_non_admin_for_data_manager():
 
 
 def test_allow_user_access_allows_admin_for_data_manager():
-    e = _entry(tool_type="data_manager", require_login=False)
+    e = _entry(tool_type="manage_data", require_login=False)
     t = _stub(e, is_admin=lambda u: True)
 
     class _U:

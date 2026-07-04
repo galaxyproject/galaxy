@@ -335,9 +335,12 @@ def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[Disco
                 tool_path=tool_path,
                 guid=guid,
                 is_shed_tool=guid is not None,
-                # Data manager tools never appear in the panel; eager loads
-                # them via load_hidden_tool.
-                hidden=True,
+                # ``hidden`` stays False: eager loads these via
+                # ``load_hidden_tool``, which only means "not in the panel"
+                # — ``Tool.hidden`` remains falsy, and the flat
+                # ``/api/tools?in_panel=false`` listing filters on it.
+                # Panel absence is already guaranteed by the missing
+                # ``panel_section_id``.
             )
 
 

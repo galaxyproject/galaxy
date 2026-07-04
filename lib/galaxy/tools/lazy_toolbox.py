@@ -303,7 +303,7 @@ class LazyTool:
         """
         if self.require_login and user is None:
             return False
-        if self.tool_type == "data_manager":
+        if self.tool_type == "manage_data":
             if user is None or not bool(self._is_admin_user(user)):
                 if attempting_access:
                     log.debug(
