@@ -47,6 +47,14 @@ class DiscoveredTool:
     tool_path: str | None  # The tool_path from the tool_conf
     guid: str | None = None  # GUID for shed tools
     is_shed_tool: bool = False
+    # Shed conf ``<tool>`` child elements. The populator keys shed entries
+    # by guid and stamps these on the index entry, so shed stubs answer
+    # repository metadata without materialising — mirroring what the eager
+    # walk reads via ``get_tool_repository_from_xml_item``.
+    tool_shed: str | None = None
+    repository_name: str | None = None
+    repository_owner: str | None = None
+    installed_changeset_revision: str | None = None
     # Conf-level ``hidden="true"`` on the ``<tool>`` element (NOT the XML
     # body's ``<tool hidden="true">`` — that's already on the parsed source).
     # ToolBox._load_tool_tag_set forces ``tool.hidden = True`` when this is
@@ -262,6 +270,13 @@ def discover_tools_from_config(
             log.debug(f"Tool file does not exist: {tool_path_abs}")
             continue
 
+        tool_shed = repository_name = repository_owner = installed_changeset_revision = None
+        if is_shed_conf and item.elem is not None:
+            tool_shed = item.elem.findtext("tool_shed")
+            repository_name = item.elem.findtext("repository_name")
+            repository_owner = item.elem.findtext("repository_owner")
+            installed_changeset_revision = item.elem.findtext("installed_changeset_revision")
+
         yield DiscoveredTool(
             path=tool_path_abs,
             tool_conf=config_filename,
@@ -272,6 +287,10 @@ def discover_tools_from_config(
             labels=list(item.labels or ()),
             section_id=section_id,
             section_name=section_name,
+            tool_shed=tool_shed,
+            repository_name=repository_name,
+            repository_owner=repository_owner,
+            installed_changeset_revision=installed_changeset_revision,
         )
 
 

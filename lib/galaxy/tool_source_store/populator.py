@@ -374,7 +374,10 @@ def build_index_entry_from_source(
     log + skip in that case.
     """
     try:
-        tool_id = tool_source.parse_id() or stored.tool_id
+        # Shed conf entries carry the tool's guid; the index (like the eager
+        # toolbox's ``_tools_by_id``) keys installed shed tools by guid, not
+        # by the short id in the XML body.
+        tool_id = discovered.guid or tool_source.parse_id() or stored.tool_id
         if not tool_id:
             return None
 
@@ -453,6 +456,10 @@ def build_index_entry_from_source(
             require_login=require_login,
             tool_type=tool_type,
             tags=[],
+            tool_shed=discovered.tool_shed,
+            repository_name=discovered.repository_name,
+            repository_owner=discovered.repository_owner,
+            changeset_revision=discovered.installed_changeset_revision,
             indexed_at=datetime.now(timezone.utc),
         )
     except Exception as e:
@@ -653,7 +660,11 @@ def populate_store_inline(
                 hash=content_hash,
                 tool_source_class=type(tool_source).__name__,
                 raw_source=expanded_content,
-                tool_id=tool_source.parse_id(),
+                # Shed tools are keyed by guid everywhere downstream: the
+                # index entry, ``get_by_tool_id``, and the materialise path
+                # (``_create_tool_from_stored_source`` passes a guid-shaped
+                # ``tool_id`` to the Tool constructor).
+                tool_id=d.guid or tool_source.parse_id(),
                 tool_version=tool_source.parse_version(),
                 tool_dir=str(Path(path).parent),
                 source_path=str(path),

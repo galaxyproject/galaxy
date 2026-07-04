@@ -88,6 +88,27 @@ def test_basic_fields_threaded_through():
     assert entry.tool_type == "default"
 
 
+def test_shed_conf_guid_keys_entry_and_stamps_repository():
+    guid = "toolshed.g2.bx.psu.edu/repos/iuc/bowtie2/bowtie2/2.5.0"
+    entry = build_index_entry_from_source(
+        _discovered(
+            guid=guid,
+            is_shed_tool=True,
+            tool_shed="toolshed.g2.bx.psu.edu",
+            repository_name="bowtie2",
+            repository_owner="iuc",
+            installed_changeset_revision="abc123def",
+        ),
+        _StoredStub(),
+        _ToolSourceStub(),
+    )
+    assert entry.id == guid
+    assert entry.tool_shed == "toolshed.g2.bx.psu.edu"
+    assert entry.repository_name == "bowtie2"
+    assert entry.repository_owner == "iuc"
+    assert entry.changeset_revision == "abc123def"
+
+
 def test_section_metadata_from_discovered():
     entry = build_index_entry_from_source(
         _discovered(section_id="ngs", section_name="NGS Tools"),
