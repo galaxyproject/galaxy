@@ -310,7 +310,10 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
         self._ensure_writable()
         index = self.load_index() or ToolIndex()
-        index.entries[entry.id] = entry
+        # add_entry keeps ``entries_by_version`` in step with ``entries``;
+        # versioned lookups read the per-version map (see the database
+        # backend's update_index_entry).
+        index.add_entry(entry)
         index.invalidate_caches()
         if entry.panel_section_id:
             index.by_section.setdefault(entry.panel_section_id, [])
