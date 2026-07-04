@@ -1,3 +1,4 @@
+import copy
 import errno
 import logging
 import os
@@ -164,8 +165,18 @@ class ToolPanelManager:
                     config_elems.append(config_elem)
                 shed_tool_conf_dict["config_elems"] = config_elems
                 self.app.toolbox.update_shed_config(shed_tool_conf_dict)
+                # Snapshot before ``add_to_shed_tool_config``: when the target
+                # <section> already exists in the on-disk conf, that method
+                # merges the incoming children into it via lxml ``append``,
+                # which REPARENTS them — emptying the section elements in
+                # ``elem_list``. Both the populate below and ``load_item``
+                # need the original children (the eager branch is immune
+                # because it loads before persisting).
+                load_elem_list = [copy.deepcopy(elem) for elem in elem_list]
                 self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
-                new_path_guids = _collect_new_tool_paths(elem_list, tool_path, shed_tool_conf_dict["config_filename"])
+                new_path_guids = _collect_new_tool_paths(
+                    load_elem_list, tool_path, shed_tool_conf_dict["config_filename"]
+                )
                 if new_path_guids:
                     from galaxy.tool_source_store.populator import populate_for_paths
 
@@ -184,7 +195,7 @@ class ToolPanelManager:
                     self.app.toolbox.invalidate_index_cache()
                 # Wire the new tools into the in-memory panel; ``create_tool``
                 # finds them in the index and hands back ``LazyTool`` stubs.
-                for config_elem in elem_list:
+                for config_elem in load_elem_list:
                     self.app.toolbox.load_item(
                         config_elem,
                         tool_path=tool_path,
