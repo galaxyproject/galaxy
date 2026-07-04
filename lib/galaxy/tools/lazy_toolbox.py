@@ -1032,21 +1032,28 @@ class LazyToolBox(ToolBox):
         """
         if self._store is None:
             return
-        try:
-            self._store.invalidate_index_cache()
-        except Exception as e:
-            log.debug(f"Store invalidate_index_cache raised: {e}")
-        loaded = self._store.load_index()
-        self._tool_index = loaded if loaded is not None else ToolIndex()
-        # Index just changed under us — refresh the short-id map so
-        # peer-process installs (which only update the persisted index)
-        # are reachable via short-id lookups in this process.
-        self._rebuild_shed_short_id_map()
-        # Wire newly-indexed entries (e.g. shed-install partial updates from
-        # a peer process) into this process's in-memory registries as
-        # ``LazyTool`` stubs. Without this, ``/api/tools`` would return the
-        # new ids only after the next full toolbox boot.
-        self._register_new_index_entries_as_stubs()
+        # Serialize against ``remove_tool_by_id``: an uninstall pops the
+        # tool from every in-memory registry and then persists the index
+        # removal. Every populate broadcasts an invalidation, so without
+        # the lock a queue-worker invalidation can interleave — it reloads
+        # the pre-removal index and re-registers the just-removed tool as
+        # a stub.
+        with self.app._toolbox_lock:
+            try:
+                self._store.invalidate_index_cache()
+            except Exception as e:
+                log.debug(f"Store invalidate_index_cache raised: {e}")
+            loaded = self._store.load_index()
+            self._tool_index = loaded if loaded is not None else ToolIndex()
+            # Index just changed under us — refresh the short-id map so
+            # peer-process installs (which only update the persisted index)
+            # are reachable via short-id lookups in this process.
+            self._rebuild_shed_short_id_map()
+            # Wire newly-indexed entries (e.g. shed-install partial updates
+            # from a peer process) into this process's in-memory registries
+            # as ``LazyTool`` stubs. Without this, ``/api/tools`` would
+            # return the new ids only after the next full toolbox boot.
+            self._register_new_index_entries_as_stubs()
 
     def _register_new_index_entries_as_stubs(self) -> None:
         """For every index entry not yet in ``_tools_by_id``, build a
