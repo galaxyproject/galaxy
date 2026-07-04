@@ -107,6 +107,7 @@ def test_shed_conf_guid_keys_entry_and_stamps_repository():
     assert entry.repository_name == "bowtie2"
     assert entry.repository_owner == "iuc"
     assert entry.changeset_revision == "abc123def"
+    assert entry.is_local is False
 
 
 def test_section_metadata_from_discovered():

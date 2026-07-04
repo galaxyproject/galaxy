@@ -460,6 +460,7 @@ def build_index_entry_from_source(
             repository_name=discovered.repository_name,
             repository_owner=discovered.repository_owner,
             changeset_revision=discovered.installed_changeset_revision,
+            is_local=discovered.guid is None,
             indexed_at=datetime.now(timezone.utc),
         )
     except Exception as e:
