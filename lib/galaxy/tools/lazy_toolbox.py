@@ -791,6 +791,22 @@ class LazyToolBox(ToolBox):
                 "or, for a new Galaxy-internal lib tool, add it to "
                 "galaxy.tools.special_tools.hidden_lib_tool_paths()."
             )
+        data_manager_id = kwds.get("data_manager_id")
+        if data_manager_id and not entry.data_manager_id:
+            # ``DataManager._load_tool`` hands the ``<data_manager id>`` conf
+            # id through ``load_hidden_tool``. Entries minted before any data
+            # manager conf covered this tool (install-time self-heal) don't
+            # carry it, and the materialise path must restore it or
+            # ``DataManagerTool.exec_after_process`` falls back to the tool
+            # id and misses the registry. Persist so job-handler processes
+            # materialising from the shared index see it too.
+            entry.data_manager_id = data_manager_id
+            if self._store is not None:
+                try:
+                    self._store.update_index_entry(entry)
+                    self._store.commit()
+                except Exception as e:
+                    log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
         # LazyTool is duck-typed against Tool — the eager pipeline (audited
         # in plans/witty-drifting-clock.md) only consults attributes the
         # stub forwards from ToolIndexEntry, with mutations stored on

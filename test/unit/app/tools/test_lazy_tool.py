@@ -356,6 +356,16 @@ def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
     box._store.invalidate_index_cache.assert_called()
 
 
+def test_create_tool_stamps_data_manager_conf_id_on_entry():
+    box = _seam_box()
+    e = _entry(id="dm_tool", tool_type="manage_data")
+    box._tool_index.entries["dm_tool"] = e
+    tool = box.create_tool(config_file=None, guid="dm_tool", data_manager_id="test_data_manager")
+    assert isinstance(tool, LazyTool)
+    assert e.data_manager_id == "test_data_manager"
+    box._store.update_index_entry.assert_called_once_with(e)
+
+
 def test_create_tool_raises_on_index_miss():
     # The populator owns the index — including the Galaxy-internal lib
     # tools listed in ``galaxy.tools.special_tools.hidden_lib_tool_paths``.
