@@ -366,6 +366,18 @@ def test_create_tool_stamps_data_manager_conf_id_on_entry():
     box._store.update_index_entry.assert_called_once_with(e)
 
 
+def test_index_reload_refreshes_existing_stub_entries():
+    box = _seam_box()
+    stale = _entry(id="fastp_guid")
+    stub = _stub(stale)
+    box._tools_by_id = {"fastp_guid": stub}
+    enriched = _entry(id="fastp_guid", tool_shed="toolshed.example.com", repository_name="fastp")
+    box._tool_index.entries["fastp_guid"] = enriched
+    box._register_new_index_entries_as_stubs()
+    assert stub._entry is enriched
+    assert stub.to_panel_entry()["tool_shed_repository"]["name"] == "fastp"
+
+
 def test_create_tool_raises_on_index_miss():
     # The populator owns the index — including the Galaxy-internal lib
     # tools listed in ``galaxy.tools.special_tools.hidden_lib_tool_paths``.

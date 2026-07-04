@@ -1052,7 +1052,17 @@ class LazyToolBox(ToolBox):
         if self._tool_index is None:
             return
         for tool_id, entry in self._tool_index.entries.items():
-            if tool_id in self._tools_by_id:
+            # ``Any``: the registry is typed for real Tools but holds
+            # LazyTool stubs on this toolbox (same duck-typing as create_tool).
+            existing: Any = self._tools_by_id.get(tool_id)
+            if existing is not None:
+                if isinstance(existing, LazyTool) and existing._entry is not entry:
+                    # Refresh the stub in place — the panel and registries
+                    # hold this object, and the reloaded index may carry an
+                    # enriched entry (e.g. the conf-driven populate after a
+                    # shed install adds repository metadata the install-time
+                    # ad-hoc entry lacked). ``_overrides`` survive.
+                    existing._entry = entry
                 continue
             try:
                 self._register_lazy_entry(entry)
