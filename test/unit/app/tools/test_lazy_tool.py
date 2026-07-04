@@ -287,6 +287,7 @@ def _seam_box():
     box._tool_index = ToolIndex()
     box._store = MagicMock()
     box._store.get_by_source_path.return_value = None
+    box._shed_short_id_to_guids = {}
     box.app = MagicMock()
     box.app.config.is_admin_user = lambda u: False
     return box
@@ -320,6 +321,39 @@ def test_create_tool_returns_lazytool_on_source_path_hit():
 def test_resolve_index_entry_returns_none_when_nothing_matches():
     box = _seam_box()
     assert box._resolve_index_entry(None, None) is None
+
+
+def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
+    # Shed installs load cloned tools during metadata generation, before
+    # any conf is persisted — a miss for an on-disk file populates that
+    # path instead of raising.
+    import galaxy.tools.lazy_toolbox as mod
+
+    guid = "toolshed.example.com/repos/owner/repo/cloned/1.0"
+    tool_file = tmp_path / "cloned.xml"
+    tool_file.write_text("<tool id='cloned' version='1.0'/>")
+
+    box = _seam_box()
+    healed = ToolIndex()
+    healed.add_entry(_entry(id=guid))
+    box._store.load_index.return_value = healed
+
+    calls = {}
+
+    def fake_populate(config, session, paths, path_guids=None, **kwargs):
+        calls["paths"] = paths
+        calls["path_guids"] = path_guids
+
+    monkeypatch.setattr(mod, "populate_for_paths", fake_populate)
+    tool = box.create_tool(config_file=str(tool_file), guid=guid)
+    assert isinstance(tool, LazyTool)
+    assert tool.id == guid
+    import os as _os
+
+    expected_path = _os.path.abspath(str(tool_file))
+    assert calls["paths"] == [expected_path]
+    assert calls["path_guids"] == {expected_path: guid}
+    box._store.invalidate_index_cache.assert_called()
 
 
 def test_create_tool_raises_on_index_miss():

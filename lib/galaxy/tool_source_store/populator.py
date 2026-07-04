@@ -607,6 +607,7 @@ def populate_store_inline(
     broadcast: bool = False,
     target: str | None = None,
     prune: bool = False,
+    path_guids: dict[str, str | None] | None = None,
 ) -> dict[str, int]:
     """In-process populator entry.
 
@@ -676,6 +677,30 @@ def populate_store_inline(
     if paths is not None:
         paths_set = {str(p) for p in paths}
         tool_specs = [(d, n) for d, n in tool_specs if d.path in paths_set]
+        # Requested paths the conf walk can't reach — a freshly cloned shed
+        # repository whose conf entry isn't persisted yet (metadata
+        # generation loads its tools first), or any other ad-hoc load.
+        # Synthesize their DiscoveredTool so partial populates index them
+        # before the conf catches up; the next conf-driven populate
+        # overwrites these entries with full conf context.
+        covered = {d.path for d, _ in tool_specs}
+        if DEFAULT_STORE_NAME in writable_names:
+            for p in sorted(paths_set - covered):
+                if not Path(p).exists():
+                    continue
+                guid = (path_guids or {}).get(p)
+                tool_specs.append(
+                    (
+                        DiscoveredTool(
+                            path=p,
+                            tool_conf="adhoc",
+                            tool_path=None,
+                            guid=guid,
+                            is_shed_tool=guid is not None,
+                        ),
+                        DEFAULT_STORE_NAME,
+                    )
+                )
         log.info(f"Restricted to {len(tool_specs)} tools matching {len(paths_set)} requested path(s)")
 
     if pattern:
@@ -839,13 +864,17 @@ def populate_for_paths(
     paths: list[str],
     *,
     rebuild_whoosh: bool = True,
+    path_guids: dict[str, str | None] | None = None,
 ) -> dict[str, int]:
     """Partial-update populator entry for shed installs.
 
     Restricts the scan to ``paths`` (typically the freshly-written tool
     files of a newly-installed repository), adds/replaces their index
     entries, and broadcasts ``reload_tool_source_cache`` so peer Galaxy
-    processes pick up the new tools.
+    processes pick up the new tools. ``path_guids`` supplies the guid for
+    paths that no persisted conf covers yet (install-time metadata
+    generation), so the ad-hoc entries are keyed like their eventual
+    conf-driven replacements.
     """
     return populate_store_inline(
         config,
@@ -853,6 +882,7 @@ def populate_for_paths(
         paths=paths,
         rebuild_whoosh=rebuild_whoosh,
         broadcast=True,
+        path_guids=path_guids,
     )
 
 

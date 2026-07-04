@@ -33,7 +33,10 @@ from galaxy.tool_source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
-from galaxy.tool_source_store.populator import populate_store_inline
+from galaxy.tool_source_store.populator import (
+    populate_for_paths,
+    populate_store_inline,
+)
 from galaxy.tool_util.id_util import extract_short_id_from_guid
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tool_util.parser import get_tool_source
@@ -765,12 +768,21 @@ class LazyToolBox(ToolBox):
         ``data_fetch``, history import/export) are indexed via
         ``galaxy.tools.special_tools.hidden_lib_tool_paths``, so the
         post-boot ``load_hidden_lib_tool`` calls resolve through the seam
-        too. Any miss is therefore a contract failure — operator added a
-        tool to a conf without re-running the populator, or a code path
-        introduced a new ad-hoc tool load without adding it to the
-        hidden-lib list.
+        too. A miss for a file that exists on disk self-heals through a
+        single-path populate (:meth:`_populate_adhoc_path`) — shed installs
+        load cloned tools during metadata generation, before any conf is
+        persisted. A miss for anything else is a contract failure and
+        raises.
         """
         entry = self._resolve_index_entry(config_file, guid)
+        if entry is None and config_file is not None and os.path.exists(str(config_file)):
+            # The file is real but the index doesn't know it. The main
+            # legitimate path here is a shed install: metadata generation
+            # (``installed_repository_metadata_manager.get_repository_tools_tups``)
+            # loads the freshly cloned tools *before* ``add_to_tool_panel``
+            # persists the conf and populates. Populate this one path —
+            # still through the single-writer populator — and retry.
+            entry = self._populate_adhoc_path(str(config_file), guid)
         if entry is None:
             raise RuntimeError(
                 "LazyToolBox.create_tool: no index entry for "
@@ -801,6 +813,32 @@ class LazyToolBox(ToolBox):
     def add_tool_to_cache(self, tool, config_file) -> None:
         """Bypass the disk ``ToolCache`` — see :meth:`load_tool_from_cache`."""
         return None
+
+    def _populate_adhoc_path(self, config_file: str, guid: str | None) -> ToolIndexEntry | None:
+        """Index a single on-disk tool file that no conf covers yet.
+
+        Runs the partial populator for the path (threading the guid so the
+        entry is keyed like its eventual conf-driven replacement), reloads
+        the index, and retries resolution. Returns the entry, or ``None``
+        when the populator couldn't index the file either.
+        """
+        path = os.path.abspath(config_file)
+        log.info("LazyToolBox: index miss for existing file %s — populating ad hoc (guid=%s)", path, guid)
+        try:
+            populate_for_paths(
+                self.app.config,
+                self.app.model.context,
+                [path],
+                path_guids={path: guid},
+            )
+        except Exception as e:
+            log.warning("Ad-hoc populate for %s raised: %s", path, e)
+            return None
+        if self._store is not None:
+            self._store.invalidate_index_cache()
+            self._tool_index = self._store.load_index() or ToolIndex()
+            self._rebuild_shed_short_id_map()
+        return self._resolve_index_entry(config_file, guid)
 
     def _resolve_index_entry(self, config_file, guid: str | None) -> ToolIndexEntry | None:
         """Find a matching index entry for the (config_file, guid) pair, or ``None``."""
