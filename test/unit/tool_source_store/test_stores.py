@@ -194,6 +194,25 @@ class TestDatabaseBackendPathRows:
         store.delete("edited_hash_v2")
         app.model.context.commit()
 
+    def test_remove_index_entry_persists_removal(self):
+        app = MockApp()
+        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
+        index = ToolIndex()
+        entry = ToolIndexEntry(id="removable", version="1.0", name="Removable", panel_section_id="sec1")
+        index.add_entry(entry)
+        index.by_section["sec1"] = ["removable"]
+        store.store_index(index)
+        app.model.context.commit()
+
+        store.remove_index_entry("removable")
+        app.model.context.commit()
+        store.invalidate_index_cache()
+
+        reloaded = store.load_index()
+        assert reloaded is not None
+        assert reloaded.get("removable") is None
+        assert "removable" not in reloaded.by_section.get("sec1", [])
+
     def test_pathless_sources_dedupe_on_hash(self):
         app = MockApp()
         store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]

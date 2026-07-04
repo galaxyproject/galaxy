@@ -176,6 +176,27 @@ class ToolSourceStore(ABC):
             entry: The index entry to update.
         """
 
+    def remove_index_entry(self, tool_id: str) -> None:
+        """Remove a tool's entry from the persisted index.
+
+        Counterpart of :meth:`update_index_entry` for uninstalls: the lazy
+        toolbox pops the entry from its in-memory index, but the persisted
+        singleton would hand it right back on the next cache invalidation
+        unless the removal is written through.
+        """
+        index = self.load_index()
+        if index is None:
+            return
+        removed = index.entries.pop(tool_id, None)
+        removed_versions = index.entries_by_version.pop(tool_id, None)
+        if removed is None and removed_versions is None:
+            return
+        for section_tool_ids in index.by_section.values():
+            if tool_id in section_tool_ids:
+                section_tool_ids.remove(tool_id)
+        index.invalidate_caches()
+        self.store_index(index)
+
     def invalidate_index_cache(self) -> None:  # noqa: B027 — intentional empty default
         """Drop any in-memory cached index so the next load_index() reads fresh.
 

@@ -1229,6 +1229,16 @@ class LazyToolBox(ToolBox):
             with self._cache_lock:
                 for key in [k for k in self._tool_object_cache.keys() if k.startswith(f"{tool_id}:")]:
                     self._tool_object_cache.pop(key, None)
+            if self._store is not None:
+                # The pops above are in-memory. The persisted singleton index
+                # still carries the entry, and any later cache invalidation
+                # (every populate broadcasts one) would reload it —
+                # resurrecting an uninstalled tool.
+                try:
+                    self._store.remove_index_entry(tool_id)
+                    self._store.commit()
+                except Exception as e:
+                    log.warning("Persisting index removal of %s raised: %s", tool_id, e)
         return result
 
     # === Override has_tool to check index ===

@@ -73,6 +73,9 @@ class CompositeToolSourceStore(ToolSourceStore):
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
         self._default_store.update_index_entry(entry)
 
+    def remove_index_entry(self, tool_id: str) -> None:
+        self._default_store.remove_index_entry(tool_id)
+
     # --- read ops: priority order --------------------------------------
 
     def get(self, hash: str) -> StoredToolSource | None:
