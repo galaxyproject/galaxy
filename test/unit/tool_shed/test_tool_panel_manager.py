@@ -1,4 +1,8 @@
 import os
+from xml.etree.ElementTree import (
+    Element,
+    SubElement,
+)
 
 from galaxy.app_unittest_utils.toolbox_support import (
     BaseToolBoxTestCase,
@@ -226,3 +230,32 @@ class TestToolPanelManager(BaseToolBoxTestCase):
     @property
     def tvm(self):
         return tool_version_manager.ToolVersionManager(self.ts_app)
+
+
+GUID_V2 = DEFAULT_GUID + "v/2"
+
+
+def _new_install_elem_list():
+    section = Element("section", {"id": "sec", "name": "Sec", "version": ""})
+    SubElement(section, "tool", {"file": "repos/iuc/fastp/abc/fastp/fastp.xml", "guid": DEFAULT_GUID})
+    top = Element("tool", {"file": "repos/iuc/other/def/other/other.xml", "guid": GUID_V2})
+    return [section, top]
+
+
+def test_collect_new_tool_paths_resolves_relative_tool_path_against_conf_dir(tmp_path):
+    conf = tmp_path / "config" / "shed_tool_conf.xml"
+    path_guids = tool_panel_manager._collect_new_tool_paths(_new_install_elem_list(), "../shed_tools", str(conf))
+    base = str(tmp_path / "shed_tools")
+    assert path_guids == {
+        f"{base}/repos/iuc/fastp/abc/fastp/fastp.xml": DEFAULT_GUID,
+        f"{base}/repos/iuc/other/def/other/other.xml": GUID_V2,
+    }
+
+
+def test_collect_new_tool_paths_absolute_tool_path(tmp_path):
+    base = str(tmp_path / "shed_tools")
+    path_guids = tool_panel_manager._collect_new_tool_paths(
+        _new_install_elem_list(), base, str(tmp_path / "shed_tool_conf.xml")
+    )
+    assert all(p.startswith(f"{base}/") for p in path_guids)
+    assert set(path_guids.values()) == {DEFAULT_GUID, GUID_V2}

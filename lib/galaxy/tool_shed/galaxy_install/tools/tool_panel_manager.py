@@ -23,28 +23,38 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 log = logging.getLogger(__name__)
 
 
-def _collect_new_tool_paths(elem_list, tool_path: str) -> list[str]:
-    """Walk ``elem_list`` and return the absolute paths of every ``<tool>``.
+def _collect_new_tool_paths(elem_list, tool_path: str, shed_tool_conf: str) -> dict[str, str | None]:
+    """Walk ``elem_list`` and map each new ``<tool>``'s absolute path to its guid.
 
     ``elem_list`` is the freshly-generated panel additions for a shed install
     — either top-level ``<tool>`` elements or ``<section>`` elements with
-    nested ``<tool>`` children. Paths are ``os.path.join(tool_path, file)``,
-    matching what ``galaxy.tool_source_store.discover.discover_tools`` yields
-    after the conf is rewritten on disk.
+    nested ``<tool>`` children. Paths must match what
+    ``galaxy.tool_source_store.discover.discover_tools`` yields for the
+    rewritten conf byte-for-byte (the partial populate filters on the string):
+    a relative ``tool_path`` resolves against the conf file's directory, not
+    the process cwd, so route through the same ``resolve_tool_path``.
     """
-    new_paths: list[str] = []
+    # Local import: keeps galaxy.tool_source_store out of the eager
+    # tool-shed install path's module graph.
+    from galaxy.tool_source_store.discover import resolve_tool_path
+
+    resolved_base = resolve_tool_path(tool_path, shed_tool_conf)
+    path_guids: dict[str, str | None] = {}
+
+    def _add(tool_elem) -> None:
+        relative = tool_elem.get("file")
+        if relative:
+            path = os.path.normpath(os.path.join(resolved_base, relative))
+            path_guids[path] = tool_elem.get("guid")
+
     for elem in elem_list:
         if elem.tag == "tool":
-            relative = elem.get("file")
-            if relative:
-                new_paths.append(os.path.normpath(os.path.join(tool_path, relative)))
+            _add(elem)
         elif elem.tag == "section":
             for child in elem:
                 if child.tag == "tool":
-                    relative = child.get("file")
-                    if relative:
-                        new_paths.append(os.path.normpath(os.path.join(tool_path, relative)))
-    return new_paths
+                    _add(child)
+    return path_guids
 
 
 class ToolPanelManager:
@@ -155,8 +165,8 @@ class ToolPanelManager:
                 shed_tool_conf_dict["config_elems"] = config_elems
                 self.app.toolbox.update_shed_config(shed_tool_conf_dict)
                 self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
-                new_paths = _collect_new_tool_paths(elem_list, tool_path)
-                if new_paths:
+                new_path_guids = _collect_new_tool_paths(elem_list, tool_path, shed_tool_conf_dict["config_filename"])
+                if new_path_guids:
                     from galaxy.tool_source_store.populator import populate_for_paths
 
                     populate_for_paths(
@@ -164,8 +174,9 @@ class ToolPanelManager:
                         # Lazy mode implies a full Galaxy app, which carries
                         # ``model`` beyond the InstallationTarget protocol.
                         self.app.model.context,  # type: ignore[attr-defined]
-                        paths=new_paths,
+                        paths=list(new_path_guids),
                         rebuild_whoosh=True,
+                        path_guids=new_path_guids,
                     )
                     # Refresh THIS process synchronously; the AMQP broadcast
                     # above only reaches peers asynchronously, but the install

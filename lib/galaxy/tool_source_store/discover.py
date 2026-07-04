@@ -96,7 +96,7 @@ def get_tool_configs(config: "GalaxyAppConfiguration") -> list[str]:
     return configs
 
 
-def _resolve_tool_path(tool_path: str | None, config_filename: str, root_dir: str | None = None) -> str:
+def resolve_tool_path(tool_path: str | None, config_filename: str, root_dir: str | None = None) -> str:
     """
     Resolve the tool_path to an absolute directory path.
 
@@ -210,7 +210,7 @@ def discover_tools_from_config(
         return
 
     tool_path = tool_conf_source.parse_tool_path()
-    resolved_tool_path = _resolve_tool_path(tool_path, config_filename, root_dir)
+    resolved_tool_path = resolve_tool_path(tool_path, config_filename, root_dir)
     is_shed_conf = tool_conf_source.is_shed_tool_conf()
 
     # Match what AbstractToolBox._path_template_kwds does for ToolBox: tool
