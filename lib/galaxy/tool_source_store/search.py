@@ -238,10 +238,13 @@ class ToolWhooshIndex:
                 writer.delete_by_term("id", stale_id)
         return written
 
-    def search(self, query: str, limit: int = 50) -> list[str]:
+    def search(self, query: str, limit: int | None = None) -> list[str]:
         """Return tool ids ranked for ``query`` (most-relevant first).
 
-        ``limit`` matches the cap on the existing hand-rolled scorer.
+        ``limit=None`` returns every match — the eager
+        ``ToolPanelViewSearch`` searches unlimited, and capped results
+        truncate uniform-score hits arbitrarily (a tag query fanning out to
+        23 tools would silently lose the last 3 in doc-insertion order).
         """
         if not query or not query.strip():
             return []

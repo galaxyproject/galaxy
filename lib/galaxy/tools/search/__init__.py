@@ -170,7 +170,9 @@ class LazyToolboxSearch(ToolBoxSearch):
         if index_dir is None:
             return []
         searcher = ToolWhooshIndex(index_dir=index_dir, tuning=ToolSearchTuning.from_config(config))
-        return searcher.search(q, limit=int(config.tool_search_limit))
+        # limit=None matches ToolPanelViewSearch below, which searches
+        # unlimited — capping here would truncate uniform-score matches.
+        return searcher.search(q, limit=None)
 
 
 class ToolPanelViewSearch:
