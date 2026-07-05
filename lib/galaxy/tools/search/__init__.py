@@ -131,9 +131,9 @@ class LazyToolboxSearch(ToolBoxSearch):
     """Drop-in for :class:`ToolBoxSearch` in lazy-toolbox mode.
 
     The populator (``galaxy.tools.source_store.populator``) builds and owns
-    the whoosh index; this class is a thin reader that opens it on each
-    query. Per-panel-view fan-out is collapsed: ``search`` ignores
-    ``panel_view`` and reads the single populator-owned index.
+    one whoosh index per store; this class is a thin reader that opens them
+    on each query and merges hits by score. Per-panel-view fan-out is
+    collapsed: ``search`` ignores ``panel_view``.
 
     ``build_index`` is a no-op (the populator's job). ``index_count`` is
     still incremented so :func:`galaxy.queue_worker.rebuild_toolbox_search_index`
@@ -144,8 +144,8 @@ class LazyToolboxSearch(ToolBoxSearch):
     def __init__(self, config: GalaxyAppConfiguration) -> None:
         # Skip ToolBoxSearch.__init__ — it walks ``toolbox.panel_views()`` and
         # builds a ToolPanelViewSearch per view. Under lazy mode the
-        # populator owns one whoosh index for the default store; per-view
-        # filtering is a follow-up if needed.
+        # populator owns the whoosh indexes; per-view filtering is a
+        # follow-up if needed.
         self.config = config
         self.panel_searches: dict[str, ToolPanelViewSearch] = {}
         self.index_count = -1
@@ -166,13 +166,30 @@ class LazyToolboxSearch(ToolBoxSearch):
             ToolWhooshIndex,
         )
 
-        index_dir = whoosh_dir_for_store(config.tool_search_index_dir, DEFAULT_STORE_NAME)
-        if index_dir is None:
+        if not config.tool_search_index_dir:
+            # No index dir means whoosh search is off entirely.
             return []
-        searcher = ToolWhooshIndex(index_dir=index_dir, tuning=ToolSearchTuning.from_config(config))
-        # limit=None matches ToolPanelViewSearch below, which searches
-        # unlimited — capping here would truncate uniform-score matches.
-        return searcher.search(q, limit=None)
+        # The populator writes one whoosh index per store — searching only
+        # the default's would make every named-store tool invisible to
+        # ``/api/tools?q=``. Search each configured store's index and merge
+        # by score. Over-searching a catalog store no conf references is
+        # harmless: ``resolve_search_hit`` drops ids not in this toolbox.
+        store_names = [DEFAULT_STORE_NAME, *sorted(config.tool_source_stores or {})]
+        tuning = ToolSearchTuning.from_config(config)
+        scored: dict[str, float] = {}
+        for store_name in store_names:
+            index_dir = whoosh_dir_for_store(config.tool_search_index_dir, store_name)
+            assert index_dir  # tool_search_index_dir checked above
+            searcher = ToolWhooshIndex(index_dir=index_dir, tuning=tuning)
+            # limit=None matches ToolPanelViewSearch below, which searches
+            # unlimited — capping here would truncate uniform-score matches.
+            for tool_id, score in searcher.search_scored(q, limit=None):
+                if tool_id not in scored or score > scored[tool_id]:
+                    scored[tool_id] = score
+        # BM25 scores from different indexes aren't strictly comparable
+        # (per-corpus statistics), but interleaving by score beats
+        # concatenation; ties keep first-seen order (default store first).
+        return [tool_id for tool_id, _score in sorted(scored.items(), key=lambda kv: -kv[1])]
 
 
 class ToolPanelViewSearch:
