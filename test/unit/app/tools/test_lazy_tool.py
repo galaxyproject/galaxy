@@ -441,3 +441,78 @@ def test_load_tool_from_cache_returns_none():
 def test_add_tool_to_cache_is_noop():
     box = _seam_box()
     assert box.add_tool_to_cache(object(), "any/path.xml") is None
+
+
+# --- peer invalidation reconciliation ---
+
+
+def _registry_box():
+    """A ``_seam_box`` with real registries + panel so the registration and
+    removal bookkeeping paths run against genuine data structures."""
+    import threading
+
+    from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
+    from galaxy.tool_util.toolbox.panel import ToolPanelElements
+
+    box = _seam_box()
+    box._tools_by_id = {}
+    box._tool_versions_by_id = {}
+    box._tools_by_old_id = {}
+    box._tools_by_uuid = {}
+    box._tool_panel = ToolPanelElements()
+    box._lineage_map = LazyLineageMap(box.app, versions_for=box._index_versions_for)
+    box._tool_to_dict_cache = {}
+    box._tool_to_dict_cache_admin = {}
+    box._curated_tool_tags = None
+    box._tool_edam_operations = None
+    box._tool_edam_topics = None
+    box.data_manager_tools = {}
+    box._cache_lock = threading.RLock()
+    box._tool_object_cache = {}
+    return box
+
+
+def test_invalidate_index_cache_reconciles_peer_removed_entries():
+    box = _registry_box()
+    box._tool_index = ToolIndex()
+    for tool_id in ("keep_tool", "gone_tool"):
+        entry = _entry(id=tool_id)
+        box._tool_index.add_entry(entry)
+        box._register_lazy_entry(entry)
+    reloaded = ToolIndex()
+    reloaded.add_entry(_entry(id="keep_tool"))
+    box._store.load_index.return_value = reloaded
+    box.invalidate_index_cache()
+    assert "gone_tool" not in box._tools_by_id
+    assert "gone_tool" not in box._tool_versions_by_id
+    assert "tool_gone_tool" not in box._tool_panel
+    assert "keep_tool" in box._tools_by_id
+    assert "tool_keep_tool" in box._tool_panel
+
+
+def test_invalidate_index_cache_keeps_unindexed_tools():
+    # Internal/dynamic tools never enter the persisted index — the removal
+    # diff must not touch them.
+    box = _registry_box()
+    box._tool_index = ToolIndex()
+    internal = _stub(_entry(id="__SET_METADATA__"))
+    box._tools_by_id["__SET_METADATA__"] = internal
+    box._store.load_index.return_value = ToolIndex()
+    box.invalidate_index_cache()
+    assert box._tools_by_id["__SET_METADATA__"] is internal
+
+
+def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):
+    import galaxy.queue_worker as queue_worker_mod
+
+    box = _registry_box()
+    box._tool_index = ToolIndex()
+    entry = _entry(id="doomed")
+    box._tool_index.add_entry(entry)
+    box._register_lazy_entry(entry)
+    calls = []
+    monkeypatch.setattr(queue_worker_mod, "send_control_task", lambda app, task, **kwargs: calls.append((task, kwargs)))
+    box.remove_tool_by_id("doomed")
+    box._store.remove_index_entry.assert_called_once_with("doomed")
+    assert calls == [("reload_tool_source_cache", {"noop_self": True})]
+    assert "doomed" not in box._tools_by_id

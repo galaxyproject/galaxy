@@ -1121,6 +1121,7 @@ class LazyToolBox(ToolBox):
                 self._store.invalidate_index_cache()
             except Exception as e:
                 log.debug(f"Store invalidate_index_cache raised: {e}")
+            previous_ids = set(self._tool_index.entries) if self._tool_index is not None else set()
             loaded = self._store.load_index()
             self._tool_index = loaded if loaded is not None else ToolIndex()
             # Index just changed under us — refresh the short-id map so
@@ -1132,6 +1133,20 @@ class LazyToolBox(ToolBox):
             # as ``LazyTool`` stubs. Without this, ``/api/tools`` would
             # return the new ids only after the next full toolbox boot.
             self._register_new_index_entries_as_stubs()
+            # Reconcile removals: an id the previous index carried but the
+            # reloaded one doesn't was removed by a peer process (uninstall).
+            # Registration above is add/update-only, so without this pop the
+            # stale stub would keep serving via the eager ``get_tool``
+            # fall-through. Diffing the two indexes keeps this scoped to
+            # store-backed tools — internal and dynamic tools never enter
+            # the index, so they are untouched.
+            for tool_id in previous_ids - set(self._tool_index.entries):
+                if tool_id not in self._tools_by_id:
+                    continue
+                try:
+                    self._remove_tool_in_memory(tool_id)
+                except Exception as e:
+                    log.warning("Reconciling peer-removed index entry %s raised: %s", tool_id, e)
 
     def _register_new_index_entries_as_stubs(self) -> None:
         """For every index entry not yet in ``_tools_by_id``, build a
@@ -1179,7 +1194,11 @@ class LazyToolBox(ToolBox):
         version = entry.version
         self._tool_versions_by_id.setdefault(tool_id, {})[version or ""] = stub  # type: ignore[assignment]
         old_id = stub.old_id
-        if old_id and old_id != tool_id:
+        # Register the old-id bucket even when ``old_id == tool_id`` — the
+        # eager ``__add_tool`` does, and ``remove_tool_by_id`` unconditionally
+        # removes from the bucket, so skipping it here would KeyError a later
+        # removal of this stub.
+        if old_id:
             bucket = self._tools_by_old_id.setdefault(old_id, [])
             if not any(getattr(t, "id", None) == tool_id for t in bucket):
                 bucket.append(stub)  # type: ignore[arg-type]
@@ -1308,75 +1327,7 @@ class LazyToolBox(ToolBox):
             # against.
             if self._tools_by_id.get(tool_id) is None:
                 self.get_tool(tool_id=tool_id)
-            result = super().remove_tool_by_id(tool_id, remove_from_panel=remove_from_panel)
-            if self._tool_index is not None:
-                self._tool_index.entries.pop(tool_id, None)
-                self._tool_index.entries_by_version.pop(tool_id, None)
-            # ``super().remove_tool_by_id`` clears ``_tools_by_id`` but leaves
-            # ``_tool_versions_by_id`` and the lineage map intact. ``get_tool``'s
-            # fall-through walks lineage versions via ``_tool_from_lineage_version``
-            # which reads ``_tool_versions_by_id``, so the tool would otherwise
-            # come back from there even after removal.
-            self._tool_versions_by_id.pop(tool_id, None)
-            if hasattr(self, "_lineage_map"):
-                self._lineage_map.lineage_map.pop(tool_id, None)
-                versionless = remove_version_from_guid(tool_id)
-                if versionless:
-                    self._lineage_map.lineage_map.pop(versionless, None)
-            # ``super().remove_tool_by_id`` removes a single Tool object
-            # from ``_tools_by_old_id[old_id]``, but if a concurrent
-            # ``_register_loaded_tool`` (e.g. an in-flight HTTP request
-            # that beat us to the lock) appended a sibling Tool to the
-            # same bucket, the sibling survives and the eager
-            # super().get_tool fall-through returns it via
-            # ``rval.extend(self._tools_by_old_id[tool_id])``. Drop the
-            # whole bucket for this tool_id to match the index removal.
-            self._tools_by_old_id.pop(tool_id, None)
-            # The short-id bucket is keyed by ``old_id`` — for a shed guid
-            # that's the short tool id, not ``tool_id``. ``super()`` removes
-            # from it by object identity only, which misses when the bucket
-            # holds an earlier registration (stub or materialised instance)
-            # while ``_tools_by_id`` held a fresher one; the leftover then
-            # resurrects the uninstalled tool via the eager get_tool
-            # fall-through. Scrub every object belonging to this guid, but
-            # leave sibling installs (other guids, other versions) alone.
-            short_id = extract_short_id_from_guid(tool_id)
-            if short_id and short_id != tool_id:
-                bucket = self._tools_by_old_id.get(short_id)
-                if bucket:
-                    survivors = [
-                        t for t in bucket if getattr(t, "id", None) != tool_id and getattr(t, "guid", None) != tool_id
-                    ]
-                    if survivors:
-                        self._tools_by_old_id[short_id] = survivors
-                    else:
-                        del self._tools_by_old_id[short_id]
-            # Mirror the cleanup in our short-id → guid map so a
-            # subsequent ``has_tool``/``get_tool`` for the short id
-            # doesn't resurrect a removed shed install. Both directions
-            # need cleanup: ``tool_id`` may itself be a short id (drop
-            # the entry), or it may be a guid (drop it from any short
-            # id's set, and remove that short id if its set becomes
-            # empty).
-            self._shed_short_id_to_guids.pop(tool_id, None)
-            for _short, _guids in list(self._shed_short_id_to_guids.items()):
-                _guids.discard(tool_id)
-                if not _guids:
-                    del self._shed_short_id_to_guids[_short]
-            with self._cache_lock:
-                # Purge by cached identity, not by key prefix: the LRU is
-                # keyed by whatever id the caller resolved with, so the same
-                # tool can sit under both its guid and its short id
-                # ("collection_column_join:latest"). A guid-prefix purge
-                # leaves the short-id entry behind and get_tool serves the
-                # uninstalled tool straight from cache.
-                for key, cached in list(self._tool_object_cache.items()):
-                    if (
-                        key.startswith(f"{tool_id}:")
-                        or getattr(cached, "id", None) == tool_id
-                        or getattr(cached, "guid", None) == tool_id
-                    ):
-                        self._tool_object_cache.pop(key, None)
+            result = self._remove_tool_in_memory(tool_id, remove_from_panel=remove_from_panel)
             if self._store is not None:
                 # The pops above are in-memory. The persisted singleton index
                 # still carries the entry, and any later cache invalidation
@@ -1387,6 +1338,96 @@ class LazyToolBox(ToolBox):
                     self._store.commit()
                 except Exception as e:
                     log.warning("Persisting index removal of %s raised: %s", tool_id, e)
+                # Installs converge across processes because every populate
+                # broadcasts an invalidation; removals must broadcast too or
+                # peer web workers keep serving the uninstalled tool until an
+                # unrelated populate happens to run.
+                from galaxy.queue_worker import send_control_task
+
+                try:
+                    send_control_task(self.app, "reload_tool_source_cache", noop_self=True)
+                except Exception as e:
+                    log.warning("Broadcasting index removal of %s raised: %s", tool_id, e)
+        return result
+
+    def _remove_tool_in_memory(self, tool_id: str, remove_from_panel: bool = True):
+        """Pop ``tool_id`` from every in-memory registry, panel slot and cache.
+
+        Shared by :meth:`remove_tool_by_id` (which additionally persists the
+        index removal and notifies peer processes) and by
+        :meth:`invalidate_index_cache`'s reconciliation of entries a peer
+        process removed from the persisted index. Caller must hold
+        ``app._toolbox_lock``.
+        """
+        result = super().remove_tool_by_id(tool_id, remove_from_panel=remove_from_panel)
+        if self._tool_index is not None:
+            self._tool_index.entries.pop(tool_id, None)
+            self._tool_index.entries_by_version.pop(tool_id, None)
+        # ``super().remove_tool_by_id`` clears ``_tools_by_id`` but leaves
+        # ``_tool_versions_by_id`` and the lineage map intact. ``get_tool``'s
+        # fall-through walks lineage versions via ``_tool_from_lineage_version``
+        # which reads ``_tool_versions_by_id``, so the tool would otherwise
+        # come back from there even after removal.
+        self._tool_versions_by_id.pop(tool_id, None)
+        if hasattr(self, "_lineage_map"):
+            self._lineage_map.lineage_map.pop(tool_id, None)
+            versionless = remove_version_from_guid(tool_id)
+            if versionless:
+                self._lineage_map.lineage_map.pop(versionless, None)
+        # ``super().remove_tool_by_id`` removes a single Tool object
+        # from ``_tools_by_old_id[old_id]``, but if a concurrent
+        # ``_register_loaded_tool`` (e.g. an in-flight HTTP request
+        # that beat us to the lock) appended a sibling Tool to the
+        # same bucket, the sibling survives and the eager
+        # super().get_tool fall-through returns it via
+        # ``rval.extend(self._tools_by_old_id[tool_id])``. Drop the
+        # whole bucket for this tool_id to match the index removal.
+        self._tools_by_old_id.pop(tool_id, None)
+        # The short-id bucket is keyed by ``old_id`` — for a shed guid
+        # that's the short tool id, not ``tool_id``. ``super()`` removes
+        # from it by object identity only, which misses when the bucket
+        # holds an earlier registration (stub or materialised instance)
+        # while ``_tools_by_id`` held a fresher one; the leftover then
+        # resurrects the uninstalled tool via the eager get_tool
+        # fall-through. Scrub every object belonging to this guid, but
+        # leave sibling installs (other guids, other versions) alone.
+        short_id = extract_short_id_from_guid(tool_id)
+        if short_id and short_id != tool_id:
+            bucket = self._tools_by_old_id.get(short_id)
+            if bucket:
+                survivors = [
+                    t for t in bucket if getattr(t, "id", None) != tool_id and getattr(t, "guid", None) != tool_id
+                ]
+                if survivors:
+                    self._tools_by_old_id[short_id] = survivors
+                else:
+                    del self._tools_by_old_id[short_id]
+        # Mirror the cleanup in our short-id → guid map so a
+        # subsequent ``has_tool``/``get_tool`` for the short id
+        # doesn't resurrect a removed shed install. Both directions
+        # need cleanup: ``tool_id`` may itself be a short id (drop
+        # the entry), or it may be a guid (drop it from any short
+        # id's set, and remove that short id if its set becomes
+        # empty).
+        self._shed_short_id_to_guids.pop(tool_id, None)
+        for _short, _guids in list(self._shed_short_id_to_guids.items()):
+            _guids.discard(tool_id)
+            if not _guids:
+                del self._shed_short_id_to_guids[_short]
+        with self._cache_lock:
+            # Purge by cached identity, not by key prefix: the LRU is
+            # keyed by whatever id the caller resolved with, so the same
+            # tool can sit under both its guid and its short id
+            # ("collection_column_join:latest"). A guid-prefix purge
+            # leaves the short-id entry behind and get_tool serves the
+            # uninstalled tool straight from cache.
+            for key, cached in list(self._tool_object_cache.items()):
+                if (
+                    key.startswith(f"{tool_id}:")
+                    or getattr(cached, "id", None) == tool_id
+                    or getattr(cached, "guid", None) == tool_id
+                ):
+                    self._tool_object_cache.pop(key, None)
         return result
 
     # === Override has_tool to check index ===
