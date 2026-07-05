@@ -130,7 +130,7 @@ class ToolBoxSearch:
 class LazyToolboxSearch(ToolBoxSearch):
     """Drop-in for :class:`ToolBoxSearch` in lazy-toolbox mode.
 
-    The populator (``galaxy.tool_source_store.populator``) builds and owns
+    The populator (``galaxy.tools.source_store.populator``) builds and owns
     the whoosh index; this class is a thin reader that opens it on each
     query. Per-panel-view fan-out is collapsed: ``search`` ignores
     ``panel_view`` and reads the single populator-owned index.
@@ -157,11 +157,11 @@ class LazyToolboxSearch(ToolBoxSearch):
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
         # Lazy import: avoids pulling populator's deps into module load.
-        from galaxy.tool_source_store.populator import (
+        from galaxy.tools.source_store.populator import (
             DEFAULT_STORE_NAME,
             whoosh_dir_for_store,
         )
-        from galaxy.tool_source_store.search import (
+        from galaxy.tools.source_store.search import (
             ToolSearchTuning,
             ToolWhooshIndex,
         )

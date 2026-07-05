@@ -56,7 +56,7 @@ class TestDatabaseToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         self._test_api_tools_show()
 
     def test_default_store_is_database_backend(self):
-        from galaxy.tool_source_store.database import DatabaseToolSourceStore
+        from galaxy.tools.source_store.database import DatabaseToolSourceStore
 
         assert isinstance(self._app.tool_source_store, DatabaseToolSourceStore)
 
@@ -79,7 +79,7 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         cls._tmpdir = tempfile.mkdtemp(prefix="composite_tss_")
         cls._sqlite_path = os.path.join(cls._tmpdir, "sources.sqlite")
 
-        from galaxy.tool_source_store.sqlalchemy import SqlAlchemyToolSourceStore
+        from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
         SqlAlchemyToolSourceStore(path=cls._sqlite_path).count()
 
@@ -108,7 +108,7 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         # is enabled. Verifying the live app's store directly is more
         # robust than relying on /api/tools, which depends on whether the
         # store was populated in advance.
-        from galaxy.tool_source_store.composite import CompositeToolSourceStore
+        from galaxy.tools.source_store.composite import CompositeToolSourceStore
 
         assert isinstance(self._app.tool_source_store, CompositeToolSourceStore)
 
@@ -171,8 +171,8 @@ class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         from typing import cast
 
         from galaxy.model.scoped_session import galaxy_scoped_session
-        from galaxy.tool_source_store import ToolIndex
-        from galaxy.tool_source_store.database import DatabaseToolSourceStore
+        from galaxy.tools.source_store import ToolIndex
+        from galaxy.tools.source_store.database import DatabaseToolSourceStore
 
         store = self._app.tool_source_store
         assert store is not None

@@ -2,7 +2,7 @@
 
 import pytest
 
-from galaxy.tool_source_store.index import (
+from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )

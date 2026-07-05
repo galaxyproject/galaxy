@@ -30,14 +30,14 @@ def _collect_new_tool_paths(elem_list, tool_path: str, shed_tool_conf: str) -> d
     ``elem_list`` is the freshly-generated panel additions for a shed install
     — either top-level ``<tool>`` elements or ``<section>`` elements with
     nested ``<tool>`` children. Paths must match what
-    ``galaxy.tool_source_store.discover.discover_tools`` yields for the
+    ``galaxy.tools.source_store.discover.discover_tools`` yields for the
     rewritten conf byte-for-byte (the partial populate filters on the string):
     a relative ``tool_path`` resolves against the conf file's directory, not
     the process cwd, so route through the same ``resolve_tool_path``.
     """
-    # Local import: keeps galaxy.tool_source_store out of the eager
+    # Local import: keeps galaxy.tools.source_store out of the eager
     # tool-shed install path's module graph.
-    from galaxy.tool_source_store.discover import resolve_tool_path
+    from galaxy.tools.source_store.discover import resolve_tool_path
 
     resolved_base = resolve_tool_path(tool_path, shed_tool_conf)
     path_guids: dict[str, str | None] = {}
@@ -178,7 +178,7 @@ class ToolPanelManager:
                     load_elem_list, tool_path, shed_tool_conf_dict["config_filename"]
                 )
                 if new_path_guids:
-                    from galaxy.tool_source_store.populator import populate_for_paths
+                    from galaxy.tools.source_store.populator import populate_for_paths
 
                     populate_for_paths(
                         self.app.config,

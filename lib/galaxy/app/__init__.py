@@ -424,7 +424,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         propagate so the operator sees the failure at startup.
         """
         # Lazy import: avoids pulling in optional backend deps at module load.
-        from galaxy.tool_source_store import (
+        from galaxy.tools.source_store import (
             build_tool_source_store,
             ToolSourceStore,
         )

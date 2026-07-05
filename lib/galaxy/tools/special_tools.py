@@ -25,7 +25,7 @@ _EXTRA_HIDDEN_LIB_TOOLS = {
 def hidden_lib_tool_paths() -> list[str]:
     """Absolute paths of every Galaxy-internal "hidden lib" tool.
 
-    Used by :func:`galaxy.tool_source_store.discover.discover_tools` so the
+    Used by :func:`galaxy.tools.source_store.discover.discover_tools` so the
     populator indexes these tools alongside the conf-discovered ones. The
     eager ``load_hidden_lib_tool`` calls that run after boot then resolve
     through ``LazyToolBox.create_tool``'s index lookup — the seam stays

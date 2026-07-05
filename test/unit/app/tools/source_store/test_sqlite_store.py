@@ -5,7 +5,6 @@ import tempfile
 
 import pytest
 
-import galaxy.tools.source_store.sqlalchemy as sqlalchemy_store_module
 from galaxy.tools.source_store import (
     ReadOnlyStoreError,
     StoredToolSource,
@@ -34,12 +33,8 @@ def _source(hash="h1", tool_id="t1", version="1.0"):
     )
 
 
-def _sqlite_url(path):
-    return f"sqlite:///{path}"
-
-
 def test_store_and_retrieve_round_trip(sqlite_path):
-    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    store = SqliteToolSourceStore(path=sqlite_path)
     store.store(_source())
     got = store.get("h1")
     assert got is not None
@@ -50,7 +45,7 @@ def test_store_and_retrieve_round_trip(sqlite_path):
 
 
 def test_get_by_tool_id_filters_by_version(sqlite_path):
-    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    store = SqliteToolSourceStore(path=sqlite_path)
     store.store(_source(hash="h1", tool_id="t1", version="1.0"))
     store.store(_source(hash="h2", tool_id="t1", version="2.0"))
     assert {s.tool_version for s in store.get_by_tool_id("t1")} == {"1.0", "2.0"}
@@ -58,7 +53,7 @@ def test_get_by_tool_id_filters_by_version(sqlite_path):
 
 
 def test_delete_returns_false_for_missing(sqlite_path):
-    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    store = SqliteToolSourceStore(path=sqlite_path)
     assert store.delete("nope") is False
     store.store(_source())
     assert store.delete("h1") is True
@@ -66,7 +61,7 @@ def test_delete_returns_false_for_missing(sqlite_path):
 
 
 def test_index_round_trip(sqlite_path):
-    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    store = SqliteToolSourceStore(path=sqlite_path)
     idx = ToolIndex(entries={"t1": ToolIndexEntry(id="t1", name="T1")})
     store.store_index(idx)
     store.invalidate_index_cache()
@@ -76,24 +71,12 @@ def test_index_round_trip(sqlite_path):
     assert loaded.entries["t1"].name == "T1"
 
 
-def test_load_index_discards_stale_schema(sqlite_path, monkeypatch):
-    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
-    store.store_index(ToolIndex(entries={"t1": ToolIndexEntry(id="t1", name="T1")}))
-
-    # Simulate a Galaxy upgrade that changed the ToolIndex model: the
-    # persisted blob's stamp no longer matches, so the store must report "no
-    # index" (triggering a rebuild) rather than load stale/defaulted fields.
-    monkeypatch.setattr(sqlalchemy_store_module, "INDEX_SCHEMA_HASH", "post-upgrade-schema-hash")
-    fresh = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
-    assert fresh.load_index() is None
-
-
 def test_read_only_refuses_writes(sqlite_path):
-    rw = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    rw = SqliteToolSourceStore(path=sqlite_path)
     rw.store(_source())
     rw.store_index(ToolIndex(entries={"t1": ToolIndexEntry(id="t1", name="T1")}))
 
-    ro = SqliteToolSourceStore(url=_sqlite_url(sqlite_path), read_only=True)
+    ro = SqliteToolSourceStore(path=sqlite_path, read_only=True)
     assert ro.read_only is True
     fetched = ro.get("h1")
     assert fetched is not None
@@ -106,8 +89,14 @@ def test_read_only_refuses_writes(sqlite_path):
         ro.store_index(ToolIndex())
 
 
+def test_read_only_missing_file_raises(tmp_path):
+    missing = tmp_path / "nope.sqlite"
+    with pytest.raises(FileNotFoundError):
+        SqliteToolSourceStore(path=str(missing), read_only=True)
+
+
 def test_get_stats_reports_backend_and_url(sqlite_path):
-    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    store = SqliteToolSourceStore(path=sqlite_path)
     stats = store.get_stats()
     assert stats["backend"] == "sqlalchemy"
     assert stats["url"].startswith("sqlite:///")

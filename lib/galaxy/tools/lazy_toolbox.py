@@ -24,19 +24,6 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.tool_source_store import (
-    StoredToolSource,
-    ToolSourceStore,
-)
-from galaxy.tool_source_store.discover import discover_tools
-from galaxy.tool_source_store.index import (
-    ToolIndex,
-    ToolIndexEntry,
-)
-from galaxy.tool_source_store.populator import (
-    populate_for_paths,
-    populate_store_inline,
-)
 from galaxy.tool_util.id_util import extract_short_id_from_guid
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tool_util.parser import get_tool_source
@@ -44,6 +31,19 @@ from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
 from galaxy.tool_util.toolbox.panel import ToolSection
 from galaxy.tool_util.version import parse_version
+from galaxy.tools.source_store import (
+    StoredToolSource,
+    ToolSourceStore,
+)
+from galaxy.tools.source_store.discover import discover_tools
+from galaxy.tools.source_store.index import (
+    ToolIndex,
+    ToolIndexEntry,
+)
+from galaxy.tools.source_store.populator import (
+    populate_for_paths,
+    populate_store_inline,
+)
 from galaxy.util.tool_version import remove_version_from_guid
 from . import (
     create_tool_from_source,

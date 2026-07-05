@@ -1,7 +1,7 @@
 """
 Benchmarks for tool source deserialization.
 
-Run with: python -m galaxy.tool_source_store.benchmarks
+Run with: python -m galaxy.tools.source_store.benchmarks
 """
 
 import hashlib

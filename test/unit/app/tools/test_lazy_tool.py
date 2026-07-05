@@ -8,14 +8,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from galaxy.tool_source_store import StoredToolSource
-from galaxy.tool_source_store.index import (
-    ToolIndex,
-    ToolIndexEntry,
-)
 from galaxy.tools.lazy_toolbox import (
     LazyTool,
     LazyToolBox,
+)
+from galaxy.tools.source_store import StoredToolSource
+from galaxy.tools.source_store.index import (
+    ToolIndex,
+    ToolIndexEntry,
 )
 
 

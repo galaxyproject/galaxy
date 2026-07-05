@@ -27,7 +27,7 @@ Module Layout
 
 ::
 
-    lib/galaxy/tool_source_store/
+    lib/galaxy/tools/source_store/
       __init__.py        ToolSourceStore ABC, StoredToolSource, build_tool_source_store()
       database.py        DatabaseToolSourceStore (uses tool_source + tool_index tables)
       sqlalchemy.py      SqlAlchemyToolSourceStore (any SA URL; sqlite shortcut)
@@ -302,4 +302,4 @@ Testing
   uses fakes (not mocks) of ``ToolSourceStore`` so behavior is verified
   against the real interface.
 - API tests: ``lib/galaxy_test/api/test_tool_sources.py``.
-- Benchmarks: ``python -m galaxy.tool_source_store.benchmarks --iterations 100``.
+- Benchmarks: ``python -m galaxy.tools.source_store.benchmarks --iterations 100``.

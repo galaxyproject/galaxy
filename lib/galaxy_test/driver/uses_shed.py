@@ -90,7 +90,7 @@ class UsesShed(UsesShedApi):
         # would otherwise survive the ``reload_toolbox`` below: ``LazyToolBox``
         # only re-runs the populator when discovery turns up a *new* path.
         try:
-            from galaxy.tool_source_store.populator import reconcile_index
+            from galaxy.tools.source_store.populator import reconcile_index
 
             reconcile_index(self._app.config, self._app.model.context, rebuild_whoosh=True)
         except Exception as e:
