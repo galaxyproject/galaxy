@@ -98,16 +98,15 @@ class LazyTool:
     Returned by :meth:`LazyToolBox.create_tool` whenever the tool's source is
     already persisted in the tool source store. The eager
     ``AbstractToolBox._init_tools_from_configs`` pipeline reads and mutates
-    a narrow attribute surface (audited at plan time — see
-    ``.claude/plans/witty-drifting-clock.md``); ``LazyTool`` forwards every
-    read off ``ToolIndexEntry`` and stores writes in ``_overrides`` so they
-    are re-applied if the stub is later materialised.
+    only a narrow attribute surface; ``LazyTool`` forwards every read off
+    ``ToolIndexEntry`` and stores writes in ``_overrides`` so they are
+    re-applied if the stub is later materialised.
 
-    **Strict by default.** Any attribute outside the explicit surface raises
-    :class:`NotImplementedError` so accidental materialisations show up at
-    test time as clear failures rather than silent multi-second parse stalls.
-    Set ``LAZY_TOOL_PERMISSIVE=1`` to downgrade to warn + materialise while
-    debugging.
+    **Permissive by default:** an attribute outside the stub surface and not
+    in ``_MATERIALIZE_OK`` materialises a real Tool with a WARN log. Set
+    ``LAZY_TOOL_STRICT=1`` to raise :class:`NotImplementedError` instead, so
+    unaccounted reads show up as clear failures rather than silent
+    multi-second parse stalls.
     """
 
     __slots__ = ("_entry", "_materialize_cb", "_is_admin_user", "_overrides", "_real", "_lineage")
@@ -848,10 +847,9 @@ class LazyToolBox(ToolBox):
                     self._store.commit()
                 except Exception as e:
                     log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
-        # LazyTool is duck-typed against Tool — the eager pipeline (audited
-        # in plans/witty-drifting-clock.md) only consults attributes the
-        # stub forwards from ToolIndexEntry, with mutations stored on
-        # ``_overrides``.
+        # LazyTool is duck-typed against Tool — the eager pipeline only
+        # consults attributes the stub forwards from ToolIndexEntry, with
+        # mutations stored on ``_overrides``.
         return LazyTool(  # type: ignore[return-value]
             entry,
             materialize_callback=self._materialize_for_lazy_tool,
@@ -926,15 +924,12 @@ class LazyToolBox(ToolBox):
                 entry = self._tool_index.get(stored.tool_id, stored.tool_version)
                 if entry is not None:
                     return entry
-        # No entry: fall through. The id-from-file last-resort that lived
-        # here previously is unsafe for multi-version tools — two conf entries
-        # carrying the same ``<tool id=foo>`` at different ``<tool version=...>``
-        # would both resolve to whatever version happened to be in
-        # ``entries[id]`` first, collapsing both panel slots onto the same
-        # LazyTool. The store's ``source_path`` index is the authoritative
-        # key; a miss here means the source genuinely isn't persisted yet,
-        # so let ``create_tool``'s fallthrough parse and ``_persist_tool_source``
-        # write it.
+        # No entry: do NOT fall back to parsing the id out of the file —
+        # ``entries[id]`` holds only the latest version, which would collapse
+        # multi-version conf entries onto one LazyTool. The store's
+        # ``source_path`` index is the authoritative key; a miss means the
+        # source genuinely isn't persisted yet, so let ``create_tool``'s
+        # fallthrough parse and ``_persist_tool_source`` write it.
         return None
 
     def _materialize_for_lazy_tool(self, entry: ToolIndexEntry) -> "Tool":

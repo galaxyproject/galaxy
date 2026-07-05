@@ -203,8 +203,8 @@ class ToolPanelManager:
                         guid=config_elem.get("guid"),
                     )
             else:
-                # Eager path: identical to upstream — append + load each elem,
-                # then persist the updated shed_tool_conf.
+                # Eager path: append + load each elem, then persist the
+                # updated shed_tool_conf.
                 config_elems = shed_tool_conf_dict["config_elems"]
                 for config_elem in elem_list:
                     # Add the new elements to the in-memory list of config_elems.

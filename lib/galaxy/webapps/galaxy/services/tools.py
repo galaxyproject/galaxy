@@ -650,12 +650,7 @@ class ToolsService(ServiceBase):
         tool_help: bool,
         view: str | None,
     ) -> list[dict[str, Any]]:
-        """
-        List tools, preferring the lazy toolbox index when available for flat listings.
-
-        For panel listings or when the index is unavailable, falls back to the
-        traditional toolbox.
-        """
+        """List tools in the panel or as a flat list."""
         # Both modes go through ``AbstractToolBox.to_dict``: the flat listing
         # runs the ``FilterFactory`` pass (admin/user tool filters and
         # ``allow_user_access``) over every tool, and ``get_tool_to_dict``
@@ -681,8 +676,7 @@ class ToolsService(ServiceBase):
 
         Every hit is resolved with a per-tool access check
         (``allow_user_access``, e.g. ``require_login`` tools for anonymous
-        users) so denied tools are filtered out — same contract as the old
-        controller loop.
+        users) so denied tools are filtered out.
 
         In lazy mode ``get_tool`` would *materialise* every hit (it loads the
         tool from the store on demand) and the populator-owned whoosh index
