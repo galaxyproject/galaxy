@@ -1,5 +1,8 @@
 import os.path
-from unittest import SkipTest
+from unittest import (
+    mock,
+    SkipTest,
+)
 
 from galaxy.tool_util.deps.mulled.get_tests import (
     deep_test_search,
@@ -47,8 +50,14 @@ def test_get_run_test():
 
 
 def test_get_anaconda_url():
-    url = get_anaconda_url("samtools:1.7--1")
+    url = get_anaconda_url("samtools:1.7--1", conda_platform_str="linux-64")
     assert url == "https://anaconda.org/bioconda/samtools/1.7/download/linux-64/samtools-1.7-1.tar.bz2"
+
+
+def test_get_anaconda_url_delegates_to_conda_platform():
+    with mock.patch("galaxy.tool_util.deps.mulled.get_tests.conda_platform", return_value="linux-aarch64"):
+        url = get_anaconda_url("samtools:1.7--1")
+    assert url == "https://anaconda.org/bioconda/samtools/1.7/download/linux-aarch64/samtools-1.7-1.tar.bz2"
 
 
 @external_dependency_management
