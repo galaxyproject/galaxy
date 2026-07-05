@@ -1410,6 +1410,33 @@ class LazyToolBox(ToolBox):
             return self._tool_index.get(tool_id)
         return None
 
+    def resolve_search_hit(self, tool_id: str) -> Optional["Tool"]:
+        """Resolve a search hit to a registered stub, never materialising.
+
+        ``ToolsService.search_tools`` only needs the tool id plus an
+        ``allow_user_access`` check to filter results — parsing the tool
+        would be pure waste. Going through :meth:`get_tool` instead
+        materialises every hit, and the populator-owned whoosh index can
+        carry ids that were never loaded into this toolbox
+        (``tool_conf.xml.sample`` alone lists ~150 legacy tools whose files
+        aren't present in most deployments).
+
+        Return the already-registered stub / Tool from ``_tools_by_id`` (or
+        via the shed short-id map), or ``None`` for a hit that isn't part of
+        this toolbox. That matches eager search, whose ``_tools_by_id``
+        lookup returns ``None`` for un-loaded ids so they're skipped — the
+        lazy path must not surface (or parse) tools the eager path wouldn't.
+        """
+        tool = self._tools_by_id.get(tool_id)
+        if tool is not None:
+            return tool
+        if self._shed_short_id_to_guids and tool_id in self._shed_short_id_to_guids:
+            for guid in sorted(self._shed_short_id_to_guids[tool_id]):
+                candidate = self._tools_by_id.get(guid)
+                if candidate is not None:
+                    return candidate
+        return None
+
     # === Required property overrides ===
 
     @property

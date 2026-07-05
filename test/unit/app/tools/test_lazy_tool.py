@@ -404,6 +404,35 @@ def test_create_tool_raises_on_index_miss():
         box.create_tool(config_file="/tools/unknown.xml", guid=None)
 
 
+def test_resolve_search_hit_returns_stub_without_materialise():
+    box = _seam_box()
+    # _stub's default materialize callback raises, so returning it proves
+    # resolve_search_hit never parsed anything.
+    stub = _stub(_entry(id="cat1"))
+    box._tools_by_id = {"cat1": stub}
+    assert box.resolve_search_hit("cat1") is stub
+
+
+def test_resolve_search_hit_skips_indexed_but_unloaded_tool():
+    # A whoosh hit that's in the index but was never loaded into this
+    # toolbox (tool_conf.xml.sample's legacy tools) must resolve to None so
+    # search skips it — the eager path skips these too — rather than
+    # materialising it.
+    box = _seam_box()
+    box._tools_by_id = {}
+    box._tool_index.entries["Cut1"] = _entry(id="Cut1")
+    assert box.resolve_search_hit("Cut1") is None
+
+
+def test_resolve_search_hit_follows_shed_short_id():
+    box = _seam_box()
+    guid = "toolshed.example.com/repos/owner/repo/cat/1.0"
+    guid_stub = _stub(_entry(id=guid))
+    box._tools_by_id = {guid: guid_stub}
+    box._shed_short_id_to_guids = {"cat": {guid}}
+    assert box.resolve_search_hit("cat") is guid_stub
+
+
 def test_load_tool_from_cache_returns_none():
     box = _seam_box()
     assert box.load_tool_from_cache("any/path.xml") is None

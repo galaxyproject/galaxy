@@ -679,14 +679,26 @@ class ToolsService(ServiceBase):
         ``search(q, panel_view, config)`` interface, so this method doesn't
         branch on which toolbox flavour is active.
 
-        Every hit is resolved through :meth:`_get_tool` so per-tool access
-        control (``allow_user_access``, e.g. ``require_login`` tools for
-        anonymous users) filters the results — same contract as the old
-        controller loop. In lazy mode ``get_tool`` returns the registered
-        ``LazyTool`` stub, so this does not materialise the hits.
+        Every hit is resolved with a per-tool access check
+        (``allow_user_access``, e.g. ``require_login`` tools for anonymous
+        users) so denied tools are filtered out — same contract as the old
+        controller loop.
+
+        In lazy mode ``get_tool`` would *materialise* every hit (it loads the
+        tool from the store on demand) and the populator-owned whoosh index
+        can carry ids that aren't loaded in this toolbox, so hits are instead
+        resolved against the registered stubs via
+        :meth:`LazyToolBox.resolve_search_hit` — no parse, and hits foreign to
+        this toolbox are skipped just as eager search skips them.
         """
+        lazy_toolbox = self._get_lazy_toolbox(trans)
         results: list[str] = []
         for hit in self._search(query, view) or []:
+            if lazy_toolbox is not None:
+                tool = lazy_toolbox.resolve_search_hit(hit)
+                if tool is not None and tool.id and tool.allow_user_access(trans.user):
+                    results.append(tool.id)
+                continue
             try:
                 tool = self._get_tool(trans, hit, user=trans.user)
                 if tool and tool.id:
