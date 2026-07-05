@@ -28,6 +28,7 @@ from galaxy.tool_util.id_util import extract_short_id_from_guid
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.base import ToolConfRepository
+from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
 from galaxy.tool_util.toolbox.panel import ToolSection
 from galaxy.tool_util.version import parse_version
@@ -544,6 +545,13 @@ class LazyToolBox(ToolBox):
         a :class:`LazyTool` stub; misses raise — by contract the cold-start
         populator below guarantees coverage.
         """
+        # Replace the plain ``LineageMap`` the base ``__init__`` just
+        # assigned: ``LazyLineageMap`` sources each lineage's version set
+        # from ``entries_by_version`` at lookup time, so post-boot lookups
+        # (peer installs surfaced by ``invalidate_index_cache``, reloads)
+        # see every indexed version instead of a memoised single-version
+        # lineage built from one Tool object.
+        self._lineage_map = LazyLineageMap(self.app, versions_for=self._index_versions_for)
         if self._store is not None:
             self._tool_index = self._store.load_index() or ToolIndex()
             if self._index_needs_population():
@@ -593,6 +601,40 @@ class LazyToolBox(ToolBox):
             self.app.model.context,
             rebuild_whoosh=True,
         )
+
+    def _index_versions_for(self, tool_id: str) -> list[str]:
+        """Return every version present in the index for ``tool_id``.
+
+        Hooked into ``LazyLineageMap.versions_for`` so a lineage lookup
+        sources its data straight from ``_tool_index.entries_by_version``.
+        Empty list (no versions) tells the lineage map to fall through to
+        the standard ``LineageMap.get`` toolbox path.
+
+        For shed-installed tools the index keys each entry on the full
+        toolshed guid (e.g. ``toolshed.../fastp/0.20.1+galaxy0``), so a
+        single id maps to a single version. Lineage merging in
+        ``ToolSection.copy(merge_tools=True)`` needs *every* version with
+        the same versionless guid to deduplicate older revisions out of
+        a panel view (e.g. ``test_only_latest_version_in_panel_fastp``
+        expects two installed fastp revisions to render as one
+        latest-version entry). Eager achieves this via
+        ``_tools_by_old_id``; the lazy index needs to walk sibling
+        entries that share the versionless prefix.
+        """
+        if self._tool_index is None:
+            return []
+        versions = list(self._tool_index.entries_by_version.get(tool_id, {}).keys())
+        result = [v for v in versions if v]
+        if "/repos/" in tool_id:
+            versionless = remove_version_from_guid(tool_id)
+            if versionless:
+                prefix = f"{versionless}/"
+                for entry_id, entry in self._tool_index.entries.items():
+                    if entry_id == tool_id:
+                        continue
+                    if entry_id.startswith(prefix) and entry.version and entry.version not in result:
+                        result.append(entry.version)
+        return result
 
     def _rebuild_shed_short_id_map(self) -> None:
         """Walk the index and rebuild short-id → guid mappings for shed installs.
