@@ -30,14 +30,10 @@ def _src(hash, tool_id="t", version="1"):
     )
 
 
-def _sqlite_url(path):
-    return f"sqlite:///{path}"
-
-
 def test_priority_order_first_hit_wins(two_paths):
     pa, pb = two_paths
-    a = SqliteToolSourceStore(url=_sqlite_url(pa))
-    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    a = SqliteToolSourceStore(path=pa)
+    b = SqliteToolSourceStore(path=pb)
     # Same hash, different tool_id payloads, to prove which member answered.
     a.store(_src("dup", tool_id="from_a"))
     b.store(_src("dup", tool_id="from_b"))
@@ -49,8 +45,8 @@ def test_priority_order_first_hit_wins(two_paths):
 
 def test_writes_go_to_default(two_paths):
     pa, pb = two_paths
-    a = SqliteToolSourceStore(url=_sqlite_url(pa))
-    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    a = SqliteToolSourceStore(path=pa)
+    b = SqliteToolSourceStore(path=pb)
     composite = CompositeToolSourceStore(members=[("a", a), ("b", b)], default="b")
     composite.store(_src("h1"))
     assert b.exists("h1")
@@ -59,17 +55,17 @@ def test_writes_go_to_default(two_paths):
 
 def test_default_must_not_be_read_only(two_paths):
     pa, pb = two_paths
-    rw = SqliteToolSourceStore(url=_sqlite_url(pa))
+    rw = SqliteToolSourceStore(path=pa)
     rw.store(_src("seed"))  # so the file exists
-    ro = SqliteToolSourceStore(url=_sqlite_url(pa), read_only=True)
+    ro = SqliteToolSourceStore(path=pa, read_only=True)
     with pytest.raises(ValueError):
         CompositeToolSourceStore(members=[("ro", ro), ("rw", rw)], default="ro")
 
 
 def test_list_all_dedupes_across_members(two_paths):
     pa, pb = two_paths
-    a = SqliteToolSourceStore(url=_sqlite_url(pa))
-    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    a = SqliteToolSourceStore(path=pa)
+    b = SqliteToolSourceStore(path=pb)
     a.store(_src("h1"))
     a.store(_src("dup"))
     b.store(_src("dup"))
@@ -81,8 +77,8 @@ def test_list_all_dedupes_across_members(two_paths):
 
 def test_load_index_merges_and_dedupes(two_paths):
     pa, pb = two_paths
-    a = SqliteToolSourceStore(url=_sqlite_url(pa))
-    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    a = SqliteToolSourceStore(path=pa)
+    b = SqliteToolSourceStore(path=pb)
     a.store_index(
         ToolIndex(
             entries={
@@ -109,8 +105,8 @@ def test_load_index_merges_and_dedupes(two_paths):
 
 def test_load_index_returns_none_when_no_member_has_one(two_paths):
     pa, pb = two_paths
-    a = SqliteToolSourceStore(url=_sqlite_url(pa))
-    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    a = SqliteToolSourceStore(path=pa)
+    b = SqliteToolSourceStore(path=pb)
     composite = CompositeToolSourceStore(members=[("a", a), ("b", b)], default="b")
     assert composite.load_index() is None
 
@@ -123,8 +119,8 @@ def test_invalidate_fans_out(two_paths):
     # cache hides the new entry; with composite.invalidate_index_cache()
     # the next load surfaces it.
     pa, pb = two_paths
-    a = SqliteToolSourceStore(url=_sqlite_url(pa))
-    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    a = SqliteToolSourceStore(path=pa)
+    b = SqliteToolSourceStore(path=pb)
     a.store_index(ToolIndex(entries={"x": ToolIndexEntry(id="x")}))
     b.store_index(ToolIndex(entries={"y": ToolIndexEntry(id="y")}))
     a.load_index()
@@ -132,10 +128,10 @@ def test_invalidate_fans_out(two_paths):
 
     # Out-of-band update via a fresh handle so the existing instance's
     # cache stays primed with the old value.
-    SqliteToolSourceStore(url=_sqlite_url(pa)).store_index(
+    SqliteToolSourceStore(path=pa).store_index(
         ToolIndex(entries={"x": ToolIndexEntry(id="x"), "x2": ToolIndexEntry(id="x2")})
     )
-    SqliteToolSourceStore(url=_sqlite_url(pb)).store_index(
+    SqliteToolSourceStore(path=pb).store_index(
         ToolIndex(entries={"y": ToolIndexEntry(id="y"), "y2": ToolIndexEntry(id="y2")})
     )
 
@@ -160,8 +156,8 @@ def test_invalidate_fans_out(two_paths):
 
 def test_load_index_merges_entries_by_version(two_paths):
     pa, pb = two_paths
-    a = SqliteToolSourceStore(url=_sqlite_url(pa))
-    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    a = SqliteToolSourceStore(path=pa)
+    b = SqliteToolSourceStore(path=pb)
     idx_a = ToolIndex()
     idx_a.add_entry(ToolIndexEntry(id="multi", name="v1", version="1.0"))
     idx_a.add_entry(ToolIndexEntry(id="multi", name="v2", version="2.0"))

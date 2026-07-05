@@ -168,6 +168,14 @@ class CompositeToolSourceStore(ToolSourceStore):
                 if tool_id in merged.entries:
                     continue
                 merged.entries[tool_id] = entry
+            # Merge the per-version map too — ``ToolIndex.get(tool_id,
+            # tool_version)`` resolves exact versions through it, so skipping
+            # it would make every non-newest version of a member-store tool
+            # unreachable. Same collision rule, applied per (id, version).
+            for tool_id, versions in idx.entries_by_version.items():
+                version_bucket = merged.entries_by_version.setdefault(tool_id, {})
+                for version, entry in versions.items():
+                    version_bucket.setdefault(version, entry)
             for section_id, ids in idx.by_section.items():
                 bucket = merged.by_section.setdefault(section_id, [])
                 for tid in ids:
