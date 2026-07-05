@@ -58,6 +58,11 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_USE_LAZY_TOOLBOX=true" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_TOOL_SOURCE_STORE=database" >> $GITHUB_ENV
+          # Raise instead of silently materialising on any off-surface
+          # LazyTool attribute read, so an accidental whole-toolbox
+          # materialisation regression fails the lazy run loudly rather
+          # than degrading to O(N) tool parses with only a WARN log.
+          echo "LAZY_TOOL_STRICT=1" >> $GITHUB_ENV
       - uses: actions/checkout@v7.0.0
         with:
           path: 'galaxy root'
