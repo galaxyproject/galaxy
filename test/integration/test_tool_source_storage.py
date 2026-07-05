@@ -371,6 +371,52 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
         toolbox.remove_tool_by_id("cat_data_and_sleep")
         assert toolbox.get_tool("cat_data_and_sleep") is None
 
+    # --- Materialisation budget ---------------------------------------------
+
+    def test_batch_endpoints_do_not_materialise_tools(self):
+        # The whole point of LazyToolBox is that batch/read endpoints answer
+        # from the pre-computed index without parsing tools. A regression that
+        # sneaks a full-toolbox sweep touching an off-surface (or
+        # _MATERIALIZE_OK) attribute would silently degrade these to O(N)
+        # parses; under the permissive default it only logs a WARN, so CI
+        # wouldn't catch it. Assert a zero materialise-count delta across the
+        # batch surface instead. LAZY_TOOL_STRICT covers off-surface reads;
+        # this also covers the ones strict can't (a filter that parses, an
+        # _MATERIALIZE_OK attr read in a loop).
+        from galaxy.tools.lazy_toolbox import LazyToolBox
+
+        toolbox = self._app.toolbox
+        # This class self-enables lazy mode; assert it (and narrow the type so
+        # mypy accepts the lazy-only _lazy_materialize_count counter).
+        assert isinstance(toolbox, LazyToolBox)
+
+        # in_panel=False flat listing (runs the FilterFactory pass), the panel
+        # walk, the panel-views endpoint, tests-summary, all_requirements, and
+        # tokenised search — every batch reader the client hits. Track a
+        # per-endpoint delta so a failure names the culprit.
+        deltas = {}
+        before = toolbox._lazy_materialize_count
+
+        def _probe(label, resp):
+            self._assert_status_code_is(resp, 200)
+            nonlocal before
+            deltas[label] = toolbox._lazy_materialize_count - before
+            before = toolbox._lazy_materialize_count
+
+        _probe("list_in_panel_false", self._get("tools", data={"in_panel": "False"}))
+        _probe("list_in_panel_true", self._get("tools", data={"in_panel": "True"}))
+        _probe("panel_default", self._get("tool_panels/default"))
+        _probe("tests_summary", self._get("tools/tests_summary"))
+        # all_requirements is admin-only; it aggregates from the index in lazy mode.
+        _probe("all_requirements", self._get("tools/all_requirements", admin=True))
+        # Search resolves whoosh hits against the registered stubs, not through
+        # the materialising get_tool — the populator-owned index carries ~150
+        # tool_conf.xml.sample ids that aren't loaded here, and resolving them
+        # via get_tool would parse every one.
+        _probe("search", self._get("tools", data={"q": "Concatenate multiple datasets"}))
+
+        assert all(v == 0 for v in deltas.values()), f"batch endpoints materialised tools (expected 0 each): {deltas}"
+
     # --- Container resolution -----------------------------------------------
 
     def test_container_resolvers_resolve_tool(self):

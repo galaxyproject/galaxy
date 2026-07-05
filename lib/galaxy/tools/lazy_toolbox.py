@@ -465,6 +465,13 @@ class LazyToolBox(ToolBox):
         self._store = tool_source_store
         self._tool_object_cache: LRUCache = LRUCache(maxsize=cache_size)
         self._cache_lock = threading.RLock()
+        # Count of stubs promoted to real ``Tool`` objects since boot — every
+        # runtime materialise funnels through ``_create_tool_from_stored_source``.
+        # Batch/read endpoints must never move this counter; the integration
+        # suite asserts a zero delta across them to catch an accidental
+        # whole-toolbox sweep that ``LAZY_TOOL_STRICT`` alone can't (a legit
+        # ``_MATERIALIZE_OK`` attr read in a loop, or a tool-filter that parses).
+        self._lazy_materialize_count = 0
         # ``_tool_index`` is filled by our ``_init_tools_from_configs`` override
         # before the eager walk runs.
         self._tool_index: ToolIndex | None = None
@@ -993,7 +1000,13 @@ class LazyToolBox(ToolBox):
         return tool
 
     def _create_tool_from_stored_source(self, stored: StoredToolSource, entry: ToolIndexEntry | None = None) -> "Tool":
-        """Create a Tool object from stored source."""
+        """Create a Tool object from stored source.
+
+        The single chokepoint for promoting a stub to a real ``Tool`` at
+        runtime — bump ``_lazy_materialize_count`` here so the budget test
+        can assert batch endpoints don't materialise.
+        """
+        self._lazy_materialize_count += 1
         tool_source = get_tool_source(
             raw_tool_source=stored.raw_source,
             tool_source_class=stored.tool_source_class,
