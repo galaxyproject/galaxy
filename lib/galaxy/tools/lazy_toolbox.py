@@ -160,6 +160,17 @@ class LazyTool:
             "get_configured_job_handler",  # job-runner handler routing
             # Job runner reads this on the tool to decide environment setup.
             "requires_galaxy_python_environment",
+            # Job-setup dependency/env path: the runner builds the dependency
+            # shell commands for the tool it's about to run (including the
+            # internal ``__SET_METADATA__`` tool that follows most jobs), which
+            # needs the parsed requirements. Materialising here is correct — the
+            # tool is executing.
+            "build_dependency_shell_commands",
+            # Parameter-validation path (data-manager / index-file tools): both
+            # walk the parsed parameter tree to check tool params against loaded
+            # data tables / index files at job time.
+            "params_with_missing_data_table_entry",
+            "params_with_missing_index_file",
             # Admin dependency-management endpoints (install_dependencies /
             # uninstall_dependencies) drive the resolver view on the tool.
             "_view",
