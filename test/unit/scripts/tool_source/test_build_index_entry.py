@@ -8,8 +8,8 @@ from typing import (
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
-from galaxy.tool_source_store.discover import DiscoveredTool
-from galaxy.tool_source_store.populator import build_index_entry_from_source
+from galaxy.tools.source_store.discover import DiscoveredTool
+from galaxy.tools.source_store.populator import build_index_entry_from_source
 
 
 @dataclass

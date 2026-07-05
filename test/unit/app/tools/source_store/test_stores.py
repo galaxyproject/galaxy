@@ -8,17 +8,17 @@ instantiate the stores to test the backend implementations.
 import pytest
 
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
-from galaxy.tool_source_store import (
+from galaxy.tools.source_store import (
     build_tool_source_store,
     ConfigurationError,
     StoredToolSource,
 )
-from galaxy.tool_source_store.database import DatabaseToolSourceStore
-from galaxy.tool_source_store.index import (
+from galaxy.tools.source_store.database import DatabaseToolSourceStore
+from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
-from galaxy.tool_source_store.sqlalchemy import SqlAlchemyToolSourceStore
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
 
 class FakeConfig:
@@ -360,7 +360,7 @@ class TestPerConfStoreRouting:
         conf.write_text('<?xml version="1.0"?>\n<toolbox/>\n')
         config = self._config(tmp_path, tool_configs=[str(conf)])
         store = build_tool_source_store(config, None)
-        from galaxy.tool_source_store.composite import CompositeToolSourceStore
+        from galaxy.tools.source_store.composite import CompositeToolSourceStore
 
         assert isinstance(store, SqlAlchemyToolSourceStore)
         assert not isinstance(store, CompositeToolSourceStore)

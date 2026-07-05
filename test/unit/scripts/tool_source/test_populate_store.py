@@ -25,7 +25,7 @@ import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
-from galaxy.tool_source_store.populator import (
+from galaxy.tools.source_store.populator import (
     compute_hash,
     send_reload_notification,
     ToolFileWatcher,

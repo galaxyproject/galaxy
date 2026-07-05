@@ -5,7 +5,7 @@ from pathlib import Path
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
-from galaxy.tool_source_store.discover import (
+from galaxy.tools.source_store.discover import (
     discover_tools_from_config,
     DiscoveredTool,
 )

@@ -5,15 +5,15 @@ import tempfile
 
 import pytest
 
-from galaxy.tool_source_store import (
+from galaxy.tools.source_store import (
     ReadOnlyStoreError,
     StoredToolSource,
 )
-from galaxy.tool_source_store.index import (
+from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
-from galaxy.tool_source_store.sqlalchemy import SqlAlchemyToolSourceStore as SqliteToolSourceStore
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore as SqliteToolSourceStore
 
 
 @pytest.fixture

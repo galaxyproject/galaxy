@@ -23,7 +23,7 @@ _EXTRA_HIDDEN_LIB_TOOLS = {
 def hidden_lib_tool_paths() -> list[str]:
     """Absolute paths of every Galaxy-internal "hidden lib" tool.
 
-    Used by :func:`galaxy.tool_source_store.discover.discover_tools` so the
+    Used by :func:`galaxy.tools.source_store.discover.discover_tools` so the
     populator indexes these tools alongside the conf-discovered ones.
     """
     base = os.path.dirname(__file__)

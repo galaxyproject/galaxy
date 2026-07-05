@@ -51,31 +51,31 @@ from galaxy.model import set_datatypes_registry
 from galaxy.model.mapping import init_models_from_config
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.queues import galaxy_exchange
-from galaxy.tool_source_store.discover import (
+from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.parser.util import parse_tool_version_with_defaults
+from galaxy.tool_util.toolbox.parser import get_toolbox_parser
+from galaxy.tools.source_store.discover import (
     discover_tools,
     DiscoveredTool,
 )
-from galaxy.tool_source_store.factory import (
+from galaxy.tools.source_store.factory import (
     _build_default_store,
     build_named_store,
     build_tool_source_store,
 )
-from galaxy.tool_source_store.index import (
+from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
-from galaxy.tool_source_store.interface import (
+from galaxy.tools.source_store.interface import (
     ReadOnlyStoreError,
     StoredToolSource,
     ToolSourceStore,
 )
-from galaxy.tool_source_store.search import (
+from galaxy.tools.source_store.search import (
     ToolSearchTuning,
     ToolWhooshIndex,
 )
-from galaxy.tool_util.parser import get_tool_source
-from galaxy.tool_util.parser.util import parse_tool_version_with_defaults
-from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from galaxy.util.properties import load_app_properties
 
 log = logging.getLogger(__name__)

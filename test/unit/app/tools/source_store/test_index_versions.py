@@ -11,7 +11,7 @@ Behaviours pinned:
 - tokenised search across id / name / description / labels
 """
 
-from galaxy.tool_source_store.index import ToolIndex
+from galaxy.tools.source_store.index import ToolIndex
 
 
 def test_add_entry_default_picks_highest_packaging_version(index_entry, tool_index):

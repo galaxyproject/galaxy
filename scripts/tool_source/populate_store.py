@@ -3,7 +3,7 @@
 
 Thin shim: extends ``sys.path`` so ``galaxy.*`` resolves when the script is
 invoked directly (no venv-installed galaxy package required), then delegates
-to :func:`galaxy.tool_source_store.populator.main`. All flags, including
+to :func:`galaxy.tools.source_store.populator.main`. All flags, including
 ``--watch``, are documented on that function's argparse setup.
 
 In-process callers should import the populator module directly rather than
@@ -16,7 +16,7 @@ from pathlib import Path
 galaxy_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
-from galaxy.tool_source_store.populator import main
+from galaxy.tools.source_store.populator import main
 
 if __name__ == "__main__":
     main()

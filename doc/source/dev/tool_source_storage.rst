@@ -29,7 +29,7 @@ Module Layout
 
 ::
 
-    lib/galaxy/tool_source_store/
+    lib/galaxy/tools/source_store/
       __init__.py        ToolSourceStore ABC, StoredToolSource, build_tool_source_store()
       database.py        DatabaseToolSourceStore (uses tool_source_record + tool_index tables)
       sqlalchemy.py      SqlAlchemyToolSourceStore (any SA URL; sqlite shortcut)
@@ -66,16 +66,16 @@ version. The sqlalchemy backend creates the same tables in its own database.
 Backend Abstraction
 -------------------
 
-``ToolSourceStore`` (in ``tool_source_store/__init__.py``) is an ABC defining:
+``ToolSourceStore`` (in ``tools/source_store/interface.py``) is an ABC defining:
 
 - ``store/get/exists/delete/list_all/get_by_tool_id/count`` — per-tool source
   operations, all keyed by content hash.
 - ``store_index/load_index/update_index_entry`` — index operations.
 - ``get_stats()`` — backend-specific stats (count, size, backend name).
 
-``build_tool_source_store(app)`` is the only entry point used by Galaxy. It
-inspects ``config.tool_source_store`` and lazily imports the chosen backend
-so deployments only pay for the dependencies they use.
+``build_tool_source_store(config, sa_session)`` is the only entry point used
+by Galaxy. It inspects ``config.tool_source_store`` to pick the backend
+(currently ``database`` and ``sqlalchemy``/``sqlite``).
 ``ConfigurationError`` is raised for unknown backends or missing required
 settings; it is allowed to propagate up so misconfiguration fails fast at
 startup.
@@ -137,7 +137,7 @@ authoritative for those entries).
 Discovery
 ---------
 
-``galaxy.tool_source_store.discover.discover_tools`` walks tool config files
+``galaxy.tools.source_store.discover.discover_tools`` walks tool config files
 and yields ``DiscoveredTool`` records without booting a full ``ToolBox``. It is
 used by:
 
@@ -153,7 +153,7 @@ Population Script
 -----------------
 
 ``scripts/tool_source/populate_store.py`` is a thin CLI wrapper over
-``galaxy.tool_source_store.populator.main``. It builds a minimal app context
+``galaxy.tools.source_store.populator.main``. It builds a minimal app context
 (datatypes registry + SQLAlchemy model + config) and calls
 ``build_tool_source_store`` with that context. Tools are parsed in a
 ``ThreadPoolExecutor`` (``--parallel``, default 4 workers); each tool is
@@ -195,7 +195,7 @@ effectively a no-op.
 Testing
 -------
 
-- Store unit tests: ``test/unit/tool_source_store/`` exercises each backend
+- Store unit tests: ``test/unit/app/tools/source_store/`` exercises each backend
   through the ``ToolSourceStore`` interface (``test_stores.py``,
   ``test_sqlite_store.py``, ``test_composite_store.py``,
   ``test_index_versions.py``).

@@ -339,9 +339,3 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             stored_at=row.stored_at,
             metadata=metadata,
         )
-
-
-# Back-compat alias for callers that imported the previous name. The
-# original class name was sqlite-specific; new code should use
-# SqlAlchemyToolSourceStore.
-SqliteToolSourceStore = SqlAlchemyToolSourceStore
