@@ -252,6 +252,22 @@ class LazyTool:
     def lineage(self):
         return self._lineage
 
+    def get_panel_section(self) -> tuple[str, str] | tuple[None, None]:
+        """Answer the tool's ``(section_id, section_name)`` off the entry.
+
+        ``Tool.get_panel_section`` resolves this through
+        ``toolbox.get_section_for_tool`` (a panel lookup), but the populator
+        already stamps the placement onto ``ToolIndexEntry``. Full-toolbox
+        sweeps read this — e.g. ``AgentTools.get_tool_categories`` iterates
+        ``toolbox.tools()`` and reads ``get_panel_section()[1]`` per tool —
+        so forwarding off the entry keeps that O(N) walk from materialising
+        every tool.
+        """
+        entry = self._entry
+        if entry.panel_section_id:
+            return (entry.panel_section_id, entry.panel_section_name or "")
+        return (None, None)
+
     @property
     def version_object(self):
         # Mirror ``Tool.version_object`` (lib/galaxy/tools/__init__.py:1213).

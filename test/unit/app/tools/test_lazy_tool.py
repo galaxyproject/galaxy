@@ -155,6 +155,16 @@ def test_to_panel_entry_carries_client_contract_fields():
     assert "config_file" not in d
 
 
+def test_get_panel_section_answered_off_entry_without_materialise():
+    # AgentTools.get_tool_categories sweeps the whole toolbox and reads
+    # get_panel_section()[1] per tool; forwarding off the entry keeps that
+    # walk from parsing every tool. _stub's default materialize raises.
+    e = _entry(panel_section_id="ngs", panel_section_name="NGS: Mapping")
+    assert _stub(e).get_panel_section() == ("ngs", "NGS: Mapping")
+    # No section stamped -> (None, None), matching Tool.get_panel_section.
+    assert _stub(_entry()).get_panel_section() == (None, None)
+
+
 def test_to_dict_materialises():
     calls: list[Any] = []
 
