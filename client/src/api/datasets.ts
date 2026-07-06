@@ -147,6 +147,22 @@ export async function copyDataset(
     return data;
 }
 
+export async function copyDatasets(datasetIds: string[], historyId: CopyDatasetParamsType["path"]["history_id"]) {
+    const results = await Promise.allSettled(datasetIds.map((datasetId) => copyDataset(datasetId, historyId)));
+    const copiedDatasets = [];
+    const failedDatasetIds = [];
+
+    for (const [index, result] of results.entries()) {
+        if (result.status === "fulfilled") {
+            copiedDatasets.push(result.value);
+        } else {
+            failedDatasetIds.push(datasetIds[index] as string);
+        }
+    }
+
+    return { copiedDatasets, failedDatasetIds };
+}
+
 export function getCompositeDatasetLink(historyDatasetId: string, path: string) {
     return withPrefix(`/api/datasets/${historyDatasetId}/display?filename=${path}`);
 }
