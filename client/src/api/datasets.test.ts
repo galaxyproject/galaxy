@@ -11,11 +11,13 @@ describe("copyDatasets", () => {
     it("copies all dataset ids to the target history", async () => {
         const copiedDatasetIds: unknown[] = [];
 
+        let receivedHistoryId;
+
         server.use(
             http.post("/api/histories/:history_id/contents/datasets", async ({ params, request }) => {
                 const body = (await request.json()) as { content: unknown };
 
-                expect(params.history_id).toBe("target-history");
+                receivedHistoryId = params.history_id;
 
                 copiedDatasetIds.push(body.content);
 
@@ -24,6 +26,7 @@ describe("copyDatasets", () => {
         );
 
         const result = await copyDatasets(["dataset-a", "dataset-b"], "target-history");
+        expect(receivedHistoryId).toBe("target-history");
 
         expect(copiedDatasetIds).toEqual(["dataset-a", "dataset-b"]);
         expect(result).toEqual({
