@@ -13,7 +13,7 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { type ToolPanelItem, useToolStore } from "@/stores/toolStore";
 
 import viewsListJson from "./testData/viewsList.json";
-import { getUniqueToolIdsInPanel } from "./utilities";
+import { countUniqueToolsInList, getUniqueToolIdsInPanel } from "./utilities";
 
 import ToolPanel from "./ToolPanel.vue";
 
@@ -38,7 +38,7 @@ const DEFAULT_VIEW_ID = "default";
 const PANEL_VIEW_ERR_MSG = "Error loading panel view";
 
 const firstTool = toolsList[0];
-const toolsListWithExtraVersion = [...toolsList, { ...firstTool, id: `${firstTool?.id}/older-version` }];
+const toolsListWithExtraVersion = [...toolsList, { ...firstTool, id: `${firstTool?.id}/0.9`, version: "0.9" }];
 
 vi.mock("@/composables/config");
 
@@ -91,6 +91,7 @@ describe("ToolPanel", () => {
         failDefault: boolean = false,
         captureToolsRequest?: (url: URL) => void,
         panelResponses: Record<string, unknown> = {},
+        defaultPanelView: string = DEFAULT_VIEW_ID,
     ) {
         server.use(
             http.untyped.get("/api/tools", ({ request }) => {
@@ -102,7 +103,7 @@ describe("ToolPanel", () => {
                 return HttpResponse.json([]);
             }),
             http.untyped.get(TEST_PANELS_URI, () => {
-                return HttpResponse.json({ default_panel_view: DEFAULT_VIEW_ID, views: viewsList });
+                return HttpResponse.json({ default_panel_view: defaultPanelView, views: viewsList });
             }),
             http.get("/api/users/{user_id}", ({ response }) => {
                 return response(200).json(getFakeRegisteredUser());
@@ -272,6 +273,31 @@ describe("ToolPanel", () => {
         const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
         const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
         expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
+    });
+
+    it("does not show the raw installed-version count when My Tools is the backend default view", async () => {
+        storePanelView("");
+        const wrapper = await createWrapper(
+            "",
+            false,
+            undefined,
+            {
+                my_panel: {
+                    favorites: {
+                        model_class: "ToolSection",
+                        id: "favorites",
+                        name: "Favorites",
+                        tools: [],
+                    },
+                },
+            },
+            "my_panel",
+        );
+        const count = countUniqueToolsInList(toolsListWithExtraVersion);
+        const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
+        const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
+        expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
+        expect(discoverButton.text()).not.toBe(`Discover ${toolsListWithExtraVersion.length} Tools`);
     });
 
     it("does not request tool tags during default tool panel startup", async () => {
