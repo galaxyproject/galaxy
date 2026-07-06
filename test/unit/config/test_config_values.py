@@ -19,7 +19,10 @@ def test_root(appconfig):
 
 def test_common_base_config(appconfig):
     assert appconfig.shed_tools_dir == os.path.join(appconfig.data_dir, "shed_tools")
-    assert appconfig.tool_source_database_connection == f"sqlite:///{os.path.join(appconfig.data_dir, 'tool_sources.sqlite')}"
+    assert (
+        appconfig.tool_source_database_connection
+        == f"sqlite:///{os.path.join(appconfig.data_dir, 'tool_sources.sqlite')}"
+    )
     if running_from_source:
         expected_path = os.path.join(appconfig.root, "lib", "galaxy", "config", "sample")
     else:
