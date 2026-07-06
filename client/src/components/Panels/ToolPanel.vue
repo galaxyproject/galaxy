@@ -9,7 +9,7 @@ import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { MY_PANEL_VIEW_ID } from "./panelViews";
-import { countUniqueToolsInPanel } from "./utilities";
+import { countUniqueToolsInList, countUniqueToolsInPanel } from "./utilities";
 
 import LoadingSpan from "../LoadingSpan.vue";
 import ActivityPanel from "./ActivityPanel.vue";
@@ -43,7 +43,7 @@ const headerToolSections = computed(() => {
     return currentToolSections.value;
 });
 const toolsCount = computed(() =>
-    countUniqueToolsInPanel(headerToolSections.value, Object.keys(toolsById.value).length),
+    countUniqueToolsInPanel(headerToolSections.value, countUniqueToolsInList(toolsById.value)),
 );
 
 function formatToolsCount(count: number) {
