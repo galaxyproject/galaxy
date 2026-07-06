@@ -1020,7 +1020,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.inputs_by_page: list[dict] = []
         self.display_by_page: list = []
         self.action: str | tuple[str, str] = "/tool_runner/index"
-        self.target = "galaxy_main"
         self.method = "post"
         self.labels: list = []
         self.check_values = True
@@ -1543,7 +1542,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     def __parse_legacy_features(self, tool_source: ToolSource):
         self.code_namespace: dict[str, Any] = {}
         self.hook_map: dict[str, str] = {}
-        self.uihints: dict[str, str] = {}
 
         if not hasattr(tool_source, "root"):
             return
@@ -1581,11 +1579,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                         exec(compiled_code, self.code_namespace)
                     else:
                         raise
-
-        # User interface hints
-        if (uihints_elem := root.find("uihints")) is not None:
-            for key, value in uihints_elem.attrib.items():
-                self.uihints[key] = value
 
     def __parse_config_files(self, tool_source: ToolSource):
         self.config_files: Sequence[TemplateConfigFile | InputConfigFile | FileSourceConfigFile] = []
@@ -1724,7 +1717,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                         f"{self.app.config.nginx_upload_path}?nginx_redir=",
                         unquote_plus(self.action),
                     )
-                self.target = input_elem.get("target", self.target)
                 self.method = input_elem.get("method", self.method)
                 # Parse the actual parameters
                 # Handle multiple page case
@@ -2967,7 +2959,11 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         return tarball_archive
 
     def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
-        """Returns dict of tool."""
+        """Returns dict of tool.
+
+        ``link_details`` is accepted for backwards compatibility and no
+        longer gates any field.
+        """
 
         # Basic information
         tool_dict = self._dictify_view_keys()
@@ -2998,16 +2994,12 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             config_file = None if not self.config_file else os.path.abspath(self.config_file)
             tool_dict["config_file"] = config_file
 
-        # Add link details.
-        if link_details:
-            # Add details for creating a hyperlink to the tool.
-            if not isinstance(self, DataSourceTool):
-                link = self.app.url_for(controller="tool_runner", tool_id=self.id)
-            else:
-                link = self.app.url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
-
-            # Basic information
-            tool_dict.update({"link": link, "min_width": self.uihints.get("minwidth", -1), "target": self.target})
+        if isinstance(self, DataSourceTool):
+            tool_dict["link"] = self.app.url_for(
+                controller="tool_runner", action="data_source_redirect", tool_id=self.id
+            )
+        else:
+            tool_dict["link"] = self.app.url_for(controller="tool_runner", tool_id=self.id)
 
         # Add input and output details.
         if io_details:
@@ -3530,8 +3522,6 @@ class DataSourceTool(OutputParameterJSONTool):
 
     def parse_inputs(self, tool_source):
         super().parse_inputs(tool_source)
-        # Open all data_source tools in _top.
-        self.target = "_top"
         # data_source tools cannot check param values
         self.check_values = False
         if "GALAXY_URL" not in self.inputs:
