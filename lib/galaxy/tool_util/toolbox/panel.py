@@ -162,7 +162,9 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
     used both by tool panel itself (normal and integrated) and its sections.
     """
 
-    _section_by_tool: dict[str, tuple[str, str]] = {}
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._section_by_tool: dict[str, tuple[str, str]] = {}
 
     def record_section_for_tool_id(self, tool_id: str, key: str, val: str):
         self._section_by_tool[tool_id] = (key, val)

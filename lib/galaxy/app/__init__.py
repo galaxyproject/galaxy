@@ -101,7 +101,10 @@ from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
 )
-from galaxy.model.database_heartbeat import DatabaseHeartbeat
+from galaxy.model.database_heartbeat import (
+    DatabaseHeartbeat,
+    WEBAPP,
+)
 from galaxy.model.database_utils import (
     database_exists,
     is_one_database,
@@ -1017,7 +1020,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
 
-        self.database_heartbeat = DatabaseHeartbeat(application_stack=self.application_stack)
+        self.database_heartbeat = DatabaseHeartbeat(
+            application_stack=self.application_stack,
+            app_type=WEBAPP if self.is_webapp else None,
+        )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 

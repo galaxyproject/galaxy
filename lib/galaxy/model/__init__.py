@@ -12983,7 +12983,7 @@ class DatasetStorageOperationRun(Base):
     succeeded_count: Mapped[int] = mapped_column(default=0)
     failed_count: Mapped[int] = mapped_column(default=0)
     skipped_count: Mapped[int] = mapped_column(default=0)
-    total_bytes_processed: Mapped[int] = mapped_column(default=0)
+    total_bytes_processed: Mapped[int] = mapped_column(BigInteger, default=0)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
 
@@ -12999,7 +12999,7 @@ class DatasetStorageOperationRunItem(Base):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id", ondelete="CASCADE"), index=True)
     state: Mapped[str] = mapped_column(String(32), index=True)
     reason_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    bytes_processed: Mapped[int] = mapped_column(default=0)
+    bytes_processed: Mapped[int] = mapped_column(BigInteger, default=0)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
 
