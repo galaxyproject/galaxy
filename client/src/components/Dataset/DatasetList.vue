@@ -240,11 +240,13 @@ async function onBulkCopy() {
 
     const datasetIdsToCopy = [...selectedItemIds.value];
     const totalSelected = datasetIdsToCopy.length;
+    const itemCountSuffix = totalSelected > 1 ? "s" : "";
+
     const confirmed = await confirm(
-        `Are you sure you want to copy ${totalSelected} datasets to your current history?`,
+        `Are you sure you want to copy ${totalSelected} dataset${itemCountSuffix} to your current history?`,
         {
-            title: "Copy datasets",
-            okText: "Copy datasets",
+            title: `Copy dataset${itemCountSuffix}`,
+            okText: `Copy dataset${itemCountSuffix}`,
             okIcon: faCopy,
         },
     );
@@ -258,11 +260,12 @@ async function onBulkCopy() {
         bulkCopyLoading.value = true;
 
         const { copiedDatasets, failedDatasetIds } = await copyDatasets(datasetIdsToCopy, currentHistoryId.value);
+
         const copiedCount = copiedDatasets.length;
         const failedCount = failedDatasetIds.length;
 
         if (failedCount === 0) {
-            Toast.success(`Copied ${copiedCount} dataset${copiedCount > 1 ? "s" : ""} to current history.`);
+            Toast.success(`Copied ${copiedCount} dataset${copiedCount !== 1 ? "s" : ""} to current history.`);
             selectedItemIds.value = [];
         } else if (copiedCount > 0) {
             Toast.error(`Copied ${copiedCount} of ${totalSelected} datasets. Failed to copy ${failedCount} datasets.`);
@@ -275,9 +278,9 @@ async function onBulkCopy() {
         Toast.error(`Failed to copy datasets: ${e?.message ?? String(e)}`);
     } finally {
         await historyStore.loadCurrentHistory();
-        await load(true);
-        overlay.value = false;
         bulkCopyLoading.value = false;
+
+        await load(true);
     }
 }
 
@@ -400,6 +403,7 @@ onMounted(() => {
                     <FontAwesomeIcon :icon="faCopy" />
                     {{ localize("Copy Selected") }} ({{ selectedItemIds.length }})
                 </BButton>
+
                 <BButton
                     id="dataset-list-footer-bulk-delete-button"
                     v-g-tooltip.hover
