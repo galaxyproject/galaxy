@@ -156,3 +156,23 @@ def test_invalidate_fans_out(two_paths):
     assert merged is not None
     assert "x2" in merged.entries
     assert "y2" in merged.entries
+
+
+def test_load_index_merges_entries_by_version(two_paths):
+    pa, pb = two_paths
+    a = SqliteToolSourceStore(url=_sqlite_url(pa))
+    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    idx_a = ToolIndex()
+    idx_a.add_entry(ToolIndexEntry(id="multi", name="v1", version="1.0"))
+    idx_a.add_entry(ToolIndexEntry(id="multi", name="v2", version="2.0"))
+    a.store_index(idx_a)
+    idx_b = ToolIndex()
+    idx_b.add_entry(ToolIndexEntry(id="multi", name="v3", version="3.0"))
+    b.store_index(idx_b)
+    composite = CompositeToolSourceStore(members=[("a", a), ("b", b)], default="b")
+    merged = composite.load_index()
+    assert merged is not None
+    for version, name in (("1.0", "v1"), ("2.0", "v2"), ("3.0", "v3")):
+        entry = merged.get("multi", version)
+        assert entry is not None
+        assert entry.name == name
