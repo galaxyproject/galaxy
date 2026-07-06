@@ -92,7 +92,7 @@ class UsesShed(UsesShedApi):
         try:
             from galaxy.tools.source_store.populator import reconcile_index
 
-            reconcile_index(self._app.config, self._app.model.context, rebuild_whoosh=True)
+            reconcile_index(self._app.config, rebuild_whoosh=True)
         except Exception as e:
             log.warning("reset_shed_tools: reconcile_index raised (continuing): %s", e)
         # deleting the containing folder doesn't trigger a toolbox reload, so signal it now and wait until it's done

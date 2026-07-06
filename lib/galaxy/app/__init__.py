@@ -419,19 +419,24 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     def _init_tool_source_store(self) -> None:
         """Initialize the tool source store for efficient tool loading.
 
-        Misconfiguration (bad backend name, missing required setting) raises
-        ``ConfigurationError`` from ``build_tool_source_store`` — we let it
-        propagate so the operator sees the failure at startup.
+        Default deployments never touch the store: it is only built when the
+        operator opted into ``use_lazy_toolbox``. Misconfiguration (bad
+        backend name, missing required setting) raises ``ConfigurationError``
+        from ``build_tool_source_store`` — we let it propagate so the
+        operator sees the failure at startup.
         """
-        # Lazy import: avoids pulling in optional backend deps at module load.
+        # Local import: avoids a circular import between galaxy.app and galaxy.tools.
         from galaxy.tools.source_store import (
             build_tool_source_store,
             ToolSourceStore,
         )
 
-        self.tool_source_store: ToolSourceStore | None = self._register_singleton(
+        self.tool_source_store: ToolSourceStore | None = None
+        if not self.config.use_lazy_toolbox:
+            return
+        self.tool_source_store = self._register_singleton(
             ToolSourceStore,  # type: ignore[type-abstract,unused-ignore]
-            build_tool_source_store(self.config, self.model.context),  # type: ignore[arg-type,unused-ignore]
+            build_tool_source_store(self.config),
         )
         stats = self.tool_source_store.get_stats()
         tool_count = stats.get("count", 0)
@@ -441,12 +446,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         # in-memory caches before the next boot wires its own. Without this,
         # the prior boot's cached ToolIndex sticks around long enough to
         # race with the new boot's _load_index_from_store.
-        # ``_shutdown_tool_source_store`` commits any flushed-but-unwritten
-        # source/index rows on its way down (so the next embedded Galaxy
-        # boot doesn't have to re-bootstrap from configs). It must run
-        # before ``_shutdown_model`` disposes the engine — after that the
-        # session can't commit. Insert at index 1 (after object store,
-        # before database connection).
         self.haltables.insert(1, ("tool source store", self._shutdown_tool_source_store))
         self.haltables.insert(2, ("lazy toolbox", self._shutdown_lazy_toolbox))
 

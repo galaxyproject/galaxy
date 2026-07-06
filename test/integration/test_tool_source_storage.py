@@ -18,12 +18,6 @@ class BaseToolSourceStorageIntegrationTestCase(integration_util.IntegrationTestC
     """Base class for tool source storage integration tests."""
 
     framework_tool_and_types = True
-    STORE_KIND: str = "database"
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
-        config["tool_source_store"] = cls.STORE_KIND
 
     def _test_api_tools_list(self):
         # ``in_panel=False`` is what the Galaxy client uses
@@ -46,8 +40,22 @@ class BaseToolSourceStorageIntegrationTestCase(integration_util.IntegrationTestC
         assert tool_info["id"] == tool_id
 
 
-class TestDatabaseToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
-    """Integration tests with database tool source storage backend."""
+class TestEagerBootSkipsStore(BaseToolSourceStorageIntegrationTestCase):
+    """Default deployments never initialize a tool source store."""
+
+    def test_no_store_initialized(self):
+        assert self._app.tool_source_store is None
+        self._test_api_tools_list()
+        self._test_api_tools_show()
+
+
+class TestSqliteToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
+    """Integration tests with the default sqlite tool source store."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["use_lazy_toolbox"] = True
 
     def test_api_tools_list(self):
         self._test_api_tools_list()
@@ -55,10 +63,10 @@ class TestDatabaseToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
     def test_api_tools_show(self):
         self._test_api_tools_show()
 
-    def test_default_store_is_database_backend(self):
-        from galaxy.tools.source_store.database import DatabaseToolSourceStore
+    def test_default_store_is_sqlalchemy_backend(self):
+        from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
-        assert isinstance(self._app.tool_source_store, DatabaseToolSourceStore)
+        assert isinstance(self._app.tool_source_store, SqlAlchemyToolSourceStore)
 
 
 class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
@@ -87,7 +95,6 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         with open(cls._conf_path, "w") as f:
             f.write('<?xml version="1.0"?>\n<toolbox store="cvmfs_main"/>\n')
 
-        config["tool_source_store"] = "database"
         config["use_lazy_toolbox"] = True
         existing_confs = config.get("tool_config_file") or "config/tool_conf.xml.sample"
         if isinstance(existing_confs, str):
@@ -168,23 +175,18 @@ class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         # with its own, much smaller view, and the peer broadcast invalidates
         # our store cache. A subsequent reload must serve THIS instance's
         # tools from its inline repopulate, not the foreign index.
-        from typing import cast
-
-        from galaxy.model.scoped_session import galaxy_scoped_session
         from galaxy.tools.source_store import ToolIndex
-        from galaxy.tools.source_store.database import DatabaseToolSourceStore
+        from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
         store = self._app.tool_source_store
         assert store is not None
-        foreign_store = DatabaseToolSourceStore(cast(galaxy_scoped_session, self._app.model.context))
+        foreign_store = SqlAlchemyToolSourceStore(path=self._app.config.tool_source_disk_path)
         foreign_store.store_index(ToolIndex())
-        foreign_store.commit()
         store.invalidate_index_cache()
         # Drop one store row so the reload takes the inline-repopulate path.
         upload_stored = store.get_by_tool_id("upload1")
         assert upload_stored
         store.delete(upload_stored[0].hash)
-        store.commit()
 
         from galaxy.queue_worker import reload_toolbox
 
@@ -201,7 +203,6 @@ class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         assert store is not None
         for source_hash in list(store.list_all()):
             store.delete(source_hash)
-        store.commit()
         store.invalidate_index_cache()
         from galaxy.queue_worker import reload_toolbox
 

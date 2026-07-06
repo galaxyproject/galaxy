@@ -350,7 +350,7 @@ def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
 
     calls = {}
 
-    def fake_populate(config, session, paths, path_guids=None, **kwargs):
+    def fake_populate(config, paths, path_guids=None, **kwargs):
         calls["paths"] = paths
         calls["path_guids"] = path_guids
 

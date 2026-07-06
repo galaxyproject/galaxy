@@ -182,9 +182,6 @@ class ToolPanelManager:
 
                     populate_for_paths(
                         self.app.config,
-                        # Lazy mode implies a full Galaxy app, which carries
-                        # ``model`` beyond the InstallationTarget protocol.
-                        self.app.model.context,  # type: ignore[attr-defined]
                         paths=list(new_path_guids),
                         rebuild_whoosh=True,
                         path_guids=new_path_guids,

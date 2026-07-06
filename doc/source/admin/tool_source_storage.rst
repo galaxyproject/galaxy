@@ -31,28 +31,25 @@ Backend Selection
 .. code-block:: yaml
 
     galaxy:
-      # Backend for storing tool sources: 'database' or 'sqlalchemy'
-      tool_source_store: database
+      # Backend for storing tool sources ('sqlite', alias 'sqlalchemy')
+      tool_source_store: sqlite
 
-**Database Backend** (default)
-
-Stores tool sources in the Galaxy database. Best for:
-
-- Single-server deployments
-- Installations where tools don't change frequently
-- Simplest setup (no additional infrastructure)
-
-**SQLAlchemy Backend**
-
-Stores tool sources in a separate SQLAlchemy-managed database (typically a
-SQLite file). Useful for shipping read-only tool source bundles via per-conf
-``tool_source_stores`` entries (see CVMFS recipe below).
+The store lives in a standalone database — a SQLite file under
+``tool_source_disk_path`` (default: ``<data_dir>/tool_sources``) — never in
+Galaxy's own database. It is a rebuildable cache: deleting it costs one
+populator run. Nothing is initialized unless ``use_lazy_toolbox`` is
+enabled.
 
 .. code-block:: yaml
 
     galaxy:
-      tool_source_store: sqlalchemy
-      tool_source_disk_path: /path/to/tool_sources.sqlite  # SQLite shortcut
+      tool_source_store: sqlite
+      tool_source_disk_path: /path/to/tool_sources.sqlite
+
+Multi-host deployments must point every Galaxy process (web workers *and*
+job handlers) at the same store: either a ``tool_source_disk_path`` on a
+shared filesystem, or a named read-only store with a full SQLAlchemy
+``url`` layered via ``tool_source_stores`` (see below).
 
 Toolbox Selection
 ^^^^^^^^^^^^^^^^^
@@ -88,7 +85,7 @@ SQLAlchemy-supported database works:
 .. code-block:: yaml
 
     galaxy:
-      tool_source_store: database          # the writable default
+      tool_source_store: sqlite            # the writable default
       tool_source_stores:
         cvmfs_main:
           backend: sqlalchemy
@@ -295,7 +292,6 @@ To migrate an existing Galaxy installation to use tool source storage:
    .. code-block:: yaml
 
        galaxy:
-         tool_source_store: database
          use_lazy_toolbox: true
 
 2. Run the population script:

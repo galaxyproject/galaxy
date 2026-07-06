@@ -508,21 +508,6 @@ class LazyToolBox(ToolBox):
         # them at discovery time), so no post-walk sync is needed.
         self._rebuild_shed_short_id_map()
 
-        # Commit anything ``create_tool`` persisted during the eager walk.
-        # No-op when the store didn't see any new content. When the
-        # constructor runs in the queue-worker thread (``reload_toolbox``
-        # control task), nothing later closes that transaction — on SQLite
-        # the open writer lock blocks the test driver's subsequent
-        # ``DELETE FROM repository_repository_dependency_association`` in
-        # ``reset_shed_tools`` (``test_repository_*`` teardown), on
-        # Postgres it leaves an idle-in-transaction row blocking those
-        # same ``DELETE``s for the rest of the shard run.
-        if self._store is not None:
-            try:
-                self._store.commit()
-            except Exception as e:
-                log.warning(f"LazyToolBox: post-init commit raised: {e}")
-
         log.info(
             "LazyToolBox initialized with %d tools (cache_size=%d, parsed=%d, from_store=%d)",
             len(self._tools_by_id),
@@ -598,7 +583,6 @@ class LazyToolBox(ToolBox):
         log.info("LazyToolBox: running populator inline to backfill the index")
         populate_store_inline(
             self.app.config,
-            self.app.model.context,
             rebuild_whoosh=True,
         )
 
@@ -886,7 +870,6 @@ class LazyToolBox(ToolBox):
             if self._store is not None:
                 try:
                     self._store.update_index_entry(entry)
-                    self._store.commit()
                 except Exception as e:
                     log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
         # LazyTool is duck-typed against Tool — the eager pipeline only
@@ -924,7 +907,6 @@ class LazyToolBox(ToolBox):
         try:
             populate_for_paths(
                 self.app.config,
-                self.app.model.context,
                 [path],
                 path_guids={path: guid},
             )
@@ -1335,7 +1317,6 @@ class LazyToolBox(ToolBox):
                 # resurrecting an uninstalled tool.
                 try:
                     self._store.remove_index_entry(tool_id)
-                    self._store.commit()
                 except Exception as e:
                     log.warning("Persisting index removal of %s raised: %s", tool_id, e)
                 # Installs converge across processes because every populate
