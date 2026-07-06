@@ -195,6 +195,24 @@ class TestToolPanelManager(BaseToolBoxTestCase):
             message = f"file {filename} does not contain valid XML, content {content}"
             raise AssertionError(message)
 
+    def test_generate_tool_panel_elem_list_skips_unmatched_guid(self):
+        tool = self._init_ts_tool(guid=DEFAULT_GUID)
+        tool_path = self._tool_path()
+        repository_tools_tups = [(tool_path, DEFAULT_GUID, tool)]
+        tool_panel_dict = {
+            DEFAULT_GUID: [{"id": "", "name": "", "version": "", "tool_config": tool_path}],
+            "guid-without-tool": [{"id": "", "name": "", "version": "", "tool_config": "missing.xml"}],
+        }
+        elem_list = self.tpm.generate_tool_panel_elem_list(
+            "example",
+            "toolshed.g2.bx.psu.edu/repos/iuc/example",
+            "0123456789abcdef",
+            tool_panel_dict,
+            repository_tools_tups,
+        )
+        assert len(elem_list) == 1
+        assert elem_list[0].attrib["guid"] == DEFAULT_GUID
+
     def _init_ts_tool(self, guid=DEFAULT_GUID, **kwds):
         tool = self._init_tool(**kwds)
         tool.guid = guid
