@@ -92,6 +92,7 @@ describe("ToolPanel", () => {
         captureToolsRequest?: (url: URL) => void,
         panelResponses: Record<string, unknown> = {},
         defaultPanelView: string = DEFAULT_VIEW_ID,
+        capturePanelRequest?: (panelView: string) => void,
     ) {
         server.use(
             http.untyped.get("/api/tools", ({ request }) => {
@@ -134,6 +135,7 @@ describe("ToolPanel", () => {
             server.use(
                 http.untyped.get(/\/api\/tool_panels\/.*/, ({ request }) => {
                     const panelView = new URL(request.url).pathname.split("/").pop() || "";
+                    capturePanelRequest?.(panelView);
                     return HttpResponse.json(panelResponses[panelView] ?? toolsListInPanel);
                 }),
             );
@@ -298,6 +300,31 @@ describe("ToolPanel", () => {
         const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
         expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
         expect(discoverButton.text()).not.toBe(`Discover ${toolsListWithExtraVersion.length} Tools`);
+    });
+
+    it("loads default panel sections when My Tools is the backend default view", async () => {
+        storePanelView("");
+        const requestedPanels: string[] = [];
+        await createWrapper(
+            "",
+            false,
+            undefined,
+            {
+                my_panel: {
+                    favorites: {
+                        model_class: "ToolSection",
+                        id: "favorites",
+                        name: "Favorites",
+                        tools: [],
+                    },
+                },
+            },
+            "my_panel",
+            (panelView) => requestedPanels.push(panelView),
+        );
+
+        expect(requestedPanels).toContain(DEFAULT_VIEW_ID);
+        expect(requestedPanels).toContain("my_panel");
     });
 
     it("does not request tool tags during default tool panel startup", async () => {
