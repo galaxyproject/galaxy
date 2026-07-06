@@ -110,6 +110,21 @@ describe("FormData", () => {
         expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(7);
     });
 
+    it("styles the workflow run no-options alert to fill the select height", async () => {
+        const wrapper = createTarget({
+            type: "data",
+            value: null,
+            options: {},
+            workflowRun: true,
+        });
+        const alert = wrapper.find(".form-data-no-options-alert");
+        expect(alert.exists()).toBe(true);
+        expect(alert.text()).toBe("No datasets available");
+
+        await wrapper.setProps({ workflowRun: false });
+        expect(wrapper.find(".form-data-no-options-alert").exists()).toBe(false);
+    });
+
     it("multiple datasets", async () => {
         const wrapper = createTarget({
             value: {

@@ -1141,10 +1141,7 @@ const noOptionsWarningMessage = computed(() => {
                     :placeholder="`Select a ${placeholder}`"
                     @search-change="onSearchChange">
                     <template v-slot:no-options>
-                        <BAlert
-                            :class="props.workflowRun && 'py-0 my-0 d-flex w-100 h-100 align-items-center'"
-                            variant="warning"
-                            show>
+                        <BAlert :class="{ 'form-data-no-options-alert': props.workflowRun }" variant="warning" show>
                             {{ noOptionsWarningMessage }}
                         </BAlert>
                     </template>
@@ -1168,7 +1165,10 @@ const noOptionsWarningMessage = computed(() => {
                     multiple
                     @search-change="onSearchChange">
                     <template v-slot:no-options>
-                        <BAlert class="py-2 my-0" variant="warning" show>
+                        <BAlert
+                            :class="props.workflowRun ? 'form-data-no-options-alert' : 'py-2 my-0'"
+                            variant="warning"
+                            show>
                             {{ noOptionsWarningMessage }}
                         </BAlert>
                     </template>
@@ -1294,6 +1294,16 @@ const noOptionsWarningMessage = computed(() => {
                 padding-left: 5px;
             }
         }
+    }
+
+    .form-data-no-options-alert {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        padding-top: 0;
+        padding-bottom: 0;
     }
 }
 
