@@ -64,7 +64,9 @@ def _needs_widening(table_name: str, column_name: str) -> bool:
             f"state during normal operation."
         )
         return False
-    inspector = sa.inspect(op.get_context().bind)
+    bind = op.get_context().bind
+    assert bind is not None  # not offline mode, so a connection exists
+    inspector = sa.inspect(bind)
     for column in inspector.get_columns(table_name):
         if column["name"] == column_name:
             return not isinstance(column["type"], sa.BigInteger)
