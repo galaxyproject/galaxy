@@ -10,6 +10,8 @@ plumbing.
 import os
 import tempfile
 
+import pytest
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -44,6 +46,10 @@ class TestEagerBootSkipsStore(BaseToolSourceStorageIntegrationTestCase):
     """Default deployments never initialize a tool source store."""
 
     def test_no_store_initialized(self):
+        if self._app.config.use_lazy_toolbox:
+            # GALAXY_CONFIG_OVERRIDE_USE_LAZY_TOOLBOX (the lazy CI dispatch)
+            # trumps per-class config kwds, so an eager boot is impossible here.
+            pytest.skip("use_lazy_toolbox forced on by environment override")
         assert self._app.tool_source_store is None
         self._test_api_tools_list()
         self._test_api_tools_show()
