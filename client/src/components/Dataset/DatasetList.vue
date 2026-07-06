@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { faBurn, faCheckCircle, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faBurn, faCheckCircle, faCopy, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BPagination } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import type { HDASummary } from "@/api";
-import { deleteDataset, loadDatasets } from "@/api/datasets";
+import { copyDatasets, deleteDataset, loadDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import type { RowIcon } from "@/components/Common/GTable.types";
 import { STATES } from "@/components/History/Content/model/states";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import { useDatasetTableActions } from "./useDatasetTableActions";
@@ -70,8 +72,11 @@ const selectedItemIds = ref<string[]>([]);
 const totalDatasets = ref(0);
 const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
 const bulkDeleteOrRestoreLoading = ref(false);
+const bulkCopyLoading = ref(false);
 
 const { datasetTableActions } = useDatasetTableActions(() => load(true));
+const historyStore = useHistoryStore();
+const { currentHistoryId } = storeToRefs(historyStore);
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const fields = computed(() => allFields.filter((field) => visibleColumns.value.includes(field.key)));
@@ -227,6 +232,55 @@ async function onBulkDelete() {
     }
 }
 
+async function onBulkCopy() {
+    if (!currentHistoryId.value) {
+        Toast.error("No current history found.");
+        return;
+    }
+
+    const datasetIdsToCopy = [...selectedItemIds.value];
+    const totalSelected = datasetIdsToCopy.length;
+    const confirmed = await confirm(
+        `Are you sure you want to copy ${totalSelected} datasets to your current history?`,
+        {
+            title: "Copy datasets",
+            okText: "Copy datasets",
+            okIcon: faCopy,
+        },
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        overlay.value = true;
+        bulkCopyLoading.value = true;
+
+        const { copiedDatasets, failedDatasetIds } = await copyDatasets(datasetIdsToCopy, currentHistoryId.value);
+        const copiedCount = copiedDatasets.length;
+        const failedCount = failedDatasetIds.length;
+
+        if (failedCount === 0) {
+            Toast.success(`Copied ${copiedCount} dataset${copiedCount > 1 ? "s" : ""} to current history.`);
+            selectedItemIds.value = [];
+        } else if (copiedCount > 0) {
+            Toast.error(`Copied ${copiedCount} of ${totalSelected} datasets. Failed to copy ${failedCount} datasets.`);
+            selectedItemIds.value = failedDatasetIds;
+        } else {
+            // Keep original selection so the user can retry the failed copy.
+            Toast.error(`Failed to copy ${totalSelected} dataset${totalSelected > 1 ? "s" : ""}.`);
+        }
+    } catch (e: any) {
+        Toast.error(`Failed to copy datasets: ${e?.message ?? String(e)}`);
+    } finally {
+        await historyStore.loadCurrentHistory();
+        await load(true);
+        overlay.value = false;
+        bulkCopyLoading.value = false;
+    }
+}
+
 function getDatasetStatusIcon(item: HDASummary): RowIcon | undefined {
     if (item.purged) {
         return { icon: faBurn, class: "text-danger", title: "Purged" };
@@ -336,10 +390,22 @@ onMounted(() => {
         <div class="d-flex mt-1 align-items-center mt-2">
             <div v-if="selectedItemIds.length > 0" class="d-flex gap-1 w-100 position-absolute">
                 <BButton
+                    id="dataset-list-footer-bulk-copy-button"
                     v-g-tooltip.hover
                     size="sm"
                     variant="primary"
-                    :disabled="bulkDeleteOrRestoreLoading"
+                    :disabled="bulkCopyLoading || bulkDeleteOrRestoreLoading"
+                    :title="bulkCopyLoading ? 'Copying datasets' : 'Copy selected datasets to current history'"
+                    @click="onBulkCopy">
+                    <FontAwesomeIcon :icon="faCopy" />
+                    {{ localize("Copy Selected") }} ({{ selectedItemIds.length }})
+                </BButton>
+                <BButton
+                    id="dataset-list-footer-bulk-delete-button"
+                    v-g-tooltip.hover
+                    size="sm"
+                    variant="primary"
+                    :disabled="bulkDeleteOrRestoreLoading || bulkCopyLoading"
                     :title="bulkDeleteOrRestoreLoading ? 'Deleting datasets' : 'Delete selected datasets'"
                     @click="onBulkDelete">
                     <FontAwesomeIcon :icon="faTrash" />
