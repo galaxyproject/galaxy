@@ -184,7 +184,7 @@ class TestBuildToolSourceStore:
             tool_source_stores=None,
             use_lazy_toolbox=False,
         )
-        store = build_tool_source_store(config)
+        store = build_tool_source_store(config)  # type: ignore[arg-type]
         assert isinstance(store, SqlAlchemyToolSourceStore)
 
     def test_build_default_in_memory_sqlite_store(self):
@@ -194,7 +194,7 @@ class TestBuildToolSourceStore:
             tool_source_stores=None,
             use_lazy_toolbox=False,
         )
-        store = build_tool_source_store(config)
+        store = build_tool_source_store(config)  # type: ignore[arg-type]
         assert isinstance(store, SqlAlchemyToolSourceStore)
 
     def test_build_store_missing_connection_raises(self):
@@ -205,7 +205,7 @@ class TestBuildToolSourceStore:
             use_lazy_toolbox=False,
         )
         with pytest.raises(ConfigurationError):
-            build_tool_source_store(config)
+            build_tool_source_store(config)  # type: ignore[arg-type]
 
     def test_build_non_sqlite_url_passes_through(self, monkeypatch):
         from galaxy.tools.source_store import factory as factory_module
@@ -224,7 +224,7 @@ class TestBuildToolSourceStore:
             tool_source_stores=None,
             use_lazy_toolbox=False,
         )
-        store = build_tool_source_store(config)
+        store = build_tool_source_store(config)  # type: ignore[arg-type]
         assert isinstance(store, CapturingStore)
         assert store.url == "postgresql://galaxy@example.org/tool_sources"
         assert store.read_only is False
