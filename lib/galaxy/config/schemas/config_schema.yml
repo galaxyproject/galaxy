@@ -328,10 +328,10 @@ mapping:
         desc: |
           SQLAlchemy connection string for storing pre-parsed tool sources.
           The store is a rebuildable cache that lives outside Galaxy's
-          database. Defining this URI does not make Galaxy's eager toolbox
-          startup use the store; it is opened by code paths that explicitly
-          use tool source storage, such as the population script and lazy
-          toolbox consumers.
+          database. This URI is used by tool source storage code paths,
+          including the population script and lazy toolbox consumers. Runtime
+          use also requires a populated store and a toolbox consumer configured
+          to read from tool source storage.
 
           By default, Galaxy uses a SQLite database at
           ``<data_dir>/tool_sources.sqlite``. Multi-host deployments should point

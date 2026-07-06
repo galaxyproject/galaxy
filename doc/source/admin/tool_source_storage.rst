@@ -38,11 +38,11 @@ Default Store
       tool_source_database_connection: sqlite:////srv/galaxy/tool_sources.sqlite
 
 The store lives in a standalone database - a SQLite file under
-``<data_dir>/tool_sources.sqlite`` by default - never in Galaxy's own database. It is
-a rebuildable cache: deleting it costs one populator run. Defining this URI
-does not make Galaxy's eager toolbox startup use the store; it is opened by
-code paths that explicitly use tool source storage, such as the population
-script and lazy toolbox consumers.
+``<data_dir>/tool_sources.sqlite`` by default - separate from Galaxy's main
+database. It is a rebuildable cache: deleting it costs one populator run.
+This URI is used by tool source storage code paths, including the population
+script and lazy toolbox consumers. Runtime use also requires a populated store
+and a toolbox consumer configured to read from tool source storage.
 
 .. code-block:: yaml
 
