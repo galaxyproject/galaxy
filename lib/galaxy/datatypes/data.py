@@ -466,9 +466,7 @@ class Data(metaclass=DataMeta):
         headers["Content-Disposition"] = to_content_disposition(filename)
         return open(file_name, mode="rb"), headers
 
-    def to_archive(
-        self, dataset: DatasetProtocol, name: str = "", auth: ObjectStoreAuth | None = None
-    ) -> Iterable:
+    def to_archive(self, dataset: DatasetProtocol, name: str = "", auth: ObjectStoreAuth | None = None) -> Iterable:
         """
         Collect archive paths and file handles that need to be exported when archiving `dataset`.
 
@@ -545,9 +543,12 @@ class Data(metaclass=DataMeta):
 
         preview = util.string_as_bool(preview)
         if not preview or isinstance(data.datatype, images.Image) or file_size < max_peek_size:
-            return self._yield_user_file_content(
-                trans, data, data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), headers
-            ), headers
+            return (
+                self._yield_user_file_content(
+                    trans, data, data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), headers
+                ),
+                headers,
+            )
 
         with compression_utils.get_fileobj(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb") as fh:
             # preview large text file - serve as text/plain so the browser

@@ -722,9 +722,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         except Exception:
             return f"Binary bam alignments file ({nice_size(dataset.get_size())})"
 
-    def to_archive(
-        self, dataset: DatasetProtocol, name: str = "", auth: ObjectStoreAuth | None = None
-    ) -> Iterable:
+    def to_archive(self, dataset: DatasetProtocol, name: str = "", auth: ObjectStoreAuth | None = None) -> Iterable:
         file_name = dataset.get_file_name(auth=auth)
         rel_paths = []
         file_paths = []

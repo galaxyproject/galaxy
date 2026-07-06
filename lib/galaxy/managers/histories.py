@@ -48,7 +48,6 @@ from galaxy.managers.base import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.export_tracker import StoreExportTracker
-from galaxy.objectstore import ObjectStoreAuth
 from galaxy.model import (
     History,
     HistoryUserShareAssociation,
@@ -60,6 +59,7 @@ from galaxy.model.index_filter_util import (
     tag_filter,
     text_column_filter,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.schema.fields import Security
 from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
