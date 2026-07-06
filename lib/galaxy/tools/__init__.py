@@ -120,6 +120,10 @@ from galaxy.tool_util.toolbox import (
     ToolLoadError,
     ToolSection,
 )
+from galaxy.tool_util.toolbox.entry import (
+    ToolPanelEntry,
+    ToolShedRepositoryInfo,
+)
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
@@ -1605,7 +1609,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def _repository_dir(self):
         """If tool shed installed tool, the base directory of the repository installed."""
-        if getattr(self, "tool_shed", None):
+        if self.tool_shed:
             assert self.tool_dir is not None
             tool_dir = Path(self.tool_dir)
             for repo_dir in itertools.chain([tool_dir], tool_dir.parents):
@@ -2958,62 +2962,59 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             os.remove(temp_file)
         return tarball_archive
 
+    def to_panel_entry(self, trans) -> dict[str, Any]:
+        """The complete per-tool panel/listing payload — see
+        :class:`galaxy.tool_util.toolbox.entry.ToolPanelEntry` for the
+        contract. ``to_dict`` layers io/help extras on top of this.
+        """
+        panel_section_id, panel_section_name = self.get_panel_section()
+        # FIXME: the Tool class should declare directly, instead of ad hoc inspection
+        regular_form = self.__class__ == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
+        if isinstance(self, DataSourceTool):
+            link = self.app.url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
+        else:
+            link = self.app.url_for(controller="tool_runner", tool_id=self.id)
+        kwargs: dict[str, Any] = self._dictify_view_keys()
+        kwargs.update(
+            icon=self.icon,
+            edam_operations=self.edam_operations,
+            edam_topics=self.edam_topics,
+            hidden=self.hidden,
+            is_workflow_compatible=self.is_workflow_compatible,
+            xrefs=self.xrefs,
+            versions=self.tool_versions,
+            hidden_versions=self.hidden_tool_versions,
+            link=link,
+            has_parameters=self.parameters is not None,
+            panel_section_id=panel_section_id,
+            panel_section_name=panel_section_name,
+            form_style="regular" if regular_form else "special",
+        )
+        if self.dynamic_tool:
+            kwargs["uuid"] = str(self.dynamic_tool.uuid)
+        if getattr(self, "tool_shed", None):
+            kwargs["tool_shed_repository"] = ToolShedRepositoryInfo(
+                name=self.repository_name,
+                owner=self.repository_owner,
+                changeset_revision=self.changeset_revision,
+                tool_shed=self.tool_shed,
+            )
+        if trans.user_is_admin:
+            kwargs["config_file"] = None if not self.config_file else os.path.abspath(self.config_file)
+        return ToolPanelEntry(**kwargs).model_dump(exclude_unset=True)
+
     def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
         """Returns dict of tool.
 
         ``link_details`` is accepted for backwards compatibility and no
         longer gates any field.
         """
-
-        # Basic information
-        tool_dict = self._dictify_view_keys()
-
-        tool_dict["icon"] = self.icon
-        tool_dict["edam_operations"] = self.edam_operations
-        tool_dict["edam_topics"] = self.edam_topics
-        tool_dict["hidden"] = self.hidden
-        tool_dict["is_workflow_compatible"] = self.is_workflow_compatible
-        tool_dict["xrefs"] = self.xrefs
-        tool_dict["versions"] = self.tool_versions
-        tool_dict["hidden_versions"] = self.hidden_tool_versions
-
-        if self.dynamic_tool:
-            tool_dict["uuid"] = str(self.dynamic_tool.uuid)
-
-        # Fill in ToolShedRepository info
-        if hasattr(self, "tool_shed") and self.tool_shed:
-            tool_dict["tool_shed_repository"] = {
-                "name": self.repository_name,
-                "owner": self.repository_owner,
-                "changeset_revision": self.changeset_revision,
-                "tool_shed": self.tool_shed,
-            }
-
-        # If an admin user, expose the path to the actual tool config XML file.
-        if trans.user_is_admin:
-            config_file = None if not self.config_file else os.path.abspath(self.config_file)
-            tool_dict["config_file"] = config_file
-
-        if isinstance(self, DataSourceTool):
-            tool_dict["link"] = self.app.url_for(
-                controller="tool_runner", action="data_source_redirect", tool_id=self.id
-            )
-        else:
-            tool_dict["link"] = self.app.url_for(controller="tool_runner", tool_id=self.id)
+        tool_dict = self.to_panel_entry(trans)
 
         # Add input and output details.
         if io_details:
             tool_dict["inputs"] = [input.to_dict(trans) for input in self.inputs.values()]
             tool_dict["outputs"] = [output.to_dict(app=self.app) for output in self.outputs.values()]
-
-        tool_dict["has_parameters"] = self.parameters is not None
-
-        tool_dict["panel_section_id"], tool_dict["panel_section_name"] = self.get_panel_section()
-
-        tool_class = self.__class__
-        # FIXME: the Tool class should declare directly, instead of ad hoc inspection
-        regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
-        tool_dict["form_style"] = "regular" if regular_form else "special"
         if tool_help:
             # create tool help
             help_txt = ""

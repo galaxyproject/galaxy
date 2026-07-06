@@ -1466,9 +1466,13 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 yield elt
 
     def get_tool_to_dict(self, trans, tool: "Tool", tool_help: bool = False) -> dict[str, Any]:
-        """Return tool's to_dict.
+        """Return tool's panel payload.
         Use cache if present, store to cache otherwise.
-        Note: The cached tool's to_dict is specific to the calls from toolbox.
+        Note: The cached payload is specific to the calls from toolbox.
+
+        Without ``tool_help`` the payload is the
+        :class:`~galaxy.tool_util.toolbox.entry.ToolPanelEntry` contract;
+        with it, the full ``to_dict`` including rendered help.
         """
         to_dict = None
         assert tool.id
@@ -1476,14 +1480,14 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if not tool_help:
                 to_dict = self._tool_to_dict_cache.get(tool.id)
             if not to_dict:
-                to_dict = tool.to_dict(trans, tool_help=tool_help)
+                to_dict = tool.to_dict(trans, tool_help=True) if tool_help else tool.to_panel_entry(trans)
                 if not tool_help:
                     self._tool_to_dict_cache[tool.id] = to_dict
         else:
             if not tool_help:
                 to_dict = self._tool_to_dict_cache_admin.get(tool.id)
             if not to_dict:
-                to_dict = tool.to_dict(trans, tool_help=tool_help)
+                to_dict = tool.to_dict(trans, tool_help=True) if tool_help else tool.to_panel_entry(trans)
                 if not tool_help:
                     self._tool_to_dict_cache_admin[tool.id] = to_dict
         return to_dict
