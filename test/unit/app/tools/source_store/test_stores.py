@@ -1,19 +1,16 @@
 """Unit tests for tool source storage backends.
 
-Tests verify that the tool source store classes work correctly with
-different backends (database, sqlalchemy). These tests directly
-instantiate the stores to test the backend implementations.
+Tests exercise the sqlalchemy/sqlite backend directly and the store
+factory / per-conf routing on top of it.
 """
 
 import pytest
 
-from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.tools.source_store import (
     build_tool_source_store,
     ConfigurationError,
     StoredToolSource,
 )
-from galaxy.tools.source_store.database import DatabaseToolSourceStore
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
@@ -27,220 +24,6 @@ class FakeConfig:
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
-
-
-class TestDatabaseBackend:
-    """Unit tests for database backend using MockApp."""
-
-    def test_database_store_basic_operations(self):
-        """Test basic store/get operations with database backend."""
-        app = MockApp()
-        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
-        test_hash = "test_hash_unit_123"
-
-        try:
-            tool_source = StoredToolSource(
-                hash=test_hash,
-                tool_source_class="XmlToolSource",
-                raw_source='<tool id="test" version="1.0"><command>echo</command></tool>',
-                tool_id="test_unit_tool",
-                tool_version="1.0",
-            )
-
-            store.store(tool_source)
-            app.model.context.commit()
-
-            assert store.exists(tool_source.hash)
-
-            retrieved = store.get(tool_source.hash)
-            assert retrieved is not None
-            assert retrieved.tool_id == "test_unit_tool"
-            assert retrieved.tool_version == "1.0"
-            assert "<tool" in retrieved.raw_source
-
-            assert store.delete(tool_source.hash)
-            app.model.context.commit()
-            assert not store.exists(tool_source.hash)
-        finally:
-            if store.exists(test_hash):
-                store.delete(test_hash)
-                app.model.context.commit()
-
-    def test_database_store_index_operations(self):
-        """Test tool index storage with database backend."""
-        app = MockApp()
-        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
-
-        index = ToolIndex()
-        index.entries["test_tool_db"] = ToolIndexEntry(
-            id="test_tool_db",
-            name="Test Tool DB",
-            version="1.0",
-            description="A test tool",
-        )
-
-        store.store_index(index)
-        app.model.context.commit()
-
-        # Clear the cached index to force reload from database
-        store.invalidate_index_cache()
-
-        loaded_index = store.load_index()
-        assert loaded_index is not None
-        assert "test_tool_db" in loaded_index.entries
-        assert loaded_index.entries["test_tool_db"].name == "Test Tool DB"
-
-    def test_database_store_get_by_tool_id(self):
-        """Test retrieving tool sources by tool ID."""
-        app = MockApp()
-        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
-
-        unique_id = "tool_by_id_test_unit"
-        test_hash = f"hash_for_{unique_id}"
-
-        try:
-            tool_source = StoredToolSource(
-                hash=test_hash,
-                tool_source_class="XmlToolSource",
-                raw_source=f'<tool id="{unique_id}" version="1.0"><command>echo</command></tool>',
-                tool_id=unique_id,
-                tool_version="1.0",
-            )
-            store.store(tool_source)
-            app.model.context.commit()
-
-            sources = store.get_by_tool_id(unique_id)
-            assert len(sources) >= 1
-            assert any(s.tool_id == unique_id for s in sources)
-        finally:
-            if store.exists(test_hash):
-                store.delete(test_hash)
-                app.model.context.commit()
-
-    def test_database_store_count(self):
-        """Test counting stored tool sources."""
-        app = MockApp()
-        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
-        test_hash = "count_test_hash_unit"
-
-        try:
-            initial_count = store.count()
-
-            tool_source = StoredToolSource(
-                hash=test_hash,
-                tool_source_class="XmlToolSource",
-                raw_source='<tool id="count_test"><command>echo</command></tool>',
-                tool_id="count_test",
-                tool_version="1.0",
-            )
-            store.store(tool_source)
-            app.model.context.commit()
-
-            assert store.count() == initial_count + 1
-
-            store.delete(test_hash)
-            app.model.context.commit()
-            assert store.count() == initial_count
-        finally:
-            if store.exists(test_hash):
-                store.delete(test_hash)
-                app.model.context.commit()
-
-
-class TestDatabaseBackendPathRows:
-    """One row per source path — identical content must not swallow paths."""
-
-    def _stored(self, hash, path, raw='<tool id="upload1" version="1.1.7"/>'):
-        return StoredToolSource(
-            hash=hash,
-            tool_source_class="XmlToolSource",
-            raw_source=raw,
-            tool_id="upload1",
-            tool_version="1.1.7",
-            source_path=path,
-        )
-
-    def test_identical_content_keeps_row_per_source_path(self):
-        app = MockApp()
-        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
-        twin_hash = "twin_hash_per_path"
-        store.store(self._stored(twin_hash, "/galaxy/tools/data_source/upload.xml"))
-        store.store(self._stored(twin_hash, "/galaxy/test/functional/tools/upload.xml"))
-        app.model.context.commit()
-
-        first = store.get_by_source_path("/galaxy/tools/data_source/upload.xml")
-        second = store.get_by_source_path("/galaxy/test/functional/tools/upload.xml")
-        assert first is not None and first.hash == twin_hash
-        assert second is not None and second.hash == twin_hash
-
-        assert store.delete(twin_hash)
-        app.model.context.commit()
-        assert store.get_by_source_path("/galaxy/tools/data_source/upload.xml") is None
-        assert store.get_by_source_path("/galaxy/test/functional/tools/upload.xml") is None
-
-    def test_changed_content_updates_path_row_in_place(self):
-        app = MockApp()
-        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
-        path = "/galaxy/tools/edited.xml"
-        store.store(self._stored("edited_hash_v1", path, raw="<tool/>"))
-        app.model.context.commit()
-        store.store(self._stored("edited_hash_v2", path, raw="<tool><description/></tool>"))
-        app.model.context.commit()
-
-        row = store.get_by_source_path(path)
-        assert row is not None
-        assert row.hash == "edited_hash_v2"
-        assert not store.exists("edited_hash_v1")
-        store.delete("edited_hash_v2")
-        app.model.context.commit()
-
-    def test_remove_index_entry_persists_removal(self):
-        app = MockApp()
-        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
-        index = ToolIndex()
-        entry = ToolIndexEntry(id="removable", version="1.0", name="Removable", panel_section_id="sec1")
-        index.add_entry(entry)
-        index.by_section["sec1"] = ["removable"]
-        store.store_index(index)
-        app.model.context.commit()
-
-        store.remove_index_entry("removable")
-        app.model.context.commit()
-        store.invalidate_index_cache()
-
-        reloaded = store.load_index()
-        assert reloaded is not None
-        assert reloaded.get("removable") is None
-        assert "removable" not in reloaded.by_section.get("sec1", [])
-
-    def test_update_index_entry_reaches_versioned_lookups(self):
-        app = MockApp()
-        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
-        index = ToolIndex()
-        index.add_entry(ToolIndexEntry(id="dm_tool", version="1.0", name="DM"))
-        store.store_index(index)
-        app.model.context.commit()
-
-        store.update_index_entry(ToolIndexEntry(id="dm_tool", version="1.0", name="DM", description="updated"))
-        app.model.context.commit()
-        store.invalidate_index_cache()
-
-        reloaded = store.load_index()
-        assert reloaded is not None
-        versioned = reloaded.get("dm_tool", "1.0")
-        assert versioned is not None
-        assert versioned.description == "updated"
-
-    def test_pathless_sources_dedupe_on_hash(self):
-        app = MockApp()
-        store = DatabaseToolSourceStore(app.model.context)  # type: ignore[arg-type]
-        store.store(self._stored("pathless_hash", None))
-        store.store(self._stored("pathless_hash", None))
-        app.model.context.commit()
-        assert store.exists("pathless_hash")
-        assert store.delete("pathless_hash")
-        app.model.context.commit()
-        assert not store.exists("pathless_hash")
 
 
 class TestSqlAlchemyBackend:
@@ -284,6 +67,89 @@ class TestSqlAlchemyBackend:
         assert store.delete("twin_hash")
         assert store.get_by_source_path("/galaxy/tools/a/upload.xml") is None
 
+    def test_count_tracks_store_and_delete(self, tmp_path):
+        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "count.sqlite"))
+        assert store.count() == 0
+        store.store(
+            StoredToolSource(
+                hash="count_hash",
+                tool_source_class="XmlToolSource",
+                raw_source="<tool/>",
+                tool_id="count_test",
+                tool_version="1.0",
+            )
+        )
+        assert store.count() == 1
+        assert store.delete("count_hash")
+        assert store.count() == 0
+
+    def test_changed_content_updates_path_row_in_place(self, tmp_path):
+        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "edited.sqlite"))
+        path = "/galaxy/tools/edited.xml"
+
+        def _stored(hash, raw):
+            return StoredToolSource(
+                hash=hash,
+                tool_source_class="XmlToolSource",
+                raw_source=raw,
+                tool_id="upload1",
+                tool_version="1.1.7",
+                source_path=path,
+            )
+
+        store.store(_stored("edited_hash_v1", "<tool/>"))
+        store.store(_stored("edited_hash_v2", "<tool><description/></tool>"))
+        row = store.get_by_source_path(path)
+        assert row is not None
+        assert row.hash == "edited_hash_v2"
+        assert not store.exists("edited_hash_v1")
+
+    def test_pathless_sources_dedupe_on_hash(self, tmp_path):
+        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "pathless.sqlite"))
+        for _ in range(2):
+            store.store(
+                StoredToolSource(
+                    hash="pathless_hash",
+                    tool_source_class="XmlToolSource",
+                    raw_source="<tool/>",
+                    tool_id="upload1",
+                    tool_version="1.1.7",
+                )
+            )
+        assert store.count() == 1
+        assert store.delete("pathless_hash")
+        assert not store.exists("pathless_hash")
+
+    def test_remove_index_entry_persists_removal(self, tmp_path):
+        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "ridx.sqlite"))
+        index = ToolIndex()
+        index.add_entry(ToolIndexEntry(id="removable", version="1.0", name="Removable", panel_section_id="sec1"))
+        index.by_section["sec1"] = ["removable"]
+        store.store_index(index)
+
+        store.remove_index_entry("removable")
+        store.invalidate_index_cache()
+
+        reloaded = store.load_index()
+        assert reloaded is not None
+        assert reloaded.get("removable") is None
+        assert "removable" not in reloaded.by_section.get("sec1", [])
+
+    def test_update_index_entry_reaches_versioned_lookups(self, tmp_path):
+        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "uidx.sqlite"))
+        index = ToolIndex()
+        index.add_entry(ToolIndexEntry(id="dm_tool", version="1.0", name="DM"))
+        store.store_index(index)
+
+        store.update_index_entry(ToolIndexEntry(id="dm_tool", version="1.0", name="DM", description="updated"))
+        store.invalidate_index_cache()
+
+        reloaded = store.load_index()
+        assert reloaded is not None
+        versioned = reloaded.get("dm_tool", "1.0")
+        assert versioned is not None
+        assert versioned.description == "updated"
+
     def test_sqlalchemy_store_persistence(self, tmp_path):
         path = str(tmp_path / "ts.sqlite")
         store1 = SqlAlchemyToolSourceStore(path=path)
@@ -306,10 +172,16 @@ class TestSqlAlchemyBackend:
 class TestBuildToolSourceStore:
     """Tests for the store factory function."""
 
-    def test_build_database_store(self):
-        app = MockApp()
-        store = build_tool_source_store(app.config, app.model.context)  # type: ignore[arg-type]
-        assert isinstance(store, DatabaseToolSourceStore)
+    def test_build_default_sqlite_store(self, tmp_path):
+        config = FakeConfig(
+            tool_source_store="sqlite",
+            tool_source_disk_path=str(tmp_path / "default.sqlite"),
+            tool_configs=[],
+            tool_source_stores=None,
+            use_lazy_toolbox=False,
+        )
+        store = build_tool_source_store(config)  # type: ignore[arg-type]
+        assert isinstance(store, SqlAlchemyToolSourceStore)
 
     def test_build_sqlalchemy_store(self, tmp_path):
         config = FakeConfig(
@@ -317,8 +189,9 @@ class TestBuildToolSourceStore:
             tool_source_disk_path=str(tmp_path / "ts.sqlite"),
             tool_configs=[],
             tool_source_stores=None,
+            use_lazy_toolbox=False,
         )
-        store = build_tool_source_store(config, None)  # type: ignore[arg-type]
+        store = build_tool_source_store(config)  # type: ignore[arg-type]
         assert isinstance(store, SqlAlchemyToolSourceStore)
 
     def test_build_sqlalchemy_store_missing_path_raises(self):
@@ -327,9 +200,10 @@ class TestBuildToolSourceStore:
             tool_source_disk_path=None,
             tool_configs=[],
             tool_source_stores=None,
+            use_lazy_toolbox=False,
         )
         with pytest.raises(ConfigurationError):
-            build_tool_source_store(config, None)  # type: ignore[arg-type]
+            build_tool_source_store(config)  # type: ignore[arg-type]
 
     def test_build_unknown_backend_raises(self):
         config = FakeConfig(
@@ -337,9 +211,10 @@ class TestBuildToolSourceStore:
             tool_source_disk_path=None,
             tool_configs=[],
             tool_source_stores=None,
+            use_lazy_toolbox=False,
         )
         with pytest.raises(ConfigurationError):
-            build_tool_source_store(config, None)  # type: ignore[arg-type]
+            build_tool_source_store(config)  # type: ignore[arg-type]
 
 
 class TestPerConfStoreRouting:
@@ -359,7 +234,7 @@ class TestPerConfStoreRouting:
         conf = tmp_path / "extra_tool_conf.xml"
         conf.write_text('<?xml version="1.0"?>\n<toolbox/>\n')
         config = self._config(tmp_path, tool_configs=[str(conf)])
-        store = build_tool_source_store(config, None)
+        store = build_tool_source_store(config)
         from galaxy.tools.source_store.composite import CompositeToolSourceStore
 
         assert isinstance(store, SqlAlchemyToolSourceStore)
@@ -370,7 +245,7 @@ class TestPerConfStoreRouting:
         conf.write_text('<?xml version="1.0"?>\n<toolbox store="missing_alias"/>\n')
         config = self._config(tmp_path, tool_configs=[str(conf)])
         with pytest.raises(ConfigurationError):
-            build_tool_source_store(config, None)
+            build_tool_source_store(config)
 
 
 class TestToolIndex:

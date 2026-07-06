@@ -324,18 +324,18 @@ mapping:
 
       tool_source_store:
         type: str
-        default: database
+        default: sqlite
         required: false
         desc: |
-          Backend for storing pre-parsed tool sources. Options are 'database'
-          or 'sqlalchemy'.
+          Backend for storing pre-parsed tool sources. The store is a
+          rebuildable cache that lives outside Galaxy's database — it is
+          only initialized when ``use_lazy_toolbox`` is enabled.
 
-          - 'database': Stores tool sources in the Galaxy database. The default;
-            no additional setup required.
-
-          - 'sqlalchemy': Stores tool sources in a separate SQLAlchemy-managed
-            database (typically a SQLite file). Useful for shipping read-only
-            tool source bundles via per-conf ``tool_source_stores`` entries.
+          The 'sqlite' (alias 'sqlalchemy') backend keeps the store in a
+          standalone database at ``tool_source_disk_path``. Multi-host
+          deployments should point every process at a shared store — either
+          a ``tool_source_disk_path`` on a shared filesystem or a named
+          store with a full SQLAlchemy ``url`` via ``tool_source_stores``.
 
           To populate the store, run: python scripts/tool_source/populate_store.py
 
@@ -360,8 +360,8 @@ mapping:
           (``tool_source_store``) backend at runtime, with reads tried in
           declared order and writes always landing on the default.
 
-          Each entry takes a ``backend`` (``database`` or ``sqlalchemy``)
-          plus the backend-specific settings, and an optional
+          Each entry takes a ``backend`` (``sqlalchemy``, alias
+          ``sqlite``) plus the backend-specific settings, and an optional
           ``read_only: true`` flag (typically used for CVMFS-shipped sqlite
           bundles).
 

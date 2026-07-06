@@ -2,8 +2,8 @@
 Tool Source Store - Pluggable storage backends for Galaxy tool sources.
 
 This package provides a configurable, pluggable tool source storage system
-that enables storing and retrieving tool sources from multiple backends
-(currently ``database`` and ``sqlalchemy``).
+that enables storing and retrieving tool sources from a standalone
+SQLAlchemy-backed store (currently ``sqlalchemy``, alias ``sqlite``).
 """
 
 from .factory import (

@@ -248,12 +248,19 @@ class TestToolFileWatcher:
         finally:
             os.unlink(temp_path)
 
-    def test_process_tool_file_stores_valid_tool(self):
-        """Valid tool XML should be stored with correct metadata."""
-        store = FakeToolSourceStore()
+    def test_process_tool_file_populates_changed_tool(self, monkeypatch):
+        import galaxy.tools.source_store.populator as populator_module
+
+        calls = []
+
+        def fake_populate(config, **kwargs):
+            calls.append(kwargs)
+            return {}
+
+        monkeypatch.setattr(populator_module, "populate_store_inline", fake_populate)
         watcher = ToolFileWatcher(
             config=FakeConfig(),
-            store=store,
+            store=FakeToolSourceStore(),
             tools_dirs=[],
         )
 
@@ -267,16 +274,9 @@ class TestToolFileWatcher:
 
         try:
             result = watcher._process_tool_file(temp_path)
-
             assert result is True
-            assert store.count == 1
-
-            # Verify stored object has correct attributes
-            stored = store.store_calls[0]
-            assert stored.tool_id == "test_tool"
-            assert stored.tool_version == "1.0"
-            assert stored.raw_source == tool_content
-            assert stored.tool_dir == str(Path(temp_path).parent)
+            assert len(calls) == 1
+            assert calls[0]["paths"] == [temp_path]
         finally:
             os.unlink(temp_path)
 
@@ -313,61 +313,6 @@ class TestToolFileWatcher:
         finally:
             os.unlink(temp_path)
 
-    def test_process_tool_file_extracts_id_and_version_from_xml(self):
-        """Tool ID and version should be extracted from XML attributes."""
-        store = FakeToolSourceStore()
-        watcher = ToolFileWatcher(
-            config=FakeConfig(),
-            store=store,
-            tools_dirs=[],
-        )
-
-        # Different attribute order and extra attributes
-        tool_content = """<tool version="2.5.1" name="My Tool" id="my_tool_id">
-            <command>echo test</command>
-        </tool>"""
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
-            f.write(tool_content)
-            temp_path = f.name
-
-        try:
-            watcher._process_tool_file(temp_path)
-
-            stored = store.store_calls[0]
-            assert stored.tool_id == "my_tool_id"
-            assert stored.tool_version == "2.5.1"
-        finally:
-            os.unlink(temp_path)
-
-    def test_process_tool_file_handles_missing_attributes(self):
-        """Tool without id or version attributes should still be stored."""
-        store = FakeToolSourceStore()
-        watcher = ToolFileWatcher(
-            config=FakeConfig(),
-            store=store,
-            tools_dirs=[],
-        )
-
-        # Minimal tool with no id or version
-        tool_content = """<tool name="Minimal">
-            <command>echo</command>
-        </tool>"""
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
-            f.write(tool_content)
-            temp_path = f.name
-
-        try:
-            result = watcher._process_tool_file(temp_path)
-
-            assert result is True
-            stored = store.store_calls[0]
-            assert stored.tool_id is None
-            assert stored.tool_version is None
-        finally:
-            os.unlink(temp_path)
-
     def test_shutdown_sets_event(self):
         """Shutdown should signal the shutdown event."""
         watcher = ToolFileWatcher(
@@ -384,12 +329,14 @@ class TestToolFileWatcher:
 
         assert watcher._shutdown_event.is_set()
 
-    def test_process_pending_changes_clears_queue(self):
+    def test_process_pending_changes_clears_queue(self, monkeypatch):
         """Processing should clear the pending changes set."""
-        store = FakeToolSourceStore()
+        import galaxy.tools.source_store.populator as populator_module
+
+        monkeypatch.setattr(populator_module, "populate_store_inline", lambda config, **kwargs: {})
         watcher = ToolFileWatcher(
             config=FakeConfig(),
-            store=store,
+            store=FakeToolSourceStore(),
             tools_dirs=[],
             notify_callable=lambda c: True,
         )
@@ -407,17 +354,18 @@ class TestToolFileWatcher:
             watcher._process_pending_changes()
 
             assert len(watcher._pending_changes) == 0
-            assert store.count == 1
         finally:
             os.unlink(temp_path)
 
-    def test_process_pending_changes_sends_notification_on_updates(self):
-        """Notification should be sent when tools are updated."""
-        store = FakeToolSourceStore()
+    def test_process_pending_changes_sends_notification_on_updates(self, monkeypatch):
+        """One batched notification should be sent when tools are updated."""
+        import galaxy.tools.source_store.populator as populator_module
+
+        monkeypatch.setattr(populator_module, "populate_store_inline", lambda config, **kwargs: {})
         notification_sent: list = []
         watcher = ToolFileWatcher(
             config=FakeConfig(),
-            store=store,
+            store=FakeToolSourceStore(),
             tools_dirs=[],
             notify_callable=_recording_notify(notification_sent),
         )
@@ -434,8 +382,6 @@ class TestToolFileWatcher:
             watcher._pending_changes.add(temp_path)
             watcher._process_pending_changes()
 
-            # State assertions: tool was stored AND notification fired exactly once.
-            assert store.count == 1
             assert len(notification_sent) == 1
         finally:
             os.unlink(temp_path)

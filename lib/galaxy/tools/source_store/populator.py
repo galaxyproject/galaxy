@@ -37,19 +37,12 @@ from datetime import (
     timezone,
 )
 from pathlib import Path
-from typing import (
-    Any,
-    cast,
-)
+from typing import Any
 
 from kombu import Connection
 from kombu.pools import producers
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.datatypes.registry import Registry
-from galaxy.model import set_datatypes_registry
-from galaxy.model.mapping import init_models_from_config
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.queues import galaxy_exchange
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.parser.util import parse_tool_version_with_defaults
@@ -142,15 +135,9 @@ class ToolFileWatcher:
         use_polling: bool = False,
         verbose: bool = False,
         notify_callable: Callable[[Any], bool] | None = None,
-        sa_session: Any = None,
     ):
         self.config = config
         self.store = store
-        # ``sa_session`` is required when the watcher should update the index
-        # alongside the store on each file change; passing ``None`` keeps the
-        # watcher store-only (used by older callers / tests that mock the
-        # session out).
-        self.sa_session = sa_session
         self.tools_dirs = tools_dirs
         self.debounce_seconds = debounce_seconds
         self.use_polling = use_polling
@@ -273,25 +260,9 @@ class ToolFileWatcher:
                 log.debug(f"Tool unchanged: {path}")
             return False
 
-        if self.sa_session is None:
-            # Legacy/no-session caller: degrade to store-only update so the
-            # watcher still keeps StoredToolSource current. The next full
-            # populator run picks up the index entry.
-            stored = StoredToolSource(
-                hash=content_hash,
-                tool_source_class="XmlToolSource",
-                raw_source=raw_content,
-                tool_id=root.get("id"),
-                tool_version=root.get("version"),
-                tool_dir=str(Path(path).parent),
-                source_path=str(path),
-                stored_at=datetime.now(timezone.utc),
-            )
-            self.store.store(stored)
-            log.info("Updated stored source for %s (index left stale)", path)
-            return True
-
-        populate_for_paths(self.config, self.sa_session, [path], rebuild_whoosh=True)
+        # No per-file broadcast: ``_process_pending_changes`` sends one
+        # debounced notification for the whole batch of changes.
+        populate_store_inline(self.config, paths=[path], rebuild_whoosh=True)
         log.info("Updated tool: %s", path)
         return True
 
@@ -473,11 +444,11 @@ def build_index_entry_from_source(
         return None
 
 
-def _build_stores(config, sa_session) -> dict[str, Any]:
+def _build_stores(config) -> dict[str, Any]:
     """Build {store_name: store_instance} for the default + every named store
     referenced from any tool_conf."""
     stores: dict[str, ToolSourceStore] = {
-        DEFAULT_STORE_NAME: _build_default_store(config, sa_session),
+        DEFAULT_STORE_NAME: _build_default_store(config),
     }
 
     catalog = config.tool_source_stores or {}
@@ -495,7 +466,7 @@ def _build_stores(config, sa_session) -> dict[str, Any]:
     for name in referenced:
         if name not in catalog:
             raise RuntimeError(f"tool_conf references store {name!r} but no such entry in tool_source_stores")
-        stores[name] = build_named_store(sa_session, name, catalog[name])
+        stores[name] = build_named_store(name, catalog[name])
 
     return stores
 
@@ -530,16 +501,10 @@ def populate_store(
     the index is rebuilt on every non-dry-run.
     """
     log.info("Loading Galaxy configuration...")
-    registry = Registry()
-    registry.load_datatypes()
-    set_datatypes_registry(registry)
     properties = load_app_properties(config_file=config_file, config_section="galaxy")
     config = GalaxyAppConfiguration(**properties)
-    log.info(f"Connecting to database: {config.database_connection[:50]}...")
-    model = init_models_from_config(config)
     return populate_store_inline(
         config,
-        model.context,
         pattern=pattern,
         parallel=parallel,
         dry_run=dry_run,
@@ -551,7 +516,6 @@ def populate_store(
 
 def populate_store_inline(
     config,
-    sa_session,
     *,
     paths: list[str] | None = None,
     pattern: str | None = None,
@@ -567,16 +531,12 @@ def populate_store_inline(
 ) -> dict[str, int]:
     """In-process populator entry.
 
-    Caller supplies an already-built ``GalaxyAppConfiguration`` and a
-    SQLAlchemy session, so in-process callers don't pay the config-load
-    cost a second time.
+    Caller supplies an already-built ``GalaxyAppConfiguration``, so
+    in-process callers don't pay the config-load cost a second time.
 
-    ``parallel`` defaults to ``1`` so the in-process callers don't share
-    ``sa_session`` across threads — ``DatabaseToolSourceStore.store()``
-    writes through that session, and SQLAlchemy ``Session`` is not thread-
-    safe. The CLI overrides via ``populate_store(config_file, parallel=...)``;
-    it operates on its own fresh ``model.context`` with no concurrent
-    readers and can safely fan out.
+    ``parallel`` defaults to ``1`` for the in-process callers (a boot or
+    install populates a handful of files); the CLI overrides via
+    ``populate_store(config_file, parallel=...)`` for full-tree scans.
 
     ``paths`` semantics:
 
@@ -595,7 +555,7 @@ def populate_store_inline(
     their cached index. Shed-install and ``reset_shed_tools`` set this.
     """
     log.info(f"Building tool source stores (default backend: {config.tool_source_store})...")
-    stores = _build_stores(config, sa_session)
+    stores = _build_stores(config)
     conf_to_store = _build_conf_to_store_map(config)
 
     if target is not None:
@@ -709,15 +669,6 @@ def populate_store_inline(
 
             if not dry_run:
                 target_store.store(stored)
-                # Commit per tool so each write is a short transaction.
-                # When the populator runs inside a Galaxy process (cold
-                # start, shed install) the shared SQLAlchemy session is
-                # under concurrent pressure from request handlers and the
-                # queue worker; holding 484 inserts in one open transaction
-                # is enough to push SQLite past its 5s busy timeout. The
-                # CLI path takes the same hit but on its own model.context
-                # with no concurrent readers, so the cost is invisible.
-                target_store.commit()
             return ("stored", d, store_name, stored, tool_source, None)
         except Exception as e:
             log.error(f"Error processing {path}: {e}")
@@ -776,7 +727,6 @@ def populate_store_inline(
                     index.add_entry(entry)
             try:
                 stores[store_name].store_index(index)
-                stores[store_name].commit()
                 log.info(
                     "Persisted ToolIndex for store %s (%d entries, mode=%s)",
                     store_name,
@@ -785,15 +735,6 @@ def populate_store_inline(
                 )
             except Exception as e:
                 log.warning("store_index for %s raised: %s", store_name, e)
-                # The flush failed — the session is now in PendingRollback
-                # state, which would surface to the very next caller as
-                # SQLAlchemyError. Clear it so the rest of the boot path
-                # (and the eventual test client) sees a clean session.
-                if sa_session is not None:
-                    try:
-                        sa_session.rollback()
-                    except Exception as rb_e:
-                        log.debug("session.rollback after store_index failure raised: %s", rb_e)
                 continue
             # Rebuild the whoosh search index from the persisted ToolIndex.
             # Single-writer principle: the toolbox stops re-building this in
@@ -812,7 +753,6 @@ def populate_store_inline(
 
 def populate_for_paths(
     config,
-    sa_session,
     paths: list[str],
     *,
     rebuild_whoosh: bool = True,
@@ -830,7 +770,6 @@ def populate_for_paths(
     """
     return populate_store_inline(
         config,
-        sa_session,
         paths=paths,
         rebuild_whoosh=rebuild_whoosh,
         broadcast=True,
@@ -840,7 +779,6 @@ def populate_for_paths(
 
 def reconcile_index(
     config,
-    sa_session,
     *,
     rebuild_whoosh: bool = True,
 ) -> dict[str, int]:
@@ -853,7 +791,6 @@ def reconcile_index(
     """
     return populate_store_inline(
         config,
-        sa_session,
         paths=None,
         prune=True,
         rebuild_whoosh=rebuild_whoosh,
@@ -877,24 +814,12 @@ def watch_mode(
         verbose: Enable verbose logging.
     """
     log.info("Loading Galaxy configuration...")
-
-    # Initialize datatypes registry (required for model)
-    registry = Registry()
-    registry.load_datatypes()
-    set_datatypes_registry(registry)
-
-    # Load app properties from config file, then create config object
     properties = load_app_properties(config_file=config_file, config_section="galaxy")
     config = GalaxyAppConfiguration(**properties)
 
-    log.info(f"Connecting to database: {config.database_connection[:50]}...")
-
-    # Initialize model from config
-    model = init_models_from_config(config)
-
     log.info(f"Building tool source store (backend: {config.tool_source_store})...")
 
-    store = build_tool_source_store(config, cast("galaxy_scoped_session", model.context))
+    store = build_tool_source_store(config)
 
     # Determine directories to watch from tool configurations
     tools_dirs_set: set[Path] = set()
@@ -914,7 +839,6 @@ def watch_mode(
     watcher = ToolFileWatcher(
         config=config,
         store=store,
-        sa_session=model.context,
         tools_dirs=tools_dirs,
         debounce_seconds=debounce,
         use_polling=use_polling,

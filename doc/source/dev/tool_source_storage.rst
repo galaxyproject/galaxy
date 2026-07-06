@@ -31,7 +31,6 @@ Module Layout
 
     lib/galaxy/tools/source_store/
       __init__.py        ToolSourceStore ABC, StoredToolSource, build_tool_source_store()
-      database.py        DatabaseToolSourceStore (uses tool_source_record + tool_index tables)
       sqlalchemy.py      SqlAlchemyToolSourceStore (any SA URL; sqlite shortcut)
       composite.py       CompositeToolSourceStore (per-conf routing, merged index)
       index.py           ToolIndex, ToolIndexEntry (the lightweight metadata)
@@ -49,19 +48,19 @@ Two persistence concepts:
 
 **StoredToolSource** — the canonical macro-expanded XML/YAML for a tool,
 keyed by SHA-256 of the expanded content. Multiple versions of the same
-``tool_id`` coexist as separate hashes. The database backend persists these in
-the store-owned ``tool_source_record`` table (the ``tool_source`` table belongs
-to the job-request path and has a different payload contract); the sqlalchemy
-backend uses the same schema in a standalone database.
+``tool_id`` coexist as separate hashes. The store keeps its own schema in a
+standalone database (a SQLite file by default, any SQLAlchemy URL for shared
+deployments) — deliberately outside Galaxy's database: the store is a
+rebuildable cache and does not participate in Galaxy's migrations or session
+lifecycle.
 
 **ToolIndex** — a single dataclass containing one ``ToolIndexEntry`` per tool,
 holding everything a store consumer needs (id, name, description, panel section,
 labels, EDAM, requirements, container info, test counts, hidden/disabled,
 shed metadata). The index is serialized and gzip-compressed as a blob.
 
-The database backend gets the ``tool_index`` and ``tool_source_record`` tables
-(migration ``f5a73c8b9d12``); ``tool_index`` holds a single row per index
-version. The sqlalchemy backend creates the same tables in its own database.
+The schema is auto-created on first open; ``tool_index`` holds a single
+row per index version.
 
 Backend Abstraction
 -------------------
@@ -73,9 +72,9 @@ Backend Abstraction
 - ``store_index/load_index/update_index_entry`` — index operations.
 - ``get_stats()`` — backend-specific stats (count, size, backend name).
 
-``build_tool_source_store(config, sa_session)`` is the only entry point used
+``build_tool_source_store(config)`` is the only entry point used
 by Galaxy. It inspects ``config.tool_source_store`` to pick the backend
-(currently ``database`` and ``sqlalchemy``/``sqlite``).
+(currently ``sqlalchemy``, alias ``sqlite``).
 ``ConfigurationError`` is raised for unknown backends or missing required
 settings; it is allowed to propagate up so misconfiguration fails fast at
 startup.
@@ -153,9 +152,9 @@ Population Script
 -----------------
 
 ``scripts/tool_source/populate_store.py`` is a thin CLI wrapper over
-``galaxy.tools.source_store.populator.main``. It builds a minimal app context
-(datatypes registry + SQLAlchemy model + config) and calls
-``build_tool_source_store`` with that context. Tools are parsed in a
+``galaxy.tools.source_store.populator.main``. It loads only the Galaxy
+config and calls ``build_tool_source_store(config)`` — the standalone store
+needs no datatypes registry or Galaxy model. Tools are parsed in a
 ``ThreadPoolExecutor`` (``--parallel``, default 4 workers); each tool is
 hashed and skipped if an entry with the same hash already exists
 (``--incremental``, the default). Once the JSON index is committed the

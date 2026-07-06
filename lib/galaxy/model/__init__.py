@@ -81,7 +81,6 @@ from sqlalchemy import (
     Integer,
     join,
     JSON,
-    LargeBinary,
     literal,
     MetaData,
     not_,
@@ -103,7 +102,6 @@ from sqlalchemy import (
     update,
     VARCHAR,
 )
-from sqlalchemy.dialects import mysql
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import (
@@ -1418,66 +1416,6 @@ class ToolSource(Base, Dictifiable, RepresentById):
     identity_hash: Mapped[str] = mapped_column(String(255))
 
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
-
-
-class ToolSourceRecord(Base, Dictifiable, RepresentById):
-    """
-    A tool source persisted by the tool source store.
-
-    Deliberately separate from :class:`ToolSource`, whose rows are created
-    per executed tool by the job-request path and whose ``source`` column
-    carries the raw source string contract that path deserializes. The
-    populator keeps one row per ``source_path``; ``hash`` fingerprints the
-    expanded content and is deliberately non-unique — distinct files can
-    expand to identical content (``tools/data_source/upload.xml`` and its
-    ``test/functional/tools`` copy) yet each path must stay resolvable.
-    The populator may prune rows freely without affecting job records.
-    """
-
-    __tablename__ = "tool_source_record"
-
-    dict_collection_visible_keys = ("id", "hash", "tool_id", "tool_version", "create_time", "update_time")
-    dict_element_visible_keys = ("id", "hash", "tool_id", "tool_version", "create_time", "update_time")
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    hash: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
-    source: Mapped[str] = mapped_column(Text().with_variant(mysql.LONGTEXT(), "mysql"), nullable=False)
-    source_class: Mapped[str] = mapped_column(TrimmedString(255))
-    tool_id: Mapped[str | None] = mapped_column(String(255), index=True)
-    tool_version: Mapped[str | None] = mapped_column(String(255))
-    tool_dir: Mapped[str | None] = mapped_column(Text, nullable=True)
-    source_path: Mapped[str | None] = mapped_column(Text, nullable=True)
-    stored_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    source_metadata: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
-    create_time: Mapped[datetime] = mapped_column(DateTime, default=now, nullable=False)
-    update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, nullable=False)
-
-
-class ToolIndexCache(Base, Dictifiable, RepresentById):
-    """
-    Stores pre-computed tool index for fast API responses.
-
-    The tool index contains lightweight metadata about all tools for
-    efficient batch endpoint access without loading full tool sources.
-
-    The ``data`` column holds a gzipped JSON serialization of the index;
-    on MySQL the variant promotion to LONGBLOB is required because a real
-    tool index easily exceeds the 64KB BLOB default. Concurrent writers
-    must serialize their updates externally — the unique constraint on
-    ``version`` is intentionally singleton-like (delete-then-insert).
-    """
-
-    __tablename__ = "tool_index"
-
-    dict_collection_visible_keys = ("id", "version", "built_at", "create_time", "update_time")
-    dict_element_visible_keys = ("id", "version", "built_at", "create_time", "update_time")
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    version: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
-    data: Mapped[bytes] = mapped_column(LargeBinary().with_variant(mysql.LONGBLOB(), "mysql"), nullable=False)
-    built_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    create_time: Mapped[datetime] = mapped_column(DateTime, default=now, nullable=False)
-    update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, nullable=False)
 
 
 class ToolRequest(Base, Dictifiable, RepresentById):

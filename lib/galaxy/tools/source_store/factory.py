@@ -1,14 +1,10 @@
 """Builders resolving Galaxy configuration into tool source stores."""
 
 import logging
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING
 
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from .composite import CompositeToolSourceStore
-from .database import DatabaseToolSourceStore
 from .interface import (
     ConfigurationError,
     ToolSourceStore,
@@ -17,22 +13,15 @@ from .sqlalchemy import SqlAlchemyToolSourceStore
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
-    from galaxy.model.scoped_session import galaxy_scoped_session
 
 log = logging.getLogger(__name__)
 
 
 def _build_default_store(
     config: "GalaxyAppConfiguration",
-    sa_session: Optional["galaxy_scoped_session"],
 ) -> ToolSourceStore:
     """Build the default store from top-level ``tool_source_*`` config."""
     backend = config.tool_source_store
-
-    if backend == "database":
-        if sa_session is None:
-            raise ConfigurationError("'database' backend requires a SQLAlchemy session")
-        return DatabaseToolSourceStore(sa_session)
 
     if backend in ("sqlalchemy", "sqlite"):
         path = config.tool_source_disk_path
@@ -44,15 +33,13 @@ def _build_default_store(
 
 
 def build_named_store(
-    sa_session: Optional["galaxy_scoped_session"],
     name: str,
     spec: dict,
 ) -> ToolSourceStore:
     """Build a single named store from a ``tool_source_stores`` entry.
 
     ``spec`` is the dict from galaxy.yml — a ``backend`` plus its options
-    plus an optional ``read_only`` flag. ``sa_session`` is only used for
-    the (unusual) ``database`` backend.
+    plus an optional ``read_only`` flag.
     """
     if not isinstance(spec, dict):
         raise ConfigurationError(f"tool_source_stores[{name!r}] must be a mapping")
@@ -65,15 +52,6 @@ def build_named_store(
         if not url and not path:
             raise ConfigurationError(f"tool_source_stores[{name!r}] requires a 'url' or 'path'")
         return SqlAlchemyToolSourceStore(url=url, path=path, read_only=read_only)
-
-    if backend == "database":
-        if sa_session is None:
-            raise ConfigurationError(
-                f"tool_source_stores[{name!r}] uses the 'database' backend which requires a SQLAlchemy session"
-            )
-        store = DatabaseToolSourceStore(sa_session)
-        store.read_only = read_only
-        return store
 
     raise ConfigurationError(f"tool_source_stores[{name!r}] has unknown backend {backend!r}")
 
@@ -97,7 +75,6 @@ def _collect_per_conf_store_names(config: "GalaxyAppConfiguration") -> set[str]:
 
 def build_tool_source_store(
     config: "GalaxyAppConfiguration",
-    sa_session: Optional["galaxy_scoped_session"],
 ) -> ToolSourceStore:
     """Build the active tool source store, composing per-conf overrides.
 
@@ -110,10 +87,8 @@ def build_tool_source_store(
 
     Args:
         config: The Galaxy application configuration.
-        sa_session: Galaxy's scoped SQLAlchemy session, used by the
-            ``database`` backend. Other backends ignore it.
     """
-    default_store = _build_default_store(config, sa_session)
+    default_store = _build_default_store(config)
 
     referenced = _collect_per_conf_store_names(config)
     if not referenced:
@@ -126,7 +101,7 @@ def build_tool_source_store(
             raise ConfigurationError(
                 f"tool_conf references store {name!r} but no such entry exists in tool_source_stores"
             )
-        members.append((name, build_named_store(sa_session, name, catalog[name])))
+        members.append((name, build_named_store(name, catalog[name])))
 
     # Default is consulted last so per-conf overrides shadow it on hash collisions.
     members.append(("__default__", default_store))
