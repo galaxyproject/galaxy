@@ -233,6 +233,14 @@ class ToolWhooshIndex:
         truncate uniform-score hits arbitrarily (a tag query fanning out to
         23 tools would silently lose the last 3 in doc-insertion order).
         """
+        return [tool_id for tool_id, _score in self.search_scored(query, limit=limit)]
+
+    def search_scored(self, query: str, limit: int | None = None) -> list[tuple[str, float]]:
+        """Like :meth:`search`, but pair each tool id with its BM25 score.
+
+        Callers merging hits across several store indexes need the scores
+        to interleave results instead of concatenating whole result lists.
+        """
         if not query or not query.strip():
             return []
         if not (os.path.isdir(self.index_dir) and index.exists_in(self.index_dir)):
@@ -255,4 +263,4 @@ class ToolWhooshIndex:
         parsed = parser.parse(query)
         with ix.searcher(weighting=BM25F()) as searcher:
             hits = searcher.search(parsed, limit=limit)
-            return [hit["id"] for hit in hits]
+            return [(hit["id"], hit.score) for hit in hits]
