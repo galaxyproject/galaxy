@@ -89,7 +89,7 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
 
         from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
-        SqlAlchemyToolSourceStore(path=cls._sqlite_path).count()
+        SqlAlchemyToolSourceStore(url=f"sqlite:///{cls._sqlite_path}").count()
 
         cls._conf_path = os.path.join(cls._tmpdir, "extra_tool_conf.xml")
         with open(cls._conf_path, "w") as f:
@@ -103,8 +103,7 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
             config["tool_config_file"] = list(existing_confs) + [cls._conf_path]
         config["tool_source_stores"] = {
             "cvmfs_main": {
-                "backend": "sqlalchemy",
-                "path": cls._sqlite_path,
+                "url": f"sqlite:///file:{cls._sqlite_path}?mode=ro&uri=true",
                 "read_only": True,
             }
         }
@@ -180,7 +179,9 @@ class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
 
         store = self._app.tool_source_store
         assert store is not None
-        foreign_store = SqlAlchemyToolSourceStore(path=self._app.config.tool_source_disk_path)
+        connection = self._app.config.tool_source_database_connection
+        assert connection is not None
+        foreign_store = SqlAlchemyToolSourceStore(url=connection)
         foreign_store.store_index(ToolIndex())
         store.invalidate_index_cache()
         # Drop one store row so the reload takes the inline-repopulate path.

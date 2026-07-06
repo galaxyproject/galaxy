@@ -28,24 +28,25 @@ Module Layout
 ::
 
     lib/galaxy/tools/source_store/
-      __init__.py        ToolSourceStore ABC, StoredToolSource, build_tool_source_store()
-      sqlalchemy.py      SqlAlchemyToolSourceStore (any SA URL; sqlite shortcut)
+      __init__.py        Facade re-exporting the interface + factory
+      interface.py       ToolSourceStore ABC, StoredToolSource, exceptions
+      factory.py         build_tool_source_store() / build_named_store()
+      sqlalchemy.py      SqlAlchemyToolSourceStore (any SQLAlchemy URL)
       composite.py       CompositeToolSourceStore (per-conf routing, merged index)
       index.py           ToolIndex, ToolIndexEntry (the lightweight metadata)
+      search.py          ToolWhooshIndex (Whoosh index built from a ToolIndex)
+      discover.py        discover_tools() — conf walk without booting a ToolBox
+      populator.py       Population + watch logic (parse, store, index, broadcast)
       models.py          Pydantic models for stored payloads
-      discover.py        Tool-file discovery (conf walk without a ToolBox)
-      populator.py       Store/index population (standalone + in-process)
-      search.py          Whoosh index writer + LazyToolboxSearch
       benchmarks.py      Store/index micro-benchmarks
 
     lib/galaxy/tools/lazy_toolbox.py     LazyToolBox (subclass of ToolBox), LazyTool
-    lib/galaxy/tool_util/toolbox/
-      base.py            (small hook to support lazy mode)
+    lib/galaxy/tools/search/__init__.py  LazyToolboxSearch (queries every store's index)
     lib/galaxy/tool_util/id_util.py      Cheap tool-ID extraction (regex, no XML parser)
 
-    lib/galaxy/webapps/galaxy/services/tools.py          Batch endpoints (lazy-aware)
+    lib/galaxy/webapps/galaxy/services/tools.py   Batch endpoints (lazy-aware)
 
-    scripts/tool_source/populate_store.py                CLI entry point for the populator
+    scripts/tool_source/populate_store.py         CLI entry point for the populator
 
 Data Model
 ----------
@@ -61,9 +62,10 @@ rebuildable cache and does not participate in Galaxy's migrations or session
 lifecycle.
 
 **ToolIndex** — a single dataclass containing one ``ToolIndexEntry`` per tool,
-holding everything the batch APIs need (id, name, description, panel section,
-labels, EDAM, requirements, container info, test counts, hidden/disabled,
-shed metadata). The index is serialized and gzip-compressed as a blob.
+holding everything the batch APIs and the lazy panel render need (id, name,
+description, panel section, labels, EDAM, xrefs, icon, requirements, container
+info, test counts, hidden/disabled, shed metadata, ``data_manager_id``). The
+index is serialized and gzip-compressed as a blob.
 
 The schema is auto-created on first open; ``tool_index`` holds a single
 row per index version.
@@ -71,7 +73,7 @@ row per index version.
 Backend Abstraction
 -------------------
 
-``ToolSourceStore`` (in ``tools/source_store/__init__.py``) is an ABC defining:
+``ToolSourceStore`` (in ``tools/source_store/interface.py``) is an ABC defining:
 
 - ``store/get/exists/delete/list_all/get_by_tool_id/count`` — per-tool source
   operations, all keyed by content hash.
@@ -79,13 +81,12 @@ Backend Abstraction
 - ``get_stats()`` — backend-specific stats (count, size, backend name).
 
 ``build_tool_source_store(config)`` is the only entry point used
-by Galaxy. It inspects ``config.tool_source_store`` to pick the backend
-(currently ``sqlalchemy``, alias ``sqlite``). The store is only built
-when ``use_lazy_toolbox`` is enabled — default deployments never
-initialize it.
-``ConfigurationError`` is raised for unknown backends or missing required
-settings; it is allowed to propagate up so misconfiguration fails fast at
-startup.
+by Galaxy. It builds the default store from
+``config.tool_source_database_connection`` and uses the same SQLAlchemy-backed
+store implementation for all configured URIs. The store is only built when
+``use_lazy_toolbox`` is enabled — default deployments never initialize it.
+``ConfigurationError`` is raised for missing required settings and is allowed
+to propagate up so misconfiguration fails fast at startup.
 
 The ABC defines a ``read_only: bool`` class attribute (default ``False``).
 ``ReadOnlyStoreError`` is raised by mutating methods of stores that opted
@@ -124,11 +125,12 @@ case.
 The ``sqlalchemy`` backend (``sqlalchemy.py``) was added to make this
 useful for CVMFS: a single self-contained ``.sqlite`` file, opened with
 its own SQLAlchemy ``MetaData`` (independent of ``galaxy.model``) so the
-file is portable, and openable with ``mode=ro&uri=true`` for read-only
-mounts. Despite the name, the backend is not sqlite-specific — pass any
-SQLAlchemy ``url`` (Postgres, MySQL, …) instead of ``path``. Auto schema
-creation runs on first open; on remote backends operators may prefer to
-manage migrations explicitly.
+file is portable, and openable with a SQLite URI such as
+``sqlite:///file:/cvmfs/example.org/tools/sources.sqlite?mode=ro&uri=true``
+for read-only mounts. Despite the name, the backend is not sqlite-specific -
+pass any SQLAlchemy URL (Postgres, MySQL, ...). Auto schema creation runs on
+first open; on remote backends operators may prefer to manage migrations
+explicitly.
 
 Per-conf populator routing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -178,28 +180,37 @@ panel-structure discovery, where we just need the ID to map a file entry
 back to an index entry.
 
 Discovery
-^^^^^^^^^
+---------
 
 ``galaxy.tools.source_store.discover.discover_tools`` walks tool config files
-and yields ``DiscoveredTool`` records. It is used by:
+and yields ``DiscoveredTool`` records without booting a full ``ToolBox``. It is
+used by:
 
-- ``populate_store.py`` to find tools to parse and store.
-- ``populate_store.py --watch`` to know which directories to monitor.
-- (Indirectly) the LazyToolBox panel-structure code path.
+- the populator to find tools to parse and store.
+- watch mode to know which directories to monitor.
+- callers that compare on-disk confs against the indexed tool set.
+- (indirectly) the LazyToolBox panel-structure code path.
 
-Pulling discovery out of ``ToolBox`` was deliberate: the population script
-must run *without* a full app (or even a running Galaxy), and the watch
-mode must run in a long-lived loop with no Galaxy process at all.
+It also walks ``data_manager_conf``/``shed_data_manager_conf`` and the
+datatype converters so data-manager and converter tools — loaded post-boot
+outside any tool_conf — still land in the index.
+
+Pulling discovery out of ``ToolBox`` was deliberate: the populator must run
+*without* a full app (or even a running Galaxy), and the watch mode must run in
+a long-lived loop with no Galaxy process at all.
 
 Population Script
 -----------------
 
-``scripts/tool_source/populate_store.py`` runs out of process. It builds a
-minimal app context (datatypes registry + SQLAlchemy model + config) and
-calls ``build_tool_source_store`` with that context. Tools are parsed in a
+``scripts/tool_source/populate_store.py`` is a thin CLI wrapper over
+``galaxy.tools.source_store.populator.main``. It loads only the Galaxy
+config and calls ``build_tool_source_store(config)`` — the standalone store
+needs no datatypes registry or Galaxy model. Tools are parsed in a
 ``ThreadPoolExecutor`` (``--parallel``, default 4 workers); each tool is
 hashed and skipped if an entry with the same hash already exists
-(``--incremental``, the default).
+(``--incremental``, the default). Once the JSON index is committed the
+populator rebuilds the Whoosh search index (``search.py``) so ranked tool
+search stays in sync with the stored sources.
 
 Watch mode (``--watch``) uses ``watchdog`` to monitor every directory yielded
 by ``discover_tools``. File events are debounced (default 2 s), the changed
@@ -231,9 +242,8 @@ materialising tools:
   and ``get_tool_to_dict`` serves ``LazyTool`` stubs from their index
   entries.
 - ``search_tools`` queries the ``app.toolbox_search`` singleton
-  (``LazyToolboxSearch`` over the populator-owned whoosh index in lazy
-  mode); hits are resolved against registered stubs via
-  ``LazyToolBox.resolve_search_hit`` with a per-hit access check.
+  (``LazyToolboxSearch`` in lazy mode); hits are resolved against registered
+  stubs via ``LazyToolBox.resolve_search_hit`` with a per-hit access check.
 - ``get_tests_summary`` and ``get_all_requirements`` answer from
   ``ToolIndex`` entries when the toolbox is lazy, and iterate the toolbox
   otherwise.
@@ -241,24 +251,29 @@ materialising tools:
 The integration suite pins this: ``_lazy_materialize_count`` (bumped in the
 single materialise chokepoint) must not move across any of these endpoints.
 
+``LazyToolboxSearch`` (``tools/search/__init__.py``) queries the whoosh index
+of *every* configured store — the default plus each named per-conf store —
+via ``ToolWhooshIndex.search_scored``, then merges the per-store hit lists by
+BM25 score. A tool served from a named store is therefore reachable through
+``/api/tools?q=`` even though its source lives outside the default store.
+
 App Wiring
 ----------
 
 ``galaxy.app.UniverseApplication.__init__`` calls
 ``_init_tool_source_store`` early and registers the result as a singleton
 under ``ToolSourceStore``. The toolbox is then chosen based on
-``_use_lazy_toolbox()`` (explicit config override, otherwise auto-detect).
-The store is exposed as ``app.tool_source_store`` and is ``Optional`` only
-to satisfy type checkers — in practice the build either succeeds or raises
-``ConfigurationError``.
+``use_lazy_toolbox``. The store is exposed as ``app.tool_source_store`` and is
+``Optional`` only to satisfy type checkers — in practice the build either
+succeeds or raises ``ConfigurationError``.
 
 Design Notes
 ------------
 
-**Why a separate index instead of always-querying-the-store?** Batch
-endpoints need O(N) access to N entries; doing that against the database on
-every request is a latency hit. Keeping the index in-process and only paying
-for invalidation on reload is the better tradeoff.
+**Why a separate index instead of always querying the store?** A consumer
+needs O(N) access to N entries; doing that against the backing store on every
+request is a latency hit. Keeping the index in-process and only paying for
+invalidation on reload is the better tradeoff.
 
 **Why an out-of-process populator?** Parsing tools and computing macro
 expansions is expensive and shouldn't block worker startup. Keeping the
@@ -278,11 +293,15 @@ effectively a no-op.
 Testing
 -------
 
-- Unit tests: ``test/unit/app/tools/source_store/test_stores.py`` exercises each
-  backend through the ``ToolSourceStore`` interface.
+- Store unit tests: ``test/unit/app/tools/source_store/`` exercises each backend
+  through the ``ToolSourceStore`` interface (``test_stores.py``,
+  ``test_sqlite_store.py``, ``test_composite_store.py``,
+  ``test_index_versions.py``, ``test_multi_store_search.py``).
+- Populator/discovery unit tests: ``test/unit/scripts/tool_source/``
+  (``test_populate_store.py``, ``test_discover.py``,
+  ``test_build_index_entry.py``, ``test_whoosh_dir.py``). These use fakes
+  (not mocks) of ``ToolSourceStore`` so behavior is verified against the real
+  interface.
 - Integration tests: ``test/integration/test_tool_source_storage.py`` spins
-  up Galaxy with each backend and verifies end-to-end behavior.
-- Populator tests: ``test/unit/scripts/tool_source/test_populate_store.py``
-  uses fakes (not mocks) of ``ToolSourceStore`` so behavior is verified
-  against the real interface.
+  up Galaxy against the store and verifies end-to-end behavior.
 - Benchmarks: ``python -m galaxy.tools.source_store.benchmarks --iterations 100``.

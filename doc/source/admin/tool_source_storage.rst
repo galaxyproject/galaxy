@@ -1,8 +1,9 @@
 Tool Source Storage
 ===================
 
-Galaxy can cache parsed tool sources to improve startup time and reduce memory usage
-when serving batch API endpoints. This is especially useful for large Galaxy installations
+Galaxy can pre-parse and store tool sources, plus a lightweight index, in a
+configurable backend, and load full ``Tool`` objects on demand through the
+``LazyToolBox``. This is especially useful for large Galaxy installations
 with thousands of tools.
 
 Overview
@@ -18,38 +19,37 @@ The tool source storage system addresses these issues by:
 
 1. Pre-parsing and storing tool sources in a configurable backend
 2. Maintaining a lightweight index in memory for fast API responses
-3. Loading full Tool objects on-demand with LRU caching
+3. Loading full ``Tool`` objects on demand with LRU caching
 
 Configuration
 -------------
 
 Tool source storage is configured in ``galaxy.yml``. The following options are available:
 
-Backend Selection
-^^^^^^^^^^^^^^^^^
+Default Store
+^^^^^^^^^^^^^
 
 .. code-block:: yaml
 
     galaxy:
-      # Backend for storing tool sources ('sqlite', alias 'sqlalchemy')
-      tool_source_store: sqlite
+      # SQLAlchemy URI for storing tool sources.
+      tool_source_database_connection: sqlite:////srv/galaxy/tool_sources.sqlite
 
-The store lives in a standalone database — a SQLite file under
-``tool_source_disk_path`` (default: ``<data_dir>/tool_sources``) — never in
-Galaxy's own database. It is a rebuildable cache: deleting it costs one
-populator run. Nothing is initialized unless ``use_lazy_toolbox`` is
-enabled.
+The store lives in a standalone database - a SQLite file under
+``<data_dir>/tool_sources.sqlite`` by default - separate from Galaxy's main
+database. It is a rebuildable cache: deleting it costs one populator run.
+This URI is used by tool source storage code paths, including the population
+script and lazy toolbox consumers. Runtime use also requires a populated store
+and a toolbox consumer configured to read from tool source storage.
 
 .. code-block:: yaml
 
     galaxy:
-      tool_source_store: sqlite
-      tool_source_disk_path: /path/to/tool_sources.sqlite
+      tool_source_database_connection: postgresql://galaxy@db.example.org/tool_sources
 
 Multi-host deployments must point every Galaxy process (web workers *and*
-job handlers) at the same store: either a ``tool_source_disk_path`` on a
-shared filesystem, or a named read-only store with a full SQLAlchemy
-``url`` layered via ``tool_source_stores`` (see below).
+job handlers) at the same store, such as a SQLite file on a shared filesystem
+or a shared database URI.
 
 Toolbox Selection
 ^^^^^^^^^^^^^^^^^
@@ -65,7 +65,7 @@ The LazyToolBox is opt-in: leave ``use_lazy_toolbox`` unset (or false) and
 Galaxy uses the traditional eager ToolBox even when the store is populated
 or when a tool_conf carries a ``store="..."`` attribute. Set
 ``use_lazy_toolbox: true`` to activate lazy loading and per-conf store
-routing.
+routing. The store is only initialized when the LazyToolBox is enabled.
 
 Per-conf Store Routing (CVMFS Recipe)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -76,23 +76,20 @@ read-only SQLite bundle on CVMFS alongside a tool_conf, so worker
 processes can resolve every tool in that conf with local-cached lookups
 instead of one network round-trip per JSON file.
 
-Declare the named stores under the new top-level ``tool_source_stores``
-key in ``galaxy.yml``. The ``sqlalchemy`` backend takes either a SQLAlchemy
-``url`` or a ``path`` shortcut that builds a SQLite URL. SQLite is the
-typical choice for CVMFS bundles (single self-contained file), but any
-SQLAlchemy-supported database works:
+Declare the named stores under the top-level ``tool_source_stores`` key in
+``galaxy.yml``. Each entry takes a SQLAlchemy ``url`` and optional
+``read_only`` flag. SQLite is the typical choice for CVMFS bundles (single
+self-contained file), but any SQLAlchemy-supported database works:
 
 .. code-block:: yaml
 
     galaxy:
-      tool_source_store: sqlite            # the writable default
+      tool_source_database_connection: sqlite:////srv/galaxy/tool_sources.sqlite
       tool_source_stores:
         cvmfs_main:
-          backend: sqlalchemy
-          path: /cvmfs/example.org/tools/sources.sqlite
+          url: sqlite:///file:/cvmfs/example.org/tools/sources.sqlite?mode=ro&uri=true
           read_only: true
         site_shared:
-          backend: sqlalchemy
           url: postgresql://galaxy_ro@db.example.org/tool_sources
           read_only: true
 
@@ -128,7 +125,9 @@ it, ``populate_store.py`` populates **every writable store** referenced
 from a tool_conf in the same run.
 
 Once the bundle is in place on CVMFS (or any read-only mount), restart
-Galaxy.
+Galaxy. The ``read_only: true`` flag prevents Galaxy from writing through that
+store. For SQLite connection-level read-only, use ``mode=ro&uri=true`` in the
+SQLite URI as shown above.
 
 Cache Configuration
 ^^^^^^^^^^^^^^^^^^^
@@ -282,10 +281,10 @@ High memory usage
 1. Reduce ``lazy_toolbox_cache_size`` to cache fewer Tool objects
 2. Ensure ``use_lazy_toolbox: true`` is set in ``galaxy.yml``
 
-Migration from Traditional Toolbox
-----------------------------------
+Populating an existing installation
+-----------------------------------
 
-To migrate an existing Galaxy installation to use tool source storage:
+To set up tool source storage on an existing Galaxy installation:
 
 1. Add the configuration to ``galaxy.yml``:
 
@@ -302,5 +301,6 @@ To migrate an existing Galaxy installation to use tool source storage:
 
 3. Restart Galaxy
 
-The traditional toolbox will continue to work as a fallback if the tool source
-store is not populated or if a specific tool is not found in the store.
+If the store is not populated, or a specific tool is not found in it, the
+LazyToolBox self-heals by populating the missing entries in-process, so the
+traditional toolbox behavior is preserved as a fallback.

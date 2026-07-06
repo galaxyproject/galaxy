@@ -1,4 +1,4 @@
-"""Shared fixtures for tool_source_store unit tests."""
+"""Shared fixtures for tool source store unit tests."""
 
 import pytest
 

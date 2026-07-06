@@ -7,7 +7,7 @@ a designated *default* store. Used to layer e.g. a CVMFS-resident
 read-only sqlite bundle on top of the local writable store.
 
 The composite is invisible to the rest of Galaxy: it implements the same
-:class:`ToolSourceStore` interface, and ``LazyToolBox`` / the populator
+:class:`ToolSourceStore` interface, and consumers / the populator
 keep working unchanged.
 """
 
@@ -17,13 +17,13 @@ from typing import (
     Any,
 )
 
-from . import (
-    StoredToolSource,
-    ToolSourceStore,
-)
 from .index import (
     ToolIndex,
     ToolIndexEntry,
+)
+from .interface import (
+    StoredToolSource,
+    ToolSourceStore,
 )
 
 log = logging.getLogger(__name__)
@@ -158,7 +158,7 @@ class CompositeToolSourceStore(ToolSourceStore):
             try:
                 idx = member.load_index()
             except Exception as e:
-                log.warning(f"Failed to load index from store {name!r}: {e}")
+                log.error(f"Failed to load index from store {name!r}: {e}")
                 continue
             if idx is None:
                 continue
@@ -196,7 +196,6 @@ class CompositeToolSourceStore(ToolSourceStore):
                 merged.built_at = idx.built_at
         if not any_loaded:
             return None
-        merged.version = merged.compute_version()
         return merged
 
     def invalidate_index_cache(self) -> None:
@@ -231,18 +230,10 @@ class CompositeToolSourceStore(ToolSourceStore):
                 verdict = None
         return verdict
 
-    def commit(self) -> None:
-        """Propagate commit() to every writable member store."""
-        for _name, member in self._members:
-            try:
-                member.commit()
-            except Exception as e:
-                log.warning(f"Composite store commit failed for member '{_name}': {e}")
-
     def close(self) -> None:
         """Propagate close() to every member store."""
         for _name, member in self._members:
             try:
                 member.close()
             except Exception as e:
-                log.warning(f"Composite store close failed for member '{_name}': {e}")
+                log.error(f"Composite store close failed for member '{_name}': {e}")

@@ -39,6 +39,8 @@ class GalaxyAppConfigurationAttributes:
     tool_path: str
     tool_source_database_connection: str | None
     tool_source_stores: Any
+    use_lazy_toolbox: bool
+    lazy_toolbox_cache_size: int
     tool_dependency_dir: str | None
     dependency_resolvers_config_file: str
     conda_prefix: str | None
