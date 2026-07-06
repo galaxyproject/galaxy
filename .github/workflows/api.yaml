@@ -57,7 +57,6 @@ jobs:
       - if: github.event_name == 'workflow_dispatch' && inputs.use_lazy_toolbox
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_USE_LAZY_TOOLBOX=true" >> $GITHUB_ENV
-          echo "GALAXY_CONFIG_OVERRIDE_TOOL_SOURCE_STORE=database" >> $GITHUB_ENV
           # Raise instead of silently materialising on any off-surface
           # LazyTool attribute read, so an accidental whole-toolbox
           # materialisation regression fails the lazy run loudly rather
