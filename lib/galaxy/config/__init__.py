@@ -850,6 +850,8 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         if not self.database_connection:  # Provide default if not supplied by user
             db_path = self._in_data_dir("universe.sqlite")
             self.database_connection = f"sqlite:///{db_path}?isolation_level=IMMEDIATE"
+        if not self.tool_source_database_connection:
+            self.tool_source_database_connection = f"sqlite:///{self._in_data_dir('tool_sources.sqlite')}"
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_encoding = kwargs.get("database_encoding")  # Create new databases with this encoding
         self.thread_local_log = None
@@ -1357,6 +1359,7 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
 
         try_parsing(self.database_connection, "database_connection")
         try_parsing(self.install_database_connection, "install_database_connection")
+        try_parsing(self.tool_source_database_connection, "tool_source_database_connection")
         if self.interactivetoolsproxy_map is not None:
             try_parsing(self.interactivetoolsproxy_map, "interactivetoolsproxy_map")
         try_parsing(self.amqp_internal_connection, "amqp_internal_connection")

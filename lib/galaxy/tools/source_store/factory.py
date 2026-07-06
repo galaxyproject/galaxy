@@ -20,16 +20,11 @@ log = logging.getLogger(__name__)
 def _build_default_store(
     config: "GalaxyAppConfiguration",
 ) -> ToolSourceStore:
-    """Build the default store from top-level ``tool_source_*`` config."""
-    backend = config.tool_source_store
-
-    if backend in ("sqlalchemy", "sqlite"):
-        path = config.tool_source_disk_path
-        if path:
-            return SqlAlchemyToolSourceStore(path=path, read_only=False)
-        raise ConfigurationError(f"{backend!r} backend requires tool_source_disk_path")
-
-    raise ConfigurationError(f"Unknown tool source store backend: {backend}")
+    """Build the default store from the top-level SQLAlchemy URI config."""
+    url = config.tool_source_database_connection
+    if not url:
+        raise ConfigurationError("tool_source_database_connection is required")
+    return SqlAlchemyToolSourceStore(url=url, read_only=False)
 
 
 def build_named_store(
@@ -38,22 +33,20 @@ def build_named_store(
 ) -> ToolSourceStore:
     """Build a single named store from a ``tool_source_stores`` entry.
 
-    ``spec`` is the dict from galaxy.yml — a ``backend`` plus its options
-    plus an optional ``read_only`` flag.
+    ``spec`` is the dict from galaxy.yml - a SQLAlchemy ``url`` plus an
+    optional ``read_only`` flag.
     """
     if not isinstance(spec, dict):
         raise ConfigurationError(f"tool_source_stores[{name!r}] must be a mapping")
-    backend = spec.get("backend")
+    if "backend" in spec or "path" in spec:
+        raise ConfigurationError(
+            f"tool_source_stores[{name!r}] must use 'url'; 'backend' and 'path' are no longer supported"
+        )
+    url = spec.get("url")
+    if not url:
+        raise ConfigurationError(f"tool_source_stores[{name!r}] requires a 'url'")
     read_only = bool(spec.get("read_only", False))
-
-    if backend in ("sqlalchemy", "sqlite"):
-        url = spec.get("url")
-        path = spec.get("path")
-        if not url and not path:
-            raise ConfigurationError(f"tool_source_stores[{name!r}] requires a 'url' or 'path'")
-        return SqlAlchemyToolSourceStore(url=url, path=path, read_only=read_only)
-
-    raise ConfigurationError(f"tool_source_stores[{name!r}] has unknown backend {backend!r}")
+    return SqlAlchemyToolSourceStore(url=url, read_only=read_only)
 
 
 def _collect_per_conf_store_names(config: "GalaxyAppConfiguration") -> set[str]:

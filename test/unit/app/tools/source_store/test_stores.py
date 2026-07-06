@@ -7,6 +7,7 @@ factory / per-conf routing on top of it.
 import pytest
 
 from galaxy.tools.source_store import (
+    build_named_store,
     build_tool_source_store,
     ConfigurationError,
     StoredToolSource,
@@ -26,11 +27,15 @@ class FakeConfig:
             setattr(self, key, value)
 
 
+def _sqlite_url(path):
+    return f"sqlite:///{path}"
+
+
 class TestSqlAlchemyBackend:
     """Tests for the sqlalchemy/sqlite backend."""
 
     def test_sqlalchemy_store_basic_operations(self, tmp_path):
-        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "ts.sqlite"))
+        store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "ts.sqlite"))
 
         tool_source = StoredToolSource(
             hash="sa_test_hash_123",
@@ -50,7 +55,7 @@ class TestSqlAlchemyBackend:
         assert not store.exists("sa_test_hash_123")
 
     def test_sqlalchemy_identical_content_keeps_row_per_source_path(self, tmp_path):
-        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "twins.sqlite"))
+        store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "twins.sqlite"))
         for path in ("/galaxy/tools/a/upload.xml", "/galaxy/tools/b/upload.xml"):
             store.store(
                 StoredToolSource(
@@ -68,7 +73,7 @@ class TestSqlAlchemyBackend:
         assert store.get_by_source_path("/galaxy/tools/a/upload.xml") is None
 
     def test_count_tracks_store_and_delete(self, tmp_path):
-        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "count.sqlite"))
+        store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "count.sqlite"))
         assert store.count() == 0
         store.store(
             StoredToolSource(
@@ -84,7 +89,7 @@ class TestSqlAlchemyBackend:
         assert store.count() == 0
 
     def test_changed_content_updates_path_row_in_place(self, tmp_path):
-        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "edited.sqlite"))
+        store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "edited.sqlite"))
         path = "/galaxy/tools/edited.xml"
 
         def _stored(hash, raw):
@@ -105,7 +110,7 @@ class TestSqlAlchemyBackend:
         assert not store.exists("edited_hash_v1")
 
     def test_pathless_sources_dedupe_on_hash(self, tmp_path):
-        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "pathless.sqlite"))
+        store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "pathless.sqlite"))
         for _ in range(2):
             store.store(
                 StoredToolSource(
@@ -121,7 +126,7 @@ class TestSqlAlchemyBackend:
         assert not store.exists("pathless_hash")
 
     def test_remove_index_entry_persists_removal(self, tmp_path):
-        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "ridx.sqlite"))
+        store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "ridx.sqlite"))
         index = ToolIndex()
         index.add_entry(ToolIndexEntry(id="removable", version="1.0", name="Removable", panel_section_id="sec1"))
         index.by_section["sec1"] = ["removable"]
@@ -136,7 +141,7 @@ class TestSqlAlchemyBackend:
         assert "removable" not in reloaded.by_section.get("sec1", [])
 
     def test_update_index_entry_reaches_versioned_lookups(self, tmp_path):
-        store = SqlAlchemyToolSourceStore(path=str(tmp_path / "uidx.sqlite"))
+        store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "uidx.sqlite"))
         index = ToolIndex()
         index.add_entry(ToolIndexEntry(id="dm_tool", version="1.0", name="DM"))
         store.store_index(index)
@@ -151,8 +156,8 @@ class TestSqlAlchemyBackend:
         assert versioned.description == "updated"
 
     def test_sqlalchemy_store_persistence(self, tmp_path):
-        path = str(tmp_path / "ts.sqlite")
-        store1 = SqlAlchemyToolSourceStore(path=path)
+        url = _sqlite_url(tmp_path / "ts.sqlite")
+        store1 = SqlAlchemyToolSourceStore(url=url)
         store1.store(
             StoredToolSource(
                 hash="persist_test_hash",
@@ -162,7 +167,7 @@ class TestSqlAlchemyBackend:
                 tool_version="1.0",
             )
         )
-        store2 = SqlAlchemyToolSourceStore(path=path)
+        store2 = SqlAlchemyToolSourceStore(url=url)
         assert store2.exists("persist_test_hash")
         retrieved = store2.get("persist_test_hash")
         assert retrieved is not None
@@ -174,8 +179,7 @@ class TestBuildToolSourceStore:
 
     def test_build_default_sqlite_store(self, tmp_path):
         config = FakeConfig(
-            tool_source_store="sqlite",
-            tool_source_disk_path=str(tmp_path / "default.sqlite"),
+            tool_source_database_connection=_sqlite_url(tmp_path / "default.sqlite"),
             tool_configs=[],
             tool_source_stores=None,
             use_lazy_toolbox=False,
@@ -183,10 +187,9 @@ class TestBuildToolSourceStore:
         store = build_tool_source_store(config)  # type: ignore[arg-type]
         assert isinstance(store, SqlAlchemyToolSourceStore)
 
-    def test_build_sqlalchemy_store(self, tmp_path):
+    def test_build_default_in_memory_sqlite_store(self):
         config = FakeConfig(
-            tool_source_store="sqlalchemy",
-            tool_source_disk_path=str(tmp_path / "ts.sqlite"),
+            tool_source_database_connection="sqlite:///:memory:",
             tool_configs=[],
             tool_source_stores=None,
             use_lazy_toolbox=False,
@@ -194,10 +197,9 @@ class TestBuildToolSourceStore:
         store = build_tool_source_store(config)  # type: ignore[arg-type]
         assert isinstance(store, SqlAlchemyToolSourceStore)
 
-    def test_build_sqlalchemy_store_missing_path_raises(self):
+    def test_build_store_missing_connection_raises(self):
         config = FakeConfig(
-            tool_source_store="sqlalchemy",
-            tool_source_disk_path=None,
+            tool_source_database_connection=None,
             tool_configs=[],
             tool_source_stores=None,
             use_lazy_toolbox=False,
@@ -205,16 +207,34 @@ class TestBuildToolSourceStore:
         with pytest.raises(ConfigurationError):
             build_tool_source_store(config)  # type: ignore[arg-type]
 
-    def test_build_unknown_backend_raises(self):
+    def test_build_non_sqlite_url_passes_through(self, monkeypatch):
+        from galaxy.tools.source_store import factory as factory_module
+
+        class CapturingStore:
+            read_only = False
+
+            def __init__(self, url, read_only):
+                self.url = url
+                self.read_only = read_only
+
+        monkeypatch.setattr(factory_module, "SqlAlchemyToolSourceStore", CapturingStore)
         config = FakeConfig(
-            tool_source_store="not-a-backend",
-            tool_source_disk_path=None,
+            tool_source_database_connection="postgresql://galaxy@example.org/tool_sources",
             tool_configs=[],
             tool_source_stores=None,
             use_lazy_toolbox=False,
         )
+        store = build_tool_source_store(config)  # type: ignore[arg-type]
+        assert store.url == "postgresql://galaxy@example.org/tool_sources"
+        assert store.read_only is False
+
+    def test_named_store_missing_url_raises(self):
         with pytest.raises(ConfigurationError):
-            build_tool_source_store(config)  # type: ignore[arg-type]
+            build_named_store("missing", {"read_only": True})
+
+    def test_named_store_old_backend_path_spec_raises(self, tmp_path):
+        with pytest.raises(ConfigurationError):
+            build_named_store("old", {"backend": "sqlalchemy", "path": str(tmp_path / "old.sqlite")})
 
 
 class TestPerConfStoreRouting:
@@ -222,8 +242,7 @@ class TestPerConfStoreRouting:
 
     def _config(self, tmp_path, **overrides):
         defaults = dict(
-            tool_source_store="sqlalchemy",
-            tool_source_disk_path=str(tmp_path / "ts.sqlite"),
+            tool_source_database_connection=_sqlite_url(tmp_path / "ts.sqlite"),
             tool_configs=[],
             tool_source_stores={},
         )

@@ -588,6 +588,32 @@ galaxy:
   # an attribute in the <toolbox> tag.
   #tool_path: tools
 
+  # SQLAlchemy connection string for storing pre-parsed tool sources.
+  # The store is a rebuildable cache that lives outside Galaxy's
+  # database. Defining this URI does not make Galaxy's eager toolbox
+  # startup use the store; it is opened by code paths that explicitly
+  # use tool source storage, such as the population script and lazy
+  # toolbox consumers.
+  # By default, Galaxy uses a SQLite database at
+  # ``<data_dir>/tool_sources.sqlite``. Multi-host deployments should
+  # point every process at the same SQLAlchemy URI, such as a SQLite
+  # file on a shared filesystem or a shared PostgreSQL database.
+  # Sample default ``sqlite:///<data_dir>/tool_sources.sqlite``.
+  # To populate the store, run: python
+  # scripts/tool_source/populate_store.py
+  #tool_source_database_connection: null
+
+  # Optional named tool source stores referenced from individual
+  # tool_conf files via a top-level ``store="<name>"`` attribute (XML)
+  # or ``store: <name>`` key (YAML). When any tool_conf opts in, the
+  # process composes its named store with the default
+  # (``tool_source_database_connection``) store at runtime, with reads
+  # tried in declared order and writes always landing on the default.
+  # Each entry takes a SQLAlchemy ``url`` and an optional ``read_only:
+  # true`` flag. For SQLite connection-level read-only, use a SQLite URI
+  # with ``mode=ro&uri=true``.
+  #tool_source_stores: null
+
   # Various dependency resolver configuration parameters will have
   # defaults set relative to this path, such as the default conda
   # prefix, default Galaxy packages path, legacy tool shed dependencies

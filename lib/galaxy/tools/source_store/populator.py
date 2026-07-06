@@ -554,7 +554,7 @@ def populate_store_inline(
     after every store write succeeds, so peer Galaxy processes refresh
     their cached index. Shed-install and ``reset_shed_tools`` set this.
     """
-    log.info(f"Building tool source stores (default backend: {config.tool_source_store})...")
+    log.info("Building tool source stores...")
     stores = _build_stores(config)
     conf_to_store = _build_conf_to_store_map(config)
 
@@ -817,7 +817,7 @@ def watch_mode(
     properties = load_app_properties(config_file=config_file, config_section="galaxy")
     config = GalaxyAppConfiguration(**properties)
 
-    log.info(f"Building tool source store (backend: {config.tool_source_store})...")
+    log.info("Building tool source store...")
 
     store = build_tool_source_store(config)
 

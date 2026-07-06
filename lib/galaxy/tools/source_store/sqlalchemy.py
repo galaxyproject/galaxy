@@ -5,9 +5,6 @@ A self-contained store that owns its own engine + metadata, decoupled
 from ``galaxy.model``. Works with any SQLAlchemy URL (sqlite, postgres,
 mysql, …); the SQLite single-file path is the typical use case
 (shippable on CVMFS) but nothing about the schema is sqlite-specific.
-
-For convenience the constructor accepts a ``path`` shortcut that builds
-a SQLite URL — set ``url`` directly to use any other backend.
 """
 
 import gzip
@@ -28,6 +25,7 @@ from sqlalchemy import (
     String,
     Text,
 )
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -92,55 +90,34 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
     openable without booting Galaxy.
 
     Args:
-        url: SQLAlchemy URL. Mutually exclusive with ``path``.
-        path: Convenience shortcut for SQLite — builds
-            ``sqlite:///{path}`` (or its read-only variant).
+        url: SQLAlchemy URL.
         read_only: If True, refuse all mutating operations with
-            :class:`ReadOnlyStoreError`. For SQLite, additionally opens
-            the file with ``mode=ro&uri=true`` (and requires the file to
-            exist). For other backends, read-only is enforced at the
-            Python level only — make sure the connection user lacks
-            write privileges if that matters.
-
-    Either ``url`` or ``path`` must be provided.
+            :class:`ReadOnlyStoreError`. This is enforced at the Python
+            level only - make sure the connection user lacks write
+            privileges if that matters. For SQLite connection-level
+            read-only, use a URI such as
+            ``sqlite:///file:/path/to/store.sqlite?mode=ro&uri=true``.
     """
 
     def __init__(
         self,
-        url: str | None = None,
-        path: str | None = None,
+        url: str,
         read_only: bool = False,
     ) -> None:
-        if (url is None) == (path is None):
-            raise ValueError("provide exactly one of url= or path=")
         self.url = url
-        self.path = path
         self.read_only = read_only
         self._cached_index: ToolIndex | None = None
 
-        if path is not None:
-            # SQLite shortcut — file-on-disk; honor the read-only flag at
-            # the connection level so accidental writes fail loudly.
-            if read_only:
-                if not os.path.exists(path):
-                    raise FileNotFoundError(f"Read-only sqlite tool source store not found: {path}")
-                resolved_url = f"sqlite:///file:{path}?mode=ro&uri=true"
-            else:
-                os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
-                resolved_url = f"sqlite:///{path}"
-        else:
-            assert url is not None
-            resolved_url = url
+        self._ensure_sqlite_parent_directory(url)
 
-        self._engine = create_engine(resolved_url, future=True)
-        self._is_sqlite_file = path is not None
+        self._engine = create_engine(url, future=True)
         if not read_only and not self._is_remote_engine():
             # Only auto-create schema on local/file backends. For shared
             # databases the operator should manage migrations explicitly
             # to avoid surprises.
             _metadata.create_all(self._engine)
         elif not read_only:
-            # Best-effort create_all on remote backends — harmless if
+            # Best-effort create_all on remote backends - harmless if
             # tables already exist.
             try:
                 _metadata.create_all(self._engine)
@@ -151,6 +128,17 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
     def _is_remote_engine(self) -> bool:
         return self._engine.url.drivername.split("+")[0] not in {"sqlite"}
 
+    def _ensure_sqlite_parent_directory(self, url: str) -> None:
+        parsed_url = make_url(url)
+        if parsed_url.drivername.split("+")[0] != "sqlite":
+            return
+        if str(parsed_url.query.get("uri", "")).lower() in {"true", "1", "yes"}:
+            return
+        database = parsed_url.database
+        if not database or database == ":memory:":
+            return
+        os.makedirs(os.path.dirname(os.path.abspath(database)) or ".", exist_ok=True)
+
     # --- helpers --------------------------------------------------------
 
     def _session(self) -> Session:
@@ -158,8 +146,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def _ensure_writable(self) -> None:
         if self.read_only:
-            target = self.path or self.url
-            raise ReadOnlyStoreError(f"tool source store at {target} is read-only")
+            raise ReadOnlyStoreError(f"tool source store at {self.url} is read-only")
 
     # --- ToolSourceStore: per-source ops --------------------------------
 
@@ -303,8 +290,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             self._cached_index = ToolIndex.from_dict(payload)
             return self._cached_index
         except Exception as e:
-            target = self.path or self.url
-            log.warning(f"Failed to decode tool index from store {target}: {e}")
+            log.warning(f"Failed to decode tool index from store {self.url}: {e}")
             return None
 
     def update_index_entry(self, entry: ToolIndexEntry) -> None:

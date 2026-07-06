@@ -31,7 +31,7 @@ Module Layout
 
     lib/galaxy/tools/source_store/
       __init__.py        ToolSourceStore ABC, StoredToolSource, build_tool_source_store()
-      sqlalchemy.py      SqlAlchemyToolSourceStore (any SA URL; sqlite shortcut)
+      sqlalchemy.py      SqlAlchemyToolSourceStore (any SQLAlchemy URL)
       composite.py       CompositeToolSourceStore (per-conf routing, merged index)
       index.py           ToolIndex, ToolIndexEntry (the lightweight metadata)
       search.py          ToolWhooshIndex (Whoosh search index built from a ToolIndex)
@@ -73,11 +73,11 @@ Backend Abstraction
 - ``get_stats()`` — backend-specific stats (count, size, backend name).
 
 ``build_tool_source_store(config)`` is the only entry point used
-by Galaxy. It inspects ``config.tool_source_store`` to pick the backend
-(currently ``sqlalchemy``, alias ``sqlite``).
-``ConfigurationError`` is raised for unknown backends or missing required
-settings; it is allowed to propagate up so misconfiguration fails fast at
-startup.
+by Galaxy. It builds the default store from
+``config.tool_source_database_connection`` and uses the same SQLAlchemy-backed
+store implementation for all configured URIs. ``ConfigurationError`` is raised
+for missing required settings and is allowed to propagate up so
+misconfiguration fails fast at startup.
 
 The ABC defines a ``read_only: bool`` class attribute (default ``False``).
 ``ReadOnlyStoreError`` is raised by mutating methods of stores that opted
@@ -115,11 +115,12 @@ case.
 The ``sqlalchemy`` backend (``sqlalchemy.py``) was added to make this
 useful for CVMFS: a single self-contained ``.sqlite`` file, opened with
 its own SQLAlchemy ``MetaData`` (independent of ``galaxy.model``) so the
-file is portable, and openable with ``mode=ro&uri=true`` for read-only
-mounts. Despite the name, the backend is not sqlite-specific — pass any
-SQLAlchemy ``url`` (Postgres, MySQL, …) instead of ``path``. Auto schema
-creation runs on first open; on remote backends operators may prefer to
-manage migrations explicitly.
+file is portable, and openable with a SQLite URI such as
+``sqlite:///file:/cvmfs/example.org/tools/sources.sqlite?mode=ro&uri=true``
+for read-only mounts. Despite the name, the backend is not sqlite-specific -
+pass any SQLAlchemy URL (Postgres, MySQL, ...). Auto schema creation runs on
+first open; on remote backends operators may prefer to manage migrations
+explicitly.
 
 Per-conf populator routing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
