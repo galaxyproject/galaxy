@@ -463,7 +463,11 @@ class WorkflowSummary(BaseWorkflowSummary):
 
 def step_inputs(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInputs, DataInputAssociations]:
     tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
-    assert tool is not None, f"Tool {job.tool_id} (version {job.tool_version}) not found"
+    if tool is None:
+        raise exceptions.ToolMissingException(
+            f"Cannot extract a workflow step for tool '{job.tool_id}' (version {job.tool_version}) because it is not installed on this Galaxy instance.",
+            tool_id=job.tool_id,
+        )
     param_values = tool.get_param_values(
         job, ignore_errors=True
     )  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
@@ -747,6 +751,8 @@ def extract_steps_by_ids(
         step.tool_id = job.tool_id
         step.tool_version = job.tool_version
         step.tool_inputs = tool_inputs
+        if job.dynamic_tool_id:
+            step.dynamic_tool_id = job.dynamic_tool_id
 
         mapped_inputs: dict[str, HistoryDatasetCollectionAssociation] = {}
         if output_hdcas:
@@ -808,8 +814,12 @@ def step_inputs_by_id(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInpu
     param-value walk, which avoids the HID path's flattening of HDCAs to
     leaf HDAs and prevents duplicate emission for DCE-as-data-param.
     """
-    tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
-    assert tool is not None, f"Tool {job.tool_id} (version {job.tool_version}) not found"
+    tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
+    if tool is None:
+        raise exceptions.ToolMissingException(
+            f"Cannot extract a workflow step for tool '{job.tool_id}' (version {job.tool_version}) because it is not installed on this Galaxy instance.",
+            tool_id=job.tool_id,
+        )
     param_values = tool.get_param_values(job, ignore_errors=True)
     associations: IdAssociations = __cleanup_param_values_by_id(tool.inputs, param_values)
     for assoc in job.input_dataset_collections:

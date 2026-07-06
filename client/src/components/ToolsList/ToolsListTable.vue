@@ -81,7 +81,7 @@ const toolsKey = computed(() => `${props.tools.length}-${props.tools[0]?.id}`);
                 :form-style="item.form_style"
                 :summary="helpDataCached[item.id]?.summary"
                 :help="helpDataCached[item.id]?.help"
-                :local="item.target === 'galaxy_main'"
+                :local="item.model_class !== 'DataSourceTool'"
                 :link="item.link"
                 :owner="props.hasOwnerFilter && item.tool_shed_repository ? item.tool_shed_repository.owner : undefined"
                 :workflow-compatible="item.is_workflow_compatible"

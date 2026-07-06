@@ -881,7 +881,12 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         return []
 
     def tools(self):
-        return self._tools_by_id.copy().items()
+        # Snapshot the id list so a concurrent shed install can't mutate
+        # the dict mid-iteration.
+        for tool_id in list(self._tools_by_id):
+            tool = self._tools_by_id.get(tool_id)
+            if tool is not None:
+                yield tool_id, tool
 
     def dynamic_confs(self, include_migrated_tool_conf=False) -> list[DynamicToolConfDict]:
         confs = []
@@ -1466,9 +1471,13 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 yield elt
 
     def get_tool_to_dict(self, trans, tool: "Tool", tool_help: bool = False) -> dict[str, Any]:
-        """Return tool's to_dict.
+        """Return tool's panel payload.
         Use cache if present, store to cache otherwise.
-        Note: The cached tool's to_dict is specific to the calls from toolbox.
+        Note: The cached payload is specific to the calls from toolbox.
+
+        Without ``tool_help`` the payload is the
+        :class:`~galaxy.tool_util.toolbox.entry.ToolPanelEntry` contract;
+        with it, the full ``to_dict`` including rendered help.
         """
         to_dict = None
         assert tool.id
@@ -1476,14 +1485,14 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if not tool_help:
                 to_dict = self._tool_to_dict_cache.get(tool.id)
             if not to_dict:
-                to_dict = tool.to_dict(trans, link_details=True, tool_help=tool_help)
+                to_dict = tool.to_dict(trans, tool_help=True) if tool_help else tool.to_panel_entry(trans)
                 if not tool_help:
                     self._tool_to_dict_cache[tool.id] = to_dict
         else:
             if not tool_help:
                 to_dict = self._tool_to_dict_cache_admin.get(tool.id)
             if not to_dict:
-                to_dict = tool.to_dict(trans, link_details=True, tool_help=tool_help)
+                to_dict = tool.to_dict(trans, tool_help=True) if tool_help else tool.to_panel_entry(trans)
                 if not tool_help:
                     self._tool_to_dict_cache_admin[tool.id] = to_dict
         return to_dict
@@ -1508,7 +1517,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 if hasattr(elt, "tool_type"):
                     rval.append(self.get_tool_to_dict(trans, elt, tool_help=tool_help))
                 else:
-                    kwargs = dict(trans=trans, link_details=True, tool_help=tool_help, toolbox=self)
+                    kwargs = dict(trans=trans, tool_help=tool_help, toolbox=self)
                     rval.append(elt.to_dict(**kwargs))
         else:
             filter_method = self._build_filter_method(trans)
@@ -1534,7 +1543,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if hasattr(elt, "tool_type"):
                 view_contents[elt.id] = self.get_tool_to_dict(trans, elt, tool_help=False)
             else:
-                kwargs = dict(trans=trans, link_details=True, tool_help=False, toolbox=self, only_ids=True)
+                kwargs = dict(trans=trans, tool_help=False, toolbox=self, only_ids=True)
                 view_contents[elt.id] = elt.to_dict(**kwargs)
         return view_contents
 

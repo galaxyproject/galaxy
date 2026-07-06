@@ -29,7 +29,10 @@ sys.path.insert(1, os.path.join(galaxy_root, "lib"))
 import galaxy.config
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model import calculate_user_disk_usage_statements
-from galaxy.objectstore import build_object_store_from_config
+from galaxy.objectstore import (
+    build_object_store_from_config,
+    is_user_object_store,
+)
 from galaxy.util.script import (
     app_properties_from_args,
     populate_config_args,
@@ -278,6 +281,17 @@ class RemovesObjects:
     def collect_removed_object_info(self, row):
         object_id = getattr(row, self.id_column, None)
         object_uuid = getattr(row, self.uuid_column, None)
+        object_store_id = row.object_store_id
+        if is_user_object_store(object_store_id):
+            self.log.warning(
+                "Skipping removal of %s (id: %s): object is stored in user-defined object store (%s) "
+                "which cannot be resolved by this script. The database record has been updated "
+                "but the physical file has not been removed.",
+                self.object_class.__name__,
+                object_id,
+                object_store_id,
+            )
+            return
         if object_uuid:
             object_uuid = str(uuid.UUID(object_uuid))
         if object_id:

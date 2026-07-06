@@ -147,7 +147,6 @@ class S3FSFileSourceTemplateConfiguration(StrictModel):
     writable: bool | TemplateExpansion = False
     template_start: str | None = None
     template_end: str | None = None
-    request_checksum_calculation: str | TemplateExpansion | None = None
 
 
 class S3FSFileSourceConfiguration(StrictModel):
@@ -158,7 +157,6 @@ class S3FSFileSourceConfiguration(StrictModel):
     key: str | None = None
     bucket: str | None = None
     writable: bool = False
-    request_checksum_calculation: str | None = None
 
 
 class FtpFileSourceTemplateConfiguration(StrictModel):

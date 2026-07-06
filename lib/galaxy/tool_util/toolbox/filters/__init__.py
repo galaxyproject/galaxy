@@ -1,10 +1,45 @@
 import logging
 import sys
 from copy import deepcopy
+from typing import (
+    Protocol,
+    runtime_checkable,
+)
 
 from galaxy.util import listify
 
 log = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class ToolFilterContext(Protocol):
+    """The attribute surface that toolbox filters are allowed to read.
+
+    ``galaxy.tools.Tool`` implements this protocol, and any lighter-weight
+    stand-in a toolbox implementation hands to the filter layer must too.
+    Admin / user-configured filter functions should only read fields
+    documented here — it is the contract that lets the filter pass run
+    against something cheaper than a fully-parsed ``Tool``.
+    """
+
+    id: str
+    name: str
+    description: str
+    hidden: bool
+    require_login: bool
+    tool_type: str
+    labels: list[str]
+    tags: list[str]
+
+    def allow_user_access(self, user, attempting_access: bool = True) -> bool:
+        """Return ``True`` if ``user`` may see/run this tool.
+
+        ``Tool`` implements this directly (with subclass overrides for
+        admin-only flavours like ``DataManagerTool``); implementations
+        should answer from their own state so the filter layer never
+        needs to reach through ``context.trans.app.config``.
+        """
+        ...
 
 
 class FilterFactory:
@@ -89,11 +124,11 @@ class FilterFactory:
 
 
 # Stock Filter Functions
-def _not_hidden(context, tool):
+def _not_hidden(context, tool: ToolFilterContext) -> bool:
     return not tool.hidden
 
 
-def _handle_authorization(context, tool):
+def _handle_authorization(context, tool: ToolFilterContext) -> bool:
     user = context.trans.user
     if tool.require_login and not user:
         return False
