@@ -36,7 +36,7 @@ const tutorialText = computed(() => {
 });
 
 function toggleCategory(category: string) {
-    Vue.set(categoryOpen, category, !categoryOpen[category]);
+    set(categoryOpen, category, !categoryOpen[category]);
 }
 </script>
 
