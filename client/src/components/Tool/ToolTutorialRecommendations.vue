@@ -2,7 +2,7 @@
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import Vue, { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, set } from "vue";
 
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
 
