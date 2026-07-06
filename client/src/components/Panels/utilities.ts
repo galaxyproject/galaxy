@@ -67,6 +67,24 @@ export function getUniqueToolIdsInPanel(panel: Record<string, ToolPanelItem> | n
     return toolIds;
 }
 
+type CountableTool = Pick<Tool, "id"> & Partial<Pick<Tool, "version">>;
+
+export function getVersionlessToolId(toolId: string, tool: CountableTool | undefined) {
+    if (tool?.version && toolId.endsWith(`/${tool.version}`)) {
+        return toolId.slice(0, -tool.version.length - 1);
+    }
+    return toolId;
+}
+
+export function countUniqueToolsInList<T extends CountableTool>(tools: Record<string, T> | T[]) {
+    const toolEntries = Array.isArray(tools) ? tools.map((tool) => [tool.id, tool] as const) : Object.entries(tools);
+    const toolIds = new Set<string>();
+    for (const [toolId, tool] of toolEntries) {
+        toolIds.add(getVersionlessToolId(toolId, tool));
+    }
+    return toolIds.size;
+}
+
 export function countUniqueToolsInPanel(panel: Record<string, ToolPanelItem> | null | undefined, fallbackCount = 0) {
     return getUniqueToolIdsInPanel(panel).size || fallbackCount;
 }
