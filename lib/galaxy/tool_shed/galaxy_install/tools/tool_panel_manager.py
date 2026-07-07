@@ -180,10 +180,12 @@ class ToolPanelManager:
                         paths=list(new_path_guids),
                         rebuild_whoosh=True,
                         path_guids=new_path_guids,
+                        app=self.app,
                     )
-                    # Refresh THIS process synchronously; the AMQP broadcast
-                    # above only reaches peers asynchronously, but the install
-                    # response should reflect the new tools immediately.
+                    # Refresh THIS process synchronously; the control-task
+                    # broadcast above only reaches peers asynchronously, but
+                    # the install response should reflect the new tools
+                    # immediately.
                     self.app.toolbox.invalidate_index_cache()
                 # Wire the new tools into the in-memory panel; ``create_tool``
                 # finds them in the index and hands back ``LazyTool`` stubs.

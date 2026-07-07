@@ -91,7 +91,7 @@ class UsesShed(UsesShedApi):
         # would otherwise survive the ``reload_toolbox`` below: ``LazyToolBox``
         # only re-runs the populator when discovery turns up a *new* path.
         try:
-            reconcile_index(self._app.config, rebuild_whoosh=True)
+            reconcile_index(self._app.config, rebuild_whoosh=True, app=self._app)
         except Exception as e:
             log.warning("reset_shed_tools: reconcile_index raised (continuing): %s", e)
         # deleting the containing folder doesn't trigger a toolbox reload, so signal it now and wait until it's done

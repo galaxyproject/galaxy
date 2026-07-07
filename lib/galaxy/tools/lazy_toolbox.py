@@ -909,6 +909,7 @@ class LazyToolBox(ToolBox):
                 self.app.config,
                 [path],
                 path_guids={path: guid},
+                app=self.app,
             )
         except Exception as e:
             log.warning("Ad-hoc populate for %s raised: %s", path, e)
