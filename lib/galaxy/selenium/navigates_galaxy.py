@@ -2166,6 +2166,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         )
         item_name_input.send_keys(new_name)
 
+        self.wait_for_and_click_selector(".g-modal-confirm-buttons button:last-child")
+        # Wait for the rename promise to resolve (modal closes in the finally block)
+        self.wait_for_selector_absent_or_hidden(f"#{item_type}-name-input")
+
     def navigate_to_history_page_editor(self, history_id, page_id):
         """Open an existing history-attached page (notebook) in the editor (history mode)."""
         self.get(f"histories/{history_id}/pages/{page_id}")
@@ -2181,10 +2185,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """Click chat button in page toolbar, wait for chat panel visible."""
         self.components.pages.history.chat_button.wait_for_and_click()
         self.components.pages.history.chat_panel.wait_for_visible()
-
-        self.wait_for_and_click_selector(".g-modal-confirm-buttons button:last-child")
-        # Wait for the rename promise to resolve (modal closes in the finally block)
-        self.wait_for_selector_absent_or_hidden(f"#{item_type}-name-input")
 
     @retry_during_transitions
     def click_history_options(self):

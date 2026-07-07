@@ -61,7 +61,7 @@ log = logging.getLogger(__name__)
 
 
 def _to_extraction_result(
-    stored_workflow: StoredWorkflow, report_warnings: Optional[list[str]] = None
+    stored_workflow: StoredWorkflow, report_warnings: list[str] | None = None
 ) -> WorkflowExtractionResult:
     return WorkflowExtractionResult.model_validate({"id": stored_workflow.id, "report_warnings": report_warnings or []})
 
@@ -74,9 +74,9 @@ def _sanitize_output_label(label: str) -> str:
 
 
 def _validate_extraction_labels(
-    dataset_names: Optional[list[str]],
-    dataset_collection_names: Optional[list[str]],
-    step_labels: Optional[list[str]] = None,
+    dataset_names: list[str] | None,
+    dataset_collection_names: list[str] | None,
+    step_labels: list[str] | None = None,
 ) -> None:
     """Validate user-supplied workflow input names and tool step labels.
 

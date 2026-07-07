@@ -1459,7 +1459,7 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         workflow_id = self.find_workflow_by_name(name)
         return self.workflow_populator.download_workflow(workflow_id)
 
-    def extract_workflow_and_download(self, name: str, screenshot_name: Optional[str] = None) -> dict:
+    def extract_workflow_and_download(self, name: str, screenshot_name: str | None = None) -> dict:
         """Navigate to extraction, submit form, return downloaded workflow."""
         self.navigate_to_workflow_extraction()
         if screenshot_name:
