@@ -242,13 +242,13 @@ class ToolFileWatcher:
             with open(path) as f:
                 raw_content = f.read()
         except OSError as e:
-            log.warning(f"Could not read {path}: {e}")
+            log.error(f"Could not read {path}: {e}")
             return False
 
         try:
             root = ET.fromstring(raw_content)
         except ET.ParseError as e:
-            log.warning(f"Could not parse {path}: {e}")
+            log.error(f"Could not parse {path}: {e}")
             return False
 
         if root.tag != "tool":
@@ -324,7 +324,7 @@ def _build_whoosh_for_store(config, store_name: str, tool_index) -> None:
         count = searcher.build(tool_index)
         log.info("Built whoosh index for store %s at %s (%d docs)", store_name, index_dir, count)
     except Exception as e:
-        log.warning("Whoosh build for store %s failed: %s", store_name, e)
+        log.error("Whoosh build for store %s failed: %s", store_name, e)
 
 
 def build_index_entry_from_source(
@@ -407,7 +407,7 @@ def build_index_entry_from_source(
         try:
             version = parse_tool_version_with_defaults(tool_id, tool_source)
         except Exception as e:
-            log.warning("parse_tool_version_with_defaults raised for %s: %s", tool_id, e)
+            log.error("parse_tool_version_with_defaults raised for %s: %s", tool_id, e)
             version = tool_source.parse_version() or "0"
 
         return ToolIndexEntry(
@@ -435,7 +435,7 @@ def build_index_entry_from_source(
             indexed_at=datetime.now(timezone.utc),
         )
     except Exception as e:
-        log.warning(
+        log.error(
             "Error building index entry (id=%s, hash=%s): %s",
             getattr(stored, "tool_id", None),
             getattr(stored, "hash", None),
@@ -734,7 +734,7 @@ def populate_store_inline(
                     "full" if full_scan else "partial",
                 )
             except Exception as e:
-                log.warning("store_index for %s raised: %s", store_name, e)
+                log.error("store_index for %s raised: %s", store_name, e)
                 continue
             # Rebuild the whoosh search index from the persisted ToolIndex.
             # Single-writer principle: the toolbox stops re-building this in

@@ -137,7 +137,7 @@ class CompositeToolSourceStore(ToolSourceStore):
             try:
                 idx = member.load_index()
             except Exception as e:
-                log.warning(f"Failed to load index from store {name!r}: {e}")
+                log.error(f"Failed to load index from store {name!r}: {e}")
                 continue
             if idx is None:
                 continue
@@ -179,4 +179,4 @@ class CompositeToolSourceStore(ToolSourceStore):
             try:
                 member.close()
             except Exception as e:
-                log.warning(f"Composite store close failed for member '{_name}': {e}")
+                log.error(f"Composite store close failed for member '{_name}': {e}")

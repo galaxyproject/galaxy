@@ -210,7 +210,7 @@ def discover_tools_from_config(
     try:
         tool_conf_source = get_toolbox_parser(config_filename)
     except Exception as e:
-        log.warning(f"Failed to parse tool config {config_filename}: {e}")
+        log.error(f"Failed to parse tool config {config_filename}: {e}")
         return
 
     tool_path = tool_conf_source.parse_tool_path()

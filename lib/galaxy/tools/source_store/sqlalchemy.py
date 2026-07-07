@@ -122,7 +122,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             try:
                 _metadata.create_all(self._engine)
             except Exception as e:
-                log.warning(f"could not auto-create tool source tables on {self._engine.url.drivername!r}: {e}")
+                log.error(f"could not auto-create tool source tables on {self._engine.url.drivername!r}: {e}")
         self._Session = sessionmaker(bind=self._engine, future=True)
 
     def _is_remote_engine(self) -> bool:
@@ -290,7 +290,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             self._cached_index = ToolIndex.from_dict(payload)
             return self._cached_index
         except Exception as e:
-            log.warning(f"Failed to decode tool index from store {self.url}: {e}")
+            log.error(f"Failed to decode tool index from store {self.url}: {e}")
             return None
 
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
