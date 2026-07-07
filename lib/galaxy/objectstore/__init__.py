@@ -4,6 +4,7 @@ objectstore package, abstraction for storing blobs of data for use in Galaxy.
 all providers ensure that data can be accessed on the filesystem for running
 tools
 """
+from __future__ import annotations
 
 import abc
 import logging
@@ -79,8 +80,8 @@ log = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class ObjectStoreAuth:
-    user: Optional["User"] = None
-    token: Optional[str] = None
+    user: User | None = None
+    token: str | None = None
 
 
 def is_user_object_store(object_store_id: str | None) -> bool:
