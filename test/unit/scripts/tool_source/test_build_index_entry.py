@@ -73,6 +73,9 @@ class _ToolSourceStub:
     def parse_edam_topics(self) -> list[str]:
         return self._edam_topics
 
+    def parse_profile(self) -> str:
+        return "21.09"
+
 
 def _discovered(**overrides: Any) -> DiscoveredTool:
     base: dict[str, Any] = dict(path="/tools/bowtie2.xml", tool_conf="tool_conf.xml", tool_path="/tools")

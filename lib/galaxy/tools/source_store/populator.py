@@ -385,56 +385,26 @@ def build_index_entry_from_source(
 
         uuid_val = None
         if hasattr(tool_source, "parse_uuid"):
-            try:
-                parsed_uuid = tool_source.parse_uuid()
-                uuid_val = str(parsed_uuid) if parsed_uuid else None
-            except Exception:
-                pass
+            parsed_uuid = tool_source.parse_uuid()
+            uuid_val = str(parsed_uuid) if parsed_uuid else None
 
         # XML-body ``<tool hidden="true">`` from the parsed source OR
         # conf-level ``hidden="true"`` from the ``<tool>`` element — either
         # forces the entry hidden. Mirrors the eager pipeline's
         # ``_load_tool_tag_set`` ordering.
-        body_hidden = False
-        try:
-            body_hidden = bool(tool_source.parse_hidden())
-        except Exception:
-            pass
-        hidden = bool(body_hidden or discovered.hidden)
+        hidden = bool(tool_source.parse_hidden() or discovered.hidden)
 
-        require_login = False
-        try:
-            require_login = bool(tool_source.parse_require_login(False))
-        except Exception:
-            pass
+        require_login = bool(tool_source.parse_require_login(False))
 
-        tool_type = "default"
-        try:
-            tool_type = tool_source.parse_tool_type() or "default"
-        except Exception:
-            pass
+        tool_type = tool_source.parse_tool_type() or "default"
 
-        edam_operations: list[str] = []
-        try:
-            edam_operations = list(tool_source.parse_edam_operations() or ())
-        except Exception:
-            pass
-
-        edam_topics: list[str] = []
-        try:
-            edam_topics = list(tool_source.parse_edam_topics() or ())
-        except Exception:
-            pass
+        edam_operations = list(tool_source.parse_edam_operations() or ())
+        edam_topics = list(tool_source.parse_edam_topics() or ())
 
         # Honour the same version-default rules as ``Tool.__init__``: empty
         # ``version`` on a pre-16.04-profile tool becomes "1.0.0"; on newer
-        # profiles it raises. Without this, ``ToolLineage.register_version``
-        # crashes on ``Version(None)`` during the eager walk.
-        try:
-            version = parse_tool_version_with_defaults(tool_id, tool_source)
-        except Exception as e:
-            log.error("parse_tool_version_with_defaults raised for %s: %s", tool_id, e)
-            version = tool_source.parse_version() or "0"
+        # profiles it raises (the outer except drops the entry).
+        version = parse_tool_version_with_defaults(tool_id, tool_source)
 
         return ToolIndexEntry(
             id=tool_id,
