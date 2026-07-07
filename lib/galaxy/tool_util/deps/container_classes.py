@@ -215,7 +215,7 @@ class Volume:
         elif len(volume_parts) == 2:
             # not really parsing/checking mode here, just figuring out if the 2nd component is target or mode
             mode_parts = volume_parts[1].split(",")
-            if any(mode_part not in ("rw", "ro", "z", "Z") for mode_part in mode_parts):
+            if any(mode_part not in ("rw", "ro", "default_ro", "z", "Z") for mode_part in mode_parts):
                 source = volume_parts[0]
                 target = volume_parts[1]
                 mode = "rw"
@@ -231,6 +231,9 @@ class Volume:
         source = source.strip()
         target = target.strip()
         mode = mode.strip()
+        if mode == "default_ro":
+            log.warning("container volumes use default_ro mode which is treated as ro")
+            mode = "ro"
 
         return source, target, mode
 
