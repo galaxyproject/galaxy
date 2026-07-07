@@ -166,6 +166,11 @@ class DatasetManager(
         if dataset.purged:
             log.warning("Unable to calculate hash for purged dataset [%s].", dataset.id)
             return
+        sa_session = self.session()
+        user = None
+        if request.user and request.user.user_id:
+            user = sa_session.get(model.User, request.user.user_id)
+        auth = ObjectStoreAuth(user=user) if user else None
         # For files in extra_files_path
         extra_files_path = request.extra_files_path
         try:
@@ -175,10 +180,10 @@ class DatasetManager(
                     dataset,
                     extra_dir=extra_dir,
                     alt_name=extra_files_path,
-                    auth=ObjectStoreAuth(user=request.user) if request.user else None,
+                    auth=auth,
                 )
             else:
-                file_path = dataset.get_file_name(auth=ObjectStoreAuth(user=request.user) if request.user else None)
+                file_path = dataset.get_file_name(auth=auth)
         except ObjectInvalid:
             log.warning(
                 "Unable to calculate hash for dataset [%s]: object is invalid (dataset may have failed or been purged).",
@@ -195,7 +200,6 @@ class DatasetManager(
         dataset_hash.dataset = dataset
         # TODO: replace/update if the combination of dataset_id/hash_function has already
         # been stored.
-        sa_session = self.session()
         hash = get_dataset_hash(sa_session, dataset.id, hash_function, extra_files_path)
         if hash is None:
             sa_session.add(dataset_hash)
