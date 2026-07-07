@@ -26,7 +26,10 @@ from typing import (
 
 from galaxy.model import _get_datatypes_registry
 from galaxy.tool_util.loader_directory import looks_like_a_tool
-from galaxy.tool_util.toolbox.base import resolve_tool_path
+from galaxy.tool_util.toolbox.base import (
+    resolve_tool_path,
+    walk_tool_directories,
+)
 from galaxy.tool_util.toolbox.parser import (
     get_toolbox_parser,
     ToolConfItem,
@@ -94,25 +97,15 @@ def _iter_tool_items(
 
 
 def _walk_tool_dir(directory: str, recursive: bool) -> Iterator[str]:
-    """Yield candidate tool file paths under ``directory``.
-
-    Mirrors the behaviour of ``ToolBox.__watch_directory`` (skips hidden /
-    private entries, recurses by default). Filtering against
-    ``_looks_like_a_tool`` is the caller's responsibility — yielding all
-    candidates here keeps logging at the discovery layer.
+    """Yield candidate tool file paths under ``directory`` via the same
+    ``walk_tool_directories`` walk that ``ToolBox.__watch_directory`` uses.
+    Filtering against ``looks_like_a_tool`` is the caller's responsibility.
     """
     if not os.path.isdir(directory):
         log.debug(f"tool_dir does not exist: {directory}")
         return
-    for name in sorted(os.listdir(directory)):
-        if name.startswith((".", "_")):
-            continue
-        child = os.path.join(directory, name)
-        if os.path.isdir(child):
-            if recursive:
-                yield from _walk_tool_dir(child, recursive)
-        else:
-            yield child
+    for _dirpath, files in walk_tool_directories(directory, recursive):
+        yield from files
 
 
 def discover_tools_from_config(
