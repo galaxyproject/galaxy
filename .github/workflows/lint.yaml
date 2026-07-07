@@ -40,22 +40,11 @@ jobs:
       - uses: actions/checkout@v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run linting
-        run: tox -e lint
-      - name: Run docstring linting
-        run: tox -e lint_docstring_include_list
-      - name: Run mypy checks
-        run: tox -e mypy
-      - name: Run format checks
-        run: tox -e format
+        run: tox -e lint,lint_docstring_include_list,mypy,format
