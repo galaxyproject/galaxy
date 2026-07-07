@@ -10,8 +10,10 @@ from galaxy.tools.source_store import (
     build_named_store,
     build_tool_source_store,
     ConfigurationError,
+    factory as factory_module,
     StoredToolSource,
 )
+from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
@@ -208,8 +210,6 @@ class TestBuildToolSourceStore:
             build_tool_source_store(config)  # type: ignore[arg-type]
 
     def test_build_non_sqlite_url_passes_through(self, monkeypatch):
-        from galaxy.tools.source_store import factory as factory_module
-
         class CapturingStore:
             read_only = False
 
@@ -255,8 +255,6 @@ class TestPerConfStoreRouting:
         conf.write_text('<?xml version="1.0"?>\n<toolbox/>\n')
         config = self._config(tmp_path, tool_configs=[str(conf)])
         store = build_tool_source_store(config)
-        from galaxy.tools.source_store.composite import CompositeToolSourceStore
-
         assert isinstance(store, SqlAlchemyToolSourceStore)
         assert not isinstance(store, CompositeToolSourceStore)
 

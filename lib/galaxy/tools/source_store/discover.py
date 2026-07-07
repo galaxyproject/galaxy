@@ -36,6 +36,7 @@ from galaxy.tool_util.toolbox.parser import (
     ToolConfSection,
 )
 from galaxy.tools import MODEL_TOOLS_PATH
+from galaxy.tools.special_tools import hidden_lib_tool_paths
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
@@ -273,23 +274,16 @@ def discover_tools(
     # ``imp_exp`` history exporters, ``data_fetch``). They're loaded after
     # boot via ``toolbox.load_hidden_lib_tool`` rather than from any
     # tool_conf, so the conf walk above misses them; index them too.
-    try:
-        # Local import: importing any galaxy.tools submodule executes the
-        # full galaxy.tools package; only this path helper is needed.
-        from galaxy.tools.special_tools import hidden_lib_tool_paths
-
-        for path in hidden_lib_tool_paths():
-            if path in seen_paths or not os.path.exists(path):
-                continue
-            seen_paths.add(path)
-            yield DiscoveredTool(
-                path=path,
-                tool_conf="<hidden-lib>",
-                tool_path=os.path.dirname(path),
-                is_shed_tool=False,
-            )
-    except Exception as e:
-        log.debug("Failed to enumerate hidden-lib tool paths: %s", e)
+    for path in hidden_lib_tool_paths():
+        if path in seen_paths or not os.path.exists(path):
+            continue
+        seen_paths.add(path)
+        yield DiscoveredTool(
+            path=path,
+            tool_conf="<hidden-lib>",
+            tool_path=os.path.dirname(path),
+            is_shed_tool=False,
+        )
 
     # Datatype converters. ``Registry.load_datatype_converters`` calls
     # ``toolbox.load_tool`` per converter after boot, so converters

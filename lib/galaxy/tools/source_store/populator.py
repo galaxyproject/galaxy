@@ -21,10 +21,12 @@ loop that updates the store as tool files change on disk and broadcasts a
 import argparse
 import hashlib
 import logging
+import os
 import signal
 import sys
 import threading
 import time
+import xml.etree.ElementTree as ET
 from collections.abc import (
     Callable,
 )
@@ -41,6 +43,18 @@ from typing import Any
 
 from kombu import Connection
 from kombu.pools import producers
+
+try:
+    from watchdog.events import FileSystemEventHandler
+    from watchdog.observers import Observer
+    from watchdog.observers.polling import PollingObserver
+
+    can_watch = True
+except ImportError:
+    Observer = None  # type: ignore[assignment, unused-ignore]
+    FileSystemEventHandler = object  # type: ignore[assignment,misc, unused-ignore]
+    PollingObserver = None  # type: ignore[assignment,misc, unused-ignore]
+    can_watch = False
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.queues import galaxy_exchange
@@ -154,13 +168,8 @@ class ToolFileWatcher:
 
     def start(self):
         """Start watching for file changes."""
-        # ``watchdog`` is an optional dependency only needed for --watch mode;
-        # keep the import local so plain populate runs (and the galaxy-app
-        # package, which doesn't ship watchdog) can import this module.
-        from watchdog.events import FileSystemEventHandler
-        from watchdog.observers import Observer
-        from watchdog.observers.polling import PollingObserver
-
+        if not can_watch:
+            raise Exception("watchdog is not installed; --watch mode requires it")
         observer_class = PollingObserver if self.use_polling else Observer
 
         class ToolFileHandler(FileSystemEventHandler):
@@ -236,8 +245,6 @@ class ToolFileWatcher:
         conf walk), whoosh rebuild, and the ``reload_tool_source_cache``
         broadcast — same machinery a shed install hits.
         """
-        import xml.etree.ElementTree as ET
-
         try:
             with open(path) as f:
                 raw_content = f.read()
@@ -302,8 +309,6 @@ def whoosh_dir_for_store(tool_search_index_dir: str | None, store_name: str) -> 
     if not tool_search_index_dir:
         return None
     sub = _WHOOSH_DEFAULT_SUBDIR if store_name == DEFAULT_STORE_NAME else store_name
-    import os
-
     return os.path.join(tool_search_index_dir, sub)
 
 

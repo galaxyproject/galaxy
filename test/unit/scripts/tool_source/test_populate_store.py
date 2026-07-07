@@ -25,6 +25,7 @@ import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+import galaxy.tools.source_store.populator as populator_module
 from galaxy.tools.source_store.populator import (
     compute_hash,
     send_reload_notification,
@@ -249,8 +250,6 @@ class TestToolFileWatcher:
             os.unlink(temp_path)
 
     def test_process_tool_file_populates_changed_tool(self, monkeypatch):
-        import galaxy.tools.source_store.populator as populator_module
-
         calls = []
 
         def fake_populate(config, **kwargs):
@@ -331,8 +330,6 @@ class TestToolFileWatcher:
 
     def test_process_pending_changes_clears_queue(self, monkeypatch):
         """Processing should clear the pending changes set."""
-        import galaxy.tools.source_store.populator as populator_module
-
         monkeypatch.setattr(populator_module, "populate_store_inline", lambda config, **kwargs: {})
         watcher = ToolFileWatcher(
             config=FakeConfig(),
@@ -359,8 +356,6 @@ class TestToolFileWatcher:
 
     def test_process_pending_changes_sends_notification_on_updates(self, monkeypatch):
         """One batched notification should be sent when tools are updated."""
-        import galaxy.tools.source_store.populator as populator_module
-
         monkeypatch.setattr(populator_module, "populate_store_inline", lambda config, **kwargs: {})
         notification_sent: list = []
         watcher = ToolFileWatcher(
