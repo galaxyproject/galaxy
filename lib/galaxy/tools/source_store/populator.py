@@ -869,13 +869,18 @@ def main():
     parser = argparse.ArgumentParser(description="Populate tool source store from Galaxy toolbox")
     parser.add_argument("--config", "-c", required=True, help="Galaxy configuration file")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be stored")
-    parser.add_argument(
+    store_mode = parser.add_mutually_exclusive_group()
+    store_mode.add_argument(
         "--incremental",
         action="store_true",
         default=True,
-        help="Only store new/changed tools (default)",
+        help=(
+            "Default. Skip re-storing tool sources whose content is unchanged. "
+            "Discovery, parsing, and the index/search rebuild still run every "
+            "time, so a re-run is not a no-op."
+        ),
     )
-    parser.add_argument("--full", action="store_true", help="Force re-store all tools")
+    store_mode.add_argument("--full", action="store_true", help="Re-store every tool source, even unchanged ones")
     parser.add_argument("--tool-id", help="Tool ID pattern filter")
     parser.add_argument("--parallel", "-j", type=int, default=4, help="Number of parallel workers")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
