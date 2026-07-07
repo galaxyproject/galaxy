@@ -77,7 +77,6 @@ class _ToolIndexRow(_Base):
     __tablename__ = "tool_index"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    version: Mapped[str] = mapped_column(String(64), unique=True)
     data: Mapped[bytes] = mapped_column(LargeBinary)  # gzip-compressed JSON
     built_at: Mapped[datetime | None] = mapped_column()
 
@@ -264,15 +263,13 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
     def store_index(self, index: ToolIndex) -> None:
         self._ensure_writable()
         compressed = gzip.compress(json.dumps(index.to_dict()).encode("utf-8"))
-        version = index.compute_version()
         with self._session() as session:
-            # Singleton row, updated in place to avoid the unique-version race.
+            # Singleton row, updated in place.
             row = session.execute(select(_ToolIndexRow).order_by(_ToolIndexRow.id)).scalar_one_or_none()
             if row is None:
-                row = _ToolIndexRow(version=version, data=compressed, built_at=index.built_at)
+                row = _ToolIndexRow(data=compressed, built_at=index.built_at)
                 session.add(row)
             else:
-                row.version = version
                 row.data = compressed
                 row.built_at = index.built_at
             session.commit()

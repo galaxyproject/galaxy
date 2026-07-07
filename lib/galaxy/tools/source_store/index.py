@@ -6,7 +6,6 @@ lightweight metadata about tools for efficient API responses without
 loading full tool sources.
 """
 
-import hashlib
 from dataclasses import (
     dataclass,
     field,
@@ -218,7 +217,6 @@ class ToolIndex:
     entries_by_version: dict[str, dict[str, ToolIndexEntry]] = field(default_factory=dict)
     by_section: dict[str, list[str]] = field(default_factory=dict)
     panel_views: dict[str, dict] = field(default_factory=dict)
-    version: str = ""  # For cache invalidation
     built_at: datetime | None = None
 
     # Cached computations
@@ -386,11 +384,6 @@ class ToolIndex:
         """Return tools with container requirements."""
         return [e for e in self.entries.values() if e.container_requirements]
 
-    def compute_version(self) -> str:
-        """Compute a version string based on index contents."""
-        keys = sorted(self.entries.keys())
-        return hashlib.md5(str(keys).encode()).hexdigest()[:8]
-
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
@@ -401,7 +394,6 @@ class ToolIndex:
             },
             "by_section": self.by_section,
             "panel_views": self.panel_views,
-            "version": self.version,
             "built_at": self.built_at.isoformat() if self.built_at else None,
         }
 
@@ -428,6 +420,5 @@ class ToolIndex:
             entries_by_version=entries_by_version,
             by_section=data.get("by_section", {}),
             panel_views=data.get("panel_views", {}),
-            version=data.get("version", ""),
             built_at=built_at,
         )

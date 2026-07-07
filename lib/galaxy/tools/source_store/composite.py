@@ -166,7 +166,6 @@ class CompositeToolSourceStore(ToolSourceStore):
                 merged.built_at = idx.built_at
         if not any_loaded:
             return None
-        merged.version = merged.compute_version()
         return merged
 
     def invalidate_index_cache(self) -> None:
