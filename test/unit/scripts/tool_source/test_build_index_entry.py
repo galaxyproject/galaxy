@@ -3,12 +3,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     Any,
+    cast,
 )
 
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tools.source_store.discover import DiscoveredTool
+from galaxy.tools.source_store.index import ToolIndexEntry
+from galaxy.tools.source_store.interface import StoredToolSource
 from galaxy.tools.source_store.populator import build_index_entry_from_source
 
 
@@ -76,8 +80,20 @@ def _discovered(**overrides: Any) -> DiscoveredTool:
     return DiscoveredTool(**base)
 
 
+def _entry(discovered: DiscoveredTool, stored: Any, source: Any) -> ToolIndexEntry:
+    """Build an entry from stubs, casting them to the real interfaces and
+    asserting the common non-None result."""
+    entry = build_index_entry_from_source(discovered, cast(StoredToolSource, stored), cast(ToolSource, source))
+    assert entry is not None
+    return entry
+
+
+def _entry_optional(discovered: DiscoveredTool, stored: Any, source: Any) -> ToolIndexEntry | None:
+    return build_index_entry_from_source(discovered, cast(StoredToolSource, stored), cast(ToolSource, source))
+
+
 def test_basic_fields_threaded_through():
-    entry = build_index_entry_from_source(_discovered(), _StoredStub(), _ToolSourceStub())
+    entry = _entry(_discovered(), _StoredStub(), _ToolSourceStub())
     assert entry is not None
     assert entry.id == "bowtie2"
     assert entry.version == "2.5.0"
@@ -90,7 +106,7 @@ def test_basic_fields_threaded_through():
 
 def test_shed_conf_guid_keys_entry_and_stamps_repository():
     guid = "toolshed.g2.bx.psu.edu/repos/iuc/bowtie2/bowtie2/2.5.0"
-    entry = build_index_entry_from_source(
+    entry = _entry(
         _discovered(
             guid=guid,
             is_shed_tool=True,
@@ -111,7 +127,7 @@ def test_shed_conf_guid_keys_entry_and_stamps_repository():
 
 
 def test_section_metadata_from_discovered():
-    entry = build_index_entry_from_source(
+    entry = _entry(
         _discovered(section_id="ngs", section_name="NGS Tools"),
         _StoredStub(),
         _ToolSourceStub(),
@@ -121,7 +137,7 @@ def test_section_metadata_from_discovered():
 
 
 def test_labels_from_discovered():
-    entry = build_index_entry_from_source(
+    entry = _entry(
         _discovered(labels=["beta", "experimental"]),
         _StoredStub(),
         _ToolSourceStub(),
@@ -131,7 +147,7 @@ def test_labels_from_discovered():
 
 def test_conf_level_hidden_forces_entry_hidden():
     # Body says not hidden; conf says hidden — entry honors the conf.
-    entry = build_index_entry_from_source(
+    entry = _entry(
         _discovered(hidden=True),
         _StoredStub(),
         _ToolSourceStub(hidden=False),
@@ -140,7 +156,7 @@ def test_conf_level_hidden_forces_entry_hidden():
 
 
 def test_body_hidden_alone_also_forces_hidden():
-    entry = build_index_entry_from_source(
+    entry = _entry(
         _discovered(),
         _StoredStub(),
         _ToolSourceStub(hidden=True),
@@ -149,12 +165,12 @@ def test_body_hidden_alone_also_forces_hidden():
 
 
 def test_neither_hidden_means_false():
-    entry = build_index_entry_from_source(_discovered(), _StoredStub(), _ToolSourceStub(hidden=False))
+    entry = _entry(_discovered(), _StoredStub(), _ToolSourceStub(hidden=False))
     assert entry.hidden is False
 
 
 def test_edam_lists_threaded_through():
-    entry = build_index_entry_from_source(
+    entry = _entry(
         _discovered(),
         _StoredStub(),
         _ToolSourceStub(edam_operations=["operation_0292"], edam_topics=["topic_0102"]),
@@ -164,12 +180,12 @@ def test_edam_lists_threaded_through():
 
 
 def test_require_login_threaded_through():
-    entry = build_index_entry_from_source(_discovered(), _StoredStub(), _ToolSourceStub(require_login=True))
+    entry = _entry(_discovered(), _StoredStub(), _ToolSourceStub(require_login=True))
     assert entry.require_login is True
 
 
 def test_tool_source_class_taken_from_stored():
-    entry = build_index_entry_from_source(
+    entry = _entry(
         _discovered(),
         _StoredStub(tool_source_class="YamlToolSource"),
         _ToolSourceStub(),
@@ -178,12 +194,12 @@ def test_tool_source_class_taken_from_stored():
 
 
 def test_no_id_yields_none():
-    entry = build_index_entry_from_source(_discovered(), _StoredStub(tool_id=""), _ToolSourceStub(tool_id=""))
+    entry = _entry_optional(_discovered(), _StoredStub(tool_id=""), _ToolSourceStub(tool_id=""))
     assert entry is None
 
 
 def test_fallback_id_from_stored_when_source_has_none():
-    entry = build_index_entry_from_source(
+    entry = _entry(
         _discovered(),
         _StoredStub(tool_id="from_stored"),
         _ToolSourceStub(tool_id=""),
@@ -193,7 +209,7 @@ def test_fallback_id_from_stored_when_source_has_none():
 
 
 def test_data_manager_tool_type_preserved():
-    entry = build_index_entry_from_source(
+    entry = _entry(
         _discovered(),
         _StoredStub(),
         _ToolSourceStub(tool_type="data_manager"),

@@ -59,6 +59,7 @@ except ImportError:
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.queues import galaxy_exchange
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.parser.util import parse_tool_version_with_defaults
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from galaxy.tools.source_store.discover import (
@@ -180,7 +181,10 @@ class ToolFileWatcher:
                 if event.is_directory:
                     return
                 path = getattr(event, "dest_path", None) or event.src_path
-                if path.endswith(".xml") and "macro" not in path.lower():
+                # Accept every .xml. Tool files re-populate themselves; a
+                # changed macros file re-expands its sibling tools (both in
+                # _process_tool_file). Non-tool confs parse-and-skip there.
+                if path.endswith(".xml"):
                     handler_self.watcher._queue_change(path)
 
         self.observer = observer_class()
@@ -258,6 +262,10 @@ class ToolFileWatcher:
             log.error(f"Could not parse {path}: {e}")
             return False
 
+        if root.tag == "macros":
+            # A macros file changed: the tools that ``<import>`` it are
+            # unchanged on disk but their expanded content is now stale.
+            return self._reprocess_macro_dependents(path)
         if root.tag != "tool":
             return False
 
@@ -271,6 +279,24 @@ class ToolFileWatcher:
         # debounced notification for the whole batch of changes.
         populate_store_inline(self.config, paths=[path], rebuild_whoosh=True)
         log.info("Updated tool: %s", path)
+        return True
+
+    def _reprocess_macro_dependents(self, macro_path: str) -> bool:
+        """Re-expand the tool files that import a changed macros file.
+
+        The watcher can't know which tools ``<import>`` this macro without
+        parsing them, so it conservatively re-populates every ``.xml``
+        sibling in the macro's directory — the standard layout keeps a tool
+        and its ``macros.xml`` together. Non-tool siblings parse-and-skip in
+        the populator. Cross-directory macro imports aren't covered (a
+        dev-loop limitation).
+        """
+        macro_dir = Path(macro_path).parent
+        siblings = [str(p) for p in macro_dir.glob("*.xml") if str(p) != macro_path]
+        if not siblings:
+            return False
+        populate_store_inline(self.config, paths=siblings, rebuild_whoosh=True)
+        log.info("Macro change in %s — re-expanded %d sibling file(s)", macro_path, len(siblings))
         return True
 
     def wait(self):
@@ -333,10 +359,10 @@ def _build_whoosh_for_store(config, store_name: str, tool_index) -> None:
 
 
 def build_index_entry_from_source(
-    discovered,
-    stored,
-    tool_source,
-):
+    discovered: DiscoveredTool,
+    stored: StoredToolSource,
+    tool_source: ToolSource,
+) -> ToolIndexEntry | None:
     """Assemble a :class:`ToolIndexEntry` from a populator triple.
 
     ``discovered`` carries conf-level metadata that isn't visible to the tool
@@ -370,40 +396,35 @@ def build_index_entry_from_source(
         # forces the entry hidden. Mirrors the eager pipeline's
         # ``_load_tool_tag_set`` ordering.
         body_hidden = False
-        if hasattr(tool_source, "parse_hidden"):
-            try:
-                body_hidden = bool(tool_source.parse_hidden())
-            except Exception:
-                pass
+        try:
+            body_hidden = bool(tool_source.parse_hidden())
+        except Exception:
+            pass
         hidden = bool(body_hidden or discovered.hidden)
 
         require_login = False
-        if hasattr(tool_source, "parse_require_login"):
-            try:
-                require_login = bool(tool_source.parse_require_login(False))
-            except Exception:
-                pass
+        try:
+            require_login = bool(tool_source.parse_require_login(False))
+        except Exception:
+            pass
 
         tool_type = "default"
-        if hasattr(tool_source, "parse_tool_type"):
-            try:
-                tool_type = tool_source.parse_tool_type() or "default"
-            except Exception:
-                pass
+        try:
+            tool_type = tool_source.parse_tool_type() or "default"
+        except Exception:
+            pass
 
         edam_operations: list[str] = []
-        if hasattr(tool_source, "parse_edam_operations"):
-            try:
-                edam_operations = list(tool_source.parse_edam_operations() or ())
-            except Exception:
-                pass
+        try:
+            edam_operations = list(tool_source.parse_edam_operations() or ())
+        except Exception:
+            pass
 
         edam_topics: list[str] = []
-        if hasattr(tool_source, "parse_edam_topics"):
-            try:
-                edam_topics = list(tool_source.parse_edam_topics() or ())
-            except Exception:
-                pass
+        try:
+            edam_topics = list(tool_source.parse_edam_topics() or ())
+        except Exception:
+            pass
 
         # Honour the same version-default rules as ``Tool.__init__``: empty
         # ``version`` on a pre-16.04-profile tool becomes "1.0.0"; on newer
@@ -442,8 +463,8 @@ def build_index_entry_from_source(
     except Exception as e:
         log.error(
             "Error building index entry (id=%s, hash=%s): %s",
-            getattr(stored, "tool_id", None),
-            getattr(stored, "hash", None),
+            stored.tool_id,
+            stored.hash,
             e,
         )
         return None
