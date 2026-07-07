@@ -223,6 +223,7 @@ def discover_tools_from_config(
 def discover_tools(
     config: "GalaxyAppConfiguration",
     include_bundled: bool = True,
+    include_converters: bool = True,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from Galaxy configuration.
@@ -233,6 +234,9 @@ def discover_tools(
     Args:
         config: Galaxy configuration object.
         include_bundled: Whether to include bundled tools from lib/galaxy/tools/bundled.
+        include_converters: Whether to enumerate datatype converters. This needs
+            the datatypes registry; it's off for targeted single-store populates,
+            which never write the default store that converters route to.
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -285,22 +289,23 @@ def discover_tools(
     # source of truth — same list that ``load_datatype_converters``
     # iterates, so we never index a converter the registry won't load
     # and vice versa.
-    try:
-        registry = _get_datatypes_registry()
-        if registry is not None and registry.converters_path:
-            for tool_config, _src_dt, _tgt_dt in registry.converters:
-                path = os.path.normpath(os.path.join(registry.converters_path, tool_config))
-                if path in seen_paths or not os.path.exists(path):
-                    continue
-                seen_paths.add(path)
-                yield DiscoveredTool(
-                    path=path,
-                    tool_conf="<converter>",
-                    tool_path=registry.converters_path,
-                    is_shed_tool=False,
-                )
-    except Exception as e:
-        log.error("Failed to enumerate datatype converters: %s", e)
+    if include_converters:
+        try:
+            registry = _get_datatypes_registry()
+            if registry.converters_path:
+                for tool_config, _src_dt, _tgt_dt in registry.converters:
+                    path = os.path.normpath(os.path.join(registry.converters_path, tool_config))
+                    if path in seen_paths or not os.path.exists(path):
+                        continue
+                    seen_paths.add(path)
+                    yield DiscoveredTool(
+                        path=path,
+                        tool_conf="<converter>",
+                        tool_path=registry.converters_path,
+                        is_shed_tool=False,
+                    )
+        except Exception as e:
+            log.error("Failed to enumerate datatype converters: %s", e)
 
 
 def discover_tool_files(

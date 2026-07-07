@@ -47,6 +47,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.datatypes.registry import Registry
+from galaxy.model import (
+    _get_datatypes_registry,
+    set_datatypes_registry,
+)
 from galaxy.queues import (
     control_queues_for_session,
     galaxy_exchange,
@@ -77,6 +82,7 @@ from galaxy.tools.source_store.search import (
     ToolSearchTuning,
     ToolWhooshIndex,
 )
+from galaxy.util import listify
 from galaxy.util.properties import load_app_properties
 from galaxy.util.watcher import (
     EventHandler,
@@ -111,6 +117,26 @@ def _cli_control_queues(config) -> list:
     except Exception as e:
         log.error("Could not build control-queue declare list: %s", e)
         return []
+
+
+def _ensure_datatypes_registry(config) -> None:
+    """Initialise the global datatypes registry if it isn't already set.
+
+    ``discover_tools`` enumerates datatype converters off the registry that
+    ``set_datatypes_registry`` installs at app boot. In-process callers
+    already have it; the standalone CLI does not, so build one from
+    ``config.datatypes_config`` — otherwise the converters are dropped from
+    the store. Only invoked on a full rebuild (see ``populate_store_inline``).
+    """
+    try:
+        _get_datatypes_registry()
+        return
+    except Exception:
+        pass
+    registry = Registry(config)
+    for datatypes_config in listify(config.datatypes_config):
+        registry.load_datatypes(config.root, datatypes_config, override=True, use_converters=True)
+    set_datatypes_registry(registry)
 
 
 def send_reload_notification(config) -> bool:
@@ -549,7 +575,13 @@ def populate_store_inline(
 
     stats = {"processed": 0, "stored": 0, "skipped": 0, "errors": 0}
 
-    discovered_tools = list(discover_tools(config, include_bundled=True))
+    # Converters route to the default store, so only enumerate them on a full
+    # rebuild — a targeted single-store populate never writes them and would
+    # otherwise pay to load the datatypes registry.
+    include_converters = target is None
+    if include_converters:
+        _ensure_datatypes_registry(config)
+    discovered_tools = list(discover_tools(config, include_bundled=True, include_converters=include_converters))
 
     # Bundled tools have tool_conf="bundled"; those go to the default store.
     tool_specs: list[tuple[DiscoveredTool, str]] = []
