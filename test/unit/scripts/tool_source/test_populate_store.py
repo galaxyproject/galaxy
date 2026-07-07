@@ -12,7 +12,6 @@ Following test guidelines:
 import hashlib
 import os
 import tempfile
-import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
@@ -180,54 +179,13 @@ class TestToolFileWatcher:
             config=config,
             store=store,
             tools_dirs=tools_dirs,
-            debounce_seconds=1.5,
-            use_polling=True,
             verbose=True,
         )
 
         assert watcher.config is config
         assert watcher.store is store
         assert watcher.tools_dirs == tools_dirs
-        assert watcher.debounce_seconds == 1.5
-        assert watcher.use_polling is True
         assert watcher.verbose is True
-
-    def test_queue_change_deduplicates_paths(self):
-        """Multiple changes to same path should be deduplicated."""
-        watcher = ToolFileWatcher(
-            config=FakeConfig(),
-            store=FakeToolSourceStore(),
-            tools_dirs=[],
-            debounce_seconds=10.0,  # Long debounce to prevent processing
-        )
-
-        watcher._queue_change("/path/to/tool.xml")
-        watcher._queue_change("/path/to/tool.xml")
-        watcher._queue_change("/path/to/tool.xml")
-
-        assert len(watcher._pending_changes) == 1
-        assert "/path/to/tool.xml" in watcher._pending_changes
-
-        # Cleanup timer
-        if watcher._debounce_timer:
-            watcher._debounce_timer.cancel()
-
-    def test_queue_change_accumulates_different_paths(self):
-        """Different paths should all be queued."""
-        watcher = ToolFileWatcher(
-            config=FakeConfig(),
-            store=FakeToolSourceStore(),
-            tools_dirs=[],
-            debounce_seconds=10.0,
-        )
-
-        watcher._queue_change("/path/to/tool1.xml")
-        watcher._queue_change("/path/to/tool2.xml")
-
-        assert len(watcher._pending_changes) == 2
-
-        if watcher._debounce_timer:
-            watcher._debounce_timer.cancel()
 
     def test_process_tool_file_ignores_non_tool_xml(self):
         """XML files without <tool> tag should be ignored."""
@@ -320,42 +278,12 @@ class TestToolFileWatcher:
             tools_dirs=[],
         )
 
-        # Start a timer that would fire later
-        watcher._debounce_timer = threading.Timer(100.0, lambda: None)
-        watcher._debounce_timer.start()
-
         watcher.shutdown()
 
         assert watcher._shutdown_event.is_set()
 
-    def test_process_pending_changes_clears_queue(self, monkeypatch):
-        """Processing should clear the pending changes set."""
-        monkeypatch.setattr(populator_module, "populate_store_inline", lambda config, **kwargs: {})
-        watcher = ToolFileWatcher(
-            config=FakeConfig(),
-            store=FakeToolSourceStore(),
-            tools_dirs=[],
-            notify_callable=lambda c: True,
-        )
-
-        tool_content = """<tool id="test" version="1.0">
-            <command>echo</command>
-        </tool>"""
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
-            f.write(tool_content)
-            temp_path = f.name
-
-        try:
-            watcher._pending_changes.add(temp_path)
-            watcher._process_pending_changes()
-
-            assert len(watcher._pending_changes) == 0
-        finally:
-            os.unlink(temp_path)
-
-    def test_process_pending_changes_sends_notification_on_updates(self, monkeypatch):
-        """One batched notification should be sent when tools are updated."""
+    def test_on_change_notifies_on_update(self, monkeypatch):
+        """A changed tool file re-populates and fires one notification."""
         monkeypatch.setattr(populator_module, "populate_store_inline", lambda config, **kwargs: {})
         notification_sent: list = []
         watcher = ToolFileWatcher(
@@ -374,21 +302,18 @@ class TestToolFileWatcher:
             temp_path = f.name
 
         try:
-            watcher._pending_changes.add(temp_path)
-            watcher._process_pending_changes()
-
+            watcher._on_change(temp_path)
             assert len(notification_sent) == 1
         finally:
             os.unlink(temp_path)
 
-    def test_process_pending_changes_no_notification_when_unchanged(self):
-        """No notification should be sent if no tools were actually updated."""
+    def test_on_change_no_notification_when_unchanged(self):
+        """No notification fires when the tool is already stored."""
         store = FakeToolSourceStore()
 
         tool_content = """<tool id="test" version="1.0">
             <command>echo</command>
         </tool>"""
-        # Pre-populate store so tool is "unchanged"
         store.stored_sources[compute_hash(tool_content)] = "exists"
 
         notification_sent: list = []
@@ -404,10 +329,7 @@ class TestToolFileWatcher:
             temp_path = f.name
 
         try:
-            watcher._pending_changes.add(temp_path)
-            watcher._process_pending_changes()
-
-            # State assertion: nothing new was stored, so no notification fires.
+            watcher._on_change(temp_path)
             assert len(store.store_calls) == 0
             assert len(notification_sent) == 0
         finally:

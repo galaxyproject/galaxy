@@ -43,21 +43,14 @@ from typing import Any
 
 from kombu import Connection
 from kombu.pools import producers
-
-try:
-    from watchdog.events import FileSystemEventHandler
-    from watchdog.observers import Observer
-    from watchdog.observers.polling import PollingObserver
-
-    can_watch = True
-except ImportError:
-    Observer = None  # type: ignore[assignment, unused-ignore]
-    FileSystemEventHandler = object  # type: ignore[assignment,misc, unused-ignore]
-    PollingObserver = None  # type: ignore[assignment,misc, unused-ignore]
-    can_watch = False
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.queues import galaxy_exchange
+from galaxy.queues import (
+    control_queues_for_session,
+    galaxy_exchange,
+)
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.parser.util import parse_tool_version_with_defaults
@@ -85,6 +78,11 @@ from galaxy.tools.source_store.search import (
     ToolWhooshIndex,
 )
 from galaxy.util.properties import load_app_properties
+from galaxy.util.watcher import (
+    EventHandler,
+    get_observer_class,
+    Watcher,
+)
 
 log = logging.getLogger(__name__)
 
@@ -92,6 +90,27 @@ log = logging.getLogger(__name__)
 def compute_hash(content: str) -> str:
     """Compute SHA256 hash of content."""
     return hashlib.sha256(content.encode()).hexdigest()
+
+
+def _cli_control_queues(config) -> list:
+    """Active per-process control queues, read straight from the main Galaxy DB.
+
+    The standalone populator CLI has no ``ApplicationStack``; on the kombu
+    sqlalchemy transport a producer must declare every live consumer's queue
+    or the message is silently dropped. Build the same routing table
+    :func:`galaxy.queues.all_control_queues_for_declare` builds, from a bare
+    session on ``config.database_connection``.
+    """
+    try:
+        engine = create_engine(config.database_connection)
+        try:
+            with Session(engine) as session:
+                return control_queues_for_session(session)
+        finally:
+            engine.dispose()
+    except Exception as e:
+        log.error("Could not build control-queue declare list: %s", e)
+        return []
 
 
 def send_reload_notification(config) -> bool:
@@ -121,6 +140,7 @@ def send_reload_notification(config) -> bool:
                 payload,
                 exchange=galaxy_exchange,
                 routing_key="control.*",
+                declare=_cli_control_queues(config),
                 retry=True,
                 headers={"epoch": time.time()},
             )
@@ -134,11 +154,14 @@ def send_reload_notification(config) -> bool:
 
 
 class ToolFileWatcher:
-    """
-    Watches tool directories for changes and triggers store updates.
+    """Watches tool directories and updates the store as files change.
 
-    Uses watchdog for filesystem monitoring and sends Kombu notifications
-    when tools are updated.
+    Filesystem observation and change detection are delegated to
+    :class:`galaxy.util.watcher.Watcher` (the plumbing the eager toolbox
+    watchers use); this class only supplies the per-file callback that
+    re-populates the store and notifies peer Galaxy processes. ``Watcher``
+    already suppresses no-op events via an md5 re-check, so there is no
+    per-batch timer — each changed ``.xml`` triggers one populate + notify.
     """
 
     def __init__(
@@ -146,7 +169,6 @@ class ToolFileWatcher:
         config,
         store,
         tools_dirs: list,
-        debounce_seconds: float = 2.0,
         use_polling: bool = False,
         verbose: bool = False,
         notify_callable: Callable[[Any], bool] | None = None,
@@ -154,89 +176,47 @@ class ToolFileWatcher:
         self.config = config
         self.store = store
         self.tools_dirs = tools_dirs
-        self.debounce_seconds = debounce_seconds
-        self.use_polling = use_polling
         self.verbose = verbose
         # Injected so tests can substitute a fake; default is the AMQP notifier.
         self._notify = notify_callable or send_reload_notification
-        # ``watchdog`` observer; typed Any because watchdog is an optional
-        # dependency imported inside :meth:`start`.
-        self.observer: Any = None
-        self._pending_changes: set[str] = set()
-        self._lock = threading.Lock()
-        self._debounce_timer: threading.Timer | None = None
+        observer_class = get_observer_class(
+            "watch_tool_sources",
+            "polling" if use_polling else "auto",
+            default="auto",
+            monitor_what_str="tool sources",
+        )
+        self._watcher = Watcher(observer_class, EventHandler) if observer_class is not None else None
         self._shutdown_event = threading.Event()
 
     def start(self):
         """Start watching for file changes."""
-        if not can_watch:
+        if self._watcher is None:
             raise Exception("watchdog is not installed; --watch mode requires it")
-        observer_class = PollingObserver if self.use_polling else Observer
-
-        class ToolFileHandler(FileSystemEventHandler):
-            def __init__(handler_self, watcher):
-                handler_self.watcher = watcher
-
-            def on_any_event(handler_self, event):
-                if event.is_directory:
-                    return
-                path = getattr(event, "dest_path", None) or event.src_path
-                # Accept every .xml. Tool files re-populate themselves; a
-                # changed macros file re-expands its sibling tools (both in
-                # _process_tool_file). Non-tool confs parse-and-skip there.
-                if path.endswith(".xml"):
-                    handler_self.watcher._queue_change(path)
-
-        self.observer = observer_class()
-        handler = ToolFileHandler(self)
-
         for tools_dir in self.tools_dirs:
             if tools_dir and tools_dir.exists():
-                log.info(f"Watching directory: {tools_dir}")
-                self.observer.schedule(handler, str(tools_dir), recursive=True)
-
-        self.observer.start()
+                log.info("Watching directory: %s", tools_dir)
+                self._watcher.watch_directory(
+                    str(tools_dir),
+                    callback=self._on_change,
+                    recursive=True,
+                    require_extensions=[".xml"],
+                )
+        self._watcher.start()
         log.info("File watcher started")
         return True
 
-    def _queue_change(self, path: str):
-        """Queue a file change for processing with debouncing."""
-        with self._lock:
-            self._pending_changes.add(path)
+    def _on_change(self, path: str) -> None:
+        """``Watcher`` callback: re-populate a changed ``.xml``, notify on success.
 
-            # Cancel existing timer if any
-            if self._debounce_timer:
-                self._debounce_timer.cancel()
-
-            # Start new debounce timer
-            self._debounce_timer = threading.Timer(
-                self.debounce_seconds,
-                self._process_pending_changes,
-            )
-            self._debounce_timer.start()
-
-    def _process_pending_changes(self):
-        """Process all pending file changes."""
-        with self._lock:
-            if not self._pending_changes:
-                return
-
-            changes = list(self._pending_changes)
-            self._pending_changes.clear()
-
-        log.info(f"Processing {len(changes)} changed tool file(s)")
-
-        updated = 0
-        for path in changes:
-            try:
-                if self._process_tool_file(path):
-                    updated += 1
-            except Exception as e:
-                log.error(f"Error processing {path}: {e}")
-
-        if updated > 0:
-            log.info(f"Updated {updated} tool(s), sending reload notification")
-            self._notify(self.config)
+        Tool files re-populate themselves; a changed macros file re-expands
+        its sibling tools (both in :meth:`_process_tool_file`). Non-tool confs
+        parse-and-skip there.
+        """
+        try:
+            if self._process_tool_file(path):
+                self._notify(self.config)
+        except Exception as e:
+            log.error("Error processing %s: %s", path, e)
 
     def _process_tool_file(self, path: str) -> bool:
         """Process a single tool file and update the store + index.
@@ -275,8 +255,7 @@ class ToolFileWatcher:
                 log.debug(f"Tool unchanged: {path}")
             return False
 
-        # No per-file broadcast: ``_process_pending_changes`` sends one
-        # debounced notification for the whole batch of changes.
+        # ``_on_change`` sends the reload notification when this returns True.
         populate_store_inline(self.config, paths=[path], rebuild_whoosh=True)
         log.info("Updated tool: %s", path)
         return True
@@ -307,13 +286,8 @@ class ToolFileWatcher:
         """Stop the watcher."""
         log.info("Shutting down file watcher...")
         self._shutdown_event.set()
-
-        if self._debounce_timer:
-            self._debounce_timer.cancel()
-
-        if self.observer:
-            self.observer.stop()
-            self.observer.join()
+        if self._watcher is not None:
+            self._watcher.shutdown()
 
         log.info("File watcher stopped")
 
@@ -797,7 +771,6 @@ def reconcile_index(
 def watch_mode(
     config_file: str,
     use_polling: bool = False,
-    debounce: float = 2.0,
     verbose: bool = False,
 ):
     """
@@ -806,7 +779,6 @@ def watch_mode(
     Args:
         config_file: Path to Galaxy configuration file.
         use_polling: Use polling observer (for network filesystems).
-        debounce: Debounce time in seconds.
         verbose: Enable verbose logging.
     """
     log.info("Loading Galaxy configuration...")
@@ -836,7 +808,6 @@ def watch_mode(
         config=config,
         store=store,
         tools_dirs=tools_dirs,
-        debounce_seconds=debounce,
         use_polling=use_polling,
         verbose=verbose,
     )
@@ -888,9 +859,6 @@ def main():
     parser.add_argument(
         "--watch-polling", action="store_true", help="Use polling observer for watch mode (for network filesystems)"
     )
-    parser.add_argument(
-        "--debounce", type=float, default=2.0, help="Debounce time in seconds for watch mode (default: 2.0)"
-    )
 
     args = parser.parse_args()
 
@@ -904,7 +872,6 @@ def main():
             watch_mode(
                 config_file=args.config,
                 use_polling=args.watch_polling,
-                debounce=args.debounce,
                 verbose=args.verbose,
             )
         )
