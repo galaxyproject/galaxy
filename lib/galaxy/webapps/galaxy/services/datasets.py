@@ -650,9 +650,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         dataset_id: DecodedDatabaseIdField,
-        to_ext: Optional[str] = None,
+        to_ext: str | None = None,
         hda_ldda: DatasetSourceType = DatasetSourceType.hda,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return a backing-store URL a whole-file download can be redirected to, or None to stream.
 
         Used by the dedicated download route; the regular display route never redirects.
@@ -678,7 +678,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         dataset_id: DecodedDatabaseIdField,
-        to_ext: Optional[str] = None,
+        to_ext: str | None = None,
         hda_ldda: DatasetSourceType = DatasetSourceType.hda,
     ) -> dict[str, str]:
         """Build response headers for a HEAD download request from object-store metadata.

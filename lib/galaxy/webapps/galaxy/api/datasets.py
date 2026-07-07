@@ -374,9 +374,9 @@ class FastAPIDatasets:
         self,
         request: Request,
         history_content_id: HistoryDatasetIDPathParam,
-        history_id: Optional[HistoryIDPathParam] = None,
+        history_id: HistoryIDPathParam | None = None,
         trans=DependsOnTrans,
-        to_ext: Optional[str] = ToExtQueryParam,
+        to_ext: str | None = ToExtQueryParam,
     ):
         """Downloads the whole dataset file. Clients must follow the 302 redirect this route may return."""
         return self._download(request, trans, history_content_id, to_ext)
@@ -396,12 +396,12 @@ class FastAPIDatasets:
         request: Request,
         history_content_id: HistoryDatasetIDPathParam,
         trans=DependsOnTrans,
-        to_ext: Optional[str] = ToExtQueryParam,
+        to_ext: str | None = ToExtQueryParam,
     ):
         """Downloads the whole dataset file. Clients must follow the 302 redirect this route may return."""
         return self._download(request, trans, history_content_id, to_ext)
 
-    def _download(self, request: Request, trans, dataset_id: DecodedDatabaseIdField, to_ext: Optional[str]):
+    def _download(self, request: Request, trans, dataset_id: DecodedDatabaseIdField, to_ext: str | None):
         # Default to_ext to "data" so the route always behaves as a whole-file download (server infers
         # the extension from the datatype) rather than a preview.
         to_ext = to_ext or "data"
