@@ -36,9 +36,17 @@ const isMyPanel = computed(() => currentPanelView.value === MY_PANEL_VIEW_ID);
 const errorMessage = ref("");
 const panelsFetched = ref(false);
 const showFavorites = ref(false);
+const defaultToolSections = computed(() => {
+    return (
+        toolSections.value.default ||
+        (defaultPanelView.value && defaultPanelView.value !== MY_PANEL_VIEW_ID
+            ? toolSections.value[defaultPanelView.value]
+            : null)
+    );
+});
 const headerToolSections = computed(() => {
     if (isMyPanel.value) {
-        return toolSections.value[defaultPanelView.value] || toolSections.value.default || currentToolSections.value;
+        return defaultToolSections.value || currentToolSections.value;
     }
     return currentToolSections.value;
 });
