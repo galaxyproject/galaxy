@@ -321,8 +321,8 @@ class ObjectStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_direct_download_url(
-        self, obj, content_disposition: Optional[str] = None, content_type: Optional[str] = None
-    ) -> Optional[str]:
+        self, obj, content_disposition: str | None = None, content_type: str | None = None
+    ) -> str | None:
         """Return a URL a client can be redirected to in order to download `obj` directly from the backing store.
 
         Returns None unless the concrete store supports direct access *and* the admin has opted in via the
@@ -687,13 +687,13 @@ class BaseObjectStore(ObjectStore):
         )
 
     def get_direct_download_url(
-        self, obj, content_disposition: Optional[str] = None, content_type: Optional[str] = None
-    ) -> Optional[str]:
+        self, obj, content_disposition: str | None = None, content_type: str | None = None
+    ) -> str | None:
         return self._invoke(
             "get_direct_download_url", obj, content_disposition=content_disposition, content_type=content_type
         )
 
-    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> Optional[str]:
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
         # Stores that don't support direct download (or haven't opted in) get this no-op default.
         return None
 
@@ -824,7 +824,7 @@ class ConcreteObjectStore(BaseObjectStore):
             object_expires_after_days=self.object_expires_after_days,
         )
 
-    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> Optional[str]:
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
         if not self.enable_direct_download:
             return None
         # _get_object_url is resolved via dynamic dispatch on each concrete backend; it is not
@@ -1301,7 +1301,7 @@ class NestedObjectStore(BaseObjectStore):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method("_get_object_url", obj, None, False, **kwargs)
 
-    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> Optional[str]:
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
         """For the first backend that has this `obj`, get its direct download URL."""
         return self._call_method(
             "_get_direct_download_url",
