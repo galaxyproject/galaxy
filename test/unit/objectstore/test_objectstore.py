@@ -530,7 +530,7 @@ def test_distributed_store_start_propagates_to_backends():
 
 
 def test_distributed_store_get_filename_forwards_auth_to_backend():
-    auth = ObjectStoreAuth(user=object())
+    auth = ObjectStoreAuth(user=None)
     dataset = MockDataset(1)
     dataset.object_store_id = "files1"
     with TestConfig(DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
