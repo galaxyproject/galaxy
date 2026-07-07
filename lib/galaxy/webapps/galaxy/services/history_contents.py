@@ -510,7 +510,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             history_dataset_collection_association_id=dataset_collection_instance.id,
         )
         result = prepare_dataset_collection_download.delay(
-            request=request, task_user_id=getattr(trans.user, "id", None), user=trans.user
+            request=request, task_user_id=getattr(trans.user, "id", None)
         )
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
 
