@@ -83,6 +83,7 @@ from galaxy.tools.source_store.search import (
     ToolWhooshIndex,
 )
 from galaxy.util import listify
+from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.properties import load_app_properties
 from galaxy.util.watcher import (
     EventHandler,
@@ -422,6 +423,8 @@ def build_index_entry_from_source(
             edam_topics=edam_topics,
             source_hash=stored.hash,
             source_class=stored.tool_source_class,
+            source_path=stored.source_path,
+            file_hash=(stored.metadata or {}).get("file_hash"),
             hidden=hidden,
             require_login=require_login,
             tool_type=tool_type,
@@ -573,7 +576,7 @@ def populate_store_inline(
 
     log.info("Discovering tools from configuration...")
 
-    stats = {"processed": 0, "stored": 0, "skipped": 0, "errors": 0}
+    stats = {"processed": 0, "stored": 0, "skipped": 0, "unchanged": 0, "errors": 0}
 
     # Converters route to the default store, so only enumerate them on a full
     # rebuild — a targeted single-store populate never writes them and would
@@ -627,6 +630,25 @@ def populate_store_inline(
         tool_specs = [(d, n) for d, n in tool_specs if pattern in d.path]
         log.info(f"Filtered to {len(tool_specs)} tools matching '{pattern}'")
 
+    # Incremental fast path: ``process_tool`` (below, in parallel) compares each
+    # tool file's raw md5 — the hash the eager ToolCache uses for reload
+    # detection — against the hash recorded on its prior index entry. A
+    # byte-identical file can't have changed, so its entry is carried forward
+    # and the expensive macro-expanding parse is skipped. Requiring an existing
+    # entry means an empty or missing index can never blank the store; ``prune``
+    # forces a from-scratch re-parse. The hash lives on the index entry (rebuilt
+    # every run), so it persists whether a tool was stored or content-deduped.
+    carried_entries: dict[str, list[ToolIndexEntry]] = {name: [] for name in writable_names}
+    old_entry_by_path: dict[str, dict[str, ToolIndexEntry]] = {name: {} for name in writable_names}
+    if incremental and not prune:
+        for name in writable_names:
+            old_index = stores[name].load_index()
+            if old_index is not None:
+                for versions in old_index.entries_by_version.values():
+                    for entry in versions.values():
+                        if entry.source_path:
+                            old_entry_by_path[name][entry.source_path] = entry
+
     def process_tool(
         d: DiscoveredTool, store_name: str
     ) -> tuple[str, DiscoveredTool, str, StoredToolSource | None, Any | None, str | None]:
@@ -639,6 +661,14 @@ def populate_store_inline(
         """
         path = d.path
         try:
+            # Fast path: a byte-identical file carries its prior index entry
+            # forward, skipping the macro-expanding parse below.
+            file_hash = md5_hash_file(path)
+            if incremental and not prune:
+                old_entry = old_entry_by_path[store_name].get(path)
+                if old_entry is not None and file_hash and old_entry.file_hash == file_hash:
+                    return ("unchanged", d, store_name, None, None, None)
+
             # Galaxy's tool source parser handles macro expansion (XML) and
             # YAML user-tool / CWL parsing transparently; ``to_string`` then
             # serialises whatever the source class needs to round-trip.
@@ -660,6 +690,8 @@ def populate_store_inline(
                 tool_dir=str(Path(path).parent),
                 source_path=str(path),
                 stored_at=datetime.now(timezone.utc),
+                # Raw file md5 for the fast path; carried onto the index entry.
+                metadata={"file_hash": file_hash},
             )
 
             if incremental:
@@ -694,6 +726,11 @@ def populate_store_inline(
 
             if status == "error":
                 stats["errors"] += 1
+            elif status == "unchanged":
+                stats["unchanged"] += 1
+                entry = old_entry_by_path[store_name].get(discovered.path)
+                if entry is not None:
+                    carried_entries[store_name].append(entry)
             elif status == "skipped":
                 stats["skipped"] += 1
                 if stored is not None and tool_source is not None:
@@ -726,6 +763,9 @@ def populate_store_inline(
                 # entries for the paths we just rescanned. Anything else
                 # stays as-is (use reconcile_index for full prune).
                 index = stores[store_name].load_index() or ToolIndex()
+            # Unchanged tools skipped the parse; carry their prior entries.
+            for entry in carried_entries[store_name]:
+                index.add_entry(entry)
             for d, stored, tool_source in triples:
                 entry = build_index_entry_from_source(d, stored, tool_source)
                 if entry is not None:

@@ -21,6 +21,8 @@ class _StoredStub:
     hash: str = "abc123"
     tool_source_class: str = "XmlToolSource"
     tool_id: str = "bowtie2"
+    source_path: str | None = "/tools/bowtie2.xml"
+    metadata: dict | None = None
 
 
 class _ToolSourceStub:

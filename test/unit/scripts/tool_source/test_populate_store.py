@@ -25,6 +25,8 @@ sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.tools.source_store.populator import (
     compute_hash,
+    DEFAULT_STORE_NAME,
+    populate_store_inline,
     send_reload_notification,
     ToolFileWatcher,
 )
@@ -319,3 +321,42 @@ class TestToolFileWatcher:
             assert len(notification_sent) == 0
         finally:
             os.unlink(temp_path)
+
+
+class TestIncrementalFastPath:
+    """A second populate carries byte-identical tools forward without re-parsing."""
+
+    def _config(self, tmp_path, conf):
+        class _Cfg:
+            enable_beta_tool_formats = False
+            tool_source_stores: dict = {}
+            tool_search_index_dir = None
+            root = str(tmp_path)
+            tool_path = str(tmp_path)
+            tool_source_database_connection = f"sqlite:///{tmp_path}/ts.sqlite"
+
+            def all_tool_config_files(self):
+                return [str(conf)]
+
+        return _Cfg()
+
+    def test_unchanged_tools_carried_forward(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tools_dir.mkdir()
+        for i in (1, 2):
+            (tools_dir / f"itest_{i}.xml").write_text(
+                f'<tool id="itest_{i}" name="ITest {i}" version="1.0" profile="21.09"><command>echo</command></tool>'
+            )
+        conf = tmp_path / "tool_conf.xml"
+        conf.write_text(
+            f'<toolbox tool_path="{tools_dir}"><tool file="itest_1.xml"/><tool file="itest_2.xml"/></toolbox>'
+        )
+        cfg = self._config(tmp_path, conf)
+
+        r1 = populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="itest_", incremental=True)
+        assert (r1["stored"], r1["unchanged"]) == (2, 0)
+
+        # Nothing changed on disk: the second run skips the parse and store
+        # write, carrying both index entries forward.
+        r2 = populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="itest_", incremental=True)
+        assert (r2["stored"], r2["unchanged"]) == (0, 2)

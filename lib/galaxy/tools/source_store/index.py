@@ -47,6 +47,10 @@ class ToolIndexEntry:
     # === Source Reference ===
     source_hash: str = ""
     source_class: str = "XmlToolSource"
+    source_path: str | None = None
+    # Raw md5 of the source file (incremental fast path: an unchanged file
+    # carries this entry forward instead of re-parsing).
+    file_hash: str | None = None
 
     # === Status ===
     hidden: bool = False
@@ -143,6 +147,8 @@ class ToolIndexEntry:
             "edam_topics": self.edam_topics,
             "source_hash": self.source_hash,
             "source_class": self.source_class,
+            "source_path": self.source_path,
+            "file_hash": self.file_hash,
             "hidden": self.hidden,
             "disabled": self.disabled,
             "require_login": self.require_login,
@@ -180,6 +186,8 @@ class ToolIndexEntry:
             edam_topics=data.get("edam_topics", []),
             source_hash=data.get("source_hash", ""),
             source_class=data.get("source_class", "XmlToolSource"),
+            source_path=data.get("source_path"),
+            file_hash=data.get("file_hash"),
             hidden=data.get("hidden", False),
             disabled=data.get("disabled", False),
             require_login=data.get("require_login", False),
