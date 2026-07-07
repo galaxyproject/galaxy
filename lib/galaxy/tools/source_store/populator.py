@@ -453,7 +453,7 @@ def _build_stores(config) -> dict[str, Any]:
         try:
             parser = get_toolbox_parser(path)
         except Exception as e:
-            log.debug(f"skipping tool conf {path} during store discovery: {e}")
+            log.error(f"skipping tool conf {path} during store discovery: {e}")
             continue
         name = parser.parse_store_name()
         if name:

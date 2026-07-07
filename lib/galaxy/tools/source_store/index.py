@@ -386,16 +386,6 @@ class ToolIndex:
         """Return tools with container requirements."""
         return [e for e in self.entries.values() if e.container_requirements]
 
-    def memory_size_estimate(self) -> int:
-        """
-        Estimate memory usage in bytes.
-
-        Returns:
-            Estimated memory usage in bytes.
-        """
-        # Rough estimate: ~1KB per entry for typical tool with all fields
-        return len(self.entries) * 1024
-
     def compute_version(self) -> str:
         """Compute a version string based on index contents."""
         keys = sorted(self.entries.keys())

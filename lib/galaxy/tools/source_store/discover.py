@@ -300,7 +300,7 @@ def discover_tools(
                     is_shed_tool=False,
                 )
     except Exception as e:
-        log.debug("Failed to enumerate datatype converters: %s", e)
+        log.error("Failed to enumerate datatype converters: %s", e)
 
 
 def discover_tool_files(

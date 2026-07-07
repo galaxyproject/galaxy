@@ -58,7 +58,7 @@ def _collect_per_conf_store_names(config: "GalaxyAppConfiguration") -> set[str]:
         try:
             parser = get_toolbox_parser(path)
         except Exception as e:
-            log.debug(f"skipping tool conf {path}: {e}")
+            log.error(f"skipping tool conf {path}: {e}")
             continue
         store = parser.parse_store_name()
         if store:
