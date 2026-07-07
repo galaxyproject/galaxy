@@ -24,7 +24,6 @@ import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
-import galaxy.tools.source_store.populator as populator_module
 from galaxy.tools.source_store.populator import (
     compute_hash,
     send_reload_notification,
@@ -166,6 +165,16 @@ def _recording_notify(sink: list):
     return notify
 
 
+def _recording_populate(sink: list):
+    """Fake populate callable that records each call's kwargs in ``sink``."""
+
+    def populate(config: Any, **kwargs: Any) -> dict:
+        sink.append(kwargs)
+        return {}
+
+    return populate
+
+
 class TestToolFileWatcher:
     """Tests for the ToolFileWatcher class."""
 
@@ -207,18 +216,13 @@ class TestToolFileWatcher:
         finally:
             os.unlink(temp_path)
 
-    def test_process_tool_file_populates_changed_tool(self, monkeypatch):
-        calls = []
-
-        def fake_populate(config, **kwargs):
-            calls.append(kwargs)
-            return {}
-
-        monkeypatch.setattr(populator_module, "populate_store_inline", fake_populate)
+    def test_process_tool_file_populates_changed_tool(self):
+        calls: list = []
         watcher = ToolFileWatcher(
             config=FakeConfig(),
             store=FakeToolSourceStore(),
             tools_dirs=[],
+            populate_callable=_recording_populate(calls),
         )
 
         tool_content = """<tool id="test_tool" name="Test" version="1.0">
@@ -270,6 +274,29 @@ class TestToolFileWatcher:
         finally:
             os.unlink(temp_path)
 
+    def test_process_tool_file_macro_repopulates_siblings(self, tmp_path):
+        # A changed macros file re-expands the sibling tools that import it,
+        # excluding the macro file itself.
+        calls: list = []
+        watcher = ToolFileWatcher(
+            config=FakeConfig(),
+            store=FakeToolSourceStore(),
+            tools_dirs=[],
+            populate_callable=_recording_populate(calls),
+        )
+
+        tool_path = tmp_path / "sometool.xml"
+        tool_path.write_text('<tool id="t" name="T" version="1.0"><command>echo</command></tool>')
+        macro_path = tmp_path / "macros.xml"
+        macro_path.write_text('<macros><token name="@X@">1</token></macros>')
+
+        result = watcher._process_tool_file(str(macro_path))
+
+        assert result is True
+        assert len(calls) == 1
+        assert str(tool_path) in calls[0]["paths"]
+        assert str(macro_path) not in calls[0]["paths"]
+
     def test_shutdown_sets_event(self):
         """Shutdown should signal the shutdown event."""
         watcher = ToolFileWatcher(
@@ -282,15 +309,15 @@ class TestToolFileWatcher:
 
         assert watcher._shutdown_event.is_set()
 
-    def test_on_change_notifies_on_update(self, monkeypatch):
+    def test_on_change_notifies_on_update(self):
         """A changed tool file re-populates and fires one notification."""
-        monkeypatch.setattr(populator_module, "populate_store_inline", lambda config, **kwargs: {})
         notification_sent: list = []
         watcher = ToolFileWatcher(
             config=FakeConfig(),
             store=FakeToolSourceStore(),
             tools_dirs=[],
             notify_callable=_recording_notify(notification_sent),
+            populate_callable=_recording_populate([]),
         )
 
         tool_content = """<tool id="test" version="1.0">

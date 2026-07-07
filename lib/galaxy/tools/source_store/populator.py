@@ -172,13 +172,16 @@ class ToolFileWatcher:
         use_polling: bool = False,
         verbose: bool = False,
         notify_callable: Callable[[Any], bool] | None = None,
+        populate_callable: Callable[..., Any] | None = None,
     ):
         self.config = config
         self.store = store
         self.tools_dirs = tools_dirs
         self.verbose = verbose
-        # Injected so tests can substitute a fake; default is the AMQP notifier.
+        # Injected so tests can substitute fakes; defaults are the real
+        # populator + the AMQP notifier.
         self._notify = notify_callable or send_reload_notification
+        self._populate = populate_callable or populate_store_inline
         observer_class = get_observer_class(
             "watch_tool_sources",
             "polling" if use_polling else "auto",
@@ -256,7 +259,7 @@ class ToolFileWatcher:
             return False
 
         # ``_on_change`` sends the reload notification when this returns True.
-        populate_store_inline(self.config, paths=[path], rebuild_whoosh=True)
+        self._populate(self.config, paths=[path], rebuild_whoosh=True)
         log.info("Updated tool: %s", path)
         return True
 
@@ -274,7 +277,7 @@ class ToolFileWatcher:
         siblings = [str(p) for p in macro_dir.glob("*.xml") if str(p) != macro_path]
         if not siblings:
             return False
-        populate_store_inline(self.config, paths=siblings, rebuild_whoosh=True)
+        self._populate(self.config, paths=siblings, rebuild_whoosh=True)
         log.info("Macro change in %s — re-expanded %d sibling file(s)", macro_path, len(siblings))
         return True
 
