@@ -26,11 +26,13 @@ from typing import (
 
 from galaxy.model import _get_datatypes_registry
 from galaxy.tool_util.loader_directory import looks_like_a_tool
+from galaxy.tool_util.toolbox.base import resolve_tool_path
 from galaxy.tool_util.toolbox.parser import (
     get_toolbox_parser,
     ToolConfItem,
     ToolConfSection,
 )
+from galaxy.tools import MODEL_TOOLS_PATH
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
@@ -69,52 +71,6 @@ class DiscoveredTool:
     # populator stamps these onto ``ToolIndexEntry``.
     section_id: str | None = None
     section_name: str | None = None
-
-
-def resolve_tool_path(tool_path: str | None, config_filename: str, root_dir: str | None = None) -> str:
-    """
-    Resolve the tool_path to an absolute directory path.
-
-    Args:
-        tool_path: The tool_path from the tool_conf, may be None or relative.
-        config_filename: The path to the tool_conf file.
-        root_dir: Optional Galaxy root directory.
-
-    Returns:
-        Absolute path to the tool directory.
-    """
-    if tool_path is None:
-        # Default to 'tools' relative to Galaxy root or config dir
-        if root_dir:
-            return os.path.join(root_dir, "tools")
-        config_dir = os.path.dirname(os.path.abspath(config_filename))
-        # Assume config is in config/ dir, tools is at same level
-        return os.path.join(os.path.dirname(config_dir), "tools")
-
-    # Expand the ``${tool_conf_dir}`` template that test/functional/tools/sample_tool_conf.xml
-    # (and similar shipped confs) use. Without this, the literal substring is taken
-    # as a directory name and every tool file ends up at a non-existent path —
-    # silently dropped at the os.path.exists() check below.
-    tool_conf_dir = os.path.dirname(os.path.abspath(config_filename))
-    tool_path = string.Template(tool_path).safe_substitute({"tool_conf_dir": tool_conf_dir})
-
-    if os.path.isabs(tool_path):
-        return tool_path
-
-    # tool_path is relative - resolve relative to config file location
-    return os.path.abspath(os.path.join(tool_conf_dir, tool_path))
-
-
-def _resolve_file_template_kwds() -> dict[str, str]:
-    """Resolve template variables that tool conf ``file=...`` attributes may use.
-
-    Mirrors :py:meth:`galaxy.tools.ToolBox._path_template_kwds`.
-    """
-    # Local import: only a path constant is needed, and a module-level import
-    # would pull the whole galaxy.tools package into every discover() caller.
-    from galaxy.tools import MODEL_TOOLS_PATH
-
-    return {"model_tools_path": MODEL_TOOLS_PATH}
 
 
 def _iter_tool_items(
@@ -161,7 +117,7 @@ def _walk_tool_dir(directory: str, recursive: bool) -> Iterator[str]:
 
 def discover_tools_from_config(
     config_filename: str,
-    root_dir: str | None = None,
+    default_tool_path: str | None = None,
     enable_beta_formats: bool = False,
 ) -> Iterator[DiscoveredTool]:
     """
@@ -169,7 +125,9 @@ def discover_tools_from_config(
 
     Args:
         config_filename: Path to a tool_conf.xml or similar file.
-        root_dir: Optional Galaxy root directory for resolving relative paths.
+        default_tool_path: Directory tool files are relative to when the conf
+            doesn't set ``tool_path`` — same fallback the toolbox applies
+            (``config.tool_path``).
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -185,7 +143,7 @@ def discover_tools_from_config(
         return
 
     tool_path = tool_conf_source.parse_tool_path()
-    resolved_tool_path = resolve_tool_path(tool_path, config_filename, root_dir)
+    resolved_tool_path = resolve_tool_path(tool_path, config_filename, default_tool_path)
     is_shed_conf = tool_conf_source.is_shed_tool_conf()
 
     # Match what AbstractToolBox._path_template_kwds does for ToolBox: tool
@@ -193,7 +151,7 @@ def discover_tools_from_config(
     # (e.g. ``<tool file="${model_tools_path}/apply_rules.xml" />`` in
     # tool_conf.xml.sample). Without expanding this, those tools are silently
     # dropped at the os.path.exists check below.
-    file_template_kwds = _resolve_file_template_kwds()
+    file_template_kwds = {"model_tools_path": MODEL_TOOLS_PATH}
 
     for item, section in _iter_tool_items(tool_conf_source.parse_items()):
         section_id = section.get("id") if section is not None else None
@@ -287,7 +245,7 @@ def discover_tools(
 
     # Discover from all tool config files
     for config_filename in config.all_tool_config_files():
-        for tool in discover_tools_from_config(config_filename, root_dir, config.enable_beta_tool_formats):
+        for tool in discover_tools_from_config(config_filename, config.tool_path, config.enable_beta_tool_formats):
             if tool.path not in seen_paths:
                 seen_paths.add(tool.path)
                 yield tool

@@ -161,6 +161,23 @@ class ToolLoadConfigurationConflict(Exception):
     pass
 
 
+def resolve_tool_path(tool_path: str | None, config_filename: str, default_tool_path: "StrPath | None" = None) -> str:
+    """Resolve a tool conf's ``tool_path`` attribute to the directory its tool
+    files are relative to.
+
+    Expands the ``${tool_conf_dir}`` template; falls back to
+    ``default_tool_path`` (the toolbox's ``tool_root_dir``, i.e.
+    ``config.tool_path``) when the conf doesn't set one.
+    """
+    if not tool_path:
+        # Default to backward compatible config setting.
+        return str(default_tool_path) if default_tool_path else ""
+    # Allow use of ${tool_conf_dir} in toolbox config files.
+    tool_conf_dir = os.path.dirname(config_filename)
+    tool_path_vars = {"tool_conf_dir": tool_conf_dir}
+    return string.Template(tool_path).safe_substitute(tool_path_vars)
+
+
 class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
@@ -375,7 +392,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             config_elems = []
         tool_conf_type = "shed tool" if parsing_shed_tool_conf else "tool"
         log.debug("Tool path for %s configuration %s is %s", tool_conf_type, config_filename, tool_path)
-        tool_path = self.__resolve_tool_path(tool_path, config_filename)
+        tool_path = resolve_tool_path(tool_path, config_filename, self._tool_root_dir)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self._integrated_tool_panel_config_has_contents
         for item in tool_conf_source.parse_items():
@@ -549,17 +566,6 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     def get_section_for_tool(self, tool) -> tuple[str, str] | tuple[None, None]:
         tool_id = tool.id
         return self._tool_panel.get_section_for_tool_id(tool_id)
-
-    def __resolve_tool_path(self, tool_path, config_filename):
-        if not tool_path:
-            # Default to backward compatible config setting.
-            tool_path = self._tool_root_dir
-        else:
-            # Allow use of __tool_conf_dir__ in toolbox config files.
-            tool_conf_dir = os.path.dirname(config_filename)
-            tool_path_vars = {"tool_conf_dir": tool_conf_dir}
-            tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
-        return tool_path
 
     def add_tool_to_tool_panel_view(self, tool, view_panel_component):
         self.__add_tool_to_tool_panel(tool, view_panel_component)
