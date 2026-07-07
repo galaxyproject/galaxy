@@ -222,17 +222,6 @@ class ToolSourceBenchmarks:
             iterations=iterations,
         )
 
-    def benchmark_index_search(self, iterations: int = 100) -> BenchmarkResult:
-        """Benchmark searching the tool index."""
-        index = self._build_sample_index(1000)
-        queries = ["genomics", "tool_5", "number", "does"]
-
-        def search():
-            for q in queries:
-                index.search(q, limit=50)
-
-        return benchmark_function("index_search", search, iterations)
-
     def benchmark_api_response_generation(self, iterations: int = 100) -> BenchmarkResult:
         """Benchmark generating /api/tools response from index."""
         index = self._build_sample_index(1000)
@@ -265,17 +254,6 @@ class ToolSourceBenchmarks:
         return benchmark_function(
             "all_requirements",
             get_reqs,
-            iterations,
-        )
-
-    def benchmark_sanitize_allowlist(self, iterations: int = 100) -> BenchmarkResult:
-        """Benchmark /api/sanitize_allow generation."""
-        index = self._build_sample_index(1000)
-        allowed_ids = {f"tool_{i}" for i in range(0, 1000, 2)}  # Half allowed
-
-        return benchmark_function(
-            "sanitize_allowlist",
-            lambda: index.get_sanitize_allowlist(allowed_ids),
             iterations,
         )
 
@@ -322,11 +300,9 @@ class ToolSourceBenchmarks:
             ("XML Parsing", lambda: self.benchmark_xml_parsing(iterations)),
             ("DB Deserialization", lambda: self.benchmark_deserialization_from_db_format(iterations)),
             ("Hash Computation", lambda: self.benchmark_hash_computation(iterations * 10)),
-            ("Index Search", lambda: self.benchmark_index_search(iterations)),
             ("API Response Generation", lambda: self.benchmark_api_response_generation(iterations)),
             ("Tests Summary", lambda: self.benchmark_tests_summary(iterations)),
             ("All Requirements", lambda: self.benchmark_all_requirements(iterations)),
-            ("Sanitize Allowlist", lambda: self.benchmark_sanitize_allowlist(iterations)),
             ("Requirements Summary", lambda: self.benchmark_requirements_summary(iterations)),
             ("Index Serialization", lambda: self.benchmark_index_serialization(iterations // 2)),
             ("Index Deserialization", lambda: self.benchmark_index_deserialization(iterations // 2)),
