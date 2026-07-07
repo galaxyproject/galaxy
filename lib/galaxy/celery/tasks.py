@@ -564,7 +564,7 @@ def prepare_dataset_collection_download(
     sa_session: galaxy_scoped_session,
     request: PrepareDatasetCollectionDownload,
     collection_manager: DatasetCollectionManager,
-    task_user_id: int | None = None
+    task_user_id: int | None = None,
 ):
     """Create a short term storage file tracked and available for download of target collection."""
     user = None
