@@ -1,9 +1,13 @@
 """
-Tool Source Store - Pluggable storage backends for Galaxy tool sources.
+Tool Source Store - standalone storage for Galaxy tool sources.
 
-This package provides a configurable, pluggable tool source storage system
-that enables storing and retrieving tool sources from a standalone
-SQLAlchemy-backed store (currently ``sqlalchemy``, alias ``sqlite``).
+Tool sources and their derived ``ToolIndex`` live in a standalone SQLAlchemy
+database chosen by connection URL (``tool_source_database_connection``;
+defaults to a ``sqlite:///`` file, but any SQLAlchemy URL such as
+``postgresql://`` works just as well). There is a single store
+implementation, ``SqlAlchemyToolSourceStore``; a tool_conf may point at a
+named store declared in ``tool_source_stores``, and those are layered over
+the default in a ``CompositeToolSourceStore``.
 """
 
 from .factory import (
