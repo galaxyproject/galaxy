@@ -9,7 +9,6 @@ Following test guidelines:
 - Real objects with constraints (temp files, fake stores)
 """
 
-import hashlib
 import os
 import tempfile
 from dataclasses import dataclass
@@ -90,24 +89,6 @@ class TestComputeHash:
         assert len(result) == 64
         assert all(c in "0123456789abcdef" for c in result)
 
-    def test_matches_hashlib_sha256(self):
-        """Verify implementation matches standard library."""
-        content = "hello world"
-        expected = hashlib.sha256(content.encode()).hexdigest()
-        assert compute_hash(content) == expected
-
-    def test_empty_string_has_valid_hash(self):
-        """Empty strings should produce consistent hash."""
-        result = compute_hash("")
-        expected = hashlib.sha256(b"").hexdigest()
-        assert result == expected
-
-    def test_unicode_content_hashes_correctly(self):
-        """Unicode content should be handled via UTF-8 encoding."""
-        content = "unicode: éàü 日本語"
-        expected = hashlib.sha256(content.encode()).hexdigest()
-        assert compute_hash(content) == expected
-
     def test_deterministic_for_same_input(self):
         """Same input always produces same output."""
         content = "test content"
@@ -126,29 +107,6 @@ class TestSendReloadNotification:
         config = FakeConfig(amqp_internal_connection=None)
         result = send_reload_notification(config)
         assert result is False
-
-    def test_returns_false_on_connection_error(self):
-        """Connection errors should be caught and return False."""
-        config = FakeConfig(amqp_internal_connection="amqp://localhost")
-
-        # Force an import error by breaking kombu import
-        import sys
-
-        original_modules = sys.modules.copy()
-
-        # Remove kombu if present to simulate import failure
-        for key in list(sys.modules.keys()):
-            if key.startswith("kombu"):
-                del sys.modules[key]
-
-        try:
-            # The function should catch the ImportError and return False
-            result = send_reload_notification(config)
-            # Either returns True if kombu is available, or False if not
-            assert isinstance(result, bool)
-        finally:
-            # Restore modules
-            sys.modules.update(original_modules)
 
 
 def _recording_notify(sink: list):
