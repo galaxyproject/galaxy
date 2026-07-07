@@ -73,6 +73,10 @@ const localVue = getLocalVue();
 const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
 
+const SELECTORS = {
+    EXTRACT_WORKFLOW_BUTTON: "[data-description='page extract workflow button']",
+};
+
 let pinia: Pinia;
 
 function mountComponent(propsData: { pageId: string; historyId?: string; displayOnly?: boolean }) {
@@ -165,6 +169,10 @@ describe("PageEditorView", () => {
 
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages`);
         });
+
+        it("shows Extract Workflow button in history mode", () => {
+            expect(wrapper.find(SELECTORS.EXTRACT_WORKFLOW_BUTTON).exists()).toBe(true);
+        });
     });
 
     describe("Editor view (standalone mode)", () => {
@@ -189,6 +197,7 @@ describe("PageEditorView", () => {
         it("hides Extract Workflow button in standalone mode", () => {
             expect(wrapper.find(SELECTORS.EXTRACT_WORKFLOW_BUTTON).exists()).toBe(false);
         });
+
         it("back button navigates to pages list", async () => {
             wrapper.findComponent(PageDisplayToolbar).vm.$emit("back");
             expect(mockPush).toHaveBeenCalledWith("/pages/list");

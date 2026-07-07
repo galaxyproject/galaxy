@@ -2146,11 +2146,11 @@ class BaseDatasetPopulator(BasePopulator):
     def new_notebook_referencing(
         self,
         history_id: str,
-        output_ids: Optional[list[str]] = None,
-        collection_ids: Optional[list[str]] = None,
-        job_ids: Optional[list[str]] = None,
-        icj_ids: Optional[list[str]] = None,
-        title: Optional[str] = None,
+        output_ids: list[str] | None = None,
+        collection_ids: list[str] | None = None,
+        job_ids: list[str] | None = None,
+        icj_ids: list[str] | None = None,
+        title: str | None = None,
     ) -> dict[str, Any]:
         """Create a history-attached page (notebook) whose markdown references the
         given dataset outputs (history_dataset_display), dataset collection
