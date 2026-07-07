@@ -109,6 +109,8 @@ const MY_PANEL_VIEW: Panel = {
     searchable: true,
 };
 
+const DEFAULT_PANEL_VIEW_ID = "default";
+
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const defaultPanelView: Ref<string> = ref("");
@@ -369,8 +371,16 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function setPanel(panelView: string) {
         try {
-            if (panelView === MY_PANEL_VIEW_ID && defaultPanelView.value && panelView !== defaultPanelView.value) {
-                await fetchToolSections(defaultPanelView.value);
+            if (panelView === MY_PANEL_VIEW_ID) {
+                const sectionedPanelView =
+                    defaultPanelView.value && defaultPanelView.value !== MY_PANEL_VIEW_ID
+                        ? defaultPanelView.value
+                        : panels.value[DEFAULT_PANEL_VIEW_ID]
+                          ? DEFAULT_PANEL_VIEW_ID
+                          : null;
+                if (sectionedPanelView) {
+                    await fetchToolSections(sectionedPanelView);
+                }
             }
             await fetchToolSections(panelView);
             currentPanelView.value = panelView;
