@@ -57,6 +57,14 @@ from whoosh.scoring import (
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.tools.source_store.populator import (
+    DEFAULT_STORE_NAME,
+    whoosh_dir_for_store,
+)
+from galaxy.tools.source_store.search import (
+    ToolSearchTuning,
+    ToolWhooshIndex,
+)
 from galaxy.util import (
     ExecutionTimer,
     unicodify,
@@ -156,16 +164,6 @@ class LazyToolboxSearch(ToolBoxSearch):
         self.index_count += 1
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
-        # Lazy import: avoids pulling populator's deps into module load.
-        from galaxy.tools.source_store.populator import (
-            DEFAULT_STORE_NAME,
-            whoosh_dir_for_store,
-        )
-        from galaxy.tools.source_store.search import (
-            ToolSearchTuning,
-            ToolWhooshIndex,
-        )
-
         if not config.tool_search_index_dir:
             # No index dir means whoosh search is off entirely.
             return []

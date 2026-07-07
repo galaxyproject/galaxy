@@ -1323,6 +1323,8 @@ class LazyToolBox(ToolBox):
                 # broadcasts an invalidation; removals must broadcast too or
                 # peer web workers keep serving the uninstalled tool until an
                 # unrelated populate happens to run.
+                # Local import: genuine circularity — galaxy.queue_worker
+                # imports LazyToolBox at module level.
                 from galaxy.queue_worker import send_control_task
 
                 try:

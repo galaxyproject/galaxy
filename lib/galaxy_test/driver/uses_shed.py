@@ -10,6 +10,7 @@ from unittest import SkipTest
 log = logging.getLogger(__name__)
 
 from galaxy.app import UniverseApplication
+from galaxy.tools.source_store.populator import reconcile_index
 from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
 from galaxy.util.unittest_utils import is_site_up
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
@@ -90,8 +91,6 @@ class UsesShed(UsesShedApi):
         # would otherwise survive the ``reload_toolbox`` below: ``LazyToolBox``
         # only re-runs the populator when discovery turns up a *new* path.
         try:
-            from galaxy.tools.source_store.populator import reconcile_index
-
             reconcile_index(self._app.config, rebuild_whoosh=True)
         except Exception as e:
             log.warning("reset_shed_tools: reconcile_index raised (continuing): %s", e)

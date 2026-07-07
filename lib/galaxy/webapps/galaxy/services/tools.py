@@ -8,7 +8,6 @@ from typing import (
     cast,
     get_args,
     Optional,
-    TYPE_CHECKING,
 )
 from uuid import UUID
 
@@ -62,13 +61,11 @@ from galaxy.tool_util_models.parameters import (
 )
 from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
+from galaxy.tools.lazy_toolbox import LazyToolBox
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
-
-if TYPE_CHECKING:
-    from galaxy.tools.lazy_toolbox import LazyToolBox
 
 log = logging.getLogger(__name__)
 
@@ -563,8 +560,6 @@ class ToolsService(ServiceBase):
 
     def _get_lazy_toolbox(self, trans: ProvidesUserContext) -> Optional["LazyToolBox"]:
         """Return the active toolbox if it's a LazyToolBox, else None."""
-        from galaxy.tools.lazy_toolbox import LazyToolBox
-
         toolbox = trans.app.toolbox
         return toolbox if isinstance(toolbox, LazyToolBox) else None
 

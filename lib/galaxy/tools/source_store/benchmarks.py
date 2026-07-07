@@ -12,6 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from galaxy.tool_util.parser.factory import TOOL_SOURCE_FACTORIES
 from .index import (
     ToolIndex,
     ToolIndexEntry,
@@ -162,12 +163,6 @@ class ToolSourceBenchmarks:
             print("No tools found for XML parsing benchmark")
             return None
 
-        try:
-            from galaxy.tool_util.parser.factory import TOOL_SOURCE_FACTORIES
-        except ImportError:
-            print("Could not import TOOL_SOURCE_FACTORIES")
-            return None
-
         # Use a representative tool
         path, content = tools[0]
         factory = TOOL_SOURCE_FACTORIES.get("XmlToolSource")
@@ -186,12 +181,6 @@ class ToolSourceBenchmarks:
         tools = self._load_sample_tools(10)
         if not tools:
             print("No tools found for deserialization benchmark")
-            return None
-
-        try:
-            from galaxy.tool_util.parser.factory import TOOL_SOURCE_FACTORIES
-        except ImportError:
-            print("Could not import TOOL_SOURCE_FACTORIES")
             return None
 
         path, content = tools[0]

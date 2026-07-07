@@ -37,6 +37,7 @@ from galaxy.managers.sse import (
 from galaxy.model import User
 from galaxy.tools import ToolBox
 from galaxy.tools.data_manager.manager import DataManagers
+from galaxy.tools.lazy_toolbox import LazyToolBox
 from galaxy.tools.special_tools import load_lib_tools
 
 logging.getLogger("kombu").setLevel(logging.WARNING)
@@ -290,9 +291,6 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
 
     new_toolbox: ToolBox
     if getattr(app.config, "use_lazy_toolbox", False) and getattr(app, "tool_source_store", None) is not None:
-        # Lazy import: avoids circular import between galaxy.queue_worker and galaxy.tools.
-        from galaxy.tools.lazy_toolbox import LazyToolBox
-
         new_toolbox = LazyToolBox(
             config_filenames=tool_configs,
             tool_root_dir=app.config.tool_path,
@@ -399,8 +397,6 @@ def reload_tool_source_cache(app, **kwargs):
     This is typically triggered by an external process (like populate_store.py --watch)
     when tool files change on disk.
     """
-    from galaxy.tools.lazy_toolbox import LazyToolBox
-
     log.debug("Executing tool source cache reload on '%s'", app.config.server_name)
 
     # Invalidate the lazy toolbox cache if the active toolbox is a LazyToolBox.

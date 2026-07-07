@@ -176,9 +176,14 @@ from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.evaluation import ToolTemplatingException
+from galaxy.tools.lazy_toolbox import LazyToolBox
 from galaxy.tools.search import (
     LazyToolboxSearch,
     ToolBoxSearch,
+)
+from galaxy.tools.source_store import (
+    build_tool_source_store,
+    ToolSourceStore,
 )
 from galaxy.tools.special_tools import load_lib_tools
 from galaxy.tours import (
@@ -425,12 +430,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         from ``build_tool_source_store`` — we let it propagate so the
         operator sees the failure at startup.
         """
-        # Local import: avoids a circular import between galaxy.app and galaxy.tools.
-        from galaxy.tools.source_store import (
-            build_tool_source_store,
-            ToolSourceStore,
-        )
-
         self.tool_source_store: ToolSourceStore | None = None
         if not self.config.use_lazy_toolbox:
             return
@@ -459,14 +458,11 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
     def _shutdown_lazy_toolbox(self) -> None:
         toolbox = getattr(self, "_toolbox", None)
-        # Lazy import: only relevant when the lazy path is in use.
-        try:
-            from galaxy.tools.lazy_toolbox import LazyToolBox
-
-            if isinstance(toolbox, LazyToolBox):
+        if isinstance(toolbox, LazyToolBox):
+            try:
                 toolbox.close()
-        except Exception as e:
-            log.debug(f"_shutdown_lazy_toolbox: {e}")
+            except Exception as e:
+                log.debug(f"_shutdown_lazy_toolbox: {e}")
 
     def _use_lazy_toolbox(self) -> bool:
         """Determine whether to use LazyToolBox instead of regular ToolBox.
@@ -482,9 +478,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
     def _create_lazy_toolbox(self) -> "tools.ToolBox":
         """Create a LazyToolBox instance."""
-        # Lazy import: avoids circular import between galaxy.app and galaxy.tools.
-        from galaxy.tools.lazy_toolbox import LazyToolBox
-
         cache_size = self.config.lazy_toolbox_cache_size
         log.info(f"Using LazyToolBox with cache_size={cache_size}")
 

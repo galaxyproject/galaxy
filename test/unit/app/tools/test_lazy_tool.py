@@ -8,6 +8,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import galaxy.queue_worker as queue_worker_mod
+import galaxy.tools.lazy_toolbox as mod
+from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
+from galaxy.tool_util.toolbox.panel import ToolPanelElements
 from galaxy.tools.lazy_toolbox import (
     LazyTool,
     LazyToolBox,
@@ -230,8 +234,6 @@ def test_strict_getattr_raises_with_clear_message(monkeypatch):
     # Strict mode is opt-in via LAZY_TOOL_STRICT=1; permissive (materialise
     # on unknown attr with WARN) is the default. Flip the module-level flag
     # for this test so the strict path fires.
-    import galaxy.tools.lazy_toolbox as mod
-
     monkeypatch.setattr(mod, "_LAZY_TOOL_PERMISSIVE", False)
     t = _stub()
     with pytest.raises(NotImplementedError) as ei:
@@ -255,8 +257,6 @@ def test_materialize_ok_set_forwards_to_real_tool(caplog):
 
 
 def test_permissive_flag_warns_and_materialises(monkeypatch, caplog):
-    import galaxy.tools.lazy_toolbox as mod
-
     monkeypatch.setattr(mod, "_LAZY_TOOL_PERMISSIVE", True)
 
     class _Real:
@@ -337,8 +337,6 @@ def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
     # Shed installs load cloned tools during metadata generation, before
     # any conf is persisted — a miss for an on-disk file populates that
     # path instead of raising.
-    import galaxy.tools.lazy_toolbox as mod
-
     guid = "toolshed.example.com/repos/owner/repo/cloned/1.0"
     tool_file = tmp_path / "cloned.xml"
     tool_file.write_text("<tool id='cloned' version='1.0'/>")
@@ -451,9 +449,6 @@ def _registry_box():
     removal bookkeeping paths run against genuine data structures."""
     import threading
 
-    from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
-    from galaxy.tool_util.toolbox.panel import ToolPanelElements
-
     box = _seam_box()
     box._tools_by_id = {}
     box._tool_versions_by_id = {}
@@ -503,8 +498,6 @@ def test_invalidate_index_cache_keeps_unindexed_tools():
 
 
 def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):
-    import galaxy.queue_worker as queue_worker_mod
-
     box = _registry_box()
     box._tool_index = ToolIndex()
     entry = _entry(id="doomed")

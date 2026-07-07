@@ -12,6 +12,11 @@ import tempfile
 
 import pytest
 
+from galaxy.queue_worker import reload_toolbox
+from galaxy.tools.lazy_toolbox import LazyToolBox
+from galaxy.tools.source_store import ToolIndex
+from galaxy.tools.source_store.composite import CompositeToolSourceStore
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -70,8 +75,6 @@ class TestSqliteToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         self._test_api_tools_show()
 
     def test_default_store_is_sqlalchemy_backend(self):
-        from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
-
         assert isinstance(self._app.tool_source_store, SqlAlchemyToolSourceStore)
 
 
@@ -92,8 +95,6 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         super().handle_galaxy_config_kwds(config)
         cls._tmpdir = tempfile.mkdtemp(prefix="composite_tss_")
         cls._sqlite_path = os.path.join(cls._tmpdir, "sources.sqlite")
-
-        from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
         SqlAlchemyToolSourceStore(url=f"sqlite:///{cls._sqlite_path}").count()
 
@@ -120,8 +121,6 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         # is enabled. Verifying the live app's store directly is more
         # robust than relying on /api/tools, which depends on whether the
         # store was populated in advance.
-        from galaxy.tools.source_store.composite import CompositeToolSourceStore
-
         assert isinstance(self._app.tool_source_store, CompositeToolSourceStore)
 
     def test_api_tools_list_populated_via_bootstrap(self):
@@ -165,8 +164,6 @@ class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         config["use_lazy_toolbox"] = True
 
     def test_base_tools_survive_toolbox_reload(self):
-        from galaxy.queue_worker import reload_toolbox
-
         self._test_api_tools_show("cat1")
         assert self._app.toolbox.get_tool("upload1") is not None
         reload_toolbox(self._app)
@@ -180,9 +177,6 @@ class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         # with its own, much smaller view, and the peer broadcast invalidates
         # our store cache. A subsequent reload must serve THIS instance's
         # tools from its inline repopulate, not the foreign index.
-        from galaxy.tools.source_store import ToolIndex
-        from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
-
         store = self._app.tool_source_store
         assert store is not None
         connection = self._app.config.tool_source_database_connection
@@ -194,8 +188,6 @@ class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         upload_stored = store.get_by_tool_id("upload1")
         assert upload_stored
         store.delete(upload_stored[0].hash)
-
-        from galaxy.queue_worker import reload_toolbox
 
         old_toolbox = self._app.toolbox
         reload_toolbox(self._app)
@@ -211,8 +203,6 @@ class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         for source_hash in list(store.list_all()):
             store.delete(source_hash)
         store.invalidate_index_cache()
-        from galaxy.queue_worker import reload_toolbox
-
         reload_toolbox(self._app)
         assert self._app.toolbox.get_tool("upload1") is not None
         self._test_api_tools_show("cat1")
@@ -390,8 +380,6 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
         # batch surface instead. LAZY_TOOL_STRICT covers off-surface reads;
         # this also covers the ones strict can't (a filter that parses, an
         # _MATERIALIZE_OK attr read in a loop).
-        from galaxy.tools.lazy_toolbox import LazyToolBox
-
         toolbox = self._app.toolbox
         # This class self-enables lazy mode; assert it (and narrow the type so
         # mypy accepts the lazy-only _lazy_materialize_count counter).
