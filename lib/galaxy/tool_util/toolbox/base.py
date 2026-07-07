@@ -5,6 +5,7 @@ import os
 import string
 import time
 from collections import namedtuple
+from collections.abc import Iterator
 from errno import ENOENT
 from typing import (
     Any,
@@ -169,6 +170,30 @@ class ToolLoadError(Exception):
 
 class ToolLoadConfigurationConflict(Exception):
     pass
+
+
+def walk_tool_directories(directory: "StrPath", recursive: bool) -> Iterator[tuple[str, list[str]]]:
+    """Yield ``(directory, files)`` for ``directory`` and, when ``recursive``,
+    each subdirectory - skipping hidden/private (``.``/``_`` prefixed) entries.
+
+    ``files`` are candidate tool file paths in sorted order; filtering them
+    (e.g. via ``looks_like_a_tool``) is the caller's responsibility.
+    """
+    files = []
+    subdirs = []
+    for name in sorted(os.listdir(directory)):
+        if name.startswith((".", "_")):
+            # Very unlikely that we want to load tools from a hidden or private folder
+            continue
+        child = os.path.join(str(directory), name)
+        if os.path.isdir(child):
+            subdirs.append(child)
+        else:
+            files.append(child)
+    yield str(directory), files
+    if recursive:
+        for subdir in subdirs:
+            yield from walk_tool_directories(subdir, recursive)
 
 
 def resolve_tool_path(tool_path: str | None, config_filename: str, default_tool_path: "StrPath | None" = None) -> str:
@@ -1214,22 +1239,16 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 log.exception("Failed to load potential tool %s.", tool_file)
             return None
 
-        tool_loaded = False
         if not os.path.isdir(directory):
             log.error("Failed to read tool directory %s.", directory)
             return
-        for name in os.listdir(directory):
-            if name.startswith((".", "_")):
-                # Very unlikely that we want to load tools from a hidden or private folder
-                continue
-            child_path = os.path.join(directory, name)
-            if os.path.isdir(child_path) and recursive:
-                self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
-            elif self._looks_like_a_tool(child_path):
-                tool_id = quick_load(child_path, async_load=False)
-                tool_loaded = bool(tool_id)
-        if (tool_loaded or force_watch) and self._tool_watcher:
-            self._tool_watcher.watch_directory(directory, quick_load)
+        for dirpath, files in walk_tool_directories(directory, recursive):
+            tool_loaded = False
+            for child_path in files:
+                if self._looks_like_a_tool(child_path):
+                    tool_loaded = bool(quick_load(child_path, async_load=False)) or tool_loaded
+            if (tool_loaded or (force_watch and dirpath == str(directory))) and self._tool_watcher:
+                self._tool_watcher.watch_directory(dirpath, quick_load)
 
     def load_tool(
         self,
