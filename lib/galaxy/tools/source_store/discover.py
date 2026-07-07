@@ -71,35 +71,6 @@ class DiscoveredTool:
     section_name: str | None = None
 
 
-def get_tool_configs(config: "GalaxyAppConfiguration") -> list[str]:
-    """
-    Get all tool configuration file paths from Galaxy config.
-
-    Args:
-        config: Galaxy configuration object.
-
-    Returns:
-        List of tool configuration file paths (tool_conf.xml, shed_tool_conf.xml, etc.)
-    """
-    configs = []
-
-    # Get main tool config files
-    if config.tool_configs:
-        configs.extend(config.tool_configs)
-
-    # Ensure shed_tool_config_file is included if not already
-    if config.shed_tool_config_file:
-        if config.shed_tool_config_file not in configs:
-            configs.append(config.shed_tool_config_file)
-
-    # Include migrated_tools_config if present
-    if config.migrated_tools_config:
-        if config.migrated_tools_config not in configs:
-            configs.append(config.migrated_tools_config)
-
-    return configs
-
-
 def resolve_tool_path(tool_path: str | None, config_filename: str, root_dir: str | None = None) -> str:
     """
     Resolve the tool_path to an absolute directory path.
@@ -315,7 +286,7 @@ def discover_tools(
     seen_paths: set = set()
 
     # Discover from all tool config files
-    for config_filename in get_tool_configs(config):
+    for config_filename in config.all_tool_config_files():
         for tool in discover_tools_from_config(config_filename, root_dir, config.enable_beta_tool_formats):
             if tool.path not in seen_paths:
                 seen_paths.add(tool.path)
@@ -418,5 +389,4 @@ __all__ = (
     "discover_tools",
     "discover_tools_from_config",
     "discover_tool_files",
-    "get_tool_configs",
 )

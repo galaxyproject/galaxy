@@ -1431,6 +1431,24 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
 
+    def all_tool_config_files(self) -> list[str]:
+        """Every tool config the toolbox loads: ``tool_config_file`` plus the
+        shed tool conf and, when present on disk, the migrated tools conf.
+        """
+        configs = list(self.tool_configs or [])
+        if self.shed_tool_config_file and self.shed_tool_config_file not in configs:
+            configs.append(self.shed_tool_config_file)
+        # migrated_tools_config is reserved for tools eliminated from the
+        # distribution; only load it when it exists (an existing deployment
+        # where migrations were previously run).
+        if (
+            self.migrated_tools_config
+            and os.path.exists(self.migrated_tools_config)
+            and self.migrated_tools_config not in configs
+        ):
+            configs.append(self.migrated_tools_config)
+        return configs
+
     def check(self):
         # Check that required directories exist; attempt to create otherwise
         paths_to_check = [
