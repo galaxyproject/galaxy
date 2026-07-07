@@ -432,12 +432,12 @@ class WorkflowExtractionJob(Model):
             "Always False for the plain history summary; set when the summary is computed for a page."
         ),
     )
-    tool_version_warning: Optional[str] = Field(
+    tool_version_warning: str | None = Field(
         None,
         title="Tool Version Warning",
         description="Warning when the current tool version differs from the version used by this job.",
     )
-    seed_warning: Optional[str] = Field(
+    seed_warning: str | None = Field(
         None,
         title="Seed Warning",
         description=(
@@ -573,7 +573,7 @@ class WorkflowExtractionByIdsPayload(Model):
         title="Step Labels",
         description="Labels to assign to extracted tool steps. Steps not listed are left unlabeled.",
     )
-    from_page_id: Optional[DecodedDatabaseIdField] = Field(
+    from_page_id: DecodedDatabaseIdField | None = Field(
         None,
         title="From Page ID",
         description=(
@@ -582,7 +582,7 @@ class WorkflowExtractionByIdsPayload(Model):
             "inputs/outputs/steps by label."
         ),
     )
-    report_title: Optional[str] = Field(
+    report_title: str | None = Field(
         None,
         title="Report Title",
         description="Title for the workflow report built from from_page_id; defaults to the workflow name.",

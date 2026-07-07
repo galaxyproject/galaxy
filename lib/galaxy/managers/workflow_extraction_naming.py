@@ -30,7 +30,7 @@ class SuggestedName:
     source: SuggestedNameSource
 
 
-def normalize_label(value: Optional[str]) -> str:
+def normalize_label(value: str | None) -> str:
     """Collapse internal whitespace and clamp to the workflow-label length limit.
 
     Returns ``""`` for empty/blank input; callers decide whether that is an error
