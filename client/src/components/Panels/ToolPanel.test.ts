@@ -13,7 +13,7 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { type ToolPanelItem, useToolStore } from "@/stores/toolStore";
 
 import viewsListJson from "./testData/viewsList.json";
-import { countUniqueToolsInList, getUniqueToolIdsInPanel } from "./utilities";
+import { getUniqueToolIdsInPanel } from "./utilities";
 
 import ToolPanel from "./ToolPanel.vue";
 
@@ -277,7 +277,7 @@ describe("ToolPanel", () => {
         expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
     });
 
-    it("does not show the raw installed-version count when My Tools is the backend default view", async () => {
+    it("uses the loaded default panel count when My Tools is the backend default view", async () => {
         storePanelView("");
         const wrapper = await createWrapper(
             "",
@@ -295,11 +295,40 @@ describe("ToolPanel", () => {
             },
             "my_panel",
         );
-        const count = countUniqueToolsInList(toolsListWithExtraVersion);
+        const count = getUniqueToolIdsInPanel(toolsListInPanel).size;
         const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
         const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
         expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
         expect(discoverButton.text()).not.toBe(`Discover ${toolsListWithExtraVersion.length} Tools`);
+    });
+
+    it("ignores My Tools panel contents for the header count when My Tools is the backend default view", async () => {
+        storePanelView("");
+        const firstToolId = firstTool?.id;
+        if (!firstToolId) {
+            throw new Error("Expected at least one tool fixture");
+        }
+        const wrapper = await createWrapper(
+            "",
+            false,
+            undefined,
+            {
+                my_panel: {
+                    favorites: {
+                        model_class: "ToolSection",
+                        id: "favorites",
+                        name: "Favorites",
+                        tools: [firstToolId],
+                    },
+                },
+            },
+            "my_panel",
+        );
+        const count = getUniqueToolIdsInPanel(toolsListInPanel).size;
+        const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
+        const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
+        expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
+        expect(discoverButton.text()).not.toBe("Discover 1 Tools");
     });
 
     it("loads default panel sections when My Tools is the backend default view", async () => {
