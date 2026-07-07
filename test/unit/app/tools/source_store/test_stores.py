@@ -24,9 +24,19 @@ from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 class FakeConfig:
     """Fake config for testing store factory."""
 
+    shed_tool_config_file: str | None = None
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+    def all_tool_config_files(self):
+        # Mirror GalaxyAppConfiguration.all_tool_config_files: the tool_config
+        # list plus the shed conf (store discovery must see both).
+        configs = list(getattr(self, "tool_configs", None) or [])
+        if self.shed_tool_config_file and self.shed_tool_config_file not in configs:
+            configs.append(self.shed_tool_config_file)
+        return configs
 
 
 def _sqlite_url(path):
@@ -264,6 +274,21 @@ class TestPerConfStoreRouting:
         config = self._config(tmp_path, tool_configs=[str(conf)])
         with pytest.raises(ConfigurationError):
             build_tool_source_store(config)
+
+    def test_store_declared_on_shed_conf_is_discovered(self, tmp_path):
+        # Regression: a store referenced from shed_tool_config_file is reachable
+        # only via all_tool_config_files(), not the bare tool_configs list, so
+        # store discovery must walk the former.
+        conf = tmp_path / "shed_tool_conf.xml"
+        conf.write_text('<?xml version="1.0"?>\n<toolbox store="cvmfs_main"/>\n')
+        config = self._config(
+            tmp_path,
+            tool_configs=[],
+            shed_tool_config_file=str(conf),
+            tool_source_stores={"cvmfs_main": {"url": _sqlite_url(tmp_path / "cvmfs.sqlite")}},
+        )
+        store = build_tool_source_store(config)
+        assert isinstance(store, CompositeToolSourceStore)
 
 
 class TestToolIndex:

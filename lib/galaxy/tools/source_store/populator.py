@@ -417,7 +417,7 @@ def build_index_entry_from_source(
         return None
 
 
-def _build_stores(config) -> dict[str, Any]:
+def _build_stores(config: GalaxyAppConfiguration) -> dict[str, Any]:
     """Build {store_name: store_instance} for the default + every named store
     referenced from any tool_conf."""
     stores: dict[str, ToolSourceStore] = {
@@ -426,7 +426,7 @@ def _build_stores(config) -> dict[str, Any]:
 
     catalog = config.tool_source_stores or {}
     referenced: set[str] = set()
-    for path in config.tool_configs or []:
+    for path in config.all_tool_config_files():
         try:
             parser = get_toolbox_parser(path)
         except Exception as e:
@@ -447,7 +447,7 @@ def _build_stores(config) -> dict[str, Any]:
 def _build_conf_to_store_map(config) -> dict[str, str]:
     """Map each tool_conf path to its declared store name (default if absent)."""
     out: dict[str, str] = {}
-    for path in config.tool_configs or []:
+    for path in config.all_tool_config_files():
         try:
             parser = get_toolbox_parser(path)
         except Exception:
