@@ -25,7 +25,10 @@ from typing import (
 )
 
 from galaxy.model import _get_datatypes_registry
-from galaxy.tool_util.loader_directory import looks_like_a_tool
+from galaxy.tool_util.loader_directory import (
+    looks_like_a_tool,
+    looks_like_a_tool_xml,
+)
 from galaxy.tool_util.toolbox.base import (
     resolve_tool_path,
     walk_tool_directories,
@@ -250,25 +253,15 @@ def discover_tools(
         if bundled_dir.exists():
             for xml_file in bundled_dir.rglob("*.xml"):
                 path_str = str(xml_file)
-                # Skip macro files and already-seen files
-                if path_str in seen_paths:
+                if path_str in seen_paths or not looks_like_a_tool_xml(path_str):
                     continue
-                if "macro" in xml_file.name.lower():
-                    continue
-                # Quick check if it's a tool file
-                try:
-                    with open(xml_file) as f:
-                        content = f.read(500)  # Read just enough to check
-                    if "<tool" in content:
-                        seen_paths.add(path_str)
-                        yield DiscoveredTool(
-                            path=path_str,
-                            tool_conf="bundled",
-                            tool_path=str(bundled_dir),
-                            is_shed_tool=False,
-                        )
-                except Exception:
-                    pass
+                seen_paths.add(path_str)
+                yield DiscoveredTool(
+                    path=path_str,
+                    tool_conf="bundled",
+                    tool_path=str(bundled_dir),
+                    is_shed_tool=False,
+                )
 
     # Galaxy-internal "hidden lib" tools (``set_metadata_tool``, the
     # ``imp_exp`` history exporters, ``data_fetch``). They're loaded after
@@ -294,7 +287,7 @@ def discover_tools(
     # and vice versa.
     try:
         registry = _get_datatypes_registry()
-        if registry is not None and getattr(registry, "converters_path", None):
+        if registry is not None and registry.converters_path:
             for tool_config, _src_dt, _tgt_dt in registry.converters:
                 path = os.path.normpath(os.path.join(registry.converters_path, tool_config))
                 if path in seen_paths or not os.path.exists(path):
