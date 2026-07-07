@@ -269,30 +269,6 @@ class TestPerConfStoreRouting:
 class TestToolIndex:
     """Tests for ToolIndex functionality."""
 
-    def test_index_search(self):
-        """Test searching the tool index."""
-        index = ToolIndex()
-        index.entries["filter_tool"] = ToolIndexEntry(
-            id="filter_tool",
-            name="Filter Tool",
-            version="1.0",
-            description="Filters data by column",
-        )
-        index.entries["cat_tool"] = ToolIndexEntry(
-            id="cat_tool",
-            name="Concatenate",
-            version="2.0",
-            description="Concatenates files",
-        )
-
-        results = index.search("Filter", limit=10)
-        assert len(results) >= 1
-        assert any(r.id == "filter_tool" for r in results)
-
-        results = index.search("column", limit=10)
-        assert len(results) >= 1
-        assert any(r.id == "filter_tool" for r in results)
-
     def test_index_serialization(self):
         """Test index to_dict/from_dict round trip."""
         index = ToolIndex()

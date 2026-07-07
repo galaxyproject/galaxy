@@ -299,71 +299,6 @@ class ToolIndex:
 
         return entries
 
-    def search(self, query: str, limit: int = 50) -> list[ToolIndexEntry]:
-        """
-        Fast text search across tool metadata.
-
-        Tokenizes the query on whitespace and treats it as a conjunction:
-        every token must appear (substring match) in *some* searchable field
-        of the entry. This mirrors how the eager toolbox's Whoosh index
-        behaves on multi-word queries — without it, "Select lines that match
-        an expression" never matches Grep1, whose name is "Select" and
-        description is "lines that match an expression" (each field has a
-        subset of the query tokens, neither has all of them).
-
-        Score per entry: sum over tokens of the field-weight where the
-        token first hits; documents with id/name hits rank above
-        description-only hits.
-        """
-        query_lower = query.lower().strip()
-        if not query_lower:
-            return []
-        tokens = [t for t in query_lower.split() if t]
-        if not tokens:
-            return []
-        results: list[tuple] = []
-
-        for entry in self.entries.values():
-            if entry.hidden:
-                continue
-
-            id_l = entry.id.lower()
-            name_l = entry.name.lower()
-            desc_l = entry.description.lower()
-            labels_l = [label.lower() for label in entry.labels]
-
-            # Each token must hit at least one field. Track the best per-token
-            # score for ranking.
-            score = 0
-            all_hit = True
-            for tok in tokens:
-                if tok in id_l:
-                    score += 100
-                elif tok in name_l:
-                    score += 50
-                elif any(tok in lab for lab in labels_l):
-                    score += 25
-                elif tok in desc_l:
-                    score += 10
-                else:
-                    all_hit = False
-                    break
-
-            # Bonus for full-phrase matches in id / name / description.
-            if all_hit:
-                if query_lower in id_l:
-                    score += 100
-                elif query_lower in name_l:
-                    score += 50
-                elif query_lower in desc_l:
-                    score += 10
-
-            if all_hit and score > 0:
-                results.append((score, entry))
-
-        results.sort(key=lambda x: -x[0])
-        return [entry for _, entry in results[:limit]]
-
     def get_tests_summary(self) -> dict[str, dict[str, dict]]:
         """
         Return pre-computed tests summary from index.
@@ -413,43 +348,6 @@ class ToolIndex:
 
         self._requirements_cache = reqs
         return reqs
-
-    def get_sanitize_allowlist(self, allowed_ids: set[str]) -> dict[str, list]:
-        """
-        Generate sanitize allowlist from index.
-
-        Args:
-            allowed_ids: Set of allowed tool IDs.
-
-        Returns:
-            Dictionary with blocked/allowed toolshed and local tool lists.
-        """
-        result: dict[str, list] = {
-            "blocked_toolshed": [],
-            "allowed_toolshed": [],
-            "blocked_local": [],
-            "allowed_local": [],
-        }
-
-        for entry in self.entries.values():
-            is_allowed = entry.id in allowed_ids
-
-            if entry.is_local:
-                key = "allowed_local" if is_allowed else "blocked_local"
-                result[key].append({"tool_id": entry.id, "name": entry.name})
-            else:
-                key = "allowed_toolshed" if is_allowed else "blocked_toolshed"
-                result[key].append(
-                    {
-                        "tool_id": entry.id,
-                        "name": entry.name,
-                        "tool_shed": entry.tool_shed,
-                        "repository_name": entry.repository_name,
-                        "repository_owner": entry.repository_owner,
-                    }
-                )
-
-        return result
 
     def get_panel_views(self) -> dict[str, dict]:
         """Return pre-computed panel view dictionaries."""
