@@ -38,13 +38,7 @@ from whoosh import (
     analysis,
     index,
 )
-from whoosh.fields import (
-    ID,
-    KEYWORD,
-    NGRAMWORDS,
-    Schema,
-    TEXT,
-)
+from whoosh.fields import Schema
 from whoosh.qparser import (
     MultifieldParser,
     OrGroup,
@@ -62,6 +56,7 @@ from galaxy.tools.source_store.populator import (
     whoosh_dir_for_store,
 )
 from galaxy.tools.source_store.search import (
+    build_search_schema,
     ToolSearchTuning,
     ToolWhooshIndex,
 )
@@ -204,68 +199,13 @@ class ToolPanelViewSearch:
         index_help: bool = True,
     ) -> None:
         """Build the schema and validate against the index."""
-        schema_conf = {
-            # The stored ID field is not searchable
-            "id": ID(stored=True, unique=True),
-            # This exact field is searchable by exact matches only
-            "id_exact": NGRAMWORDS(
-                minsize=config.tool_ngram_minsize,
-                maxsize=config.tool_ngram_maxsize,
-                field_boost=(config.tool_id_boost * config.tool_name_exact_multiplier),
-            ),
-            # The primary name field is searchable by exact match only, and is
-            # eligible for massive score boosting. A secondary ngram or text
-            # field for name is added below
-            "name_exact": TEXT(
-                field_boost=(config.tool_name_boost * config.tool_name_exact_multiplier),
-                analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
-            ),
-            # The owner/repo/tool_id parsed from the GUID
-            "stub": KEYWORD(field_boost=float(config.tool_stub_boost)),
-            # The section where the tool is listed in the tool panel
-            "section": TEXT(field_boost=float(config.tool_section_boost)),
-            # The edam operations section where the tool is listed in the tool panel
-            "edam_operations": TEXT(field_boost=float(config.tool_section_boost)),
-            # The edam topics section where the tool is listed in the tool panel
-            "edam_topics": TEXT(field_boost=float(config.tool_section_boost)),
-            # The name of the repository the tool belongs to
-            "repository": TEXT(field_boost=float(config.tool_section_boost)),
-            # The owner id of the repository the tool belongs to
-            "owner": TEXT(field_boost=float(config.tool_section_boost)),
-            # Short description defined in the tool XML
-            "description": TEXT(
-                field_boost=config.tool_description_boost,
-                analyzer=analysis.StemmingAnalyzer(),
-            ),
-            # Help text parsed from the tool XML
-            "help": TEXT(field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()),
-            "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
-            "tool_tags": TEXT(
-                field_boost=float(config.tool_label_boost),
-                analyzer=analysis.KeywordAnalyzer(lowercase=True, commas=True),
-            ),
-        }
-
-        if config.tool_enable_ngram_search:
-            schema_conf.update(
-                {
-                    "name": NGRAMWORDS(
-                        minsize=config.tool_ngram_minsize,
-                        maxsize=config.tool_ngram_maxsize,
-                        field_boost=(float(config.tool_name_boost) * config.tool_ngram_factor),
-                    ),
-                }
-            )
-        else:
-            schema_conf.update(
-                {
-                    "name": TEXT(
-                        field_boost=float(config.tool_name_boost),
-                    ),
-                }
-            )
-
-        self.schema = Schema(**schema_conf)
+        # Shared with the store's ``ToolWhooshIndex`` so eager and lazy
+        # search rank identically; ``help_boost`` adds the eager-only help
+        # field the populator can't index.
+        self.schema = build_search_schema(
+            ToolSearchTuning.from_config(config),
+            help_boost=config.tool_help_boost,
+        )
         self.rex = analysis.RegexTokenizer()
         self.index_dir = index_dir
         self.panel_view_id = panel_view_id
