@@ -81,10 +81,8 @@ def build_named_store(
 
 def _collect_per_conf_store_names(config: "GalaxyAppConfiguration") -> set[str]:
     """Walk configured tool_confs and collect referenced store names."""
-    if not config.tool_configs:
-        return set()
     names: set[str] = set()
-    for path in config.tool_configs:
+    for path in config.all_tool_config_files():
         try:
             parser = get_toolbox_parser(path)
         except Exception as e:
