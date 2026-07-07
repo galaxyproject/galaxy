@@ -131,6 +131,7 @@ class FastAPIRepositories:
         "/api/repositories",
         description="Get a list of repositories or perform a search.",
         operation_id="repositories__index",
+        allow_cors=True,
     )
     def index(
         self,
@@ -271,6 +272,7 @@ class FastAPIRepositories:
         "/api/repositories/get_ordered_installable_revisions",
         description="Get an ordered list of the repository changeset revisions that are installable",
         operation_id="repositories__get_ordered_installable_revisions",
+        allow_cors=True,
     )
     def get_ordered_installable_revisions(
         self,
