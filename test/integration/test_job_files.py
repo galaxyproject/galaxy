@@ -18,6 +18,7 @@ API has gone too far.
 import io
 import os
 import tempfile
+from typing import Any
 
 import requests
 from sqlalchemy import select
@@ -40,6 +41,8 @@ TEST_TUS_CHUNK_SIZE = 1024
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     initialized = False
     dataset_populator: DatasetPopulator
+    input_hda_dict: dict[str, Any]
+    input_hda: model.HistoryDatasetAssociation
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -57,9 +60,11 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             sa_session = self.sa_session
             stmt = select(model.HistoryDatasetAssociation)
             assert len(sa_session.scalars(stmt).all()) == 0
-            self.input_hda_dict = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
+            TestJobFilesIntegration.input_hda_dict = self.dataset_populator.new_dataset(
+                history_id, content=TEST_INPUT_TEXT, wait=True
+            )
             assert len(sa_session.scalars(stmt).all()) == 1
-            self.input_hda = sa_session.scalars(stmt).all()[0]
+            TestJobFilesIntegration.input_hda = sa_session.scalars(stmt).all()[0]
             TestJobFilesIntegration.initialized = True
 
     def test_read_by_state(self):
