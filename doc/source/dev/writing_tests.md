@@ -1145,7 +1145,7 @@ class TestWithExternalService(integration_util.IntegrationTestCase):
 | ``keycloak/keycloak:26.2`` | OIDC authentication | ``oidc/test_auth_oidc.py`` |
 | ``mvdbeek/galaxy-integration-docker-images:slurm-22.01`` | Slurm scheduler | ``test_cli_runners.py`` |
 | ``mvdbeek/galaxy-integration-docker-images:openpbs-22.01`` | PBS scheduler | ``test_cli_runners.py`` |
-| ``savannah.ornl.gov/ndip/public-docker/rucio:1.29.8`` | Rucio data management | ``objectstore/`` tests |
+| ``savannah.ornl.gov/ndip/public-docker/rucio:40.2.0`` | Rucio data management | ``objectstore/`` tests |
 | ``onedata/onezone:21.02.5-dev`` | Onedata storage | ``objectstore/`` tests |
 
 **Environment variables for external services:**

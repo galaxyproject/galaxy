@@ -2,12 +2,14 @@ import hashlib
 import logging
 import os
 import shutil
+import uuid
 
 try:
     import rucio.common
     from rucio.client import Client
     from rucio.client.downloadclient import DownloadClient
     from rucio.client.uploadclient import UploadClient
+    from rucio.common.config import clean_cached_config
 
     from .rucio_extra_clients import (
         DeleteClient,
@@ -92,11 +94,13 @@ def parse_config_xml(config_xml):
             rucio_upload_scheme = e_xml[0].get("scheme", None)
             rucio_scope = e_xml[0].get("scope", None)
             rucio_register_only = string_as_bool(e_xml[0].get("register_only", "False"))
+            rucio_register_with_checksum = string_as_bool(e_xml[0].get("rucio_register_with_checksum", "True"))
         else:
             rucio_upload_rse_name = None
             rucio_upload_scheme = None
             rucio_scope = None
             rucio_register_only = False
+            rucio_register_with_checksum = True
 
         e_xml = config_xml.findall("auth")
         if not e_xml:
@@ -117,6 +121,7 @@ def parse_config_xml(config_xml):
             "upload_scheme": rucio_upload_scheme,
             "scope": rucio_scope,
             "register_only": rucio_register_only,
+            "rucio_register_with_checksum": rucio_register_with_checksum,
             "download_schemes": rucio_download_schemes,
             "account": rucio_account,
             "auth_host": rucio_auth_host,
@@ -149,6 +154,9 @@ class RucioBroker:
         self.upload_rse_name = self.config["upload_rse_name"]
         self.scope = self.config["scope"]
         self.register_only = self.config["register_only"]
+        self.register_with_checksum = self.config.get(
+            "register_with_checksum", self.config.get("rucio_register_with_checksum", True)
+        )
         self.download_schemes = self.config["download_schemes"]
         if Client is None:
             raise Exception(NO_RUCIO_ERROR_MESSAGE)
@@ -173,30 +181,32 @@ username = {self.config["username"]}
         # We may have crossed a forkpool boundary. No harm setting the env var again.
         # Fixes rucio integration tests
         os.environ["RUCIO_CONFIG"] = self.rucio_config_path
+        clean_cached_config()
         client = Client(
             rucio_host=self.config["host"],
             auth_host=self.config["auth_host"],
             account=self.config["account"],
             auth_type=self.config["auth_type"],
+            logger=log,
             creds={"username": self.config["username"], "password": self.config["password"]},
         )
         return client
 
     def get_rucio_upload_client(self, auth_token=None):
         client = self.get_rucio_client()
-        uc = UploadClient(_client=client)
+        uc = UploadClient(_client=client, logger=log)
         uc.auth_token = auth_token
         return uc
 
     def get_rucio_download_client(self, auth_token=None):
         client = self.get_rucio_client()
-        dc = DownloadClient(client=client)
+        dc = DownloadClient(client=client, logger=log)
         dc.auth_token = auth_token
         return dc
 
     def get_rucio_ingest_client(self, auth_token=None):
         client = self.get_rucio_client()
-        ic = InPlaceIngestClient(_client=client)
+        ic = InPlaceIngestClient(client, self.register_with_checksum)
         ic.auth_token = auth_token
         return ic
 
@@ -232,7 +242,8 @@ username = {self.config["username"]}
 
     def download(self, key, dest_path, auth_token):
         key = _encode_key(key)
-        base_dir = os.path.dirname(dest_path)
+        base_dir = os.path.join(os.path.dirname(dest_path), uuid.uuid4().hex)
+        os.makedirs(base_dir, exist_ok=True)
         dids = [{"scope": self.scope, "name": key}]
         try:
             repl = next(self.get_rucio_client().list_replicas(dids))["rses"].keys()
@@ -257,8 +268,8 @@ username = {self.config["username"]}
                 }
             items = [item]
             download_client = self.get_rucio_download_client(auth_token=auth_token)
-            res = download_client.download_dids(items)
             try:
+                res = download_client.download_dids(items)
                 os.replace(res[0]["dest_file_paths"][0], dest_path)
             except Exception as e:
                 if os.path.exists(dest_path):
@@ -269,6 +280,8 @@ username = {self.config["username"]}
         except Exception as e:
             log.exception(f"Cannot download file: {str(e)}")
             return False
+        finally:
+            shutil.rmtree(base_dir, ignore_errors=True)
         return True
 
     def data_object_exists(self, key):
