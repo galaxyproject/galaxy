@@ -500,6 +500,11 @@ class LazyToolBox(ToolBox):
         # ``_index_source_paths``. Set before ``super().__init__`` because
         # the eager walk consults it through ``_tool_file_on_disk``.
         self._index_source_paths_cache: tuple[ToolIndex, set[str]] | None = None
+        # Versionless-guid → sibling versions map, keyed on index identity
+        # plus entry count — see ``_guid_sibling_versions``. Also consulted
+        # during ``super().__init__`` (panel views resolve lineages
+        # mid-walk).
+        self._guid_sibling_versions_cache: tuple[ToolIndex, int, dict[str, list[tuple[str, str]]]] | None = None
 
         # Eager init — its ``_init_tools_from_configs`` is overridden so the
         # walk goes through our ``create_tool`` seam and hands back LazyTool
@@ -704,13 +709,38 @@ class LazyToolBox(ToolBox):
         if "/repos/" in tool_id:
             versionless = remove_version_from_guid(tool_id)
             if versionless:
-                prefix = f"{versionless}/"
-                for entry_id, entry in self._tool_index.entries.items():
-                    if entry_id == tool_id:
-                        continue
-                    if entry_id.startswith(prefix) and entry.version and entry.version not in result:
-                        result.append(entry.version)
+                for entry_id, version in self._guid_sibling_versions().get(versionless, ()):
+                    if entry_id != tool_id and version not in result:
+                        result.append(version)
         return result
+
+    def _guid_sibling_versions(self) -> dict[str, list[tuple[str, str]]]:
+        """Versionless guid → ``(entry_id, version)`` of every indexed sibling.
+
+        ``_index_versions_for`` used to prefix-scan all index entries per
+        lineage lookup; the EDAM panel views resolve a lineage per shed
+        tool, which made boot quadratic in installed-tool count (~11k
+        scans over ~9k entries profiled as the single largest toolbox
+        cost). Keyed on index identity *and* entry count — reloads swap
+        the ``ToolIndex`` object, while registrations and removals mutate
+        membership in place; in-place removals additionally reset the
+        cache explicitly (a pop-then-add could keep the count stable).
+        """
+        index = self._tool_index
+        if index is None:
+            return {}
+        cached = self._guid_sibling_versions_cache
+        if cached is not None and cached[0] is index and cached[1] == len(index.entries):
+            return cached[2]
+        siblings: dict[str, list[tuple[str, str]]] = {}
+        for entry_id, entry in index.entries.items():
+            if "/repos/" not in entry_id or not entry.version:
+                continue
+            versionless = remove_version_from_guid(entry_id)
+            if versionless:
+                siblings.setdefault(versionless, []).append((entry_id, entry.version))
+        self._guid_sibling_versions_cache = (index, len(index.entries), siblings)
+        return siblings
 
     def _rebuild_shed_short_id_map(self) -> None:
         """Walk the index and rebuild short-id → guid mappings for shed installs.
@@ -1501,6 +1531,10 @@ class LazyToolBox(ToolBox):
         if self._tool_index is not None:
             self._tool_index.entries.pop(tool_id, None)
             self._tool_index.entries_by_version.pop(tool_id, None)
+            # In-place membership change on the same ToolIndex object: the
+            # identity-keyed sibling-versions cache would otherwise keep
+            # serving the removed version to lineage lookups.
+            self._guid_sibling_versions_cache = None
         # ``super().remove_tool_by_id`` clears ``_tools_by_id`` but leaves
         # ``_tool_versions_by_id`` and the lineage map intact. ``get_tool``'s
         # fall-through walks lineage versions via ``_tool_from_lineage_version``

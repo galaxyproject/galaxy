@@ -541,3 +541,28 @@ def test_index_source_paths_refresh_on_index_swap():
     swapped.add_entry(_entry(id="t2", source_path="/b/t2.xml"))
     box._tool_index = swapped
     assert box._index_source_paths() == {"/b/t2.xml"}
+
+
+def test_index_versions_for_collects_guid_sibling_versions():
+    box = _seam_box()
+    box._guid_sibling_versions_cache = None
+    prefix = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp"
+    for version in ("0.20.1", "0.23.2"):
+        box._tool_index.add_entry(_entry(id=f"{prefix}/{version}", version=version))
+    box._tool_index.add_entry(_entry(id="unrelated", version="1.0"))
+    versions = box._index_versions_for(f"{prefix}/0.20.1")
+    assert set(versions) == {"0.20.1", "0.23.2"}
+    assert box._index_versions_for("unrelated") == ["1.0"]
+
+
+def test_guid_sibling_versions_reset_on_in_place_removal():
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    prefix = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp"
+    for version in ("0.20.1", "0.23.2"):
+        entry = _entry(id=f"{prefix}/{version}", version=version)
+        box._tool_index.add_entry(entry)
+        box._register_lazy_entry(entry)
+    assert set(box._index_versions_for(f"{prefix}/0.20.1")) == {"0.20.1", "0.23.2"}
+    box._remove_tool_in_memory(f"{prefix}/0.23.2")
+    assert box._index_versions_for(f"{prefix}/0.20.1") == ["0.20.1"]
