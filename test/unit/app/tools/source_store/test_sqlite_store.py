@@ -5,6 +5,7 @@ import tempfile
 
 import pytest
 
+import galaxy.tools.source_store.sqlalchemy as sqlalchemy_store_module
 from galaxy.tools.source_store import (
     ReadOnlyStoreError,
     StoredToolSource,
@@ -73,6 +74,18 @@ def test_index_round_trip(sqlite_path):
     assert loaded is not None
     assert "t1" in loaded.entries
     assert loaded.entries["t1"].name == "T1"
+
+
+def test_load_index_discards_stale_schema(sqlite_path, monkeypatch):
+    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    store.store_index(ToolIndex(entries={"t1": ToolIndexEntry(id="t1", name="T1")}))
+
+    # Simulate a Galaxy upgrade that changed the ToolIndex model: the
+    # persisted blob's stamp no longer matches, so the store must report "no
+    # index" (triggering a rebuild) rather than load stale/defaulted fields.
+    monkeypatch.setattr(sqlalchemy_store_module, "INDEX_SCHEMA_HASH", "post-upgrade-schema-hash")
+    fresh = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    assert fresh.load_index() is None
 
 
 def test_read_only_refuses_writes(sqlite_path):

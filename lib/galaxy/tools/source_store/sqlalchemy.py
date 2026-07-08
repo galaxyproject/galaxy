@@ -35,6 +35,7 @@ from sqlalchemy.orm import (
 )
 
 from .index import (
+    INDEX_SCHEMA_HASH,
     ToolIndex,
     ToolIndexEntry,
 )
@@ -262,7 +263,8 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def store_index(self, index: ToolIndex) -> None:
         self._ensure_writable()
-        compressed = gzip.compress(json.dumps(index.model_dump(mode="json")).encode("utf-8"))
+        payload = {"schema_hash": INDEX_SCHEMA_HASH, "index": index.model_dump(mode="json")}
+        compressed = gzip.compress(json.dumps(payload).encode("utf-8"))
         with self._session() as session:
             # Singleton row, updated in place.
             row = session.execute(select(_ToolIndexRow).order_by(_ToolIndexRow.id)).scalar_one_or_none()
@@ -284,7 +286,13 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             return None
         try:
             payload = json.loads(gzip.decompress(row.data).decode("utf-8"))
-            self._cached_index = ToolIndex.model_validate(payload)
+            if payload.get("schema_hash") != INDEX_SCHEMA_HASH:
+                # The index model changed since this blob was written (or the
+                # blob predates schema stamping): discard rather than load
+                # stale/defaulted fields — the populator rebuilds from source.
+                log.info("Persisted tool index in %s has a stale schema; discarding", self.url)
+                return None
+            self._cached_index = ToolIndex.model_validate(payload["index"])
             return self._cached_index
         except Exception as e:
             log.error(f"Failed to decode tool index from store {self.url}: {e}")

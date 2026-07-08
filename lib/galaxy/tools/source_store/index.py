@@ -6,6 +6,7 @@ lightweight metadata about tools for efficient API responses without
 loading full tool sources.
 """
 
+import json
 from datetime import datetime
 from typing import (
     Any,
@@ -18,6 +19,7 @@ from pydantic import (
 )
 
 from galaxy.tool_util.version import parse_version
+from galaxy.util.hash_util import md5_hash_str
 
 
 class ToolIndexEntry(BaseModel):
@@ -319,3 +321,11 @@ class ToolIndex(BaseModel):
     def get_tools_needing_containers(self) -> list[ToolIndexEntry]:
         """Return tools with container requirements."""
         return [e for e in self.entries.values() if e.container_requirements]
+
+
+# md5 of the ToolIndex JSON schema (the pattern
+# tool_shed.managers.model_cache.hash_model uses — not imported from there,
+# galaxy cannot depend on tool_shed). Persisted index blobs are stamped with
+# this and discarded on mismatch, so a model change triggers a clean rebuild
+# instead of silently loading defaults for fields the old blob never had.
+INDEX_SCHEMA_HASH = md5_hash_str(json.dumps(ToolIndex.model_json_schema()))
