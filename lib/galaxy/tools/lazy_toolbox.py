@@ -8,6 +8,7 @@ LRU eviction.
 
 import logging
 import os
+import errno
 import threading
 from typing import (
     Any,
@@ -27,10 +28,15 @@ from galaxy.exceptions import (
 from galaxy.tool_util.id_util import extract_short_id_from_guid
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.tool_util.toolbox.base import ToolConfRepository
+from galaxy.tool_util.toolbox.base import (
+    resolve_tool_path,
+    SHED_TOOL_CONF_XML,
+    ToolConfRepository,
+)
 from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
 from galaxy.tool_util.toolbox.panel import ToolSection
+from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from galaxy.tool_util.version import parse_version
 from galaxy.tools.source_store import (
     StoredToolSource,
@@ -49,6 +55,7 @@ from galaxy.tools.source_store.populator import (
     populate_store_inline,
 )
 from galaxy.tools.source_store.watcher import ToolSourceStoreWatcher
+from galaxy.util import listify
 from galaxy.util.tool_version import remove_version_from_guid
 from . import (
     create_tool_from_source,
@@ -604,6 +611,7 @@ class LazyToolBox(ToolBox):
         # see every indexed version instead of a memoised single-version
         # lineage built from one Tool object.
         self._lineage_map = LazyLineageMap(self.app, versions_for=self._index_versions_for)
+        self._tool_panel_loaded_from_index = False
         if self._store is not None:
             self._tool_index = self._store.load_index() or ToolIndex()
             if self._index_needs_population():
@@ -616,7 +624,152 @@ class LazyToolBox(ToolBox):
                 self._tool_index = self._store.load_index() or ToolIndex()
         else:
             self._tool_index = ToolIndex()
+        if self._init_tools_from_index(config_filenames):
+            return
         super()._init_tools_from_configs(config_filenames)
+
+    def _init_tools_from_index(self, config_filenames: list[str]) -> bool:
+        """Register lazy stubs directly from a fresh index.
+
+        The generic toolbox walk still parses every tool-conf item and routes
+        each tool through ``load_item``. In lazy mode, a populated source-store
+        index already contains enough section metadata to build the in-memory
+        registries. If the index does not carry panel section data, return
+        ``False`` and let the parent implementation take the conservative path.
+        """
+        tool_ids = self._index_panel_tool_ids()
+        if not tool_ids:
+            return False
+        # ``_index_panel_tool_ids`` only returns ids when the index is
+        # populated, so it is non-None here.
+        assert self._tool_index is not None
+        missing = [tool_id for tool_id in tool_ids if tool_id not in self._tool_index.entries]
+        if missing:
+            log.info(
+                "LazyToolBox fast panel init found %d panel ids missing from index; running populator",
+                len(missing),
+            )
+            self._run_inline_populator()
+            if self._store is not None:
+                self._store.invalidate_index_cache()
+                self._tool_index = self._store.load_index() or ToolIndex()
+            missing = [tool_id for tool_id in tool_ids if tool_id not in self._tool_index.entries]
+            if missing:
+                log.debug("LazyToolBox fast panel init disabled; %d panel ids still missing from index", len(missing))
+                return False
+        assert self._tool_index is not None
+        self._init_dynamic_tool_confs_without_loading(config_filenames)
+        registered_tool_ids: set[str] = set()
+        for tool_id in tool_ids:
+            entry = self._tool_index.entries[tool_id]
+            self._register_lazy_entry(entry, place_in_panel=not entry.hidden)
+            registered_tool_ids.add(tool_id)
+        for entry in self._tool_index.entries.values():
+            if entry.id not in registered_tool_ids:
+                self._register_lazy_entry(entry, place_in_panel=False)
+                registered_tool_ids.add(entry.id)
+        log.debug(
+            "LazyToolBox registered %d indexed tools (%d in panel) without walking tool conf items",
+            len(registered_tool_ids),
+            len(tool_ids),
+        )
+        self._tool_panel_loaded_from_index = True
+        return True
+
+    def _load_tool_panel(self):
+        if getattr(self, "_tool_panel_loaded_from_index", False):
+            return
+        super()._load_tool_panel()
+
+    def _index_panel_tool_ids(self) -> list[str]:
+        tool_ids: list[str] = []
+        if self._tool_index is None:
+            return tool_ids
+        seen: set[str] = set()
+        if self._tool_index.by_section:
+            panel_tool_ids = (
+                tool_id for section_tool_ids in self._tool_index.by_section.values() for tool_id in section_tool_ids
+            )
+        else:
+            # Some existing store indexes predate ``by_section`` population
+            # but still have per-entry section metadata. Preserve persisted
+            # entry order so warm boots do not fall back to the XML walk.
+            panel_tool_ids = (
+                entry.id for entry in self._tool_index.entries.values() if entry.panel_section_id and not entry.hidden
+            )
+        for tool_id in panel_tool_ids:
+            if tool_id in seen:
+                continue
+            seen.add(tool_id)
+            tool_ids.append(tool_id)
+        return self._latest_panel_tool_ids(tool_ids)
+
+    def _latest_panel_tool_ids(self, tool_ids: list[str]) -> list[str]:
+        if self._tool_index is None:
+            return tool_ids
+        ordered_lineages: list[tuple[str | None, str]] = []
+        latest_by_lineage: dict[tuple[str | None, str], ToolIndexEntry] = {}
+        for tool_id in tool_ids:
+            entry = self._tool_index.entries.get(tool_id)
+            if entry is None or entry.hidden:
+                continue
+            lineage_id = remove_version_from_guid(entry.id) or entry.id
+            lineage_key = (entry.panel_section_id, lineage_id)
+            current = latest_by_lineage.get(lineage_key)
+            if current is None:
+                ordered_lineages.append(lineage_key)
+                latest_by_lineage[lineage_key] = entry
+            elif self._index_entry_newer(entry, current):
+                latest_by_lineage[lineage_key] = entry
+        return [latest_by_lineage[lineage_key].id for lineage_key in ordered_lineages]
+
+    def _index_entry_newer(self, entry: ToolIndexEntry, other: ToolIndexEntry) -> bool:
+        try:
+            return parse_version(entry.version or "0") > parse_version(other.version or "0")
+        except Exception:
+            return (entry.version or "") > (other.version or "")
+
+    def _init_dynamic_tool_confs_without_loading(self, config_filenames: list[str]) -> None:
+        config_filenames = listify(config_filenames)
+        config_directories = [config_filename for config_filename in config_filenames if os.path.isdir(config_filename)]
+        config_filenames = [
+            config_filename for config_filename in config_filenames if config_filename not in config_directories
+        ]
+        for config_directory in config_directories:
+            directory_contents = sorted(os.listdir(config_directory))
+            directory_config_files = [config_file for config_file in directory_contents if config_file.endswith(".xml")]
+            config_filenames.extend(directory_config_files)
+        for config_filename in config_filenames:
+            if not self.can_load_config_file(config_filename):
+                continue
+            self._init_dynamic_tool_conf_without_loading(config_filename)
+
+    def _init_dynamic_tool_conf_without_loading(self, config_filename: str) -> None:
+        try:
+            tool_conf_source = get_toolbox_parser(config_filename)
+        except OSError as exc:
+            dynamic_confs = (self.app.config.shed_tool_config_file, self.app.config.migrated_tools_config)
+            if config_filename in dynamic_confs and exc.errno == errno.ENOENT:
+                stcd = dict(
+                    config_filename=config_filename,
+                    tool_path=self.app.config.shed_tools_dir,
+                    config_elems=[],
+                    create=SHED_TOOL_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir),
+                )
+                self._dynamic_tool_confs.append(stcd)
+                return
+            raise
+        if not tool_conf_source.is_shed_tool_conf() or not os.access(config_filename, os.W_OK):
+            return
+        tool_path = resolve_tool_path(tool_conf_source.parse_tool_path(), config_filename, self._tool_root_dir)
+        config_elems = [item.elem for item in tool_conf_source.parse_items() if item.has_elem]
+        self._dynamic_tool_confs.append(
+            dict(
+                config_filename=config_filename,
+                tool_path=tool_path,
+                config_elems=config_elems,
+            )
+        )
 
     def _index_needs_population(self) -> bool:
         """Return True when at least one config-discovered tool path is absent
@@ -646,6 +799,8 @@ class LazyToolBox(ToolBox):
         # ``galaxy.tools.source_store.freshness``.
         fresh = self._store.index_is_fresh()
         if fresh is True:
+            if self._writable_store_index_needs_population():
+                return True
             log.info("Tool source store index is fresh; skipping index coverage scan")
             return False
         if fresh is False:
@@ -665,6 +820,33 @@ class LazyToolBox(ToolBox):
         except Exception as e:
             log.warning("Index coverage check raised; running populator defensively: %s", e)
             return True
+        return False
+
+    def _writable_store_index_needs_population(self) -> bool:
+        if self._store is None:
+            return False
+        stores = (
+            self._store.members if isinstance(self._store, CompositeToolSourceStore) else [("__default__", self._store)]
+        )
+        for store_name, store in stores:
+            if store.read_only:
+                continue
+            source_hashes = set(store.list_all())
+            index = store.load_index()
+            index_hashes: set[str] = set()
+            if index is not None:
+                index_hashes.update(entry.source_hash for entry in index.entries.values() if entry.source_hash)
+                for versions in index.entries_by_version.values():
+                    index_hashes.update(entry.source_hash for entry in versions.values() if entry.source_hash)
+            if source_hashes != index_hashes:
+                log.info(
+                    "Tool source store index/source mismatch for %s (%d indexed sources, %d stored sources); "
+                    "running populator",
+                    store_name,
+                    len(index_hashes),
+                    len(source_hashes),
+                )
+                return True
         return False
 
     def _run_inline_populator(self) -> None:
@@ -965,6 +1147,12 @@ class LazyToolBox(ToolBox):
             # still through the single-writer populator — and retry.
             entry = self._populate_adhoc_path(str(config_file), guid)
         if entry is None:
+            if config_file is not None and os.path.exists(str(config_file)):
+                log.warning(
+                    "LazyToolBox.create_tool: no index entry for %s after ad-hoc populate; parsing eagerly",
+                    config_file,
+                )
+                return super().create_tool(config_file, tool_shed_repository=tool_shed_repository, guid=guid, **kwds)
             raise RuntimeError(
                 "LazyToolBox.create_tool: no index entry for "
                 f"(config_file={config_file!r}, guid={guid!r}). The populator "
@@ -1340,7 +1528,7 @@ class LazyToolBox(ToolBox):
             except Exception as e:
                 log.warning("Failed to register new index entry %s: %s", tool_id, e)
 
-    def _register_lazy_entry(self, entry: ToolIndexEntry) -> "LazyTool":
+    def _register_lazy_entry(self, entry: ToolIndexEntry, place_in_panel: bool = True) -> "LazyTool":
         """Construct + slot a ``LazyTool`` stub for ``entry``.
 
         Inverse of :meth:`_register_loaded_tool`: same bookkeeping, but for
@@ -1372,18 +1560,21 @@ class LazyToolBox(ToolBox):
         # populator wrote on the previous step, so .get() returns the right
         # ToolLineage; register() is the fallback for an as-yet-unseen id.
         stub._lineage = self._lineage_map.get(tool_id) or self._lineage_map.register(stub)  # type: ignore[arg-type]
+        if not place_in_panel:
+            return stub
         # Place into the panel. The populator stamped panel_section_id /
         # panel_section_name onto the entry; create the ToolSection if it
         # doesn't already exist (peer-process install of the first tool in
         # a new section).
         section_id = entry.panel_section_id
         if section_id:
-            section_key = f"section_{section_id}"
+            section_key = section_id
             section = self._tool_panel.get(section_key)
             if not isinstance(section, ToolSection):
                 section = ToolSection({"id": section_id, "name": entry.panel_section_name or section_id})
                 self._tool_panel[section_key] = section
             section.elems.append_tool(stub)
+            self._tool_panel.record_section_for_tool_id(tool_id, section_key, section.name)
         else:
             self._tool_panel[f"tool_{tool_id}"] = stub
         return stub
@@ -1710,6 +1901,24 @@ class LazyToolBox(ToolBox):
                 if candidate is not None:
                     return candidate
         return None
+
+    def latest_search_hits(self, tool_ids: list[str]) -> list[str]:
+        if self._tool_index is None:
+            return tool_ids
+        ordered_lineages: list[str] = []
+        latest_by_lineage: dict[str, ToolIndexEntry] = {}
+        for tool_id in tool_ids:
+            entry = self._tool_index.entries.get(tool_id)
+            if entry is None:
+                continue
+            lineage_id = remove_version_from_guid(entry.id) or entry.id
+            current = latest_by_lineage.get(lineage_id)
+            if current is None:
+                ordered_lineages.append(lineage_id)
+                latest_by_lineage[lineage_id] = entry
+            elif self._index_entry_newer(entry, current):
+                latest_by_lineage[lineage_id] = entry
+        return [latest_by_lineage[lineage_id].id for lineage_id in ordered_lineages]
 
     # === Required property overrides ===
 

@@ -682,7 +682,10 @@ class ToolsService(ServiceBase):
         """
         lazy_toolbox = self._get_lazy_toolbox(trans)
         results: list[str] = []
-        for hit in self._search(query, view) or []:
+        hits = self._search(query, view) or []
+        if lazy_toolbox is not None:
+            hits = lazy_toolbox.latest_search_hits(hits)
+        for hit in hits:
             if lazy_toolbox is not None:
                 tool = lazy_toolbox.resolve_search_hit(hit)
                 if tool is not None and tool.id and tool.allow_user_access(trans.user):
