@@ -115,13 +115,29 @@ def test_composite_stale_writable_member_wins(tmp_path):
     assert composite.index_is_fresh() is False
 
 
-def test_composite_stale_read_only_member_warns_but_stays_fresh(tmp_path, caplog):
+def test_read_only_store_trusts_schema_valid_index_over_probe(tmp_path):
+    # Stamped token and probe value disagree, but a read-only store is
+    # trusted whenever its index loads — the probe only feeds the watcher.
     ro = _stamped_store(tmp_path / "ro.sqlite", "cvmfs:r:1", "cvmfs:r:2", read_only=True)
+    assert ro.index_is_fresh() is True
+
+
+def test_read_only_store_without_index_is_not_fresh(tmp_path):
+    SqlAlchemyToolSourceStore(url=f"sqlite:///{tmp_path}/ro.sqlite")
+    ro = SqlAlchemyToolSourceStore(
+        url=f"sqlite:///{tmp_path}/ro.sqlite", read_only=True, freshness_probe=lambda: "cvmfs:r:1"
+    )
+    assert ro.index_is_fresh() is False
+
+
+def test_composite_read_only_member_without_index_warns_but_stays_fresh(tmp_path, caplog):
+    SqlAlchemyToolSourceStore(url=f"sqlite:///{tmp_path}/ro.sqlite")
+    ro = SqlAlchemyToolSourceStore(url=f"sqlite:///{tmp_path}/ro.sqlite", read_only=True)
     rw = _stamped_store(tmp_path / "rw.sqlite", "confs:x", "confs:x")
     composite = CompositeToolSourceStore(members=[("ro", ro), ("rw", rw)], default="rw")
     with caplog.at_level(logging.WARNING):
         assert composite.index_is_fresh() is True
-    assert "repopulated upstream" in caplog.text
+    assert "no loadable index" in caplog.text
 
 
 def test_composite_member_without_probe_downgrades_to_none(tmp_path):

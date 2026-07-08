@@ -357,19 +357,23 @@ mapping:
           For details see
           https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 
+          A ``read_only`` store is trusted at boot whenever its persisted
+          index loads under the current index schema: it is published
+          together with the tools it indexes (the CVMFS model), so a
+          schema-valid index is authoritative by construction and no
+          per-tool coverage scan runs against it.
+
           An entry may also declare a freshness probe via ``freshness``.
-          The populator stamps the probe's value into the store's persisted
-          index; at boot a matching value proves the store still covers the
-          tool tree and skips the per-tool coverage scan entirely.
           ``freshness: cvmfs`` reads the CernVM-FS repository revision (one
           extended-attribute syscall) from ``freshness_path``, defaulting
-          to the store's SQLite file location — the right probe for a store
-          published on CVMFS in the same transaction as the tools it
-          indexes. ``freshness: tool_confs`` hashes the local tool conf
-          files plus tool_dir directory mtimes; the default
-          (``tool_source_database_connection``) store always uses this
-          probe. Without ``freshness``, a named store is verified by the
-          coverage scan as before.
+          to the store's SQLite file location; combined with
+          ``watch_tool_source_stores`` it lets Galaxy detect and reload a
+          newly published repository revision at runtime.
+          ``freshness: tool_confs`` hashes the local tool conf files plus
+          tool_dir directory mtimes and is compared at boot against the
+          value the populator stamped — the right probe for a writable
+          store populated on the same host; the default
+          (``tool_source_database_connection``) store always uses it.
 
       use_lazy_toolbox:
         type: bool
