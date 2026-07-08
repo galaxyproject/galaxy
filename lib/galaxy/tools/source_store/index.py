@@ -6,25 +6,27 @@ lightweight metadata about tools for efficient API responses without
 loading full tool sources.
 """
 
-from dataclasses import (
-    dataclass,
-    field,
-)
 from datetime import datetime
 from typing import (
     Any,
 )
 
+from pydantic import (
+    BaseModel,
+    Field,
+    PrivateAttr,
+)
+
 from galaxy.tool_util.version import parse_version
 
 
-@dataclass
-class ToolIndexEntry:
+class ToolIndexEntry(BaseModel):
     """
     Lightweight tool metadata for API responses and search.
 
     This class contains all fields needed for batch API endpoints without
-    requiring the full tool source to be loaded.
+    requiring the full tool source to be loaded. Serialization is plain
+    Pydantic (``model_dump(mode="json")`` / ``model_validate``).
     """
 
     # === Identity ===
@@ -40,9 +42,9 @@ class ToolIndexEntry:
     # === Classification ===
     panel_section_id: str | None = None
     panel_section_name: str | None = None
-    labels: list[str] = field(default_factory=list)
-    edam_operations: list[str] = field(default_factory=list)
-    edam_topics: list[str] = field(default_factory=list)
+    labels: list[str] = Field(default_factory=list)
+    edam_operations: list[str] = Field(default_factory=list)
+    edam_topics: list[str] = Field(default_factory=list)
 
     # === Source Reference ===
     source_hash: str = ""
@@ -64,17 +66,17 @@ class ToolIndexEntry:
     tool_type: str = "default"
     # User-facing tags from ``<tool>`` config (distinct from ``labels``).
     # Surfaced for custom tool filters that bucket tools by tag.
-    tags: list[str] = field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
 
     # === Tests (for /api/tools/tests_summary) ===
     test_count: int = 0
 
     # === Requirements (for /api/tools/all_requirements, dependency endpoints) ===
-    requirements: list[dict[str, Any]] = field(default_factory=list)
+    requirements: list[dict[str, Any]] = Field(default_factory=list)
     # Example: [{"name": "samtools", "version": "1.9", "type": "package"}]
 
     # === Container Info (for container resolution endpoints) ===
-    container_requirements: list[dict[str, Any]] = field(default_factory=list)
+    container_requirements: list[dict[str, Any]] = Field(default_factory=list)
     # Example: [{"type": "docker", "identifier": "biocontainers/samtools:1.9"}]
 
     # === Tool Shed Info (for sanitize_allow, shed endpoints) ===
@@ -131,82 +133,8 @@ class ToolIndexEntry:
             )
         return entry
 
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for serialization."""
-        return {
-            "id": self.id,
-            "uuid": self.uuid,
-            "version": self.version,
-            "tool_shed_repository_id": self.tool_shed_repository_id,
-            "name": self.name,
-            "description": self.description,
-            "panel_section_id": self.panel_section_id,
-            "panel_section_name": self.panel_section_name,
-            "labels": self.labels,
-            "edam_operations": self.edam_operations,
-            "edam_topics": self.edam_topics,
-            "source_hash": self.source_hash,
-            "source_class": self.source_class,
-            "source_path": self.source_path,
-            "file_hash": self.file_hash,
-            "hidden": self.hidden,
-            "disabled": self.disabled,
-            "require_login": self.require_login,
-            "tool_type": self.tool_type,
-            "tags": self.tags,
-            "test_count": self.test_count,
-            "requirements": self.requirements,
-            "container_requirements": self.container_requirements,
-            "tool_shed": self.tool_shed,
-            "repository_name": self.repository_name,
-            "repository_owner": self.repository_owner,
-            "changeset_revision": self.changeset_revision,
-            "is_local": self.is_local,
-            "indexed_at": self.indexed_at.isoformat() if self.indexed_at else None,
-        }
 
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ToolIndexEntry":
-        """Create from dictionary."""
-        indexed_at = data.get("indexed_at")
-        if indexed_at and isinstance(indexed_at, str):
-            indexed_at = datetime.fromisoformat(indexed_at)
-
-        return cls(
-            id=data["id"],
-            uuid=data.get("uuid"),
-            version=data.get("version"),
-            tool_shed_repository_id=data.get("tool_shed_repository_id"),
-            name=data.get("name", ""),
-            description=data.get("description", ""),
-            panel_section_id=data.get("panel_section_id"),
-            panel_section_name=data.get("panel_section_name"),
-            labels=data.get("labels", []),
-            edam_operations=data.get("edam_operations", []),
-            edam_topics=data.get("edam_topics", []),
-            source_hash=data.get("source_hash", ""),
-            source_class=data.get("source_class", "XmlToolSource"),
-            source_path=data.get("source_path"),
-            file_hash=data.get("file_hash"),
-            hidden=data.get("hidden", False),
-            disabled=data.get("disabled", False),
-            require_login=data.get("require_login", False),
-            tool_type=data.get("tool_type", "default"),
-            tags=data.get("tags", []),
-            test_count=data.get("test_count", 0),
-            requirements=data.get("requirements", []),
-            container_requirements=data.get("container_requirements", []),
-            tool_shed=data.get("tool_shed"),
-            repository_name=data.get("repository_name"),
-            repository_owner=data.get("repository_owner"),
-            changeset_revision=data.get("changeset_revision"),
-            is_local=data.get("is_local", True),
-            indexed_at=indexed_at,
-        )
-
-
-@dataclass
-class ToolIndex:
+class ToolIndex(BaseModel):
     """
     In-memory index of all tools for fast API access.
 
@@ -214,7 +142,7 @@ class ToolIndex:
     used to serve API responses without loading full tool sources.
     """
 
-    entries: dict[str, ToolIndexEntry] = field(default_factory=dict)
+    entries: dict[str, ToolIndexEntry] = Field(default_factory=dict)
     # Multi-version map. Several tool confs ship the same ``id`` at different
     # versions (e.g. multiple_versions_hidden_v01 and _v02 both have id
     # ``multiple_versions_hidden``). ``entries`` keeps the default per id (the
@@ -222,14 +150,14 @@ class ToolIndex:
     # every version so ``get(tool_id, tool_version=...)`` resolves correctly
     # to the matching ``source_hash``. Empty-string version key represents
     # tools whose XML lacks a ``version`` attribute.
-    entries_by_version: dict[str, dict[str, ToolIndexEntry]] = field(default_factory=dict)
-    by_section: dict[str, list[str]] = field(default_factory=dict)
-    panel_views: dict[str, dict] = field(default_factory=dict)
+    entries_by_version: dict[str, dict[str, ToolIndexEntry]] = Field(default_factory=dict)
+    by_section: dict[str, list[str]] = Field(default_factory=dict)
+    panel_views: dict[str, dict] = Field(default_factory=dict)
     built_at: datetime | None = None
 
-    # Cached computations
-    _requirements_cache: list[dict[str, Any]] | None = field(default=None, repr=False)
-    _tests_summary_cache: dict[str, dict[str, dict]] | None = field(default=None, repr=False)
+    # Cached computations (not serialized)
+    _requirements_cache: list[dict[str, Any]] | None = PrivateAttr(default=None)
+    _tests_summary_cache: dict[str, dict[str, dict]] | None = PrivateAttr(default=None)
 
     def invalidate_caches(self) -> None:
         """Invalidate all cached computations."""
@@ -391,42 +319,3 @@ class ToolIndex:
     def get_tools_needing_containers(self) -> list[ToolIndexEntry]:
         """Return tools with container requirements."""
         return [e for e in self.entries.values() if e.container_requirements]
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for serialization."""
-        return {
-            "entries": {k: v.to_dict() for k, v in self.entries.items()},
-            "entries_by_version": {
-                tool_id: {ver: entry.to_dict() for ver, entry in versions.items()}
-                for tool_id, versions in self.entries_by_version.items()
-            },
-            "by_section": self.by_section,
-            "panel_views": self.panel_views,
-            "built_at": self.built_at.isoformat() if self.built_at else None,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ToolIndex":
-        """Create from dictionary."""
-        built_at = data.get("built_at")
-        if built_at and isinstance(built_at, str):
-            built_at = datetime.fromisoformat(built_at)
-
-        entries = {k: ToolIndexEntry.from_dict(v) for k, v in data.get("entries", {}).items()}
-        entries_by_version: dict[str, dict[str, ToolIndexEntry]] = {}
-        for tool_id, versions in data.get("entries_by_version", {}).items():
-            entries_by_version[tool_id] = {ver: ToolIndexEntry.from_dict(v) for ver, v in versions.items()}
-        # Backwards-compat: indexes persisted before entries_by_version existed
-        # only have ``entries``; fall back to a 1-version map so callers don't
-        # break.
-        if entries and not entries_by_version:
-            for tool_id, entry in entries.items():
-                entries_by_version[tool_id] = {entry.version or "": entry}
-
-        return cls(
-            entries=entries,
-            entries_by_version=entries_by_version,
-            by_section=data.get("by_section", {}),
-            panel_views=data.get("panel_views", {}),
-            built_at=built_at,
-        )

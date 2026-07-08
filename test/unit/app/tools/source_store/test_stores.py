@@ -295,7 +295,7 @@ class TestToolIndex:
     """Tests for ToolIndex functionality."""
 
     def test_index_serialization(self):
-        """Test index to_dict/from_dict round trip."""
+        """Test index model_dump/model_validate round trip."""
         index = ToolIndex()
         index.entries["test_tool"] = ToolIndexEntry(
             id="test_tool",
@@ -306,9 +306,9 @@ class TestToolIndex:
         )
         index.by_section["section1"] = ["test_tool"]
 
-        data = index.to_dict()
+        data = index.model_dump(mode="json")
 
-        restored = ToolIndex.from_dict(data)
+        restored = ToolIndex.model_validate(data)
 
         assert "test_tool" in restored.entries
         assert restored.entries["test_tool"].name == "Test"

@@ -262,7 +262,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def store_index(self, index: ToolIndex) -> None:
         self._ensure_writable()
-        compressed = gzip.compress(json.dumps(index.to_dict()).encode("utf-8"))
+        compressed = gzip.compress(json.dumps(index.model_dump(mode="json")).encode("utf-8"))
         with self._session() as session:
             # Singleton row, updated in place.
             row = session.execute(select(_ToolIndexRow).order_by(_ToolIndexRow.id)).scalar_one_or_none()
@@ -284,7 +284,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             return None
         try:
             payload = json.loads(gzip.decompress(row.data).decode("utf-8"))
-            self._cached_index = ToolIndex.from_dict(payload)
+            self._cached_index = ToolIndex.model_validate(payload)
             return self._cached_index
         except Exception as e:
             log.error(f"Failed to decode tool index from store {self.url}: {e}")

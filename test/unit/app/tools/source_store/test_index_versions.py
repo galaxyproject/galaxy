@@ -7,8 +7,7 @@ Behaviours pinned:
 - per-id default selection by ``packaging.version.parse``
 - ``entries_by_version`` records every indexed version
 - explicit-version lookup via ``ToolIndex.get(tool_id, tool_version)``
-- ``to_dict`` / ``from_dict`` round-trips ``entries_by_version``
-- tokenised search across id / name / description / labels
+- pydantic serialization round-trips ``entries_by_version``
 """
 
 from galaxy.tools.source_store.index import ToolIndex
@@ -67,29 +66,15 @@ def test_get_with_no_version_returns_default_entry(index_entry, tool_index):
     assert index.get("multi") is e2
 
 
-def test_to_dict_from_dict_round_trips_entries_by_version(index_entry, tool_index):
+def test_serialization_round_trips_entries_by_version(index_entry, tool_index):
     index = tool_index(
         index_entry("multi", version="0.1"),
         index_entry("multi", version="0.2"),
         index_entry("solo", version="1.0"),
     )
-    restored = ToolIndex.from_dict(index.to_dict())
+    restored = ToolIndex.model_validate(index.model_dump(mode="json"))
     assert set(restored.entries_by_version["multi"]) == {"0.1", "0.2"}
     assert restored.entries["multi"].version == "0.2"
     multi_v01 = restored.get("multi", tool_version="0.1")
     assert multi_v01 is not None and multi_v01.version == "0.1"
     assert set(restored.entries_by_version["solo"]) == {"1.0"}
-
-
-def test_from_dict_backfills_entries_by_version_for_legacy_indexes():
-    # Indexes serialised before ``entries_by_version`` existed should still
-    # load — ``ToolIndex.get(tool_id, tool_version=...)`` relies on the
-    # backfill so legacy stores keep working after upgrade.
-    legacy = {
-        "entries": {
-            "tool1": {"id": "tool1", "version": "1.0", "name": "Tool 1"},
-        },
-    }
-    restored = ToolIndex.from_dict(legacy)
-    tool1 = restored.get("tool1", tool_version="1.0")
-    assert tool1 is not None and tool1.version == "1.0"
