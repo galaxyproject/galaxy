@@ -323,7 +323,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             config_value = getattr(config, "default_panel_view", None)
         return config_value or self.__default_panel_view
 
-    def create_tool(self, config_file: StrPath, **kwds) -> "Tool":
+    def create_tool(self, config_file: StrPath, **kwds: Any) -> "Tool":
         raise NotImplementedError()
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
@@ -1186,8 +1186,8 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     def __watch_directory(
         self,
         directory: StrPath,
-        elems,
-        integrated_elems,
+        elems: ToolPanelElements,
+        integrated_elems: ToolPanelElements,
         load_panel_dict: bool,
         recursive: bool,
         force_watch: bool = False,
@@ -1231,10 +1231,10 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     def load_tool(
         self,
         config_file: StrPath,
-        guid=None,
-        tool_shed_repository=None,
+        guid: str | None = None,
+        tool_shed_repository: "ToolConfRepository | ToolShedRepository | None" = None,
         use_cached: bool = False,
-        **kwds,
+        **kwds: Any,
     ) -> "Tool":
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element

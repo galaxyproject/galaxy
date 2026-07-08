@@ -7,9 +7,6 @@ All message queues used by Galaxy
 import datetime
 import logging
 import socket
-from typing import (
-    TYPE_CHECKING,
-)
 
 from kombu import (
     Connection,
@@ -20,12 +17,11 @@ from sqlalchemy import (
     or_,
     select,
 )
+from sqlalchemy.orm import Session
 
 from galaxy.model import WorkerProcess
 from galaxy.util import now
-
-if TYPE_CHECKING:
-    from galaxy.web_stack import ApplicationStack
+from galaxy.web_stack import ApplicationStack
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +37,7 @@ WEBAPP_APP_TYPE = "webapp"
 SSE_MONITOR_APP_TYPE = "sse_monitor"
 
 
-def control_queues_for_session(session, webapp_only: bool = False) -> list[Queue]:
+def control_queues_for_session(session: Session, webapp_only: bool = False) -> list[Queue]:
     """Build the per-process control-queue declare list from a model session.
 
     Split out of :func:`all_control_queues_for_declare` so callers that have a
@@ -60,7 +56,7 @@ def control_queues_for_session(session, webapp_only: bool = False) -> list[Queue
     return [Queue(f"control.{p.server_name}@{p.hostname}", galaxy_exchange, routing_key="control.*") for p in processes]
 
 
-def all_control_queues_for_declare(application_stack: "ApplicationStack", webapp_only: bool = False) -> list[Queue]:
+def all_control_queues_for_declare(application_stack: ApplicationStack, webapp_only: bool = False) -> list[Queue]:
     """
     For in-memory routing (used by sqlalchemy-based transports), we need to be able to
     build the entire routing table in producers.

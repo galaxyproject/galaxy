@@ -78,6 +78,7 @@ class FakeConfig:
     """Minimal config for testing."""
 
     amqp_internal_connection: str | None = None
+    database_connection: str = "sqlite:///:memory:"
 
 
 # --- Tests ---

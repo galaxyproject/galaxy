@@ -36,9 +36,17 @@ from datetime import (
     timezone,
 )
 from pathlib import Path
-from typing import Any
+from types import FrameType
+from typing import (
+    Any,
+    NoReturn,
+    Protocol,
+)
 
-from kombu import Connection
+from kombu import (
+    Connection,
+    Queue,
+)
 from kombu.pools import producers
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -91,22 +99,31 @@ from galaxy.util.watcher import (
 log = logging.getLogger(__name__)
 
 
+class _ReloadNotificationConfig(Protocol):
+    amqp_internal_connection: str | None
+    database_connection: str
+
+
+class _ToolFileWatcherStore(Protocol):
+    def exists(self, __hash: str) -> bool: ...
+
+
 def compute_hash(content: str) -> str:
     """Compute SHA256 hash of content."""
     return hashlib.sha256(content.encode()).hexdigest()
 
 
-def _cli_control_queues(config) -> list:
+def _cli_control_queues(database_connection: str) -> list[Queue]:
     """Active per-process control queues, read straight from the main Galaxy DB.
 
     The standalone populator CLI has no ``ApplicationStack``; on the kombu
     sqlalchemy transport a producer must declare every live consumer's queue
     or the message is silently dropped. Build the same routing table
     :func:`galaxy.queues.all_control_queues_for_declare` builds, from a bare
-    session on ``config.database_connection``.
+    session on ``database_connection``.
     """
     try:
-        engine = create_engine(config.database_connection)
+        engine = create_engine(database_connection)
         try:
             with Session(engine) as session:
                 return control_queues_for_session(session)
@@ -117,7 +134,7 @@ def _cli_control_queues(config) -> list:
         return []
 
 
-def _ensure_datatypes_registry(config) -> None:
+def _ensure_datatypes_registry(config: GalaxyAppConfiguration) -> None:
     """Initialise the global datatypes registry if it isn't already set.
 
     ``discover_tools`` enumerates datatype converters off the registry that
@@ -137,7 +154,7 @@ def _ensure_datatypes_registry(config) -> None:
     set_datatypes_registry(registry)
 
 
-def send_reload_notification(config) -> bool:
+def send_reload_notification(config: _ReloadNotificationConfig) -> bool:
     """
     Send a reload_tool_source_cache control task via Kombu.
 
@@ -164,7 +181,7 @@ def send_reload_notification(config) -> bool:
                 payload,
                 exchange=galaxy_exchange,
                 routing_key="control.*",
-                declare=_cli_control_queues(config),
+                declare=_cli_control_queues(config.database_connection),
                 retry=True,
                 headers={"epoch": time.time()},
             )
@@ -190,14 +207,14 @@ class ToolFileWatcher:
 
     def __init__(
         self,
-        config,
-        store,
-        tools_dirs: list,
+        config: _ReloadNotificationConfig,
+        store: _ToolFileWatcherStore,
+        tools_dirs: list[Path],
         use_polling: bool = False,
         verbose: bool = False,
-        notify_callable: Callable[[Any], bool] | None = None,
+        notify_callable: Callable[[_ReloadNotificationConfig], bool] | None = None,
         populate_callable: Callable[..., Any] | None = None,
-    ):
+    ) -> None:
         self.config = config
         self.store = store
         self.tools_dirs = tools_dirs
@@ -205,7 +222,7 @@ class ToolFileWatcher:
         # Injected so tests can substitute fakes; defaults are the real
         # populator + the AMQP notifier.
         self._notify = notify_callable or send_reload_notification
-        self._populate = populate_callable or populate_store_inline
+        self._populate: Callable[..., Any] = populate_callable or populate_store_inline
         observer_class = get_observer_class(
             "watch_tool_sources",
             "polling" if use_polling else "auto",
@@ -215,7 +232,7 @@ class ToolFileWatcher:
         self._watcher = Watcher(observer_class, EventHandler) if observer_class is not None else None
         self._shutdown_event = threading.Event()
 
-    def start(self):
+    def start(self) -> bool:
         """Start watching for file changes."""
         if self._watcher is None:
             raise Exception("watchdog is not installed; --watch mode requires it")
@@ -305,11 +322,11 @@ class ToolFileWatcher:
         log.info("Macro change in %s — re-expanded %d sibling file(s)", macro_path, len(siblings))
         return True
 
-    def wait(self):
+    def wait(self) -> None:
         """Wait for shutdown signal."""
         self._shutdown_event.wait()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Stop the watcher."""
         log.info("Shutting down file watcher...")
         self._shutdown_event.set()
@@ -339,7 +356,7 @@ def whoosh_dir_for_store(tool_search_index_dir: str | None, store_name: str) -> 
     return os.path.join(tool_search_index_dir, sub)
 
 
-def _build_whoosh_for_store(config, store_name: str, tool_index) -> None:
+def _build_whoosh_for_store(config: GalaxyAppConfiguration, store_name: str, tool_index: ToolIndex) -> None:
     """Rebuild the whoosh index for ``store_name`` from ``tool_index``.
 
     No-ops if ``tool_search_index_dir`` is unset. Logs and swallows whoosh
@@ -443,7 +460,7 @@ def build_index_entry_from_source(
         return None
 
 
-def _build_stores(config: GalaxyAppConfiguration) -> dict[str, Any]:
+def _build_stores(config: GalaxyAppConfiguration) -> dict[str, ToolSourceStore]:
     """Build {store_name: store_instance} for the default + every named store
     referenced from any tool_conf."""
     stores: dict[str, ToolSourceStore] = {
@@ -470,7 +487,7 @@ def _build_stores(config: GalaxyAppConfiguration) -> dict[str, Any]:
     return stores
 
 
-def _build_conf_to_store_map(config) -> dict[str, str]:
+def _build_conf_to_store_map(config: GalaxyAppConfiguration) -> dict[str, str]:
     """Map each tool_conf path to its declared store name (default if absent)."""
     out: dict[str, str] = {}
     for path in config.all_tool_config_files():
@@ -514,7 +531,7 @@ def populate_store(
 
 
 def populate_store_inline(
-    config,
+    config: GalaxyAppConfiguration,
     *,
     paths: list[str] | None = None,
     pattern: str | None = None,
@@ -734,9 +751,9 @@ def populate_store_inline(
                 stats["errors"] += 1
             elif status == "unchanged":
                 stats["unchanged"] += 1
-                entry = old_entry_by_path[store_name].get(discovered.path)
-                if entry is not None:
-                    index_inputs[store_name].append(entry)
+                old_entry = old_entry_by_path[store_name].get(discovered.path)
+                if old_entry is not None:
+                    index_inputs[store_name].append(old_entry)
             elif status == "skipped":
                 stats["skipped"] += 1
                 if stored is not None and tool_source is not None:
@@ -774,9 +791,9 @@ def populate_store_inline(
                     index.add_entry(index_input)
                     continue
                 d, stored, tool_source = index_input
-                entry = build_index_entry_from_source(d, stored, tool_source)
-                if entry is not None:
-                    index.add_entry(entry)
+                new_entry = build_index_entry_from_source(d, stored, tool_source)
+                if new_entry is not None:
+                    index.add_entry(new_entry)
             try:
                 stores[store_name].store_index(index)
                 log.info(
@@ -804,7 +821,7 @@ def populate_store_inline(
 
 
 def populate_for_paths(
-    config,
+    config: GalaxyAppConfiguration,
     paths: list[str],
     *,
     rebuild_whoosh: bool = True,
@@ -830,7 +847,7 @@ def populate_for_paths(
 
 
 def reconcile_index(
-    config,
+    config: GalaxyAppConfiguration,
     *,
     rebuild_whoosh: bool = True,
 ) -> dict[str, int]:
@@ -854,7 +871,7 @@ def watch_mode(
     config_file: str,
     use_polling: bool = False,
     verbose: bool = False,
-):
+) -> int:
     """
     Run in watch mode, monitoring tool directories for changes.
 
@@ -895,7 +912,7 @@ def watch_mode(
     )
 
     # Handle shutdown signals
-    def signal_handler(signum, frame):
+    def signal_handler(signum: int, frame: FrameType | None) -> None:
         log.info(f"Received signal {signum}, shutting down...")
         watcher.shutdown()
 
@@ -911,7 +928,7 @@ def watch_mode(
     return 0
 
 
-def main():
+def main() -> NoReturn:
     """CLI entry point. Invoked by ``scripts/tool_source/populate_store.py``."""
     parser = argparse.ArgumentParser(description="Populate tool source store from Galaxy toolbox")
     parser.add_argument("--config", "-c", required=True, help="Galaxy configuration file")

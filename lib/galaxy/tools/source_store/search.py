@@ -15,9 +15,6 @@ import os
 import re
 import shutil
 from dataclasses import dataclass
-from typing import (
-    TYPE_CHECKING,
-)
 
 from whoosh import (
     analysis,
@@ -37,14 +34,13 @@ from whoosh.qparser import (
 )
 from whoosh.scoring import BM25F
 
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.tools.source_store.index import (
+    ToolIndex,
+    ToolIndexEntry,
+)
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_str
-
-if TYPE_CHECKING:
-    from .index import (
-        ToolIndex,
-        ToolIndexEntry,
-    )
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +72,7 @@ class ToolSearchTuning:
     ngram_factor: float
 
     @classmethod
-    def from_config(cls, config) -> "ToolSearchTuning":
+    def from_config(cls, config: GalaxyAppConfiguration) -> "ToolSearchTuning":
         return cls(
             id_boost=float(config.tool_id_boost),
             name_boost=float(config.tool_name_boost),
@@ -141,7 +137,7 @@ def _clean(s: str | None) -> str:
     return text
 
 
-def _entry_to_doc(entry: "ToolIndexEntry") -> dict | None:
+def _entry_to_doc(entry: ToolIndexEntry) -> dict | None:
     """Turn a ``ToolIndexEntry`` into the document shape ``Schema`` expects."""
     # Data manager tools are admin-only; mirror ``ToolPanelViewSearch._create_doc``
     # by leaving them out of the public search corpus.
@@ -216,7 +212,7 @@ class ToolWhooshIndex:
             + json.dumps(sorted(docs, key=lambda d: d["id"]), sort_keys=True)
         )
 
-    def build(self, tool_index: "ToolIndex") -> int:
+    def build(self, tool_index: ToolIndex) -> int:
         """Rebuild the on-disk index from ``tool_index.entries``.
 
         Returns the number of documents written — 0 when the corpus is
