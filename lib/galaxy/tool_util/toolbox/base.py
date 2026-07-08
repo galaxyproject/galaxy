@@ -30,6 +30,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.util import (
+    Element,
     etree,
     ExecutionTimer,
     listify,
@@ -38,6 +39,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.path import StrPath
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -172,7 +174,7 @@ class ToolLoadConfigurationConflict(Exception):
     pass
 
 
-def walk_tool_directories(directory: "StrPath", recursive: bool) -> Iterator[tuple[str, list[str]]]:
+def walk_tool_directories(directory: StrPath, recursive: bool) -> Iterator[tuple[str, list[str]]]:
     """Yield ``(directory, files)`` for ``directory`` and, when ``recursive``,
     each subdirectory - skipping hidden/private (``.``/``_`` prefixed) entries.
 
@@ -196,7 +198,7 @@ def walk_tool_directories(directory: "StrPath", recursive: bool) -> Iterator[tup
             yield from walk_tool_directories(subdir, recursive)
 
 
-def resolve_tool_path(tool_path: str | None, config_filename: str, default_tool_path: "StrPath | None" = None) -> str:
+def resolve_tool_path(tool_path: str | None, config_filename: str, default_tool_path: StrPath | None = None) -> str:
     """Resolve a tool conf's ``tool_path`` attribute to the directory its tool
     files are relative to.
 
@@ -230,6 +232,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         view_sources=None,
         default_panel_view="default",
         save_integrated_tool_panel: bool = True,
+        load_panel_views: bool = True,
     ) -> None:
         """
         Create a toolbox from the config files named by `config_filenames`, using
@@ -320,7 +323,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         for tool_panel_view in tool_panel_views_list:
             self._tool_panel_views[tool_panel_view.to_model().id] = tool_panel_view
 
-        if self.app.name == "galaxy":
+        if load_panel_views and self.app.name == "galaxy":
             self._load_tool_panel_views()
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()
@@ -337,7 +340,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         """Public accessor for the default tool panel view name."""
         return self._default_panel_view(trans)
 
-    def create_tool(self, config_file: "StrPath", **kwds) -> "Tool":
+    def create_tool(self, config_file: StrPath, **kwds: Any) -> "Tool":
         raise NotImplementedError()
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
@@ -1068,7 +1071,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         return logging.WARNING
 
     def get_tool_repository_from_xml_item(
-        self, elem: "Element", path: str
+        self, elem: Element, path: str
     ) -> Union[ToolConfRepository, "ToolShedRepository"]:
         tool_shed_el = elem.find("tool_shed")
         assert tool_shed_el is not None
@@ -1227,14 +1230,14 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
     def __watch_directory(
         self,
-        directory: "StrPath",
-        elems,
-        integrated_elems,
+        directory: StrPath,
+        elems: ToolPanelElements,
+        integrated_elems: ToolPanelElements,
         load_panel_dict: bool,
         recursive: bool,
         force_watch: bool = False,
     ) -> None:
-        def quick_load(tool_file: "StrPath", async_load: bool = True) -> str | None:
+        def quick_load(tool_file: StrPath, async_load: bool = True) -> str | None:
             if not self._looks_like_a_tool(str(tool_file)):
                 return None
             try:
@@ -1272,11 +1275,11 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
     def load_tool(
         self,
-        config_file: "StrPath",
-        guid=None,
-        tool_shed_repository=None,
+        config_file: StrPath,
+        guid: str | None = None,
+        tool_shed_repository: "ToolConfRepository | ToolShedRepository | None" = None,
         use_cached: bool = False,
-        **kwds,
+        **kwds: Any,
     ) -> "Tool":
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
@@ -1311,12 +1314,12 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if self._tool_config_watcher:
                 [self._tool_config_watcher.watch_file(macro_path) for macro_path in tool._macro_paths]
 
-    def add_tool_to_cache(self, tool: "Tool", config_file: "StrPath") -> None:
+    def add_tool_to_cache(self, tool: "Tool", config_file: StrPath) -> None:
         tool_cache: ToolCache | None = getattr(self.app, "tool_cache", None)
         if tool_cache:
             tool_cache.cache_tool(config_file, tool)
 
-    def load_tool_from_cache(self, config_file: "StrPath", recover_tool: bool = False) -> Union["Tool", None]:
+    def load_tool_from_cache(self, config_file: StrPath, recover_tool: bool = False) -> Union["Tool", None]:
         tool_cache: ToolCache | None = getattr(self.app, "tool_cache", None)
         tool = None
         if tool_cache:

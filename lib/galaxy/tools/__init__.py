@@ -545,6 +545,7 @@ class ToolBox(AbstractToolBox):
             view_sources=view_sources,
             default_panel_view=default_panel_view,
             save_integrated_tool_panel=save_integrated_tool_panel,
+            load_panel_views=not app.config.display_builtin_converters,
         )
         # Load built-in converters
         if app.config.display_builtin_converters:
