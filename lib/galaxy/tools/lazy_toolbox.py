@@ -36,12 +36,15 @@ from galaxy.tools.source_store import (
     StoredToolSource,
     ToolSourceStore,
 )
+from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.discover import discover_tools
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
 from galaxy.tools.source_store.populator import (
+    conf_to_store_map,
+    DEFAULT_STORE_NAME,
     populate_for_paths,
     populate_store_inline,
 )
@@ -553,18 +556,44 @@ class LazyToolBox(ToolBox):
 
     def _index_needs_population(self) -> bool:
         """Return True when at least one config-discovered tool path is absent
-        from the store. The first miss short-circuits the scan — we don't need
-        an exhaustive answer, just a decision to run the populator.
+        from the store.
+
+        The stored paths are fetched as one bulk set up front
+        (``list_source_paths``) so the conf walk costs a set lookup per tool
+        instead of a store query per tool — on a CVMFS-scale deployment the
+        per-tool round trips dominated boot time.
+
+        Paths whose tool_conf routes to a read-only store never trigger the
+        populator: it skips read-only targets, so a miss there would re-run
+        on every boot without ever healing. Those misses are logged once and
+        left to the eager parse fall-through in ``create_tool``.
         """
         if self._store is None:
             return False
         if not self._tool_index or not self._tool_index.entries:
             return True
-        # The discover walker reads tool confs only; no DB round-trip per file.
         try:
+            stored_paths = self._store.list_source_paths()
+            read_only_stores: set[str] = set()
+            if isinstance(self._store, CompositeToolSourceStore):
+                read_only_stores = self._store.read_only_member_names
+            conf_to_store = conf_to_store_map(self.app.config) if read_only_stores else {}
+            read_only_misses = 0
+            # The discover walker reads tool confs only; no DB round-trip per file.
             for d in discover_tools(self.app.config):
-                if self._store.get_by_source_path(d.path) is None:
-                    return True
+                if d.path in stored_paths:
+                    continue
+                if conf_to_store.get(d.tool_conf, DEFAULT_STORE_NAME) in read_only_stores:
+                    read_only_misses += 1
+                    log.debug("tool path %s missing from its read-only store", d.path)
+                    continue
+                return True
+            if read_only_misses:
+                log.warning(
+                    "%d tool path(s) route to read-only stores that don't index them; "
+                    "these tools will parse eagerly until the store is repopulated upstream",
+                    read_only_misses,
+                )
         except Exception as e:
             log.warning("Index coverage check raised; running populator defensively: %s", e)
             return True
