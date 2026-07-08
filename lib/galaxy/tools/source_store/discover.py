@@ -15,6 +15,7 @@ from collections.abc import (
     Iterable,
     Iterator,
 )
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import (
     dataclass,
     field,
@@ -43,6 +44,11 @@ from galaxy.tools.special_tools import hidden_lib_tool_paths
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
+
+# Existence checks dominate discovery on network filesystems: one stat per
+# ``<tool file=...>`` at tens of ms each is minutes of wall clock for a shed
+# conf listing thousands of tools (CVMFS). Batch them through a thread pool.
+_EXISTS_CHECK_WORKERS = 16
 
 log = logging.getLogger(__name__)
 
@@ -150,7 +156,29 @@ def discover_tools_from_config(
     # dropped at the os.path.exists check below.
     file_template_kwds = {"model_tools_path": MODEL_TOOLS_PATH}
 
-    for item, section in _iter_tool_items(tool_conf_source.parse_items()):
+    items = list(_iter_tool_items(tool_conf_source.parse_items()))
+
+    # Pre-resolve every ``<tool file=...>`` path and run the existence checks
+    # through a thread pool (see ``_EXISTS_CHECK_WORKERS``); the loop below
+    # then consumes the results in conf document order.
+    file_paths: dict[int, str] = {}
+    for i, (item, _section) in enumerate(items):
+        if item.type == "tool_dir":
+            continue
+        tool_file = item.get("file")
+        if not tool_file:
+            continue
+        tool_file = string.Template(tool_file).safe_substitute(file_template_kwds)
+        if not os.path.isabs(tool_file):
+            tool_file = os.path.join(resolved_tool_path, tool_file)
+        file_paths[i] = os.path.normpath(tool_file)
+    exists_by_path: dict[str, bool] = {}
+    if file_paths:
+        unique_paths = list(set(file_paths.values()))
+        with ThreadPoolExecutor(max_workers=_EXISTS_CHECK_WORKERS) as executor:
+            exists_by_path = dict(zip(unique_paths, executor.map(os.path.exists, unique_paths)))
+
+    for i, (item, section) in enumerate(items):
         section_id = section.get("id") if section is not None else None
         section_name = section.get("name") if section is not None else None
         if item.type == "tool_dir":
@@ -177,22 +205,11 @@ def discover_tools_from_config(
                 )
             continue
 
-        tool_file = item.get("file")
-        if not tool_file:
+        tool_path_abs = file_paths.get(i)
+        if tool_path_abs is None:
             continue
 
-        tool_file = string.Template(tool_file).safe_substitute(file_template_kwds)
-
-        # Resolve tool file path
-        if os.path.isabs(tool_file):
-            tool_path_abs = tool_file
-        else:
-            tool_path_abs = os.path.join(resolved_tool_path, tool_file)
-
-        # Normalize path
-        tool_path_abs = os.path.normpath(tool_path_abs)
-
-        if not os.path.exists(tool_path_abs):
+        if not exists_by_path[tool_path_abs]:
             log.debug(f"Tool file does not exist: {tool_path_abs}")
             continue
 
