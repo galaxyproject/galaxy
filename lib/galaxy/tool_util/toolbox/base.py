@@ -990,7 +990,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             template_kwds = self._path_template_kwds()
             path = string.Template(path_template).safe_substitute(**template_kwds)
             concrete_path = os.path.join(tool_path, path)
-            if not os.path.exists(concrete_path):
+            if not self._tool_file_on_disk(concrete_path):
                 # This is a lot faster than attempting to load a non-existing tool
                 raise OSError(ENOENT, os.strerror(ENOENT))
             tool_shed_repository = None
@@ -1047,6 +1047,26 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
+    def _tool_file_on_disk(self, path: str) -> bool:
+        """Existence gate for a conf-referenced tool file.
+
+        A per-tool stat dominates the walk of a large shed conf on a
+        network filesystem (CVMFS); the lazy toolbox overrides this to
+        answer from its index instead.
+        """
+        return os.path.exists(path)
+
+    def _missing_repository_log_level(self, path: str) -> int:
+        """Severity for a shed tool whose repository has no install-DB row.
+
+        Warning by default — for the eager toolbox that usually means lost
+        install records. The lazy toolbox downgrades index-covered tools:
+        conf-provided repositories (a CVMFS shed conf) are absent from the
+        install database by design, and one warning per tool is thousands
+        of lines per boot there.
+        """
+        return logging.WARNING
+
     def get_tool_repository_from_xml_item(
         self, elem: "Element", path: str
     ) -> Union[ToolConfRepository, "ToolShedRepository"]:
@@ -1087,7 +1107,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found "
                 "in database. Tool will be loaded without install database."
             )
-            log.warning(msg, repository_name, repository_owner)
+            log.log(self._missing_repository_log_level(path), msg, repository_name, repository_owner)
             # Figure out path to repository on disk given the tool shed info and the path to the tool contained in the repo
             assert installed_changeset_revision
             repository_path = os.path.join(

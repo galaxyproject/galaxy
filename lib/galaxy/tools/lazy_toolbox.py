@@ -496,6 +496,10 @@ class LazyToolBox(ToolBox):
         # via ``_rebuild_shed_short_id_map``.
         self._shed_short_id_to_guids: dict[str, set[str]] = {}
         self._store_watcher: ToolSourceStoreWatcher | None = None
+        # Identity-keyed cache of every indexed ``source_path`` — see
+        # ``_index_source_paths``. Set before ``super().__init__`` because
+        # the eager walk consults it through ``_tool_file_on_disk``.
+        self._index_source_paths_cache: tuple[ToolIndex, set[str]] | None = None
 
         # Eager init — its ``_init_tools_from_configs`` is overridden so the
         # walk goes through our ``create_tool`` seam and hands back LazyTool
@@ -1007,6 +1011,55 @@ class LazyToolBox(ToolBox):
             self._tool_index = self._store.load_index() or ToolIndex()
             self._rebuild_shed_short_id_map()
         return self._resolve_index_entry(config_file, guid)
+
+    def _index_source_paths(self) -> set[str]:
+        """Every ``source_path`` the current in-memory index covers.
+
+        Cached against the identity of ``_tool_index``, so any reload
+        (which always assigns a fresh ``ToolIndex``) refreshes it without
+        reset plumbing. In-place entry removals can leave a stale extra
+        path here — that only skips one stat for a tool ``create_tool``
+        will then resolve or self-heal, so it is harmless.
+        """
+        index = self._tool_index
+        if index is None:
+            return set()
+        cached = self._index_source_paths_cache
+        if cached is not None and cached[0] is index:
+            return cached[1]
+        paths: set[str] = set()
+        for versions in index.entries_by_version.values():
+            for entry in versions.values():
+                if entry.source_path:
+                    paths.add(entry.source_path)
+        for entry in index.entries.values():
+            if entry.source_path:
+                paths.add(entry.source_path)
+        self._index_source_paths_cache = (index, paths)
+        return paths
+
+    def _tool_file_on_disk(self, path: str) -> bool:
+        """Answer the eager walk's existence gate from the index.
+
+        The populator established existence when it stored the source, and
+        materialisation reads the raw source from the store, not the file —
+        so for an index-covered tool the per-tool stat proves nothing and,
+        on a CVMFS-resident shed conf, costs minutes of boot time.
+        """
+        if os.path.abspath(path) in self._index_source_paths():
+            return True
+        return os.path.exists(path)
+
+    def _missing_repository_log_level(self, path: str) -> int:
+        """Index-covered shed tools expectedly lack install-DB rows.
+
+        A conf-provided repository (CVMFS shed conf) is never installed
+        through the install database, so the eager warning would repeat
+        for every one of its tools on every boot.
+        """
+        if os.path.abspath(path) in self._index_source_paths():
+            return logging.DEBUG
+        return logging.WARNING
 
     def _resolve_index_entry(self, config_file, guid: str | None) -> ToolIndexEntry | None:
         """Find a matching index entry for the (config_file, guid) pair, or ``None``."""

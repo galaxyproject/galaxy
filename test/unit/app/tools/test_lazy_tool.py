@@ -509,3 +509,35 @@ def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):
     box._store.remove_index_entry.assert_called_once_with("doomed")
     assert calls == [("reload_tool_source_cache", {"noop_self": True})]
     assert "doomed" not in box._tools_by_id
+
+
+def test_tool_file_on_disk_answers_from_index(tmp_path):
+    box = _seam_box()
+    box._index_source_paths_cache = None
+    indexed_path = "/cvmfs/nowhere.example.org/shed_tools/repos/o/n/rev/t1.xml"
+    box._tool_index.add_entry(_entry(id="t1", source_path=indexed_path))
+    assert box._tool_file_on_disk(indexed_path) is True
+    assert box._tool_file_on_disk(str(tmp_path / "missing.xml")) is False
+    on_disk = tmp_path / "real.xml"
+    on_disk.write_text("<tool/>")
+    assert box._tool_file_on_disk(str(on_disk)) is True
+
+
+def test_missing_repository_log_level_downgrades_indexed_paths():
+    box = _seam_box()
+    box._index_source_paths_cache = None
+    indexed_path = "/cvmfs/nowhere.example.org/shed_tools/repos/o/n/rev/t1.xml"
+    box._tool_index.add_entry(_entry(id="t1", source_path=indexed_path))
+    assert box._missing_repository_log_level(indexed_path) == logging.DEBUG
+    assert box._missing_repository_log_level("/elsewhere/t2.xml") == logging.WARNING
+
+
+def test_index_source_paths_refresh_on_index_swap():
+    box = _seam_box()
+    box._index_source_paths_cache = None
+    box._tool_index.add_entry(_entry(id="t1", source_path="/a/t1.xml"))
+    assert "/a/t1.xml" in box._index_source_paths()
+    swapped = ToolIndex()
+    swapped.add_entry(_entry(id="t2", source_path="/b/t2.xml"))
+    box._tool_index = swapped
+    assert box._index_source_paths() == {"/b/t2.xml"}
