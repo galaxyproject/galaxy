@@ -536,8 +536,9 @@ def populate_store_inline(
     Caller supplies an already-built ``GalaxyAppConfiguration``, so
     in-process callers don't pay the config-load cost a second time.
 
-    ``parallel`` defaults to ``1`` for the in-process callers (a boot or
-    install populates a handful of files); the CLI overrides via
+    ``parallel`` sizes both worker pools — the discovery existence checks and
+    the parse/store workers. It defaults to ``1`` for the in-process callers
+    (a boot or install populates a handful of files); the CLI overrides via
     ``populate_store(config_file, parallel=...)`` for full-tree scans.
 
     ``paths`` semantics:
@@ -584,7 +585,11 @@ def populate_store_inline(
     include_converters = target is None
     if include_converters:
         _ensure_datatypes_registry(config)
-    discovered_tools = list(discover_tools(config, include_bundled=True, include_converters=include_converters))
+    # ``parallel`` governs both pools: the discovery existence checks here and
+    # the parse/store workers below.
+    discovered_tools = list(
+        discover_tools(config, include_bundled=True, include_converters=include_converters, parallel=parallel)
+    )
 
     # Bundled tools have tool_conf="bundled"; those go to the default store.
     tool_specs: list[tuple[DiscoveredTool, str]] = []
@@ -922,7 +927,16 @@ def main():
     )
     store_mode.add_argument("--full", action="store_true", help="Re-store every tool source, even unchanged ones")
     parser.add_argument("--tool-id", help="Tool ID pattern filter")
-    parser.add_argument("--parallel", "-j", type=int, default=4, help="Number of parallel workers")
+    parser.add_argument(
+        "--parallel",
+        "-j",
+        type=int,
+        default=4,
+        help=(
+            "Worker count for both discovery existence checks and tool "
+            "parsing/storing. Raise (e.g. 16) on network filesystems like CVMFS."
+        ),
+    )
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     parser.add_argument("--rebuild-index", action="store_true", help="Rebuild index after population")
     parser.add_argument(

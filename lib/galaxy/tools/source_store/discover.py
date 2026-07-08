@@ -45,11 +45,6 @@ from galaxy.tools.special_tools import hidden_lib_tool_paths
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
 
-# Existence checks dominate discovery on network filesystems: one stat per
-# ``<tool file=...>`` at tens of ms each is minutes of wall clock for a shed
-# conf listing thousands of tools (CVMFS). Batch them through a thread pool.
-_EXISTS_CHECK_WORKERS = 16
-
 log = logging.getLogger(__name__)
 
 
@@ -122,6 +117,7 @@ def discover_tools_from_config(
     config_filename: str,
     default_tool_path: str | None = None,
     enable_beta_formats: bool = False,
+    parallel: int = 1,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from a single tool configuration file.
@@ -131,6 +127,10 @@ def discover_tools_from_config(
         default_tool_path: Directory tool files are relative to when the conf
             doesn't set ``tool_path`` — same fallback the toolbox applies
             (``config.tool_path``).
+        parallel: Worker count for the per-tool existence checks. On network
+            filesystems (CVMFS) each stat costs tens of ms, so a shed conf
+            listing thousands of tools takes minutes checked serially; the
+            populator threads its ``--parallel`` value through here.
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -159,8 +159,8 @@ def discover_tools_from_config(
     items = list(_iter_tool_items(tool_conf_source.parse_items()))
 
     # Pre-resolve every ``<tool file=...>`` path and run the existence checks
-    # through a thread pool (see ``_EXISTS_CHECK_WORKERS``); the loop below
-    # then consumes the results in conf document order.
+    # through a thread pool; the loop below then consumes the results in conf
+    # document order.
     file_paths: dict[int, str] = {}
     for i, (item, _section) in enumerate(items):
         if item.type == "tool_dir":
@@ -172,11 +172,12 @@ def discover_tools_from_config(
         if not os.path.isabs(tool_file):
             tool_file = os.path.join(resolved_tool_path, tool_file)
         file_paths[i] = os.path.normpath(tool_file)
-    exists_by_path: dict[str, bool] = {}
-    if file_paths:
-        unique_paths = list(set(file_paths.values()))
-        with ThreadPoolExecutor(max_workers=_EXISTS_CHECK_WORKERS) as executor:
+    unique_paths = list(set(file_paths.values()))
+    if parallel > 1 and unique_paths:
+        with ThreadPoolExecutor(max_workers=parallel) as executor:
             exists_by_path = dict(zip(unique_paths, executor.map(os.path.exists, unique_paths)))
+    else:
+        exists_by_path = {path: os.path.exists(path) for path in unique_paths}
 
     for i, (item, section) in enumerate(items):
         section_id = section.get("id") if section is not None else None
@@ -241,6 +242,7 @@ def discover_tools(
     config: "GalaxyAppConfiguration",
     include_bundled: bool = True,
     include_converters: bool = True,
+    parallel: int = 1,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from Galaxy configuration.
@@ -254,6 +256,8 @@ def discover_tools(
         include_converters: Whether to enumerate datatype converters. This needs
             the datatypes registry; it's off for targeted single-store populates,
             which never write the default store that converters route to.
+        parallel: Worker count for per-tool existence checks (see
+            :func:`discover_tools_from_config`).
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -263,7 +267,9 @@ def discover_tools(
 
     # Discover from all tool config files
     for config_filename in config.all_tool_config_files():
-        for tool in discover_tools_from_config(config_filename, config.tool_path, config.enable_beta_tool_formats):
+        for tool in discover_tools_from_config(
+            config_filename, config.tool_path, config.enable_beta_tool_formats, parallel=parallel
+        ):
             if tool.path not in seen_paths:
                 seen_paths.add(tool.path)
                 yield tool
