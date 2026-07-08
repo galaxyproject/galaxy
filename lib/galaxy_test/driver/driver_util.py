@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 from typing import (
     Any,
+    NamedTuple,
 )
 from urllib.parse import urlparse
 
@@ -880,6 +881,12 @@ def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app, original_l
     app.openapi = _lazy_openapi  # type: ignore[method-assign]
 
 
+class TusState(NamedTuple):
+    upload_files_dir: str
+    job_files_dir: str
+    maximum_upload_file_size: int | None
+
+
 def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
     """Drop-in replacement for ``init_galaxy_fast_app`` that reuses the
     FastAPI app across repeated embedded-server launches in the same
@@ -895,16 +902,34 @@ def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
     because those paths produce a parent wrapper / lifespan-bound
     app that is awkward to re-bind.
     """
+
+    def _build_and_cache_app() -> FastAPI:
+        app = init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
+        slot["app"] = app
+        slot["lifespan_context"] = app.router.lifespan_context
+        slot["tus_state"] = tus_state
+        return app
+
     topology_differs = gx_app.config.galaxy_url_prefix != "/" or gx_app.config.enable_mcp_server
     if topology_differs:
         return init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
     slot = _test_fast_app_slot()
     existing = slot.get("app")
+    tus_state = TusState(
+        upload_files_dir=gx_app.config.tus_upload_store or gx_app.config.new_file_path,
+        job_files_dir=gx_app.config.tus_upload_store_job_files
+        or gx_app.config.tus_upload_store
+        or gx_app.config.new_file_path,
+        maximum_upload_file_size=gx_app.config.maximum_upload_file_size,
+    )
     if existing is None:
-        app = init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
-        slot["app"] = app
-        slot["lifespan_context"] = app.router.lifespan_context
-        return app
+        log.debug("Creating cached FastAPI app")
+        return _build_and_cache_app()
+    if slot.get("tus_state") != tus_state:
+        log.debug(
+            "Rebuilding cached FastAPI app because TUS state changed from %s to %s", slot.get("tus_state"), tus_state
+        )
+        return _build_and_cache_app()
     _rebind_fast_app_for_launch(existing, gx_wsgi_webapp, gx_app, slot["lifespan_context"])
     return existing
 

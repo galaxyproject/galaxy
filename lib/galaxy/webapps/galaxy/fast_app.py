@@ -245,16 +245,20 @@ def get_openapi_schema() -> dict[str, Any]:
 def include_tus(app: FastAPI, gx_app):
     config = gx_app.config
     root_path = "" if config.galaxy_url_prefix == "/" else config.galaxy_url_prefix
+    upload_files_dir = config.tus_upload_store or config.new_file_path
     upload_tus_router = create_tus_router(
         prefix=urljoin(root_path, "api/upload/resumable_upload"),
-        files_dir=config.tus_upload_store or config.new_file_path,
+        files_dir=upload_files_dir,
         max_size=config.maximum_upload_file_size,
     )
+    log.debug("Configured upload TUS router with files_dir=%s", upload_files_dir)
+    job_files_dir = config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path
     job_files_tus_router = create_tus_router(
         prefix=urljoin(root_path, "api/job_files/resumable_upload"),
-        files_dir=config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path,
+        files_dir=job_files_dir,
         max_size=config.maximum_upload_file_size,
     )
+    log.debug("Configured job files TUS router with files_dir=%s", job_files_dir)
     app.include_router(upload_tus_router)
     app.include_router(job_files_tus_router)
 
