@@ -45,7 +45,6 @@ from galaxy.tools.source_store.index import (
 from galaxy.tools.source_store.populator import (
     build_whoosh_for_store,
     conf_to_store_map,
-    DEFAULT_STORE_NAME,
     populate_for_paths,
     populate_store_inline,
 )
@@ -619,10 +618,11 @@ class LazyToolBox(ToolBox):
         instead of a store query per tool — on a CVMFS-scale deployment the
         per-tool round trips dominated boot time.
 
-        Paths whose tool_conf routes to a read-only store never trigger the
-        populator: it skips read-only targets, so a miss there would re-run
-        on every boot without ever healing. Those misses are logged once and
-        left to the eager parse fall-through in ``create_tool``.
+        Confs routed to read-only stores are not walked at all: the
+        populator can't write those stores, so a miss there could never be
+        healed — their coverage is the trust/schema gate's job
+        (``index_is_fresh``), and any genuinely missing tool falls through
+        to the eager parse in ``create_tool``.
         """
         if self._store is None:
             return False
@@ -644,26 +644,15 @@ class LazyToolBox(ToolBox):
             return True
         try:
             stored_paths = self._store.list_source_paths()
-            read_only_stores: set[str] = set()
+            only_confs = None
             if isinstance(self._store, CompositeToolSourceStore):
                 read_only_stores = self._store.read_only_member_names
-            conf_to_store = conf_to_store_map(self.app.config) if read_only_stores else {}
-            read_only_misses = 0
-            # The discover walker reads tool confs only; no DB round-trip per file.
-            for d in discover_tools(self.app.config):
-                if d.path in stored_paths:
-                    continue
-                if conf_to_store.get(d.tool_conf, DEFAULT_STORE_NAME) in read_only_stores:
-                    read_only_misses += 1
-                    log.debug("tool path %s missing from its read-only store", d.path)
-                    continue
-                return True
-            if read_only_misses:
-                log.warning(
-                    "%d tool path(s) route to read-only stores that don't index them; "
-                    "these tools will parse eagerly until the store is repopulated upstream",
-                    read_only_misses,
-                )
+                if read_only_stores:
+                    conf_to_store = conf_to_store_map(self.app.config)
+                    only_confs = {c for c, name in conf_to_store.items() if name not in read_only_stores}
+            for d in discover_tools(self.app.config, only_confs=only_confs):
+                if d.path not in stored_paths:
+                    return True
         except Exception as e:
             log.warning("Index coverage check raised; running populator defensively: %s", e)
             return True
