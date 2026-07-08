@@ -21,6 +21,7 @@ from fastapi import (
     Request,
 )
 from starlette.responses import (
+    RedirectResponse,
     Response,
     StreamingResponse,
 )
@@ -76,6 +77,14 @@ from galaxy.webapps.galaxy.services.datasets import (
 log = logging.getLogger(__name__)
 
 router = Router(tags=["datasets"])
+
+DIRECT_DOWNLOAD_REDIRECT_RESPONSE = {
+    "description": (
+        "Redirect to a URL serving the dataset directly from the backing object store. "
+        "Only returned for whole-file downloads when the dataset's object store has "
+        "`enable_direct_download` set."
+    ),
+}
 
 DatasetIDPathParam = Annotated[
     DecodedDatabaseIdField, Path(..., description="The encoded database identifier of the dataset.")
@@ -346,6 +355,73 @@ class FastAPIDatasets:
     ):
         """Streams the dataset for download or the contents preview to be displayed in a browser."""
         return self._display(request, trans, history_content_id, preview, filename, to_ext, raw, offset, ck_size)
+
+    @router.get(
+        "/api/histories/{history_id}/contents/{history_content_id}/download",
+        name="history_contents_download",
+        summary="Downloads the dataset, redirecting to the object store when possible.",
+        tags=["histories"],
+        response_class=StreamingResponse,
+        responses={302: DIRECT_DOWNLOAD_REDIRECT_RESPONSE},
+    )
+    @router.head(
+        "/api/histories/{history_id}/contents/{history_content_id}/download",
+        name="history_contents_download",
+        summary="Returns download metadata (size, filename) for the dataset.",
+        tags=["histories"],
+    )
+    def download_history_content(
+        self,
+        request: Request,
+        history_content_id: HistoryDatasetIDPathParam,
+        history_id: HistoryIDPathParam | None = None,
+        trans=DependsOnTrans,
+        to_ext: str | None = ToExtQueryParam,
+    ):
+        """Downloads the whole dataset file. Clients must follow the 302 redirect this route may return."""
+        return self._download(request, trans, history_content_id, to_ext)
+
+    @router.get(
+        "/api/datasets/{history_content_id}/download",
+        summary="Downloads the dataset, redirecting to the object store when possible.",
+        response_class=StreamingResponse,
+        responses={302: DIRECT_DOWNLOAD_REDIRECT_RESPONSE},
+    )
+    @router.head(
+        "/api/datasets/{history_content_id}/download",
+        summary="Returns download metadata (size, filename) for the dataset.",
+    )
+    def download(
+        self,
+        request: Request,
+        history_content_id: HistoryDatasetIDPathParam,
+        trans=DependsOnTrans,
+        to_ext: str | None = ToExtQueryParam,
+    ):
+        """Downloads the whole dataset file. Clients must follow the 302 redirect this route may return."""
+        return self._download(request, trans, history_content_id, to_ext)
+
+    def _download(self, request: Request, trans, dataset_id: DecodedDatabaseIdField, to_ext: str | None):
+        # Default to_ext to "data" so the route always behaves as a whole-file download (server infers
+        # the extension from the datatype) rather than a preview.
+        to_ext = to_ext or "data"
+        if request.method == "HEAD":
+            # HEAD answers from object-store metadata without redirecting -- clients (e.g. requests) do
+            # not follow redirects on HEAD, so a 302 here would hide the size/filename from them.
+            headers = self.service.download_head_headers(trans, dataset_id, to_ext)
+            return Response(status_code=200, headers=headers)
+        url = self.service.direct_download_url(trans, dataset_id, to_ext)
+        if url is None:
+            # No object-store offload: redirect to the streaming display route. Every download is a 302
+            # so clients implement redirect-following uniformly, regardless of the backing object store.
+            # Auth (x-api-key header, session cookie) carries itself across this same-origin redirect.
+            url = trans.url_builder(
+                "display",
+                history_content_id=trans.security.encode_id(dataset_id),
+                qualified=True,
+                query_params={"to_ext": to_ext},
+            )
+        return RedirectResponse(url, status_code=302)
 
     def _display(
         self,

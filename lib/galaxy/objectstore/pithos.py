@@ -240,7 +240,7 @@ class PithosObjectStore(CachingConcreteObjectStore):
             log.exception(f"Could not delete path '{path}' from Pithos")
             return False
 
-    def _get_object_url(self, obj, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
         """
         :returns: URL for direct access, None if no object
         """

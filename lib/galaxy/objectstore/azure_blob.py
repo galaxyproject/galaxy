@@ -85,6 +85,9 @@ def parse_config_xml(config_xml):
             "transfer": transfer_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
+            "enable_direct_download": CachingConcreteObjectStore.parse_enable_direct_download_from_config_xml(
+                config_xml
+            ),
         }
         name = config_xml.attrib.get("name", None)
         if name is not None:
@@ -311,7 +314,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             log.exception("Could not delete blob '%s' from Azure", rel_path)
             return False
 
-    def _get_object_url(self, obj, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
@@ -324,6 +327,8 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                     blob_name=rel_path,
                     permission=BlobSasPermissions(read=True),
                     expiry=now() + timedelta(hours=1),
+                    content_disposition=content_disposition,
+                    content_type=content_type,
                 )
                 return f"{url}?{token}"
             except AzureHttpError:

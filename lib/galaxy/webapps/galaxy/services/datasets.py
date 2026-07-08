@@ -94,6 +94,19 @@ log = logging.getLogger(__name__)
 DEFAULT_LIMIT = 500
 
 
+def is_direct_download_candidate(filename, to_ext, raw, offset, ck_size, is_archive) -> bool:
+    """Whether a display request is a plain whole-file download eligible for a direct backing-store link.
+
+    Excludes extra-files access, chunked display, datatype-processed previews, and archived/composite
+    downloads -- only a request for the single stored object's bytes can be served directly.
+    """
+    if filename or offset is not None or ck_size is not None:
+        return False
+    if is_archive:
+        return False
+    return raw or to_ext is not None
+
+
 class RequestDataType(str, Enum):
     """Particular pieces of information that can be requested for a dataset."""
 
@@ -633,6 +646,62 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         return rval
 
+    def direct_download_url(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: DecodedDatabaseIdField,
+        to_ext: str | None = None,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ) -> str | None:
+        """Return a backing-store URL a whole-file download can be redirected to, or None to stream.
+
+        Used by the dedicated download route; the regular display route never redirects.
+        """
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset_instance = dataset_manager.get_accessible(dataset_id, trans.user)
+        dataset_manager.ensure_dataset_on_disk(trans, dataset_instance)
+        datatype = dataset_instance.datatype
+        is_archive = datatype.is_archive_download(trans.app.datatypes_registry, dataset_instance.extension)
+        if not is_direct_download_candidate(None, to_ext, False, None, None, is_archive):
+            return None
+        content_disposition = None
+        content_type = None
+        if to_ext is not None:
+            # Match the filename/content-type a streamed download would produce.
+            content_disposition = datatype.download_content_disposition(dataset_instance, to_ext)
+            content_type = "application/octet-stream"
+        return trans.app.object_store.get_direct_download_url(
+            dataset_instance.dataset, content_disposition=content_disposition, content_type=content_type
+        )
+
+    def download_head_headers(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: DecodedDatabaseIdField,
+        to_ext: str | None = None,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ) -> dict[str, str]:
+        """Build response headers for a HEAD download request from object-store metadata.
+
+        Answers without redirecting or pulling the object into cache, so clients (which may not follow
+        redirects on HEAD) can learn the size and filename of a download.
+        """
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset_instance = dataset_manager.get_accessible(dataset_id, trans.user)
+        dataset_manager.ensure_dataset_on_disk(trans, dataset_instance)
+        datatype = dataset_instance.datatype
+        headers = {
+            "content-type": "application/octet-stream",
+            "Content-Disposition": datatype.download_content_disposition(dataset_instance, to_ext),
+            "accept-ranges": "bytes",
+        }
+        # Composite/archived downloads are zipped on the fly, so their size is not known up front.
+        if not datatype.is_archive_download(trans.app.datatypes_registry, dataset_instance.extension):
+            size = trans.app.object_store.size(dataset_instance.dataset)
+            if size:
+                headers["Content-Length"] = str(size)
+        return headers
+
     def display(
         self,
         trans: ProvidesHistoryContext,
@@ -653,7 +722,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the default if raw is unspecified or explicitly false.
         """
-        headers = {}
+        headers: dict[str, str] = {}
         rval: Any = ""
         try:
             dataset_manager = self.dataset_manager_by_type[hda_ldda]

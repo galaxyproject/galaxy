@@ -676,6 +676,9 @@ def test_config_parse_boto3():
             # defaults to AWS
             assert object_store.endpoint_url is None
 
+            # direct download (presigned URL redirects) is opt-in
+            assert object_store.enable_direct_download is False
+
             cache_target = object_store.cache_target
             assert cache_target.size == 1000
             assert cache_target.path == "database/object_store_cache"
@@ -701,6 +704,62 @@ def test_config_parse_boto3():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_enable_direct_download():
+    for config_str in [get_example("boto3_direct_download.xml"), get_example("boto3_direct_download.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.enable_direct_download is True
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict, "enable_direct_download", True)
+
+            model = object_store.to_model("the_object_store_id")
+            assert model.enable_direct_download is True
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_direct_download_url_returns_presigned_url_when_enabled():
+    with TestConfig(get_example("boto3_direct_download.yml")) as (directory, object_store):
+        object_store._client = MagicMock()
+        object_store._client.generate_presigned_url.return_value = "https://s3.example.org/signed"
+        with patch.object(object_store, "_exists", return_value=True):
+            url = object_store.get_direct_download_url(MockDataset(1))
+        assert url == "https://s3.example.org/signed"
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_direct_download_url_returns_none_when_disabled():
+    with TestConfig(get_example("boto3_simple.yml")) as (directory, object_store):
+        object_store._client = MagicMock()
+        with patch.object(object_store, "_exists", return_value=True):
+            url = object_store.get_direct_download_url(MockDataset(1))
+        assert url is None
+        object_store._client.generate_presigned_url.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_direct_download_url_forwards_content_disposition():
+    with TestConfig(get_example("boto3_direct_download.yml")) as (directory, object_store):
+        object_store._client = MagicMock()
+        object_store._client.generate_presigned_url.return_value = "https://s3.example.org/signed"
+        with patch.object(object_store, "_exists", return_value=True):
+            object_store.get_direct_download_url(
+                MockDataset(1),
+                content_disposition='attachment; filename="Galaxy1-[data].txt"',
+                content_type="application/octet-stream",
+            )
+        _, call_kwargs = object_store._client.generate_presigned_url.call_args
+        params = call_kwargs["Params"]
+        assert params["ResponseContentDisposition"] == 'attachment; filename="Galaxy1-[data].txt"'
+        assert params["ResponseContentType"] == "application/octet-stream"
+
+
+def test_get_direct_download_url_disk_store_returns_none():
+    with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
+        url = object_store.get_direct_download_url(MockDataset(1))
+        assert url is None
 
 
 @patch_object_stores_to_skip_initialize

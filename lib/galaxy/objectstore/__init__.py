@@ -320,6 +320,19 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def get_direct_download_url(
+        self, obj, content_disposition: str | None = None, content_type: str | None = None
+    ) -> str | None:
+        """Return a URL a client can be redirected to in order to download `obj` directly from the backing store.
+
+        Returns None unless the concrete store supports direct access *and* the admin has opted in via the
+        ``enable_direct_download`` configuration flag. ``content_disposition`` and ``content_type``, when
+        supported by the backend, are baked into the URL so the client receives the right download filename
+        and content type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def get_concrete_store_name(self, obj):
         """Return a display name or title of the objectstore corresponding to obj.
 
@@ -673,6 +686,17 @@ class BaseObjectStore(ObjectStore):
             obj_dir=obj_dir,
         )
 
+    def get_direct_download_url(
+        self, obj, content_disposition: str | None = None, content_type: str | None = None
+    ) -> str | None:
+        return self._invoke(
+            "get_direct_download_url", obj, content_disposition=content_disposition, content_type=content_type
+        )
+
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
+        # Stores that don't support direct download (or haven't opted in) get this no-op default.
+        return None
+
     def get_concrete_store_name(self, obj):
         return self._invoke("get_concrete_store_name", obj)
 
@@ -700,6 +724,13 @@ class BaseObjectStore(ObjectStore):
         if config_xml is not None:
             private = asbool(config_xml.attrib.get("private", DEFAULT_PRIVATE))
         return private
+
+    @classmethod
+    def parse_enable_direct_download_from_config_xml(clazz, config_xml):
+        enable_direct_download = False
+        if config_xml is not None:
+            enable_direct_download = asbool(config_xml.attrib.get("enable_direct_download", False))
+        return enable_direct_download
 
     @classmethod
     def parse_badges_from_config_xml(clazz, badges_xml):
@@ -758,6 +789,10 @@ class ConcreteObjectStore(BaseObjectStore):
         self.quota_source = quota_config.get("source", DEFAULT_QUOTA_SOURCE)
         self.quota_enabled = quota_config.get("enabled", DEFAULT_QUOTA_ENABLED)
         self.device_id = config_dict.get("device", None)
+        # Allow clients to download this store's datasets directly from the backing store (e.g. via a
+        # presigned URL) instead of streaming through Galaxy. Opt-in; only meaningful for stores whose
+        # _get_object_url returns a usable URL.
+        self.enable_direct_download = asbool(config_dict.get("enable_direct_download", False))
         self.badges = read_badges(config_dict)
 
     def to_dict(self):
@@ -772,6 +807,7 @@ class ConcreteObjectStore(BaseObjectStore):
         }
         rval["badges"] = self._get_concrete_store_badges(None)
         rval["device"] = self.device_id
+        rval["enable_direct_download"] = self.enable_direct_download
         rval["object_expires_after_days"] = self.object_expires_after_days
         return rval
 
@@ -784,7 +820,17 @@ class ConcreteObjectStore(BaseObjectStore):
             quota=QuotaModel(source=self.quota_source, enabled=self.quota_enabled),
             badges=self._get_concrete_store_badges(None),
             device=self.device_id,
+            enable_direct_download=self.enable_direct_download,
             object_expires_after_days=self.object_expires_after_days,
+        )
+
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
+        if not self.enable_direct_download:
+            return None
+        # _get_object_url is resolved via dynamic dispatch on each concrete backend; it is not
+        # declared on ConcreteObjectStore so static analysis can't see it here.
+        return self._get_object_url(  # type: ignore[attr-defined]
+            obj, content_disposition=content_disposition, content_type=content_type
         )
 
     def _get_concrete_store_badges(self, obj) -> list[BadgeDict]:
@@ -1254,6 +1300,17 @@ class NestedObjectStore(BaseObjectStore):
     def _get_object_url(self, obj, **kwargs):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method("_get_object_url", obj, None, False, **kwargs)
+
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
+        """For the first backend that has this `obj`, get its direct download URL."""
+        return self._call_method(
+            "_get_direct_download_url",
+            obj,
+            None,
+            False,
+            content_disposition=content_disposition,
+            content_type=content_type,
+        )
 
     def _get_concrete_store_name(self, obj):
         return self._call_method("_get_concrete_store_name", obj, None, False)
@@ -1779,6 +1836,7 @@ class ConcreteObjectStoreModel(BaseModel):
     quota: QuotaModel
     badges: list[BadgeDict]
     device: str | None = None
+    enable_direct_download: bool | None = None
     object_expires_after_days: int | None = None
 
 
