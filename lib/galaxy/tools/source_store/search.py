@@ -5,10 +5,11 @@ Single source of truth for populator-built tool search ranking. The schema and f
 tool first under the eager toolbox ranks it first here too.
 
 The populator calls :meth:`ToolWhooshIndex.build`
-once the JSON index is committed. ``ToolIndex.search`` then opens the
-on-disk Whoosh index and queries it with ``BM25F`` scoring.
+once the JSON index is committed. Store consumers open the on-disk Whoosh
+index via :meth:`ToolWhooshIndex.search_scored` (``BM25F`` scoring).
 """
 
+import json
 import logging
 import os
 import re
@@ -21,6 +22,7 @@ from typing import (
 from whoosh import (
     analysis,
     index,
+    writing,
 )
 from whoosh.fields import (
     ID,
@@ -34,9 +36,9 @@ from whoosh.qparser import (
     OrGroup,
 )
 from whoosh.scoring import BM25F
-from whoosh.writing import AsyncWriter
 
 from galaxy.util import unicodify
+from galaxy.util.hash_util import md5_hash_str
 
 if TYPE_CHECKING:
     from .index import (
@@ -45,6 +47,10 @@ if TYPE_CHECKING:
     )
 
 log = logging.getLogger(__name__)
+
+# Sidecar file in the whoosh dir recording the corpus signature of the last
+# successful build; a matching signature lets ``build`` skip the rebuild.
+_CORPUS_SIGNATURE_FILE = "corpus.md5"
 
 
 @dataclass(frozen=True)
@@ -197,33 +203,60 @@ class ToolWhooshIndex:
             os.makedirs(self.index_dir, exist_ok=True)
         return index.create_in(self.index_dir, schema=self.schema)
 
+    def _corpus_signature(self, docs: list[dict]) -> str:
+        """Fingerprint of what a build over ``docs`` would produce.
+
+        Covers the document content, the field set, and the boosts (tuning) —
+        if none of those changed, the on-disk index is already equivalent and
+        a rebuild can be skipped.
+        """
+        return md5_hash_str(
+            repr(self.tuning)
+            + json.dumps(sorted(self.schema.names()))
+            + json.dumps(sorted(docs, key=lambda d: d["id"]), sort_keys=True)
+        )
+
     def build(self, tool_index: "ToolIndex") -> int:
         """Rebuild the on-disk index from ``tool_index.entries``.
 
-        Returns the number of documents written.
+        Returns the number of documents written — 0 when the corpus is
+        unchanged and the rebuild was skipped.
         """
-        ix = self._open()
-        existing_ids: set[str] = set()
-        with ix.reader() as reader:
-            for fields in reader.all_stored_fields():
-                if fields:
-                    existing_ids.add(fields["id"])
+        docs = []
+        for entry in tool_index.entries.values():
+            if entry.hidden:
+                continue
+            doc = _entry_to_doc(entry)
+            if doc is None:
+                continue
+            docs.append(doc)
 
-        written = 0
-        new_ids: set[str] = set()
-        with AsyncWriter(ix) as writer:
-            for entry in tool_index.entries.values():
-                if entry.hidden:
-                    continue
-                doc = _entry_to_doc(entry)
-                if doc is None:
-                    continue
-                writer.update_document(**doc)
-                new_ids.add(doc["id"])
-                written += 1
-            for stale_id in existing_ids - new_ids:
-                writer.delete_by_term("id", stale_id)
-        return written
+        # Tokenising ~10k documents takes a minute-plus; skip it when the
+        # corpus signature matches what's already on disk (the common
+        # populate re-run where nothing changed).
+        signature = self._corpus_signature(docs)
+        signature_path = os.path.join(self.index_dir, _CORPUS_SIGNATURE_FILE)
+        if os.path.isdir(self.index_dir) and index.exists_in(self.index_dir):
+            try:
+                with open(signature_path) as f:
+                    if f.read().strip() == signature:
+                        log.info("Whoosh index at %s is up to date; skipping rebuild", self.index_dir)
+                        return 0
+            except OSError:
+                pass
+
+        # The corpus is complete, so bulk-load fresh documents and commit
+        # with CLEAR — the new segment atomically replaces all previous
+        # content. No per-document delete lookups (update_document) and no
+        # upfront scan of existing ids, which dominated the old build.
+        ix = self._open()
+        writer = ix.writer(limitmb=256)
+        for doc in docs:
+            writer.add_document(**doc)
+        writer.commit(mergetype=writing.CLEAR)
+        with open(signature_path, "w") as f:
+            f.write(signature)
+        return len(docs)
 
     def search(self, query: str, limit: int | None = None) -> list[str]:
         """Return tool ids ranked for ``query`` (most-relevant first).
