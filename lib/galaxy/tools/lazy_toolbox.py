@@ -6,9 +6,9 @@ lightweight index in memory and loads full Tool objects on-demand with
 LRU eviction.
 """
 
+import errno
 import logging
 import os
-import errno
 import threading
 from typing import (
     Any,
