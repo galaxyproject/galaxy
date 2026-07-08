@@ -29,6 +29,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.util import (
+    Element,
     etree,
     ExecutionTimer,
     listify,
@@ -37,6 +38,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.path import StrPath
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -76,8 +78,6 @@ if TYPE_CHECKING:
     from galaxy.model.tool_shed_install import ToolShedRepository
     from galaxy.tools import Tool
     from galaxy.tools.cache import ToolCache
-    from galaxy.util import Element
-    from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ class ToolLoadConfigurationConflict(Exception):
     pass
 
 
-def walk_tool_directories(directory: "StrPath", recursive: bool) -> Iterator[tuple[str, list[str]]]:
+def walk_tool_directories(directory: StrPath, recursive: bool) -> Iterator[tuple[str, list[str]]]:
     """Yield ``(directory, files)`` for ``directory`` and, when ``recursive``,
     each subdirectory - skipping hidden/private (``.``/``_`` prefixed) entries.
 
@@ -323,7 +323,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             config_value = getattr(config, "default_panel_view", None)
         return config_value or self.__default_panel_view
 
-    def create_tool(self, config_file: "StrPath", **kwds) -> "Tool":
+    def create_tool(self, config_file: StrPath, **kwds) -> "Tool":
         raise NotImplementedError()
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
@@ -1026,7 +1026,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             log.exception("Error reading tool from path: %s", path)
 
     def get_tool_repository_from_xml_item(
-        self, elem: "Element", path: str
+        self, elem: Element, path: str
     ) -> Union[ToolConfRepository, "ToolShedRepository"]:
         tool_shed_el = elem.find("tool_shed")
         assert tool_shed_el is not None
@@ -1185,14 +1185,14 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
     def __watch_directory(
         self,
-        directory: "StrPath",
+        directory: StrPath,
         elems,
         integrated_elems,
         load_panel_dict: bool,
         recursive: bool,
         force_watch: bool = False,
     ) -> None:
-        def quick_load(tool_file: "StrPath", async_load: bool = True) -> str | None:
+        def quick_load(tool_file: StrPath, async_load: bool = True) -> str | None:
             if not self._looks_like_a_tool(str(tool_file)):
                 return None
             try:
@@ -1230,7 +1230,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
     def load_tool(
         self,
-        config_file: "StrPath",
+        config_file: StrPath,
         guid=None,
         tool_shed_repository=None,
         use_cached: bool = False,
@@ -1269,12 +1269,12 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if self._tool_config_watcher:
                 [self._tool_config_watcher.watch_file(macro_path) for macro_path in tool._macro_paths]
 
-    def add_tool_to_cache(self, tool: "Tool", config_file: "StrPath") -> None:
+    def add_tool_to_cache(self, tool: "Tool", config_file: StrPath) -> None:
         tool_cache: ToolCache | None = getattr(self.app, "tool_cache", None)
         if tool_cache:
             tool_cache.cache_tool(config_file, tool)
 
-    def load_tool_from_cache(self, config_file: "StrPath", recover_tool: bool = False) -> Union["Tool", None]:
+    def load_tool_from_cache(self, config_file: StrPath, recover_tool: bool = False) -> Union["Tool", None]:
         tool_cache: ToolCache | None = getattr(self.app, "tool_cache", None)
         tool = None
         if tool_cache:
