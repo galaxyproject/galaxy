@@ -630,9 +630,11 @@ def _initialize_repeat_state(parameter: RepeatParameterModel, tool_state: dict[s
     if parameter_name not in tool_state:
         tool_state[parameter_name] = []
     repeat_instances = cast(list[dict[str, Any]], tool_state[parameter_name])
-    if parameter.min:
-        while len(repeat_instances) < parameter.min:
-            repeat_instances.append({})
+    # Match sync's ``Repeat.get_initial_value()``: seed ``max(min, default)`` empty
+    # instances when the request supplies none (bigscape).
+    floor = max(parameter.min or 0, parameter.default or 0)
+    while len(repeat_instances) < floor:
+        repeat_instances.append({})
     return repeat_instances
 
 
