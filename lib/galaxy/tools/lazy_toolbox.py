@@ -676,7 +676,7 @@ class LazyToolBox(ToolBox):
         self._tool_panel_loaded_from_index = True
         return True
 
-    def _load_tool_panel(self):
+    def _load_tool_panel(self) -> None:
         if getattr(self, "_tool_panel_loaded_from_index", False):
             return
         super()._load_tool_panel()

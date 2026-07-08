@@ -1706,7 +1706,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.config_files.extend(tool_source.parse_template_configfiles())
         self.config_files.extend(tool_source.parse_file_sources())
 
-    def parse_tests(self):
+    def parse_tests(self) -> None:
         self.__tests_parsed = True
         source = self.tool_source
         if source is None:
