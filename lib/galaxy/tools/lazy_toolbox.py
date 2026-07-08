@@ -43,11 +43,13 @@ from galaxy.tools.source_store.index import (
     ToolIndexEntry,
 )
 from galaxy.tools.source_store.populator import (
+    build_whoosh_for_store,
     conf_to_store_map,
     DEFAULT_STORE_NAME,
     populate_for_paths,
     populate_store_inline,
 )
+from galaxy.tools.source_store.watcher import ToolSourceStoreWatcher
 from galaxy.util.tool_version import remove_version_from_guid
 from . import (
     create_tool_from_source,
@@ -494,6 +496,7 @@ class LazyToolBox(ToolBox):
         # only the guid landed in the panel. Filled after the eager walk
         # via ``_rebuild_shed_short_id_map``.
         self._shed_short_id_to_guids: dict[str, set[str]] = {}
+        self._store_watcher: ToolSourceStoreWatcher | None = None
 
         # Eager init — its ``_init_tools_from_configs`` is overridden so the
         # walk goes through our ``create_tool`` seam and hands back LazyTool
@@ -518,6 +521,59 @@ class LazyToolBox(ToolBox):
             self._tools_parsed_from_file,
             self._tools_loaded_from_store,
         )
+
+        self._start_store_watcher()
+
+    def _start_store_watcher(self) -> None:
+        """Poll externally-published stores for freshness-token changes.
+
+        Only read-only members with a probe are watched: writable stores
+        change through this process's own populate paths, which broadcast
+        their own reloads, and CVMFS (the read-only publishing model)
+        delivers no filesystem events to react to — polling one
+        extended-attribute read per store per tick is the whole cost.
+        """
+        if not self.app.config.watch_tool_source_stores:
+            return
+        if not isinstance(self._store, CompositeToolSourceStore):
+            log.info("watch_tool_source_stores is enabled but no named tool source stores are configured")
+            return
+        members = [(n, m) for n, m in self._store.members if m.read_only and m.has_freshness_probe]
+        if not members:
+            log.info("watch_tool_source_stores is enabled but no read-only store declares a freshness probe")
+            return
+        self._store_watcher = ToolSourceStoreWatcher(
+            members=members,
+            interval=self.app.config.tool_source_store_watch_interval,
+            on_change=self._on_store_freshness_change,
+        )
+        self._store_watcher.start()
+        log.info(
+            "Watching tool source store(s) %s for freshness changes every %gs",
+            sorted(n for n, _ in members),
+            self.app.config.tool_source_store_watch_interval,
+        )
+
+    def _on_store_freshness_change(self, changed_names: list[str]) -> None:
+        """A watched store was republished: reload index state and search.
+
+        ``invalidate_index_cache`` handles the reload dance (it also
+        disposes read-only members' engines — see there). The whoosh
+        rebuild runs here rather than in the reload path because only a
+        republished store can grow the corpus without a local populate;
+        its corpus-signature check makes re-runs no-ops, and concurrent
+        rebuilds from peer processes degrade to one winner (whoosh lock,
+        errors swallowed and logged by ``build_whoosh_for_store``).
+        """
+        self.invalidate_index_cache()
+        if not isinstance(self._store, CompositeToolSourceStore):
+            return
+        for name, member in self._store.members:
+            if name not in changed_names:
+                continue
+            index = member.load_index()
+            if index is not None:
+                build_whoosh_for_store(self.app.config, name, index)
 
     def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
         """Load the persistent ``ToolIndex`` before delegating to the eager walk.
@@ -1142,6 +1198,16 @@ class LazyToolBox(ToolBox):
         # tool right after the install's own broadcast).
         with self.app._toolbox_lock:
             try:
+                # Read-only members are published externally (CVMFS); a
+                # descriptor opened before the publish keeps serving the old
+                # snapshot forever, so dropping pooled connections — not just
+                # the cached index — is what makes the re-read below actually
+                # see the new file. Writable stores were updated through this
+                # process group's own connections and only need the cache drop.
+                if isinstance(self._store, CompositeToolSourceStore):
+                    for _name, member in self._store.members:
+                        if member.read_only:
+                            member.dispose()
                 self._store.invalidate_index_cache()
             except Exception as e:
                 log.debug(f"Store invalidate_index_cache raised: {e}")
@@ -1310,6 +1376,9 @@ class LazyToolBox(ToolBox):
         ``tool_source_store`` before the next boot wires up a fresh
         toolbox. Idempotent; safe to call more than once.
         """
+        if self._store_watcher is not None:
+            self._store_watcher.shutdown()
+            self._store_watcher = None
         with self._cache_lock:
             self._tool_object_cache.clear()
         self._tool_index = None

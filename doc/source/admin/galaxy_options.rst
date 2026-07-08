@@ -499,6 +499,35 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``watch_tool_source_stores``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Poll the freshness probes of read-only tool source stores and
+    reload the lazy toolbox index when a store's token changes (for
+    example, a new CVMFS repository revision was published).
+    Filesystem event watchers do not fire on CVMFS, so polling is the
+    only reliable signal; each poll costs one extended-attribute read
+    per watched store. Only meaningful with ``use_lazy_toolbox`` and a
+    ``tool_source_stores`` entry declaring a freshness probe. The
+    admin toolbox-reload API remains available as a manual trigger.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_source_store_watch_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Seconds between freshness polls when ``watch_tool_source_stores``
+    is enabled. CVMFS clients only refresh their catalogs every few
+    minutes, so sub-minute polling buys nothing.
+:Default: ``60.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_dependency_dir``
 ~~~~~~~~~~~~~~~~~~~~~~~
