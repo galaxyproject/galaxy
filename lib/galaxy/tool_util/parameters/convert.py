@@ -14,6 +14,7 @@ from typing import (
 
 from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
+    ColorParameterModel,
     ConditionalParameterModel,
     ConditionalWhen,
     create_job_runtime_model,
@@ -494,6 +495,11 @@ def _fill_default_for(tool_state: dict[str, Any], parameter: ToolParameterT) -> 
     if isinstance(parameter, (IntegerParameterModel, FloatParameterModel, HiddenParameterModel)):
         if parameter_name not in tool_state:
             tool_state[parameter_name] = parameter.value
+    elif isinstance(parameter, ColorParameterModel):
+        # Legacy ``value=""`` on an optional color means "no default"; treat as unset (arriba).
+        if parameter_name not in tool_state:
+            default = parameter.value
+            tool_state[parameter_name] = None if default == "" else default
     elif isinstance(parameter, GenomeBuildParameterModel):
         if parameter_name not in tool_state and parameter.optional:
             tool_state[parameter_name] = None
