@@ -268,23 +268,23 @@ class ToolSourceBenchmarks:
         )
 
     def benchmark_index_serialization(self, iterations: int = 50) -> BenchmarkResult:
-        """Benchmark index to_dict serialization."""
+        """Benchmark index serialization to JSON-ready dicts."""
         index = self._build_sample_index(1000)
 
         return benchmark_function(
             "index_serialization",
-            lambda: index.to_dict(),
+            lambda: index.model_dump(mode="json"),
             iterations,
         )
 
     def benchmark_index_deserialization(self, iterations: int = 50) -> BenchmarkResult:
-        """Benchmark index from_dict deserialization."""
+        """Benchmark index deserialization from JSON-ready dicts."""
         index = self._build_sample_index(1000)
-        data = index.to_dict()
+        data = index.model_dump(mode="json")
 
         return benchmark_function(
             "index_deserialization",
-            lambda: ToolIndex.from_dict(data),
+            lambda: ToolIndex.model_validate(data),
             iterations,
         )
 
