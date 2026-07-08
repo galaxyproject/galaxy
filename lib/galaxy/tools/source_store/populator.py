@@ -30,10 +30,7 @@ import xml.etree.ElementTree as ET
 from collections.abc import (
     Callable,
 )
-from concurrent.futures import (
-    as_completed,
-    ThreadPoolExecutor,
-)
+from concurrent.futures import ThreadPoolExecutor
 from datetime import (
     datetime,
     timezone,
@@ -643,7 +640,6 @@ def populate_store_inline(
     # entry means an empty or missing index can never blank the store; ``prune``
     # forces a from-scratch re-parse. The hash lives on the index entry (rebuilt
     # every run), so it persists whether a tool was stored or content-deduped.
-    carried_entries: dict[str, list[ToolIndexEntry]] = {name: [] for name in writable_names}
     old_entry_by_path: dict[str, dict[str, ToolIndexEntry]] = {name: {} for name in writable_names}
     if incremental and not prune:
         for name in writable_names:
@@ -718,15 +714,20 @@ def populate_store_inline(
 
     log.info(f"Processing {len(tool_specs)} tools with {parallel} workers...")
 
-    # Collect (discovered, stored, tool_source) per writable store so the
-    # post-walk pass can build a fresh ToolIndex from this run's discoveries.
-    parsed_per_store: dict[str, list[tuple[DiscoveredTool, StoredToolSource, Any]]] = {
+    # Per-store index inputs in discovery (conf document) order — a
+    # carried-forward entry for unchanged tools, a parsed triple otherwise.
+    # One ordered stream matters: same-id twins are resolved by index
+    # add-order, so consuming as_completed (thread timing) or adding carried
+    # entries before parsed ones flips which twin wins ``entries[id]`` run to
+    # run — changing its panel section in the whoosh corpus and defeating the
+    # corpus-signature rebuild skip.
+    index_inputs: dict[str, list[ToolIndexEntry | tuple[DiscoveredTool, StoredToolSource, Any]]] = {
         name: [] for name in writable_names
     }
 
     with ThreadPoolExecutor(max_workers=parallel) as executor:
-        futures = {executor.submit(process_tool, d, n): (d, n) for d, n in tool_specs}
-        for future in as_completed(futures):
+        futures = [executor.submit(process_tool, d, n) for d, n in tool_specs]
+        for future in futures:
             status, discovered, store_name, stored, tool_source, err = future.result()
 
             if status == "error":
@@ -735,15 +736,15 @@ def populate_store_inline(
                 stats["unchanged"] += 1
                 entry = old_entry_by_path[store_name].get(discovered.path)
                 if entry is not None:
-                    carried_entries[store_name].append(entry)
+                    index_inputs[store_name].append(entry)
             elif status == "skipped":
                 stats["skipped"] += 1
                 if stored is not None and tool_source is not None:
-                    parsed_per_store[store_name].append((discovered, stored, tool_source))
+                    index_inputs[store_name].append((discovered, stored, tool_source))
             else:
                 stats["stored"] += 1
                 if stored is not None and tool_source is not None:
-                    parsed_per_store[store_name].append((discovered, stored, tool_source))
+                    index_inputs[store_name].append((discovered, stored, tool_source))
 
             stats["processed"] += 1
 
@@ -759,7 +760,6 @@ def populate_store_inline(
         # off DiscoveredTool).
         full_scan = paths is None or prune
         for store_name in sorted(writable_names):
-            triples = parsed_per_store[store_name]
             if full_scan:
                 # Replace the index entirely from this run's discoveries.
                 index = ToolIndex()
@@ -768,10 +768,12 @@ def populate_store_inline(
                 # entries for the paths we just rescanned. Anything else
                 # stays as-is (use reconcile_index for full prune).
                 index = stores[store_name].load_index() or ToolIndex()
-            # Unchanged tools skipped the parse; carry their prior entries.
-            for entry in carried_entries[store_name]:
-                index.add_entry(entry)
-            for d, stored, tool_source in triples:
+            for index_input in index_inputs[store_name]:
+                if isinstance(index_input, ToolIndexEntry):
+                    # Unchanged tool: prior entry carried forward, no re-parse.
+                    index.add_entry(index_input)
+                    continue
+                d, stored, tool_source = index_input
                 entry = build_index_entry_from_source(d, stored, tool_source)
                 if entry is not None:
                     index.add_entry(entry)

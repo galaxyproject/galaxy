@@ -23,6 +23,7 @@ import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.tools.source_store import build_tool_source_store
 from galaxy.tools.source_store.populator import (
     compute_hash,
     DEFAULT_STORE_NAME,
@@ -360,3 +361,53 @@ class TestIncrementalFastPath:
         # write, carrying both index entries forward.
         r2 = populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="itest_", incremental=True)
         assert (r2["stored"], r2["unchanged"]) == (0, 2)
+
+
+class TestTwinDeterminism:
+    """Same-id twins resolve by conf document order, stably across re-runs.
+
+    Regression: the winner among same-id/same-version twins is decided by
+    index add-order. Consuming pool results as_completed — or adding
+    carried-forward entries before re-parsed ones — flipped the winner (and
+    its panel section in the whoosh corpus) between runs, defeating the
+    whoosh corpus-signature rebuild skip.
+    """
+
+    def _config(self, tmp_path, conf):
+        class _Cfg:
+            enable_beta_tool_formats = False
+            tool_source_stores: dict = {}
+            tool_search_index_dir = None
+            root = str(tmp_path)
+            tool_path = str(tmp_path)
+            tool_source_database_connection = f"sqlite:///{tmp_path}/ts.sqlite"
+
+            def all_tool_config_files(self):
+                return [str(conf)]
+
+        return _Cfg()
+
+    def test_twin_winner_stable_across_runs(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tools_dir.mkdir()
+        for suffix in ("a", "b"):
+            (tools_dir / f"twin_{suffix}.xml").write_text(
+                f'<tool id="twin" name="Twin" version="1.0" profile="21.09"><command>echo {suffix}</command></tool>'
+            )
+        conf = tmp_path / "tool_conf.xml"
+        conf.write_text(
+            f'<toolbox tool_path="{tools_dir}">'
+            '<section id="sec_a" name="A"><tool file="twin_a.xml"/></section>'
+            '<section id="sec_b" name="B"><tool file="twin_b.xml"/></section>'
+            "</toolbox>"
+        )
+        cfg = self._config(tmp_path, conf)
+
+        # Run 2 is the interesting one: the run-1 winner (sec_b) comes back
+        # via the unchanged fast path while its twin re-parses — the winner
+        # must still be decided by document order, not by which path parsed.
+        for run in (1, 2, 3):
+            populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="twin_", incremental=True, parallel=4)
+            index = build_tool_source_store(cfg).load_index()
+            assert index is not None
+            assert index.entries["twin"].panel_section_id == "sec_b", f"wrong twin won on run {run}"
