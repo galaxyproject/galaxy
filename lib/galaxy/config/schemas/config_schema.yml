@@ -357,6 +357,39 @@ mapping:
           For details see
           https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 
+          An entry may also declare a freshness probe via ``freshness``.
+          The populator stamps the probe's value into the store's persisted
+          index; at boot a matching value proves the store still covers the
+          tool tree and skips the per-tool coverage scan entirely.
+          ``freshness: cvmfs`` reads the CernVM-FS repository revision (one
+          extended-attribute syscall) from ``freshness_path``, defaulting
+          to the store's SQLite file location — the right probe for a store
+          published on CVMFS in the same transaction as the tools it
+          indexes. ``freshness: tool_confs`` hashes the local tool conf
+          files plus tool_dir directory mtimes; the default
+          (``tool_source_database_connection``) store always uses this
+          probe. Without ``freshness``, a named store is verified by the
+          coverage scan as before.
+
+      use_lazy_toolbox:
+        type: bool
+        required: false
+        desc: |
+          When true, use the LazyToolBox which loads tools on demand from the
+          tool source store. Otherwise (the default), the traditional eager
+          ToolBox is used and any per-conf ``store="..."`` attributes on
+          tool_conf files are ignored. Opt-in is explicit: a populated tool
+          source store does not flip a default deployment to lazy mode.
+
+      lazy_toolbox_cache_size:
+        type: int
+        default: 500
+        required: false
+        desc: |
+          Maximum number of fully constructed Tool objects the LazyToolBox keeps
+          in its in-memory LRU cache. Larger values reduce repeat parsing cost
+          for popular tools at the expense of memory.
+
       tool_dependency_dir:
         type: str
         default: dependencies

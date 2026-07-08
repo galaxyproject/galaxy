@@ -572,6 +572,18 @@ class LazyToolBox(ToolBox):
             return False
         if not self._tool_index or not self._tool_index.entries:
             return True
+        # Freshness fast path: when every member store carries a probe and
+        # every probe value matches the token its populator stamped, the
+        # store provably covers the current tree — skip the conf walk (and
+        # its per-file existence stats) entirely. See
+        # ``galaxy.tools.source_store.freshness``.
+        fresh = self._store.index_is_fresh()
+        if fresh is True:
+            log.info("Tool source store freshness token matches; skipping index coverage scan")
+            return False
+        if fresh is False:
+            log.info("Tool source store freshness token mismatch; running populator")
+            return True
         try:
             stored_paths = self._store.list_source_paths()
             read_only_stores: set[str] = set()

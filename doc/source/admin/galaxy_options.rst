@@ -425,16 +425,19 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    SQLAlchemy connection string for the tool source store, a
-    rebuildable cache of pre-parsed tool sources kept outside Galaxy's
-    main database. Multi-host deployments should point every Galaxy
-    process at the same URI, such as a SQLite file on a shared
-    filesystem.
+    SQLAlchemy connection string for storing pre-parsed tool sources.
+    The store is a rebuildable cache that lives outside Galaxy's
+    database. This URI is used by tool source storage code paths,
+    including the population script and lazy toolbox consumers.
+    Runtime use also requires a populated store and a toolbox consumer
+    configured to read from tool source storage.
+    By default, Galaxy uses a SQLite database at
+    ``<data_dir>/tool_sources.sqlite``. Multi-host deployments should
+    point every process at the same SQLAlchemy URI, such as a SQLite
+    file on a shared filesystem or a shared PostgreSQL database.
     Sample default ``sqlite:///<data_dir>/tool_sources.sqlite``.
-    Populate the store with: python
+    To populate the store, run: python
     scripts/tool_source/populate_store.py
-    For details see
-    https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 :Default: ``None``
 :Type: str
 
@@ -453,8 +456,19 @@
     Each entry takes a SQLAlchemy ``url`` and an optional ``read_only:
     true`` flag. For SQLite connection-level read-only, use a SQLite
     URI with ``mode=ro&uri=true``.
-    For details see
-    https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
+    An entry may also declare a freshness probe via ``freshness``. The
+    populator stamps the probe's value into the store's persisted
+    index; at boot a matching value proves the store still covers the
+    tool tree and skips the per-tool coverage scan entirely.
+    ``freshness: cvmfs`` reads the CernVM-FS repository revision (one
+    extended-attribute syscall) from ``freshness_path``, defaulting to
+    the store's SQLite file location — the right probe for a store
+    published on CVMFS in the same transaction as the tools it
+    indexes. ``freshness: tool_confs`` hashes the local tool conf
+    files plus tool_dir directory mtimes; the default
+    (``tool_source_database_connection``) store always uses this
+    probe. Without ``freshness``, a named store is verified by the
+    coverage scan as before.
 :Default: ``None``
 :Type: map
 
@@ -5775,18 +5789,7 @@
     maximum output retries"). custom_tool's producer keeps a budget of
     0 because it runs its own reflection loop; a shared ``default``
     block does not change that -- set ``custom_tool.retries``
-    explicitly to override it. custom_tool also accepts
-    ``quality_critic_enabled`` (default false) to turn on the LLM
-    clarity/idiomaticity critic, and
-    ``container_recommendation_enabled`` (default false) to resolve
-    the produced tool's container to a verified quay.io biocontainer.
-    Container recommendation runs a dedicated container critic that
-    infers the tool's conda packages from its command and config
-    files, independently of ``quality_critic_enabled``; it adds an
-    extra model call plus an outbound network call to quay.io during
-    the agent turn. Example: inference_services: { custom_tool: {
-    quality_critic_enabled: true, container_recommendation_enabled:
-    true } }
+    explicitly to override it.
 :Default: ``None``
 :Type: any
 
