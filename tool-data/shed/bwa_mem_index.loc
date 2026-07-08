@@ -7,8 +7,8 @@
 #
 #<unique_build_id>   <dbkey>   <display_name>   <file_path>
 #
-#So, for example, if you had phiX indexed stored in 
-#/depot/data2/galaxy/phiX/base/, 
+#So, for example, if you had phiX indexed stored in
+#/depot/data2/galaxy/phiX/base/,
 #then the bwa_index.loc entry would look like this:
 #
 #phiX174   phiX   phiX Pretty   /depot/data2/galaxy/phiX/base/phiX.fa
