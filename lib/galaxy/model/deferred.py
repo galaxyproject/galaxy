@@ -9,8 +9,10 @@ from typing import (
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import DetachedInstanceError
 
+from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.sniff import (
     convert_function,
+    guess_ext,
     stream_url_to_file,
 )
 from galaxy.exceptions import ObjectAttributeInvalidException
@@ -81,6 +83,7 @@ class DatasetInstanceMaterializer:
         file_sources: ConfiguredFileSources | None = None,
         sa_session: Session | None = None,
         user_context: OptionalUserContext = None,
+        datatypes_registry: Registry | None = None,
     ):
         """Constructor for DatasetInstanceMaterializer.
 
@@ -91,6 +94,9 @@ class DatasetInstanceMaterializer:
         ``user_context`` is forwarded to file source operations so that access
         controls (``requires_roles`` / ``requires_groups``) are enforced when
         materializing from ``gxfiles://`` URIs.
+
+        ``datatypes_registry`` enables content sniffing for deferred datasets whose
+        extension is ``"auto"``. Optional; no-op when unset.
         """
         self._attached = attached
         self._transient_path_mapper = transient_path_mapper
@@ -98,6 +104,7 @@ class DatasetInstanceMaterializer:
         self._file_sources = file_sources
         self._sa_session = sa_session
         self._user_context = user_context
+        self._datatypes_registry = datatypes_registry
         self._previously_materialized: dict[int, HistoryDatasetAssociation] = {}
 
     def ensure_materialized(
@@ -189,6 +196,7 @@ class DatasetInstanceMaterializer:
             if not replacement_dataset:
                 try:
                     path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                    self._sniff_deferred_extension(path, dataset_instance)
                     object_store.update_from_file(materialized_dataset, file_name=path)
                     materialized_dataset.set_size()
                 except Exception as e:
@@ -201,6 +209,7 @@ class DatasetInstanceMaterializer:
             # TODO: take into account transform and ensure we are and are not modifying the file as appropriate.
             try:
                 path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                self._sniff_deferred_extension(path, dataset_instance)
                 shutil.move(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
@@ -255,6 +264,20 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance.metadata_deferred = False
         self._previously_materialized[dataset_instance.id] = materialized_dataset_instance
         return materialized_dataset_instance
+
+    def _sniff_deferred_extension(
+        self,
+        path: str,
+        dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation,
+    ) -> None:
+        """Replace ``extension="auto"`` with a sniffed extension after download."""
+        if self._datatypes_registry is None:
+            return
+        if dataset_instance.extension != "auto":
+            return
+        sniffed = guess_ext(path, self._datatypes_registry.sniff_order)
+        if sniffed and sniffed != "auto":
+            dataset_instance.extension = sniffed
 
     def _stream_source(self, target_source: DatasetSource, datatype, dataset: Dataset) -> str:
         source_uri = target_source.source_uri
@@ -394,6 +417,7 @@ def materializer_factory(
     file_sources: ConfiguredFileSources | None = None,
     sa_session: Session | None = None,
     user_context: OptionalUserContext = None,
+    datatypes_registry: Registry | None = None,
 ) -> DatasetInstanceMaterializer:
     if object_store_populator is None and object_store is not None:
         object_store_populator = ObjectStorePopulator(object_store, None)
@@ -406,6 +430,7 @@ def materializer_factory(
         file_sources=file_sources,
         sa_session=sa_session,
         user_context=user_context,
+        datatypes_registry=datatypes_registry,
     )
 
 

@@ -434,6 +434,48 @@ def test_deferred_hdas_with_deferred_metadata():
     _assert_2_bed_metadata(materialized_hda)
 
 
+def test_deferred_hda_with_auto_extension_gets_sniffed_from_content():
+    # An HDA created with extension="auto" should get a real extension after materialize
+    # when a datatypes_registry is provided.
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict()
+    store_dict["datasets"][0]["extension"] = "auto"
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    assert deferred_hda.extension == "auto"
+    assert deferred_hda.dataset is not None
+    assert deferred_hda.dataset.state == "deferred"
+
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+
+    assert materialized_hda.dataset is not None
+    assert materialized_hda.dataset.state == "ok"
+    # The fixture source is a .bed file; content sniffing must upgrade "auto" to "bed".
+    assert materialized_hda.extension == "bed"
+
+
+def test_deferred_hda_without_registry_keeps_auto_extension():
+    # Without a datatypes_registry the sniff step is a no-op; extension stays "auto".
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict()
+    store_dict["datasets"][0]["extension"] = "auto"
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+    )
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+
+    assert materialized_hda.extension == "auto"
+
+
 def test_materialize_attached_hdcas_unimplemented(tmpdir):
     fixture_context = setup_fixture_context_with_history()
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
