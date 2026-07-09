@@ -1,10 +1,5 @@
 import os
 import posixpath
-from typing import (
-    Optional,
-    Union,
-)
-
 from galaxy.files.models import (
     FilesSourceRuntimeContext,
 )
@@ -25,23 +20,23 @@ except ImportError:
 
 
 class IrodsFsspecFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    host: Union[str, TemplateExpansion]
-    port: Union[int, TemplateExpansion] = 1247
-    username: Union[str, TemplateExpansion]
-    password: Union[str, TemplateExpansion]
-    zone: Union[str, TemplateExpansion]
-    root: Optional[Union[str, TemplateExpansion]] = None
-    timeout: Union[int, TemplateExpansion] = 30
-    refresh_time: Union[int, TemplateExpansion] = 300
-    client_server_negotiation: Optional[Union[str, TemplateExpansion]] = None
-    client_server_policy: Optional[Union[str, TemplateExpansion]] = None
-    encryption_algorithm: Optional[Union[str, TemplateExpansion]] = None
-    encryption_key_size: Optional[Union[int, TemplateExpansion]] = None
-    encryption_num_hash_rounds: Optional[Union[int, TemplateExpansion]] = None
-    encryption_salt_size: Optional[Union[int, TemplateExpansion]] = None
-    ssl_verify_server: Optional[Union[str, TemplateExpansion]] = None
-    ssl_ca_certificate_file: Optional[Union[str, TemplateExpansion]] = None
-    resource: Optional[Union[str, TemplateExpansion]] = None
+    host: str | TemplateExpansion
+    port: int | TemplateExpansion = 1247
+    username: str | TemplateExpansion
+    password: str | TemplateExpansion
+    zone: str | TemplateExpansion
+    root: str | TemplateExpansion | None = None
+    timeout: int | TemplateExpansion = 30
+    refresh_time: int | TemplateExpansion = 300
+    client_server_negotiation: str | TemplateExpansion | None = None
+    client_server_policy: str | TemplateExpansion | None = None
+    encryption_algorithm: str | TemplateExpansion | None = None
+    encryption_key_size: int | TemplateExpansion | None = None
+    encryption_num_hash_rounds: int | TemplateExpansion | None = None
+    encryption_salt_size: int | TemplateExpansion | None = None
+    ssl_verify_server: str | TemplateExpansion | None = None
+    ssl_ca_certificate_file: str | TemplateExpansion | None = None
+    resource: str | TemplateExpansion | None = None
 
 
 class IrodsFsspecFileSourceConfiguration(FsspecBaseFileSourceConfiguration):

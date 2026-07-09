@@ -291,8 +291,11 @@ class ConditionalDependencies:
     def check_rspace_client(self):
         return "rspace" in self.file_sources
 
-    def check_mangofs(self):
+    def check_fs_irods(self):
         return "irods" in self.file_sources
+
+    def check_mangofs(self):
+        return self.check_fs_irods()
 
     def check_watchdog(self):
         install_set = {"auto", "True", "true", "polling", True}
