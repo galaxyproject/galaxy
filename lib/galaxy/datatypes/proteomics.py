@@ -239,10 +239,10 @@ class MzSpecLibJson(Json):
     https://github.com/HUPO-PSI/mzSpecLib
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.mzSpecLib.json')
+    >>> fname = get_test_fname('test.mzspeclib.json')
     >>> MzSpecLibJson().sniff(fname)
     True
-    >>> fname = get_test_fname('test.mzSpecLib.txt')
+    >>> fname = get_test_fname('test.mzspeclib.txt')
     >>> MzSpecLibJson().sniff(fname)
     False
     """
@@ -311,10 +311,10 @@ class MzSpecLibTxt(Text):
     https://github.com/HUPO-PSI/mzSpecLib
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.mzSpecLib.txt')
+    >>> fname = get_test_fname('test.mzspeclib.txt')
     >>> MzSpecLibTxt().sniff(fname)
     True
-    >>> fname = get_test_fname('test.mzSpecLib.json')
+    >>> fname = get_test_fname('test.mzspeclib.json')
     >>> MzSpecLibTxt().sniff(fname)
     False
     """
