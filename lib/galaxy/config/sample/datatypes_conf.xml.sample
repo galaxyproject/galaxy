@@ -17,6 +17,7 @@
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
     <datatype extension="agp" type="galaxy.datatypes.goldenpath:GoldenPath" display_in_upload="true" description="UCSC GoldenPath assembly"/>
     <datatype extension="alto" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="Analyzed Layout and Text Object" description_url="https://github.com/altoxml/documentation/wiki/Versions"/>
+    <datatype extension="page" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="Analyzed Layout and Text Object similar to ALTO" description_url="https://github.com/PRImA-Research-Lab/PAGE-XML/wiki/Changelog-(pagecontent)"/>
     <datatype extension="anvio_cog_profile" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" subclass="true" />
     <datatype extension="anvio_composite" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" />
     <datatype extension="anvio_classifier" type="galaxy.datatypes.data:Data" display_in_upload="false" subclass="true" />
