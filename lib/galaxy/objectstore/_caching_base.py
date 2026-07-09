@@ -1,7 +1,6 @@
 import logging
 import os
 import shutil
-from contextlib import contextmanager
 from datetime import datetime
 from typing import (
     Any,
@@ -19,6 +18,7 @@ from galaxy.util import (
 from galaxy.util.path import safe_relpath
 from ._util import fix_permissions
 from .caching import (
+    CacheArea,
     CacheTarget,
     InProcessCacheMonitor,
 )
@@ -35,18 +35,16 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
     cache_size: int
     cache_monitor: InProcessCacheMonitor | None = None
     cache_monitor_interval: int
+    _cache_area: CacheArea | None = None
+
+    @property
+    def _cache(self) -> CacheArea:
+        if self._cache_area is None:
+            self._cache_area = CacheArea(self.staging_path, self.cache_size)
+        return self._cache_area
 
     def _ensure_staging_path_writable(self):
-        staging_path = self.staging_path
-        if not os.path.exists(staging_path):
-            os.makedirs(staging_path, exist_ok=True)
-            if not os.path.exists(staging_path):
-                raise Exception(f"Caching object store created with path '{staging_path}' that does not exist")
-
-        if not os.access(staging_path, os.R_OK):
-            raise Exception(f"Caching object store created with path '{staging_path}' that does not readable")
-        if not os.access(staging_path, os.W_OK):
-            raise Exception(f"Caching object store created with path '{staging_path}' that does not writable")
+        self._cache.ensure_writable()
 
     def _construct_path(
         self,
@@ -103,12 +101,11 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         return rel_path
 
     def _get_cache_path(self, rel_path: str) -> str:
-        return os.path.abspath(os.path.join(self.staging_path, rel_path))
+        return self._cache.path(rel_path)
 
     def _in_cache(self, rel_path: str) -> bool:
         """Check if the given dataset is in the local cache and return True if so."""
-        cache_path = self._get_cache_path(rel_path)
-        return os.path.exists(cache_path)
+        return self._cache.contains(rel_path)
 
     def _pull_into_cache(self, rel_path, **kwargs) -> bool:
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
@@ -253,7 +250,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
     def _get_size_in_cache(self, rel_path):
-        return os.path.getsize(self._get_cache_path(rel_path))
+        return self._cache.size(rel_path)
 
     def _size(self, obj, **kwargs) -> int:
         rel_path = self._construct_path(obj, **kwargs)
@@ -375,11 +372,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
 
     @property
     def cache_target(self) -> CacheTarget:
-        return CacheTarget(
-            self.staging_path,
-            self.cache_size,
-            0.9,
-        )
+        return self._cache.target
 
     def _shutdown_cache_monitor(self) -> None:
         self.cache_monitor and self.cache_monitor.shutdown()
@@ -394,7 +387,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
     def _exists_remotely(self, rel_path: str) -> bool:
         raise NotImplementedError()
 
-    @contextmanager
     def _atomic_download(self, cache_path):
         """Download to a temp file then atomically rename to prevent serving partial files.
 
@@ -403,18 +395,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             with self._atomic_download(local_destination) as tmp_path:
                 do_download(tmp_path)
         """
-        tmp_path = cache_path + ".tmp"
-        try:
-            yield tmp_path
-            os.rename(tmp_path, cache_path)
-        except BaseException:
-            # Catch BaseException (not just Exception) so that KeyboardInterrupt
-            # and SystemExit also trigger cleanup — we re-raise immediately, so
-            # propagation is not blocked. Without this, interrupted downloads
-            # leave .tmp files that poison the cache on next startup.
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-            raise
+        return self._cache.atomic_write(cache_path)
 
     def _download(self, rel_path: str) -> bool:
         raise NotImplementedError()

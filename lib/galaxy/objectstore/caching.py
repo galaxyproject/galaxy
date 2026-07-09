@@ -2,8 +2,10 @@
 
 import logging
 import os
+import shutil
 import threading
 import time
+from contextlib import contextmanager
 from math import inf
 
 from typing_extensions import NamedTuple
@@ -11,6 +13,7 @@ from typing_extensions import NamedTuple
 from galaxy.util import (
     nice_size,
     string_as_bool,
+    unlink,
 )
 from galaxy.util.sleeper import Sleeper
 
@@ -41,6 +44,83 @@ class CacheTarget(NamedTuple):
     @property
     def log_description(self) -> str:
         return f"{self.limit} percent of {self.size} gigabytes"
+
+
+class CacheArea:
+    """A local staging directory that caches objects addressed by relative path.
+
+    The single cache implementation shared by the caching object stores
+    (``_caching_base.CachingConcreteObjectStore``) and ``CachingFilesSource``: path
+    resolution, the in-cache check, atomic writes, size accounting, and the ``CacheTarget``
+    fits-in-cache policy. Whole-area eviction is handled by ``check_cache`` /
+    ``InProcessCacheMonitor`` against :attr:`target`.
+    """
+
+    def __init__(self, staging_path: str, cache_size: int, cache_limit_percent: float = 0.9):
+        # Keep staging_path as configured (may be relative); only per-object paths are
+        # abspath-ed, matching the historical CachingConcreteObjectStore behavior.
+        self.staging_path = staging_path
+        self.cache_size = cache_size
+        self.cache_limit_percent = cache_limit_percent
+
+    @property
+    def target(self) -> CacheTarget:
+        return CacheTarget(self.staging_path, self.cache_size, self.cache_limit_percent)
+
+    def ensure_writable(self) -> None:
+        staging_path = self.staging_path
+        if not os.path.exists(staging_path):
+            os.makedirs(staging_path, exist_ok=True)
+            if not os.path.exists(staging_path):
+                raise Exception(f"Caching object store created with path '{staging_path}' that does not exist")
+        if not os.access(staging_path, os.R_OK):
+            raise Exception(f"Caching object store created with path '{staging_path}' that does not readable")
+        if not os.access(staging_path, os.W_OK):
+            raise Exception(f"Caching object store created with path '{staging_path}' that does not writable")
+
+    def path(self, rel_path: str) -> str:
+        return os.path.abspath(os.path.join(self.staging_path, rel_path))
+
+    def contains(self, rel_path: str) -> bool:
+        return os.path.exists(self.path(rel_path))
+
+    def contains_nonempty(self, rel_path: str) -> bool:
+        cache_path = self.path(rel_path)
+        return os.path.exists(cache_path) and os.path.getsize(cache_path) > 0
+
+    def size(self, rel_path: str) -> int:
+        return os.path.getsize(self.path(rel_path))
+
+    def fits(self, size: int) -> bool:
+        return self.target.fits_in_cache(size)
+
+    def makedirs_for(self, rel_path: str) -> None:
+        os.makedirs(os.path.dirname(self.path(rel_path)), exist_ok=True)
+
+    def evict(self, rel_path: str) -> None:
+        unlink(self.path(rel_path), ignore_errors=True)
+
+    def evict_dir(self, rel_path: str) -> None:
+        shutil.rmtree(self.path(rel_path), ignore_errors=True)
+
+    @contextmanager
+    def atomic_write(self, cache_path: str):
+        """Write to a temp file then atomically rename, to avoid serving partial files.
+
+        ``cache_path`` is an absolute path within the staging area; the caller is responsible
+        for ensuring its parent directory exists (see :meth:`makedirs_for`).
+        """
+        tmp_path = cache_path + ".tmp"
+        try:
+            yield tmp_path
+            os.rename(tmp_path, cache_path)
+        except BaseException:
+            # Catch BaseException (not just Exception) so KeyboardInterrupt and SystemExit also
+            # trigger cleanup -- we re-raise immediately, so propagation is not blocked. Without
+            # this, interrupted downloads leave .tmp files that poison the cache on next startup.
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise
 
 
 def check_caches(targets: list[CacheTarget]):
