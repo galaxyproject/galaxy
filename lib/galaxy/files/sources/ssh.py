@@ -94,6 +94,8 @@ class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFi
             pkey=pkey,
             port=config.port,
             timeout=config.timeout,
+            allow_agent=False,
+            look_for_keys=False,
             compress=config.compress,
         )
         return fs
