@@ -4953,18 +4953,18 @@ class SpatialData(CompressedZarrZipArchive):
             with zipfile.ZipFile(filename) as zf:
                 # Find root zarr directory and detect version (at any nesting level)
                 root_zarr = is_v3 = None
+                candidates = []
                 for file in zf.namelist():
-                    # Look for zarr.json or .zattrs in any directory
                     if file.endswith("/zarr.json"):
-                        # Format: <path>/zarr.json (v3)
-                        root_zarr, is_v3 = file.rsplit("/", 1)[0], True
-                        break
+                        candidates.append((file.rsplit("/", 1)[0], True))
                     elif file.endswith("/.zattrs"):
-                        # Format: <path>/.zattrs (v2)
-                        root_zarr, is_v3 = file.rsplit("/", 1)[0], False
-                        break
-                if not root_zarr:
+                        candidates.append((file.rsplit("/", 1)[0], False))
+
+                if not candidates:
                     return info
+
+                # the true root is the entry with the fewest path components
+                root_zarr, is_v3 = min(candidates, key=lambda c: c[0].count("/"))
 
                 # Extract elements: <root>.zarr/<type>/<name>/...
                 prefix = root_zarr + "/"
