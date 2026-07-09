@@ -19,7 +19,7 @@ cloud credentials are needed. See doc/source/dev/objectstore_filesource_unificat
 
 import shutil
 
-from fsspec.implementations.memory import MemoryFileSystem
+import pytest
 
 from galaxy.objectstore._transport import (
     FilesSourceTransport,
@@ -27,7 +27,15 @@ from galaxy.objectstore._transport import (
 )
 from galaxy.objectstore.delegating import DelegatingObjectStore
 from galaxy.objectstore.unittest_utils import MockConfig
-from ._unification_utils import (
+
+# These tests exercise the object store <-> FilesSource integration, so they need galaxy-files
+# and fsspec. Skip cleanly when the objectstore package is tested in isolation without them.
+pytest.importorskip("fsspec")
+pytest.importorskip("galaxy.files")
+
+from fsspec.implementations.memory import MemoryFileSystem  # noqa: E402  (after importorskip)
+
+from ._unification_utils import (  # noqa: E402  (after importorskip)
     assert_object_store_round_trip,
     Dataset,
     key,

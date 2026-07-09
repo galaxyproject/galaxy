@@ -15,14 +15,22 @@ doc/source/dev/objectstore_filesource_unification.md.
 
 import os
 
-from fsspec.implementations.memory import MemoryFileSystem
+import pytest
 
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.objectstore._caching_source import CachingFilesSource
 from galaxy.objectstore.source_store import SourceObjectStore
 from galaxy.objectstore.unittest_utils import MockConfig
 from galaxy.util import directory_hash_id
-from ._unification_utils import (
+
+# These tests exercise the object store <-> FilesSource integration, so they need galaxy-files
+# and fsspec. Skip cleanly when the objectstore package is tested in isolation without them.
+pytest.importorskip("fsspec")
+pytest.importorskip("galaxy.files")
+
+from fsspec.implementations.memory import MemoryFileSystem  # noqa: E402  (after importorskip)
+
+from ._unification_utils import (  # noqa: E402  (after importorskip)
     assert_object_store_round_trip,
     Dataset,
     key,

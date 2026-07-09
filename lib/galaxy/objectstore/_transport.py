@@ -13,8 +13,8 @@ implementation used both as a test stand-in for remote stores and, eventually, a
 import os
 import shutil
 import tempfile
+from collections.abc import Iterable
 from typing import (
-    Iterable,
     Protocol,
     runtime_checkable,
     TYPE_CHECKING,
