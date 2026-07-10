@@ -17,9 +17,11 @@ try:
         ProviderList,
     )
     from cloudbridge.interfaces.exceptions import InvalidNameException
+    from cloudbridge.interfaces.resources import UploadConfig
 except ImportError:
     CloudProviderFactory = None  # type: ignore[assignment,misc,unused-ignore]
     ProviderList = None  # type: ignore[assignment,misc,unused-ignore]
+    UploadConfig = None  # type: ignore[assignment,misc,unused-ignore]
 
 log = logging.getLogger(__name__)
 
@@ -27,6 +29,10 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Cloud ObjectStore is configured, but no CloudBridge dependency available."
     "Please install CloudBridge or modify ObjectStore configuration."
 )
+
+TRANSFER_OPTION_KEYS = ("multipart_threshold", "multipart_chunksize", "max_concurrency")
+# Providers reject multipart parts smaller than 5 MiB (except the final part).
+MIN_MULTIPART_CHUNKSIZE = 5 * 1024 * 1024
 
 
 class Cloud(CachingConcreteObjectStore, UsesAxel):
@@ -51,6 +57,17 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         self.bucket_name = bucket_dict.get("name")
         self.use_rr = bucket_dict.get("use_reduced_redundancy", False)
         self.max_chunk_size = bucket_dict.get("max_chunk_size", 250)
+
+        transfer_dict = config_dict.get("transfer") or {}
+        self.transfer_dict = {
+            key: int(transfer_dict[key]) for key in TRANSFER_OPTION_KEYS if transfer_dict.get(key) is not None
+        }
+        chunksize = self.transfer_dict.get("multipart_chunksize")
+        if chunksize is not None and chunksize < MIN_MULTIPART_CHUNKSIZE:
+            raise Exception(
+                f"Invalid multipart_chunksize {chunksize}: cloud storage providers require "
+                f"multipart parts of at least {MIN_MULTIPART_CHUNKSIZE} bytes (5 MiB)."
+            )
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
@@ -127,6 +144,12 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         # following.
         config = parse_config_xml(config_xml)
 
+        transfer_element = config_xml.find("transfer")
+        if transfer_element is not None:
+            config["transfer"] = {
+                key: transfer_element.get(key) for key in TRANSFER_OPTION_KEYS if transfer_element.get(key) is not None
+            }
+
         try:
             provider = config_xml.attrib.get("provider")
             if provider is None:
@@ -197,12 +220,24 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 "name": self.bucket_name,
                 "use_reduced_redundancy": self.use_rr,
             },
+            "transfer": self.transfer_dict,
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
                 "cache_updated_data": self.cache_updated_data,
             },
         }
+
+    def _upload_config(self):
+        # Any value left unset falls back to cloudbridge's own defaults (the
+        # CB_MULTIPART_* settings); with nothing configured pass no config at all.
+        if not self.transfer_dict:
+            return None
+        return UploadConfig(
+            threshold=self.transfer_dict.get("multipart_threshold"),
+            part_size=self.transfer_dict.get("multipart_chunksize"),
+            max_concurrency=self.transfer_dict.get("max_concurrency"),
+        )
 
     def _get_bucket(self, bucket_name):
         try:

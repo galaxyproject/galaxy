@@ -986,6 +986,57 @@ def test_config_parse_cloud_is_cloud():
         assert object_store.cloud is True
 
 
+CLOUD_TRANSFER_TEST_CONFIG = get_example("cloud_transfer.xml")
+CLOUD_TRANSFER_TEST_CONFIG_YAML = get_example("cloud_transfer.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_transfer_options():
+    for config_str in [CLOUD_TRANSFER_TEST_CONFIG, CLOUD_TRANSFER_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.transfer_dict == {
+                "multipart_threshold": 5242880,
+                "multipart_chunksize": 5242880,
+                "max_concurrency": 2,
+            }
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(
+                as_dict,
+                "transfer",
+                {
+                    "multipart_threshold": 5242880,
+                    "multipart_chunksize": 5242880,
+                    "max_concurrency": 2,
+                },
+            )
+
+            upload_config = object_store._upload_config()
+            assert upload_config is not None
+            assert upload_config.threshold == 5242880
+            assert upload_config.part_size == 5242880
+            assert upload_config.max_concurrency == 2
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_no_transfer_options():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        assert object_store.transfer_dict == {}
+        # With nothing configured, uploads fall back to cloudbridge's own
+        # defaults rather than passing a hollow config.
+        assert object_store._upload_config() is None
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_transfer_chunksize_below_provider_minimum():
+    config_str = CLOUD_TRANSFER_TEST_CONFIG.replace(
+        'multipart_chunksize="5242880"', 'multipart_chunksize="1048576"'
+    )
+    with pytest.raises(Exception, match="multipart_chunksize"):
+        with TestConfig(config_str):
+            pass
+
+
 @patch_object_stores_to_skip_initialize
 def test_cloud_store_push_file_single_remote_lookup():
     with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
