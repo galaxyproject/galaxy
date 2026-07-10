@@ -8,14 +8,16 @@ bucket:
   name: unique_bucket_name_all_lowercase
   use_reduced_redundancy: false
 
-# Multipart upload tuning, all sizes in bytes. Files larger than
-# multipart_threshold are uploaded in multipart_chunksize parts, up to
-# max_concurrency parts in parallel. multipart_chunksize must be at least
-# 5 MiB (5242880), the provider minimum for all but the final part.
+# Transfer tuning, all sizes in bytes. Files larger than multipart_threshold
+# transfer in multipart_chunksize parts, up to max_concurrency parts in
+# parallel. For uploads multipart_chunksize must be at least 5 MiB (5242880),
+# the provider minimum for all but the final part; downloads have no minimum.
 # Unset values fall back to cloudbridge's defaults (CB_MULTIPART_* settings).
-# The aws and azure providers honor all three values; google and openstack
-# upload large files through their SDKs' native mechanisms (resumable
-# upload / static large objects), which manage their own chunking.
+# Each option may also be prefixed with upload_/download_ to tune one
+# direction only (the prefixed key overrides the bare key). Note: google and
+# openstack upload large files through their SDKs' native mechanisms
+# (resumable upload / static large objects), which manage their own chunking;
+# downloads honor these values on every provider.
 transfer:
   multipart_threshold: 5242880
   multipart_chunksize: 5242880

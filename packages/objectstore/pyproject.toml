@@ -40,7 +40,7 @@ test = [
     "pytest",
     "boto3",
     "azure-storage-blob",
-    "cloudbridge>=4.2.1",
+    "cloudbridge>=4.3.0",
 ]
 
 [project.urls]
