@@ -1,0 +1,37 @@
+- id: cloud_aws_bucket
+  name: Amazon S3 Bucket (CloudBridge)
+  version: 0
+  description: |
+    Stores Galaxy datasets in an Amazon S3 bucket through the
+    provider-agnostic cloud object store. Files larger than the multipart
+    threshold transfer as parts in parallel, in both directions.
+  variables:
+    bucket:
+      label: Bucket
+      type: string
+      help: The name of the existing S3 bucket to store datasets in.
+    region:
+      label: Region
+      type: string
+      help: The AWS region the bucket lives in (e.g. us-east-2).
+      default: us-east-1
+  secrets:
+    access_key:
+      label: Access Key ID
+      help: The AWS access key ID to access the bucket with.
+    secret_key:
+      label: Secret Access Key
+      help: The AWS secret access key to access the bucket with.
+  configuration:
+    type: cloud
+    provider: aws
+    auth:
+      access_key: '{{ secrets.access_key }}'
+      secret_key: '{{ secrets.secret_key }}'
+      region: '{{ variables.region }}'
+    bucket:
+      name: '{{ variables.bucket }}'
+    transfer:
+      multipart_threshold: 104857600
+      multipart_chunksize: 52428800
+      max_concurrency: 5
