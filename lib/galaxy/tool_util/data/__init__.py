@@ -1348,13 +1348,14 @@ class ToolDataTableManager(Dictifiable):
             if dataset.ext != "data_manager_json":
                 continue
 
+            extra_files_path = dataset.extra_files_path
+            _relativize_bundle_data_table_paths(data_manager_dict.get("data_tables", {}), extra_files_path)
             bundle = DataTableBundle(
                 data_tables=data_manager_dict.get("data_tables", {}),
                 output_name=output_name,
                 processor_description=bundle_description,
                 repo_info=repo_info,
             )
-            extra_files_path = dataset.extra_files_path
             bundle_path = os.path.join(extra_files_path, BUNDLE_INDEX_FILE_NAME)
             with open(bundle_path, "w") as fw:
                 fw.write(bundle.model_dump_json())
@@ -1371,6 +1372,40 @@ class BundleProcessingOptions:
     data_manager_path: str
     target_config_file: str
     tool_data_file_path: str | None = None
+
+
+def _iter_bundle_rows(data_table_values: Any) -> Iterator[dict[str, Any]]:
+    """Yield row dicts from a data-table value (list, single dict, or add/remove wrapper)."""
+    if isinstance(data_table_values, dict):
+        if "add" in data_table_values or "remove" in data_table_values:
+            for section in ("add", "remove"):
+                rows = data_table_values.get(section)
+                if isinstance(rows, list):
+                    yield from (row for row in rows if isinstance(row, dict))
+                elif isinstance(rows, dict):
+                    yield rows
+            return
+        yield data_table_values
+    elif isinstance(data_table_values, list):
+        yield from (row for row in data_table_values if isinstance(row, dict))
+
+
+def _relativize_bundle_data_table_paths(data_tables: dict[str, Any], extra_files_path: str) -> None:
+    """Rewrite absolute ``path`` values under ``extra_files_path`` to be relative to it.
+
+    Some data managers record the absolute path inside the (transient) job
+    directory (e.g. MetaPhlAn's ``$out_file.extra_files_path/$index``) rather
+    than the expected relative path; that absolute path no longer resolves once
+    the bundle is staged elsewhere, so imports and chained data managers fail.
+    Paths already relative, or outside ``extra_files_path``, are left untouched.
+    """
+    for data_table_values in data_tables.values():
+        for row in _iter_bundle_rows(data_table_values):
+            path = row.get("path")
+            if path and os.path.isabs(path):
+                rel = os.path.relpath(path, extra_files_path)
+                if rel != os.pardir and not rel.startswith(os.pardir + os.sep):
+                    row["path"] = rel
 
 
 def _data_manager_dict(out_data: dict[str, OutputDataset], ensure_single_output: bool = False) -> dict[str, Any]:

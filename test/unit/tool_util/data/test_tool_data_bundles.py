@@ -210,6 +210,93 @@ def test_import_bundle(tdt_manager, tmp_path):
     assert new_row[2] == str(tmp_path / "testalpha" / "newvalue" / "newvalue.txt")
 
 
+def prepare_absolute_path_output_and_description(tmp_path):
+    """Mirror MetaPhlAn: an absolute recorded ``path`` with a ``${path}`` move source."""
+    index = "mpa_toy"
+    extra_files_path = tmp_path / "extra"
+    staged = extra_files_path / index
+    staged.mkdir(parents=True)
+    (staged / f"{index}.pkl").write_text("PICKLE")
+
+    # Absolute path, as MetaPhlAn records it (points inside extra_files_path).
+    recorded_path = str(staged)
+    output = {"data_tables": {"testalpha": [{"value": index, "name": "toy", "path": recorded_path}]}}
+    output_dataset_path = tmp_path / "output.dat"
+    output_dataset_path.write_text(json.dumps(output))
+    output_dataset = OutputDataset(output_dataset_path, extra_files_path)
+    out_data = {"out1": output_dataset}
+    data_table = {
+        "name": "testalpha",
+        "output": {
+            "columns": [
+                {"name": "value"},
+                {"name": "name"},
+                {
+                    "name": "path",
+                    "output_ref": "out1",
+                    "moves": [
+                        {
+                            "type": "directory",
+                            "relativize_symlinks": False,
+                            "source_value": "${path}",
+                            "target_value": "metaphlan/data/${value}",
+                            "target_base": "${GALAXY_DATA_MANAGER_DATA_PATH}",
+                        }
+                    ],
+                    "value_translations": [
+                        {"value": "${GALAXY_DATA_MANAGER_DATA_PATH}/metaphlan/data/${value}", "type": "template"},
+                        {"value": "abspath", "type": "function"},
+                    ],
+                },
+            ]
+        },
+    }
+    process_description = DataTableBundleProcessorDescription(
+        **{"undeclared_tables": False, "data_tables": [data_table]}
+    )
+    return index, out_data, process_description
+
+
+def test_write_bundle_relativizes_absolute_path(tdt_manager, tmp_path):
+    index, out_data, process_description = prepare_absolute_path_output_and_description(tmp_path)
+    tdt_manager.write_bundle(out_data, process_description, repo_info=None)
+
+    bundle_index_json_path = tmp_path / "extra" / BUNDLE_INDEX_FILE_NAME
+    with open(bundle_index_json_path) as f:
+        bundle_index = json.load(f)
+    stored_path = bundle_index["data_tables"]["testalpha"][0]["path"]
+    # The absolute job path is stored relative to the extra-files dir.
+    assert stored_path == index
+    assert not os.path.isabs(stored_path)
+
+
+def test_import_bundle_with_absolute_recorded_path(tdt_manager, tmp_path):
+    """Import must stage the files even when the data manager recorded an absolute path.
+
+    Renaming the extra-files dir before import models transport to another host,
+    where the recorded absolute job dir no longer exists.
+    """
+    index, out_data, process_description = prepare_absolute_path_output_and_description(tmp_path)
+    tdt_manager.write_bundle(out_data, process_description, None)
+
+    # Transport the bundle: the location it was written at is gone by import.
+    transported = tmp_path / "imported"
+    os.rename(tmp_path / "extra", transported)
+
+    options = BundleProcessingOptions(
+        what="data manager 'mock'",
+        data_manager_path=str(tmp_path),
+        target_config_file=str(tmp_path / "sample_data_managers_conf.xml"),
+    )
+    tdt_manager.import_bundle(str(transported), options)
+
+    new_row = _last_row(tmp_path / "testalpha.loc")
+    assert new_row[0] == index
+    loc_target = new_row[-1]
+    # The DB files were actually moved to where the loc entry points.
+    assert os.path.exists(os.path.join(loc_target, f"{index}.pkl"))
+
+
 def test_undeclared_tables(tdt_manager, tmp_path):
     options = BundleProcessingOptions(
         what="data manager 'mock'",
