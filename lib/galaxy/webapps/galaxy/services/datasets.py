@@ -824,6 +824,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         Retrieves contents of a dataset. It is left to the datatype to decide how
         to interpret the content types.
+
+        Returns a ``(content, headers)`` tuple. ``content`` is usually a ``bytes``
+        body, but datatypes that stream large content may return an iterator of
+        ``bytes`` chunks, which the controller serves as a ``StreamingResponse``.
         """
         headers = {}
         content: Any = ""

@@ -499,7 +499,9 @@ class FastAPIDatasets:
         content_type: DatasetContentType = DatasetContentType.data,
     ):
         content, headers = self.service.get_structured_content(trans, dataset_id, content_type, **request.query_params)
-        return Response(content=content, headers=headers)
+        if isinstance(content, (bytes, str)):
+            return Response(content=content, headers=headers)
+        return StreamingResponse(content, headers=headers)
 
     @router.delete(
         "/api/datasets",
