@@ -1601,7 +1601,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 log.exception("Failed to parse tool tests for tool '%s'", self.id)
 
     @property
-    def tests(self):
+    def tests(self) -> list[ToolTestDescription] | None:
         if self.__tests:
             return [ToolTestDescription(d) for d in json.loads(self.__tests)]
         return None
