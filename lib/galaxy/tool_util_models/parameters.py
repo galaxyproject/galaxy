@@ -327,6 +327,11 @@ def _json_schema_extra_for_validators(validators: Sequence[VT]) -> dict[str, Any
             # Python re.match anchors at start; JSON Schema pattern does not
             if not pattern.startswith("^"):
                 pattern = "^" + pattern
+            # Python ``re`` (used by pydantic's ``pattern``) doesn't recognise POSIX
+            # character classes; defer such patterns to ``statically_validate`` which uses
+            # the ``regex`` module (seurat_plot).
+            if "[:" in pattern and ":]" in pattern:
+                continue
             extra["pattern"] = pattern
             break
     for v in validators:
