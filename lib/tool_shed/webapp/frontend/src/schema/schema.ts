@@ -2649,6 +2649,11 @@ export interface components {
              */
             argument?: string | null
             /**
+             * Default
+             * @default 0
+             */
+            default: number
+            /**
              * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
