@@ -1090,6 +1090,42 @@ def test_cloud_store_push_string_single_remote_lookup():
         assert created.upload.call_args.args == ("other content",)
 
 
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_uploads_pass_transfer_config():
+    with TestConfig(CLOUD_TRANSFER_TEST_CONFIG) as (directory, object_store):
+        obj = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = obj
+        object_store.bucket = bucket
+
+        assert object_store._push_file_to_path("files/dataset_1.dat", "/tmp/dataset_1.dat")
+        upload_config = obj.upload_from_file.call_args.kwargs["config"]
+        assert upload_config.threshold == 5242880
+        assert upload_config.part_size == 5242880
+        assert upload_config.max_concurrency == 2
+
+        assert object_store._push_string_to_path("files/dataset_1.dat", "some content")
+        upload_config = obj.upload.call_args.kwargs["config"]
+        assert upload_config.threshold == 5242880
+        assert upload_config.part_size == 5242880
+        assert upload_config.max_concurrency == 2
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_uploads_pass_no_config_when_unconfigured():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        obj = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = obj
+        object_store.bucket = bucket
+
+        assert object_store._push_file_to_path("files/dataset_1.dat", "/tmp/dataset_1.dat")
+        assert obj.upload_from_file.call_args.kwargs["config"] is None
+
+        assert object_store._push_string_to_path("files/dataset_1.dat", "some content")
+        assert obj.upload.call_args.kwargs["config"] is None
+
+
 AZURE_BLOB_TEST_CONFIG = get_example("azure_simple.xml")
 AZURE_BLOB_TEST_CONFIG_YAML = get_example("azure_simple.yml")
 

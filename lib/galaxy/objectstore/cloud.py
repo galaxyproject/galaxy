@@ -321,7 +321,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
             obj = self._get_or_create_object(rel_path)
-            obj.upload(from_string)
+            obj.upload(from_string, config=self._upload_config())
             return True
         except Exception:
             log.exception("Trouble pushing to cloud '%s' from string", rel_path)
@@ -330,7 +330,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
     def _push_file_to_path(self, rel_path: str, source_file: str) -> bool:
         try:
             obj = self._get_or_create_object(rel_path)
-            obj.upload_from_file(source_file)
+            obj.upload_from_file(source_file, config=self._upload_config())
             return True
         except Exception:
             log.exception("Trouble pushing to cloud '%s' from file '%s'", rel_path, source_file)
