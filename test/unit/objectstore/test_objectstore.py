@@ -986,6 +986,59 @@ def test_config_parse_cloud_is_cloud():
         assert object_store.cloud is True
 
 
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_push_file_single_remote_lookup():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        # An existing remote object is uploaded in place - no create and
+        # exactly one remote lookup.
+        existing = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = existing
+        object_store.bucket = bucket
+        assert object_store._push_file_to_path("files/dataset_1.dat", "/tmp/dataset_1.dat")
+        bucket.objects.get.assert_called_once_with("files/dataset_1.dat")
+        bucket.objects.create.assert_not_called()
+        assert existing.upload_from_file.call_count == 1
+        assert existing.upload_from_file.call_args.args == ("/tmp/dataset_1.dat",)
+
+        # A missing remote object is created first, then uploaded.
+        created = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = None
+        bucket.objects.create.return_value = created
+        object_store.bucket = bucket
+        assert object_store._push_file_to_path("files/dataset_2.dat", "/tmp/dataset_2.dat")
+        bucket.objects.get.assert_called_once_with("files/dataset_2.dat")
+        bucket.objects.create.assert_called_once_with("files/dataset_2.dat")
+        assert created.upload_from_file.call_count == 1
+        assert created.upload_from_file.call_args.args == ("/tmp/dataset_2.dat",)
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_push_string_single_remote_lookup():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        existing = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = existing
+        object_store.bucket = bucket
+        assert object_store._push_string_to_path("files/dataset_1.dat", "some content")
+        bucket.objects.get.assert_called_once_with("files/dataset_1.dat")
+        bucket.objects.create.assert_not_called()
+        assert existing.upload.call_count == 1
+        assert existing.upload.call_args.args == ("some content",)
+
+        created = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = None
+        bucket.objects.create.return_value = created
+        object_store.bucket = bucket
+        assert object_store._push_string_to_path("files/dataset_2.dat", "other content")
+        bucket.objects.get.assert_called_once_with("files/dataset_2.dat")
+        bucket.objects.create.assert_called_once_with("files/dataset_2.dat")
+        assert created.upload.call_count == 1
+        assert created.upload.call_args.args == ("other content",)
+
+
 AZURE_BLOB_TEST_CONFIG = get_example("azure_simple.xml")
 AZURE_BLOB_TEST_CONFIG_YAML = get_example("azure_simple.yml")
 

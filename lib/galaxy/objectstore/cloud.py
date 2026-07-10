@@ -280,13 +280,13 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             with open(local_destination, "wb+") as downloaded_file_handle:
                 key.save_content(downloaded_file_handle)
 
+    def _get_or_create_object(self, rel_path: str):
+        return self.bucket.objects.get(rel_path) or self.bucket.objects.create(rel_path)
+
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
-            if not self.bucket.objects.get(rel_path):
-                created_obj = self.bucket.objects.create(rel_path)
-                created_obj.upload(from_string)
-            else:
-                self.bucket.objects.get(rel_path).upload(from_string)
+            obj = self._get_or_create_object(rel_path)
+            obj.upload(from_string)
             return True
         except Exception:
             log.exception("Trouble pushing to cloud '%s' from string", rel_path)
@@ -294,11 +294,8 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
 
     def _push_file_to_path(self, rel_path: str, source_file: str) -> bool:
         try:
-            if not self.bucket.objects.get(rel_path):
-                created_obj = self.bucket.objects.create(rel_path)
-                created_obj.upload_from_file(source_file)
-            else:
-                self.bucket.objects.get(rel_path).upload_from_file(source_file)
+            obj = self._get_or_create_object(rel_path)
+            obj.upload_from_file(source_file)
             return True
         except Exception:
             log.exception("Trouble pushing to cloud '%s' from file '%s'", rel_path, source_file)
