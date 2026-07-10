@@ -6,9 +6,17 @@ See doc/source/dev/objectstore_filesource_unification.md.
 import os
 from uuid import uuid4
 
-from galaxy.files.plugins import FileSourcePluginsConfig
-from galaxy.files.unittest_utils import TestConfiguredFileSources
+import pytest
+
 from galaxy.util import directory_hash_id
+
+# These helpers need galaxy-files + fsspec; skip cleanly when the galaxy-objectstore package
+# is tested in isolation without them (this module is collected directly by pytest).
+pytest.importorskip("fsspec")
+pytest.importorskip("galaxy.files")
+
+from galaxy.files.plugins import FileSourcePluginsConfig  # noqa: E402  (after importorskip)
+from galaxy.files.unittest_utils import TestConfiguredFileSources  # noqa: E402  (after importorskip)
 
 
 class Dataset:
