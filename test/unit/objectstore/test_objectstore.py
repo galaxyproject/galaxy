@@ -1090,6 +1090,138 @@ def test_cloud_store_push_string_single_remote_lookup():
         assert created.upload.call_args.args == ("other content",)
 
 
+CLOUD_AWS_CUSTOM_CONNECTION_CONFIG = get_example("cloud_aws_custom_connection.xml")
+CLOUD_AWS_CUSTOM_CONNECTION_CONFIG_YAML = get_example("cloud_aws_custom_connection.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_aws_custom_connection():
+    for config_str in [CLOUD_AWS_CUSTOM_CONNECTION_CONFIG, CLOUD_AWS_CUSTOM_CONNECTION_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.credentials["session_token"] == "session_token_moo"
+            assert object_store.credentials["region"] == "us-east-2"
+            assert object_store.connection_dict == {
+                "endpoint_url": "https://s3.example.org/",
+                "validate_certs": False,
+                "signature_version": "s3v4",
+            }
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict["auth"], "session_token", "session_token_moo")
+            _assert_key_has_value(as_dict["connection"], "endpoint_url", "https://s3.example.org/")
+            _assert_key_has_value(as_dict["connection"], "validate_certs", False)
+            _assert_key_has_value(as_dict["connection"], "signature_version", "s3v4")
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_connection_aws_maps_full_options():
+    with TestConfig(CLOUD_AWS_CUSTOM_CONNECTION_CONFIG_YAML) as (directory, object_store):
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "aws_access_key": "access_moo",
+            "aws_secret_key": "secret_cow",
+            "aws_session_token": "session_token_moo",
+            "aws_region_name": "us-east-2",
+            "s3_endpoint_url": "https://s3.example.org/",
+            "s3_validate_certs": False,
+            "s3_signature_version": "s3v4",
+        }
+
+
+CLOUD_AZURE_FULL_CONFIG = get_example("cloud_azure_full.xml")
+CLOUD_AZURE_FULL_CONFIG_YAML = get_example("cloud_azure_full.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_azure_full():
+    for config_str in [CLOUD_AZURE_FULL_CONFIG, CLOUD_AZURE_FULL_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.credentials["storage_account"] == "galaxystorage"
+            assert object_store.credentials["resource_group"] == "galaxy_rg"
+            assert object_store.credentials["region"] == "eastus2"
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict["auth"], "storage_account", "galaxystorage")
+            _assert_key_has_value(as_dict["auth"], "resource_group", "galaxy_rg")
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_connection_azure_maps_full_options():
+    with TestConfig(CLOUD_AZURE_FULL_CONFIG_YAML) as (directory, object_store):
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "azure_subscription_id": "a_sub_id",
+            "azure_client_id": "and_a_client_id",
+            "azure_secret": "and_a_secret_key",
+            "azure_tenant": "and_some_tenant_info",
+            "azure_storage_account": "galaxystorage",
+            "azure_resource_group": "galaxy_rg",
+            "azure_region_name": "eastus2",
+        }
+
+
+CLOUD_AZURE_ACCESS_TOKEN_ONLY_CONFIG = """<object_store type="cloud" provider="azure">
+    <auth access_token="a_token" storage_account="galaxystorage" resource_group="galaxy_rg" />
+    <bucket name="unique_container_name" use_reduced_redundancy="False" />
+    <cache path="database/object_store_cache" size="1000" />
+    <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+    <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_azure_access_token_only():
+    # With an access token the service-principal quartet is optional.
+    with TestConfig(CLOUD_AZURE_ACCESS_TOKEN_ONLY_CONFIG) as (directory, object_store):
+        assert object_store.credentials["access_token"] == "a_token"
+        assert "subscription_id" not in object_store.credentials
+
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "azure_access_token": "a_token",
+            "azure_storage_account": "galaxystorage",
+            "azure_resource_group": "galaxy_rg",
+        }
+
+
+CLOUD_GCP_INLINE_CREDS_CONFIG_YAML = get_example("cloud_gcp_inline_creds.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_gcp_inline_credentials():
+    with TestConfig(CLOUD_GCP_INLINE_CREDS_CONFIG_YAML) as (directory, object_store):
+        assert object_store.credentials["credentials_dict"]["project_id"] == "my_project"
+
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config["gcp_service_creds_dict"]["project_id"] == "my_project"
+        assert provider_config["gcp_region_name"] == "us-central1"
+        assert "gcp_service_creds_file" not in provider_config
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_gcp_requires_exactly_one_credential_source():
+    no_creds = CLOUD_GCP_INLINE_CREDS_CONFIG_YAML.replace("credentials_dict:", "ignored_dict:")
+    with pytest.raises(Exception, match="exactly one"):
+        with TestConfig(no_creds):
+            pass
+
+    both_creds = CLOUD_GCP_INLINE_CREDS_CONFIG_YAML.replace(
+        "  credentials_dict:", "  credentials_file: gcp.config\n  credentials_dict:"
+    )
+    with pytest.raises(Exception, match="exactly one"):
+        with TestConfig(both_creds):
+            pass
+
+
 CLOUD_DIRECT_DOWNLOAD_CONFIG = get_example("cloud_direct_download.xml")
 CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML = get_example("cloud_direct_download.yml")
 

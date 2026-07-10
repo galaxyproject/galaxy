@@ -6,6 +6,7 @@ import logging
 import os
 import os.path
 
+from galaxy.util import string_as_bool
 from ._caching_base import CachingConcreteObjectStore
 from ._util import UsesAxel
 from .caching import enable_cache_monitor
@@ -69,6 +70,27 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 f"multipart parts of at least {MIN_MULTIPART_CHUNKSIZE} bytes (5 MiB)."
             )
 
+        # The endpoint scheme conveys http/https, so no is_secure here (matching
+        # the boto3 store); the legacy host/port/... keys the s3 parser emits are
+        # not used by this store.
+        connection_dict = config_dict.get("connection") or {}
+        self.connection_dict = {}
+        for key in ("endpoint_url", "signature_version"):
+            value = connection_dict.get(key)
+            if value:
+                self.connection_dict[key] = value
+        validate_certs = connection_dict.get("validate_certs")
+        if validate_certs is not None:
+            self.connection_dict["validate_certs"] = string_as_bool(validate_certs)
+
+        if self.provider == "google":
+            has_file = bool(self.credentials.get("credentials_file"))
+            has_dict = bool(self.credentials.get("credentials_dict"))
+            if has_file == has_dict:
+                raise Exception(
+                    "The google provider requires exactly one of credentials_file or credentials_dict."
+                )
+
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
@@ -79,30 +101,66 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
-        self.conn = self._get_connection(self.provider, self.credentials)
+        self.conn = self._get_connection(self.provider, self.credentials, self.connection_dict)
         self.bucket = self._get_bucket(self.bucket_name)
         self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
         self._init_axel()
 
     @staticmethod
-    def _get_connection(provider, credentials):
+    def _map_config_values(source, key_map):
+        return {mapped_key: source[key] for key, mapped_key in key_map if source.get(key) is not None}
+
+    @staticmethod
+    def _get_connection(provider, credentials, connection_config=None):
         log.debug(f"Configuring `{provider}` Connection")
+        connection_config = connection_config or {}
         if provider == "aws":
-            config = {"aws_access_key": credentials["access_key"], "aws_secret_key": credentials["secret_key"]}
-            if "region" in credentials:
-                config["aws_region_name"] = credentials["region"]
+            config = {"aws_access_key": credentials.get("access_key"), "aws_secret_key": credentials.get("secret_key")}
+            config.update(
+                Cloud._map_config_values(
+                    credentials,
+                    (
+                        ("session_token", "aws_session_token"),
+                        ("region", "aws_region_name"),
+                    ),
+                )
+            )
+            config.update(
+                Cloud._map_config_values(
+                    connection_config,
+                    (
+                        ("endpoint_url", "s3_endpoint_url"),
+                        ("validate_certs", "s3_validate_certs"),
+                        ("signature_version", "s3_signature_version"),
+                    ),
+                )
+            )
             connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
         elif provider == "azure":
-            config = {
-                "azure_subscription_id": credentials["subscription_id"],
-                "azure_client_id": credentials["client_id"],
-                "azure_secret": credentials["secret"],
-                "azure_tenant": credentials["tenant"],
-            }
+            config = Cloud._map_config_values(
+                credentials,
+                (
+                    ("subscription_id", "azure_subscription_id"),
+                    ("client_id", "azure_client_id"),
+                    ("secret", "azure_secret"),
+                    ("tenant", "azure_tenant"),
+                    ("access_token", "azure_access_token"),
+                    ("storage_account", "azure_storage_account"),
+                    ("resource_group", "azure_resource_group"),
+                    ("region", "azure_region_name"),
+                ),
+            )
             connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
         elif provider == "google":
-            config = {"gcp_service_creds_file": credentials["credentials_file"]}
+            config = Cloud._map_config_values(
+                credentials,
+                (
+                    ("credentials_file", "gcp_service_creds_file"),
+                    ("credentials_dict", "gcp_service_creds_dict"),
+                    ("region", "gcp_region_name"),
+                ),
+            )
             connection = CloudProviderFactory().create_provider(ProviderList.GCP, config)
         else:
             raise Exception(f"Unsupported provider `{provider}`.")
@@ -150,6 +208,13 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 key: transfer_element.get(key) for key in TRANSFER_OPTION_KEYS if transfer_element.get(key) is not None
             }
 
+        connection_element = config_xml.find("connection")
+        if connection_element is not None:
+            for key in ("endpoint_url", "validate_certs", "signature_version"):
+                value = connection_element.get(key)
+                if value is not None:
+                    config["connection"][key] = value
+
         try:
             provider = config_xml.attrib.get("provider")
             if provider is None:
@@ -166,23 +231,31 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 akey = auth_element.get("access_key")
                 skey = auth_element.get("secret_key")
                 config["auth"] = {"access_key": akey, "secret_key": skey}
-                region = auth_element.get("region")
-                if region:
-                    config["auth"]["region"] = region
+                for key in ("session_token", "region"):
+                    value = auth_element.get(key)
+                    if value:
+                        config["auth"][key] = value
             elif provider == "azure":
-                sid = auth_element.get("subscription_id")
-                if sid is None:
-                    missing_config.append("subscription_id")
-                cid = auth_element.get("client_id")
-                if cid is None:
-                    missing_config.append("client_id")
-                sec = auth_element.get("secret")
-                if sec is None:
-                    missing_config.append("secret")
-                ten = auth_element.get("tenant")
-                if ten is None:
-                    missing_config.append("tenant")
-                config["auth"] = {"subscription_id": sid, "client_id": cid, "secret": sec, "tenant": ten}
+                auth = {}
+                for key in (
+                    "subscription_id",
+                    "client_id",
+                    "secret",
+                    "tenant",
+                    "access_token",
+                    "storage_account",
+                    "resource_group",
+                    "region",
+                ):
+                    value = auth_element.get(key)
+                    if value is not None:
+                        auth[key] = value
+                if "access_token" not in auth:
+                    # Without an access token the service-principal quartet is required.
+                    for key in ("subscription_id", "client_id", "secret", "tenant"):
+                        if key not in auth:
+                            missing_config.append(key)
+                config["auth"] = auth
             elif provider == "google":
                 cre = auth_element.get("credentials_file")
                 if cre is None:
@@ -192,6 +265,9 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                     log.error(msg)
                     raise OSError(msg)
                 config["auth"] = {"credentials_file": cre}
+                region = auth_element.get("region")
+                if region:
+                    config["auth"]["region"] = region
             else:
                 msg = f"Unsupported provider `{provider}`."
                 log.error(msg)
@@ -220,6 +296,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 "name": self.bucket_name,
                 "use_reduced_redundancy": self.use_rr,
             },
+            "connection": self.connection_dict,
             "transfer": self.transfer_dict,
             "cache": {
                 "size": self.cache_size,
