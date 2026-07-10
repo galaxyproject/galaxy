@@ -95,9 +95,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             has_file = bool(self.credentials.get("credentials_file"))
             has_dict = bool(self.credentials.get("credentials_dict"))
             if has_file == has_dict:
-                raise Exception(
-                    "The google provider requires exactly one of credentials_file or credentials_dict."
-                )
+                raise Exception("The google provider requires exactly one of credentials_file or credentials_dict.")
 
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
         self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
