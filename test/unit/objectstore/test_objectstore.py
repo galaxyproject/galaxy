@@ -980,6 +980,12 @@ def test_config_parse_cloud_google_missing_credentials_file():
             pass
 
 
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_is_cloud():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        assert object_store.cloud is True
+
+
 AZURE_BLOB_TEST_CONFIG = get_example("azure_simple.xml")
 AZURE_BLOB_TEST_CONFIG_YAML = get_example("azure_simple.yml")
 

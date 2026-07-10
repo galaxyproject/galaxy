@@ -37,6 +37,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
     """
 
     store_type = "cloud"
+    cloud = True
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
