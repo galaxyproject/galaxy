@@ -7,7 +7,6 @@ serialization (build_extraction_summary) is covered by the API tests.
 
 from typing import (
     cast,
-    Optional,
 )
 
 from galaxy.managers.context import ProvidesHistoryContext
@@ -26,7 +25,7 @@ class MockTool:
 
 
 class MockToolbox:
-    def __init__(self, by_job_id: Optional[dict] = None, default_compatible: bool = True):
+    def __init__(self, by_job_id: dict | None = None, default_compatible: bool = True):
         self._by_job_id = by_job_id or {}
         self._default = default_compatible
 
