@@ -1,0 +1,28 @@
+type: cloud
+provider: openstack
+auth:
+  username: os_user
+  password: os_pass
+  project_name: os_project
+  auth_url: https://keystone.example.org:5000/v3
+  region: RegionOne
+  user_domain_name: Default
+  project_domain_name: Default
+  # Alternatively authenticate with a Keystone application credential
+  # instead of username/password/project_name:
+  # application_credential_id: an_app_credential_id
+  # application_credential_secret: an_app_credential_secret
+
+bucket:
+  name: unique_container_name
+  use_reduced_redundancy: false
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_cloud
+- type: temp
+  path: database/tmp_cloud
