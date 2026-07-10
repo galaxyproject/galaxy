@@ -471,7 +471,11 @@ def implicit_parameters_for_testing(
             raise InconsistentDatabase(
                 f"Failed to recover oauth2 refresh token from vault at location {refresh_token_key}, Galaxy is in an inconsistent state and probably requires admin intervention"
             )
-        _inject_oauth2_access_token(implicit, oauth2_refresh_token, template_server_configuration)
+        rotated_refresh_token = _inject_oauth2_access_token(
+            implicit, oauth2_refresh_token, template_server_configuration
+        )
+        if refresh_token_key and rotated_refresh_token and rotated_refresh_token != oauth2_refresh_token:
+            trans.user_vault.write_secret(refresh_token_key, rotated_refresh_token)
 
     return implicit
 
@@ -492,7 +496,11 @@ def implicit_parameters_for_instance(
         oauth2_refresh_token = user_vault.read_secret(refresh_token_key)
         if not oauth2_refresh_token:
             raise Exception("null refresh token key read from user vault")
-        _inject_oauth2_access_token(implicit, oauth2_refresh_token, template_server_configuration)
+        rotated_refresh_token = _inject_oauth2_access_token(
+            implicit, oauth2_refresh_token, template_server_configuration
+        )
+        if rotated_refresh_token and rotated_refresh_token != oauth2_refresh_token:
+            user_vault.write_secret(refresh_token_key, rotated_refresh_token)
 
     return implicit
 
@@ -501,7 +509,7 @@ def _inject_oauth2_access_token(
     implicit: ImplicitConfigurationParameters,
     oauth2_refresh_token: str,
     template_server_configuration: TemplateServerConfiguration,
-) -> None:
+) -> str | None:
     oauth2_client_pair = template_server_configuration.oauth2_client_pair
     oauth2_configuration = template_server_configuration.oauth2_configuration
     assert oauth2_client_pair
@@ -510,7 +518,12 @@ def _inject_oauth2_access_token(
         oauth2_refresh_token, oauth2_client_pair, oauth2_configuration
     )
     response.raise_for_status()
-    implicit["oauth2_access_token"] = response.json()["access_token"]
+    token_response = response.json()
+    implicit["oauth2_access_token"] = token_response["access_token"]
+    # Some providers (e.g. GitHub) rotate the refresh token on every use and invalidate the
+    # previous one. Return any new refresh token so the caller can persist it; providers that
+    # do not rotate omit it and the stored token stays valid.
+    return token_response.get("refresh_token")
 
 
 def oauth2_refresh_token_status(

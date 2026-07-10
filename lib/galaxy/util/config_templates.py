@@ -199,7 +199,9 @@ def expand_raw_config(
 
 
 def _expand_raw_config(
-    template_configuration: TemplateConfiguration, template_variables: dict[str, Any]
+    template_configuration: TemplateConfiguration,
+    template_variables: dict[str, Any],
+    only_keys: set[str] | None = None,
 ) -> RawTemplateConfig:
     template_start = template_configuration.template_start or "{{"
     template_end = template_configuration.template_end or "}}"
@@ -211,6 +213,11 @@ def _expand_raw_config(
         return key, value
 
     template_model_as_json = template_configuration.model_dump()
+    if only_keys is not None:
+        # Restrict expansion to the given top-level keys. Used when only a subset of the
+        # configuration can be expanded because the full template variables/secrets are not
+        # available yet (e.g. reading oauth2 client fields before the user provides variables).
+        template_model_as_json = {k: v for k, v in template_model_as_json.items() if k in only_keys}
     raw_config = remap(template_model_as_json, visit=expand_template)
     _clean_template_meta_parameters(raw_config)
     return raw_config
@@ -556,6 +563,11 @@ class OAuth2Configuration(StrictModel):
 
 ConfiguredOAuth2Sources = dict[str, OAuth2Configuration]
 
+# OAuth2 token endpoints are required to return application/json (RFC 6749 section 5.1), but some
+# providers (notably GitHub) only do so when the client explicitly requests it. Sending this on
+# every token request is correct for all providers and avoids per-provider special-casing.
+OAUTH2_TOKEN_REQUEST_HEADERS = {"Accept": "application/json"}
+
 
 class OAuth2ClientPair(StrictModel):
     client_id: str
@@ -599,7 +611,7 @@ def get_token_from_code_raw(
     if redirect_uri is not None:
         data["redirect_uri"] = redirect_uri
 
-    return requests.post(config.token_url, data=data)
+    return requests.post(config.token_url, data=data, headers=OAUTH2_TOKEN_REQUEST_HEADERS)
 
 
 def get_token_from_refresh_raw(
@@ -612,7 +624,7 @@ def get_token_from_refresh_raw(
         "client_secret": client_pair.client_secret,
     }
 
-    return requests.post(config.token_url, data=data)
+    return requests.post(config.token_url, data=data, headers=OAUTH2_TOKEN_REQUEST_HEADERS)
 
 
 def get_oauth2_config_from(template, sources: ConfiguredOAuth2Sources) -> OAuth2Configuration:
@@ -632,7 +644,15 @@ def read_oauth2_info_from_configuration(
         "environment": environment,
     }
 
-    expanded_config = _expand_raw_config(template_configuration, template_variables)
+    # Only the admin-provided oauth2 client fields are needed here, and they must not depend
+    # on the user's variables/secrets (which are not collected until after authorization).
+    # Restrict expansion to these fields so a configuration that references user variables
+    # elsewhere (e.g. a per-repository GitHub source) can still be read at this stage.
+    expanded_config = _expand_raw_config(
+        template_configuration,
+        template_variables,
+        only_keys={"oauth2_client_id", "oauth2_client_secret", "oauth2_scope"},
+    )
     oauth2_client_id = expanded_config["oauth2_client_id"]
     oauth2_client_secret = expanded_config["oauth2_client_secret"]
     oauth2_scope = cast(str | None, expanded_config.get("oauth2_scope"))

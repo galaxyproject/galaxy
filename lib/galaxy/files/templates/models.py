@@ -49,6 +49,7 @@ FileSourceTemplateType = Literal[
     "dataverse",
     "cbioportal",
     "huggingface",
+    "github",
     "iiif",
     "mavedb",
     "omero",
@@ -442,6 +443,29 @@ class HuggingFaceFileSourceConfiguration(StrictModel):
     endpoint: str | None = None
 
 
+class GithubFileSourceTemplateConfiguration(OAuth2TemplateConfiguration, StrictModel):
+    type: Literal["github"]
+    org: str | TemplateExpansion
+    repo: str | TemplateExpansion
+    branch: str | TemplateExpansion | None = None
+    commit_message: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
+    oauth2_client_id: str | TemplateExpansion
+    oauth2_client_secret: str | TemplateExpansion
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class GithubFileSourceConfiguration(OAuth2FileSourceConfiguration, StrictModel):
+    type: Literal["github"]
+    org: str
+    repo: str
+    branch: str | None = None
+    commit_message: str | None = None
+    writable: bool = False
+    oauth2_access_token: str
+
+
 class IIIFFileSourceTemplateConfiguration(StrictModel):
     type: Literal["iiif"]
     manifest_url: str | TemplateExpansion
@@ -509,6 +533,7 @@ FileSourceTemplateConfiguration = Annotated[
     | DataverseFileSourceTemplateConfiguration
     | CBioPortalFileSourceTemplateConfiguration
     | HuggingFaceFileSourceTemplateConfiguration
+    | GithubFileSourceTemplateConfiguration
     | IIIFFileSourceTemplateConfiguration
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
@@ -535,6 +560,7 @@ FileSourceConfiguration = Annotated[
     | DataverseFileSourceConfiguration
     | CBioPortalFileSourceConfiguration
     | HuggingFaceFileSourceConfiguration
+    | GithubFileSourceConfiguration
     | IIIFFileSourceConfiguration
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
@@ -620,6 +646,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "dataverse": DataverseFileSourceConfiguration,
     "cbioportal": CBioPortalFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
+    "github": GithubFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
     "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
@@ -644,6 +671,12 @@ OAUTH2_CONFIGURED_SOURCES: ConfiguredOAuth2Sources = {
         token_url="https://login.microsoftonline.com/common/oauth2/v2.0/token",
         authorize_params={},
         scope="offline_access Files.ReadWrite.AppFolder",
+    ),
+    "github": OAuth2Configuration(
+        authorize_url="https://github.com/login/oauth/authorize",
+        token_url="https://github.com/login/oauth/access_token",
+        authorize_params={},
+        # No scope: a GitHub App's permissions (Contents: read/write) are set on the App itself.
     ),
 }
 

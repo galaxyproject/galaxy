@@ -708,6 +708,59 @@ This implementation currently uses Microsoft Graph's simple upload endpoint and
 does not yet implement resumable uploads for very large files, server-side pagination,
 or server-side search/sorting.
 
+#### GitHub
+
+Once you have OAuth 2.0 client credentials from GitHub (called `oauth2_client_id`
+and `oauth2_client_secret` here), the following configuration can be used to enable
+GitHub repositories for your Galaxy instance.
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_github.yml
+:language: yaml
+```
+
+To use this template, make the credentials available to Galaxy's web and job handler
+processes using the environment variables `GALAXY_GITHUB_APP_CLIENT_ID` and
+`GALAXY_GITHUB_APP_CLIENT_SECRET`. Jobs themselves do not need these values and should
+not receive them.
+
+GitHub is a per-repository file source: each instance connects a single repository, and
+the user supplies the repository owner, name, and (optionally) branch when creating the
+instance. To connect several repositories, a user creates several instances of the template.
+
+To configure a GitHub App for this file source:
+
+1. Sign in to GitHub and open
+   [Settings > Developer settings > GitHub Apps](https://github.com/settings/apps),
+   then select `New GitHub App` (for an organization, use its developer settings instead).
+2. Enter a recognizable application name for Galaxy, for example `Galaxy GitHub`, and a
+   homepage URL (your Galaxy instance URL is fine).
+3. Under `Callback URL`, enter your Galaxy callback URL: `<your galaxy root>/oauth2_callback`.
+   For example, if Galaxy is available at `https://usegalaxy.eu`, use
+   `https://usegalaxy.eu/oauth2_callback`.
+   This must match exactly the URL Galaxy redirects to, which Galaxy derives from the
+   address users browse to. GitHub treats `localhost` and `127.0.0.1` as different hosts,
+   so for local development register the exact host you use (often
+   `http://localhost:8080/oauth2_callback`). GitHub Apps allow multiple callback URLs, so
+   you may add both `localhost` and `127.0.0.1` variants if needed.
+4. Enable `Request user authorization (OAuth) during installation`, and under
+   `Optional features` (or `Identifying and authorizing users`) enable
+   `Expiring user authorization tokens`. This is required: it makes GitHub issue a
+   `refresh_token`, which Galaxy stores to mint short-lived access tokens on the user's
+   behalf. Without it, GitHub returns a non-expiring token with no refresh token and Galaxy
+   cannot complete the flow.
+5. Under `Webhook`, uncheck `Active`. Galaxy does not use GitHub webhooks, and GitHub
+   otherwise requires a webhook URL to create the app.
+6. Under `Permissions > Repository permissions`, set `Contents` to `Read-only` for
+   browse and download, or `Read and write` if users should be able to upload files.
+7. Create the app. On its settings page copy the `Client ID` and expose it to Galaxy as
+   `GALAXY_GITHUB_APP_CLIENT_ID`, then `Generate a new client secret` and expose that value
+   as `GALAXY_GITHUB_APP_CLIENT_SECRET` (GitHub shows the secret only once).
+
+After this setup, users connect their own GitHub accounts through Galaxy's OAuth2 flow.
+The client ID and client secret identify your Galaxy application to GitHub, but file access
+is performed with per-user access and refresh tokens - Galaxy stores only the refresh token
+in its Vault and mints short-lived access tokens on use.
+
 ## Playing Nicer with Ansible
 
 Many large instances of Galaxy are configured with Ansible and much of the existing administrator
@@ -1052,8 +1105,8 @@ user defined data access templates can support OAuth 2.0.
 
 Galaxy keeps track of which plugin `type`s (currently only file source types) require
 OAuth2 to work properly and will take care of authorization redirection, saving refresh tokens,
-etc.. implicitly. One such `type` is `dropbox`. Here is the production Dropbox
-template distributed with Galaxy.
+etc.. implicitly. Such `type`s include `dropbox`, `googledrive`, `onedrive`, and `github`.
+Here is the production Dropbox template distributed with Galaxy.
 
 ```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_dropbox.yml
 :language: yaml
