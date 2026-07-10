@@ -37,7 +37,8 @@ dependencies = [
     "docutils!=0.17,!=0.17.1",
     "dparse",
     "edam-ontology",
-    "fastapi>=0.133.0",  # First version compatible with starlette>=1.0.0
+    "fastapi>=0.137.2",  # https://github.com/fastapi/fastapi/pull/15785
+    "fastmcp>=2.13.0",
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support

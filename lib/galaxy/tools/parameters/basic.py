@@ -25,6 +25,7 @@ from packaging.version import Version
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
+from galaxy.exceptions import ToolExecutionError
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.managers.dbkeys import read_dbnames
 from galaxy.model import (
@@ -723,6 +724,9 @@ class FileToolParameter(ToolParameter):
                 assert local_filename.startswith(
                     upload_store
                 ), f"Filename provided by nginx ({local_filename}) is not in correct directory ({upload_store})."
+            if not os.path.exists(local_filename):
+                log.error("Local file missing for local_filename=%s upload_store=%s", local_filename, upload_store)
+                raise ToolExecutionError("File upload failed, missing local file.")
             value = dict(filename=value["name"], local_filename=local_filename)
         return value
 
