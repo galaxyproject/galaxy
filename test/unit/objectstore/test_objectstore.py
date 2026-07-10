@@ -947,6 +947,39 @@ def test_config_parse_cloud_no_cache_for_aws():
             assert object_store.cache_size == -1
 
 
+CLOUD_AWS_REGION_TEST_CONFIG = get_example("cloud_aws_region.xml")
+CLOUD_AWS_REGION_TEST_CONFIG_YAML = get_example("cloud_aws_region.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_aws_region():
+    for config_str in [CLOUD_AWS_REGION_TEST_CONFIG, CLOUD_AWS_REGION_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.credentials["region"] == "us-east-2"
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict["auth"], "region", "us-east-2")
+
+
+CLOUD_GOOGLE_MISSING_CREDENTIALS_FILE_CONFIG = """<object_store type="cloud" provider="google">
+    <auth />
+    <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+    <cache path="database/object_store_cache" size="1000" />
+    <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+    <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_google_missing_credentials_file():
+    # A missing credentials_file must produce the missing-configuration error,
+    # not a TypeError from checking a None path on disk.
+    with pytest.raises(Exception, match="credentials_file"):
+        with TestConfig(CLOUD_GOOGLE_MISSING_CREDENTIALS_FILE_CONFIG):
+            pass
+
+
 AZURE_BLOB_TEST_CONFIG = get_example("azure_simple.xml")
 AZURE_BLOB_TEST_CONFIG_YAML = get_example("azure_simple.yml")
 
