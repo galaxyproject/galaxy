@@ -19,7 +19,6 @@ the report.
 """
 
 import logging
-from typing import Optional
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
@@ -164,10 +163,10 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
     def handle_history_link(self, line, history):
         return self._drop_unportable(line, "history link")
 
-    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: int | None):
         return self._drop_unportable(line, "workflow display")
 
-    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: int | None):
         return self._drop_unportable(line, "workflow image")
 
     def handle_workflow_license(self, line, stored_workflow):
@@ -257,7 +256,7 @@ def reconcile_report_labels(trans: ProvidesHistoryContext, index: ExtractionLabe
         _label_step(index.icj_to_step.get(icj_id), used)
 
 
-def _label_step(step: Optional[WorkflowStep], used: set) -> None:
+def _label_step(step: WorkflowStep | None, used: set) -> None:
     if step is None or step.label:
         return
     step.label = _generate_label(_tool_base_name(step), used)
@@ -277,12 +276,12 @@ def _used_labels(index: ExtractionLabelIndex) -> set:
     return used
 
 
-def _suggested(trans: ProvidesHistoryContext, kind: str, content: HistoryItem) -> Optional[str]:
+def _suggested(trans: ProvidesHistoryContext, kind: str, content: HistoryItem) -> str | None:
     suggested = suggested_output_name(trans, content.id, "hda" if kind == "hda" else "hdca")
     return suggested.name if suggested else None
 
 
-def _generate_label(base: Optional[str], used: set) -> str:
+def _generate_label(base: str | None, used: set) -> str:
     label = normalize_label(base) or "label"
     candidate = label
     suffix = 2
@@ -299,7 +298,7 @@ def _tool_base_name(step: WorkflowStep) -> str:
     return segments[-2] if len(segments) >= 2 else tool_id
 
 
-def _resolve_content(trans: ProvidesHistoryContext, kind: str, content_id: int) -> Optional[HistoryItem]:
+def _resolve_content(trans: ProvidesHistoryContext, kind: str, content_id: int) -> HistoryItem | None:
     model_class = HistoryDatasetCollectionAssociation if kind == "hdca" else HistoryDatasetAssociation
     return trans.sa_session.get(model_class, content_id)
 

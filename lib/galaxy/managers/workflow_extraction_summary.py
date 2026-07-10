@@ -20,7 +20,6 @@ from dataclasses import (
 from typing import (
     cast,
     Literal,
-    Optional,
 )
 
 from sqlalchemy import select
@@ -88,7 +87,7 @@ def _content_key(content: HistoryItem) -> ContentRef:
     return ("hda", _original_hda(cast(HistoryDatasetAssociation, content)).id)
 
 
-def _resolve_content(trans: ProvidesHistoryContext, ref: ContentRef) -> Optional[HistoryItem]:
+def _resolve_content(trans: ProvidesHistoryContext, ref: ContentRef) -> HistoryItem | None:
     kind, id_ = ref
     model_class = HistoryDatasetCollectionAssociation if kind == "hdca" else HistoryDatasetAssociation
     return trans.sa_session.get(model_class, id_)
@@ -286,7 +285,7 @@ def _icj_assoc_by_job_id(trans: ProvidesHistoryContext, jobs) -> dict:
 def _serialize_output(
     trans: ProvidesHistoryContext,
     content: HistoryItem,
-    output_name: Optional[str] = None,
+    output_name: str | None = None,
     *,
     exposed: bool = False,
 ) -> WorkflowExtractionOutput:
@@ -316,7 +315,7 @@ def _input_step_type(outputs: list[WorkflowExtractionOutput]) -> Literal["input_
     return "input_dataset"
 
 
-def _workflow_output_name(content: HistoryItem, output_name: Optional[str]) -> Optional[str]:
+def _workflow_output_name(content: HistoryItem, output_name: str | None) -> str | None:
     if output_name and _skip_output_assoc_name(output_name):
         return None
     if content.history_content_type == "dataset_collection":
@@ -330,8 +329,8 @@ def _input_extraction_row(
     datasets: list,
     *,
     seeded: bool,
-    tool_name: Optional[str],
-    seed_warning: Optional[str] = None,
+    tool_name: str | None,
+    seed_warning: str | None = None,
 ) -> WorkflowExtractionJob:
     """A non-step input row: a FakeJob/DatasetCollectionCreationJob, or a job
     whose tool is not workflow-compatible (upload, data fetch)."""
@@ -357,7 +356,7 @@ def _extraction_row(
     job,
     datasets: list,
     icj_assoc_by_job_id: dict,
-    closure: Optional[ClosureResult],
+    closure: ClosureResult | None,
 ) -> WorkflowExtractionJob:
     referenced = closure.referenced_output_refs if closure else set()
     content_keys = {_content_key(data) for _, data in datasets}
@@ -475,7 +474,7 @@ def _synthesize_cross_history_inputs(
 
 
 def build_extraction_summary(
-    trans: ProvidesHistoryContext, history: History, *, closure: Optional[ClosureResult] = None
+    trans: ProvidesHistoryContext, history: History, *, closure: ClosureResult | None = None
 ) -> WorkflowExtractionSummary:
     """Serialize the whole-history extraction summary.
 
