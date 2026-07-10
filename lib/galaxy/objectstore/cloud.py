@@ -8,7 +8,6 @@ import os.path
 
 from galaxy.util import string_as_bool
 from ._caching_base import CachingConcreteObjectStore
-from ._util import UsesAxel
 from .caching import enable_cache_monitor
 from .s3 import parse_config_xml
 
@@ -18,11 +17,11 @@ try:
         ProviderList,
     )
     from cloudbridge.interfaces.exceptions import InvalidNameException
-    from cloudbridge.interfaces.resources import UploadConfig
+    from cloudbridge.interfaces.resources import TransferConfig
 except ImportError:
     CloudProviderFactory = None  # type: ignore[assignment,misc,unused-ignore]
     ProviderList = None  # type: ignore[assignment,misc,unused-ignore]
-    UploadConfig = None  # type: ignore[assignment,misc,unused-ignore]
+    TransferConfig = None  # type: ignore[assignment,misc,unused-ignore]
 
 log = logging.getLogger(__name__)
 
@@ -32,11 +31,17 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 )
 
 TRANSFER_OPTION_KEYS = ("multipart_threshold", "multipart_chunksize", "max_concurrency")
-# Providers reject multipart parts smaller than 5 MiB (except the final part).
+# Each option may be given bare (applies to both directions) or prefixed with
+# upload_/download_ to tune one direction, mirroring the boto3 store.
+ALL_TRANSFER_OPTION_KEYS = tuple(
+    prefix + key for key in TRANSFER_OPTION_KEYS for prefix in ("", "upload_", "download_")
+)
+# Providers reject multipart upload parts smaller than 5 MiB (except the final
+# part); ranged downloads have no minimum.
 MIN_MULTIPART_CHUNKSIZE = 5 * 1024 * 1024
 
 
-class Cloud(CachingConcreteObjectStore, UsesAxel):
+class Cloud(CachingConcreteObjectStore):
     """
     Object store that stores objects as items in an cloud storage. A local
     cache exists that is used as an intermediate location for files between
@@ -61,13 +66,15 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
 
         transfer_dict = config_dict.get("transfer") or {}
         self.transfer_dict = {
-            key: int(transfer_dict[key]) for key in TRANSFER_OPTION_KEYS if transfer_dict.get(key) is not None
+            key: int(transfer_dict[key]) for key in ALL_TRANSFER_OPTION_KEYS if transfer_dict.get(key) is not None
         }
-        chunksize = self.transfer_dict.get("multipart_chunksize")
-        if chunksize is not None and chunksize < MIN_MULTIPART_CHUNKSIZE:
+        upload_chunksize = self.transfer_dict.get(
+            "upload_multipart_chunksize", self.transfer_dict.get("multipart_chunksize")
+        )
+        if upload_chunksize is not None and upload_chunksize < MIN_MULTIPART_CHUNKSIZE:
             raise Exception(
-                f"Invalid multipart_chunksize {chunksize}: cloud storage providers require "
-                f"multipart parts of at least {MIN_MULTIPART_CHUNKSIZE} bytes (5 MiB)."
+                f"Invalid multipart_chunksize {upload_chunksize}: cloud storage providers require "
+                f"multipart upload parts of at least {MIN_MULTIPART_CHUNKSIZE} bytes (5 MiB)."
             )
 
         # The endpoint scheme conveys http/https, so no is_secure here (matching
@@ -103,7 +110,6 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         self.bucket = self._get_bucket(self.bucket_name)
         self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
-        self._init_axel()
 
     @staticmethod
     def _map_config_values(source, key_map):
@@ -219,7 +225,9 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         transfer_element = config_xml.find("transfer")
         if transfer_element is not None:
             config["transfer"] = {
-                key: transfer_element.get(key) for key in TRANSFER_OPTION_KEYS if transfer_element.get(key) is not None
+                key: transfer_element.get(key)
+                for key in ALL_TRANSFER_OPTION_KEYS
+                if transfer_element.get(key) is not None
             }
 
         connection_element = config_xml.find("connection")
@@ -343,15 +351,21 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             },
         }
 
-    def _upload_config(self):
-        # Any value left unset falls back to cloudbridge's own defaults (the
-        # CB_MULTIPART_* settings); with nothing configured pass no config at all.
-        if not self.transfer_dict:
+    def _transfer_config(self, direction):
+        # A direction-prefixed key overrides the bare key; any value left
+        # unset falls back to cloudbridge's own defaults (the CB_MULTIPART_*
+        # settings). With nothing configured pass no config at all.
+        values = {}
+        for key in TRANSFER_OPTION_KEYS:
+            value = self.transfer_dict.get(f"{direction}_{key}", self.transfer_dict.get(key))
+            if value is not None:
+                values[key] = value
+        if not values:
             return None
-        return UploadConfig(
-            threshold=self.transfer_dict.get("multipart_threshold"),
-            part_size=self.transfer_dict.get("multipart_chunksize"),
-            max_concurrency=self.transfer_dict.get("max_concurrency"),
+        return TransferConfig(
+            threshold=values.get("multipart_threshold"),
+            part_size=values.get("multipart_chunksize"),
+            max_concurrency=values.get("max_concurrency"),
         )
 
     def _get_bucket(self, bucket_name):
@@ -423,12 +437,9 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 self._download_to(obj, tmp)
 
     def _download_to(self, key, local_destination):
-        if self.use_axel:
-            url = key.generate_url(7200)
-            return self._axel_download(url, local_destination)
-        else:
-            with open(local_destination, "wb+") as downloaded_file_handle:
-                key.save_content(downloaded_file_handle)
+        # cloudbridge fetches objects above the transfer threshold as parallel
+        # ranged reads, so no external downloader (axel) is needed.
+        key.download_to_file(local_destination, config=self._transfer_config("download"))
 
     def _get_or_create_object(self, rel_path: str):
         return self.bucket.objects.get(rel_path) or self.bucket.objects.create(rel_path)
@@ -436,7 +447,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
             obj = self._get_or_create_object(rel_path)
-            obj.upload(from_string, config=self._upload_config())
+            obj.upload(from_string, config=self._transfer_config("upload"))
             return True
         except Exception:
             log.exception("Trouble pushing to cloud '%s' from string", rel_path)
@@ -445,7 +456,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
     def _push_file_to_path(self, rel_path: str, source_file: str) -> bool:
         try:
             obj = self._get_or_create_object(rel_path)
-            obj.upload_from_file(source_file, config=self._upload_config())
+            obj.upload_from_file(source_file, config=self._transfer_config("upload"))
             return True
         except Exception:
             log.exception("Trouble pushing to cloud '%s' from file '%s'", rel_path, source_file)

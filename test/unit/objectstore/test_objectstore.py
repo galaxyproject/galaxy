@@ -1012,20 +1012,54 @@ def test_config_parse_cloud_transfer_options():
                 },
             )
 
-            upload_config = object_store._upload_config()
-            assert upload_config is not None
-            assert upload_config.threshold == 5242880
-            assert upload_config.part_size == 5242880
-            assert upload_config.max_concurrency == 2
+            # Bare keys apply to both directions.
+            for direction in ("upload", "download"):
+                transfer_config = object_store._transfer_config(direction)
+                assert transfer_config is not None
+                assert transfer_config.threshold == 5242880
+                assert transfer_config.part_size == 5242880
+                assert transfer_config.max_concurrency == 2
+
+
+CLOUD_SEPARATED_TRANSFER_TEST_CONFIG_YAML = CLOUD_TRANSFER_TEST_CONFIG_YAML.replace(
+    """transfer:
+  multipart_threshold: 5242880
+  multipart_chunksize: 5242880
+  max_concurrency: 2""",
+    """transfer:
+  multipart_threshold: 10485760
+  upload_multipart_threshold: 20971520
+  download_multipart_threshold: 31457280
+  multipart_chunksize: 5242880
+  download_multipart_chunksize: 1048576
+  max_concurrency: 2
+  upload_max_concurrency: 4""",
+)
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_separated_transfer_options():
+    with TestConfig(CLOUD_SEPARATED_TRANSFER_TEST_CONFIG_YAML) as (directory, object_store):
+        # Direction-prefixed keys override the bare key for that direction.
+        upload_config = object_store._transfer_config("upload")
+        assert upload_config.threshold == 20971520
+        assert upload_config.part_size == 5242880
+        assert upload_config.max_concurrency == 4
+
+        download_config = object_store._transfer_config("download")
+        assert download_config.threshold == 31457280
+        assert download_config.part_size == 1048576
+        assert download_config.max_concurrency == 2
 
 
 @patch_object_stores_to_skip_initialize
 def test_config_parse_cloud_no_transfer_options():
     with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
         assert object_store.transfer_dict == {}
-        # With nothing configured, uploads fall back to cloudbridge's own
+        # With nothing configured, transfers fall back to cloudbridge's own
         # defaults rather than passing a hollow config.
-        assert object_store._upload_config() is None
+        assert object_store._transfer_config("upload") is None
+        assert object_store._transfer_config("download") is None
 
 
 @patch_object_stores_to_skip_initialize
@@ -1034,6 +1068,39 @@ def test_config_parse_cloud_transfer_chunksize_below_provider_minimum():
     with pytest.raises(Exception, match="multipart_chunksize"):
         with TestConfig(config_str):
             pass
+
+    # The 5 MiB floor is an upload constraint (non-final part minimum);
+    # ranged downloads have no minimum part size.
+    config_str = CLOUD_TRANSFER_TEST_CONFIG.replace(
+        'multipart_chunksize="5242880"', 'download_multipart_chunksize="1048576"'
+    )
+    with TestConfig(config_str) as (directory, object_store):
+        assert object_store._transfer_config("download").part_size == 1048576
+
+    config_str = CLOUD_TRANSFER_TEST_CONFIG.replace(
+        'multipart_chunksize="5242880"', 'upload_multipart_chunksize="1048576"'
+    )
+    with pytest.raises(Exception, match="multipart_chunksize"):
+        with TestConfig(config_str):
+            pass
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_download_passes_transfer_config():
+    with TestConfig(CLOUD_TRANSFER_TEST_CONFIG) as (directory, object_store):
+        key = MagicMock()
+        object_store._download_to(key, "/tmp/dataset_1.dat")
+        assert key.download_to_file.call_count == 1
+        assert key.download_to_file.call_args.args == ("/tmp/dataset_1.dat",)
+        transfer_config = key.download_to_file.call_args.kwargs["config"]
+        assert transfer_config.threshold == 5242880
+        assert transfer_config.part_size == 5242880
+        assert transfer_config.max_concurrency == 2
+
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        key = MagicMock()
+        object_store._download_to(key, "/tmp/dataset_1.dat")
+        assert key.download_to_file.call_args.kwargs["config"] is None
 
 
 @patch_object_stores_to_skip_initialize
