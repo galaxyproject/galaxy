@@ -87,9 +87,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             has_file = bool(self.credentials.get("credentials_file"))
             has_dict = bool(self.credentials.get("credentials_dict"))
             if has_file == has_dict:
-                raise Exception(
-                    "The google provider requires exactly one of credentials_file or credentials_dict."
-                )
+                raise Exception("The google provider requires exactly one of credentials_file or credentials_dict.")
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path

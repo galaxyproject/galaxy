@@ -1030,9 +1030,7 @@ def test_config_parse_cloud_no_transfer_options():
 
 @patch_object_stores_to_skip_initialize
 def test_config_parse_cloud_transfer_chunksize_below_provider_minimum():
-    config_str = CLOUD_TRANSFER_TEST_CONFIG.replace(
-        'multipart_chunksize="5242880"', 'multipart_chunksize="1048576"'
-    )
+    config_str = CLOUD_TRANSFER_TEST_CONFIG.replace('multipart_chunksize="5242880"', 'multipart_chunksize="1048576"')
     with pytest.raises(Exception, match="multipart_chunksize"):
         with TestConfig(config_str):
             pass
