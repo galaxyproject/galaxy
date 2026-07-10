@@ -399,6 +399,8 @@ class Cloud(CachingConcreteObjectStore):
             # A hackish way of testing if the rel_path is a folder vs a file
             is_dir = rel_path[-1] == "/"
             if is_dir:
+                # One page suffices here: any match at all puts at least one
+                # object on the first page.
                 keyresult = self.bucket.objects.list(prefix=rel_path)
                 if len(keyresult) > 0:
                     exists = True
@@ -428,8 +430,8 @@ class Cloud(CachingConcreteObjectStore):
         return False
 
     def _download_directory_into_cache(self, rel_path, cache_path):
-        objects = self.bucket.objects.list(prefix=rel_path)
-        for obj in objects:
+        # iter() (unlike list()) pages through the full result set.
+        for obj in self.bucket.objects.iter(prefix=rel_path):
             remote_file_path = obj.name
             local_file_path = os.path.join(cache_path, os.path.relpath(remote_file_path, rel_path))
             os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
@@ -464,8 +466,8 @@ class Cloud(CachingConcreteObjectStore):
 
     def _delete_remote_all(self, rel_path: str) -> bool:
         try:
-            results = self.bucket.objects.list(prefix=rel_path)
-            for key in results:
+            # iter() (unlike list()) pages through the full result set.
+            for key in self.bucket.objects.iter(prefix=rel_path):
                 log.debug("Deleting key %s", key.name)
                 key.delete()
             return True

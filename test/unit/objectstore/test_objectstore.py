@@ -1085,6 +1085,73 @@ def test_config_parse_cloud_transfer_chunksize_below_provider_minimum():
             pass
 
 
+class _FakePagedObjectContainer:
+    """A bucket.objects fake speaking cloudbridge's real paging protocol.
+
+    list() returns one page at a time (via ClientPagedResultList, the same
+    class the AWS provider uses), so code that only consumes the first page
+    misses objects; cloudbridge's BasePageableObjectMixin.iter() yields all.
+    """
+
+    def __init__(self, keys, page_size=1):
+        from types import SimpleNamespace
+
+        from cloudbridge.base.resources import BasePageableObjectMixin
+
+        self._keys = keys
+        provider = SimpleNamespace(config=SimpleNamespace(default_result_limit=page_size))
+
+        class _Container(BasePageableObjectMixin):
+            def list(self, limit=None, marker=None, prefix=None):
+                from cloudbridge.base.resources import ClientPagedResultList
+
+                return ClientPagedResultList(provider, keys, limit=limit, marker=marker)
+
+        self._container = _Container()
+
+    def __getattr__(self, item):
+        return getattr(self._container, item)
+
+
+def _fake_remote_key(name):
+    key = MagicMock()
+    key.id = name
+    key.name = name
+    return key
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_delete_all_paginates():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        keys = [_fake_remote_key(f"files/dir/dataset_{i}.dat") for i in range(3)]
+        bucket = MagicMock()
+        bucket.objects = _FakePagedObjectContainer(keys, page_size=1)
+        object_store.bucket = bucket
+
+        assert object_store._delete_remote_all("files/dir")
+        for key in keys:
+            key.delete.assert_called_once()
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_download_directory_paginates(tmp_path):
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        keys = [_fake_remote_key(f"files/dir/part_{i}.dat") for i in range(3)]
+        bucket = MagicMock()
+        bucket.objects = _FakePagedObjectContainer(keys, page_size=1)
+        object_store.bucket = bucket
+
+        downloaded = []
+
+        def fake_download_to(key, destination):
+            downloaded.append(key.name)
+            open(destination, "wb").close()
+
+        object_store._download_to = fake_download_to
+        object_store._download_directory_into_cache("files/dir", str(tmp_path / "cache"))
+        assert downloaded == [key.name for key in keys]
+
+
 @patch_object_stores_to_skip_initialize
 def test_cloud_store_download_passes_transfer_config():
     with TestConfig(CLOUD_TRANSFER_TEST_CONFIG) as (directory, object_store):
