@@ -1222,6 +1222,71 @@ def test_config_parse_cloud_gcp_requires_exactly_one_credential_source():
             pass
 
 
+CLOUD_OPENSTACK_TEST_CONFIG = get_example("cloud_openstack_simple.xml")
+CLOUD_OPENSTACK_TEST_CONFIG_YAML = get_example("cloud_openstack_simple.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_openstack():
+    for config_str in [CLOUD_OPENSTACK_TEST_CONFIG, CLOUD_OPENSTACK_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.provider == "openstack"
+            assert object_store.credentials["username"] == "os_user"
+            assert object_store.credentials["password"] == "os_pass"
+            assert object_store.credentials["project_name"] == "os_project"
+            assert object_store.credentials["auth_url"] == "https://keystone.example.org:5000/v3"
+            assert object_store.credentials["region"] == "RegionOne"
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict, "provider", "openstack")
+            _assert_key_has_value(as_dict["auth"], "auth_url", "https://keystone.example.org:5000/v3")
+            _assert_key_has_value(as_dict["bucket"], "name", "unique_container_name")
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_connection_openstack_maps_options():
+    with TestConfig(CLOUD_OPENSTACK_TEST_CONFIG_YAML) as (directory, object_store):
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "os_username": "os_user",
+            "os_password": "os_pass",
+            "os_project_name": "os_project",
+            "os_auth_url": "https://keystone.example.org:5000/v3",
+            "os_region_name": "RegionOne",
+            "os_user_domain_name": "Default",
+            "os_project_domain_name": "Default",
+        }
+
+
+CLOUD_OPENSTACK_APP_CREDENTIAL_CONFIG = """<object_store type="cloud" provider="openstack">
+    <auth auth_url="https://keystone.example.org:5000/v3" application_credential_id="an_app_cred_id" application_credential_secret="an_app_cred_secret" />
+    <bucket name="unique_container_name" use_reduced_redundancy="False" />
+    <cache path="database/object_store_cache" size="1000" />
+    <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+    <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_openstack_app_credentials():
+    # With an application credential, username/password/project_name are optional.
+    with TestConfig(CLOUD_OPENSTACK_APP_CREDENTIAL_CONFIG) as (directory, object_store):
+        assert object_store.credentials["application_credential_id"] == "an_app_cred_id"
+        assert "username" not in object_store.credentials
+
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "os_auth_url": "https://keystone.example.org:5000/v3",
+            "os_application_credential_id": "an_app_cred_id",
+            "os_application_credential_secret": "an_app_cred_secret",
+        }
+
+
 CLOUD_DIRECT_DOWNLOAD_CONFIG = get_example("cloud_direct_download.xml")
 CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML = get_example("cloud_direct_download.yml")
 

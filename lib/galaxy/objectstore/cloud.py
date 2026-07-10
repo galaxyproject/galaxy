@@ -162,6 +162,22 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 ),
             )
             connection = CloudProviderFactory().create_provider(ProviderList.GCP, config)
+        elif provider == "openstack":
+            config = Cloud._map_config_values(
+                credentials,
+                (
+                    ("username", "os_username"),
+                    ("password", "os_password"),
+                    ("project_name", "os_project_name"),
+                    ("auth_url", "os_auth_url"),
+                    ("region", "os_region_name"),
+                    ("user_domain_name", "os_user_domain_name"),
+                    ("project_domain_name", "os_project_domain_name"),
+                    ("application_credential_id", "os_application_credential_id"),
+                    ("application_credential_secret", "os_application_credential_secret"),
+                ),
+            )
+            connection = CloudProviderFactory().create_provider(ProviderList.OPENSTACK, config)
         else:
             raise Exception(f"Unsupported provider `{provider}`.")
 
@@ -268,6 +284,30 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 region = auth_element.get("region")
                 if region:
                     config["auth"]["region"] = region
+            elif provider == "openstack":
+                auth = {}
+                for key in (
+                    "username",
+                    "password",
+                    "project_name",
+                    "auth_url",
+                    "region",
+                    "user_domain_name",
+                    "project_domain_name",
+                    "application_credential_id",
+                    "application_credential_secret",
+                ):
+                    value = auth_element.get(key)
+                    if value is not None:
+                        auth[key] = value
+                if "auth_url" not in auth:
+                    missing_config.append("auth_url")
+                if "application_credential_id" not in auth and "application_credential_secret" not in auth:
+                    # Without an application credential, password authentication is required.
+                    for key in ("username", "password", "project_name"):
+                        if key not in auth:
+                            missing_config.append(key)
+                config["auth"] = auth
             else:
                 msg = f"Unsupported provider `{provider}`."
                 log.error(msg)
