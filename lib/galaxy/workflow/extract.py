@@ -10,7 +10,6 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
-    Optional,
 )
 
 from sqlalchemy import select
@@ -69,8 +68,8 @@ class _WorkItem(NamedTuple):
 
     job: Job
     output_hdcas: list[HistoryDatasetCollectionAssociation]
-    step_label: Optional[str]
-    icj_id: Optional[int]
+    step_label: str | None
+    icj_id: int | None
 
 
 log = logging.getLogger(__name__)
@@ -569,14 +568,14 @@ def extract_workflow_by_ids(
     user: User,
     workflow_name: str,
     job_manager: JobManager,
-    job_ids: Optional[list[int]] = None,
-    implicit_collection_jobs_ids: Optional[list[int]] = None,
-    hda_ids: Optional[list[int]] = None,
-    hdca_ids: Optional[list[int]] = None,
-    dataset_names: Optional[list[str]] = None,
-    dataset_collection_names: Optional[list[str]] = None,
-    output_labels: Optional[list[OutputLabelHint]] = None,
-    step_labels: Optional[list[StepLabelHint]] = None,
+    job_ids: list[int] | None = None,
+    implicit_collection_jobs_ids: list[int] | None = None,
+    hda_ids: list[int] | None = None,
+    hdca_ids: list[int] | None = None,
+    dataset_names: list[str] | None = None,
+    dataset_collection_names: list[str] | None = None,
+    output_labels: list[OutputLabelHint] | None = None,
+    step_labels: list[StepLabelHint] | None = None,
 ) -> "tuple[StoredWorkflow, ExtractionLabelIndex]":
     """ID-based variant of :func:`extract_workflow`.
 
@@ -637,7 +636,7 @@ class ExtractionLabelIndex:
     job_to_step: dict[int, WorkflowStep]
     icj_to_step: dict[int, WorkflowStep]
 
-    def content_label_arg(self, content_kind: OutputLabelKind, content: HistoryItem) -> Optional[str]:
+    def content_label_arg(self, content_kind: OutputLabelKind, content: HistoryItem) -> str | None:
         """Directive argument (``input="x"`` / ``output="y"``) for a referenced
         HDA/HDCA, or None when it is not in the extracted subgraph / not labeled."""
         if content_kind == "hda":
@@ -655,7 +654,7 @@ class ExtractionLabelIndex:
             return None
         return f'output="{workflow_output.label}"'
 
-    def job_label_arg(self, job: Job) -> Optional[str]:
+    def job_label_arg(self, job: Job) -> str | None:
         """Directive argument (``step="z"``) for a referenced job/ICJ, folding an
         element job to its ICJ step exactly as the seeding collector does."""
         icj_assoc = job.implicit_collection_jobs_association
@@ -667,7 +666,7 @@ class ExtractionLabelIndex:
             return None
         return f'step="{step.label}"'
 
-    def step_for_content(self, content_kind: OutputLabelKind, original_id: int) -> Optional[tuple[WorkflowStep, str]]:
+    def step_for_content(self, content_kind: OutputLabelKind, original_id: int) -> tuple[WorkflowStep, str] | None:
         return self.content_to_step.get(output_label_to_id_key(content_kind, original_id))
 
 
@@ -728,15 +727,15 @@ def collect_output_label_targets(
 
 def extract_steps_by_ids(
     trans: ProvidesHistoryContext,
-    job_manager: Optional[JobManager] = None,
-    job_ids: Optional[list[int]] = None,
-    implicit_collection_jobs_ids: Optional[list[int]] = None,
-    hda_ids: Optional[list[int]] = None,
-    hdca_ids: Optional[list[int]] = None,
-    dataset_names: Optional[list[str]] = None,
-    dataset_collection_names: Optional[list[str]] = None,
-    output_labels: Optional[list[OutputLabelHint]] = None,
-    step_labels: Optional[list[StepLabelHint]] = None,
+    job_manager: JobManager | None = None,
+    job_ids: list[int] | None = None,
+    implicit_collection_jobs_ids: list[int] | None = None,
+    hda_ids: list[int] | None = None,
+    hdca_ids: list[int] | None = None,
+    dataset_names: list[str] | None = None,
+    dataset_collection_names: list[str] | None = None,
+    output_labels: list[OutputLabelHint] | None = None,
+    step_labels: list[StepLabelHint] | None = None,
 ) -> tuple[list[WorkflowStep], ExtractionLabelIndex]:
     """ID-based variant of :func:`extract_steps`.
 
