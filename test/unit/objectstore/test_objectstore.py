@@ -1090,6 +1090,55 @@ def test_cloud_store_push_string_single_remote_lookup():
         assert created.upload.call_args.args == ("other content",)
 
 
+CLOUD_DIRECT_DOWNLOAD_CONFIG = get_example("cloud_direct_download.xml")
+CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML = get_example("cloud_direct_download.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_direct_download():
+    for config_str in [CLOUD_DIRECT_DOWNLOAD_CONFIG, CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.enable_direct_download is True
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict, "enable_direct_download", True)
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_get_direct_download_url_forwards_response_headers():
+    with TestConfig(CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
+        key = MagicMock()
+        key.generate_url.return_value = "https://cloud.example.org/signed"
+        bucket = MagicMock()
+        bucket.objects.get.return_value = key
+        object_store.bucket = bucket
+        with patch.object(object_store, "_exists", return_value=True):
+            url = object_store.get_direct_download_url(
+                MockDataset(1),
+                content_disposition='attachment; filename="Galaxy1-[data].txt"',
+                content_type="application/octet-stream",
+            )
+        assert url == "https://cloud.example.org/signed"
+        key.generate_url.assert_called_once_with(
+            expires_in=86400,
+            content_disposition='attachment; filename="Galaxy1-[data].txt"',
+            content_type="application/octet-stream",
+        )
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_get_direct_download_url_returns_none_when_disabled():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        key = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = key
+        object_store.bucket = bucket
+        with patch.object(object_store, "_exists", return_value=True):
+            url = object_store.get_direct_download_url(MockDataset(1))
+        assert url is None
+        key.generate_url.assert_not_called()
+
+
 @patch_object_stores_to_skip_initialize
 def test_cloud_store_uploads_pass_transfer_config():
     with TestConfig(CLOUD_TRANSFER_TEST_CONFIG) as (directory, object_store):

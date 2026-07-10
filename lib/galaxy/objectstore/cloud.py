@@ -362,7 +362,11 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             rel_path = self._construct_path(obj, **kwargs)
             try:
                 key = self.bucket.objects.get(rel_path)
-                return key.generate_url(expires_in=86400)  # 24hrs
+                return key.generate_url(
+                    expires_in=86400,  # 24hrs
+                    content_disposition=content_disposition,
+                    content_type=content_type,
+                )
             except Exception:
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None
