@@ -1,3 +1,4 @@
+import hashlib
 import os
 import shutil
 import time
@@ -1568,7 +1569,9 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
     path = tmp_path / "big_file.bytes"
     with path.open("wb") as f:
         f.write(os.urandom(size))
-    object_store.update_from_file(big_file_dataset, file_name=hello_path, create=True)
+    object_store.update_from_file(big_file_dataset, file_name=path, create=True)
+    assert object_store.exists(big_file_dataset)
+    assert object_store.size(big_file_dataset) == size
 
     extra_files_dataset = MockDataset(7)
     object_store.create(extra_files_dataset)
@@ -1614,6 +1617,29 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
         response = get(url)
         response.raise_for_status()
         assert response.text == "Hello World!"
+
+
+def verify_big_file_storage_roundtrip(tmp_path, object_store, size_bytes):
+    # Store a file large enough to cross the configured multipart threshold
+    # and verify it round-trips bit-for-bit through the remote store.
+    big_file_dataset = MockDataset(11)
+    path = tmp_path / "big_file_roundtrip.bytes"
+    content = os.urandom(size_bytes)
+    with path.open("wb") as f:
+        f.write(content)
+    expected_sha256 = hashlib.sha256(content).hexdigest()
+
+    object_store.update_from_file(big_file_dataset, file_name=path, create=True)
+    reset_cache(object_store.cache_target)
+    assert object_store.exists(big_file_dataset)
+    reset_cache(object_store.cache_target)
+    assert object_store.size(big_file_dataset) == size_bytes
+
+    reset_cache(object_store.cache_target)
+    stored_path = object_store.get_filename(big_file_dataset)
+    with open(stored_path, "rb") as f:
+        stored_sha256 = hashlib.sha256(f.read()).hexdigest()
+    assert stored_sha256 == expected_sha256
 
 
 def _extra_file_path(object_store, dataset):
@@ -1760,6 +1786,32 @@ def test_aws_via_cloudbridge_store(tmp_path):
 def test_aws_via_cloudbridge_store_with_region(tmp_path):
     with integration_test_config("cloud_integration_test_aws_with_region.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
+def test_aws_via_cloudbridge_store_multipart(tmp_path):
+    # 12 MiB crosses the configured 5 MiB threshold -> 3 parts, exercising
+    # cloudbridge's multipart upload path end to end.
+    with integration_test_config("cloud_integration_test_aws_multipart.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+        verify_big_file_storage_roundtrip(tmp_path, object_store, 12 * 1024 * 1024)
+
+
+@skip_unless_environ("GALAXY_TEST_OS_USERNAME")
+@skip_unless_environ("GALAXY_TEST_OS_PASSWORD")
+@skip_unless_environ("GALAXY_TEST_OS_PROJECT_NAME")
+@skip_unless_environ("GALAXY_TEST_OS_AUTH_URL")
+@skip_unless_environ("GALAXY_TEST_OS_REGION_NAME")
+@skip_unless_environ("GALAXY_TEST_OS_CONTAINER")
+def test_openstack_via_cloudbridge_store(tmp_path):
+    # Exercises cloudbridge's generic clone-pool multipart driver on Swift
+    # (static large objects) with the big-file roundtrip.
+    with integration_test_config("cloud_integration_test_openstack.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+        verify_big_file_storage_roundtrip(tmp_path, object_store, 12 * 1024 * 1024)
 
 
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
