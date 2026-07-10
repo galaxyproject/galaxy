@@ -155,8 +155,9 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 akey = auth_element.get("access_key")
                 skey = auth_element.get("secret_key")
                 config["auth"] = {"access_key": akey, "secret_key": skey}
-                if "region" in auth_element:
-                    config["auth"]["region"] = auth_element["region"]
+                region = auth_element.get("region")
+                if region:
+                    config["auth"]["region"] = region
             elif provider == "azure":
                 sid = auth_element.get("subscription_id")
                 if sid is None:
@@ -173,12 +174,12 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 config["auth"] = {"subscription_id": sid, "client_id": cid, "secret": sec, "tenant": ten}
             elif provider == "google":
                 cre = auth_element.get("credentials_file")
-                if not os.path.isfile(cre):
+                if cre is None:
+                    missing_config.append("credentials_file")
+                elif not os.path.isfile(cre):
                     msg = f"The following file specified for GCP credentials not found: {cre}"
                     log.error(msg)
                     raise OSError(msg)
-                if cre is None:
-                    missing_config.append("credentials_file")
                 config["auth"] = {"credentials_file": cre}
             else:
                 msg = f"Unsupported provider `{provider}`."
