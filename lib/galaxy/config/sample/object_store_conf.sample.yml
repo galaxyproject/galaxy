@@ -401,12 +401,34 @@ extra_dirs:
 
 type: cloud
 provider: aws
+# Redirect dataset downloads to a short-lived presigned URL instead of streaming
+# through Galaxy's cache. See the boto3 example above for the tradeoffs. Defaults to false.
+# enable_direct_download: true
 auth:
   access_key: ...
   secret_key: ...
+  # Optional: session token for temporary (STS) credentials, and bucket region.
+  # session_token: ...
+  # region: us-east-2
 bucket:
   name: unique_bucket_name
   use_reduced_redundancy: false
+# Optional: S3-compatible endpoints (MinIO, Ceph RGW, ...); the endpoint
+# scheme conveys http/https.
+# connection:
+#   endpoint_url: https://s3.example.org/
+#   validate_certs: true
+#   signature_version: s3v4
+# Optional multipart upload tuning, all sizes in bytes. Files larger than
+# multipart_threshold upload in multipart_chunksize parts (at least 5 MiB), up
+# to max_concurrency parts in parallel. Unset values use cloudbridge's
+# defaults. The aws and azure providers honor all three values; google and
+# openstack upload large files through their SDKs' native mechanisms, which
+# manage their own chunking.
+# transfer:
+#   multipart_threshold: 104857600
+#   multipart_chunksize: 52428800
+#   max_concurrency: 5
 cache:
   path: database/object_store_cache_cloud
   size: 1000
@@ -424,6 +446,14 @@ auth:
   client_id: ...
   secret: ...
   tenant: ...
+  # Name the existing storage account and its resource group; without these
+  # cloudbridge synthesizes a storage-account name.
+  storage_account: ...
+  resource_group: ...
+  # region: eastus
+  # Alternatively authenticate with an access token instead of the service
+  # principal above:
+  # access_token: ...
 bucket:
   name: unique_bucket_name
   use_reduced_redundancy: false
@@ -441,8 +471,44 @@ type: cloud
 provider: google
 auth:
   credentials_file: ...
+  # Alternatively inline the service-account credentials (exactly one of
+  # credentials_file or credentials_dict must be set):
+  # credentials_dict:
+  #   type: service_account
+  #   project_id: ...
+  #   client_email: ...
+  # region: us-central1
 bucket:
   name: unique_bucket_name
+  use_reduced_redundancy: false
+cache:
+  path: database/object_store_cache_cloud
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_cloud
+
+# Sample Cloud Object Store with OpenStack Swift configuration (native Swift
+# via Keystone v3; requires the cloudbridge openstack extras installed in
+# Galaxy's environment).
+
+type: cloud
+provider: openstack
+auth:
+  username: ...
+  password: ...
+  project_name: ...
+  auth_url: https://keystone.example.org:5000/v3
+  region: RegionOne
+  user_domain_name: Default
+  project_domain_name: Default
+  # Alternatively authenticate with a Keystone application credential
+  # instead of username/password/project_name:
+  # application_credential_id: ...
+  # application_credential_secret: ...
+bucket:
+  name: unique_container_name
   use_reduced_redundancy: false
 cache:
   path: database/object_store_cache_cloud
