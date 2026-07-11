@@ -232,7 +232,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
             sort=galaxy_sort_to_osf(sort_by),
         )
         nodes = [n for n in payload.get("data", []) if not has_parent(n)]
-        total = int(payload.get("meta", {}).get("total", 0))
+        total = int(payload["links"]["meta"]["total"])
         containers = [
             RemoteDirectory(
                 name=node_title(node),
