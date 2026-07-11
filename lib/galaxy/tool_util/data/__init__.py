@@ -55,6 +55,7 @@ from ._schema import (
 from .bundles.models import (
     DataTableBundle,
     DataTableBundleProcessorDescription,
+    get_path_headers,
     RepoInfo,
 )
 
@@ -1349,7 +1350,9 @@ class ToolDataTableManager(Dictifiable):
                 continue
 
             extra_files_path = dataset.extra_files_path
-            _relativize_bundle_data_table_paths(data_manager_dict.get("data_tables", {}), extra_files_path)
+            _relativize_bundle_data_table_paths(
+                data_manager_dict.get("data_tables", {}), extra_files_path, bundle_description
+            )
             bundle = DataTableBundle(
                 data_tables=data_manager_dict.get("data_tables", {}),
                 output_name=output_name,
@@ -1390,8 +1393,12 @@ def _iter_bundle_rows(data_table_values: Any) -> Iterator[dict[str, Any]]:
         yield from (row for row in data_table_values if isinstance(row, dict))
 
 
-def _relativize_bundle_data_table_paths(data_tables: dict[str, Any], extra_files_path: str) -> None:
-    """Rewrite absolute ``path`` values under ``extra_files_path`` to be relative to it.
+def _relativize_bundle_data_table_paths(
+    data_tables: dict[str, Any],
+    extra_files_path: str,
+    bundle_description: DataTableBundleProcessorDescription,
+) -> None:
+    """Rewrite absolute path values under ``extra_files_path`` to be relative to it.
 
     Some data managers record the absolute path inside the (transient) job
     directory (e.g. MetaPhlAn's ``$out_file.extra_files_path/$index``) rather
@@ -1399,13 +1406,15 @@ def _relativize_bundle_data_table_paths(data_tables: dict[str, Any], extra_files
     the bundle is staged elsewhere, so imports and chained data managers fail.
     Paths already relative, or outside ``extra_files_path``, are left untouched.
     """
-    for data_table_values in data_tables.values():
+    for data_table_name, data_table_values in data_tables.items():
+        path_headers = get_path_headers(bundle_description, data_table_name)
         for row in _iter_bundle_rows(data_table_values):
-            path = row.get("path")
-            if path and os.path.isabs(path):
-                rel = os.path.relpath(path, extra_files_path)
-                if rel != os.pardir and not rel.startswith(os.pardir + os.sep):
-                    row["path"] = rel
+            for header in path_headers:
+                path = row.get(header)
+                if path and os.path.isabs(path):
+                    rel = os.path.relpath(path, extra_files_path)
+                    if rel != os.pardir and not rel.startswith(os.pardir + os.sep):
+                        row[header] = rel
 
 
 def _data_manager_dict(out_data: dict[str, OutputDataset], ensure_single_output: bool = False) -> dict[str, Any]:
@@ -1520,15 +1529,15 @@ def _process_bundle(
         for ref_file in out_data.values():
             if ref_file.extra_files_path_exists():
                 util.move_merge(ref_file.extra_files_path, options.data_manager_path)
-        path_column_names = ["path"]
         for data_table_name, data_table_values in data_tables_dict.items():
+            path_headers = get_path_headers(bundle_description, data_table_name)
             data_table = tool_data_tables.get(data_table_name, None)
             if not isinstance(data_table_values, list):
                 data_table_values = [data_table_values]
             for data_table_row in data_table_values:
                 data_table_value = dict(**data_table_row)  # keep original values here
                 for name, value in data_table_row.items():
-                    if name in path_column_names:
+                    if name in path_headers:
                         data_table_value[name] = os.path.abspath(os.path.join(options.data_manager_path, value))
                 data_table.add_entry(
                     data_table_value,

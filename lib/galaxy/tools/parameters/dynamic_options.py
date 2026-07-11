@@ -27,6 +27,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.dataset_collections.adapters import CollectionAdapter
+from galaxy.tool_util.data.bundles.models import get_path_headers
 from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import (
@@ -894,14 +895,17 @@ class DynamicOptions:
 
     @staticmethod
     def hda_to_table_entries(hda, table_name):
+        # No processor description at hand here, so path columns fall back to the naming convention.
+        path_headers = get_path_headers(None, table_name)
         table_entries = {}
         for value in hda._metadata["data_tables"][table_name]:
             if dbkey := value.get("dbkey"):
                 table_entries[dbkey] = value
-            if path := value.get("path"):
-                # maybe a hack, should probably pass around dataset or src id combinations ?
-                value["path"] = os.path.join(hda.extra_files_path, path)
-                value["__hda__"] = hda
+            for header in path_headers:
+                if path := value.get(header):
+                    # maybe a hack, should probably pass around dataset or src id combinations ?
+                    value[header] = os.path.join(hda.extra_files_path, path)
+                    value["__hda__"] = hda
         return table_entries
 
     def get_option_from_dataset(self, dataset):
