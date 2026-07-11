@@ -68,7 +68,7 @@ class ValidationError(galaxy_exceptions.MessageException, OSFFilesSourceExceptio
     """OSF returned an unexpected or malformed response."""
 
 
-class _OSFClient:
+class OSFClient:
     def __init__(self, base_url: str, token: str):
         self.base_url = base_url.rstrip("/") + "/"
         self.token = token
@@ -315,11 +315,11 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         client.download(container_id, leaf["attributes"]["path"], file_path)
 
     # private helpers
-    def _client(self, context) -> _OSFClient:
-        return _OSFClient(self.repository_url, context.config.token)
+    def _client(self, context) -> OSFClient:
+        return OSFClient(self.repository_url, context.config.token)
 
     def _walk_to(
-        self, client: _OSFClient, container_id: str, segments: list,
+        self, client: OSFClient, container_id: str, segments: list,
     ) -> dict:
         """Descend osfstorage segment-by-segment, matching on name.
 
@@ -346,7 +346,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         return leaf
 
     def _walk_files(
-        self, client: _OSFClient, container_id: str, wb_path: str, rel_prefix: str,
+        self, client: OSFClient, container_id: str, wb_path: str, rel_prefix: str,
     ):
         for item in client.list_storage(container_id, wb_path):
             attrs = item.get("attributes", {})
