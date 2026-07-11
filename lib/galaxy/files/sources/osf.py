@@ -25,7 +25,6 @@ from galaxy.util.config_templates import TemplateExpansion
 
 
 OSF_DEFAULT_URL = "https://api.osf.io/v2/"
-WATERBUTLER_URL = "https://files.osf.io/v1/"
 DEFAULT_STORAGE = "osfstorage"
 OSF_MAX_PAGE_SIZE = 100
 CONNECT_TIMEOUT = 10
@@ -71,6 +70,7 @@ class ValidationError(galaxy_exceptions.MessageException, OSFFilesSourceExceptio
 class OSFClient:
     def __init__(self, base_url: str, token: str):
         self.base_url = base_url.rstrip("/") + "/"
+        self.waterbutler_base_url = self.base_url.replace("api.osf.io/v2", "files.osf.io/v1")
         self._session = requests.Session()
         self._session.headers.update({
             "Authorization": f"Bearer {token}",
@@ -123,7 +123,7 @@ class OSFClient:
         if not wb_path.startswith("/"):
             wb_path = "/" + wb_path
         return urljoin(
-            WATERBUTLER_URL,
+            self.waterbutler_base_url,
             f"resources/{container_id}/providers/{DEFAULT_STORAGE}{wb_path}",
         )
 
@@ -389,9 +389,6 @@ class OSFFilesSource(RDMFilesSource):
         if not path.startswith("/"):
             path = f"/{path}"
         return path
-
-    def user_has_access(self, user_context) -> bool:
-        return user_context is not None  # true only when a token is configured
 
     # RDM contract
     def get_repository_interactor(self, repository_url: str) -> OSFRepositoryInteractor:
