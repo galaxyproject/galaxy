@@ -119,7 +119,7 @@ class OSFClient:
             timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
 
-    def create_node(self, payload: dict) -> dict:
+    def create_project(self, payload: dict) -> dict:
         return self._request(
             "POST", "nodes/",
             json=payload, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -286,7 +286,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
                 },
             }
         }
-        return self._client(context).create_node(payload).get("data", {})
+        return self._client(context).create_project(payload).get("data", {})
 
     def upload_file_to_draft_container(
         self,
