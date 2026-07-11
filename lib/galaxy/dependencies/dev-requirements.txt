@@ -26,6 +26,7 @@ certifi==2026.6.17
 cffi==2.1.0 ; (implementation_name != 'pypy' and os_name == 'nt') or platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.9
 click==8.4.2
+cloudbridge==4.3.0
 codespell==2.4.2
 colorama==0.4.6 ; os_name == 'nt' or sys_platform == 'win32'
 colorlog==6.10.1
@@ -137,6 +138,7 @@ pycparser==3.0 ; (implementation_name != 'PyPy' and implementation_name != 'pypy
 pydantic==2.13.4
 pydantic-core==2.46.4
 pyee==13.0.1
+pyeventsystem==0.1.0
 pygithub==2.9.1
 pygments==2.20.0
 pyjwt==2.13.0
@@ -208,6 +210,7 @@ statsd==4.0.1
 stevedore==5.8.0 ; python_full_version < '3.11'
 stevedore==5.9.0 ; python_full_version >= '3.11'
 tabulate==0.10.0
+tenacity==9.1.4
 testfixtures==8.3.0 ; python_full_version < '3.11'
 testfixtures==12.3.0 ; python_full_version >= '3.11'
 text-unidecode==1.3

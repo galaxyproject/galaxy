@@ -52,7 +52,6 @@ click-didyoumean==0.3.1
 click-plugins==1.1.1.2
 click-repl==0.3.0
 cloudauthz==0.6.0
-cloudbridge==4.3.0
 colorama==0.4.6 ; sys_platform == 'win32'
 coloredlogs==15.0.1
 conda-package-streaming==0.13.0
@@ -204,7 +203,6 @@ pydantic-settings==2.14.2
 pydantic-tes==0.4.0
 pydicom==3.0.2
 pydot==4.0.1
-pyeventsystem==0.1.0
 pyfaidx==0.9.0.4
 pygments==2.20.0
 pyjwt==2.13.0
