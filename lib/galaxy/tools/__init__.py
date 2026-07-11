@@ -43,6 +43,7 @@ from galaxy.exceptions import (
     ToolInputsNotReadyException,
 )
 from galaxy.job_execution import output_collect
+from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
     BaseJobContext,
     MetadataSourceProvider,
@@ -200,6 +201,7 @@ from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
+    asbool,
     in_directory,
     Params,
     parse_xml_string,
@@ -3738,6 +3740,36 @@ class InteractiveTool(Tool):
         self.__remove_interactivetool_by_job(job)
 
 
+def _data_manager_bundle_source_extra_files_paths(app, job, out_data: dict[str, Any]) -> dict[str, str]:
+    """Return the compute-side extra-files roots for bundle outputs.
+
+    Data managers running with ``outputs_to_working_directory`` receive an
+    extra-files path derived from the job working directory, not the path the
+    handler later obtains from the object store. Reconstruct that same path
+    here, using the rules in ``OutputsToWorkingDirectoryPathRewriter``.
+    """
+    outputs_to_working_directory = asbool(
+        job.get_destination_configuration({}, app.config, "outputs_to_working_directory", False)
+    )
+    if not outputs_to_working_directory:
+        return {}
+
+    job_working_directory = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
+    outputs_directory = None if Version(job.galaxy_version or "19.05") < Version("20.01") else "outputs"
+    if outputs_directory is not None:
+        job_working_directory = os.path.join(job_working_directory, outputs_directory)
+
+    source_extra_files_paths = {}
+    for output_name, dataset in out_data.items():
+        if dataset.ext != "data_manager_json":
+            continue
+        hda = cast(HistoryDatasetAssociation, dataset)
+        assert hda.dataset is not None
+        output_path = os.path.join(job_working_directory, f"dataset_{hda.dataset.uuid}.dat")
+        source_extra_files_paths[output_name] = dataset_path_to_extra_path(output_path)
+    return source_extra_files_paths
+
+
 class DataManagerTool(OutputParameterJSONTool):
     tool_type = "manage_data"
     default_tool_action = DataManagerToolAction
@@ -3768,7 +3800,8 @@ class DataManagerTool(OutputParameterJSONTool):
         elif data_manager_mode == "dry_run":
             pass
         elif data_manager_mode == "bundle":
-            for bundle_path, dataset in data_manager.write_bundle(out_data).items():
+            source_extra_files_paths = _data_manager_bundle_source_extra_files_paths(app, job, out_data)
+            for bundle_path, dataset in data_manager.write_bundle(out_data, source_extra_files_paths).items():
                 hda = cast(HistoryDatasetAssociation, dataset)
                 assert hda.dataset is not None
                 assert hda.dataset.object_store is not None

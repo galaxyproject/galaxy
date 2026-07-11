@@ -1,4 +1,5 @@
 import threading
+from collections.abc import Mapping
 from typing import (
     Any,
     runtime_checkable,
@@ -27,7 +28,9 @@ class DataManagerInterface(Protocol):
 
     def process_result(self, out_data): ...
 
-    def write_bundle(self, out: dict[str, OutputDataset]) -> dict[str, OutputDataset]: ...
+    def write_bundle(
+        self, out: dict[str, OutputDataset], source_extra_files_paths: Mapping[str, str] | None = None
+    ) -> dict[str, OutputDataset]: ...
 
 
 class DataManagersInterface(Protocol):
