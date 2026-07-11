@@ -4,6 +4,7 @@ import os
 import re
 from abc import abstractmethod
 from collections.abc import (
+    Iterable,
     Mapping,
     MutableMapping,
 )
@@ -98,6 +99,10 @@ class ToolAction:
     """
 
     produces_real_jobs: bool
+
+    def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
+        """Yield file source URIs embedded in action-specific parameters."""
+        return ()
 
     @abstractmethod
     def execute(

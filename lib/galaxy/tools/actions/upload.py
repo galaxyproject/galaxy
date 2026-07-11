@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from collections.abc import Iterable
 
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.job_execution.output_collect import copy_collection_metadata_from_target_dict
@@ -16,6 +17,7 @@ from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import upload_common
+from galaxy.tools.data_fetch_utils import iter_fetch_request_urls
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
     DEFAULT_DATASET_COLLECTION_ELEMENTS,
@@ -86,6 +88,18 @@ class BaseUploadToolAction(ToolAction):
 
 
 class UploadToolAction(BaseUploadToolAction):
+    def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
+        paramfile = param_dict.get("paramfile")
+        if not isinstance(paramfile, str):
+            return
+        with open(paramfile) as f:
+            upload_params = json.load(f)
+        for upload_param in upload_params:
+            if upload_param.get("type") == "url":
+                path = upload_param.get("path")
+                if isinstance(path, str) and path:
+                    yield path
+
     def _setup_job(
         self, tool, trans: ProvidesHistoryContext, incoming, dataset_upload_inputs, history, preferred_object_store_id
     ):
@@ -112,6 +126,9 @@ class UploadToolAction(BaseUploadToolAction):
 
 
 class FetchUploadToolAction(BaseUploadToolAction):
+    def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
+        return iter_fetch_request_urls(param_dict)
+
     def _setup_job(
         self, tool, trans: ProvidesHistoryContext, incoming, dataset_upload_inputs, history, preferred_object_store_id
     ):

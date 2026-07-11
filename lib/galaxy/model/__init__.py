@@ -4858,6 +4858,11 @@ class Dataset(Base, StorableObject, Serializable):
     def is_new(self):
         return self.state == self.states.NEW
 
+    @property
+    def source_uris(self) -> list[str]:
+        """The URIs this dataset was populated from (e.g. remote/deferred sources)."""
+        return [source.source_uri for source in self.sources if source.source_uri]
+
     def in_ready_state(self):
         return self.state in self.ready_states
 

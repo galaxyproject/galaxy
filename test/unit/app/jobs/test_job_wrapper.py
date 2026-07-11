@@ -1,10 +1,12 @@
 import abc
 import os
 from contextlib import contextmanager
+from types import SimpleNamespace
 from typing import (
     cast,
     TYPE_CHECKING,
 )
+from uuid import uuid4
 
 from galaxy.app_unittest_utils.tools_support import (
     MockContext,
@@ -12,6 +14,7 @@ from galaxy.app_unittest_utils.tools_support import (
 )
 from galaxy.jobs import (
     JobWrapper,
+    MinimalJobWrapper,
     TaskWrapper,
 )
 from galaxy.jobs.handler import BaseJobHandlerQueue
@@ -23,6 +26,8 @@ from galaxy.model import (
 )
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tools import ToolBox
+from galaxy.tools.parameters.basic import DirectoryUriToolParameter
+from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
 
@@ -150,6 +155,11 @@ class MockTool:
         self.home_target = None
         self.tmp_target = None
         self.tool_source = Bunch(to_string=lambda: "")
+        self.inputs = {}
+        self.tool_action = SimpleNamespace(iter_referenced_file_source_uris=lambda param_dict: ())
+
+    def params_from_strings(self, param_dict):
+        return param_dict
 
     def get_job_destination(self, params):
         return Bunch(runner="local", id="local", params={})
@@ -197,3 +207,57 @@ class MockObjectStore:
         if kwds.get("base_dir", "") == "job_work":
             return self.working_directory
         return None
+
+
+def _minimal_wrapper(param_dict=None, inputs=None, action_uris=()):
+    tool_action = SimpleNamespace(iter_referenced_file_source_uris=lambda param_dict: action_uris)
+    return SimpleNamespace(
+        tool=SimpleNamespace(inputs=inputs or {}, tool_action=tool_action),
+        get_param_dict=lambda job: param_dict or {},
+    )
+
+
+def _job_with_file_source_inputs(input_datasets=None, input_library_datasets=None):
+    return SimpleNamespace(
+        id=1,
+        input_datasets=input_datasets or [],
+        input_library_datasets=input_library_datasets or [],
+    )
+
+
+def test_referenced_file_source_uris_reads_tool_parameters_and_action():
+    destination = "gxfiles://good/out"
+    fetched = f"gxuserfiles://{uuid4().hex}/input"
+    destination_param = DirectoryUriToolParameter(None, XML('<param name="destination" type="directory_uri"/>'))
+    wrapper = _minimal_wrapper(
+        param_dict={"destination": destination},
+        inputs={"destination": destination_param},
+        action_uris=(fetched,),
+    )
+    assert MinimalJobWrapper._referenced_file_source_uris(wrapper, _job_with_file_source_inputs()) == {
+        destination,
+        fetched,
+    }
+
+
+def test_referenced_file_source_uris_empty_for_job_without_sources():
+    assert MinimalJobWrapper._referenced_file_source_uris(_minimal_wrapper(), _job_with_file_source_inputs()) == set()
+
+
+def test_referenced_file_source_uris_adds_regular_and_library_input_sources():
+    regular_src = f"gxuserfiles://{uuid4().hex}/regular.txt"
+    library_src = f"gxuserfiles://{uuid4().hex}/library.txt"
+    hda = SimpleNamespace(has_deferred_data=True, dataset=SimpleNamespace(source_uris=[regular_src]))
+    ldda = SimpleNamespace(has_deferred_data=True, dataset=SimpleNamespace(source_uris=[library_src]))
+    job = _job_with_file_source_inputs(
+        input_datasets=[SimpleNamespace(dataset=hda)],
+        input_library_datasets=[SimpleNamespace(dataset=ldda)],
+    )
+    assert MinimalJobWrapper._referenced_file_source_uris(_minimal_wrapper(), job) == {regular_src, library_src}
+
+
+def test_referenced_file_source_uris_ignores_materialized_input_sources():
+    source = f"gxuserfiles://{uuid4().hex}/materialized.txt"
+    hda = SimpleNamespace(has_deferred_data=False, dataset=SimpleNamespace(source_uris=[source]))
+    job = _job_with_file_source_inputs(input_datasets=[SimpleNamespace(dataset=hda)])
+    assert MinimalJobWrapper._referenced_file_source_uris(_minimal_wrapper(), job) == set()

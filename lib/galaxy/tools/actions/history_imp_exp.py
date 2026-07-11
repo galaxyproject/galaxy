@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import tempfile
+from collections.abc import Iterable
 
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model import (
@@ -40,6 +41,12 @@ class ImportHistoryToolAction(ToolAction):
     """Tool action used for importing a history to an archive."""
 
     produces_real_jobs: bool = True
+
+    def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
+        if param_dict.get("__ARCHIVE_TYPE__") == "url":
+            archive_source = param_dict.get("__ARCHIVE_SOURCE__")
+            if isinstance(archive_source, str) and archive_source:
+                yield archive_source
 
     def execute(
         self,

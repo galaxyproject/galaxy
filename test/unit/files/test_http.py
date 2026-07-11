@@ -40,6 +40,18 @@ def test_file_source_http_specific():
         assert_realizes_as(file_sources, test_url, "hello specific world", user_context=user_context)
 
 
+def test_plugins_to_dict_serializes_only_best_matching_http_source():
+    test_url = "https://www.usegalaxy.org/myfile.txt"
+    user_context = user_context_fixture()
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    plugins = file_sources.plugins_to_dict(
+        for_serialization=True,
+        user_context=user_context,
+        referenced_uris={test_url},
+    )
+    assert [plugin["id"] for plugin in plugins] == ["test1"]
+
+
 def test_file_source_another_http_specific():
     test_url = "http://www.galaxyproject.org/anotherfile.txt"
 
