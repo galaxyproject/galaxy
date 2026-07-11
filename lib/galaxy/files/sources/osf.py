@@ -71,20 +71,13 @@ class ValidationError(galaxy_exceptions.MessageException, OSFFilesSourceExceptio
 class OSFClient:
     def __init__(self, base_url: str, token: str):
         self.base_url = base_url.rstrip("/") + "/"
-        self.token = token
-        self._session: Optional[requests.Session] = None
-
-    def _make_headers(self) -> dict:
-        return {"Authorization": f"Bearer {self.token}", "Accept": "application/json"}
-
-    def _make_session(self) -> requests.Session:
-        session = requests.Session()
-        session.headers.update(self._make_headers())
-        return session
+        self._session = requests.Session()
+        self._session.headers.update({
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        })
 
     def _request(self, method: str, endpoint: str, **kwargs) -> dict:
-        if self._session is None:
-            self._session = self._make_session()
         url = urljoin(self.base_url, endpoint.lstrip("/"))
         response = self._session.request(method, url, **kwargs)
         response.raise_for_status()
@@ -135,8 +128,6 @@ class OSFClient:
         )
 
     def list_storage(self, container_id: str, wb_path: str = "/") -> list[dict]:
-        if self._session is None:
-            self._session = self._make_session()
         url = self.waterbutler_url(container_id, wb_path)
         response = self._session.get(
             url, params={"meta": ""}, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -147,8 +138,6 @@ class OSFClient:
     def upload(
         self, container_id: str, folder_wb_path: str, filename: str, local_path: str,
     ) -> dict:
-        if self._session is None:
-            self._session = self._make_session()
         url = self.waterbutler_url(container_id, folder_wb_path)
         params = {"kind": "file", "name": filename}
         with open(local_path, "rb") as f:
@@ -160,8 +149,6 @@ class OSFClient:
         return response.json()
 
     def download(self, container_id: str, wb_path: str, local_path: str) -> None:
-        if self._session is None:
-            self._session = self._make_session()
         url = self.waterbutler_url(container_id, wb_path)
         try:
             with self._session.get(
