@@ -174,7 +174,7 @@ dev = [
 typecheck = [
     "boto3-stubs[s3]",
     "lxml-stubs",
-    "mypy",
+    "mypy>=2.2.0",  # support for closed TypedDicts
     "pydantic>=2.7.4",  # for pydantic.mypy plugin
     "types-bleach",
     "types-boto",
