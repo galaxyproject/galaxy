@@ -177,15 +177,15 @@ class _OSFClient:
             raise
 
 
-def _has_parent(node: dict) -> bool:
+def has_parent(node: dict) -> bool:
     return node.get("relationships", {}).get("parent", {}).get("data") is not None
 
 
-def _node_title(node: dict) -> str:
+def node_title(node: dict) -> str:
     return node.get("attributes", {}).get("title", node.get("id", "untitled"))
 
 
-def _galaxy_pagination_to_osf(
+def galaxy_pagination_to_osf(
     limit: Optional[int], offset: Optional[int],
 ) -> tuple[int, int]:
     """Translate Galaxy's (limit, offset) into OSF's (page, page[size]).
@@ -199,7 +199,7 @@ def _galaxy_pagination_to_osf(
     return page, page_size
 
 
-def _galaxy_sort_to_osf(sort_by: Optional[str]) -> Optional[str]:
+def galaxy_sort_to_osf(sort_by: Optional[str]) -> Optional[str]:
     if not sort_by:
         return None
     return {
@@ -236,19 +236,19 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         sort_by: Optional[str] = None,
     ) -> tuple[list[RemoteDirectory], int]:
         client = self._client(context)
-        page, page_size = _galaxy_pagination_to_osf(limit, offset)
+        page, page_size = galaxy_pagination_to_osf(limit, offset)
         payload = client.list_projects(
             page=page,
             page_size=page_size,
             query=query,
             write_intent=write_intent,
-            sort=_galaxy_sort_to_osf(sort_by),
+            sort=galaxy_sort_to_osf(sort_by),
         )
-        nodes = [n for n in payload.get("data", []) if not _has_parent(n)]
+        nodes = [n for n in payload.get("data", []) if not has_parent(n)]
         total = int(payload.get("meta", {}).get("total", 0))
         containers = [
             RemoteDirectory(
-                name=_node_title(node),
+                name=node_title(node),
                 uri=self.to_plugin_uri(node["id"]),
                 path=f"/{node['id']}",
             )
