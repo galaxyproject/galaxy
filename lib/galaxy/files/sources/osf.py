@@ -343,6 +343,55 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
             ))
         return files, total
 
+    def list_folder(
+        self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+        container_id: str,
+        subpath: str = "",
+        category: str = "projects",
+        query: Optional[str] = None,
+    ) -> tuple[list[AnyRemoteEntry], int]:
+        """List one level of a container's osfstorage.
+
+        Returns folders as ``RemoteDirectory`` and files as ``RemoteFile``.
+        Does not recurse: descending into a subfolder is a separate call,
+        triggered by the user navigating into it. This preserves the actual
+        OSF folder hierarchy (REQ-1.6).
+        """
+        client = self._client(context)
+        if subpath:
+            leaf = self._walk_to(client, container_id, subpath.split("/"))
+            if leaf.get("attributes", {}).get("kind") != "folder":
+                raise DirectoryExpected(
+                    f"path {subpath!r} is not a folder"
+                )
+            wb_path = leaf["attributes"]["path"]
+        else:
+            wb_path = "/"
+        entries: list[AnyRemoteEntry] = []
+        for item in client.list_storage(container_id, wb_path):
+            attrs = item.get("attributes", {})
+            name = attrs.get("name", "untitled")
+            kind = attrs.get("kind")
+            rel_path = f"{subpath}/{name}" if subpath else name
+            if kind == "folder":
+                entries.append(RemoteDirectory(
+                    name=name,
+                    uri=self.to_plugin_uri(container_id, rel_path, category=category),
+                    path=f"/{category}/{container_id}/{rel_path}",
+                ))
+            elif kind == "file":
+                entries.append(RemoteFile(
+                    name=name,
+                    uri=self.to_plugin_uri(container_id, rel_path, category=category),
+                    path=f"/{category}/{container_id}/{rel_path}",
+                    size=attrs.get("size", 0),
+                    ctime=attrs.get("modified_utc") or attrs.get("created_utc"),
+                ))
+        if query:
+            entries = [e for e in entries if query in e.name]
+        return entries, len(entries)
+
     def get_files_in_container(
         self,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
@@ -583,14 +632,20 @@ class OSFFilesSource(RDMFilesSource):
                     context, query, limit, offset,
                 )
 
-        # /<category>/<container_id>/... (or old-shape /<container_id>/...):
-        # list files in the container.
-        category = parts[0] if parts[0] in CATEGORY_FOLDERS else "projects"
-        container_id = self.parse_path(path).container_id
-        files = self.repository.get_files_in_container(
-            context, container_id, writeable=write_intent, query=query, category=category,
+        # /<category>/<container_id>/<optional-subpath>: list one level of
+        # that container's osfstorage. Old-shape paths (no category) are
+        # treated as projects.
+        if parts[0] in CATEGORY_FOLDERS:
+            category = parts[0]
+            container_id = parts[1] if len(parts) > 1 else ""
+            subpath = "/".join(parts[2:])
+        else:
+            category = "projects"
+            container_id = parts[0]
+            subpath = "/".join(parts[1:])
+        return self.repository.list_folder(
+            context, container_id, subpath=subpath, category=category, query=query,
         )
-        return files, len(files)
 
     def _realize_to(
         self,
