@@ -9,6 +9,7 @@ from galaxy.app_unittest_utils.toolbox_support import (
     SimplifiedToolBox,
 )
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
+from galaxy.tool_util.toolbox.base import resolve_tool_path
 from galaxy.util import parse_xml
 from tool_shed.tools import tool_version_manager
 from ._util import TestToolShedApp
@@ -242,13 +243,19 @@ def _new_install_elem_list():
     return [section, top]
 
 
-def test_collect_new_tool_paths_resolves_relative_tool_path_against_conf_dir(tmp_path):
+def test_collect_new_tool_paths_resolves_relative_tool_path_the_way_discovery_does(tmp_path):
+    # The partial populate filters discovered tools on exact path strings, so
+    # ``_collect_new_tool_paths`` must resolve a relative ``tool_path`` exactly
+    # the way ``discover`` does — through the shared ``resolve_tool_path`` —
+    # otherwise the strings never match. ``resolve_tool_path`` expands the
+    # ``${tool_conf_dir}`` template but leaves a bare relative path relative
+    # (CWD-relative, no abspath), so the collected paths stay relative too.
     conf = tmp_path / "config" / "shed_tool_conf.xml"
     path_guids = tool_panel_manager._collect_new_tool_paths(_new_install_elem_list(), "../shed_tools", str(conf))
-    base = str(tmp_path / "shed_tools")
+    base = resolve_tool_path("../shed_tools", str(conf))
     assert path_guids == {
-        f"{base}/repos/iuc/fastp/abc/fastp/fastp.xml": DEFAULT_GUID,
-        f"{base}/repos/iuc/other/def/other/other.xml": GUID_V2,
+        os.path.normpath(os.path.join(base, "repos/iuc/fastp/abc/fastp/fastp.xml")): DEFAULT_GUID,
+        os.path.normpath(os.path.join(base, "repos/iuc/other/def/other/other.xml")): GUID_V2,
     }
 
 
