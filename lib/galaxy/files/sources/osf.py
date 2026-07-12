@@ -234,12 +234,18 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
     ``file_identifier`` so downloads can find them again).
     """
 
-    def to_plugin_uri(self, container_id: str, filename: Optional[str] = None) -> str:
+    def to_plugin_uri(
+        self,
+        container_id: str,
+        filename: Optional[str] = None,
+        category: str = "projects",
+    ) -> str:
         scheme = self.plugin.get_scheme()
         prefix = self.plugin.get_prefix() or ""
+        base = f"{scheme}://{prefix}/{category}/{container_id}"
         if filename:
-            return f"{scheme}://{prefix}/{container_id}/{filename}"
-        return f"{scheme}://{prefix}/{container_id}"
+            return f"{base}/{filename}"
+        return base
 
     def get_file_containers(
         self,
@@ -265,11 +271,77 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
             RemoteDirectory(
                 name=node_title(node),
                 uri=self.to_plugin_uri(node["id"]),
-                path=f"/{node['id']}",
+                path=f"/projects/{node['id']}",
             )
             for node in nodes
             ]
         return containers, total
+
+    def get_registration_containers(
+        self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> tuple[list[RemoteDirectory], int]:
+        client = self._client(context)
+        page, page_size = galaxy_pagination_to_osf(limit, offset)
+        payload = client.list_registrations(
+            page=page,
+            page_size=page_size,
+            query=query,
+            sort=galaxy_sort_to_osf(sort_by),
+        )
+        nodes = payload.get("data", [])
+        total = int(payload["links"]["meta"]["total"])
+        containers = [
+            RemoteDirectory(
+                name=node_title(node),
+                uri=self.to_plugin_uri(node["id"], category="registrations"),
+                path=f"/registrations/{node['id']}",
+            )
+            for node in nodes
+        ]
+        return containers, total
+
+    def get_files_search_results(
+        self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+        query: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> tuple[list[RemoteFile], int]:
+        if not query:
+            return [], 0
+        client = self._client(context)
+        page, page_size = galaxy_pagination_to_osf(limit, offset)
+        payload = client.list_files(
+            page=page, page_size=page_size, query=query,
+        )
+        hits = payload.get("data", [])
+        total = int(payload["links"]["meta"]["total"])
+        files: list[RemoteFile] = []
+        for hit in hits:
+            attrs = hit.get("attributes", {})
+            name = attrs.get("name", "untitled")
+            node_data = hit.get("relationships", {}).get("node", {}).get("data") or {}
+            parent_pid = node_data.get("id", "")
+            rel_path = attrs.get("materialized_path", name).lstrip("/")
+            if parent_pid:
+                uri = self.to_plugin_uri(parent_pid, rel_path)
+                path = f"/projects/{parent_pid}/{rel_path}"
+            else:
+                uri = f"{self.plugin.get_scheme()}://{self.plugin.get_prefix()}/files/{name}"
+                path = f"/files/{name}"
+            files.append(RemoteFile(
+                name=name,
+                uri=uri,
+                path=path,
+                size=attrs.get("size", 0),
+                ctime=attrs.get("date_modified") or attrs.get("date_created"),
+            ))
+        return files, total
 
     def get_files_in_container(
         self,
@@ -277,9 +349,10 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         container_id: str,
         writeable: bool,
         query: Optional[str] = None,
+        category: str = "projects",
     ) -> list[RemoteFile]:
         client = self._client(context)
-        files = list(self._walk_files(client, container_id, wb_path="/", rel_prefix=""))
+        files = list(self._walk_files(client, container_id, wb_path="/", rel_prefix="", category=category))
         if query:
             files = [f for f in files if query in f.get("name", "")]
         return files
@@ -361,7 +434,12 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         return leaf
 
     def _walk_files(
-        self, client: OSFClient, container_id: str, wb_path: str, rel_prefix: str,
+        self,
+        client: OSFClient,
+        container_id: str,
+        wb_path: str,
+        rel_prefix: str,
+        category: str = "projects",
     ):
         for item in client.list_storage(container_id, wb_path):
             attrs = item.get("attributes", {})
@@ -370,13 +448,13 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
             rel_path = name if not rel_prefix else f"{rel_prefix}/{name}"
             if kind == "folder":
                 yield from self._walk_files(
-                    client, container_id, attrs["path"], rel_path,
+                    client, container_id, attrs["path"], rel_path, category=category,
                 )
             elif kind == "file":
                 yield RemoteFile(**{
                     "name": name,
-                    "uri": self.to_plugin_uri(container_id, rel_path),
-                    "path": f"/{container_id}/{rel_path}",
+                    "uri": self.to_plugin_uri(container_id, rel_path, category=category),
+                    "path": f"/{category}/{container_id}/{rel_path}",
                     "size": attrs.get("size", 0),
                     "ctime": attrs.get("modified_utc") or attrs.get("created_utc"),
                 })
@@ -475,13 +553,42 @@ class OSFFilesSource(RDMFilesSource):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
+        parts = [p for p in path.strip("/").split("/") if p]
+
+        # Root: return the three fake category folders.
+        if not parts:
+            entries: list[AnyRemoteEntry] = [
+                RemoteDirectory(
+                    name=label,
+                    uri=f"{self.get_scheme()}://{self.get_prefix()}/{key}",
+                    path=f"/{key}",
+                )
+                for key, label in CATEGORY_FOLDERS.items()
+            ]
+            return entries, len(entries)
+
+        # /<category>: list items in that category.
+        if len(parts) == 1 and parts[0] in CATEGORY_FOLDERS:
+            category = parts[0]
+            if category == "projects":
+                return self.repository.get_file_containers(
+                    context, write_intent, limit, offset, query, sort_by,
+                )
+            if category == "registrations":
+                return self.repository.get_registration_containers(
+                    context, limit, offset, query, sort_by,
+                )
+            if category == "files":
+                return self.repository.get_files_search_results(
+                    context, query, limit, offset,
+                )
+
+        # /<category>/<container_id>/... (or old-shape /<container_id>/...):
+        # list files in the container.
+        category = parts[0] if parts[0] in CATEGORY_FOLDERS else "projects"
         container_id = self.parse_path(path).container_id
-        if not container_id:
-            return self.repository.get_file_containers(
-                context, write_intent, limit, offset, query, sort_by,
-            )
         files = self.repository.get_files_in_container(
-            context, container_id, writeable=write_intent, query=query,
+            context, container_id, writeable=write_intent, query=query, category=category,
         )
         return files, len(files)
 
