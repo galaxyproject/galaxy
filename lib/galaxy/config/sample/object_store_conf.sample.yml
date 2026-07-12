@@ -156,21 +156,23 @@ backends:
     files_dir: /old-fs/galaxy/files
 
 
-# There are now four ways to access S3 related services. Two are
-# suitable just for AWS services (aws_s3 & cloud), one is
-# more suited for non-AWS S3 compatible services (generic_s3),
-# and finally boto3 gracefully handles either scenario.
+# There are now four ways to access S3 related services: aws_s3 is
+# suitable just for AWS services, generic_s3 is more suited for
+# non-AWS S3 compatible services, and boto3 and cloud gracefully
+# handle either scenario (cloud via its aws provider with an
+# endpoint_url).
 #
 # boto3 is built on the newest and most widely used Python client
-# outside of Galaxy. It has advanced transfer options and is likely
-# the client you should use for new setup. generic_s3 and aws_s3
-# have existed in Galaxy for longer and could perhaps be considered
-# more battle tested. Both boto3 and generic_s3 have been tested
-# with multiple non-AWS APIs including minio and GCP. The cloud
-# implementation is based on CloudBridge and is still supported
-# and has been recently tested - the downside is mostly the advanced
-# multi-threaded processing options of boto3 are not available
-# and it has not been battle tested like aws_s3.
+# outside of Galaxy and has advanced transfer options. generic_s3
+# and aws_s3 have existed in Galaxy for longer and could perhaps be
+# considered more battle tested. Both boto3 and generic_s3 have been
+# tested with multiple non-AWS APIs including minio and GCP. The
+# cloud implementation is based on CloudBridge and supports parallel
+# multipart uploads and downloads with per-direction tuning like
+# boto3; its distinguishing feature is that the same store type also
+# speaks Azure Blob, Google Cloud Storage, and OpenStack Swift
+# natively. For a pure S3 setup boto3 remains the most battle-tested
+# choice; choose cloud for multi-cloud deployments or native Swift.
 
 #
 # Sample AWS S3 Object Store configuration (newest boto3 client)
