@@ -140,6 +140,19 @@ class OSFClient:
             params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
 
+    def list_children(
+        self,
+        node_id: str,
+        page: int = 1,
+        page_size: int = OSF_MAX_PAGE_SIZE,
+    ) -> list[dict]:
+        payload = self._request(
+            "GET", f"nodes/{node_id}/children/",
+            params={"page": page, "page[size]": page_size},
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        )
+        return payload.get("data", [])
+
     def create_project(self, payload: dict) -> dict:
         return self._request(
             "POST", "nodes/",
@@ -357,6 +370,10 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         Does not recurse: descending into a subfolder is a separate call,
         triggered by the user navigating into it. This preserves the actual
         OSF folder hierarchy (REQ-1.6).
+
+        When at the container root (no subpath) and the container is a project
+        or registration, child components are included as ``RemoteDirectory``
+        entries so the user can navigate into them like folders.
         """
         client = self._client(context)
         if subpath:
@@ -369,6 +386,16 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         else:
             wb_path = "/"
         entries: list[AnyRemoteEntry] = []
+        if not subpath and category in ("projects", "registrations"):
+            try:
+                for child in client.list_children(container_id):
+                    entries.append(RemoteDirectory(
+                        name=node_title(child),
+                        uri=self.to_plugin_uri(child["id"], category=category),
+                        path=f"/{category}/{child['id']}",
+                    ))
+            except Exception:
+                pass
         for item in client.list_storage(container_id, wb_path):
             attrs = item.get("attributes", {})
             name = attrs.get("name", "untitled")
