@@ -8,6 +8,8 @@ from urllib.parse import urljoin, urlparse
 from galaxy import exceptions as galaxy_exceptions
 from galaxy.files.models import (
     AnyRemoteEntry,
+    Entry,
+    EntryData,
     FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
@@ -672,6 +674,27 @@ class OSFFilesSource(RDMFilesSource):
             subpath = "/".join(parts[1:])
         return self.repository.list_folder(
             context, container_id, subpath=subpath, category=category, query=query,
+        )
+
+    def _create_entry(
+        self,
+        entry_data: EntryData,
+        context: FilesSourceRuntimeContext[OSFFileSourceConfiguration],
+    ) -> Entry:
+        public_name = self.get_public_name(context)
+        record = self.repository.create_draft_file_container(
+            entry_data.name, public_name, context,
+        )
+        record_id = record.get("id")
+        if not record_id:
+            raise ValidationError("OSF did not return an id for the new project.")
+        title = record.get("attributes", {}).get("title") or entry_data.name
+        external_link = record.get("links", {}).get("html", "")
+        uri = self.repository.to_plugin_uri(str(record_id), category="projects")
+        return Entry(
+            name=title,
+            uri=uri,
+            external_link=external_link,
         )
 
     def _realize_to(
