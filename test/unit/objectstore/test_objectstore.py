@@ -1095,11 +1095,17 @@ class _FakePagedObjectContainer:
 
     def __init__(self, keys, page_size=1):
         from types import SimpleNamespace
+        from typing import (
+            Any,
+            cast,
+        )
 
         from cloudbridge.base.resources import BasePageableObjectMixin
 
         self._keys = keys
-        provider = SimpleNamespace(config=SimpleNamespace(default_result_limit=page_size))
+        # Duck-typed stand-in for a cloudbridge provider; only the result-limit
+        # config is consulted by ClientPagedResultList.
+        provider = cast(Any, SimpleNamespace(config=SimpleNamespace(default_result_limit=page_size)))
 
         class _Container(BasePageableObjectMixin):
             def list(self, limit=None, marker=None, prefix=None):
