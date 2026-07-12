@@ -1433,6 +1433,9 @@ def test_config_parse_cloud_direct_download():
             as_dict = object_store.to_dict()
             _assert_key_has_value(as_dict, "enable_direct_download", True)
 
+            model = object_store.to_model("the_object_store_id")
+            assert model.enable_direct_download is True
+
 
 @patch_object_stores_to_skip_initialize
 def test_cloud_get_direct_download_url_forwards_response_headers():
