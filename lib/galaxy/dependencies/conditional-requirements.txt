@@ -46,6 +46,9 @@ chronos-python==1.2.1
 # Kubernetes job runner
 pykube-ng==23.6.0
 
+# Cloud object store
+cloudbridge
+
 # Synnefo / Pithos+ object store client
 kamaki
 

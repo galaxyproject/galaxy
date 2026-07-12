@@ -30,9 +30,8 @@ NoneType = type(None)
 SampleSheetColumnValueT = int | float | bool | str | NoneType
 
 
-# type ignore because mypy can't handle closed TypedDicts yet
 @with_config(ConfigDict(extra="forbid"))
-class SampleSheetColumnDefinition(TypedDict, closed=True):  # type: ignore[call-arg]
+class SampleSheetColumnDefinition(TypedDict, closed=True):
     name: str
     description: NotRequired[str | None]
     type: SampleSheetColumnType

@@ -18,8 +18,8 @@ try:
     )
     from cloudbridge.interfaces.exceptions import InvalidNameException
 except ImportError:
-    CloudProviderFactory = None
-    ProviderList = None
+    CloudProviderFactory = None  # type: ignore[assignment,misc,unused-ignore]
+    ProviderList = None  # type: ignore[assignment,misc,unused-ignore]
 
 log = logging.getLogger(__name__)
 

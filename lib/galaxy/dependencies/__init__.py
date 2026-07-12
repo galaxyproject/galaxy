@@ -254,6 +254,9 @@ class ConditionalDependencies:
     def check_boto3(self):
         return "boto3" in self.object_stores
 
+    def check_cloudbridge(self):
+        return "cloud" in self.object_stores
+
     def check_kamaki(self):
         return "pithos" in self.object_stores
 

@@ -26,7 +26,6 @@ dependencies = [
     "bx-python",
     "celery>=5.4.0",  # prefer not downgrading this to upgrading typing-extensions
     "cloudauthz==0.6.0",
-    "cloudbridge",
     "circus",
     "conda-package-streaming",
     "CT3>=3.3.3",  # Python 3.13 support
@@ -128,6 +127,7 @@ test = [
     "ase>=3.18.1",
     "axe-selenium-python",
     "boto3",
+    "cloudbridge",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
     "fluent-logger",
     "gcsfs",
@@ -174,7 +174,7 @@ dev = [
 typecheck = [
     "boto3-stubs[s3]",
     "lxml-stubs",
-    "mypy",
+    "mypy>=2.2.0",  # support for closed TypedDicts
     "pydantic>=2.7.4",  # for pydantic.mypy plugin
     "types-bleach",
     "types-boto",
