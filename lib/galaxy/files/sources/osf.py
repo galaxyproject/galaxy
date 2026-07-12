@@ -31,6 +31,12 @@ CONNECT_TIMEOUT = 10
 READ_TIMEOUT = 60
 CHUNK_SIZE = 64 * 1024
 
+CATEGORY_FOLDERS = {
+    "projects": "Projects",
+    "registrations": "Registrations",
+    "files": "Files",
+}
+
 
 class OSFFileSourceTemplateConfiguration(RDMFileSourceTemplateConfiguration):
     type: str = "osf"
@@ -104,12 +110,34 @@ class OSFClient:
         )
 
     def list_registrations(
-        self, page: int = 1, page_size: int = OSF_MAX_PAGE_SIZE,
+        self,
+        page: int = 1,
+        page_size: int = OSF_MAX_PAGE_SIZE,
+        query: Optional[str] = None,
+        sort: Optional[str] = None,
     ) -> dict:
+        params: dict[str, Any] = {"page": page, "page[size]": page_size}
+        if query:
+            params["filter[title]"] = query
+        if sort:
+            params["sort"] = sort
         return self._request(
             "GET", "users/me/registrations/",
-            params={"page": page, "page[size]": page_size},
-            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        )
+
+    def list_files(
+        self,
+        page: int = 1,
+        page_size: int = OSF_MAX_PAGE_SIZE,
+        query: Optional[str] = None,
+    ) -> dict:
+        params: dict[str, Any] = {"page": page, "page[size]": page_size}
+        if query:
+            params["q"] = query
+        return self._request(
+            "GET", "search/files/",
+            params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
 
     def create_project(self, payload: dict) -> dict:
