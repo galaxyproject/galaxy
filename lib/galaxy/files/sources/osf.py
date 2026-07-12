@@ -427,10 +427,17 @@ class OSFFilesSource(RDMFilesSource):
     ) -> ContainerAndFileIdentifier:
         """Split a plugin path into (container_id, file_identifier).
 
-        "/"                          -> ("", "")
-        "/abc12"                     -> ("abc12", "")
-        "/abc12/data.csv"            -> ("abc12", "data.csv")
-        "/abc12/folder/sub/a.csv"    -> ("abc12", "folder/sub/a.csv")
+        Paths follow /<category>/<container_id>/<optional-subpath>, where
+        <category> is one of "projects", "registrations", or "files". The
+        leading category segment is stripped; callers that only care about
+        the container do not need to know which category the container came
+        from. Paths that omit the category (older URIs) are still accepted.
+
+        "/"                                    -> ("", "")
+        "/projects"                            -> ("", "")
+        "/projects/abc12"                      -> ("abc12", "")
+        "/projects/abc12/data.csv"             -> ("abc12", "data.csv")
+        "/projects/abc12/folder/sub/a.csv"     -> ("abc12", "folder/sub/a.csv")
         """
         path_obj = Path(source_path)
         if not path_obj.is_absolute():
@@ -440,6 +447,10 @@ class OSFFilesSource(RDMFilesSource):
         parts = path_obj.parts[1:]
         if not parts:
             return ContainerAndFileIdentifier(container_id="", file_identifier="")
+        if parts[0] in CATEGORY_FOLDERS:
+            parts = parts[1:]
+            if not parts:
+                return ContainerAndFileIdentifier(container_id="", file_identifier="")
         container_id = parts[0]
         if container_id_only or len(parts) == 1:
             return ContainerAndFileIdentifier(
