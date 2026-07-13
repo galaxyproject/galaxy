@@ -511,10 +511,12 @@ onMounted(() => {
             id="dataset-list-bulk-copy-modal"
             :show.sync="showBulkCopyModal"
             title="Copy selected datasets"
+            size="medium"
             confirm
             ok-text="Copy datasets"
             :close-on-ok="false"
             :ok-disabled="bulkCopyLoading || targetHistoriesLoading || !selectedTargetHistoryId"
+            :ok-loading="bulkCopyLoading"
             overflow-visible
             @ok="onBulkCopy">
             <GAlert v-if="targetHistoriesLoading" variant="info" show>
