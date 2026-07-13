@@ -75,6 +75,15 @@ class _ToolSourceStub:
     def parse_edam_topics(self) -> list[str]:
         return self._edam_topics
 
+    def parse_xrefs(self) -> list[dict[str, str]]:
+        return []
+
+    def parse_icon(self) -> str | None:
+        return None
+
+    def parse_input_pages(self):
+        return None
+
     def parse_profile(self) -> str:
         return "21.09"
 

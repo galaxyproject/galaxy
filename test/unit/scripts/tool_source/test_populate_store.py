@@ -24,6 +24,8 @@ import sys
 sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.tools.source_store import build_tool_source_store
+from galaxy.tools.source_store.factory import _build_default_store
+from galaxy.tools.source_store.freshness import tool_confs_token
 from galaxy.tools.source_store.populator import (
     compute_hash,
     DEFAULT_STORE_NAME,
@@ -325,22 +327,33 @@ class TestToolFileWatcher:
             os.unlink(temp_path)
 
 
+def _populate_config(tmp_path, conf):
+    class _Cfg:
+        enable_beta_tool_formats = False
+        tool_source_stores: dict = {}
+        tool_search_index_dir = None
+        root = str(tmp_path)
+        tool_path = str(tmp_path)
+        tool_source_database_connection = f"sqlite:///{tmp_path}/ts.sqlite"
+        data_manager_config_file: str | None = None
+        shed_data_manager_config_file: str | None = None
+        biotools_content_directory = None
+        biotools_use_api = False
+        biotools_service_cache_type = "memory"
+        biotools_service_cache_data_dir = None
+        biotools_service_cache_lock_dir = None
+        biotools_service_cache_url = None
+        biotools_service_cache_table_name = None
+        biotools_service_cache_schema_name = None
+
+        def all_tool_config_files(self):
+            return [str(conf)]
+
+    return _Cfg()
+
+
 class TestIncrementalFastPath:
     """A second populate carries byte-identical tools forward without re-parsing."""
-
-    def _config(self, tmp_path, conf):
-        class _Cfg:
-            enable_beta_tool_formats = False
-            tool_source_stores: dict = {}
-            tool_search_index_dir = None
-            root = str(tmp_path)
-            tool_path = str(tmp_path)
-            tool_source_database_connection = f"sqlite:///{tmp_path}/ts.sqlite"
-
-            def all_tool_config_files(self):
-                return [str(conf)]
-
-        return _Cfg()
 
     def test_unchanged_tools_carried_forward(self, tmp_path):
         tools_dir = tmp_path / "tools"
@@ -353,7 +366,7 @@ class TestIncrementalFastPath:
         conf.write_text(
             f'<toolbox tool_path="{tools_dir}"><tool file="itest_1.xml"/><tool file="itest_2.xml"/></toolbox>'
         )
-        cfg = self._config(tmp_path, conf)
+        cfg = _populate_config(tmp_path, conf)
 
         r1 = populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="itest_", incremental=True)
         assert (r1["stored"], r1["unchanged"]) == (2, 0)
@@ -374,20 +387,6 @@ class TestTwinDeterminism:
     whoosh corpus-signature rebuild skip.
     """
 
-    def _config(self, tmp_path, conf):
-        class _Cfg:
-            enable_beta_tool_formats = False
-            tool_source_stores: dict = {}
-            tool_search_index_dir = None
-            root = str(tmp_path)
-            tool_path = str(tmp_path)
-            tool_source_database_connection = f"sqlite:///{tmp_path}/ts.sqlite"
-
-            def all_tool_config_files(self):
-                return [str(conf)]
-
-        return _Cfg()
-
     def test_twin_winner_stable_across_runs(self, tmp_path):
         tools_dir = tmp_path / "tools"
         tools_dir.mkdir()
@@ -402,7 +401,7 @@ class TestTwinDeterminism:
             '<section id="sec_b" name="B"><tool file="twin_b.xml"/></section>'
             "</toolbox>"
         )
-        cfg = self._config(tmp_path, conf)
+        cfg = _populate_config(tmp_path, conf)
 
         # Run 2 is the interesting one: the run-1 winner (sec_b) comes back
         # via the unchanged fast path while its twin re-parses — the winner
@@ -412,3 +411,37 @@ class TestTwinDeterminism:
             index = build_tool_source_store(cfg).load_index()
             assert index is not None
             assert index.entries["twin"].panel_section_id == "sec_b", f"wrong twin won on run {run}"
+
+
+class TestFreshnessStamping:
+    """Populate stamps the default store's tool_confs token; boot trusts it."""
+
+    def test_populate_stamps_token_and_conf_edit_invalidates(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tools_dir.mkdir()
+        (tools_dir / "ftest_1.xml").write_text(
+            '<tool id="ftest_1" name="FTest" version="1.0" profile="21.09"><command>echo</command></tool>'
+        )
+        conf = tmp_path / "tool_conf.xml"
+        conf.write_text(f'<toolbox tool_path="{tools_dir}"><tool file="ftest_1.xml"/></toolbox>')
+        cfg = _populate_config(tmp_path, conf)
+
+        populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="ftest_", incremental=True)
+
+        store = _build_default_store(cfg)
+        index = store.load_index()
+        assert index is not None
+        assert index.freshness_token == tool_confs_token(cfg)
+        assert store.index_is_fresh() is True
+
+        (tools_dir / "ftest_2.xml").write_text(
+            '<tool id="ftest_2" name="FTest 2" version="1.0" profile="21.09"><command>echo</command></tool>'
+        )
+        conf.write_text(
+            f'<toolbox tool_path="{tools_dir}"><tool file="ftest_1.xml"/><tool file="ftest_2.xml"/></toolbox>'
+        )
+        assert store.index_is_fresh() is False
+
+        populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="ftest_", incremental=True)
+        store.invalidate_index_cache()
+        assert store.index_is_fresh() is True

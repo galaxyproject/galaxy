@@ -130,3 +130,12 @@ def test_url_path_works_with_in_memory_sqlite():
     fetched = store.get("hmem")
     assert fetched is not None
     assert fetched.tool_id == "mem"
+
+
+def test_list_source_paths_skips_pathless_rows(sqlite_path):
+    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    with_path = _source(hash="h1", tool_id="t1")
+    with_path.source_path = "/tools/a.xml"
+    store.store(with_path)
+    store.store(_source(hash="h2", tool_id="t2"))
+    assert store.list_source_paths() == {"/tools/a.xml"}

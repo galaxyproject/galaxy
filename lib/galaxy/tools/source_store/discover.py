@@ -12,6 +12,7 @@ import logging
 import os
 import string
 from collections.abc import (
+    Collection,
     Iterable,
     Iterator,
 )
@@ -41,11 +42,19 @@ from galaxy.tool_util.toolbox.parser import (
 )
 from galaxy.tools import MODEL_TOOLS_PATH
 from galaxy.tools.special_tools import hidden_lib_tool_paths
+from galaxy.util import (
+    listify,
+    parse_xml,
+)
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
 
 log = logging.getLogger(__name__)
+
+# Sentinel ``tool_conf`` for datatype-converter discoveries — they have no
+# panel conf; the registry loads them after boot via ``load_tool``.
+CONVERTER_TOOL_CONF = "<converter>"
 
 
 @dataclass
@@ -65,6 +74,10 @@ class DiscoveredTool:
     repository_name: str | None = None
     repository_owner: str | None = None
     installed_changeset_revision: str | None = None
+    # ``<data_manager id="...">`` conf id for tools referenced from data
+    # manager configs — may differ from the tool XML id, and the registry
+    # is keyed by it.
+    data_manager_id: str | None = None
     # Conf-level ``hidden="true"`` on the ``<tool>`` element (NOT the XML
     # body's ``<tool hidden="true">`` — that's already on the parsed source).
     # ToolBox._load_tool_tag_set forces ``tool.hidden = True`` when this is
@@ -99,6 +112,47 @@ def _iter_tool_items(
             yield item, parent_section
         elif isinstance(item, ToolConfSection):
             yield from _iter_tool_items(item.items, parent_section=item)
+
+
+def _resolve_tool_dir(item: ToolConfItem, resolved_tool_path: str) -> str | None:
+    """Resolve a ``tool_dir`` conf item to an absolute directory path."""
+    dir_attr = item.get("dir")
+    if not dir_attr:
+        return None
+    dir_attr = string.Template(dir_attr).safe_substitute({"model_tools_path": MODEL_TOOLS_PATH})
+    if not os.path.isabs(dir_attr):
+        dir_attr = os.path.join(resolved_tool_path, dir_attr)
+    return os.path.normpath(dir_attr)
+
+
+def _tool_dir_recursive(item: ToolConfItem) -> bool:
+    return str(item.get("recursive", "true")).lower() != "false"
+
+
+def conf_tool_directories(config: "GalaxyAppConfiguration") -> list[tuple[str, bool]]:
+    """Resolve every ``tool_dir`` conf entry to ``(directory, recursive)``.
+
+    A ``tool_dir`` places tools on disk without naming them in any conf, so
+    conf-content hashing alone can't see additions there — the freshness
+    probe folds these directories' mtimes in on top of the conf contents.
+    """
+    out: list[tuple[str, bool]] = []
+    for config_filename in config.all_tool_config_files():
+        if not os.path.exists(config_filename):
+            continue
+        try:
+            tool_conf_source = get_toolbox_parser(config_filename)
+        except Exception as e:
+            log.error(f"Failed to parse tool config {config_filename}: {e}")
+            continue
+        resolved_tool_path = resolve_tool_path(tool_conf_source.parse_tool_path(), config_filename, config.tool_path)
+        for item, _section in _iter_tool_items(tool_conf_source.parse_items()):
+            if item.type != "tool_dir":
+                continue
+            directory = _resolve_tool_dir(item, resolved_tool_path)
+            if directory is not None:
+                out.append((directory, _tool_dir_recursive(item)))
+    return out
 
 
 def _walk_tool_dir(directory: str, recursive: bool) -> Iterator[str]:
@@ -183,16 +237,11 @@ def discover_tools_from_config(
         section_id = section.get("id") if section is not None else None
         section_name = section.get("name") if section is not None else None
         if item.type == "tool_dir":
-            dir_attr = item.get("dir")
-            if not dir_attr:
+            directory = _resolve_tool_dir(item, resolved_tool_path)
+            if directory is None:
                 continue
-            dir_attr = string.Template(dir_attr).safe_substitute(file_template_kwds)
-            if os.path.isabs(dir_attr):
-                directory = dir_attr
-            else:
-                directory = os.path.join(resolved_tool_path, dir_attr)
-            recursive = str(item.get("recursive", "true")).lower() != "false"
-            for candidate in _walk_tool_dir(os.path.normpath(directory), recursive):
+            recursive = _tool_dir_recursive(item)
+            for candidate in _walk_tool_dir(directory, recursive):
                 if not looks_like_a_tool(candidate, enable_beta_formats=enable_beta_formats):
                     continue
                 yield DiscoveredTool(
@@ -238,11 +287,71 @@ def discover_tools_from_config(
         )
 
 
+def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[DiscoveredTool]:
+    """Yield tool files referenced by data manager configs.
+
+    Data manager tools are loaded via ``DataManagers`` -> ``toolbox.load_hidden_tool``
+    rather than from a tool_conf, so the normal conf walk misses them.
+    """
+    conf_files = [f for f in listify(config.data_manager_config_file or "") if f]
+    if config.shed_data_manager_config_file:
+        conf_files.append(config.shed_data_manager_config_file)
+    for conf in conf_files:
+        if not os.path.exists(conf):
+            continue
+        try:
+            root = parse_xml(conf).getroot()
+        except Exception as e:
+            log.warning("Skipping data manager config %s: %s", conf, e)
+            continue
+        if root.tag != "data_managers":
+            continue
+        conf_tool_path = root.get("tool_path") or config.tool_path or "."
+        for dm_elem in root.findall("data_manager"):
+            tool_path = conf_tool_path
+            data_manager_id = dm_elem.get("id")
+            path = dm_elem.get("tool_file")
+            guid = None
+            if path is None:
+                tool_elem = dm_elem.find("tool")
+                if tool_elem is None:
+                    continue
+                path = tool_elem.get("file")
+                guid = tool_elem.get("guid")
+                shed_conf_file = dm_elem.get("shed_conf_file")
+                if shed_conf_file and os.path.exists(shed_conf_file):
+                    try:
+                        shed_tool_path = get_toolbox_parser(shed_conf_file).parse_tool_path()
+                        if shed_tool_path:
+                            tool_path = shed_tool_path
+                    except Exception as e:
+                        log.warning("Could not resolve tool_path from %s: %s", shed_conf_file, e)
+            if not path:
+                continue
+            resolved = os.path.abspath(os.path.join(tool_path, path))
+            if not os.path.exists(resolved):
+                # Mirror DataManagers.load_from_xml: fall back to resolving
+                # relative to the conf file for planemo-managed layouts.
+                fallback = os.path.abspath(os.path.join(os.path.dirname(conf), path))
+                if os.path.exists(fallback):
+                    resolved = fallback
+                    tool_path = os.path.dirname(conf)
+            yield DiscoveredTool(
+                path=resolved,
+                tool_conf=conf,
+                tool_path=tool_path,
+                guid=guid,
+                is_shed_tool=guid is not None,
+                data_manager_id=data_manager_id,
+            )
+
+
 def discover_tools(
     config: "GalaxyAppConfiguration",
     include_bundled: bool = True,
     include_converters: bool = True,
     parallel: int = 1,
+    only_confs: Collection[str] | None = None,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from Galaxy configuration.
@@ -258,6 +367,11 @@ def discover_tools(
             which never write the default store that converters route to.
         parallel: Worker count for per-tool existence checks (see
             :func:`discover_tools_from_config`).
+        only_confs: When set, walk only these tool conf files. The per-tool
+            existence checks are the expensive part of discovery on network
+            filesystems, so callers that would drop a conf's tools anyway
+            (routed to a read-only or untargeted store) skip its walk
+            entirely rather than filter afterwards.
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -265,14 +379,21 @@ def discover_tools(
     root_dir = config.root
     seen_paths: set = set()
 
-    # Discover from all tool config files
+    # Discover from all tool config files. A file referenced by several conf
+    # items — top-level and again inside a section is a common layout in
+    # multi-version confs — is a distinct panel placement per reference and
+    # the eager walk places each one, so yield them all; the store layer is
+    # content-addressed and absorbs the repeats. ``seen_paths`` still keeps
+    # the bundled/hidden-lib/converter/data-manager sweeps below from
+    # re-discovering conf tools.
     for config_filename in config.all_tool_config_files():
+        if only_confs is not None and config_filename not in only_confs:
+            continue
         for tool in discover_tools_from_config(
             config_filename, config.tool_path, config.enable_beta_tool_formats, parallel=parallel
         ):
-            if tool.path not in seen_paths:
-                seen_paths.add(tool.path)
-                yield tool
+            seen_paths.add(tool.path)
+            yield tool
 
     # Include bundled tools if requested
     if include_bundled and root_dir:
@@ -305,6 +426,14 @@ def discover_tools(
             is_shed_tool=False,
         )
 
+    # Data manager tools are loaded after boot and are not referenced from
+    # ordinary tool_conf files.
+    for dm_tool in _iter_data_manager_tools(config):
+        if dm_tool.path in seen_paths or not os.path.exists(dm_tool.path):
+            continue
+        seen_paths.add(dm_tool.path)
+        yield dm_tool
+
     # Datatype converters. ``Registry.load_datatype_converters`` calls
     # ``toolbox.load_tool`` per converter after boot, so converters
     # belong in the index. Use the active datatypes registry (populated by
@@ -323,7 +452,7 @@ def discover_tools(
                     seen_paths.add(path)
                     yield DiscoveredTool(
                         path=path,
-                        tool_conf="<converter>",
+                        tool_conf=CONVERTER_TOOL_CONF,
                         tool_path=registry.converters_path,
                         is_shed_tool=False,
                     )

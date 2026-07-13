@@ -133,6 +133,15 @@ class ToolSourceStore(ABC):
         """
 
     @abstractmethod
+    def list_source_paths(self) -> set[str]:
+        """Return every ``source_path`` recorded in the store.
+
+        Bulk companion to :meth:`get_by_source_path` for boot-time coverage
+        checks: comparing the config-discovered tool paths against this set
+        costs one query, instead of one lookup round-trip per tool.
+        """
+
+    @abstractmethod
     def count(self) -> int:
         """Return the total number of stored tool sources."""
 
@@ -194,6 +203,41 @@ class ToolSourceStore(ABC):
         """Drop any in-memory cached index so the next load_index() reads fresh.
 
         Backends override this when they cache; the default is a no-op.
+        """
+
+    @property
+    def has_freshness_probe(self) -> bool:
+        """Whether a freshness probe was configured for this store."""
+        return False
+
+    def compute_freshness_token(self) -> str | None:
+        """Return the current value of this store's freshness probe.
+
+        ``None`` when no probe is configured or the probe failed (the
+        failure is the backend's to log). Backends with a probe override.
+        """
+        return None
+
+    def index_is_fresh(self) -> bool | None:
+        """Three-way freshness verdict for the persisted index.
+
+        ``True``: the probe's current value matches the token the populator
+        stamped on the persisted index — the store provably covers the
+        current tool tree. ``False``: a probe is configured but the token
+        is missing or mismatched — the tree changed since the last
+        populate. ``None``: no probe — the caller must fall back to a
+        coverage scan.
+        """
+        return None
+
+    def dispose(self) -> None:  # noqa: B027 — intentional empty default
+        """Drop pooled connections and cached state so the next read reopens.
+
+        Needed when the backing file is replaced underneath the store — a
+        CVMFS publish keeps serving the pre-publish file to descriptors
+        that were already open, so only a connection opened afterwards
+        sees the new snapshot. Default is a no-op; engine-holding backends
+        override.
         """
 
     def close(self) -> None:  # noqa: B027 — intentional empty default

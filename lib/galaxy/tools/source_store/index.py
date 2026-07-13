@@ -19,6 +19,12 @@ from pydantic import (
 )
 
 from galaxy.tool_util.version import parse_version
+from galaxy.tools import (
+    DatabaseOperationTool,
+    InteractiveTool,
+    Tool,
+    tool_types,
+)
 from galaxy.util.hash_util import md5_hash_str
 
 
@@ -42,8 +48,16 @@ class ToolIndexEntry(BaseModel):
     description: str = ""
 
     # === Classification ===
+    icon: str | None = None
+    xrefs: list[dict[str, Any]] = Field(default_factory=list)
+    is_workflow_compatible: bool = True
     panel_section_id: str | None = None
     panel_section_name: str | None = None
+    # True when the tool was a ``<tool>`` item of a tool-panel conf — top-level
+    # or inside a section — i.e. the set the eager conf walk places in the
+    # panel and records in the integrated tool panel. Converter and
+    # data-manager discoveries are indexed for lookups but never placed.
+    in_panel: bool = True
     labels: list[str] = Field(default_factory=list)
     edam_operations: list[str] = Field(default_factory=list)
     edam_topics: list[str] = Field(default_factory=list)
@@ -69,6 +83,11 @@ class ToolIndexEntry(BaseModel):
     # User-facing tags from ``<tool>`` config (distinct from ``labels``).
     # Surfaced for custom tool filters that bucket tools by tag.
     tags: list[str] = Field(default_factory=list)
+    # ``<data_manager id="...">`` from the data manager conf that references
+    # this tool. The conf id and the tool XML id may differ;
+    # ``DataManagerTool.exec_after_process`` resolves the registry by conf
+    # id, so materialise must restore it.
+    data_manager_id: str | None = None
 
     # === Tests (for /api/tools/tests_summary) ===
     test_count: int = 0
@@ -91,6 +110,25 @@ class ToolIndexEntry(BaseModel):
     # === Timestamps ===
     indexed_at: datetime | None = None
 
+    # ``model_class`` and ``form_style`` are pure functions of ``tool_type``,
+    # so they are derived at read time rather than persisted — a stored copy
+    # would go silently stale if the ``Tool.to_dict`` classification changed
+    # (the index schema hash only catches field-shape drift, not value drift).
+
+    @property
+    def model_class(self) -> str:
+        return self._tool_class.__name__
+
+    @property
+    def form_style(self) -> str:
+        tool_class = self._tool_class
+        regular = tool_class is Tool or issubclass(tool_class, (DatabaseOperationTool, InteractiveTool))
+        return "regular" if regular else "special"
+
+    @property
+    def _tool_class(self) -> type[Tool]:
+        return tool_types.get(self.tool_type, Tool)
+
     def to_api_dict(self, detail: bool = False) -> dict[str, Any]:
         """Convert to /api/tools response format."""
         result: dict[str, Any] = {
@@ -98,9 +136,14 @@ class ToolIndexEntry(BaseModel):
             "name": self.name,
             "version": self.version,
             "description": self.description,
+            "model_class": self.model_class,
+            "icon": self.icon,
             "labels": self.labels,
             "panel_section_id": self.panel_section_id,
             "panel_section_name": self.panel_section_name,
+            "is_workflow_compatible": self.is_workflow_compatible,
+            "xrefs": self.xrefs,
+            "form_style": self.form_style,
             "hidden": self.hidden,
         }
         if detail:
@@ -136,6 +179,21 @@ class ToolIndexEntry(BaseModel):
         return entry
 
 
+class ToolPanelItem(BaseModel):
+    """One panel placement — a conf ``<tool>`` item, top-level or sectioned.
+
+    Placements are what the eager conf walk iterates; recording them
+    separately from ``ToolIndex.entries`` (which collapses same-id tools to
+    one winner) lets the lazy fast panel init rebuild the live and
+    integrated panels without walking the confs.
+    """
+
+    tool_id: str
+    section_id: str | None = None
+    section_name: str | None = None
+    hidden: bool = False
+
+
 class ToolIndex(BaseModel):
     """
     In-memory index of all tools for fast API access.
@@ -154,12 +212,24 @@ class ToolIndex(BaseModel):
     # tools whose XML lacks a ``version`` attribute.
     entries_by_version: dict[str, dict[str, ToolIndexEntry]] = Field(default_factory=dict)
     by_section: dict[str, list[str]] = Field(default_factory=dict)
+    # Ordered panel placements, one per conf ``<tool>`` item, appended by
+    # ``add_entry`` in discovery (= conf) order. ``entries`` collapses
+    # same-id tools from different conf placements to one winner, so it
+    # cannot reproduce the panel: a tool id referenced by two confs (or two
+    # sections) has one entry but two placements. The lazy fast panel init
+    # replays these instead of walking the confs.
+    panel_items: list["ToolPanelItem"] = Field(default_factory=list)
     panel_views: dict[str, dict] = Field(default_factory=dict)
     built_at: datetime | None = None
+    # Freshness-probe value captured by the populator run that wrote this
+    # index; boot re-probes and a match certifies coverage without a
+    # per-path scan (see :mod:`galaxy.tools.source_store.freshness`).
+    freshness_token: str | None = None
 
     # Cached computations (not serialized)
     _requirements_cache: list[dict[str, Any]] | None = PrivateAttr(default=None)
     _tests_summary_cache: dict[str, dict[str, dict]] | None = PrivateAttr(default=None)
+    _panel_item_by_key: dict[tuple[str, str | None], "ToolPanelItem"] | None = PrivateAttr(default=None)
 
     def invalidate_caches(self) -> None:
         """Invalidate all cached computations."""
@@ -185,7 +255,7 @@ class ToolIndex(BaseModel):
             return versions.get(tool_version)
         return self.entries.get(tool_id)
 
-    def add_entry(self, entry: ToolIndexEntry) -> None:
+    def add_entry(self, entry: ToolIndexEntry, *, new_placements_first: bool = False) -> None:
         """Add an entry, populating both the default and per-version maps.
 
         The "default" entry per id (used by ``ToolIndex.get(tool_id)`` and
@@ -194,8 +264,16 @@ class ToolIndex(BaseModel):
         string comparison fails on e.g. ``"0.1+galaxy6"`` vs ``"0.2"``
         (which compares as ``"0.1+..." < "0.2"`` lexically only by
         accident — a different prefix would flip the sign).
+
+        ``new_placements_first``: place a not-yet-seen panel placement at
+        the head of its section instead of the tail. Partial updates (a shed
+        install adding a tool to an existing index) pass this to mirror the
+        eager runtime behaviour, where ``update_or_append`` inserts the new
+        tool at its conf-fragment position — the top of the section. Full
+        rebuilds append, preserving conf order.
         """
         self.entries_by_version.setdefault(entry.id, {})[entry.version or ""] = entry
+        self._record_panel_item(entry, new_placements_first=new_placements_first)
         existing = self.entries.get(entry.id)
         if existing is None:
             self.entries[entry.id] = entry
@@ -208,6 +286,40 @@ class ToolIndex(BaseModel):
             replace = (entry.version or "") >= (existing.version or "")
         if replace:
             self.entries[entry.id] = entry
+
+    def _record_panel_item(self, entry: ToolIndexEntry, new_placements_first: bool = False) -> None:
+        """Record ``entry``'s panel placement, keyed on (tool id, section).
+
+        Every ``add_entry`` call is one conf item, so appending here keeps
+        placements in conf order; re-adding the same id in the same section
+        (a rescan, a version bump) updates the existing placement in place.
+        """
+        if not entry.in_panel:
+            return
+        # Keyed lookup over ``panel_items`` — rebuilt lazily because private
+        # attrs reset to their defaults on ``model_validate``.
+        if self._panel_item_by_key is None or len(self._panel_item_by_key) != len(self.panel_items):
+            self._panel_item_by_key = {(item.tool_id, item.section_id): item for item in self.panel_items}
+        key = (entry.id, entry.panel_section_id)
+        item = self._panel_item_by_key.get(key)
+        if item is not None:
+            item.section_name = entry.panel_section_name
+            item.hidden = entry.hidden
+            return
+        item = ToolPanelItem(
+            tool_id=entry.id,
+            section_id=entry.panel_section_id,
+            section_name=entry.panel_section_name,
+            hidden=entry.hidden,
+        )
+        insert_at = len(self.panel_items)
+        if new_placements_first:
+            for position, existing in enumerate(self.panel_items):
+                if existing.section_id == entry.panel_section_id:
+                    insert_at = position
+                    break
+        self.panel_items.insert(insert_at, item)
+        self._panel_item_by_key[key] = item
 
     def list_all(
         self,

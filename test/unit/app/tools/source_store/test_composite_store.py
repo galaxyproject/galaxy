@@ -176,3 +176,26 @@ def test_load_index_merges_entries_by_version(two_paths):
         entry = merged.get("multi", version)
         assert entry is not None
         assert entry.name == name
+
+
+def test_list_source_paths_unions_members(two_paths):
+    pa, pb = two_paths
+    a = SqliteToolSourceStore(url=_sqlite_url(pa))
+    b = SqliteToolSourceStore(url=_sqlite_url(pb))
+    src_a = _src("ha", tool_id="ta")
+    src_a.source_path = "/tools/a.xml"
+    a.store(src_a)
+    src_b = _src("hb", tool_id="tb")
+    src_b.source_path = "/tools/b.xml"
+    b.store(src_b)
+    composite = CompositeToolSourceStore(members=[("a", a), ("b", b)], default="b")
+    assert composite.list_source_paths() == {"/tools/a.xml", "/tools/b.xml"}
+
+
+def test_read_only_member_names(two_paths):
+    pa, pb = two_paths
+    writable = SqliteToolSourceStore(url=_sqlite_url(pa))
+    SqliteToolSourceStore(url=_sqlite_url(pb)).store(_src("h"))
+    read_only = SqliteToolSourceStore(url=_sqlite_url(pb), read_only=True)
+    composite = CompositeToolSourceStore(members=[("ro", read_only), ("rw", writable)], default="rw")
+    assert composite.read_only_member_names == {"ro"}

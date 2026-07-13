@@ -35,6 +35,7 @@ from whoosh.qparser import (
 from whoosh.scoring import BM25F
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
@@ -88,8 +89,12 @@ class ToolSearchTuning:
         )
 
 
-def build_schema(tuning: ToolSearchTuning) -> Schema:
-    """Whoosh schema mirroring ``ToolPanelViewSearch`` field set + boosts."""
+def build_search_schema(tuning: ToolSearchTuning, *, help_boost: float | None = None) -> Schema:
+    """Whoosh schema shared by eager toolbox search and store search.
+
+    ``help_boost`` adds the eager-only help field; the populator cannot index
+    rendered help text, so store search leaves it out.
+    """
     schema_conf: dict = {
         "id": ID(stored=True, unique=True),
         "id_exact": NGRAMWORDS(
@@ -112,7 +117,13 @@ def build_schema(tuning: ToolSearchTuning) -> Schema:
             analyzer=analysis.StemmingAnalyzer(),
         ),
         "labels": KEYWORD(field_boost=tuning.label_boost),
+        "tool_tags": TEXT(
+            field_boost=tuning.label_boost,
+            analyzer=analysis.KeywordAnalyzer(lowercase=True, commas=True),
+        ),
     }
+    if help_boost is not None:
+        schema_conf["help"] = TEXT(field_boost=help_boost, analyzer=analysis.StemmingAnalyzer())
     if tuning.enable_ngram_search:
         schema_conf["name"] = NGRAMWORDS(
             minsize=tuning.ngram_minsize,
@@ -169,6 +180,12 @@ def _entry_to_doc(entry: ToolIndexEntry) -> dict | None:
         doc["stub"] = unicodify(entry.id)
     if entry.labels:
         doc["labels"] = unicodify(" ".join(entry.labels))
+    tool_id = (entry.id or "").lower()
+    all_ids = [tool_id]
+    if "/repos/" in tool_id:
+        all_ids = [tool_id, tool_id.rsplit("/", 1)[0], tool_id.rsplit("/", 2)[-2]]
+    if tags := curated_tool_tags(all_ids):
+        doc["tool_tags"] = unicodify(",".join(tags))
     return doc
 
 
@@ -183,7 +200,7 @@ class ToolWhooshIndex:
     def __init__(self, index_dir: str, tuning: ToolSearchTuning) -> None:
         self.index_dir = index_dir
         self.tuning = tuning
-        self.schema = build_schema(tuning)
+        self.schema = build_search_schema(tuning)
 
     def _open(self) -> index.FileIndex:
         os.makedirs(self.index_dir, exist_ok=True)
@@ -287,6 +304,7 @@ class ToolWhooshIndex:
             "repository",
             "owner",
             "labels",
+            "tool_tags",
         ]
         parser = MultifieldParser(search_fields, schema=ix.schema, group=OrGroup)
         parsed = parser.parse(query)

@@ -11,7 +11,10 @@ import gzip
 import json
 import logging
 import os
-from collections.abc import Iterator
+from collections.abc import (
+    Callable,
+    Iterator,
+)
 from datetime import datetime
 from typing import (
     Any,
@@ -103,9 +106,11 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         self,
         url: str,
         read_only: bool = False,
+        freshness_probe: Callable[[], str] | None = None,
     ) -> None:
         self.url = url
         self.read_only = read_only
+        self._freshness_probe = freshness_probe
         self._cached_index: ToolIndex | None = None
 
         self._ensure_sqlite_parent_directory(url)
@@ -247,6 +252,15 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             )
             return self._row_to_stored(row) if row is not None else None
 
+    def list_source_paths(self) -> set[str]:
+        with self._session() as session:
+            return {
+                path
+                for (path,) in session.execute(
+                    select(_ToolSourceRow.source_path).where(_ToolSourceRow.source_path.is_not(None))
+                ).all()
+            }
+
     def count(self) -> int:
         with self._session() as session:
             return session.query(_ToolSourceRow).count()
@@ -303,8 +317,10 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         index = self.load_index() or ToolIndex()
         # add_entry keeps ``entries_by_version`` in step with ``entries``;
         # versioned lookups read the per-version map (see the database
-        # backend's update_index_entry).
-        index.add_entry(entry)
+        # backend's update_index_entry). Single-entry writes are runtime
+        # additions (a shed install, a self-heal), so a new placement goes
+        # to the head of its section like the eager runtime insert does.
+        index.add_entry(entry, new_placements_first=True)
         index.invalidate_caches()
         if entry.panel_section_id:
             index.by_section.setdefault(entry.panel_section_id, [])
@@ -314,6 +330,54 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def invalidate_index_cache(self) -> None:
         self._cached_index = None
+
+    def dispose(self) -> None:
+        self._engine.dispose()
+        self._cached_index = None
+
+    def close(self) -> None:
+        self.dispose()
+
+    @property
+    def has_freshness_probe(self) -> bool:
+        return self._freshness_probe is not None
+
+    def compute_freshness_token(self) -> str | None:
+        if self._freshness_probe is None:
+            return None
+        try:
+            return self._freshness_probe()
+        except Exception as e:
+            log.error("Freshness probe for tool source store %s failed: %s", self.url, e)
+            return None
+
+    def index_is_fresh(self) -> bool | None:
+        if self.read_only:
+            # Trust by construction: a read-only store is published together
+            # with the tools it indexes (the CVMFS model), so a schema-valid
+            # index is authoritative — ``load_index`` already discards on
+            # schema-hash mismatch. Comparing a stamped repository revision
+            # instead would be unsound: the publisher populates *inside* the
+            # publish transaction at revision N, clients then see N+1, so
+            # the stamp could never match. The probe, if configured, serves
+            # the watcher's change detection only.
+            try:
+                return self.load_index() is not None
+            except Exception as e:
+                # e.g. the sqlite exists but was never populated (no
+                # tables) — same verdict as "no index": not loadable.
+                log.error("Loading index from read-only store %s failed: %s", self.url, e)
+                return False
+        if self._freshness_probe is None:
+            return None
+        current = self.compute_freshness_token()
+        if current is None:
+            # Probe configured but unreadable — never report fresh.
+            return False
+        index = self.load_index()
+        if index is None or index.freshness_token is None:
+            return False
+        return index.freshness_token == current
 
     # --- internals ------------------------------------------------------
 

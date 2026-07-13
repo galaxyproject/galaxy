@@ -116,6 +116,27 @@ class CompositeToolSourceStore(ToolSourceStore):
                 seen.add(h)
                 yield h
 
+    def list_source_paths(self) -> set[str]:
+        paths: set[str] = set()
+        for _name, member in self._members:
+            paths |= member.list_source_paths()
+        return paths
+
+    @property
+    def members(self) -> list[tuple[str, ToolSourceStore]]:
+        """The ``(name, store)`` pairs, in read-priority order."""
+        return list(self._members)
+
+    @property
+    def read_only_member_names(self) -> set[str]:
+        """Names of member stores no populator can write to.
+
+        The boot coverage check treats paths routed to these differently:
+        a miss there can never be healed by running the populator, so it
+        must not trigger one.
+        """
+        return {name for name, member in self._members if member.read_only}
+
     def count(self) -> int:
         # Distinct hashes across the composite.
         return sum(1 for _ in self.list_all())
@@ -160,6 +181,15 @@ class CompositeToolSourceStore(ToolSourceStore):
                 for tid in ids:
                     if tid not in bucket:
                         bucket.append(tid)
+            # Same collision rule per (tool id, section): earlier members'
+            # placements win, later members append theirs after.
+            seen_placements = {(item.tool_id, item.section_id) for item in merged.panel_items}
+            for item in idx.panel_items:
+                placement_key = (item.tool_id, item.section_id)
+                if placement_key in seen_placements:
+                    continue
+                seen_placements.add(placement_key)
+                merged.panel_items.append(item)
             for view_name, view in idx.panel_views.items():
                 merged.panel_views.setdefault(view_name, view)
             if idx.built_at and (merged.built_at is None or idx.built_at > merged.built_at):
@@ -171,6 +201,34 @@ class CompositeToolSourceStore(ToolSourceStore):
     def invalidate_index_cache(self) -> None:
         for _name, member in self._members:
             member.invalidate_index_cache()
+
+    def index_is_fresh(self) -> bool | None:
+        """Aggregate the member verdicts.
+
+        A stale *writable* member makes the composite stale — the populator
+        can heal it, so report ``False`` and let boot run it. A read-only
+        member is trusted whenever its index loads under the current schema
+        (see the SQLAlchemy backend): ``False`` there means no loadable
+        index at all, which can't be healed locally — warn and continue,
+        the publisher owns repopulation. A member without a probe
+        downgrades an otherwise-fresh verdict to ``None`` so the caller
+        still runs its coverage scan.
+        """
+        verdict: bool | None = True
+        for name, member in self._members:
+            fresh = member.index_is_fresh()
+            if fresh is False:
+                if member.read_only:
+                    log.warning(
+                        "Read-only tool source store %r has no loadable index; "
+                        "its tools will parse eagerly until it is repopulated upstream",
+                        name,
+                    )
+                else:
+                    return False
+            elif fresh is None:
+                verdict = None
+        return verdict
 
     def close(self) -> None:
         """Propagate close() to every member store."""

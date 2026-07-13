@@ -6,6 +6,7 @@ galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.tools.source_store.discover import (
+    discover_tools,
     discover_tools_from_config,
     DiscoveredTool,
 )
@@ -131,3 +132,38 @@ def test_dataclass_defaults_are_independent_lists():
     b = DiscoveredTool(path="/b", tool_conf="/c", tool_path=None)
     a.labels.append("x")
     assert b.labels == []
+
+
+def test_only_confs_skips_unlisted_conf_walk(tmp_path):
+    conf_bodies = {}
+    for name in ("a", "b"):
+        tool = tmp_path / f"{name}_tool.xml"
+        tool.write_text(f'<tool id="{name}" version="1.0"><command>echo</command></tool>')
+        conf = tmp_path / f"{name}_conf.xml"
+        conf.write_text(f'<toolbox tool_path="{tmp_path}"><tool file="{tool.name}"/></toolbox>')
+        conf_bodies[name] = str(conf)
+
+    class _Cfg:
+        root = None
+        tool_path = str(tmp_path)
+        enable_beta_tool_formats = False
+        data_manager_config_file = None
+        shed_data_manager_config_file = None
+
+        def all_tool_config_files(self):
+            return [conf_bodies["a"], conf_bodies["b"]]
+
+    cfg = _Cfg()
+    walked = {
+        d.tool_conf
+        for d in discover_tools(cfg, include_bundled=False, include_converters=False)  # type: ignore[arg-type]
+        if d.tool_conf in conf_bodies.values()
+    }
+    assert walked == set(conf_bodies.values())
+
+    walked = {
+        d.tool_conf
+        for d in discover_tools(cfg, include_bundled=False, include_converters=False, only_confs={conf_bodies["a"]})  # type: ignore[arg-type]
+        if d.tool_conf in conf_bodies.values()
+    }
+    assert walked == {conf_bodies["a"]}

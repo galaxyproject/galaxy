@@ -223,9 +223,10 @@ class TestBuildToolSourceStore:
         class CapturingStore:
             read_only = False
 
-            def __init__(self, url: str, read_only: bool):
+            def __init__(self, url: str, read_only: bool, freshness_probe=None):
                 self.url = url
                 self.read_only = read_only
+                self.freshness_probe = freshness_probe
 
         monkeypatch.setattr(factory_module, "SqlAlchemyToolSourceStore", CapturingStore)
         config = FakeConfig(
@@ -241,11 +242,11 @@ class TestBuildToolSourceStore:
 
     def test_named_store_missing_url_raises(self):
         with pytest.raises(ConfigurationError):
-            build_named_store("missing", {"read_only": True})
+            build_named_store("missing", {"read_only": True}, None)  # type: ignore[arg-type]
 
     def test_named_store_old_backend_path_spec_raises(self, tmp_path):
         with pytest.raises(ConfigurationError):
-            build_named_store("old", {"backend": "sqlalchemy", "path": str(tmp_path / "old.sqlite")})
+            build_named_store("old", {"backend": "sqlalchemy", "path": str(tmp_path / "old.sqlite")}, None)  # type: ignore[arg-type]
 
 
 class TestPerConfStoreRouting:

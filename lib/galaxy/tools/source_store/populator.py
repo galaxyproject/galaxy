@@ -61,11 +61,14 @@ from galaxy.queues import (
     control_queues_for_session,
     galaxy_exchange,
 )
+from galaxy.tool_util.ontologies.ontology_data import expand_ontology_data
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.parser.util import parse_tool_version_with_defaults
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
+from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
 from galaxy.tools.source_store.discover import (
+    CONVERTER_TOOL_CONF,
     discover_tools,
     DiscoveredTool,
 )
@@ -77,6 +80,7 @@ from galaxy.tools.source_store.factory import (
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
+    ToolPanelItem,
 )
 from galaxy.tools.source_store.interface import (
     ReadOnlyStoreError,
@@ -192,6 +196,18 @@ def send_reload_notification(config: _ReloadNotificationConfig) -> bool:
     except Exception as e:
         log.error(f"Failed to send reload notification: {e}")
         return False
+
+
+def _broadcast_reload(config: _ReloadNotificationConfig, app=None) -> None:
+    """Tell peer Galaxy processes to drop their cached source-store index."""
+    if app is not None:
+        # Local import: populator -> queue_worker -> lazy_toolbox -> populator
+        # is a real import cycle if this is imported at module load time.
+        from galaxy.queue_worker import send_control_task
+
+        send_control_task(app, "reload_tool_source_cache")
+    else:
+        send_reload_notification(config)
 
 
 class ToolFileWatcher:
@@ -356,7 +372,7 @@ def whoosh_dir_for_store(tool_search_index_dir: str | None, store_name: str) -> 
     return os.path.join(tool_search_index_dir, sub)
 
 
-def _build_whoosh_for_store(config: GalaxyAppConfiguration, store_name: str, tool_index: ToolIndex) -> None:
+def build_whoosh_for_store(config: GalaxyAppConfiguration, store_name: str, tool_index: ToolIndex) -> None:
     """Rebuild the whoosh index for ``store_name`` from ``tool_index``.
 
     No-ops if ``tool_search_index_dir`` is unset. Logs and swallows whoosh
@@ -376,10 +392,42 @@ def _build_whoosh_for_store(config: GalaxyAppConfiguration, store_name: str, too
         log.error("Whoosh build for store %s failed: %s", store_name, e)
 
 
+def _merge_panel_order(previous: list[ToolPanelItem], rebuilt: list[ToolPanelItem]) -> list[ToolPanelItem]:
+    """Reorder a full rebuild's placements to the previous index's order.
+
+    Placements surviving the rebuild keep their previous position (with the
+    rebuilt item's fresh section name / hidden flag); placements the rebuild
+    dropped disappear; genuinely new placements slot in after the last
+    surviving placement of their section — the position the eager
+    ``update_or_append`` gives a tool it has no recorded index for.
+    """
+    rebuilt_by_key = {(item.tool_id, item.section_id): item for item in rebuilt}
+    merged: list[ToolPanelItem] = []
+    seen: set[tuple[str, str | None]] = set()
+    for item in previous:
+        key = (item.tool_id, item.section_id)
+        if key in rebuilt_by_key and key not in seen:
+            seen.add(key)
+            merged.append(rebuilt_by_key[key])
+    for item in rebuilt:
+        key = (item.tool_id, item.section_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        insert_at = len(merged)
+        for position in range(len(merged) - 1, -1, -1):
+            if merged[position].section_id == item.section_id:
+                insert_at = position + 1
+                break
+        merged.insert(insert_at, item)
+    return merged
+
+
 def build_index_entry_from_source(
     discovered: DiscoveredTool,
     stored: StoredToolSource,
     tool_source: ToolSource,
+    biotools_metadata_source=None,
 ) -> ToolIndexEntry | None:
     """Assemble a :class:`ToolIndexEntry` from a populator triple.
 
@@ -416,8 +464,26 @@ def build_index_entry_from_source(
 
         tool_type = tool_source.parse_tool_type() or "default"
 
-        edam_operations = list(tool_source.parse_edam_operations() or ())
-        edam_topics = list(tool_source.parse_edam_topics() or ())
+        lowered = tool_id.lower()
+        all_ids = [lowered]
+        if "/repos/" in lowered:
+            all_ids = [lowered, lowered.rsplit("/", 1)[0], lowered.rsplit("/", 2)[-2]]
+        # Same ontology expansion as ``Tool.__init__``: curated EDAM mapping
+        # overrides and legacy bio.tools xrefs included.
+        ontology_data = expand_ontology_data(tool_source, all_ids, biotools_metadata_source)
+        edam_operations = list(ontology_data.edam_operations or ())
+        edam_topics = list(ontology_data.edam_topics or ())
+        xrefs: list[dict[str, Any]] = [dict(x) for x in ontology_data.xrefs or ()]
+
+        icon = tool_source.parse_icon()
+
+        is_workflow_compatible = not tool_type.startswith("data_source")
+        pages = tool_source.parse_input_pages()
+        if pages is not None and len(pages.page_sources) > 1:
+            is_workflow_compatible = False
+        root = getattr(tool_source, "root", None)
+        if root is not None and str(root.get("workflow_compatible", "True")).lower() in ("false", "0", "no"):
+            is_workflow_compatible = False
 
         # Honour the same version-default rules as ``Tool.__init__``: empty
         # ``version`` on a pre-16.04-profile tool becomes "1.0.0"; on newer
@@ -430,8 +496,12 @@ def build_index_entry_from_source(
             version=version,
             name=tool_source.parse_name() or "",
             description=tool_source.parse_description() or "",
+            icon=icon,
+            xrefs=xrefs,
+            is_workflow_compatible=is_workflow_compatible,
             panel_section_id=discovered.section_id,
             panel_section_name=discovered.section_name,
+            in_panel=discovered.data_manager_id is None and discovered.tool_conf != CONVERTER_TOOL_CONF,
             labels=list(discovered.labels or ()),
             edam_operations=edam_operations,
             edam_topics=edam_topics,
@@ -443,6 +513,7 @@ def build_index_entry_from_source(
             require_login=require_login,
             tool_type=tool_type,
             tags=[],
+            data_manager_id=discovered.data_manager_id,
             tool_shed=discovered.tool_shed,
             repository_name=discovered.repository_name,
             repository_owner=discovered.repository_owner,
@@ -482,12 +553,12 @@ def _build_stores(config: GalaxyAppConfiguration) -> dict[str, ToolSourceStore]:
     for name in referenced:
         if name not in catalog:
             raise RuntimeError(f"tool_conf references store {name!r} but no such entry in tool_source_stores")
-        stores[name] = build_named_store(name, catalog[name])
+        stores[name] = build_named_store(name, catalog[name], config)
 
     return stores
 
 
-def _build_conf_to_store_map(config: GalaxyAppConfiguration) -> dict[str, str]:
+def conf_to_store_map(config: GalaxyAppConfiguration) -> dict[str, str]:
     """Map each tool_conf path to its declared store name (default if absent)."""
     out: dict[str, str] = {}
     for path in config.all_tool_config_files():
@@ -544,6 +615,7 @@ def populate_store_inline(
     target: str | None = None,
     prune: bool = False,
     path_guids: dict[str, str | None] | None = None,
+    app=None,
 ) -> dict[str, int]:
     """In-process populator entry.
 
@@ -570,10 +642,12 @@ def populate_store_inline(
     ``broadcast=True`` sends a ``reload_tool_source_cache`` control task
     after every store write succeeds, so peer Galaxy processes refresh
     their cached index. Shed-install and ``reset_shed_tools`` set this.
+    Pass ``app`` to route in-process broadcasts through ``send_control_task``,
+    which declares dynamic per-process queues for the SQLAlchemy transport.
     """
     log.info("Building tool source stores...")
     stores = _build_stores(config)
-    conf_to_store = _build_conf_to_store_map(config)
+    conf_to_store = conf_to_store_map(config)
 
     if target is not None:
         if target not in stores:
@@ -589,6 +663,10 @@ def populate_store_inline(
         log.info(f"Skipping read-only stores: {skipped_read_only}")
     log.info(f"Writable target stores: {sorted(writable_names)}")
 
+    # Capture freshness tokens before the tree walk: a tree that changes
+    # while we scan it must read as stale on the next boot, never as fresh.
+    freshness_tokens = {name: stores[name].compute_freshness_token() for name in sorted(writable_names)}
+
     log.info("Discovering tools from configuration...")
 
     stats = {"processed": 0, "stored": 0, "skipped": 0, "unchanged": 0, "errors": 0}
@@ -599,10 +677,23 @@ def populate_store_inline(
     include_converters = target is None
     if include_converters:
         _ensure_datatypes_registry(config)
+    # Walk only confs routed to a store this run writes: the per-tool
+    # existence checks are the expensive part of discovery on network
+    # filesystems, and tools routed elsewhere (read-only stores, stores
+    # outside --target) would be dropped right after anyway. Bundled tools
+    # route to the default store, so their walk follows the same gate.
+    writable_confs = {conf for conf, name in conf_to_store.items() if name in writable_names}
+    default_writable = DEFAULT_STORE_NAME in writable_names
     # ``parallel`` governs both pools: the discovery existence checks here and
     # the parse/store workers below.
     discovered_tools = list(
-        discover_tools(config, include_bundled=True, include_converters=include_converters, parallel=parallel)
+        discover_tools(
+            config,
+            include_bundled=default_writable,
+            include_converters=include_converters,
+            parallel=parallel,
+            only_confs=writable_confs,
+        )
     )
 
     # Bundled tools have tool_conf="bundled"; those go to the default store.
@@ -610,7 +701,8 @@ def populate_store_inline(
     for d in discovered_tools:
         store_name = conf_to_store.get(d.tool_conf, DEFAULT_STORE_NAME)
         if store_name not in writable_names:
-            # tool routed to a read-only store, or to a store not in --target.
+            # hidden-lib / data-manager tools when the default store is
+            # outside --target — small local families discovery still walks.
             continue
         tool_specs.append((d, store_name))
 
@@ -753,6 +845,42 @@ def populate_store_inline(
                 stats["unchanged"] += 1
                 old_entry = old_entry_by_path[store_name].get(discovered.path)
                 if old_entry is not None:
+                    # The carried entry keeps the conf context of whichever
+                    # reference wrote it — possibly an ad-hoc synthesis with
+                    # no conf at all (an install's metadata generation loads
+                    # cloned tools before the conf is written). The file's
+                    # content hash can't reflect conf-level changes, so
+                    # reconcile them from the current discovery: the section
+                    # (a path referenced from several conf items, or moved
+                    # between sections) and, for shed conf references, the
+                    # repository coordinates.
+                    updates: dict[str, Any] = {}
+                    if (old_entry.panel_section_id, old_entry.panel_section_name) != (
+                        discovered.section_id,
+                        discovered.section_name,
+                    ):
+                        updates["panel_section_id"] = discovered.section_id
+                        updates["panel_section_name"] = discovered.section_name
+                    if discovered.guid is not None and (
+                        old_entry.tool_shed,
+                        old_entry.repository_name,
+                        old_entry.repository_owner,
+                        old_entry.changeset_revision,
+                    ) != (
+                        discovered.tool_shed,
+                        discovered.repository_name,
+                        discovered.repository_owner,
+                        discovered.installed_changeset_revision,
+                    ):
+                        updates.update(
+                            tool_shed=discovered.tool_shed,
+                            repository_name=discovered.repository_name,
+                            repository_owner=discovered.repository_owner,
+                            changeset_revision=discovered.installed_changeset_revision,
+                            is_local=False,
+                        )
+                    if updates:
+                        old_entry = old_entry.model_copy(update=updates)
                     index_inputs[store_name].append(old_entry)
             elif status == "skipped":
                 stats["skipped"] += 1
@@ -776,7 +904,9 @@ def populate_store_inline(
         # already on each entry (build_index_entry_from_source threads them
         # off DiscoveredTool).
         full_scan = paths is None or prune
+        biotools_metadata_source = get_galaxy_biotools_metadata_source(config)
         for store_name in sorted(writable_names):
+            previous_index = stores[store_name].load_index()
             if full_scan:
                 # Replace the index entirely from this run's discoveries.
                 index = ToolIndex()
@@ -784,16 +914,24 @@ def populate_store_inline(
                 # Partial update: load the existing index, then add/replace
                 # entries for the paths we just rescanned. Anything else
                 # stays as-is (use reconcile_index for full prune).
-                index = stores[store_name].load_index() or ToolIndex()
+                index = previous_index or ToolIndex()
             for index_input in index_inputs[store_name]:
                 if isinstance(index_input, ToolIndexEntry):
                     # Unchanged tool: prior entry carried forward, no re-parse.
-                    index.add_entry(index_input)
+                    index.add_entry(index_input, new_placements_first=not full_scan)
                     continue
                 d, stored, tool_source = index_input
-                new_entry = build_index_entry_from_source(d, stored, tool_source)
+                new_entry = build_index_entry_from_source(d, stored, tool_source, biotools_metadata_source)
                 if new_entry is not None:
-                    index.add_entry(new_entry)
+                    index.add_entry(new_entry, new_placements_first=not full_scan)
+            if full_scan and previous_index is not None and previous_index.panel_items:
+                # The placements list is the panel's ordering memory — the
+                # role integrated_tool_panel.xml plays for the eager toolbox.
+                # A shed install inserts its tool at the head of its section
+                # (mirroring the eager runtime insert); a later full rebuild
+                # must not reset that to conf order.
+                index.panel_items = _merge_panel_order(previous_index.panel_items, index.panel_items)
+            index.freshness_token = freshness_tokens.get(store_name)
             try:
                 stores[store_name].store_index(index)
                 log.info(
@@ -809,13 +947,12 @@ def populate_store_inline(
             # Single-writer principle: the toolbox stops re-building this in
             # the search hot path.
             if rebuild_whoosh:
-                _build_whoosh_for_store(config, store_name, index)
+                build_whoosh_for_store(config, store_name, index)
 
         if broadcast:
             # Tell peer Galaxy processes to drop their cached index so the
-            # next request reloads what we just wrote. ``send_reload_notification``
-            # tolerates a missing AMQP config (logs WARN, returns False).
-            send_reload_notification(config)
+            # next request reloads what we just wrote.
+            _broadcast_reload(config, app)
 
     return stats
 
@@ -826,6 +963,7 @@ def populate_for_paths(
     *,
     rebuild_whoosh: bool = True,
     path_guids: dict[str, str | None] | None = None,
+    app=None,
 ) -> dict[str, int]:
     """Partial-update populator entry for shed installs.
 
@@ -835,7 +973,8 @@ def populate_for_paths(
     processes pick up the new tools. ``path_guids`` supplies the guid for
     paths that no persisted conf covers yet (install-time metadata
     generation), so the ad-hoc entries are keyed like their eventual
-    conf-driven replacements.
+    conf-driven replacements. Pass ``app`` so reload broadcasts reach peers
+    on the SQLAlchemy transport.
     """
     return populate_store_inline(
         config,
@@ -843,6 +982,7 @@ def populate_for_paths(
         rebuild_whoosh=rebuild_whoosh,
         broadcast=True,
         path_guids=path_guids,
+        app=app,
     )
 
 
@@ -850,6 +990,7 @@ def reconcile_index(
     config: GalaxyAppConfiguration,
     *,
     rebuild_whoosh: bool = True,
+    app=None,
 ) -> dict[str, int]:
     """Full prune-enabled scan; used by ``reset_shed_tools``.
 
@@ -857,6 +998,7 @@ def reconcile_index(
     store with the result. Anything previously indexed that no longer has a
     matching ``<tool>`` entry in any conf is dropped. Broadcasts
     ``reload_tool_source_cache`` so peer processes drop their stale view.
+    Pass ``app`` so reload broadcasts reach peers on the SQLAlchemy transport.
     """
     return populate_store_inline(
         config,
@@ -864,6 +1006,7 @@ def reconcile_index(
         prune=True,
         rebuild_whoosh=rebuild_whoosh,
         broadcast=True,
+        app=app,
     )
 
 
