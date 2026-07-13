@@ -36,11 +36,9 @@ Example usage:
 
 from typing import (
     Literal,
-    Optional,
     overload,
     TypedDict,
     TypeVar,
-    Union,
 )
 
 from .framework import NavigatesGalaxyMixin
@@ -137,18 +135,18 @@ class UploadItem:
 
 
 class LocalUploadItem(UploadItem):
-    def stage_local_file(self, test_path: str, metadata: Optional[UploadMetadata] = None) -> "LocalUploadItem":
+    def stage_local_file(self, test_path: str, metadata: UploadMetadata | None = None) -> "LocalUploadItem":
         return self.context.stage_local_file(test_path, metadata)
 
 
 class PasteContentUploadItem(UploadItem):
-    def stage_paste_content(self, content: str, metadata: Optional[UploadMetadata] = None) -> "PasteContentUploadItem":
+    def stage_paste_content(self, content: str, metadata: UploadMetadata | None = None) -> "PasteContentUploadItem":
         return self.context.stage_paste_content(content, metadata)
 
 
 class RemoteFileUploadItem(UploadItem):
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: Optional[UploadMetadata] = None
+        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None
     ) -> "RemoteFileUploadItem":
         return self.context.stage_remote_file(source_label, file_label, metadata)
 
@@ -170,14 +168,14 @@ class _UploadStaging:
     def __init__(self, driver_wrapper: NavigatesGalaxyMixin):
         self.driver_wrapper = driver_wrapper
         self._item_count = 0
-        self._current_method_id: Optional[UploadMethodId] = None
+        self._current_method_id: UploadMethodId | None = None
 
     @property
     def components(self):
         """Access to component selectors."""
         return self.driver_wrapper.components
 
-    def stage_local_file(self, test_path: str, metadata: Optional[UploadMetadata] = None) -> LocalUploadItem:
+    def stage_local_file(self, test_path: str, metadata: UploadMetadata | None = None) -> LocalUploadItem:
         file_input = self.driver_wrapper.wait_for_selector("#local-file-input")
         if self.driver_wrapper.backend_type == "playwright":
             file_input.element_handle.set_input_files(test_path)
@@ -185,7 +183,7 @@ class _UploadStaging:
             file_input.send_keys(test_path)
         return self._create_item(LocalUploadItem, metadata)
 
-    def stage_paste_content(self, content: str, metadata: Optional[UploadMetadata] = None) -> PasteContentUploadItem:
+    def stage_paste_content(self, content: str, metadata: UploadMetadata | None = None) -> PasteContentUploadItem:
         if self._item_count > 0:
             self.components.upload_activity.add_another_dataset_button.wait_for_and_click()
 
@@ -196,7 +194,15 @@ class _UploadStaging:
 
         return self._create_item(PasteContentUploadItem, metadata)
 
-    def stage_paste_link(self, url: str, metadata: Optional[UploadMetadata] = None) -> UploadItem:
+    def stage_remote_file(
+        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None
+    ) -> RemoteFileUploadItem:
+        raise NotImplementedError("stage_remote_file must be implemented by subclasses")
+
+    def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
+        raise NotImplementedError("stage_data_library_dataset must be implemented by subclasses")
+
+    def stage_paste_link(self, url: str, metadata: UploadMetadata | None = None) -> UploadItem:
         textarea = self.components.upload_activity.paste_textarea.wait_for_visible()
         textarea.click()
         textarea.send_keys(url)
@@ -204,7 +210,7 @@ class _UploadStaging:
 
         return self._create_item(UploadItem, metadata)
 
-    def stage_paste_links(self, url_metadata_pairs: list[tuple[str, Optional[UploadMetadata]]]) -> "_UploadStaging":
+    def stage_paste_links(self, url_metadata_pairs: list[tuple[str, UploadMetadata | None]]) -> "_UploadStaging":
         urls = [pair[0] for pair in url_metadata_pairs]
         textarea = self.components.upload_activity.paste_textarea.wait_for_visible()
         textarea.click()
@@ -227,7 +233,7 @@ class _UploadStaging:
         self._item_count += len(url_metadata_pairs)
         return self
 
-    def _create_item(self, item_class: type[T], metadata: Optional[UploadMetadata] = None) -> T:
+    def _create_item(self, item_class: type[T], metadata: UploadMetadata | None = None) -> T:
         if metadata is None:
             metadata = {}
 
@@ -298,7 +304,7 @@ class _UploadStaging:
 
 class UploadContext(_UploadStaging):
     def __init__(self, method_id: UploadMethodId, driver_wrapper: NavigatesGalaxyMixin):
-        self._collection_config: Optional[tuple[str, CollectionType]] = None
+        self._collection_config: tuple[str, CollectionType] | None = None
         super().__init__(driver_wrapper)
 
         self._open_upload_activity(method_id)
@@ -312,7 +318,7 @@ class UploadContext(_UploadStaging):
         self._apply_collection_config()
 
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: Optional[UploadMetadata] = None
+        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None
     ) -> RemoteFileUploadItem:
         if self._current_method_id != "remote-files":
             raise AssertionError("stage_remote_file is only available for the remote-files method")
@@ -327,7 +333,7 @@ class UploadContext(_UploadStaging):
         self,
         source_label: str,
         file_labels: list[str],
-        metadata_list: Optional[list[Optional[UploadMetadata]]] = None,
+        metadata_list: list[UploadMetadata | None] | None = None,
     ) -> list[RemoteFileUploadItem]:
         if self._current_method_id != "remote-files":
             raise AssertionError("stage_remote_files is only available for the remote-files method")
@@ -661,27 +667,27 @@ class BaseUploadContext:
 
 
 class LocalFileContext(BaseUploadContext):
-    def stage_local_file(self, test_path: str, metadata: Optional[UploadMetadata] = None) -> LocalUploadItem:
+    def stage_local_file(self, test_path: str, metadata: UploadMetadata | None = None) -> LocalUploadItem:
         return self._context.stage_local_file(test_path, metadata)
 
 
 class PasteContentContext(BaseUploadContext):
-    def stage_paste_content(self, content: str, metadata: Optional[UploadMetadata] = None) -> PasteContentUploadItem:
+    def stage_paste_content(self, content: str, metadata: UploadMetadata | None = None) -> PasteContentUploadItem:
         return self._context.stage_paste_content(content, metadata)
 
 
 class PasteLinksContext(BaseUploadContext):
-    def stage_paste_link(self, url: str, metadata: Optional[UploadMetadata] = None) -> UploadItem:
+    def stage_paste_link(self, url: str, metadata: UploadMetadata | None = None) -> UploadItem:
         return self._context.stage_paste_link(url, metadata)
 
-    def stage_paste_links(self, url_metadata_pairs: list[tuple[str, Optional[UploadMetadata]]]) -> "PasteLinksContext":
+    def stage_paste_links(self, url_metadata_pairs: list[tuple[str, UploadMetadata | None]]) -> "PasteLinksContext":
         self._context.stage_paste_links(url_metadata_pairs)
         return self
 
 
 class RemoteFilesContext(BaseUploadContext):
     def stage_remote_file(
-        self, source_label: str, file_label: str, metadata: Optional[UploadMetadata] = None
+        self, source_label: str, file_label: str, metadata: UploadMetadata | None = None
     ) -> RemoteFileUploadItem:
         return self._context.stage_remote_file(source_label, file_label, metadata)
 
@@ -689,7 +695,7 @@ class RemoteFilesContext(BaseUploadContext):
         self,
         source_label: str,
         file_labels: list[str],
-        metadata_list: Optional[list[Optional[UploadMetadata]]] = None,
+        metadata_list: list[UploadMetadata | None] | None = None,
     ) -> "RemoteFilesContext":
         self._context.stage_remote_files(source_label, file_labels, metadata_list)
         return self
@@ -883,16 +889,18 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
     @overload
     def upload_context(self, method_id: RuleImportContextId) -> RuleImportContext: ...
 
-    def upload_context(self, method_id: Union[UploadMethodId, RuleImportContextId]) -> Union[
-        LocalFileContext,
-        PasteContentContext,
-        PasteLinksContext,
-        RemoteFilesContext,
-        CompositeFileContext,
-        DataLibraryContext,
-        ExploreZipContext,
-        RuleImportContext,
-    ]:
+    def upload_context(
+        self, method_id: UploadMethodId | RuleImportContextId
+    ) -> (
+        LocalFileContext
+        | PasteContentContext
+        | PasteLinksContext
+        | RemoteFilesContext
+        | CompositeFileContext
+        | DataLibraryContext
+        | ExploreZipContext
+        | RuleImportContext
+    ):
         if method_id == "rule":
             return RuleImportContext(self)
 
