@@ -1079,6 +1079,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.credentials: list[CredentialsRequirement] | None = None
         self._is_workflow_compatible = None
         self.__tests: str | None = None
+        self.__tests_parsed: bool = False
         self.parameters: list[ToolParameterT] | None = None
         self.template_macro_params: dict = {}
         self._macro_paths: list = []
@@ -1452,7 +1453,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
         if self.app.is_webapp:
             self.raw_help = self.__get_help_with_images(tool_source.parse_help())
-            self.parse_tests()
         self.__parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
@@ -1592,16 +1592,38 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.config_files.extend(tool_source.parse_file_sources())
 
     def parse_tests(self):
-        if self.tool_source:
-            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id, self.parameters)
+        self.__tests_parsed = True
+        source = self.tool_source
+        if source is None:
+            return
+        # ``Tool.__init__`` calls ``tool_source.mem_optimize()`` after parsing,
+        # which frees an ``XmlToolSource``'s element tree (``root`` becomes
+        # ``None``). A deferred test parse therefore rebuilds the source from
+        # its retained string — the same round-trip a stored tool source uses.
+        # Non-XML sources have no ``root`` and keep their data, so they parse
+        # directly.
+        if getattr(source, "root", False) is None:
             try:
-                self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
+                source = get_tool_source(raw_tool_source=source.to_string(), tool_source_class=type(source).__name__)
             except Exception:
                 self.__tests = None
-                log.exception("Failed to parse tool tests for tool '%s'", self.id)
+                log.exception("Failed to rebuild tool source for deferred test parsing of '%s'", self.id)
+                return
+        test_descriptions = parse_tool_test_descriptions(source, self.id, self.parameters)
+        try:
+            self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
+        except Exception:
+            self.__tests = None
+            log.exception("Failed to parse tool tests for tool '%s'", self.id)
 
     @property
     def tests(self) -> list[ToolTestDescription] | None:
+        # Deferred parse: the ``<tests>`` block is only needed by the
+        # test-data and tarball endpoints, so pay the (potentially
+        # seconds-long) validation cost on first access rather than at
+        # construction.
+        if not self.__tests_parsed and self.app.is_webapp:
+            self.parse_tests()
         if self.__tests:
             return [ToolTestDescription(d) for d in json.loads(self.__tests)]
         return None
