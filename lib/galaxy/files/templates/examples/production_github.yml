@@ -31,7 +31,7 @@
           help: |
               The owner of the repository - a GitHub username or organization name. Choose from
               the owners of the repositories you granted the GitHub App access to.
-              For ``github.com/galaxyproject/galaxy`` this is ``galaxyproject``.
+              For ``github.com/<owner>/<repository>``, choose ``<owner>``.
       repo:
           label: Repository Name
           type: select
@@ -39,7 +39,7 @@
           help: |
               The name of the repository, restricted to repositories the selected owner has
               granted the GitHub App access to.
-              For ``github.com/galaxyproject/galaxy`` this is ``galaxy``.
+              For ``github.com/<owner>/<repository>``, choose ``<repository>``.
       branch:
           label: Branch or Commit
           type: string
