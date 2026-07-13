@@ -17,7 +17,7 @@
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
     <datatype extension="agp" type="galaxy.datatypes.goldenpath:GoldenPath" display_in_upload="true" description="UCSC GoldenPath assembly"/>
     <datatype extension="alto" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="Analyzed Layout and Text Object" description_url="https://github.com/altoxml/documentation/wiki/Versions"/>
-    <datatype extension="pagexml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="Analyzed Layout and Text Object similar to ALTO" description_url="https://github.com/PRImA-Research-Lab/PAGE-XML/wiki/Changelog-(pagecontent)"/>
+    <datatype extension="page.xml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="Analyzed Layout and Text Object similar to ALTO" description_url="https://github.com/PRImA-Research-Lab/PAGE-XML/wiki"/>
     <datatype extension="abbyyxml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="ABBYY FineReader XML" description_url="https://support.abbyy.com/hc/en-us/articles/360017270080-Output-XML-document"/>
     <datatype extension="hocr" type="galaxy.datatypes.html:GenericHtml" mimetype="text/html" subclass="true" description="HTML format for representing OCR output." description_url="https://kba.github.io/hocr-spec/1.2/"/>
     <datatype extension="anvio_cog_profile" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" subclass="true" />
