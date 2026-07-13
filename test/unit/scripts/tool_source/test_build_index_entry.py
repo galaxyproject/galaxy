@@ -10,6 +10,11 @@ galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.tool_util.parser.interface import ToolSource
+from galaxy.tool_util.deps.requirements import (
+    ContainerDescription,
+    ToolRequirement,
+    ToolRequirements,
+)
 from galaxy.tools.source_store.discover import DiscoveredTool
 from galaxy.tools.source_store.index import ToolIndexEntry
 from galaxy.tools.source_store.interface import StoredToolSource
@@ -37,6 +42,9 @@ class _ToolSourceStub:
         tool_type: str = "default",
         edam_operations: list[str] | None = None,
         edam_topics: list[str] | None = None,
+        requirements: list[ToolRequirement] | None = None,
+        containers: list[ContainerDescription] | None = None,
+        test_count: int = 0,
     ):
         self._id = tool_id
         self._version = version
@@ -47,6 +55,9 @@ class _ToolSourceStub:
         self._tool_type = tool_type
         self._edam_operations = edam_operations or []
         self._edam_topics = edam_topics or []
+        self._requirements = ToolRequirements(requirements)
+        self._containers = containers or []
+        self._test_count = test_count
 
     def parse_id(self) -> str:
         return self._id
@@ -86,6 +97,12 @@ class _ToolSourceStub:
 
     def parse_profile(self) -> str:
         return "21.09"
+
+    def parse_requirements(self):
+        return self._requirements, self._containers, [], [], []
+
+    def parse_tests_to_dict(self):
+        return {"tests": [{} for _ in range(self._test_count)]}
 
 
 def _discovered(**overrides: Any) -> DiscoveredTool:
@@ -196,6 +213,19 @@ def test_edam_lists_threaded_through():
 def test_require_login_threaded_through():
     entry = _entry(_discovered(), _StoredStub(), _ToolSourceStub(require_login=True))
     assert entry.require_login is True
+
+
+def test_tests_requirements_and_containers_threaded_through():
+    requirement = ToolRequirement(name="samtools", type="package", version="1.19")
+    container = ContainerDescription(identifier="quay.io/biocontainers/samtools:1.19--h50ea8bc_0")
+    entry = _entry(
+        _discovered(),
+        _StoredStub(),
+        _ToolSourceStub(requirements=[requirement], containers=[container], test_count=2),
+    )
+    assert entry.test_count == 2
+    assert entry.requirements == [requirement.to_dict()]
+    assert entry.container_requirements == [container.to_dict()]
 
 
 def test_tool_source_class_taken_from_stored():

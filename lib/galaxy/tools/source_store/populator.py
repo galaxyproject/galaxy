@@ -489,6 +489,8 @@ def build_index_entry_from_source(
         # ``version`` on a pre-16.04-profile tool becomes "1.0.0"; on newer
         # profiles it raises (the outer except drops the entry).
         version = parse_tool_version_with_defaults(tool_id, tool_source)
+        requirements, containers, _, _, _ = tool_source.parse_requirements()
+        tests = tool_source.parse_tests_to_dict().get("tests", [])
 
         return ToolIndexEntry(
             id=tool_id,
@@ -512,6 +514,9 @@ def build_index_entry_from_source(
             hidden=hidden,
             require_login=require_login,
             tool_type=tool_type,
+            test_count=len(tests),
+            requirements=requirements.to_dict(),
+            container_requirements=[container.to_dict() for container in containers],
             tags=[],
             data_manager_id=discovered.data_manager_id,
             tool_shed=discovered.tool_shed,
