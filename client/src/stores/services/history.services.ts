@@ -84,7 +84,7 @@ export async function getHistoryList(offset = 0, limit: number | null = null, qu
     // TODO: to convert this to openapi-fetch we need to fix the query string handling
     // in the caller code to use the query object instead of a string
 
-    const params = `view=summary&order=update_time&offset=${offset}`;
+    const params = `view=summary&order=update_time&offset=${offset}&keys=contents_active`;
     let url = `api/histories?${params}`;
     if (limit !== null) {
         url += `&limit=${limit}`;
