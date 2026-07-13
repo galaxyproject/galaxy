@@ -1349,14 +1349,26 @@ class LazyToolBox(ToolBox):
         """
         if self._store is None:
             raise RuntimeError(f"LazyTool materialise needs a tool source store (id={entry.id!r})")
-        stored = self._store.get(entry.source_hash)
+        stored = self._stored_source_for_entry(entry)
         if stored is None:
             raise RuntimeError(
-                f"LazyTool materialise: source missing from store (id={entry.id!r}, hash={entry.source_hash!r})"
+                "LazyTool materialise: indexed source missing from store "
+                f"(id={entry.id!r}, path={entry.source_path!r}, hash={entry.source_hash!r})"
             )
         tool = self._create_tool_from_stored_source(stored, entry=entry)
         self._register_loaded_tool(tool)
         return tool
+
+    def _stored_source_for_entry(self, entry: ToolIndexEntry) -> StoredToolSource | None:
+        """Resolve path-specific source metadata without ambiguous hash lookup."""
+        if self._store is None:
+            return None
+        if entry.source_path is None:
+            return self._store.get(entry.source_hash)
+        stored = self._store.get_by_source_path(entry.source_path)
+        if stored is None or stored.hash != entry.source_hash:
+            return None
+        return stored
 
     def _load_tool_on_demand(self, tool_id: str, tool_version: str | None = None) -> Optional["Tool"]:
         """
@@ -1391,9 +1403,14 @@ class LazyToolBox(ToolBox):
             return None
 
         # Load source from store
-        stored = self._store.get(entry.source_hash)
+        stored = self._stored_source_for_entry(entry)
         if not stored:
-            log.warning(f"Tool source not found for {tool_id} (hash: {entry.source_hash})")
+            log.warning(
+                "Indexed tool source not found for %s (path: %s, hash: %s)",
+                tool_id,
+                entry.source_path,
+                entry.source_hash,
+            )
             return None
 
         # Create Tool object
@@ -1770,8 +1787,7 @@ class LazyToolBox(ToolBox):
         """
         result = super().remove_tool_by_id(tool_id, remove_from_panel=remove_from_panel)
         if self._tool_index is not None:
-            self._tool_index.entries.pop(tool_id, None)
-            self._tool_index.entries_by_version.pop(tool_id, None)
+            self._tool_index.remove_entry(tool_id)
             # In-place membership change on the same ToolIndex object: the
             # identity-keyed sibling-versions cache would otherwise keep
             # serving the removed version to lineage lookups.
@@ -1983,7 +1999,9 @@ class LazyToolBox(ToolBox):
                     req_tuple = (req.get("name"), req.get("version"), req.get("type"))
                     requirements.add(req_tuple)
             return [
-                {"name": r[0], "version": r[1], "type": r[2]} for r in requirements if r[0]  # Filter out empty names
+                {"name": r[0], "version": r[1], "type": r[2]}
+                for r in requirements
+                if r[0]  # Filter out empty names
             ]
         return []
 

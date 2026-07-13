@@ -333,6 +333,37 @@ def test_resolve_index_entry_returns_none_when_nothing_matches():
     assert box._resolve_index_entry(None, None) is None
 
 
+def test_stored_source_for_entry_uses_source_path_for_identical_content():
+    box = _seam_box()
+    entry = _entry(source_path="/tools/b/upload.xml", source_hash="same_hash")
+    expected = StoredToolSource(
+        hash="same_hash",
+        tool_source_class="XmlToolSource",
+        raw_source="<tool/>",
+        tool_id="upload1",
+        tool_dir="/tools/b",
+        source_path=entry.source_path,
+    )
+    box._store.get_by_source_path.return_value = expected
+
+    assert box._stored_source_for_entry(entry) is expected
+    box._store.get.assert_not_called()
+
+
+def test_stored_source_for_entry_rejects_stale_path_row():
+    box = _seam_box()
+    entry = _entry(source_path="/tools/b/upload.xml", source_hash="current_hash")
+    box._store.get_by_source_path.return_value = StoredToolSource(
+        hash="stale_hash",
+        tool_source_class="XmlToolSource",
+        raw_source="<tool/>",
+        source_path=entry.source_path,
+    )
+
+    assert box._stored_source_for_entry(entry) is None
+    box._store.get.assert_not_called()
+
+
 def _reconcile_box(index_hashes, store_hashes):
     box = _seam_box()
     box._store.read_only = False
