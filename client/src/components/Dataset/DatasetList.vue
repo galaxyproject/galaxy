@@ -118,6 +118,7 @@ const targetHistories = computed<TargetHistory[]>(() => {
     const ownedHistories = (histories.value as AnyHistory[])
         .filter((history) => userOwnsHistory(currentUser.value, history))
         .filter((history) => !history.deleted && !history.purged) as TargetHistory[];
+
     const sortedHistories = [...ownedHistories].sort((a, b) => {
         if (a.id === currentHistoryId.value) {
             return -1;
@@ -513,7 +514,7 @@ onMounted(() => {
             title="Copy selected datasets"
             size="medium"
             confirm
-            ok-text="Copy datasets"
+            :ok-text="bulkCopyLoading ? 'Copying...' : 'Copy datasets'"
             :close-on-ok="false"
             :ok-disabled="bulkCopyLoading || targetHistoriesLoading || !selectedTargetHistoryId"
             :ok-loading="bulkCopyLoading"
@@ -523,9 +524,10 @@ onMounted(() => {
                 <LoadingSpan message="Loading histories" />
             </GAlert>
             <div v-else>
-                <label class="font-weight-bold" for="dataset-list-bulk-copy-history-select">
-                    {{ localize("Copy to history") }}
+                <label for="dataset-list-bulk-copy-history-select">
+                    {{ localize("Select history to copy datasets to:") }}
                 </label>
+
                 <Multiselect
                     id="dataset-list-bulk-copy-history-select"
                     v-model="selectedTargetHistory"
@@ -543,37 +545,42 @@ onMounted(() => {
                     <template v-slot:singleLabel="{ option }">
                         <div class="history-option history-option-selected">
                             <div class="history-option-name">{{ option.name }}</div>
+
                             <div class="history-option-meta">
                                 <span v-if="option.update_time">
                                     Updated <UtcDate :date="option.update_time" mode="elapsed" />
                                 </span>
+
                                 <span v-if="getHistoryDatasetCount(option) !== undefined">
-                                    {{ getHistoryDatasetCount(option) }} dataset{{
-                                        getHistoryDatasetCount(option) === 1 ? "" : "s"
-                                    }}
+                                    {{ getHistoryDatasetCount(option) }}
+                                    dataset{{ getHistoryDatasetCount(option) === 1 ? "" : "s" }}
                                 </span>
                             </div>
                         </div>
                     </template>
+
                     <template v-slot:option="{ option }">
                         <div class="history-option">
                             <div class="history-option-name">{{ option.name }}</div>
+
                             <div class="history-option-meta">
                                 <span v-if="option.update_time">
                                     Updated <UtcDate :date="option.update_time" mode="elapsed" />
                                 </span>
+
                                 <span v-if="getHistoryDatasetCount(option) !== undefined">
-                                    {{ getHistoryDatasetCount(option) }} dataset{{
-                                        getHistoryDatasetCount(option) === 1 ? "" : "s"
-                                    }}
+                                    {{ getHistoryDatasetCount(option) }}
+                                    dataset{{ getHistoryDatasetCount(option) === 1 ? "" : "s" }}
                                 </span>
                             </div>
                         </div>
                     </template>
+
                     <template v-slot:noResult>
                         {{ localize("No histories found.") }}
                     </template>
                 </Multiselect>
+
                 <GAlert v-if="targetHistories.length === 0" class="mt-2 mb-0" variant="warning" show>
                     {{ localize("No target histories available.") }}
                 </GAlert>
