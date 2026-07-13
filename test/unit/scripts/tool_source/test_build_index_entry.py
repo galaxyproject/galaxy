@@ -9,12 +9,12 @@ from typing import (
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
-from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.deps.requirements import (
     ContainerDescription,
     ToolRequirement,
     ToolRequirements,
 )
+from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tools.source_store.discover import DiscoveredTool
 from galaxy.tools.source_store.index import ToolIndexEntry
 from galaxy.tools.source_store.interface import StoredToolSource
@@ -42,7 +42,7 @@ class _ToolSourceStub:
         tool_type: str = "default",
         edam_operations: list[str] | None = None,
         edam_topics: list[str] | None = None,
-        requirements: list[ToolRequirement] | None = None,
+        requirements: list[ToolRequirement | dict[str, Any]] | None = None,
         containers: list[ContainerDescription] | None = None,
         test_count: int = 0,
     ):
