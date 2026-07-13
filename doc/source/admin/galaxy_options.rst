@@ -425,19 +425,16 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    SQLAlchemy connection string for storing pre-parsed tool sources.
-    The store is a rebuildable cache that lives outside Galaxy's
-    database. This URI is used by tool source storage code paths,
-    including the population script and lazy toolbox consumers.
-    Runtime use also requires a populated store and a toolbox consumer
-    configured to read from tool source storage.
-    By default, Galaxy uses a SQLite database at
-    ``<data_dir>/tool_sources.sqlite``. Multi-host deployments should
-    point every process at the same SQLAlchemy URI, such as a SQLite
-    file on a shared filesystem or a shared PostgreSQL database.
+    SQLAlchemy connection string for the tool source store, a
+    rebuildable cache of pre-parsed tool sources kept outside Galaxy's
+    main database. Multi-host deployments should point every Galaxy
+    process at the same URI, such as a SQLite file on a shared
+    filesystem.
     Sample default ``sqlite:///<data_dir>/tool_sources.sqlite``.
-    To populate the store, run: python
+    Populate the store with: python
     scripts/tool_source/populate_store.py
+    For details see
+    https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 :Default: ``None``
 :Type: str
 
@@ -456,6 +453,8 @@
     Each entry takes a SQLAlchemy ``url`` and an optional ``read_only:
     true`` flag. For SQLite connection-level read-only, use a SQLite
     URI with ``mode=ro&uri=true``.
+    For details see
+    https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 :Default: ``None``
 :Type: map
 

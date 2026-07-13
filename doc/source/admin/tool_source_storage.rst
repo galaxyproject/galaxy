@@ -1,27 +1,26 @@
 Tool Source Storage
 ===================
 
-Galaxy can pre-parse and store tool sources, plus a lightweight index, in a
-configurable backend. This is especially useful for large Galaxy installations
-with thousands of tools.
+Overview
+--------
+
+By default, Galaxy parses every tool at startup and keeps all of them in
+memory. For installations with many tools this:
+
+- Slows down Galaxy startup significantly
+- Consumes large amounts of memory in every Galaxy process
+
+Tool source storage addresses this by doing the parsing work once, ahead of
+time:
+
+1. Tool sources are pre-parsed (with macros expanded) and stored in a
+   configurable database backend
+2. A lightweight index over the stored tools supports fast tool listings and
+   search without touching tool files
 
 A toolbox that consumes this store to load tools on demand is planned as
 follow-up work; this document covers the store, the populator, and the index
 that it will build on.
-
-Overview
---------
-
-By default, Galaxy loads all tools into memory at startup. For installations with many tools,
-this can:
-
-- Slow down Galaxy startup significantly
-- Consume large amounts of memory
-
-The tool source storage system provides the groundwork to address these issues by:
-
-1. Pre-parsing and storing tool sources in a configurable backend
-2. Maintaining a lightweight index for fast API responses
 
 Configuration
 -------------
@@ -39,19 +38,19 @@ Default Store
 
 The store lives in a standalone database - a SQLite file under
 ``<data_dir>/tool_sources.sqlite`` by default - separate from Galaxy's main
-database. It is a rebuildable cache: deleting it costs one populator run.
-This URI is used by tool source storage code paths, including the population
-script and lazy toolbox consumers. Runtime use also requires a populated store
-and a toolbox consumer configured to read from tool source storage.
+database. It is a rebuildable cache: it can be deleted at any time and
+recreated by re-running the population script.
+
+Multi-host deployments must point every Galaxy process (web workers *and*
+job handlers) at the same store — typically a SQLite file on a shared
+filesystem:
 
 .. code-block:: yaml
 
     galaxy:
-      tool_source_database_connection: postgresql://galaxy@db.example.org/tool_sources
+      tool_source_database_connection: sqlite:////shared/galaxy/tool_sources.sqlite
 
-Multi-host deployments must point every Galaxy process (web workers *and*
-job handlers) at the same store, such as a SQLite file on a shared filesystem
-or a shared database URI.
+Any other SQLAlchemy-supported database (e.g. PostgreSQL) works as well.
 
 Per-conf Store Routing (CVMFS Recipe)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -76,7 +75,7 @@ self-contained file), but any SQLAlchemy-supported database works:
           url: sqlite:///file:/cvmfs/example.org/tools/sources.sqlite?mode=ro&uri=true
           read_only: true
         site_shared:
-          url: postgresql://galaxy_ro@db.example.org/tool_sources
+          url: sqlite:///file:/shared/galaxy/tool_sources.sqlite?mode=ro&uri=true
           read_only: true
 
 Then point the tool_conf at it via the root element's ``store`` attribute
@@ -193,10 +192,10 @@ script on a schedule:
 Watch Mode (Live Updates)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For development environments or installations where tools change frequently, you can run
-the population script in watch mode. This uses ``watchdog`` to monitor tool directories
-for changes and automatically updates the store, then sends a notification via Kombu
-to trigger cache reloads in all Galaxy processes.
+As an alternative to cron, you can run the population script in watch mode to
+keep the store continuously up to date. This uses ``watchdog`` to monitor tool
+directories for changes and automatically updates the store, then sends a
+notification via Kombu to trigger cache reloads in all Galaxy processes.
 
 .. code-block:: console
 
@@ -228,9 +227,9 @@ When a tool XML file changes, watch mode will:
 
 This is useful for:
 
-- Development environments where tools are being actively edited
-- CI/CD pipelines that deploy tool updates
 - Installations using shared storage where tools may be updated externally
+- CI/CD pipelines that deploy tool updates
+- Development environments where tools are being actively edited
 
 Troubleshooting
 ---------------
@@ -256,7 +255,7 @@ To set up tool source storage on an existing Galaxy installation:
    .. code-block:: yaml
 
        galaxy:
-         use_lazy_toolbox: true
+         tool_source_database_connection: sqlite:////srv/galaxy/tool_sources.sqlite
 
 2. Run the population script:
 
