@@ -1571,17 +1571,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/file_source_templates/{template_id}/{template_version}/repositories": {
+    "/api/file_source_templates/{template_id}/{template_version}/form-data": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List the GitHub repositories the user authorized the GitHub App to access. */
-        get: operations["file_sources__github_repositories"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** Get dynamic data for a file source template form. */
+        post: operations["file_sources__template_form_data"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13211,6 +13211,20 @@ export interface components {
              * @default 0
              */
             version: number;
+        };
+        /** TemplateFormDataRequest */
+        TemplateFormDataRequest: {
+            /** Uuid */
+            uuid: string;
+            /** Variables */
+            variables?: Record<string, string | boolean | number>;
+        };
+        /** TemplateFormDataResponse */
+        TemplateFormDataResponse: {
+            /** Alert Conditions */
+            alert_conditions?: string[];
+            /** Dynamic Options */
+            dynamic_options?: Record<string, [string, string][]>;
         };
         /** FilesSourcePlugin */
         FilesSourcePlugin: {
@@ -35600,12 +35614,9 @@ export interface operations {
             };
         };
     };
-    file_sources__github_repositories: {
+    file_sources__template_form_data: {
         parameters: {
-            query: {
-                /** @description The UUID pre-allocated during the OAuth2 authorization callback. */
-                uuid: string;
-            };
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -35618,15 +35629,18 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateFormDataRequest"];
+            };
+        };
         responses: {
-            /** @description The repositories the user granted the GitHub App access to. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GithubRepository"][];
+                    "application/json": components["schemas"]["TemplateFormDataResponse"];
                 };
             };
             /** @description Request Error */

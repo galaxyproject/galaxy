@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from pydantic import (
     BaseModel,
+    Field,
     UUID4,
     ValidationError,
 )
@@ -110,6 +111,13 @@ log = logging.getLogger(__name__)
 USER_FILE_SOURCES_SCHEME = "gxuserfiles"
 
 
+def _variable_name_for_dynamic_options(template: FileSourceTemplate, marker: str) -> str | None:
+    for variable in template.variables or []:
+        if variable.type == "select" and variable.dynamic_options == marker:
+            return variable.name
+    return None
+
+
 class UserFileSourceModel(BaseModel):
     uuid: UUID4
     uri_root: str
@@ -132,6 +140,18 @@ class GithubRepository(BaseModel):
     owner: str
     repo: str
     full_name: str
+
+
+class TemplateFormDataRequest(BaseModel):
+    """Values available while rendering a post-authorization template form."""
+
+    uuid: str
+    variables: dict[str, TemplateVariableValueType] = Field(default_factory=dict)
+
+
+class TemplateFormDataResponse(BaseModel):
+    dynamic_options: dict[str, list[tuple[str, str]]] = Field(default_factory=dict)
+    alert_conditions: list[str] = Field(default_factory=list)
 
 
 class UserDefinedFileSourcesConfig(BaseModel):
@@ -262,6 +282,41 @@ class FileSourceInstancesManager:
             trans, template_server_configuration, uuid, UserFileSource, self._app_config
         )
         return [GithubRepository(**repository) for repository in list_authorized_repositories(access_token)]
+
+    def template_form_data(
+        self,
+        trans: ProvidesUserContext,
+        template_id: str,
+        template_version: int,
+        payload: TemplateFormDataRequest,
+    ) -> TemplateFormDataResponse:
+        """Return dynamic form data supplied by built-in template capabilities."""
+        template = self._catalog.find_template_by(template_id, template_version)
+        if template.configuration.type != GITHUB_TEMPLATE_TYPE:
+            return TemplateFormDataResponse()
+
+        repositories = self.list_github_repositories(trans, template_id, template_version, payload.uuid)
+        owner_variable_name = _variable_name_for_dynamic_options(template, "github_repository_owners")
+        repository_variable_name = _variable_name_for_dynamic_options(template, "github_repository_names")
+        if not owner_variable_name or not repository_variable_name:
+            return TemplateFormDataResponse()
+
+        if not repositories:
+            return TemplateFormDataResponse(alert_conditions=["repository_picker_empty"])
+
+        owner = payload.variables.get(owner_variable_name)
+        owners = sorted({repository.owner for repository in repositories})
+        dynamic_options = {owner_variable_name: [(owner, owner) for owner in owners]}
+        if isinstance(owner, str):
+            dynamic_options[repository_variable_name] = [
+                (repository.repo, repository.repo) for repository in repositories if repository.owner == owner
+            ]
+        else:
+            dynamic_options[repository_variable_name] = []
+        return TemplateFormDataResponse(
+            dynamic_options=dynamic_options,
+            alert_conditions=["repository_picker_available"],
+        )
 
     def assert_repository_authorized(
         self, trans: ProvidesUserContext, template_id: str, template_version: int, uuid: str, org: str, repo: str

@@ -3,7 +3,6 @@ import logging
 from fastapi import (
     Body,
     Path,
-    Query,
     Response,
     status,
 )
@@ -14,8 +13,9 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
-    GithubRepository,
     ModifyInstancePayload,
+    TemplateFormDataRequest,
+    TemplateFormDataResponse,
     TestModifyInstancePayload,
     UserFileSourceModel,
 )
@@ -80,24 +80,19 @@ class FastAPIFileSources:
     ) -> OAuth2Info:
         return self.file_source_instances_manager.template_oauth2(trans, template_id, template_version)
 
-    @router.get(
-        "/api/file_source_templates/{template_id}/{template_version}/repositories",
-        summary="List the GitHub repositories the user authorized the GitHub App to access.",
-        response_description="The repositories the user granted the GitHub App access to.",
-        operation_id="file_sources__github_repositories",
+    @router.post(
+        "/api/file_source_templates/{template_id}/{template_version}/form-data",
+        summary="Get dynamic data for a file source template form.",
+        operation_id="file_sources__template_form_data",
     )
-    def github_repositories(
+    def template_form_data(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         template_id: str = TemplateIdPathParam,
         template_version: int = TemplateVersionPathParam,
-        uuid: str = Query(
-            ...,
-            title="Pending File Source UUID",
-            description="The UUID pre-allocated during the OAuth2 authorization callback.",
-        ),
-    ) -> list[GithubRepository]:
-        return self.file_source_instances_manager.list_github_repositories(trans, template_id, template_version, uuid)
+        payload: TemplateFormDataRequest = Body(...),
+    ) -> TemplateFormDataResponse:
+        return self.file_source_instances_manager.template_form_data(trans, template_id, template_version, payload)
 
     @router.post(
         "/api/file_source_instances",

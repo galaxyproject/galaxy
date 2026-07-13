@@ -5,7 +5,7 @@ import { computed, ref, toRef } from "vue";
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
 import { useConfigurationTemplateCreation } from "@/components/ConfigTemplates/useConfigurationTesting";
 
-import { useGithubRepositoryOptions } from "./useGithubRepositoryOptions";
+import { useTemplateFormData } from "./useTemplateFormData";
 
 import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
 
@@ -29,7 +29,7 @@ function onFormChange(incoming: Record<string, unknown>) {
     formData.value = incoming;
 }
 
-const { alertConditions, dynamicOptions } = useGithubRepositoryOptions(
+const { alertConditions, dynamicOptions } = useTemplateFormData(
     toRef(props, "template"),
     toRef(props, "uuid"),
     formData,

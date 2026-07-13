@@ -24,6 +24,7 @@ from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
     ModifyInstancePayload,
+    TemplateFormDataRequest,
     TestUpdateInstancePayload,
     TestUpgradeInstancePayload,
     UpdateInstancePayload,
@@ -949,6 +950,18 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert responses.calls[0].request.headers["Authorization"] == "Bearer my_access_token"
         # The rotated refresh token is persisted back to the user vault.
         assert user_vault.read_secret(refresh_key) == "rotated_refresh_token"
+
+        form_data = self.manager.template_form_data(
+            self.trans,
+            "github",
+            0,
+            TemplateFormDataRequest(uuid=uuid, variables={"org": "galaxyproject"}),
+        )
+        assert form_data.dynamic_options == {
+            "org": [("galaxyproject", "galaxyproject"), ("me", "me")],
+            "repo": [("galaxy", "galaxy")],
+        }
+        assert form_data.alert_conditions == ["repository_picker_available"]
 
     def test_github_oauth_redirects_to_authorization(self, tmp_path, monkeypatch):
         self._init_github_env(tmp_path, monkeypatch)
