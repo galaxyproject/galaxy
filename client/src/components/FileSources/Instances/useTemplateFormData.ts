@@ -44,7 +44,9 @@ export function useTemplateFormData(
             error.value = errorMessageAsString(requestError);
             return;
         }
-        dynamicOptions.value = data.dynamic_options ?? {};
+        // openapi-fetch widens the server's [label, value] tuples to string[][]; they are
+        // pairs by construction, so narrow them back to SelectFormOption tuples here.
+        dynamicOptions.value = (data.dynamic_options ?? {}) as DynamicOptions;
         alertConditions.value = data.alert_conditions ?? [];
     }
 
