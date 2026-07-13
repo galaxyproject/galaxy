@@ -34,7 +34,7 @@ _PER_PAGE = 100
 _API_TIMEOUT = 30
 
 
-def _github_api_headers(access_token: str) -> dict:
+def _github_api_headers(access_token: str) -> dict[str, str]:
     """Bearer-auth headers for GitHub REST API calls (mirrors ``WritableGithubFileSystem.kw``)."""
     return {
         "Authorization": f"Bearer {access_token}",
@@ -70,9 +70,9 @@ def _raise_for_github_error(response: requests.Response) -> None:
     raise MessageException(f"GitHub API request failed with {response.status_code}: {response.text}")
 
 
-def _paginate(url: str, headers: dict, items_key: str) -> list:
+def _paginate(url: str, headers: dict[str, str], items_key: str) -> list[dict]:
     """Yield all items across paginated GitHub responses keyed by ``items_key``."""
-    items: list = []
+    items: list[dict] = []
     page = 1
     while True:
         response = requests.get(
@@ -119,7 +119,7 @@ if GithubFileSystem is not None:
             super().__init__(*args, **kwargs)
 
         @property
-        def kw(self):
+        def kw(self) -> dict:
             """Authenticate every request with the OAuth2 token as a Bearer credential.
 
             fsspec's ``GithubFileSystem`` uses HTTP Basic auth keyed on ``username``; an OAuth2

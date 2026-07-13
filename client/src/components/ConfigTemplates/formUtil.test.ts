@@ -292,6 +292,12 @@ describe("formUtils", () => {
     });
 
     describe("formDataTypedGet", () => {
+        const selectVar: TemplateVariable = {
+            name: "org",
+            type: "select",
+            dynamic_options: "github_repository_owners",
+        };
+
         it("should return undefined for an optional integer when the raw value is empty string", () => {
             const optionalIntVar: TemplateVariable = {
                 name: "timeout",
@@ -321,21 +327,11 @@ describe("formUtils", () => {
         });
 
         it("should return the selected value as a string for select variables", () => {
-            const selectVar: TemplateVariable = {
-                name: "org",
-                type: "select",
-                dynamic_options: "github_repository_owners",
-            };
             const result = formDataTypedGet(selectVar, { org: "galaxyproject" });
             expect(result).toBe("galaxyproject");
         });
 
         it("should return undefined for a select variable with no value", () => {
-            const selectVar: TemplateVariable = {
-                name: "org",
-                type: "select",
-                dynamic_options: "github_repository_owners",
-            };
             const result = formDataTypedGet(selectVar, {});
             expect(result).toBeUndefined();
         });
