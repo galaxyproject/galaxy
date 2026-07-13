@@ -19,9 +19,14 @@ Two probe kinds exist:
   automatically.
 - ``cvmfs``: the CernVM-FS repository revision, read from the
   ``user.revision`` extended attribute the CVMFS client exposes on the
-  mount point. One syscall covers every file in the repository. For a
-  store whose sqlite bundle is published in the same CVMFS transaction as
-  the tools it indexes, a matching revision is a hard consistency proof.
+  mount point. One syscall covers every file in the repository. This
+  probe only feeds the watcher's change detection: a revision transition
+  means a new publish landed and cached state should reload. It is *not*
+  a boot-time token comparison — read-only stores are trusted as
+  published (see ``SqlAlchemyToolSourceStore.index_is_fresh``: the bundle
+  ships in the same transaction as the tools it indexes), and a stamped
+  revision could never match anyway, since the publisher populates inside
+  the transaction at revision N while clients see N+1.
 """
 
 import hashlib
