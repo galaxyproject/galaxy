@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { faBurn, faCheckCircle, faCopy, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BFormSelect, BModal, BPagination, type BvModalEvent } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import type { HDASummary } from "@/api";
 import { copyDatasets, deleteDataset, loadDatasets } from "@/api/datasets";
+import { getMyHistories, type MyHistory } from "@/api/histories";
 import { updateTags } from "@/api/tags";
 import type { RowIcon } from "@/components/Common/GTable.types";
 import { STATES } from "@/components/History/Content/model/states";
@@ -69,14 +70,18 @@ const sortDesc = ref(true);
 const sortBy = ref("update_time");
 const rows = ref<HDASummary[]>([]);
 const selectedItemIds = ref<string[]>([]);
+const selectedTargetHistoryId = ref<string | null>(null);
+const targetHistories = ref<MyHistory[]>([]);
 const totalDatasets = ref(0);
 const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
 const bulkDeleteOrRestoreLoading = ref(false);
 const bulkCopyLoading = ref(false);
+const historiesLoading = ref(false);
+const showBulkCopyModal = ref(false);
 
 const { datasetTableActions } = useDatasetTableActions(() => load(true));
 const historyStore = useHistoryStore();
-const { currentHistoryId } = storeToRefs(historyStore);
+const { currentHistory, currentHistoryId } = storeToRefs(historyStore);
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const fields = computed(() => allFields.filter((field) => visibleColumns.value.includes(field.key)));
@@ -96,6 +101,15 @@ const selectedIndices = computed(() => {
     return rows.value
         .map((row, index) => (selectedItemIds.value.includes(row.id) ? index : -1))
         .filter((i) => i !== -1);
+});
+const historyOptions = computed(() => {
+    const options = targetHistories.value.map((history) => ({ text: history.name, value: history.id }));
+
+    if (currentHistory.value && !options.some((option) => option.value === currentHistory.value?.id)) {
+        options.unshift({ text: currentHistory.value.name, value: currentHistory.value.id });
+    }
+
+    return options;
 });
 
 async function load(showOverlay = false) {
@@ -232,41 +246,66 @@ async function onBulkDelete() {
     }
 }
 
-async function onBulkCopy() {
+async function loadTargetHistories() {
+    historiesLoading.value = true;
+    try {
+        const { data } = await getMyHistories({
+            limit: 1000,
+            offset: 0,
+            search: "",
+            sortBy: "update_time",
+            sortDesc: true,
+        });
+
+        targetHistories.value = data;
+    } catch (e: any) {
+        Toast.error(`Failed to load histories: ${e?.message ?? String(e)}`);
+    } finally {
+        historiesLoading.value = false;
+    }
+}
+
+async function openBulkCopyModal() {
     if (!currentHistoryId.value) {
         Toast.error("No current history found.");
         return;
     }
 
-    const datasetIdsToCopy = [...selectedItemIds.value];
-    const totalSelected = datasetIdsToCopy.length;
-    const itemCountSuffix = totalSelected > 1 ? "s" : "";
+    selectedTargetHistoryId.value = currentHistoryId.value;
+    showBulkCopyModal.value = true;
+    await loadTargetHistories();
+}
 
-    const confirmed = await confirm(
-        `Are you sure you want to copy ${totalSelected} dataset${itemCountSuffix} to your current history?`,
-        {
-            title: `Copy dataset${itemCountSuffix}`,
-            okText: `Copy dataset${itemCountSuffix}`,
-            okIcon: faCopy,
-        },
-    );
+async function onBulkCopy(event?: BvModalEvent) {
+    event?.preventDefault();
 
-    if (!confirmed) {
+    if (!selectedTargetHistoryId.value) {
+        Toast.error("Select a target history.");
         return;
     }
+
+    const datasetIdsToCopy = [...selectedItemIds.value];
+    const totalSelected = datasetIdsToCopy.length;
 
     try {
         overlay.value = true;
         bulkCopyLoading.value = true;
 
-        const { copiedDatasets, failedDatasetIds } = await copyDatasets(datasetIdsToCopy, currentHistoryId.value);
+        const { copiedDatasets, failedDatasetIds } = await copyDatasets(
+            datasetIdsToCopy,
+            selectedTargetHistoryId.value,
+        );
 
         const copiedCount = copiedDatasets.length;
         const failedCount = failedDatasetIds.length;
+        const targetHistoryName =
+            historyOptions.value.find((option) => option.value === selectedTargetHistoryId.value)?.text ??
+            "selected history";
 
         if (failedCount === 0) {
-            Toast.success(`Copied ${copiedCount} dataset${copiedCount !== 1 ? "s" : ""} to current history.`);
+            Toast.success(`Copied ${copiedCount} dataset${copiedCount !== 1 ? "s" : ""} to ${targetHistoryName}.`);
             selectedItemIds.value = [];
+            showBulkCopyModal.value = false;
         } else if (copiedCount > 0) {
             Toast.error(`Copied ${copiedCount} of ${totalSelected} datasets. Failed to copy ${failedCount} datasets.`);
             selectedItemIds.value = failedDatasetIds;
@@ -277,7 +316,6 @@ async function onBulkCopy() {
     } catch (e: any) {
         Toast.error(`Failed to copy datasets: ${e?.message ?? String(e)}`);
     } finally {
-        await historyStore.loadCurrentHistory();
         bulkCopyLoading.value = false;
 
         await load(true);
@@ -397,9 +435,9 @@ onMounted(() => {
                     v-g-tooltip.hover
                     size="sm"
                     variant="primary"
-                    :disabled="bulkCopyLoading || bulkDeleteOrRestoreLoading"
-                    :title="bulkCopyLoading ? 'Copying datasets' : 'Copy selected datasets to current history'"
-                    @click="onBulkCopy">
+                    :disabled="bulkCopyLoading || bulkDeleteOrRestoreLoading || historiesLoading"
+                    :title="bulkCopyLoading ? 'Copying datasets' : 'Copy selected datasets'"
+                    @click="openBulkCopyModal">
                     <FontAwesomeIcon :icon="faCopy" />
                     {{ localize("Copy Selected") }} ({{ selectedItemIds.length }})
                 </BButton>
@@ -428,6 +466,34 @@ onMounted(() => {
                 last-number
                 @change="onPageChange" />
         </div>
+
+        <BModal
+            id="dataset-list-bulk-copy-modal"
+            v-model="showBulkCopyModal"
+            title="Copy selected datasets"
+            ok-title="Copy datasets"
+            :ok-disabled="bulkCopyLoading || historiesLoading || !selectedTargetHistoryId"
+            :cancel-disabled="bulkCopyLoading"
+            :no-close-on-backdrop="bulkCopyLoading"
+            :no-close-on-esc="bulkCopyLoading"
+            @ok="onBulkCopy">
+            <BAlert v-if="historiesLoading" variant="info" show>
+                <LoadingSpan message="Loading histories" />
+            </BAlert>
+            <div v-else>
+                <label class="font-weight-bold" for="dataset-list-bulk-copy-history-select">
+                    {{ localize("Copy to history") }}
+                </label>
+                <BFormSelect
+                    id="dataset-list-bulk-copy-history-select"
+                    v-model="selectedTargetHistoryId"
+                    :options="historyOptions"
+                    :disabled="bulkCopyLoading || historyOptions.length === 0" />
+                <BAlert v-if="historyOptions.length === 0" class="mt-2 mb-0" variant="warning" show>
+                    {{ localize("No target histories available.") }}
+                </BAlert>
+            </div>
+        </BModal>
     </div>
 </template>
 
