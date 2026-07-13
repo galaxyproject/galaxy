@@ -4,8 +4,7 @@ A store published outside this Galaxy process — the CVMFS model, where a
 publisher repopulates the sqlite bundle in the same transaction that ships
 new tools — changes without any local filesystem event (inotify does not
 fire on CVMFS). Polling each store's freshness probe is the only reliable
-signal, and it is cheap: one probe per store per tick, a single
-extended-attribute read for CVMFS stores.
+signal, and it is cheap: one probe per store per tick.
 
 The watcher itself is deliberately dumb: it detects token transitions and
 hands the changed store names to ``on_change``. Reload mechanics —
