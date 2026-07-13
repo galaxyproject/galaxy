@@ -1,8 +1,7 @@
 """Pin ``ToolIndex`` behaviours that index consumers depend on.
 
 These unit tests run against a real ``ToolIndex`` (no mocks, no Galaxy
-app) so they're cheap and pinpoint regressions in the round-2
-Behaviours pinned:
+app) so they're cheap and pinpoint regressions. Behaviours pinned:
 
 - per-id default selection by ``packaging.version.parse``
 - ``entries_by_version`` records every indexed version
@@ -78,3 +77,36 @@ def test_serialization_round_trips_entries_by_version(index_entry, tool_index):
     multi_v01 = restored.get("multi", tool_version="0.1")
     assert multi_v01 is not None and multi_v01.version == "0.1"
     assert set(restored.entries_by_version["solo"]) == {"1.0"}
+
+
+def test_add_entry_maintains_section_projection(index_entry, tool_index):
+    index = tool_index(
+        index_entry("one", panel_section_id="sec", panel_section_name="Section"),
+        index_entry("two", panel_section_id="sec", panel_section_name="Section"),
+    )
+    assert index.by_section == {"sec": ["one", "two"]}
+
+
+def test_remove_entry_clears_all_projections(index_entry, tool_index):
+    index = tool_index(
+        index_entry("remove", version="1.0", panel_section_id="one"),
+        index_entry("remove", version="2.0", panel_section_id="two"),
+        index_entry("keep", version="1.0", panel_section_id="one"),
+    )
+
+    assert index.remove_entry("remove") is True
+    assert "remove" not in index.entries
+    assert "remove" not in index.entries_by_version
+    assert index.by_section == {"one": ["keep"]}
+    assert all(item.tool_id != "remove" for item in index.panel_items)
+
+
+def test_add_entry_invalidates_derived_metadata(index_entry, tool_index):
+    index = tool_index(index_entry("one", requirements=[{"name": "one", "type": "package"}], test_count=1))
+    assert [requirement["name"] for requirement in index.get_all_requirements()] == ["one"]
+    assert set(index.get_tests_summary()) == {"one"}
+
+    index.add_entry(index_entry("two", requirements=[{"name": "two", "type": "package"}], test_count=1))
+
+    assert [requirement["name"] for requirement in index.get_all_requirements()] == ["one", "two"]
+    assert set(index.get_tests_summary()) == {"one", "two"}

@@ -272,6 +272,7 @@ class ToolIndex(BaseModel):
         tool at its conf-fragment position — the top of the section. Full
         rebuilds append, preserving conf order.
         """
+        self.invalidate_caches()
         self.entries_by_version.setdefault(entry.id, {})[entry.version or ""] = entry
         self._record_panel_item(entry, new_placements_first=new_placements_first)
         existing = self.entries.get(entry.id)
@@ -305,6 +306,10 @@ class ToolIndex(BaseModel):
         if item is not None:
             item.section_name = entry.panel_section_name
             item.hidden = entry.hidden
+            if entry.panel_section_id is not None:
+                section_tool_ids = self.by_section.setdefault(entry.panel_section_id, [])
+                if entry.id not in section_tool_ids:
+                    section_tool_ids.append(entry.id)
             return
         item = ToolPanelItem(
             tool_id=entry.id,
@@ -320,6 +325,37 @@ class ToolIndex(BaseModel):
                     break
         self.panel_items.insert(insert_at, item)
         self._panel_item_by_key[key] = item
+        if entry.panel_section_id is not None:
+            section_tool_ids = self.by_section.setdefault(entry.panel_section_id, [])
+            if entry.id not in section_tool_ids:
+                if new_placements_first:
+                    section_tool_ids.insert(0, entry.id)
+                else:
+                    section_tool_ids.append(entry.id)
+
+    def rebuild_panel_projections(self) -> None:
+        """Rebuild panel lookup state after replacing ``panel_items``."""
+        self._panel_item_by_key = None
+        by_section: dict[str, list[str]] = {}
+        for item in self.panel_items:
+            if item.section_id is None:
+                continue
+            section_tool_ids = by_section.setdefault(item.section_id, [])
+            if item.tool_id not in section_tool_ids:
+                section_tool_ids.append(item.tool_id)
+        self.by_section = by_section
+
+    def remove_entry(self, tool_id: str) -> bool:
+        """Remove a tool and every projection derived from it."""
+        removed = self.entries.pop(tool_id, None)
+        removed_versions = self.entries_by_version.pop(tool_id, None)
+        original_panel_size = len(self.panel_items)
+        self.panel_items = [item for item in self.panel_items if item.tool_id != tool_id]
+        if removed is None and removed_versions is None and len(self.panel_items) == original_panel_size:
+            return False
+        self.rebuild_panel_projections()
+        self.invalidate_caches()
+        return True
 
     def list_all(
         self,

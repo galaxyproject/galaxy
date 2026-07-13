@@ -169,16 +169,15 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
                     .first()
                 )
                 if existing is not None:
-                    if existing.hash != tool_source.hash:
-                        existing.hash = tool_source.hash
-                        existing.tool_source_class = tool_source.tool_source_class
-                        existing.raw_source = tool_source.raw_source
-                        existing.tool_id = tool_source.tool_id
-                        existing.tool_version = tool_source.tool_version
-                        existing.tool_dir = tool_source.tool_dir
-                        existing.stored_at = tool_source.stored_at
-                        existing.extra_metadata = json.dumps(tool_source.metadata) if tool_source.metadata else None
-                        session.commit()
+                    existing.hash = tool_source.hash
+                    existing.tool_source_class = tool_source.tool_source_class
+                    existing.raw_source = tool_source.raw_source
+                    existing.tool_id = tool_source.tool_id
+                    existing.tool_version = tool_source.tool_version
+                    existing.tool_dir = tool_source.tool_dir
+                    existing.stored_at = tool_source.stored_at
+                    existing.extra_metadata = json.dumps(tool_source.metadata) if tool_source.metadata else None
+                    session.commit()
                     return tool_source.hash
             else:
                 existing = (
@@ -315,17 +314,10 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
         self._ensure_writable()
         index = self.load_index() or ToolIndex()
-        # add_entry keeps ``entries_by_version`` in step with ``entries``;
-        # versioned lookups read the per-version map (see the database
-        # backend's update_index_entry). Single-entry writes are runtime
+        # add_entry keeps every index projection in step. Single-entry writes are runtime
         # additions (a shed install, a self-heal), so a new placement goes
         # to the head of its section like the eager runtime insert does.
         index.add_entry(entry, new_placements_first=True)
-        index.invalidate_caches()
-        if entry.panel_section_id:
-            index.by_section.setdefault(entry.panel_section_id, [])
-            if entry.id not in index.by_section[entry.panel_section_id]:
-                index.by_section[entry.panel_section_id].append(entry.id)
         self.store_index(index)
 
     def invalidate_index_cache(self) -> None:

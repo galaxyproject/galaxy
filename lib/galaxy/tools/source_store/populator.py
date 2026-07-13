@@ -936,6 +936,7 @@ def populate_store_inline(
                 # (mirroring the eager runtime insert); a later full rebuild
                 # must not reset that to conf order.
                 index.panel_items = _merge_panel_order(previous_index.panel_items, index.panel_items)
+                index.rebuild_panel_projections()
             index.freshness_token = freshness_tokens.get(store_name)
             try:
                 stores[store_name].store_index(index)

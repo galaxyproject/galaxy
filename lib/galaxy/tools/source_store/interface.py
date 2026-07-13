@@ -189,14 +189,8 @@ class ToolSourceStore(ABC):
         index = self.load_index()
         if index is None:
             return
-        removed = index.entries.pop(tool_id, None)
-        removed_versions = index.entries_by_version.pop(tool_id, None)
-        if removed is None and removed_versions is None:
+        if not index.remove_entry(tool_id):
             return
-        for section_tool_ids in index.by_section.values():
-            if tool_id in section_tool_ids:
-                section_tool_ids.remove(tool_id)
-        index.invalidate_caches()
         self.store_index(index)
 
     def invalidate_index_cache(self) -> None:  # noqa: B027 — intentional empty default

@@ -121,6 +121,40 @@ class TestSqlAlchemyBackend:
         assert row.hash == "edited_hash_v2"
         assert not store.exists("edited_hash_v1")
 
+    def test_identical_content_updates_path_metadata(self, tmp_path):
+        store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "metadata.sqlite"))
+        path = "/galaxy/tools/metadata.xml"
+        original = StoredToolSource(
+            hash="same_hash",
+            tool_source_class="XmlToolSource",
+            raw_source="<tool/>",
+            tool_id="old_id",
+            tool_version="1.0",
+            tool_dir="/old/tools",
+            source_path=path,
+            metadata={"file_hash": "old"},
+        )
+        updated = StoredToolSource(
+            hash="same_hash",
+            tool_source_class="XmlToolSource",
+            raw_source="<tool/>",
+            tool_id="new_id",
+            tool_version="2.0",
+            tool_dir="/new/tools",
+            source_path=path,
+            metadata={"file_hash": "new"},
+        )
+
+        store.store(original)
+        store.store(updated)
+
+        row = store.get_by_source_path(path)
+        assert row is not None
+        assert row.tool_id == "new_id"
+        assert row.tool_version == "2.0"
+        assert row.tool_dir == "/new/tools"
+        assert row.metadata == {"file_hash": "new"}
+
     def test_pathless_sources_dedupe_on_hash(self, tmp_path):
         store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "pathless.sqlite"))
         for _ in range(2):
@@ -141,7 +175,6 @@ class TestSqlAlchemyBackend:
         store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "ridx.sqlite"))
         index = ToolIndex()
         index.add_entry(ToolIndexEntry(id="removable", version="1.0", name="Removable", panel_section_id="sec1"))
-        index.by_section["sec1"] = ["removable"]
         store.store_index(index)
 
         store.remove_index_entry("removable")
@@ -151,6 +184,7 @@ class TestSqlAlchemyBackend:
         assert reloaded is not None
         assert reloaded.get("removable") is None
         assert "removable" not in reloaded.by_section.get("sec1", [])
+        assert all(item.tool_id != "removable" for item in reloaded.panel_items)
 
     def test_update_index_entry_reaches_versioned_lookups(self, tmp_path):
         store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "uidx.sqlite"))
