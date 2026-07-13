@@ -6,6 +6,7 @@ Uses Streamable HTTP transport with stateless mode for multi-worker compatibilit
 """
 
 import logging
+from collections.abc import Callable
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -22,6 +23,12 @@ from starlette.datastructures import URL
 
 from galaxy.agents.operations import AgentOperationsManager
 from galaxy.managers.users import UserManager
+from galaxy.tool_util.deps.mulled.recommend import (
+    biocontainer_tag_built,
+    ContainerRecommendation,
+    PackageSpec,
+    recommend_container,
+)
 from galaxy.work.context import (
     GalaxyAbstractRequest,
     GalaxyAbstractResponse,
@@ -153,6 +160,33 @@ def _mcp_error_handler(operation: str):
     except Exception as e:
         logger.error(f"MCP {operation}: {e}")
         raise ValueError(f"{operation} failed: {e}") from e
+
+
+def _biocontainer_recommendation_payload(
+    packages: list[str],
+    recommend: Callable[[list[PackageSpec]], ContainerRecommendation] = recommend_container,
+    verify: Callable[[str], Optional[bool]] = biocontainer_tag_built,
+) -> dict[str, Any]:
+    """Resolve a verified biocontainer for ``packages`` and shape the MCP response.
+
+    Pure (no Galaxy app / auth): parses each ``"name"`` / ``"name=version"`` entry into a
+    ``PackageSpec``, calls the recommender, and adds a quay.io tag-existence check. ``recommend``
+    and ``verify`` are injectable so the payload shaping can be unit-tested offline.
+    """
+    specs = []
+    for pkg in packages:
+        name, _, version = pkg.partition("=")
+        if name.strip():
+            specs.append(PackageSpec(name.strip(), version.strip() or None))
+    recommendation = recommend(specs)
+    return {
+        "image": recommendation.image,
+        "found": recommendation.found,
+        "match_quality": recommendation.match_quality.value,
+        "source": recommendation.source.value,
+        "notes": list(recommendation.notes),
+        "verified": verify(recommendation.image) if recommendation.image else None,
+    }
 
 
 def get_mcp_app(gx_app):
@@ -966,6 +1000,40 @@ def get_mcp_app(gx_app):
         with _mcp_error_handler("create_user_tool"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.create_user_tool(representation)
+
+    @mcp.tool()
+    def recommend_biocontainer(packages: list[str], api_key: str, ctx: MCPContext) -> dict[str, Any]:
+        """Resolve a verified ``quay.io/biocontainers`` image for a set of conda packages.
+
+        Use this to pick the ``container`` for ``create_user_tool`` instead of guessing an
+        image. The result is verified against quay.io rather than hallucinated, which avoids
+        the common failure of inventing a tag or using a bare image (e.g. ``python:3.12-slim``)
+        that doesn't ship the libraries the tool needs.
+
+        Args:
+            packages: The conda packages the tool wraps, each as ``"name"`` or ``"name=version"``
+                (e.g. ``["samtools=1.17", "bwa"]``). Use the canonical conda package names you
+                would ``conda install`` (e.g. ``pandas``, ``r-ggplot2``, ``samtools``). A single
+                package yields a single-package image; several yield a mulled-v2 image.
+
+        Returns:
+            Dict with:
+            - ``image``: the resolved ``quay.io/biocontainers/...`` reference, or null if none found.
+            - ``found``: whether an image was resolved.
+            - ``match_quality``: ``exact_version`` | ``name_only`` | ``not_found`` (name_only means
+              the package matched but the requested version did not; the newest tag was used).
+            - ``source``, ``notes``: provenance and any explanatory notes.
+            - ``verified``: true if the exact tag is built on quay.io, false if it is positively
+              absent, null if it could not be checked (non-biocontainer ref or transient error).
+
+        NEXT STEPS:
+        - Pass ``image`` as the ``container`` when calling ``create_user_tool``.
+        """
+        with _mcp_error_handler("recommend_biocontainer"):
+            # Authenticate (reject anonymous use -- this makes outbound quay.io requests); the
+            # recommender itself is a pure library call and needs no trans/user.
+            get_operations_manager(api_key, ctx)
+            return _biocontainer_recommendation_payload(packages)
 
     @mcp.tool()
     def delete_user_tool(uuid: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:

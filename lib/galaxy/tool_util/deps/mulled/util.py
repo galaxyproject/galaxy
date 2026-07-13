@@ -13,8 +13,10 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Literal,
     NamedTuple,
     Optional,
+    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -416,6 +418,99 @@ def v2_image_name(
         if version_hash_str or build_suffix:
             suffix = f":{version_hash_str}{build_suffix}"
         return f"mulled-v2-{package_hash.hexdigest()}{suffix}"
+
+
+class MulledNameMatch(NamedTuple):
+    """A resolved remote mulled image name and whether it matched the request exactly.
+
+    ``name`` is the unnamespaced image name (e.g. ``samtools:1.17--h0_0`` or
+    ``mulled-v2-<hash>:<version_hash>-0``). ``exact`` is True when the tag matched the
+    requested version / version-hash, False when it is a newest-available fallback.
+    """
+
+    name: str
+    exact: bool
+
+
+def select_single_package_tag(
+    tags: List[str], version: Optional[str], *, allow_newest_fallback: bool = False
+) -> Tuple[Optional[str], bool]:
+    """Pick the best tag for a single-package repo (``tags`` newest-first).
+
+    Returns ``(tag, exact)``: an exact version match when ``version`` is found, otherwise the
+    newest tag with ``exact=False`` if ``allow_newest_fallback`` else ``(None, False)``.
+    """
+    if not tags:
+        return None, False
+    if version is not None:
+        for tag in tags:
+            if split_tag(tag)[0] == version:
+                return tag, True
+    if allow_newest_fallback:
+        return tags[0], False
+    return None, False
+
+
+def select_mulled_v2_tag(
+    tags: List[str], version_hash: Optional[str], *, allow_newest_fallback: bool = False
+) -> Tuple[Optional[str], bool]:
+    """Pick the best tag for a ``mulled-v2`` repo (``tags`` newest-first).
+
+    A mulled-v2 tag is ``<version_hash>-<build>``. With a ``version_hash`` an exact match is the
+    newest tag carrying that hash; without one (e.g. v1 / unversioned) the newest tag *is* the
+    canonical result (``exact=True`` -- there is no finer version to mismatch). When a requested
+    ``version_hash`` isn't built, returns the newest tag with ``exact=False`` if
+    ``allow_newest_fallback`` else ``(None, False)``.
+    """
+    if not tags:
+        return None, False
+    if version_hash:
+        for tag in tags:
+            if tag == version_hash or tag.startswith(f"{version_hash}-"):
+                return tag, True
+        if allow_newest_fallback:
+            return tags[0], False
+        return None, False
+    return tags[0], True
+
+
+def find_remote_mulled_name(
+    targets: List[CondaTarget],
+    namespace: str,
+    hash_func: Literal["v1", "v2"] = "v2",
+    *,
+    allow_newest_fallback: bool = False,
+    resolution_cache: Optional["ResolutionCache"] = None,
+    session: Optional[Session] = None,
+) -> Optional[MulledNameMatch]:
+    """Resolve conda targets to a remote quay mulled image name (unnamespaced).
+
+    Single target: the repo is the package name, matched by version. Multiple targets: the repo
+    and version-hash come from :func:`v1_image_name` / :func:`v2_image_name`, matched by
+    version-hash. With ``allow_newest_fallback`` the newest available tag is returned (with
+    ``exact=False``) when there's no exact match; otherwise ``None``. Network errors from
+    :func:`mulled_tags_for` propagate to the caller.
+    """
+    if len(targets) == 1:
+        target = targets[0]
+        tags = mulled_tags_for(namespace, target.package, resolution_cache=resolution_cache, session=session)
+        tag, exact = select_single_package_tag(tags, target.version, allow_newest_fallback=allow_newest_fallback)
+        return MulledNameMatch(f"{target.package}:{tag}", exact) if tag is not None else None
+
+    if hash_func == "v2":
+        base_image_name = v2_image_name(targets)
+    elif hash_func == "v1":
+        base_image_name = v1_image_name(targets)
+    else:
+        raise Exception(f"Unimplemented mulled hash_func [{hash_func}]")
+
+    if ":" in base_image_name:
+        repo_name, version_hash = base_image_name.split(":", 1)
+    else:
+        repo_name, version_hash = base_image_name, None
+    tags = mulled_tags_for(namespace, repo_name, resolution_cache=resolution_cache, session=session)
+    tag, exact = select_mulled_v2_tag(tags, version_hash, allow_newest_fallback=allow_newest_fallback)
+    return MulledNameMatch(f"{repo_name}:{tag}", exact) if tag is not None else None
 
 
 def get_files_from_conda_package(url: str, filepaths: Iterable[str]) -> Dict[str, bytes]:

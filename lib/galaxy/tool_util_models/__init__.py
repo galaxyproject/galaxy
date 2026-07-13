@@ -251,6 +251,20 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
         return self
 
 
+class CondaPackage(BaseModel):
+    """A conda package a tool wraps -- a name plus an optional pinned version.
+
+    Inferred by tool-authoring agents (from a tool's command/configfiles) so a
+    verified ``quay.io/biocontainers`` image can be resolved deterministically
+    rather than guessed. ``UserToolSource`` persists only a single ``container``
+    string and has no package-requirement field, so this is never stored on a
+    tool -- it is transient input to container resolution.
+    """
+
+    name: str
+    version: Optional[str] = None
+
+
 # Schema-narrowed view of ``UserToolSource`` for LLM tool authoring.
 #
 # This is the *parent* of ``UserToolSource`` and carries every field and
@@ -289,6 +303,16 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     # ``required`` set stops the model dropping it -- notably on a retry, where the
     # model would otherwise regenerate without it and trip ``ToolVersionMissing``.
     version: Annotated[str, Field(description="Version for the tool.", examples=["0.1.0"])]
+    # Required here (optional on the base / canonical model). Under grammar-constrained
+    # structured output, an optional list is one the model is free to never emit -- and
+    # weak models do exactly that, stopping after ``container`` and dropping ``inputs``/
+    # ``outputs`` entirely (then ``shell_command`` references an input that was never
+    # declared and validation fails). Forcing both into the ``required`` set compels the
+    # model to emit them. ``UserToolSource`` restores the lenient defaults so stored /
+    # API-authored tools may still omit them. An empty list is allowed -- this forces the
+    # key to be present, not non-empty.
+    inputs: List[YamlGalaxyToolParameter]
+    outputs: List[IncomingToolOutput]
 
     # Field declaration order puts subclass fields (class_, container) after
     # parent ones, which serializes them at the end. Re-order on dump so the
@@ -361,6 +385,11 @@ class UserToolSource(UserToolSourceAuthoringView):
     # row that predates the requirement won't validate; ``lift_user_tool_source``
     # returns it as the raw dict with status "invalid" so its author still sees it.
     tests: Optional[List["YamlToolTest"]] = None
+    # Restore lenient defaults: the required-ness of ``inputs``/``outputs`` on the
+    # authoring view is a structured-output nudge for the LLM only. The canonical
+    # model (API surface, stored rows) must still accept tools that omit them.
+    inputs: List[YamlGalaxyToolParameter] = []
+    outputs: List[IncomingToolOutput] = []
 
 
 class YamlToolSource(_DynamicToolSourceBase):

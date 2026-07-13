@@ -57,6 +57,129 @@ _PROTO_CASES: list[dict[str, Any]] = [
         ),
     },
     {
+        "name": "ggplot2_boxplot_configfile",
+        "query": (
+            "Can you write a tool that uses ggplot2 to create a boxplot from a tabular file. The "
+            "user should be able to select grouping column and numeric column. Place the script "
+            "inside a configfile."
+        ),
+        # configfiles: -> the R script is materialized in a configfile (not dropped, not inlined);
+        # ggplot2/Rscript -> R plotting wired through that script; quay.io/biocontainers -> a real
+        # biocontainer rather than rocker/a guessed image; $(inputs. + from_work_dir -> the two
+        # column selections are wired and the plot output is claimed.
+        "yaml_must_contain": [
+            "configfiles:",
+            "ggplot2",
+            "Rscript",
+            "quay.io/biocontainers",
+            "$(inputs.",
+            "from_work_dir",
+        ],
+        "rubric": (
+            "A correct tool plots a ggplot2 boxplot from a tabular input and is shaped exactly as "
+            "asked:\n"
+            "- The R script lives INSIDE a configfile: a `configfiles` entry whose filename holds "
+            "the ggplot2 script as its content, and `shell_command` runs that file by name (e.g. "
+            "`Rscript boxplot.R`). It must NOT run a script by name with no configfile that creates "
+            "it (a dropped configfile), and -- since the user explicitly asked for a configfile -- "
+            "must NOT inline the script with `Rscript -e`.\n"
+            "- The container is an EXISTING biocontainer that bundles R + ggplot2 (a "
+            "quay.io/biocontainers image, e.g. r-ggplot2). rocker/tidyverse, bare r-base, or a "
+            "fabricated image/tag is incorrect.\n"
+            "- There are TWO user-selectable inputs -- one for the grouping column and one for the "
+            "numeric column (text/select/integer column references passed to the script) -- NOT "
+            "hardcoded columns.\n"
+            "- The tabular dataset is a data input and the plot image is an output claimed via "
+            "from_work_dir."
+        ),
+    },
+    {
+        "name": "r_ggplot2_scatter_configfile",
+        "query": (
+            "Write a Galaxy tool that uses ggplot2 to draw a scatter plot from a tabular file. Let "
+            "the user choose the x-axis column, the y-axis column, and a column to color the points "
+            "by. Put the R script in a configfile."
+        ),
+        "yaml_must_contain": [
+            "configfiles:",
+            "ggplot2",
+            "Rscript",
+            "quay.io/biocontainers",
+            "$(inputs.",
+            "from_work_dir",
+        ],
+        "rubric": (
+            "A correct tool draws a ggplot2 scatter plot from a tabular input and is shaped exactly "
+            "as asked:\n"
+            "- The R script lives INSIDE a `configfiles` entry (its content is the ggplot2 script) "
+            "and `shell_command` runs that file by name (e.g. `Rscript scatter.R`). It must NOT run "
+            "a script by name with no configfile that creates it, and must NOT inline the script "
+            "with `Rscript -e`.\n"
+            "- The container is an EXISTING quay.io/biocontainers image bundling R + ggplot2 (e.g. "
+            "r-ggplot2). rocker/tidyverse, bare r-base, or a fabricated image/tag is incorrect.\n"
+            "- There are THREE user-selectable column inputs -- x, y, and color -- passed to the "
+            "script, NOT hardcoded columns.\n"
+            "- The tabular dataset is a data input and the plot image is an output claimed via "
+            "from_work_dir."
+        ),
+    },
+    {
+        "name": "pandas_group_summary_configfile",
+        "query": (
+            "Create a Galaxy tool that reads a tabular file and computes summary statistics (mean, "
+            "median, count) of a numeric column grouped by a category column. The user should select "
+            "which column is the group and which is the numeric value. Place the Python script in a "
+            "configfile."
+        ),
+        "yaml_must_contain": [
+            "configfiles:",
+            "pandas",
+            "$(inputs.",
+            "from_work_dir",
+            "quay.io/biocontainers",
+        ],
+        "rubric": (
+            "A correct tool group-summarizes a tabular input with pandas and is shaped exactly as "
+            "asked:\n"
+            "- The Python script lives INSIDE a `configfiles` entry and `shell_command` runs that "
+            "file by name (e.g. `python summary.py`). It must NOT run a script by name with no "
+            "configfile that creates it, and must NOT inline the script with `python -c`.\n"
+            "- The container is an EXISTING quay.io/biocontainers image that ships pandas (e.g. a "
+            "pandas image), NOT bare python or a fabricated image/tag.\n"
+            "- There are TWO user-selectable column inputs -- the group column and the numeric value "
+            "column -- passed to the script, NOT hardcoded columns.\n"
+            "- The tabular dataset is a data input and the summary table is an output claimed via "
+            "from_work_dir."
+        ),
+    },
+    {
+        "name": "biopython_fasta_filter_configfile",
+        "query": (
+            "Make a Galaxy tool that filters sequences in a FASTA file by a minimum length that the "
+            "user sets. Use a Python script (placed in a configfile) with Biopython to read the "
+            "FASTA, drop sequences shorter than the threshold, and write the kept sequences."
+        ),
+        "yaml_must_contain": [
+            "configfiles:",
+            "$(inputs.",
+            "from_work_dir",
+            "quay.io/biocontainers",
+            "type: integer",
+        ],
+        "rubric": (
+            "A correct tool filters a FASTA by minimum length with Biopython and is shaped exactly "
+            "as asked:\n"
+            "- The Python script lives INSIDE a `configfiles` entry and `shell_command` runs that "
+            "file by name (e.g. `python filter.py`). It must NOT run a script by name with no "
+            "configfile that creates it, and must NOT inline the script with `python -c`.\n"
+            "- The container is an EXISTING quay.io/biocontainers image that ships Biopython (e.g. a "
+            "biopython image), NOT bare python or a fabricated image/tag.\n"
+            "- There is a data input for the FASTA and an INTEGER input for the minimum length "
+            "(a user parameter, NOT a hardcoded threshold).\n"
+            "- The filtered FASTA is an output claimed via from_work_dir."
+        ),
+    },
+    {
         "name": "head_n_lines",
         "query": (
             "Make a Galaxy tool that returns the first N lines of an uploaded text file, where N "
