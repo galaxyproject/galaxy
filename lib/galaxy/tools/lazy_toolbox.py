@@ -47,6 +47,7 @@ from galaxy.tools.source_store.discover import discover_tools
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
+    ToolPanelItem,
 )
 from galaxy.tools.source_store.populator import (
     build_whoosh_for_store,
@@ -633,17 +634,18 @@ class LazyToolBox(ToolBox):
 
         The generic toolbox walk still parses every tool-conf item and routes
         each tool through ``load_item``. In lazy mode, a populated source-store
-        index already contains enough section metadata to build the in-memory
-        registries. If the index does not carry panel section data, return
-        ``False`` and let the parent implementation take the conservative path.
+        index already carries the panel placements (``ToolIndex.panel_items``)
+        the walk would produce, so replay those instead. If the index predates
+        placement recording, return ``False`` and let the parent
+        implementation take the conservative path.
         """
-        tool_ids = self._index_panel_tool_ids()
-        if not tool_ids:
+        placements = self._index_panel_items()
+        if not placements:
             return False
-        # ``_index_panel_tool_ids`` only returns ids when the index is
+        # ``_index_panel_items`` only returns placements when the index is
         # populated, so it is non-None here.
         assert self._tool_index is not None
-        missing = [tool_id for tool_id in tool_ids if tool_id not in self._tool_index.entries]
+        missing = {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
         if missing:
             log.info(
                 "LazyToolBox fast panel init found %d panel ids missing from index; running populator",
@@ -653,25 +655,27 @@ class LazyToolBox(ToolBox):
             if self._store is not None:
                 self._store.invalidate_index_cache()
                 self._tool_index = self._store.load_index() or ToolIndex()
-            missing = [tool_id for tool_id in tool_ids if tool_id not in self._tool_index.entries]
-            if missing:
+            placements = self._index_panel_items()
+            missing = {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
+            if missing or not placements:
                 log.debug("LazyToolBox fast panel init disabled; %d panel ids still missing from index", len(missing))
                 return False
         assert self._tool_index is not None
         self._init_dynamic_tool_confs_without_loading(config_filenames)
-        registered_tool_ids: set[str] = set()
-        for tool_id in tool_ids:
-            entry = self._tool_index.entries[tool_id]
-            self._register_lazy_entry(entry, place_in_panel=not entry.hidden)
-            registered_tool_ids.add(tool_id)
+        stubs_by_id: dict[str, LazyTool] = {}
         for entry in self._tool_index.entries.values():
-            if entry.id not in registered_tool_ids:
-                self._register_lazy_entry(entry, place_in_panel=False)
-                registered_tool_ids.add(entry.id)
+            stubs_by_id[entry.id] = self._register_lazy_entry(entry, place_in_panel=False)
+        placed = 0
+        for placement in placements:
+            stub = stubs_by_id.get(placement.tool_id)
+            if stub is None:
+                continue
+            self._place_stub(stub, placement.section_id, placement.section_name, hidden=placement.hidden)
+            placed += 1
         log.debug(
-            "LazyToolBox registered %d indexed tools (%d in panel) without walking tool conf items",
-            len(registered_tool_ids),
-            len(tool_ids),
+            "LazyToolBox registered %d indexed tools (%d panel placements) without walking tool conf items",
+            len(stubs_by_id),
+            placed,
         )
         self._tool_panel_loaded_from_index = True
         return True
@@ -681,28 +685,27 @@ class LazyToolBox(ToolBox):
             return
         super()._load_tool_panel()
 
-    def _index_panel_tool_ids(self) -> list[str]:
-        tool_ids: list[str] = []
+    def _index_panel_items(self) -> list[ToolPanelItem]:
+        """The index's conf-ordered panel placements, latest version only.
+
+        Placements of non-newest versions of a lineage are dropped the same
+        way the old id-based fast path collapsed them — the panel shows the
+        latest version, older ones stay reachable through the lineage.
+        """
         if self._tool_index is None:
-            return tool_ids
+            return []
+        placements = self._tool_index.panel_items
+        if not placements:
+            return []
+        ordered_ids: list[str] = []
         seen: set[str] = set()
-        if self._tool_index.by_section:
-            panel_tool_ids = (
-                tool_id for section_tool_ids in self._tool_index.by_section.values() for tool_id in section_tool_ids
-            )
-        else:
-            # Some existing store indexes predate ``by_section`` population
-            # but still have per-entry section metadata. Preserve persisted
-            # entry order so warm boots do not fall back to the XML walk.
-            panel_tool_ids = (
-                entry.id for entry in self._tool_index.entries.values() if entry.panel_section_id and not entry.hidden
-            )
-        for tool_id in panel_tool_ids:
-            if tool_id in seen:
+        for placement in placements:
+            if placement.tool_id in seen:
                 continue
-            seen.add(tool_id)
-            tool_ids.append(tool_id)
-        return self._latest_panel_tool_ids(tool_ids)
+            seen.add(placement.tool_id)
+            ordered_ids.append(placement.tool_id)
+        keep = set(self._latest_panel_tool_ids(ordered_ids))
+        return [placement for placement in placements if placement.tool_id in keep]
 
     def _latest_panel_tool_ids(self, tool_ids: list[str]) -> list[str]:
         if self._tool_index is None:
@@ -1566,18 +1569,44 @@ class LazyToolBox(ToolBox):
         # panel_section_name onto the entry; create the ToolSection if it
         # doesn't already exist (peer-process install of the first tool in
         # a new section).
-        section_id = entry.panel_section_id
+        self._place_stub(stub, entry.panel_section_id, entry.panel_section_name, hidden=False)
+        return stub
+
+    def _place_stub(
+        self,
+        stub: "LazyTool",
+        section_id: str | None,
+        section_name: str | None,
+        hidden: bool,
+    ) -> None:
+        """Slot ``stub`` into the live and integrated tool panels.
+
+        The integrated panel gets every placement, hidden included — the
+        eager ``__add_tool`` always records walked conf tools there. It is
+        the panel ``_load_tool_panel_views`` renders EDAM/static views from
+        and ``_save_integrated_tool_panel`` persists, so a boot that skips
+        the conf walk must fill it or every panel view renders empty.
+        """
+        tool_id = stub.id
         if section_id:
-            section_key = section_id
-            section = self._tool_panel.get(section_key)
+            integrated_section = self._integrated_tool_panel.get(section_id)
+            if not isinstance(integrated_section, ToolSection):
+                integrated_section = ToolSection({"id": section_id, "name": section_name or section_id})
+                self._integrated_tool_panel[section_id] = integrated_section
+            integrated_section.elems[f"tool_{tool_id}"] = stub
+        else:
+            self._integrated_tool_panel[f"tool_{tool_id}"] = stub
+        if hidden:
+            return
+        if section_id:
+            section = self._tool_panel.get(section_id)
             if not isinstance(section, ToolSection):
-                section = ToolSection({"id": section_id, "name": entry.panel_section_name or section_id})
-                self._tool_panel[section_key] = section
+                section = ToolSection({"id": section_id, "name": section_name or section_id})
+                self._tool_panel[section_id] = section
             section.elems.append_tool(stub)
-            self._tool_panel.record_section_for_tool_id(tool_id, section_key, section.name)
+            self._tool_panel.record_section_for_tool_id(tool_id, section_id, section.name)
         else:
             self._tool_panel[f"tool_{tool_id}"] = stub
-        return stub
 
     def _register_loaded_tool(self, tool: "Tool") -> None:
         """Register a lazily-loaded tool in the toolbox registries."""

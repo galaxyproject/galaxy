@@ -455,6 +455,7 @@ def _registry_box():
     box._tools_by_old_id = {}
     box._tools_by_uuid = {}
     box._tool_panel = ToolPanelElements()
+    box._integrated_tool_panel = ToolPanelElements()
     box._lineage_map = LazyLineageMap(box.app, versions_for=box._index_versions_for)
     box._tool_to_dict_cache = {}
     box._tool_to_dict_cache_admin = {}
