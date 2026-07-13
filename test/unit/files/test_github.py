@@ -13,7 +13,10 @@ import responses
 from galaxy.exceptions import MessageException
 from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources.github import GithubFilesSource
-from galaxy.files.sources.github_fsspec import WritableGithubFileSystem
+from galaxy.files.sources.github_fsspec import (
+    list_authorized_repositories,
+    WritableGithubFileSystem,
+)
 from galaxy.files.templates.models import OAUTH2_CONFIGURED_SOURCES
 from galaxy.util import config_templates
 from galaxy.util.unittest_utils import skip_unless_environ
@@ -182,6 +185,53 @@ def test_get_token_from_code_always_sends_json_accept_header():
     client_pair = config_templates.OAuth2ClientPair(client_id="cid", client_secret="csecret")
     config_templates.get_token_from_code_raw("the-code", client_pair, config, redirect_uri=None)
     assert responses.calls[-1].request.headers["Accept"] == "application/json"
+
+
+@responses.activate
+def test_list_authorized_repositories_combines_installations():
+    responses.add(
+        responses.GET,
+        "https://api.github.com/user/installations",
+        json={"installations": [{"id": 1}, {"id": 2}]},
+    )
+    responses.add(
+        responses.GET,
+        "https://api.github.com/user/installations/1/repositories",
+        json={"repositories": [{"full_name": "galaxyproject/tools"}, {"full_name": "galaxyproject/galaxy"}]},
+    )
+    responses.add(
+        responses.GET,
+        "https://api.github.com/user/installations/2/repositories",
+        json={"repositories": [{"full_name": "me/data"}]},
+    )
+
+    repositories = list_authorized_repositories("gho_token")
+
+    # Repositories from every installation are combined and sorted by full name.
+    assert repositories == [
+        {"owner": "galaxyproject", "repo": "galaxy", "full_name": "galaxyproject/galaxy"},
+        {"owner": "galaxyproject", "repo": "tools", "full_name": "galaxyproject/tools"},
+        {"owner": "me", "repo": "data", "full_name": "me/data"},
+    ]
+    # The access token is sent as a Bearer credential.
+    assert responses.calls[0].request.headers["Authorization"] == "Bearer gho_token"
+
+
+@responses.activate
+def test_list_authorized_repositories_translates_http_error():
+    # A failed GitHub API call must surface as a clean MessageException carrying GitHub's own
+    # message, not a leaked 500 from requests' raise_for_status.
+    responses.add(
+        responses.GET,
+        "https://api.github.com/user/installations",
+        json={"message": "Resource not accessible by integration"},
+        status=403,
+    )
+
+    with pytest.raises(MessageException, match="Resource not accessible by integration") as exc_info:
+        list_authorized_repositories("gho_token")
+    assert "403" in str(exc_info.value)
+    assert exc_info.value.status_code == 400
 
 
 # Transient/network failures that should skip rather than fail the live smoke test.

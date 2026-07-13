@@ -27,6 +27,86 @@ log = logging.getLogger(__name__)
 # Contents API endpoint used to create or update a single file (PUT).
 _PUT_URL = "https://api.github.com/repos/{org}/{repo}/contents/{path}"
 
+# Endpoints used to enumerate the repositories the user granted the GitHub App.
+_INSTALLATIONS_URL = "https://api.github.com/user/installations"
+_INSTALLATION_REPOS_URL = "https://api.github.com/user/installations/{installation_id}/repositories"
+_PER_PAGE = 100
+_API_TIMEOUT = 30
+
+
+def _github_api_headers(access_token: str) -> dict:
+    """Bearer-auth headers for GitHub REST API calls (mirrors ``WritableGithubFileSystem.kw``)."""
+    return {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+
+def _raise_for_github_error(response: requests.Response) -> None:
+    """Translate a failed GitHub API response into a user-facing ``MessageException``.
+
+    ``requests``' own ``raise_for_status`` raises an ``HTTPError`` that would surface as an
+    opaque HTTP 500. Instead we log GitHub's own diagnostics (the response body and the
+    ``x-accepted-github-permissions`` / rate-limit headers, which pinpoint *why* a 403 happened)
+    and raise a clean ``MessageException`` carrying GitHub's message back to the user.
+    """
+    if response.ok:
+        return
+    # Headers GitHub uses to explain a 403: the permission the endpoint requires and whether the
+    # request was rate limited.
+    diagnostic_headers = {
+        header: response.headers[header]
+        for header in ("x-accepted-github-permissions", "x-ratelimit-remaining", "x-github-request-id")
+        if header in response.headers
+    }
+    log.warning(
+        "GitHub API request to %s failed with %s: %s (headers: %s)",
+        response.url,
+        response.status_code,
+        response.text,
+        diagnostic_headers,
+    )
+    raise MessageException(f"GitHub API request failed with {response.status_code}: {response.text}")
+
+
+def _paginate(url: str, headers: dict, items_key: str) -> list:
+    """Yield all items across paginated GitHub responses keyed by ``items_key``."""
+    items: list = []
+    page = 1
+    while True:
+        response = requests.get(
+            url, headers=headers, params={"per_page": _PER_PAGE, "page": page}, timeout=_API_TIMEOUT
+        )
+        _raise_for_github_error(response)
+        page_items = response.json().get(items_key, [])
+        items.extend(page_items)
+        if len(page_items) < _PER_PAGE:
+            break
+        page += 1
+    return items
+
+
+def list_authorized_repositories(access_token: str) -> list[dict]:
+    """Return the repositories the user authorized the GitHub App to access.
+
+    Combines the repositories granted across every App installation the user can
+    access. Each entry is ``{"owner": ..., "repo": ..., "full_name": "owner/repo"}``.
+    """
+    headers = _github_api_headers(access_token)
+    installations = _paginate(_INSTALLATIONS_URL, headers, "installations")
+    repositories: dict[str, dict] = {}
+    for installation in installations:
+        installation_id = installation["id"]
+        url = _INSTALLATION_REPOS_URL.format(installation_id=installation_id)
+        for repository in _paginate(url, headers, "repositories"):
+            full_name = repository["full_name"]
+            if full_name in repositories:
+                continue
+            owner, _, repo = full_name.partition("/")
+            repositories[full_name] = {"owner": owner, "repo": repo, "full_name": full_name}
+    return sorted(repositories.values(), key=lambda entry: entry["full_name"].lower())
+
 
 if GithubFileSystem is not None:
 
@@ -97,4 +177,4 @@ else:
     WritableGithubFileSystem = None  # type: ignore[assignment, misc, unused-ignore]
 
 
-__all__ = ("WritableGithubFileSystem",)
+__all__ = ("WritableGithubFileSystem", "list_authorized_repositories")

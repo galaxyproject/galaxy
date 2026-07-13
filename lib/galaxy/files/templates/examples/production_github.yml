@@ -12,15 +12,19 @@
   variables:
       org:
           label: Repository Owner
-          type: string
+          type: select
+          dynamic_options: github_repository_owners
           help: |
-              The owner of the repository - a GitHub username or organization name.
+              The owner of the repository - a GitHub username or organization name. Choose from
+              the owners of the repositories you granted the GitHub App access to.
               For ``github.com/galaxyproject/galaxy`` this is ``galaxyproject``.
       repo:
           label: Repository Name
-          type: string
+          type: select
+          dynamic_options: github_repository_names
           help: |
-              The name of the repository.
+              The name of the repository, restricted to repositories the selected owner has
+              granted the GitHub App access to.
               For ``github.com/galaxyproject/galaxy`` this is ``galaxy``.
       branch:
           label: Branch or Commit

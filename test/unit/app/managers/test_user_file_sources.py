@@ -5,6 +5,7 @@ from typing import (
 from uuid import uuid4
 
 import pytest
+import responses
 from requests.exceptions import HTTPError
 from yaml import safe_load
 
@@ -917,6 +918,118 @@ class TestFileSourcesTestCase(BaseTestCase):
         with pytest.raises(MessageException) as exc_info:
             self.manager.template_oauth2(self.trans, "dropbox", 0)
         assert "Please contact your administrator" in str(exc_info.value)
+
+    @responses.activate
+    def test_github_list_repositories_rotates_refresh_token(self, tmp_path, monkeypatch):
+        self._init_github_env(tmp_path, monkeypatch)
+        uuid = uuid4().hex
+        user_vault = self.trans.user_vault
+        refresh_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        user_vault.write_secret(refresh_key, "original_refresh_token")
+
+        refresh_requests = 0
+
+        def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
+            nonlocal refresh_requests
+            refresh_requests += 1
+            assert refresh_token == "original_refresh_token"
+            return MockResponse(
+                {"access_token": "my_access_token", "refresh_token": "rotated_refresh_token", "expires_in": 28_800}
+            )
+
+        monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
+        self._stub_github_repositories([("galaxyproject", "galaxy"), ("me", "data")])
+
+        repositories = self.manager.list_github_repositories(self.trans, "github", 0, uuid)
+        assert [r.full_name for r in repositories] == ["galaxyproject/galaxy", "me/data"]
+        self.manager.list_github_repositories(self.trans, "github", 0, uuid)
+        # The refresh token was exchanged once (the access token is cached) and the minted
+        # access token authenticated the request GitHub actually received.
+        assert refresh_requests == 1
+        assert responses.calls[0].request.headers["Authorization"] == "Bearer my_access_token"
+        # The rotated refresh token is persisted back to the user vault.
+        assert user_vault.read_secret(refresh_key) == "rotated_refresh_token"
+
+    def test_github_oauth_redirects_to_authorization(self, tmp_path, monkeypatch):
+        self._init_github_env(tmp_path, monkeypatch)
+
+        authorize_url = self.manager.template_oauth2(self.trans, "github", 0).authorize_url
+        from urllib.parse import (
+            parse_qs,
+            urlparse,
+        )
+
+        parsed_url = urlparse(authorize_url)
+        assert parsed_url.hostname == "github.com"
+        assert parsed_url.path == "/login/oauth/authorize"
+        state = OAuth2State.decode(parse_qs(parsed_url.query)["state"][0])
+        assert state.route == "file_source_instances/github/0"
+
+    @responses.activate
+    def test_github_assert_repository_authorized(self, tmp_path, monkeypatch):
+        self._init_github_env(tmp_path, monkeypatch)
+        uuid = uuid4().hex
+        user_vault = self.trans.user_vault
+        refresh_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        user_vault.write_secret(refresh_key, "original_refresh_token")
+        self._mock_github_repositories(monkeypatch, [("galaxyproject", "galaxy")])
+
+        # An authorized repository passes validation.
+        self.manager.assert_repository_authorized(self.trans, "github", 0, uuid, "galaxyproject", "galaxy")
+
+        # An un-granted repository raises a clear error naming the repository.
+        with pytest.raises(RequestParameterInvalidException) as exc_info:
+            self.manager.assert_repository_authorized(self.trans, "github", 0, uuid, "someone", "private")
+        assert "someone/private" in str(exc_info.value)
+
+    @responses.activate
+    def test_github_create_rejects_unauthorized_repo(self, tmp_path, monkeypatch):
+        self._init_github_env(tmp_path, monkeypatch)
+        uuid = uuid4().hex
+        user_vault = self.trans.user_vault
+        refresh_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        user_vault.write_secret(refresh_key, "original_refresh_token")
+        self._mock_github_repositories(monkeypatch, [("galaxyproject", "galaxy")])
+
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="github",
+            template_version=0,
+            variables={"org": "someone", "repo": "private"},
+            secrets={},
+            uuid=uuid,
+        )
+        with pytest.raises(RequestParameterInvalidException) as exc_info:
+            self.manager.create_instance(self.trans, create_payload)
+        assert "someone/private" in str(exc_info.value)
+
+    def _mock_github_repositories(self, monkeypatch, repositories: list[tuple[str, str]]):
+        def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
+            return MockResponse({"access_token": "my_access_token"})
+
+        monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
+        self._stub_github_repositories(repositories)
+
+    def _stub_github_repositories(self, repositories: list[tuple[str, str]]):
+        # Stub the GitHub App installations/repositories endpoints that
+        # ``list_authorized_repositories`` calls, so the real pagination and parsing run.
+        responses.add(
+            responses.GET,
+            "https://api.github.com/user/installations",
+            json={"installations": [{"id": 1}]},
+        )
+        responses.add(
+            responses.GET,
+            "https://api.github.com/user/installations/1/repositories",
+            json={"repositories": [{"full_name": f"{owner}/{repo}"} for owner, repo in repositories]},
+        )
+
+    def _init_github_env(self, tmp_path, monkeypatch):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, safe_load(get_example("production_github.yml")))
+        monkeypatch.setenv("GALAXY_GITHUB_APP_CLIENT_ID", "mock_client_id")
+        monkeypatch.setenv("GALAXY_GITHUB_APP_CLIENT_SECRET", "mock_client_secret")
 
     def _init_invalid_upgrade_test_case(self, tmp_path) -> UserFileSourceModel:
         version_0 = home_directory_template(tmp_path)

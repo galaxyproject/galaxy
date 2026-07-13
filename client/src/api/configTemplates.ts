@@ -10,7 +10,10 @@ export type TemplateVariable =
     | components["schemas"]["TemplateVariableString"]
     | components["schemas"]["TemplateVariableInteger"]
     | components["schemas"]["TemplateVariablePathComponent"]
-    | components["schemas"]["TemplateVariableBoolean"];
+    | components["schemas"]["TemplateVariableBoolean"]
+    | components["schemas"]["TemplateVariableSelect"];
+export type TemplateVariableSelectOption = components["schemas"]["TemplateVariableSelectOption"];
+export type GithubRepository = components["schemas"]["GithubRepository"];
 export type TemplateVariableValidator =
     | components["schemas"]["RegexParameterValidatorModel"]
     | components["schemas"]["InRangeParameterValidatorModel"]

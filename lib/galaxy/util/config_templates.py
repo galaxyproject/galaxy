@@ -58,7 +58,7 @@ from galaxy.util import asbool
 
 log = logging.getLogger(__name__)
 
-TemplateVariableType = Literal["string", "path_component", "boolean", "integer"]
+TemplateVariableType = Literal["string", "path_component", "boolean", "integer", "select"]
 TemplateVariableValueType = str | bool | int
 TemplateExpansion = str
 MarkdownContent = str
@@ -103,8 +103,29 @@ class TemplateVariableBoolean(BaseTemplateVariable):
     default: bool | None = None
 
 
+class TemplateVariableSelectOption(StrictModel):
+    label: str
+    value: str
+
+
+class TemplateVariableSelect(BaseTemplateVariable):
+    type: Literal["select"]
+    default: str | None = None
+    # Statically declared options. When omitted, options are expected to be
+    # supplied at form-render time by the client based on ``dynamic_options``.
+    options: list[TemplateVariableSelectOption] | None = None
+    # Marker naming a client-side provider that populates the options
+    # dynamically (e.g. "github_repository_owners"). The generic framework does
+    # not resolve this - it only carries the marker to the frontend.
+    dynamic_options: str | None = None
+
+
 TemplateVariable = (
-    TemplateVariableString | TemplateVariableInteger | TemplateVariablePathComponent | TemplateVariableBoolean
+    TemplateVariableString
+    | TemplateVariableInteger
+    | TemplateVariablePathComponent
+    | TemplateVariableBoolean
+    | TemplateVariableSelect
 )
 
 
@@ -427,6 +448,17 @@ def validate_specified_datatypes_variables(variables: dict[str, Any], template: 
         if template_type == "boolean":
             if not _is_of_exact_type(variable_value, bool):
                 raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type bool")
+        if isinstance(template_variable, TemplateVariableSelect):
+            if not isinstance(variable_value, str):
+                raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type str")
+            # Only statically declared options can be validated generically;
+            # dynamic options are resolved and validated elsewhere (e.g. the
+            # github membership check in the file source instances manager).
+            options = template_variable.options
+            if options is not None and variable_value not in [option.value for option in options]:
+                raise RequestParameterInvalidException(
+                    f"Variable value for variable '{name}' must be one of the allowed options"
+                )
 
         # Run custom validators if present.
         if template_variable.validators:

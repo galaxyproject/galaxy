@@ -37,6 +37,7 @@ from galaxy.files.sources import (
     PluginKind,
     SupportsBrowsing,
 )
+from galaxy.files.sources.github_fsspec import list_authorized_repositories
 from galaxy.files.templates import (
     ConfiguredFileSourceTemplates,
     FileSourceConfiguration,
@@ -72,6 +73,7 @@ from galaxy.util.config_templates import (
 from galaxy.util.plugin_config import plugin_source_from_dict
 from galaxy.work.context import SessionRequestContext
 from ._config_templates import (
+    access_token_for_uuid,
     CanTestPluginStatus,
     CreateInstancePayload,
     CreateTestTarget,
@@ -121,6 +123,15 @@ class UserFileSourceModel(BaseModel):
     template_version: int
     variables: dict[str, TemplateVariableValueType] | None
     secrets: list[str]
+
+
+GITHUB_TEMPLATE_TYPE = "github"
+
+
+class GithubRepository(BaseModel):
+    owner: str
+    repo: str
+    full_name: str
 
 
 class UserDefinedFileSourcesConfig(BaseModel):
@@ -227,6 +238,55 @@ class FileSourceInstancesManager:
         redirect_uri = f"{galaxy_root}/oauth2_callback"
         return redirect_uri
 
+    def list_github_repositories(
+        self, trans: ProvidesUserContext, template_id: str, template_version: int, uuid: str
+    ) -> list[GithubRepository]:
+        """List the repositories the user authorized the GitHub App to access.
+
+        Uses the refresh token stored at the pre-allocated ``uuid`` during the OAuth callback to
+        mint an access token, then queries GitHub for the granted repositories.
+        """
+        template = self._catalog.find_template_by(template_id, template_version)
+        if template.configuration.type != GITHUB_TEMPLATE_TYPE:
+            raise RequestParameterInvalidException(
+                "Listing repositories is only supported for GitHub file source templates."
+            )
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template_id, template_version
+        )
+        if not template_server_configuration.uses_oauth2:
+            raise RequestParameterInvalidException(
+                f"The file source template {template_id} is not configured for OAuth2 authorization."
+            )
+        access_token = access_token_for_uuid(
+            trans, template_server_configuration, uuid, UserFileSource, self._app_config
+        )
+        return [GithubRepository(**repository) for repository in list_authorized_repositories(access_token)]
+
+    def assert_repository_authorized(
+        self, trans: ProvidesUserContext, template_id: str, template_version: int, uuid: str, org: str, repo: str
+    ) -> None:
+        """Raise a clear error if ``org/repo`` is not among the App's authorized repositories."""
+        full_name = f"{org}/{repo}"
+        authorized = self.list_github_repositories(trans, template_id, template_version, uuid)
+        if not any(repository.full_name == full_name for repository in authorized):
+            raise RequestParameterInvalidException(
+                f"The GitHub App isn't installed on {full_name}. Authorize access to this "
+                "repository on GitHub, or pick one of the repositories you have granted access to."
+            )
+
+    def _assert_github_repository_authorized(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> None:
+        """For a github create/test payload with a pre-allocated uuid, validate the chosen repo."""
+        template = self._catalog.find_template(payload)
+        if not template or template.configuration.type != GITHUB_TEMPLATE_TYPE or not payload.uuid:
+            return
+        org = payload.variables.get("org")
+        repo = payload.variables.get("repo")
+        if org and repo:
+            self.assert_repository_authorized(
+                trans, template.id, template.version, str(payload.uuid), str(org), str(repo)
+            )
+
     def index(self, trans: ProvidesUserContext) -> list[UserFileSourceModel]:
         stores = self._sa_session.query(UserFileSource).filter(UserFileSource.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
@@ -296,6 +356,7 @@ class FileSourceInstancesManager:
         catalog.validate(payload)
         template = catalog.find_template(payload)
         assert template
+        self._assert_github_repository_authorized(trans, payload)
         user_vault = trans.user_vault
         persisted_file_source = UserFileSource()
         persisted_file_source.user_id = trans.user.id
@@ -359,6 +420,7 @@ class FileSourceInstancesManager:
 
     def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
         target = CreateTestTarget(payload, UserFileSource)
+        self._assert_github_repository_authorized(trans, payload)
         return self._plugin_status(trans, target, payload)
 
     def _plugin_status(
@@ -443,10 +505,10 @@ class FileSourceInstancesManager:
     ) -> tuple[BaseFilesSource | None, PluginAspectStatus]:
         file_source = None
         exception = None
-        if isinstance(target, (UpgradeTestTarget, UpdateTestTarget)):
+        if isinstance(target, UpgradeTestTarget | UpdateTestTarget):
             label = target.instance.name
             doc = target.instance.description
-        elif isinstance(target, (CreateTestTarget)):
+        elif isinstance(target, CreateTestTarget):
             label = target.payload.name
             doc = target.payload.description
         else:
