@@ -363,14 +363,14 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             # pass the token as a header only when using the API
             headers = self._get_request_headers(context)
         try:
-            response = requests.get(
+            with requests.get(
                 download_file_content_url, headers=headers, stream=True, timeout=DEFAULT_SOCKET_TIMEOUT
-            )
-            response.raise_for_status()
-            with open(file_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
+            ) as response:
+                response.raise_for_status()
+                with open(file_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
         except requests.exceptions.HTTPError as e:
             if e.response.status_code in [401, 403, 404]:
                 raise Exception(
