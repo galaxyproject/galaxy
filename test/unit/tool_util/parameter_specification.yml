@@ -795,13 +795,11 @@ gx_select_multiple:
   - parameter: [{__class__: 'ConnectedValue'}]
   - {}
   - parameter: null
+  - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: ["Ex1"]
   - parameter: {}
   - parameter: 5
-  # might be wrong? I guess we would expect the semantic of this to do like a map-over
-  # but as far as I am aware that is not implemented https://github.com/galaxyproject/galaxy/issues/18541
-  - parameter: {__class__: 'ConnectedValue'}
 
 gx_select_multiple_optional:
   request_valid:
