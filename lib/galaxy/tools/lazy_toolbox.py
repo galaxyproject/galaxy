@@ -1774,6 +1774,16 @@ class LazyToolBox(ToolBox):
                     send_control_task(self.app, "reload_tool_source_cache", noop_self=True)
                 except Exception as e:
                     log.warning("Broadcasting index removal of %s raised: %s", tool_id, e)
+            # A toolbox reload queued before this removal (the conf write of
+            # the preceding install) may already have swapped a NEW toolbox
+            # into ``app.toolbox``, built from the index as it stood before
+            # ``remove_index_entry`` above — with the tool still registered.
+            # ``self`` is then the superseded instance and cleaning it alone
+            # leaves ``app.toolbox`` serving the uninstalled tool. The swap
+            # holds the same lock, so the current object is stable here.
+            current = getattr(self.app, "toolbox", None)
+            if current is not self and isinstance(current, LazyToolBox):
+                current._remove_tool_in_memory(tool_id, remove_from_panel=remove_from_panel)
         return result
 
     def _remove_tool_in_memory(self, tool_id: str, remove_from_panel: bool = True):

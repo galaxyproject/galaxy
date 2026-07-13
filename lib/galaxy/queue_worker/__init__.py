@@ -286,33 +286,40 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
     """
     Generate a new toolbox, by constructing a toolbox from the config files,
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
+
+    Serialized under ``app._toolbox_lock`` against ``remove_tool_by_id`` and
+    ``invalidate_index_cache``: a reload queued by an earlier conf write (the
+    install that precedes an uninstall) otherwise interleaves its rebuild —
+    including a potentially long inline index populate — with the removal,
+    and the swapped-in toolbox resurrects the just-removed tool.
     """
     tool_configs = app.config.tool_configs
 
-    new_toolbox: ToolBox
-    if getattr(app.config, "use_lazy_toolbox", False) and getattr(app, "tool_source_store", None) is not None:
-        new_toolbox = LazyToolBox(
-            config_filenames=tool_configs,
-            tool_root_dir=app.config.tool_path,
-            app=app,
-            tool_source_store=app.tool_source_store,
-            cache_size=getattr(app.config, "lazy_toolbox_cache_size", 500),
-            save_integrated_tool_panel=save_integrated_tool_panel,
-        )
-    else:
-        new_toolbox = ToolBox(
-            tool_configs,
-            app.config.tool_path,
-            app,
-            save_integrated_tool_panel=save_integrated_tool_panel,
-        )
-    new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
-    app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
-    app.datatypes_registry.load_external_metadata_tool(new_toolbox)
-    load_lib_tools(new_toolbox)
-    for tool in new_toolbox.data_manager_tools.values():
-        new_toolbox.register_tool(tool)
-    app._toolbox = new_toolbox
+    with app._toolbox_lock:
+        new_toolbox: ToolBox
+        if getattr(app.config, "use_lazy_toolbox", False) and getattr(app, "tool_source_store", None) is not None:
+            new_toolbox = LazyToolBox(
+                config_filenames=tool_configs,
+                tool_root_dir=app.config.tool_path,
+                app=app,
+                tool_source_store=app.tool_source_store,
+                cache_size=getattr(app.config, "lazy_toolbox_cache_size", 500),
+                save_integrated_tool_panel=save_integrated_tool_panel,
+            )
+        else:
+            new_toolbox = ToolBox(
+                tool_configs,
+                app.config.tool_path,
+                app,
+                save_integrated_tool_panel=save_integrated_tool_panel,
+            )
+        new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
+        app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
+        app.datatypes_registry.load_external_metadata_tool(new_toolbox)
+        load_lib_tools(new_toolbox)
+        for tool in new_toolbox.data_manager_tools.values():
+            new_toolbox.register_tool(tool)
+        app._toolbox = new_toolbox
 
 
 def reload_data_managers(app, **kwargs):

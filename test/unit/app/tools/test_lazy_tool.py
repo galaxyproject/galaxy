@@ -564,6 +564,25 @@ def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):
     assert "doomed" not in box._tools_by_id
 
 
+def test_remove_tool_by_id_also_cleans_swapped_in_toolbox(monkeypatch):
+    # A reload queued before the removal can swap a new toolbox into
+    # app.toolbox, rebuilt from the pre-removal index — cleaning only
+    # ``self`` would leave the new box serving the uninstalled tool.
+    old_box = _registry_box()
+    new_box = _registry_box()
+    entry = _entry(id="doomed")
+    for box in (old_box, new_box):
+        box._tool_index = ToolIndex()
+        box._tool_index.add_entry(entry)
+        box._register_lazy_entry(entry)
+    old_box.app.toolbox = new_box
+    monkeypatch.setattr(queue_worker_mod, "send_control_task", lambda app, task, **kwargs: None)
+    old_box.remove_tool_by_id("doomed")
+    assert "doomed" not in old_box._tools_by_id
+    assert "doomed" not in new_box._tools_by_id
+    assert "tool_doomed" not in new_box._tool_panel
+
+
 def test_tool_file_on_disk_answers_from_index(tmp_path):
     box = _seam_box()
     box._index_source_paths_cache = None
