@@ -1999,9 +1999,7 @@ class LazyToolBox(ToolBox):
                     req_tuple = (req.get("name"), req.get("version"), req.get("type"))
                     requirements.add(req_tuple)
             return [
-                {"name": r[0], "version": r[1], "type": r[2]}
-                for r in requirements
-                if r[0]  # Filter out empty names
+                {"name": r[0], "version": r[1], "type": r[2]} for r in requirements if r[0]  # Filter out empty names
             ]
         return []
 
