@@ -224,6 +224,43 @@ class TestUserManager(BaseTestCase):
                 mock_hash_util.assert_called_once()
         assert result is True
 
+    def test_create_active_by_default_when_activation_off(self):
+        self.app.config.user_activation_on = False
+        user = self.user_manager.create(email="off@example.com", username="actoff")
+        assert user.active is True
+
+    def test_create_inactive_when_activation_on(self):
+        self.app.config.user_activation_on = True
+        user = self.user_manager.create(email="on@example.com", username="acton")
+        assert user.active is False
+
+    def test_create_trusted_email_active_despite_activation_on(self):
+        self.app.config.user_activation_on = True
+        user = self.user_manager.create(email="trust@example.com", username="trusted", trusted_email=True)
+        assert user.active is True
+
+    def test_create_sends_activation_email_only_when_inactive(self):
+        self.app.config.user_activation_on = True
+        with patch.object(self.user_manager, "send_activation_email") as mock_send:
+            user = self.user_manager.create(
+                email="mail@example.com", username="mailer", trans=self.trans, send_activation_email=True
+            )
+        assert user.active is False
+        mock_send.assert_called_once_with(self.trans, "mail@example.com", "mailer")
+
+    def test_create_skips_activation_email_when_trusted(self):
+        self.app.config.user_activation_on = True
+        with patch.object(self.user_manager, "send_activation_email") as mock_send:
+            user = self.user_manager.create(
+                email="trustmail@example.com",
+                username="trustmail",
+                trans=self.trans,
+                trusted_email=True,
+                send_activation_email=True,
+            )
+        assert user.active is True
+        mock_send.assert_not_called()
+
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")

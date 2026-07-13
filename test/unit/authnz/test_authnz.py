@@ -47,6 +47,7 @@ OIDC_BACKEND_CONFIG_TEMPLATE = """<?xml version="1.0"?>
         <redirect_uri>$galaxy_url/authnz/keycloak/callback</redirect_uri>
         <enable_idp_logout>{enable_idp_logout}</enable_idp_logout>
         <require_create_confirmation>{require_create_confirmation}</require_create_confirmation>
+        <require_user_activation>{require_user_activation}</require_user_activation>
         <require_session_refresh>{require_session_refresh}</require_session_refresh>
         <accepted_audiences>{accepted_audiences}</accepted_audiences>
         <username_key>{username_key}</username_key>
@@ -77,6 +78,7 @@ def create_backend_config(
     client_secret="client_secret",
     enable_idp_logout="true",
     require_create_confirmation="false",
+    require_user_activation="false",
     require_session_refresh="false",
     accepted_audiences="https://audience.example.com",
     username_key="custom_username",
@@ -88,6 +90,7 @@ def create_backend_config(
         client_secret=client_secret,
         enable_idp_logout=enable_idp_logout,
         require_create_confirmation=require_create_confirmation,
+        require_user_activation=require_user_activation,
         require_session_refresh=require_session_refresh,
         accepted_audiences=accepted_audiences,
         username_key=username_key,
@@ -160,6 +163,7 @@ def test_parse_backend_config(mock_app):
         "client_secret": "abcd1234",
         "enable_idp_logout": "true",
         "require_create_confirmation": "false",
+        "require_user_activation": "true",
         "require_session_refresh": "true",
         "accepted_audiences": "https://audience.example.com",
         "username_key": "custom_username",
@@ -177,6 +181,7 @@ def test_parse_backend_config(mock_app):
     # Boolean values should be parsed into bools
     assert parsed["enable_idp_logout"] == asbool(config_values["enable_idp_logout"])
     assert parsed["require_create_confirmation"] == asbool(config_values["require_create_confirmation"])
+    assert parsed["require_user_activation"] == asbool(config_values["require_user_activation"])
     assert parsed["require_session_refresh"] == asbool(config_values["require_session_refresh"])
 
 
@@ -203,6 +208,7 @@ def test_parse_backend_config_bool_defaults(mock_app):
     # Boolean values should be False by default
     assert parsed["enable_idp_logout"] is False
     assert parsed.get("require_create_confirmation", False) is False
+    assert parsed["require_user_activation"] is False
     assert parsed.get("require_session_refresh", False) is False
 
 
@@ -216,6 +222,7 @@ def test_psa_authnz_config(mock_app):
         "client_secret": "abcd1234",
         "enable_idp_logout": "true",
         "require_create_confirmation": "false",
+        "require_user_activation": "true",
         "accepted_audiences": "https://audience.example.com",
         "username_key": "custom_username",
     }
@@ -231,6 +238,7 @@ def test_psa_authnz_config(mock_app):
         app_config=mock_app.config,
     )
     assert psa_authnz.config[setting_name("USERNAME_KEY")] == config_values["username_key"]
+    assert psa_authnz.config["REQUIRE_USER_ACTIVATION"] is True
 
 
 def _create_backend_config_with_idphint(idphint_value: Optional[str] = None) -> tuple[str, str]:
