@@ -155,6 +155,14 @@ Basic Usage
 
     $ python scripts/tool_source/populate_store.py --config /path/to/galaxy.yml
 
+Deployments that install Galaxy from packages get the same command as the
+``galaxy-populate-tool-source-store`` console script (shipped with the
+``galaxy-app`` package), so no Galaxy source checkout is needed:
+
+.. code-block:: console
+
+    $ galaxy-populate-tool-source-store --config /path/to/galaxy.yml
+
 This will:
 
 1. Discover tools from your tool configs (uses the same logic as Galaxy startup)
@@ -184,7 +192,6 @@ Command Line Options
       --verbose, -v          Verbose output
       --watch, -w            Watch tool directories and send reload notifications
       --watch-polling        Use polling observer (for NFS/CVMFS/network FS)
-      --debounce SECS        Debounce time for watch mode (default: 2.0)
 
 Examples
 ^^^^^^^^
@@ -234,13 +241,12 @@ Watch mode options:
 
 - ``--watch, -w`` - Enable watch mode
 - ``--watch-polling`` - Use polling observer (required for network filesystems like NFS/CVMFS)
-- ``--debounce SECS`` - Debounce time for file changes (default: 2.0 seconds)
 
 Example with polling for network filesystem:
 
 .. code-block:: console
 
-    $ python scripts/tool_source/populate_store.py -c galaxy.yml --watch --watch-polling --debounce 5.0
+    $ python scripts/tool_source/populate_store.py -c galaxy.yml --watch --watch-polling
 
 **Requirements:**
 

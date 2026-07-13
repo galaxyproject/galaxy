@@ -37,7 +37,6 @@ Module Layout
       search.py          ToolWhooshIndex (Whoosh index built from a ToolIndex)
       discover.py        discover_tools() — conf walk without booting a ToolBox
       populator.py       Population + watch logic (parse, store, index, broadcast)
-      models.py          Pydantic models for stored payloads
       benchmarks.py      Store/index micro-benchmarks
 
     lib/galaxy/tools/lazy_toolbox.py     LazyToolBox (subclass of ToolBox), LazyTool
@@ -47,6 +46,10 @@ Module Layout
     lib/galaxy/webapps/galaxy/services/tools.py   Batch endpoints (lazy-aware)
 
     scripts/tool_source/populate_store.py         CLI entry point for the populator
+
+The same ``populator.main`` is registered as the
+``galaxy-populate-tool-source-store`` console script in the ``galaxy-app``
+package metadata (``packages/app/pyproject.toml``).
 
 Data Model
 ----------
@@ -61,7 +64,8 @@ deployments) — deliberately outside Galaxy's database: the store is a
 rebuildable cache and does not participate in Galaxy's migrations or session
 lifecycle.
 
-**ToolIndex** — a single dataclass containing one ``ToolIndexEntry`` per tool,
+**ToolIndex** — a Pydantic model containing one default ``ToolIndexEntry`` per tool
+plus its versioned and panel-placement projections,
 holding everything the batch APIs and the lazy panel render need (id, name,
 description, panel section, labels, EDAM, xrefs, icon, requirements, container
 info, test counts, hidden/disabled, shed metadata, ``data_manager_id``). The
@@ -205,9 +209,10 @@ Population Script
 ``scripts/tool_source/populate_store.py`` is a thin CLI wrapper over
 ``galaxy.tools.source_store.populator.main``. It loads only the Galaxy
 config and calls ``build_tool_source_store(config)`` — the standalone store
-needs no datatypes registry or Galaxy model. Tools are parsed in a
+builds the datatypes registry for converter discovery but does not initialize
+the Galaxy model. Tools are parsed in a
 ``ThreadPoolExecutor`` (``--parallel``, default 4 workers); each tool is
-hashed and skipped if an entry with the same hash already exists
+matched to its source path and carried forward when its raw file hash is unchanged
 (``--incremental``, the default). Once the JSON index is committed the
 populator rebuilds the Whoosh search index (``search.py``) so ranked tool
 search stays in sync with the stored sources.
