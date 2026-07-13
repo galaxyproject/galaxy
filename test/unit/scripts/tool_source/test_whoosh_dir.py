@@ -11,7 +11,6 @@ from galaxy.tools.source_store.populator import (
 
 
 def test_default_store_maps_to_store_default_subdir():
-    # Backwards-compat: LazyToolBox._get_search_index has been reading from
     assert (
         whoosh_dir_for_store("/var/galaxy/tool_search", DEFAULT_STORE_NAME) == "/var/galaxy/tool_search/_store_default"
     )

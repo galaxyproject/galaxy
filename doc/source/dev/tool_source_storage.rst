@@ -30,14 +30,17 @@ Module Layout
 ::
 
     lib/galaxy/tools/source_store/
-      __init__.py        ToolSourceStore ABC, StoredToolSource, build_tool_source_store()
+      __init__.py        Public re-exports
+      interface.py       ToolSourceStore ABC and StoredToolSource
+      factory.py         Store construction from Galaxy configuration
       sqlalchemy.py      SqlAlchemyToolSourceStore (any SQLAlchemy URL)
       composite.py       CompositeToolSourceStore (per-conf routing, merged index)
       index.py           ToolIndex, ToolIndexEntry (the lightweight metadata)
       search.py          ToolWhooshIndex (Whoosh search index built from a ToolIndex)
       discover.py        discover_tools() — conf walk without booting a ToolBox
       populator.py       Population + watch logic (parse, store, index, broadcast)
-      models.py          Pydantic response models
+      freshness.py       Optional external freshness probes
+      watcher.py         Filesystem watch support
 
     scripts/tool_source/populate_store.py    Thin CLI wrapper over populator.main
 
@@ -54,7 +57,8 @@ deployments) — deliberately outside Galaxy's database: the store is a
 rebuildable cache and does not participate in Galaxy's migrations or session
 lifecycle.
 
-**ToolIndex** — a single dataclass containing one ``ToolIndexEntry`` per tool,
+**ToolIndex** — a Pydantic model containing one default ``ToolIndexEntry`` per tool
+plus its versioned and panel-placement projections,
 holding everything a store consumer needs (id, name, description, panel section,
 labels, EDAM, requirements, container info, test counts, hidden/disabled,
 shed metadata). The index is serialized and gzip-compressed as a blob.
@@ -154,10 +158,11 @@ Population Script
 
 ``scripts/tool_source/populate_store.py`` is a thin CLI wrapper over
 ``galaxy.tools.source_store.populator.main``. It loads only the Galaxy
-config and calls ``build_tool_source_store(config)`` — the standalone store
-needs no datatypes registry or Galaxy model. Tools are parsed in a
+config and calls ``build_tool_source_store(config)``. Converter discovery builds
+the datatypes registry, but the standalone process does not initialize the Galaxy
+model. Tools are parsed in a
 ``ThreadPoolExecutor`` (``--parallel``, default 4 workers); each tool is
-hashed and skipped if an entry with the same hash already exists
+matched to its source path and carried forward when its raw file hash is unchanged
 (``--incremental``, the default). Once the JSON index is committed the
 populator rebuilds the Whoosh search index (``search.py``) so ranked tool
 search stays in sync with the stored sources.

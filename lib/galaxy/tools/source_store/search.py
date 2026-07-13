@@ -192,8 +192,7 @@ def _entry_to_doc(entry: ToolIndexEntry) -> dict | None:
 class ToolWhooshIndex:
     """Build + query a Whoosh index over ``ToolIndexEntry`` rows.
 
-    Build at populate time,
-    query from :meth:`ToolIndex.search`. The on-disk format is plain Whoosh —
+    Built at populate time and queried by store consumers. The on-disk format is plain Whoosh —
     no Galaxy-specific encoding, so an operator can reopen it offline.
     """
 
