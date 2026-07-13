@@ -1554,23 +1554,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/file_source_templates/{template_id}/{template_version}/oauth2": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Template Oauth2 */
-        get: operations["file_sources__template_oauth2"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/file_source_templates/{template_id}/{template_version}/form-data": {
         parameters: {
             query?: never;
@@ -1582,6 +1565,23 @@ export interface paths {
         put?: never;
         /** Get dynamic data for a file source template form. */
         post: operations["file_sources__template_form_data"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/file_source_templates/{template_id}/{template_version}/oauth2": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Template Oauth2 */
+        get: operations["file_sources__template_oauth2"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -13136,9 +13136,10 @@ export interface components {
             /** Url */
             url: string;
         };
-        /** FileSourceTemplateSummaries */
-        FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
-        /** FileSourceTemplateAlert */
+        /**
+         * FileSourceTemplateAlert
+         * @description An administrator-authored alert shown while creating a file source.
+         */
         FileSourceTemplateAlert: {
             /** Condition */
             condition?: string | null;
@@ -13149,8 +13150,10 @@ export interface components {
              * @default info
              * @enum {string}
              */
-            variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+            variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
         };
+        /** FileSourceTemplateSummaries */
+        FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
         /** FileSourceTemplateSummary */
         FileSourceTemplateSummary: {
             /** Description */
@@ -13211,20 +13214,6 @@ export interface components {
              * @default 0
              */
             version: number;
-        };
-        /** TemplateFormDataRequest */
-        TemplateFormDataRequest: {
-            /** Uuid */
-            uuid: string;
-            /** Variables */
-            variables?: Record<string, string | boolean | number>;
-        };
-        /** TemplateFormDataResponse */
-        TemplateFormDataResponse: {
-            /** Alert Conditions */
-            alert_conditions?: string[];
-            /** Dynamic Options */
-            dynamic_options?: Record<string, [string, string][]>;
         };
         /** FilesSourcePlugin */
         FilesSourcePlugin: {
@@ -13668,15 +13657,6 @@ export interface components {
              * @constant
              */
             type: "genomebuild";
-        };
-        /** GithubRepository */
-        GithubRepository: {
-            /** Full Name */
-            full_name: string;
-            /** Owner */
-            owner: string;
-            /** Repo */
-            repo: string;
         };
         /** GraphEdge */
         GraphEdge: {
@@ -23687,6 +23667,27 @@ export interface components {
          * @enum {string}
          */
         TaskState: "PENDING" | "STARTED" | "RETRY" | "FAILURE" | "SUCCESS";
+        /**
+         * TemplateFormDataRequest
+         * @description Values available while rendering a post-authorization template form.
+         */
+        TemplateFormDataRequest: {
+            /** Uuid */
+            uuid: string;
+            /** Variables */
+            variables?: {
+                [key: string]: string | boolean | number;
+            };
+        };
+        /** TemplateFormDataResponse */
+        TemplateFormDataResponse: {
+            /** Alert Conditions */
+            alert_conditions?: string[];
+            /** Dynamic Options */
+            dynamic_options?: {
+                [key: string]: [string, string][];
+            };
+        };
         /** TemplateSecret */
         TemplateSecret: {
             /** Help */
@@ -35568,6 +35569,56 @@ export interface operations {
             };
         };
     };
+    file_sources__template_form_data: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The template ID of the target file source template. */
+                template_id: string;
+                /** @description The template version of the target file source template. */
+                template_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateFormDataRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateFormDataResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     file_sources__template_oauth2: {
         parameters: {
             query?: never;
@@ -35592,55 +35643,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OAuth2Info"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    file_sources__template_form_data: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The template ID of the target file source template. */
-                template_id: string;
-                /** @description The template version of the target file source template. */
-                template_version: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TemplateFormDataRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TemplateFormDataResponse"];
                 };
             };
             /** @description Request Error */
