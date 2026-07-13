@@ -281,6 +281,12 @@ pointed to by the configuration option `file_source_templates_config_file` in `g
 Alternatively, the configuration can be placed directly into `galaxy.yml` using the
 `file_source_templates` configuration option.
 
+A template can define `form_alerts` to show administrator-authored Markdown alerts while a
+user creates an instance. Each alert has a Bootstrap `variant` and optional `condition`; alerts
+without a condition are always shown. Template capabilities can expose condition names for
+source-specific states, allowing the template to control the message without hard-coding it in
+the form component.
+
 ### File Source Types
 
 #### `posix`

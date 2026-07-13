@@ -7,6 +7,8 @@ import { useConfigurationTemplateCreation } from "@/components/ConfigTemplates/u
 
 import { useGithubRepositoryOptions } from "./useGithubRepositoryOptions";
 
+import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
+
 const createUrl = "/api/file_source_instances";
 const createTestUrl = "/api/file_source_instances/test";
 
@@ -27,11 +29,18 @@ function onFormChange(incoming: Record<string, unknown>) {
     formData.value = incoming;
 }
 
-const { dynamicOptions, isRepositoryPicker, noRepositoriesFound } = useGithubRepositoryOptions(
+const { alertConditions, dynamicOptions } = useGithubRepositoryOptions(
     toRef(props, "template"),
     toRef(props, "uuid"),
     formData,
 );
+
+const formAlerts = computed(() => {
+    const activeConditions = new Set(alertConditions.value);
+    return (props.template.form_alerts ?? []).filter(
+        (alert) => !alert.condition || activeConditions.has(alert.condition),
+    );
+});
 
 const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadingMessage, testRunning, testResults } =
     useConfigurationTemplateCreation(
@@ -47,18 +56,8 @@ const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadi
 <template>
     <div id="create-file-source-landing">
         <ActionSummary error-data-description="file-source-creation-error" :test-results="testResults" :error="error" />
-        <BAlert v-if="noRepositoriesFound" show variant="warning" data-description="github-no-repositories">
-            The GitHub App isn't installed on any repository you can access, so there are no owners or
-            repositories to choose. Install it on at least one repository from your
-            <a href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer">
-                installed GitHub Apps </a
-            >, then reload this page.
-        </BAlert>
-        <BAlert v-else-if="isRepositoryPicker" show variant="info" data-description="github-manage-repositories">
-            Need access to another repository? Update the GitHub App's repository access in a new tab from your
-            <a href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer">
-                installed GitHub Apps</a
-            >, then reload this page.
+        <BAlert v-for="alert in formAlerts" :key="alert.content" show :variant="alert.variant">
+            <ConfigurationMarkdown :markdown="alert.content" :admin="true" />
         </BAlert>
         <InstanceForm
             :inputs="inputs"

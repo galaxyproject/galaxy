@@ -13138,10 +13138,25 @@ export interface components {
         };
         /** FileSourceTemplateSummaries */
         FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
+        /** FileSourceTemplateAlert */
+        FileSourceTemplateAlert: {
+            /** Condition */
+            condition?: string | null;
+            /** Content */
+            content: string;
+            /**
+             * Variant
+             * @default info
+             * @enum {string}
+             */
+            variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+        };
         /** FileSourceTemplateSummary */
         FileSourceTemplateSummary: {
             /** Description */
             description: string | null;
+            /** Form Alerts */
+            form_alerts?: components["schemas"]["FileSourceTemplateAlert"][] | null;
             /**
              * Hidden
              * @default false

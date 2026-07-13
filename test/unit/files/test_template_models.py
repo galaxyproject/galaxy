@@ -296,6 +296,11 @@ def test_production_aws_public_bucket():
 
 def test_production_github_oauth():
     github_template = _get_example_template("production_github.yml")
+    assert github_template.form_alerts is not None
+    assert [alert.condition for alert in github_template.form_alerts] == [
+        "repository_picker_empty",
+        "repository_picker_available",
+    ]
     configuration_obj = template_to_configuration(
         github_template,
         {"org": "galaxyproject", "repo": "galaxy"},

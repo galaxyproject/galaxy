@@ -82,6 +82,18 @@ export function useGithubRepositoryOptions(
             repositories.value.length === 0,
     );
 
+    // These semantic conditions deliberately describe picker state rather than GitHub-specific
+    // wording. Template-defined alerts decide what, if anything, to show for each state.
+    const alertConditions = computed(() => {
+        if (noRepositoriesFound.value) {
+            return ["repository_picker_empty"];
+        }
+        if (isRepositoryPicker.value) {
+            return ["repository_picker_available"];
+        }
+        return [];
+    });
+
     async function fetchRepositories() {
         if (!isRepositoryPicker.value || !uuid.value) {
             return;
@@ -116,7 +128,7 @@ export function useGithubRepositoryOptions(
 
     watch([uuid, isRepositoryPicker], () => void fetchRepositories(), { immediate: true });
 
-    return { dynamicOptions, loading, error, isRepositoryPicker, noRepositoriesFound };
+    return { dynamicOptions, loading, error, isRepositoryPicker, noRepositoriesFound, alertConditions };
 }
 
 function findVariableByMarker(template: FileSourceTemplateSummary, marker: string): string | undefined {
