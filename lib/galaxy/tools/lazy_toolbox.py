@@ -826,6 +826,17 @@ class LazyToolBox(ToolBox):
         return False
 
     def _writable_store_index_needs_population(self) -> bool:
+        """Return True when an index entry references a source the store lost.
+
+        The invariant that matters is one-directional: every ``source_hash``
+        the index references must resolve to a stored row, or materialising
+        that tool would fail. The reverse is not staleness — the store is
+        append-only (only ``reconcile_index`` prunes), so rows orphaned by a
+        content change, an ad-hoc self-heal superseded by conf context, or an
+        uninstall accumulate legitimately. A symmetric comparison here turned
+        one such orphan into a full inline repopulate on every boot and
+        reload, permanently defeating the freshness-token scan skip.
+        """
         if self._store is None:
             return False
         stores = (
@@ -841,15 +852,25 @@ class LazyToolBox(ToolBox):
                 index_hashes.update(entry.source_hash for entry in index.entries.values() if entry.source_hash)
                 for versions in index.entries_by_version.values():
                     index_hashes.update(entry.source_hash for entry in versions.values() if entry.source_hash)
-            if source_hashes != index_hashes:
+            dangling = index_hashes - source_hashes
+            if dangling:
                 log.info(
-                    "Tool source store index/source mismatch for %s (%d indexed sources, %d stored sources); "
-                    "running populator",
+                    "Tool source store index for %s references %d source(s) missing from the store "
+                    "(%d indexed, %d stored); running populator",
                     store_name,
+                    len(dangling),
                     len(index_hashes),
                     len(source_hashes),
                 )
                 return True
+            orphaned = len(source_hashes - index_hashes)
+            if orphaned:
+                log.debug(
+                    "Tool source store %s holds %d source row(s) no index entry references "
+                    "(superseded content or ad-hoc rows; reconcile_index prunes them)",
+                    store_name,
+                    orphaned,
+                )
         return False
 
     def _run_inline_populator(self) -> None:

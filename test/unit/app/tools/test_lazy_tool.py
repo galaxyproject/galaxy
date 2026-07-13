@@ -333,6 +333,27 @@ def test_resolve_index_entry_returns_none_when_nothing_matches():
     assert box._resolve_index_entry(None, None) is None
 
 
+def _reconcile_box(index_hashes, store_hashes):
+    box = _seam_box()
+    box._store.read_only = False
+    box._store.list_all.return_value = list(store_hashes)
+    index = ToolIndex()
+    for position, source_hash in enumerate(index_hashes):
+        index.add_entry(_entry(id=f"tool_{position}", source_hash=source_hash))
+    box._store.load_index.return_value = index
+    return box
+
+
+def test_index_reconcile_ignores_orphaned_store_rows():
+    box = _reconcile_box(index_hashes=["a", "b"], store_hashes=["a", "b", "orphaned"])
+    assert box._writable_store_index_needs_population() is False
+
+
+def test_index_reconcile_repopulates_on_dangling_index_reference():
+    box = _reconcile_box(index_hashes=["a", "b"], store_hashes=["a"])
+    assert box._writable_store_index_needs_population() is True
+
+
 def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
     # Shed installs load cloned tools during metadata generation, before
     # any conf is persisted — a miss for an on-disk file populates that
