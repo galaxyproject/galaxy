@@ -9,7 +9,7 @@ import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { MY_PANEL_VIEW_ID } from "./panelViews";
-import { countUniqueToolsInPanel } from "./utilities";
+import { countUniqueToolsInList, countUniqueToolsInPanel } from "./utilities";
 
 import LoadingSpan from "../LoadingSpan.vue";
 import ActivityPanel from "./ActivityPanel.vue";
@@ -36,14 +36,22 @@ const isMyPanel = computed(() => currentPanelView.value === MY_PANEL_VIEW_ID);
 const errorMessage = ref("");
 const panelsFetched = ref(false);
 const showFavorites = ref(false);
+const defaultToolSections = computed(() => {
+    return (
+        toolSections.value.default ||
+        (defaultPanelView.value && defaultPanelView.value !== MY_PANEL_VIEW_ID
+            ? toolSections.value[defaultPanelView.value]
+            : null)
+    );
+});
 const headerToolSections = computed(() => {
     if (isMyPanel.value) {
-        return toolSections.value[defaultPanelView.value] || toolSections.value.default || currentToolSections.value;
+        return defaultToolSections.value || currentToolSections.value;
     }
     return currentToolSections.value;
 });
 const toolsCount = computed(() =>
-    countUniqueToolsInPanel(headerToolSections.value, Object.keys(toolsById.value).length),
+    countUniqueToolsInPanel(headerToolSections.value, countUniqueToolsInList(toolsById.value)),
 );
 
 function formatToolsCount(count: number) {

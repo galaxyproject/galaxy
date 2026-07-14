@@ -38,7 +38,7 @@ const DEFAULT_VIEW_ID = "default";
 const PANEL_VIEW_ERR_MSG = "Error loading panel view";
 
 const firstTool = toolsList[0];
-const toolsListWithExtraVersion = [...toolsList, { ...firstTool, id: `${firstTool?.id}/older-version` }];
+const toolsListWithExtraVersion = [...toolsList, { ...firstTool, id: `${firstTool?.id}/0.9`, version: "0.9" }];
 
 vi.mock("@/composables/config");
 
@@ -91,6 +91,8 @@ describe("ToolPanel", () => {
         failDefault: boolean = false,
         captureToolsRequest?: (url: URL) => void,
         panelResponses: Record<string, unknown> = {},
+        defaultPanelView: string = DEFAULT_VIEW_ID,
+        capturePanelRequest?: (panelView: string) => void,
     ) {
         server.use(
             http.untyped.get("/api/tools", ({ request }) => {
@@ -102,7 +104,7 @@ describe("ToolPanel", () => {
                 return HttpResponse.json([]);
             }),
             http.untyped.get(TEST_PANELS_URI, () => {
-                return HttpResponse.json({ default_panel_view: DEFAULT_VIEW_ID, views: viewsList });
+                return HttpResponse.json({ default_panel_view: defaultPanelView, views: viewsList });
             }),
             http.get("/api/users/{user_id}", ({ response }) => {
                 return response(200).json(getFakeRegisteredUser());
@@ -133,6 +135,7 @@ describe("ToolPanel", () => {
             server.use(
                 http.untyped.get(/\/api\/tool_panels\/.*/, ({ request }) => {
                     const panelView = new URL(request.url).pathname.split("/").pop() || "";
+                    capturePanelRequest?.(panelView);
                     return HttpResponse.json(panelResponses[panelView] ?? toolsListInPanel);
                 }),
             );
@@ -272,6 +275,85 @@ describe("ToolPanel", () => {
         const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
         const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
         expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
+    });
+
+    it("uses the loaded default panel count when My Tools is the backend default view", async () => {
+        storePanelView("");
+        const wrapper = await createWrapper(
+            "",
+            false,
+            undefined,
+            {
+                my_panel: {
+                    favorites: {
+                        model_class: "ToolSection",
+                        id: "favorites",
+                        name: "Favorites",
+                        tools: [],
+                    },
+                },
+            },
+            "my_panel",
+        );
+        const count = getUniqueToolIdsInPanel(toolsListInPanel).size;
+        const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
+        const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
+        expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
+        expect(discoverButton.text()).not.toBe(`Discover ${toolsListWithExtraVersion.length} Tools`);
+    });
+
+    it("ignores My Tools panel contents for the header count when My Tools is the backend default view", async () => {
+        storePanelView("");
+        const firstToolId = firstTool?.id;
+        if (!firstToolId) {
+            throw new Error("Expected at least one tool fixture");
+        }
+        const wrapper = await createWrapper(
+            "",
+            false,
+            undefined,
+            {
+                my_panel: {
+                    favorites: {
+                        model_class: "ToolSection",
+                        id: "favorites",
+                        name: "Favorites",
+                        tools: [firstToolId],
+                    },
+                },
+            },
+            "my_panel",
+        );
+        const count = getUniqueToolIdsInPanel(toolsListInPanel).size;
+        const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
+        const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
+        expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
+        expect(discoverButton.text()).not.toBe("Discover 1 Tools");
+    });
+
+    it("loads default panel sections when My Tools is the backend default view", async () => {
+        storePanelView("");
+        const requestedPanels: string[] = [];
+        await createWrapper(
+            "",
+            false,
+            undefined,
+            {
+                my_panel: {
+                    favorites: {
+                        model_class: "ToolSection",
+                        id: "favorites",
+                        name: "Favorites",
+                        tools: [],
+                    },
+                },
+            },
+            "my_panel",
+            (panelView) => requestedPanels.push(panelView),
+        );
+
+        expect(requestedPanels).toContain(DEFAULT_VIEW_ID);
+        expect(requestedPanels).toContain("my_panel");
     });
 
     it("does not request tool tags during default tool panel startup", async () => {

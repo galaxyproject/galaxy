@@ -49,7 +49,7 @@ dependencies = [
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",
     "pebble",
-    "pulsar-galaxy-lib>=0.15.0.dev0",
+    "pulsar-galaxy-lib>=0.15.15",
     "pydantic>=2.7.4",
     "pydantic-ai>=1.99.0",
     "pysam>=0.21",

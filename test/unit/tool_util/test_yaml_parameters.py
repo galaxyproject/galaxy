@@ -448,7 +448,8 @@ def test_simple_outputs_require_name_but_not_hidden_in_authoring_schema():
         assert "name" in required, f"{name} should require 'name'"
         assert "hidden" not in required, f"{name} should not require 'hidden'"
 
-    # A named text output without `hidden` validates.
+    # A named text output without `hidden` validates. (``inputs`` is required on the
+    # authoring view -- empty is fine here; this command references no inputs.)
     tool = UserToolSourceAuthoringView.model_validate(
         {
             "class": "GalaxyUserTool",
@@ -456,6 +457,7 @@ def test_simple_outputs_require_name_but_not_hidden_in_authoring_schema():
             "version": "0.1.0",
             "container": "busybox",
             "shell_command": "echo 0.03 > p.txt",
+            "inputs": [],
             "outputs": [
                 {"type": "data", "name": "plot", "from_work_dir": "p.txt"},
                 {"type": "text", "name": "pvalue"},
@@ -464,7 +466,8 @@ def test_simple_outputs_require_name_but_not_hidden_in_authoring_schema():
     )
     assert tool.outputs[1].hidden is None
 
-    # A simple output WITHOUT a name is rejected.
+    # A simple output WITHOUT a name is rejected. (``inputs`` supplied so the only
+    # validation error is the missing output name, not a missing ``inputs`` field.)
     with pytest.raises(ValidationError):
         UserToolSourceAuthoringView.model_validate(
             {
@@ -472,6 +475,7 @@ def test_simple_outputs_require_name_but_not_hidden_in_authoring_schema():
                 "name": "pvalue tool",
                 "container": "busybox",
                 "shell_command": "echo 0.03 > p.txt",
+                "inputs": [],
                 "outputs": [{"type": "text"}],
             }
         )
