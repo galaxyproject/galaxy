@@ -27,7 +27,7 @@ withDefaults(
 );
 
 const emit = defineEmits<{
-    "newer-version-click": [];
+    (e: "newer-version-click"): void;
 }>();
 </script>
 
