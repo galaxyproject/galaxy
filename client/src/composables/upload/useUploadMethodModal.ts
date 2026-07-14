@@ -29,6 +29,8 @@ const DEFAULT_ALLOWED_METHODS: DatasetUploadMethod[] = [
     "data-library",
 ];
 
+export { DEFAULT_ALLOWED_METHODS };
+
 let hostElement: HTMLDivElement | null = null;
 let modalVm: UploadMethodModalHostInstance | null = null;
 let pendingResolvers: UploadModalResolvers | null = null;
