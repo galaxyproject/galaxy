@@ -27,7 +27,7 @@ class RDMFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     public_name: Optional[Union[str, TemplateExpansion]] = None
     multipart_threshold: Optional[Union[int, TemplateExpansion]] = None  # MB
     multipart_chunk_size: Optional[Union[int, TemplateExpansion]] = None  # MB
-    default_resource_type: Optional[str] = None
+    default_resource_type: Optional[Union[str, TemplateExpansion]] = None
 
 
 class RDMFileSourceConfiguration(BaseFileSourceConfiguration):
