@@ -25,6 +25,10 @@ withDefaults(
         isLoading: false,
     },
 );
+
+const emit = defineEmits<{
+    "newer-version-click": [];
+}>();
 </script>
 
 <template>
@@ -50,9 +54,15 @@ withDefaults(
 
                         <BBadge
                             v-if="isNotLatestVersion"
+                            v-g-tooltip.hover.focus
+                            tag="button"
+                            type="button"
+                            class="border-0 cursor-pointer"
                             pill
                             variant="warning"
-                            data-description="newer tool version">
+                            title="Switch to the latest available tool version"
+                            data-description="newer tool version"
+                            @click="emit('newer-version-click')">
                             Newer version available
                         </BBadge>
                     </div>
