@@ -1,6 +1,9 @@
 """Unit tests for Invenio multipart upload functionality."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import pytest
 
@@ -239,13 +242,15 @@ class TestUploadFileMultipart:
         file_path.write_bytes(b"x" * file_size)
 
         interactor = _make_interactor()
-        context = _make_context(config=MagicMock(
-            multipart_threshold=1,
-            multipart_chunk_size=None,
-            default_resource_type=None,
-            token="test-token",
-            public_name="Doe, Jane",
-        ))
+        context = _make_context(
+            config=MagicMock(
+                multipart_threshold=1,
+                multipart_chunk_size=None,
+                default_resource_type=None,
+                token="test-token",
+                public_name="Doe, Jane",
+            )
+        )
 
         entries = _make_multipart_entries(3)
 
@@ -283,13 +288,15 @@ class TestUploadFileMultipart:
         file_path.write_bytes(b"x" * file_size)
 
         interactor = _make_interactor()
-        context = _make_context(config=MagicMock(
-            multipart_threshold=1,
-            multipart_chunk_size=None,
-            default_resource_type=None,
-            token="test-token",
-            public_name="Doe, Jane",
-        ))
+        context = _make_context(
+            config=MagicMock(
+                multipart_threshold=1,
+                multipart_chunk_size=None,
+                default_resource_type=None,
+                token="test-token",
+                public_name="Doe, Jane",
+            )
+        )
 
         # Server returns only 2 part links instead of 3
         entries = _make_multipart_entries(2)
@@ -403,13 +410,15 @@ class TestUploadFileToDraftContainerRouting:
         file_path.write_bytes(b"small")
 
         interactor = _make_interactor()
-        context = _make_context(config=MagicMock(
-            multipart_threshold=100,
-            multipart_chunk_size=None,
-            default_resource_type=None,
-            token="test-token",
-            public_name="Doe, Jane",
-        ))
+        context = _make_context(
+            config=MagicMock(
+                multipart_threshold=100,
+                multipart_chunk_size=None,
+                default_resource_type=None,
+                token="test-token",
+                public_name="Doe, Jane",
+            )
+        )
 
         with patch.object(interactor, "_upload_file_single") as mock_single:
             interactor.upload_file_to_draft_container("abc", "test.txt", str(file_path), context)
@@ -422,13 +431,15 @@ class TestUploadFileToDraftContainerRouting:
         file_path.write_bytes(b"x" * file_size)
 
         interactor = _make_interactor()
-        context = _make_context(config=MagicMock(
-            multipart_threshold=1,  # 1 MB threshold, file is 2 MB
-            multipart_chunk_size=None,
-            default_resource_type=None,
-            token="test-token",
-            public_name="Doe, Jane",
-        ))
+        context = _make_context(
+            config=MagicMock(
+                multipart_threshold=1,  # 1 MB threshold, file is 2 MB
+                multipart_chunk_size=None,
+                default_resource_type=None,
+                token="test-token",
+                public_name="Doe, Jane",
+            )
+        )
 
         with patch.object(interactor, "_upload_file_multipart") as mock_multipart:
             interactor.upload_file_to_draft_container("abc", "test.txt", str(file_path), context)

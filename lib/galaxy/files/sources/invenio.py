@@ -16,11 +16,11 @@ from typing import (
 )
 from urllib.parse import quote
 
-log = logging.getLogger(__name__)
-
 from typing_extensions import (
     TypedDict,
 )
+
+log = logging.getLogger(__name__)
 
 from galaxy.exceptions import (
     AuthenticationRequired,
