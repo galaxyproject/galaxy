@@ -68,6 +68,7 @@ export const STANDARD_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
     id: "moo",
     version: 2,
     hidden: false,
+    requires_oauth2_authorization: false,
 };
 
 export const GENERIC_FTP_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
@@ -114,6 +115,7 @@ export const GENERIC_FTP_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
     ],
     hidden: false,
     version: 1,
+    requires_oauth2_authorization: false,
 };
 
 export const OBJECT_STORE_INSTANCE: UserConcreteObjectStore = {

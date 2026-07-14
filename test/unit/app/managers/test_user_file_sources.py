@@ -941,9 +941,12 @@ class TestFileSourcesTestCase(BaseTestCase):
         monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
         self._stub_github_repositories([("galaxyproject", "galaxy"), ("me", "data")])
 
-        repositories = self.manager.list_github_repositories(self.trans, "github", 0, uuid)
-        assert [r.full_name for r in repositories] == ["galaxyproject/galaxy", "me/data"]
-        self.manager.list_github_repositories(self.trans, "github", 0, uuid)
+        form_data = self.manager.template_form_data(
+            self.trans,
+            "github",
+            0,
+            TemplateFormDataRequest(uuid=uuid, variables={"org": "galaxyproject"}),
+        )
         # The refresh token was exchanged once (the access token is cached) and the minted
         # access token authenticated the request GitHub actually received.
         assert refresh_requests == 1
@@ -951,20 +954,18 @@ class TestFileSourcesTestCase(BaseTestCase):
         # The rotated refresh token is persisted back to the user vault.
         assert user_vault.read_secret(refresh_key) == "rotated_refresh_token"
 
-        form_data = self.manager.template_form_data(
-            self.trans,
-            "github",
-            0,
-            TemplateFormDataRequest(uuid=uuid, variables={"org": "galaxyproject"}),
-        )
         assert form_data.dynamic_options == {
             "org": [("galaxyproject", "galaxyproject"), ("me", "me")],
             "repo": [("galaxy", "galaxy")],
         }
-        assert form_data.alert_conditions == ["repository_picker_available"]
+        assert len(form_data.messages) == 1
+        assert form_data.messages[0].variant == "info"
 
     def test_github_oauth_redirects_to_authorization(self, tmp_path, monkeypatch):
         self._init_github_env(tmp_path, monkeypatch)
+
+        summary = next(summary for summary in self.manager.summaries.root if summary.id == "github")
+        assert summary.requires_oauth2_authorization
 
         authorize_url = self.manager.template_oauth2(self.trans, "github", 0).authorize_url
         from urllib.parse import (
@@ -979,7 +980,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert state.route == "file_source_instances/github/0"
 
     @responses.activate
-    def test_github_assert_repository_authorized(self, tmp_path, monkeypatch):
+    def test_github_capability_rejects_unauthorized_repository(self, tmp_path, monkeypatch):
         self._init_github_env(tmp_path, monkeypatch)
         uuid = uuid4().hex
         user_vault = self.trans.user_vault
@@ -987,12 +988,23 @@ class TestFileSourcesTestCase(BaseTestCase):
         user_vault.write_secret(refresh_key, "original_refresh_token")
         self._mock_github_repositories(monkeypatch, [("galaxyproject", "galaxy")])
 
-        # An authorized repository passes validation.
-        self.manager.assert_repository_authorized(self.trans, "github", 0, uuid, "galaxyproject", "galaxy")
+        authorized_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="github",
+            template_version=0,
+            variables={"org": "galaxyproject", "repo": "galaxy"},
+            secrets={},
+            uuid=uuid,
+        )
+        self.manager._validate_provider_creation(self.trans, authorized_payload)
 
         # An un-granted repository raises a clear error naming the repository.
         with pytest.raises(RequestParameterInvalidException) as exc_info:
-            self.manager.assert_repository_authorized(self.trans, "github", 0, uuid, "someone", "private")
+            self.manager._validate_provider_creation(
+                self.trans,
+                authorized_payload.model_copy(update={"variables": {"org": "someone", "repo": "private"}}),
+            )
         assert "someone/private" in str(exc_info.value)
 
     @responses.activate

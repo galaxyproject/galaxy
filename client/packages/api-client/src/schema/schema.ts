@@ -13136,30 +13136,12 @@ export interface components {
             /** Url */
             url: string;
         };
-        /**
-         * FileSourceTemplateAlert
-         * @description An administrator-authored alert shown while creating a file source.
-         */
-        FileSourceTemplateAlert: {
-            /** Condition */
-            condition?: string | null;
-            /** Content */
-            content: string;
-            /**
-             * Variant
-             * @default info
-             * @enum {string}
-             */
-            variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
-        };
         /** FileSourceTemplateSummaries */
         FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
         /** FileSourceTemplateSummary */
         FileSourceTemplateSummary: {
             /** Description */
             description: string | null;
-            /** Form Alerts */
-            form_alerts?: components["schemas"]["FileSourceTemplateAlert"][] | null;
             /**
              * Hidden
              * @default false
@@ -13169,6 +13151,11 @@ export interface components {
             id: string;
             /** Name */
             name: string | null;
+            /**
+             * Requires Oauth2 Authorization
+             * @default false
+             */
+            requires_oauth2_authorization: boolean;
             /** Secrets */
             secrets?: components["schemas"]["TemplateSecret"][] | null;
             /**
@@ -23681,12 +23668,23 @@ export interface components {
         };
         /** TemplateFormDataResponse */
         TemplateFormDataResponse: {
-            /** Alert Conditions */
-            alert_conditions?: string[];
             /** Dynamic Options */
             dynamic_options?: {
                 [key: string]: [string, string][];
             };
+            /** Messages */
+            messages?: components["schemas"]["TemplateFormMessage"][];
+        };
+        /** TemplateFormMessage */
+        TemplateFormMessage: {
+            /** Content */
+            content: string;
+            /**
+             * Variant
+             * @default info
+             * @enum {string}
+             */
+            variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
         };
         /** TemplateSecret */
         TemplateSecret: {
@@ -23757,6 +23755,19 @@ export interface components {
                   )[]
                 | null;
         };
+        /**
+         * TemplateVariableOptionsProvider
+         * @description A server-side source for select options and its form dependencies.
+         */
+        TemplateVariableOptionsProvider: {
+            /**
+             * Depends On
+             * @default []
+             */
+            depends_on: string[];
+            /** Kind */
+            kind: string;
+        };
         /** TemplateVariablePathComponent */
         TemplateVariablePathComponent: {
             /** Default */
@@ -23789,8 +23800,6 @@ export interface components {
         TemplateVariableSelect: {
             /** Default */
             default?: string | null;
-            /** Dynamic Options */
-            dynamic_options?: string | null;
             /** Help */
             help?: string | null;
             /** Label */
@@ -23803,6 +23812,7 @@ export interface components {
             optional?: boolean | null;
             /** Options */
             options?: components["schemas"]["TemplateVariableSelectOption"][] | null;
+            options_provider?: components["schemas"]["TemplateVariableOptionsProvider"] | null;
             /**
              * Type
              * @constant

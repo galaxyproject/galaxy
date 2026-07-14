@@ -29,18 +29,7 @@ function onFormChange(incoming: Record<string, unknown>) {
     formData.value = incoming;
 }
 
-const { alertConditions, dynamicOptions } = useTemplateFormData(
-    toRef(props, "template"),
-    toRef(props, "uuid"),
-    formData,
-);
-
-const formAlerts = computed(() => {
-    const activeConditions = new Set(alertConditions.value);
-    return (props.template.form_alerts ?? []).filter(
-        (alert) => !alert.condition || activeConditions.has(alert.condition),
-    );
-});
+const { dynamicOptions, messages } = useTemplateFormData(toRef(props, "template"), toRef(props, "uuid"), formData);
 
 const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadingMessage, testRunning, testResults } =
     useConfigurationTemplateCreation(
@@ -56,8 +45,8 @@ const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadi
 <template>
     <div id="create-file-source-landing">
         <ActionSummary error-data-description="file-source-creation-error" :test-results="testResults" :error="error" />
-        <BAlert v-for="alert in formAlerts" :key="alert.content" show :variant="alert.variant">
-            <ConfigurationMarkdown :markdown="alert.content" :admin="true" />
+        <BAlert v-for="message in messages" :key="message.content" show :variant="message.variant">
+            <ConfigurationMarkdown :markdown="message.content" :admin="true" />
         </BAlert>
         <InstanceForm
             :inputs="inputs"

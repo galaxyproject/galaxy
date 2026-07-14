@@ -108,16 +108,22 @@ class TemplateVariableSelectOption(StrictModel):
     value: str
 
 
+class TemplateVariableOptionsProvider(StrictModel):
+    """A server-side source for select options and its form dependencies."""
+
+    kind: str
+    depends_on: list[str] = []
+
+
 class TemplateVariableSelect(BaseTemplateVariable):
     type: Literal["select"]
     default: str | None = None
-    # Statically declared options. When omitted, options are expected to be
-    # supplied at form-render time by the client based on ``dynamic_options``.
+    # Statically declared options. When omitted, options can be supplied by an
+    # options provider while the form is rendered.
     options: list[TemplateVariableSelectOption] | None = None
-    # Marker naming a client-side provider that populates the options
-    # dynamically (e.g. "github_repository_owners"). The generic framework does
-    # not resolve this - it only carries the marker to the frontend.
-    dynamic_options: str | None = None
+    # A server-side capability populates these options. Dependencies let the client
+    # refresh only when values that affect this field change.
+    options_provider: TemplateVariableOptionsProvider | None = None
 
 
 TemplateVariable = (

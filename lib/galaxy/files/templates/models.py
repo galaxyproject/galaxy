@@ -68,16 +68,6 @@ FileSourceTemplateAlertVariant = Literal[
 ]
 
 
-class FileSourceTemplateAlert(StrictModel):
-    """An administrator-authored alert shown while creating a file source."""
-
-    content: MarkdownContent
-    variant: FileSourceTemplateAlertVariant = "info"
-    # A condition is supplied by a client-side template capability. Omit it for an alert that
-    # should always be visible.
-    condition: str | None = None
-
-
 class PosixFileSourceTemplateConfiguration(StrictModel):
     type: Literal["posix"]
     root: str | TemplateExpansion
@@ -609,7 +599,7 @@ class FileSourceTemplateBase(StrictModel):
     # template by hiding but keep it in the catalog for backward
     # compatibility for users with existing stores of that template.
     hidden: bool = False
-    form_alerts: list[FileSourceTemplateAlert] | None = None
+    requires_oauth2_authorization: bool = False
     variables: list[TemplateVariable] | None = None
     secrets: list[TemplateSecret] | None = None
 

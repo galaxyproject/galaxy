@@ -163,7 +163,12 @@ def test_variable_typing_path_component():
 def test_variable_typing_select():
     # A select without static options accepts any string (dynamic options are validated elsewhere).
     template = _template_with_variable(
-        TemplateVariableSelect(name="test_var", help=None, type="select", dynamic_options="github_repository_owners")
+        TemplateVariableSelect(
+            name="test_var",
+            help=None,
+            type="select",
+            options_provider={"kind": "github_authorized_repository_owners"},
+        )
     )
     instance = _test_instance_with_variables({"test_var": "galaxyproject/galaxy"})
     validate_secrets_and_variables(instance, template)
