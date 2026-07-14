@@ -535,7 +535,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
 
         if num_parts <= 2:
             for part_index, part_info in enumerate(part_links):
-                self._upload_single_part(file_path, file_size, part_size, part_index, part_info)
+                self._upload_single_part(file_path, file_size, part_size, part_index, part_info, headers)
         else:
             max_workers = min(4, num_parts)
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -548,6 +548,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
                         part_size,
                         part_index,
                         part_info,
+                        headers,
                     )
                     futures[future] = part_index
 
@@ -566,6 +567,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         part_size: int,
         part_index: int,
         part_info: dict,
+        headers: dict,
     ):
         """Upload a single part of a multipart upload."""
         part_url = part_info.get("url")
@@ -578,13 +580,18 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
 
         log.debug(f"Uploading part {part_index}: bytes {start_byte}-{end_byte-1} ({part_content_length} bytes)")
 
+        # Presigned S3 URLs are authenticated via query parameters; adding
+        # Authorization or other headers would invalidate the signature.
+        # Invenio API proxy URLs require the Authorization header.
+        # Check for both X-Amz-Signature (current) and Signature (legacy v2) query params.
+        is_presigned = "X-Amz-Signature" in part_url or "Signature=" in part_url
+        part_headers = None if is_presigned else headers
+
         # Stream the file slice without loading the entire part into memory
-        # Use empty headers - presigned URLs are authenticated via query parameters
-        # Adding Authorization or other headers would invalidate the signature
         with open(file_path, "rb") as f:
             f.seek(start_byte)
             reader = _LimitedFileReader(f, part_content_length)
-            response = requests.put(part_url, data=reader)
+            response = requests.put(part_url, data=reader, headers=part_headers)
             self._ensure_response_has_expected_status_code(response, 200)
 
     def download_file_from_container(

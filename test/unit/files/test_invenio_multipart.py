@@ -349,7 +349,7 @@ class TestUploadSinglePart:
         with patch("galaxy.files.sources.invenio.requests") as mock_requests:
             mock_requests.put.side_effect = fake_put
 
-            interactor._upload_single_part(str(file_path), len(data), part_size, 2, part_info)
+            interactor._upload_single_part(str(file_path), len(data), part_size, 2, part_info, {})
 
             # Part 2 = bytes 32-48
             assert bytes(captured_data) == data[32:48]
