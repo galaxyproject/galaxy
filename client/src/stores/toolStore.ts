@@ -97,7 +97,13 @@ export type ToolPanelItem = Tool | ToolSection | ToolSectionLabel;
 
 export type ToolHelpData = {
     help?: string;
+    helpFormat?: string;
     summary?: string;
+};
+
+type ToolHelpResponse = {
+    help?: string;
+    help_format?: string;
 };
 
 const MY_PANEL_VIEW: Panel = {
@@ -315,9 +321,10 @@ export const useToolStore = defineStore("toolStore", () => {
 
                 const { data } = (await axios.get(
                     `${getAppRoot()}api/tools/${encodeURIComponent(toolId)}/build`,
-                )) as AxiosResponse<ToolHelpData>;
+                )) as AxiosResponse<ToolHelpResponse>;
 
                 const help = data.help;
+                toolHelpData.helpFormat = data.help_format;
                 if (help && help !== "\n") {
                     toolHelpData.help = help;
                     toolHelpData.summary = parseHelpForSummary(help);
