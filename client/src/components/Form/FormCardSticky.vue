@@ -19,9 +19,11 @@ withDefaults(
         name?: string;
         version?: string;
         isLatestVersion?: boolean;
+        isNotLatestVersion?: boolean;
     }>(),
     {
         isLatestVersion: false,
+        isNotLatestVersion: false,
         isLoading: false,
     },
 );
@@ -56,6 +58,13 @@ withDefaults(
                             title="Selected tool version is the latest available version"
                             data-description="latest tool version">
                             Latest version
+                        </BBadge>
+                        <BBadge
+                            v-if="isNotLatestVersion"
+                            pill
+                            variant="warning"
+                            data-description="newer tool version">
+                            Newer version available
                         </BBadge>
                     </div>
 

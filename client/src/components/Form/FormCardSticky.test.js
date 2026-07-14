@@ -73,6 +73,13 @@ describe("FormCardSticky.vue", () => {
         expect(badge.text()).toBe("Latest version");
     });
 
+    it("renders newer version badge when requested", () => {
+        const wrapper = mountComponent({ isNotLatestVersion: true });
+        const badge = wrapper.find("[data-description='newer tool version']");
+        expect(badge.exists()).toBe(true);
+        expect(badge.text()).toBe("Newer version available");
+    });
+
     it("does not render latest version badge by default", () => {
         const wrapper = mountComponent();
         expect(wrapper.find("[data-description='latest tool version']").exists()).toBe(false);
