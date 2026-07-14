@@ -1,14 +1,12 @@
 import datetime
 import json
 import re
-import urllib.request
 from typing import (
     Any,
     cast,
     Literal,
     Optional,
 )
-from urllib.error import HTTPError
 from urllib.parse import quote
 
 from typing_extensions import (
@@ -39,9 +37,7 @@ from galaxy.files.sources._rdm import (
 )
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
-    get_charset_from_http_headers,
     requests,
-    stream_to_open_named_file,
 )
 from galaxy.util.hash_util import as_hash_function_name
 
@@ -369,17 +365,20 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             # pass the token as a header only when using the API
             headers = self._get_request_headers(context)
         try:
-            req = urllib.request.Request(download_file_content_url, headers=headers)
-            with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
-                f = open(file_path, "wb")
-                return stream_to_open_named_file(
-                    page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
-                )
-        except HTTPError as e:
-            if e.code in [401, 403, 404]:
+            with requests.get(
+                download_file_content_url, headers=headers, stream=True, timeout=DEFAULT_SOCKET_TIMEOUT
+            ) as response:
+                response.raise_for_status()
+                with open(file_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=2**20):
+                        if chunk:
+                            f.write(chunk)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code in [401, 403, 404]:
                 raise Exception(
                     f"Cannot download file '{file_identifier}' from record '{container_id}'. Please make sure the record exists and you have access to it."
                 )
+            raise
 
     def _get_download_file_url(
         self, record_id: str, filename: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
