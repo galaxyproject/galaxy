@@ -158,6 +158,31 @@ def calculate_multipart_params(file_size: int, preferred_part_size: int | None =
     return parts, part_size
 
 
+class _LimitedFileReader:
+    """File-like wrapper that limits reads to a specified number of bytes.
+
+    Enables streaming a slice of a file for upload without loading the
+    entire slice into memory. The __len__ method lets requests determine
+    the correct Content-Length for the upload.
+    """
+
+    def __init__(self, file_obj, length: int):
+        self._file = file_obj
+        self._length = length
+
+    def read(self, size: int = -1) -> bytes:
+        if size is None or size < 0:
+            size = self._length
+        else:
+            size = min(size, self._length)
+        data = self._file.read(size)
+        self._length -= len(data)
+        return data
+
+    def __len__(self) -> int:
+        return self._length
+
+
 class InvenioRecord(TypedDict):
     id: str
     title: str
@@ -553,15 +578,14 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
 
         log.debug(f"Uploading part {part_index}: bytes {start_byte}-{end_byte-1} ({part_content_length} bytes)")
 
-        # Read the entire part into memory and upload
-        with open(file_path, "rb") as f:
-            f.seek(start_byte)
-            part_data = f.read(part_content_length)
-
+        # Stream the file slice without loading the entire part into memory
         # Use empty headers - presigned URLs are authenticated via query parameters
         # Adding Authorization or other headers would invalidate the signature
-        response = requests.put(part_url, data=part_data)
-        self._ensure_response_has_expected_status_code(response, 200)
+        with open(file_path, "rb") as f:
+            f.seek(start_byte)
+            reader = _LimitedFileReader(f, part_content_length)
+            response = requests.put(part_url, data=reader)
+            self._ensure_response_has_expected_status_code(response, 200)
 
     def download_file_from_container(
         self,
