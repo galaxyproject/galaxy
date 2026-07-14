@@ -7,10 +7,13 @@ from typing import (
     TypeVar,
 )
 
+import yaml
 from pydantic_evals.evaluators import (
     Evaluator,
     EvaluatorContext,
 )
+
+from galaxy.tool_util.deps.mulled.recommend import biocontainer_tag_built
 
 # Routing datasets vary in their case-input shape: a plain query string, or a dict for the
 # multi-turn cases. HandoffMatch ignores the input entirely (it only compares output to
@@ -143,6 +146,44 @@ class ToolYamlContains(Evaluator[Any, Any, dict]):
             return 0.0
         hits = sum(1 for n in needles if n.lower() in yaml_text)
         return hits / len(needles)
+
+
+@dataclass
+class ContainerVerified(Evaluator[Any, Any, dict]):
+    """Score 0.0 only when the produced tool's container is a *verifiably made-up*
+    biocontainer; 1.0 otherwise.
+
+    ``ToolYamlContains`` can assert the container is in the ``quay.io/biocontainers``
+    namespace, but a substring match can't tell a real image from a hallucinated tag
+    (e.g. an invented ``--py311h1128e8f_0`` build suffix). This checks the actual
+    ``container`` against quay.io with ``biocontainer_tag_built``:
+
+    - tag verified present (real biocontainer) -> 1.0
+    - tag verified absent (made up) -> 0.0  <- the failure this exists to catch
+    - unverifiable (not a biocontainers reference, or a transient lookup failure)
+      -> 1.0, so a legitimately real non-biocontainer image (busybox, ubuntu, ...)
+      or a network blip is not a false failure. Whether the image *ought* to be a
+      biocontainer is a separate concern, measured by ``ToolYamlContains``.
+
+    Touches the network (quay.io), like the recommender -- meaningful only in eval
+    runs where outbound calls are allowed; it degrades to 1.0 when they aren't.
+    """
+
+    def evaluate(self, ctx: EvaluatorContext[Any, Any, dict]) -> float:
+        output = ctx.output if isinstance(ctx.output, dict) else {}
+        yaml_text = str(output.get("tool_yaml") or "")
+        if not yaml_text:
+            return 0.0
+        try:
+            data = yaml.safe_load(yaml_text)
+        except yaml.YAMLError:
+            data = None
+        container = data.get("container") if isinstance(data, dict) else None
+        if not container:
+            return 0.0
+        # 0.0 only on a positively-disproven biocontainer tag; None (unverifiable)
+        # and True (present) both pass.
+        return 0.0 if biocontainer_tag_built(str(container)) is False else 1.0
 
 
 @dataclass

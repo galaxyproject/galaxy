@@ -4228,6 +4228,14 @@ mapping:
           retries"). custom_tool's producer keeps a budget of 0 because it runs its
           own reflection loop; a shared ``default`` block does not change that -- set
           ``custom_tool.retries`` explicitly to override it.
+          custom_tool also accepts ``quality_critic_enabled`` (default false) to turn on the
+          LLM clarity/idiomaticity critic, and ``container_recommendation_enabled`` (default
+          false) to resolve the produced tool's container to a verified quay.io biocontainer.
+          Container recommendation runs a dedicated container critic that infers the tool's
+          conda packages from its command and config files, independently of
+          ``quality_critic_enabled``; it adds an extra model call plus an outbound network
+          call to quay.io during the agent turn. Example:
+          inference_services: { custom_tool: { quality_critic_enabled: true, container_recommendation_enabled: true } }
 
       agent_model_capabilities_file:
         type: str
