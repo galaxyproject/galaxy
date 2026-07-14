@@ -1,4 +1,4 @@
-import { expectConfigurationRequest, getLocalVue } from "@tests/vitest/helpers";
+import { expectConfigurationRequest, getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -25,12 +25,17 @@ const config = { enable_tool_source_display: false };
 setupMockConfig(config);
 
 const localVue = getLocalVue();
+const router = injectTestRouter(localVue);
 
 describe("ToolCard", () => {
     let wrapper;
     let userStore;
 
     beforeEach(async () => {
+        if (router.currentRoute.fullPath !== "/") {
+            await router.push("/");
+        }
+
         // some child component must be bypassing useConfig - so we need to explicitly
         // stup the API endpoint also. If you can drop this without request problems in log,
         // this hack can be removed.
@@ -65,6 +70,7 @@ describe("ToolCard", () => {
                 disabled: false,
             },
             localVue,
+            router,
             pinia,
         });
         userStore = useUserStore();
@@ -99,7 +105,7 @@ describe("ToolCard", () => {
         await flushPromises();
     });
 
-    it("shows newer version badge for older lineage versions", async () => {
+    it("shows newer version badge when latest version is not active and navigates to the latest alias", async () => {
         await wrapper.setProps({
             version: "1.0",
             options: {
@@ -109,7 +115,12 @@ describe("ToolCard", () => {
             },
         });
 
-        expect(wrapper.find("[data-description='newer tool version']").text()).toBe("Newer version available");
+        const badge = wrapper.find("[data-description='newer tool version']");
+        expect(badge.text()).toBe("Newer version available");
+
+        await badge.trigger("click");
+
+        expect(router.currentRoute.fullPath).toBe("/?tool_id=identifier&version=latest");
     });
 
     it("does not show newer version badge for the latest lineage version", async () => {
@@ -125,7 +136,7 @@ describe("ToolCard", () => {
         expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
     });
 
-    it("does not show newer version badge for a single version", async () => {
+    it("does not show newer version badge for single-version tools", async () => {
         await wrapper.setProps({
             version: "1.0",
             options: {
