@@ -6,20 +6,22 @@ import { computed, nextTick, ref, watch } from "vue";
 
 import type { HDCASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
-import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
+import type { UploadedDataset, UploadModalConfig } from "@/components/Panels/Upload/uploadModalTypes";
+import { toDataOptions } from "@/composables/upload/useUploadMethodModal";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
 import type { VariantInterface } from "./variants";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
-import CollectionCreatorShowExtensions from "@/components/Collections/common/CollectionCreatorShowExtensions.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
+import UploadMethodViewInline from "@/components/Panels/Upload/UploadMethodViewInline.vue";
 
 const WorkflowRunTabs: Record<string, number> = {
     view: 0,
-    create: 1,
+    upload: 1,
+    create: 2,
 };
 
 const props = defineProps<{
@@ -35,29 +37,53 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "focus"): void;
-    (e: "uploaded-data", data: any): void;
+    (e: "uploaded-data", data: DataOption[]): void;
     (e: "update:workflow-tab", value: string): void;
 }>();
 
 const currentWorkflowTab = computed({
-    get: () => WorkflowRunTabs[props.workflowTab],
+    get: () => WorkflowRunTabs[props.workflowTab] ?? WorkflowRunTabs.view,
     set: (value) => {
         emit("update:workflow-tab", Object.keys(WorkflowRunTabs).find((key) => WorkflowRunTabs[key] === value) || "");
     },
 });
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
-const { openUploadModal } = useUploadMethodModal();
 
-function addUploadedFiles(value: any[], viewUploads = true) {
+const uploadConfig = computed<UploadModalConfig>(() => ({
+    formats: props.extensions,
+    multiple: props.currentVariant?.multiple,
+    allowCollections: false,
+    hideTips: true,
+    targetHistoryId: currentHistoryId.value ?? undefined,
+}));
+
+function addUploadedFiles(value: DataOption[], viewUploads = true) {
     emit("uploaded-data", value);
     if (viewUploads) {
         goToFirstWorkflowTab();
     }
 }
 
+function onUploaded(datasets: UploadedDataset[]) {
+    const dataOptions = toDataOptions(datasets);
+    addUploadedFiles(dataOptions, true);
+}
+
+function onUploadCancelled() {
+    goToFirstWorkflowTab();
+}
+
 function collectionCreated(collection: HDCASummary) {
-    addUploadedFiles([collection], false);
+    const dataOption: DataOption = {
+        id: collection.id,
+        name: collection.name ?? "",
+        src: "hdca",
+        keep: true,
+        batch: false,
+        tags: [],
+    };
+    addUploadedFiles([dataOption], false);
     emit("focus");
 }
 
@@ -68,34 +94,19 @@ function goToFirstWorkflowTab() {
     currentWorkflowTab.value = WorkflowRunTabs.view;
 }
 
-async function onUploadForWorkflowInput() {
-    const result = await openUploadModal({
-        formats: props.extensions,
-        hideTips: true,
-    });
-
-    if (!result.cancelled && result.datasets.length > 0) {
-        emit("uploaded-data", result.toDataOptions());
-        goToFirstWorkflowTab();
-    }
-}
-
 // hack for AG grid - it doesn't resize automatically so we need to force it
 // to resize when the tab has a window
 watch(
     currentWorkflowTab,
     () => {
         nextTick(() => {
-            if (creatorIndex.value) {
+            if (creatorIndex.value && currentWorkflowTab.value === WorkflowRunTabs.create) {
                 creatorIndex.value.redrawCreator();
             }
         });
     },
     { immediate: true },
 );
-
-// TODO:
-// - Add support for the browse files option we have in FormData
 </script>
 
 <template>
@@ -108,6 +119,14 @@ watch(
             <div v-for="item in currentValue" :key="item.id">
                 <GenericItem class="mr-2 w-100" :item-id="item.id" :item-src="item.src" />
             </div>
+        </div>
+
+        <div v-show="currentWorkflowTab === WorkflowRunTabs.upload">
+            <Heading separator size="sm">
+                <FontAwesomeIcon :icon="faUpload" fixed-width />
+                Upload dataset{{ props.currentVariant?.multiple ? "s" : "" }}
+            </Heading>
+            <UploadMethodViewInline :config="uploadConfig" @uploaded="onUploaded" @cancelled="onUploadCancelled" />
         </div>
 
         <div v-show="currentWorkflowTab === WorkflowRunTabs.create && props.currentVariant?.src === 'hdca'">

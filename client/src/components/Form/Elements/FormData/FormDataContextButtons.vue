@@ -11,7 +11,6 @@ import {
     type CollectionBuilderType,
 } from "@/components/Collections/common/buildCollectionModal";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
-import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import localize from "@/utils/localization";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
@@ -43,8 +42,6 @@ const emit = defineEmits<{
     (e: "uploaded-data", value: DataOption[]): void;
 }>();
 
-const { openUploadModal } = useUploadMethodModal();
-
 const createTitle = computed(() => {
     const defaultBuilderType = defaultCollectionBuilderType.value;
     return sourceIsCollection.value
@@ -56,17 +53,8 @@ function clickedTab(tab: string) {
     emit("update:workflow-tab", props.workflowTab === tab ? "" : tab);
 }
 
-async function onUpload() {
-    const result = await openUploadModal({
-        formats: props.extensions,
-        multiple: props.multiple,
-        hideTips: true,
-    });
-
-    if (!result.cancelled) {
-        emit("uploaded-data", result.toDataOptions());
-        emit("update:workflow-tab", "view");
-    }
+function onUpload() {
+    emit("update:workflow-tab", "upload");
 }
 
 function createCollectionType(colType: CollectionBuilderType) {
