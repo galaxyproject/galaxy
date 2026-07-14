@@ -17,6 +17,9 @@
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
     <datatype extension="agp" type="galaxy.datatypes.goldenpath:GoldenPath" display_in_upload="true" description="UCSC GoldenPath assembly"/>
     <datatype extension="alto" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="Analyzed Layout and Text Object" description_url="https://github.com/altoxml/documentation/wiki/Versions"/>
+    <datatype extension="page.xml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="XML format for encoding the layout and text of digitised documents, comparable to ALTO" description_url="https://github.com/PRImA-Research-Lab/PAGE-XML/wiki"/>
+    <datatype extension="abbyy.xml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="ABBYY FineReader XML" description_url="https://support.abbyy.com/hc/en-us/articles/360017270080-Output-XML-document"/>
+    <datatype extension="hocr" type="galaxy.datatypes.html:GenericHtml" mimetype="text/html" subclass="true" description="HTML format for representing OCR output." description_url="https://kba.github.io/hocr-spec/1.2/"/>
     <datatype extension="anvio_cog_profile" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" subclass="true" />
     <datatype extension="anvio_composite" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" />
     <datatype extension="anvio_classifier" type="galaxy.datatypes.data:Data" display_in_upload="false" subclass="true" />
@@ -103,6 +106,7 @@
     <datatype extension="parquet" type="galaxy.datatypes.binary:Parquet" display_in_upload="true">
       <converter file="parquet_to_csv_converter.xml" target_datatype="csv"/>
     </datatype>
+    <datatype extension="arrow" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="Apache Arrow IPC file format" description_url="https://arrow.apache.org/docs/format/Columnar.html#ipc-file-format"/>
     <datatype extension="idat" type="galaxy.datatypes.binary:Idat" display_in_upload="true"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <converter file="bigbed_to_bed_converter.xml" target_datatype="bed"/>
@@ -1224,6 +1228,7 @@
     <!-- rdeval types -->
     <datatype extension="rd" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="Rdeval read sketch"/>
     <datatype extension="safetensors" type="galaxy.datatypes.binary:Safetensors" mimetype="application/octet-stream" display_in_upload="true" description="A simple format for storing tensors safely (as opposed to pickle) and that is still fast (zero-copy)" description_url="https://huggingface.co/docs/safetensors/index"/>
+    <datatype extension="mlmodel" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" description="A Protocol Buffers-based (Protobuf) format developed by Apple for storing machine learning models" description_url="https://apple.github.io/coremltools/mlmodel/index.html"/>
     <datatype extension="deacon.idx" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="application/octet-stream" display_in_upload="true" description="Binary index format which is compatible with Deacon."/>
   </registration>
 
