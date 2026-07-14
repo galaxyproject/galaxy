@@ -18,11 +18,9 @@ withDefaults(
         logo?: string;
         name?: string;
         version?: string;
-        isLatestVersion?: boolean;
         isNotLatestVersion?: boolean;
     }>(),
     {
-        isLatestVersion: false,
         isNotLatestVersion: false,
         isLoading: false,
     },
@@ -50,15 +48,6 @@ withDefaults(
                             (Galaxy Version {{ version }})
                         </span>
 
-                        <BBadge
-                            v-if="isLatestVersion"
-                            v-g-tooltip.hover
-                            pill
-                            variant="info"
-                            title="Selected tool version is the latest available version"
-                            data-description="latest tool version">
-                            Latest version
-                        </BBadge>
                         <BBadge
                             v-if="isNotLatestVersion"
                             pill
