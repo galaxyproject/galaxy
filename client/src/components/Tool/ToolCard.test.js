@@ -99,20 +99,7 @@ describe("ToolCard", () => {
         await flushPromises();
     });
 
-    it("shows latest version badge for the latest lineage version", async () => {
-        await wrapper.setProps({
-            version: "2.0",
-            options: {
-                ...wrapper.props("options"),
-                version: "2.0",
-                versions: ["1.0", "2.0"],
-            },
-        });
-
-        expect(wrapper.find("[data-description='latest tool version']").text()).toBe("Latest version");
-    });
-
-    it("does not show latest version badge for older lineage versions", async () => {
+    it("shows newer version badge for older lineage versions", async () => {
         await wrapper.setProps({
             version: "1.0",
             options: {
@@ -122,6 +109,32 @@ describe("ToolCard", () => {
             },
         });
 
-        expect(wrapper.find("[data-description='latest tool version']").exists()).toBe(false);
+        expect(wrapper.find("[data-description='newer tool version']").text()).toBe("Newer version available");
+    });
+
+    it("does not show newer version badge for the latest lineage version", async () => {
+        await wrapper.setProps({
+            version: "2.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "2.0",
+                versions: ["1.0", "2.0"],
+            },
+        });
+
+        expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
+    });
+
+    it("does not show newer version badge for a single version", async () => {
+        await wrapper.setProps({
+            version: "1.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "1.0",
+                versions: ["1.0"],
+            },
+        });
+
+        expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
     });
 });
