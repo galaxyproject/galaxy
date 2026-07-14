@@ -5,7 +5,7 @@ import { computed, ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
 import { COLLECTION_TYPE_TO_LABEL } from "@/components/Collections/common/buildCollectionModal";
-import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
+import type { UploadModalConfig } from "@/components/Panels/Upload/uploadModalTypes";
 import localize from "@/utils/localization";
 
 import CollectionCreatorFooterButtons from "./CollectionCreatorFooterButtons.vue";
@@ -16,6 +16,7 @@ import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue
 import CollectionNameInput from "./CollectionNameInput.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
+import UploadMethodViewInline from "@/components/Panels/Upload/UploadMethodViewInline.vue";
 
 const Tabs = {
     create: 0,
@@ -60,7 +61,12 @@ const emit = defineEmits<{
 const currentTab = ref(Tabs.create);
 const localHideSourceItems = ref(props.hideSourceItems);
 const name = ref(props.collectionName);
-const { openUploadModal } = useUploadMethodModal();
+
+const uploadConfig = computed<UploadModalConfig>(() => ({
+    formats: props.extensions,
+    hideTips: true,
+    targetHistoryId: props.historyId,
+}));
 
 const validInput = computed(() => {
     return props.collectionName.length > 0;
@@ -84,14 +90,9 @@ function addUploadedFiles(value: HDASummary[]) {
     emit("add-uploaded-files", value);
 }
 
-async function onUploadFilesToCollection() {
-    const result = await openUploadModal({
-        formats: props.extensions,
-        hideTips: true,
-    });
-
-    if (!result.cancelled && result.datasets.length > 0) {
-        addUploadedFiles(result.datasets as unknown as HDASummary[]);
+function onUploaded(datasets: any[]) {
+    if (datasets.length > 0) {
+        addUploadedFiles(datasets as unknown as HDASummary[]);
         currentTab.value = Tabs.create;
     }
 }
@@ -213,13 +214,7 @@ watch(
                     <span>{{ localize("Upload Files to Add to Collection") }}</span>
                 </template>
                 <div class="p-3">
-                    <button
-                        class="btn btn-primary btn-sm"
-                        type="button"
-                        data-description="collection upload modal trigger"
-                        @click="onUploadFilesToCollection">
-                        {{ localize("Open Upload Dialog") }}
-                    </button>
+                    <UploadMethodViewInline :config="uploadConfig" @uploaded="onUploaded" />
                     <div class="mt-2">
                         <CollectionCreatorShowExtensions :extensions="extensions" upload />
                     </div>
