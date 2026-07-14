@@ -139,8 +139,16 @@ def purge_hda(
 
 
 @galaxy_task(ignore_result=True, action="completely removes a set of datasets from the object_store")
-def purge_datasets(dataset_manager: DatasetManager, request: PurgeDatasetsTaskRequest, task_user_id: int | None = None):
-    dataset_manager.purge_datasets(request)
+def purge_datasets(
+    sa_session: galaxy_scoped_session,
+    dataset_manager: DatasetManager,
+    request: PurgeDatasetsTaskRequest,
+    task_user_id: int | None = None,
+):
+    user = None
+    if task_user_id:
+        user = sa_session.get(User, task_user_id)
+    dataset_manager.purge_datasets(request, user)
 
 
 @galaxy_task(action="purge all datasets in a history")
@@ -553,12 +561,16 @@ def export_history(
 
 @galaxy_task(action="preparing compressed file for collection download")
 def prepare_dataset_collection_download(
+    sa_session: galaxy_scoped_session,
     request: PrepareDatasetCollectionDownload,
     collection_manager: DatasetCollectionManager,
     task_user_id: int | None = None,
 ):
     """Create a short term storage file tracked and available for download of target collection."""
-    collection_manager.write_dataset_collection(request)
+    user = None
+    if task_user_id:
+        user = sa_session.get(User, task_user_id)
+    collection_manager.write_dataset_collection(request, user=user)
 
 
 @galaxy_task(action="preparing Galaxy Markdown PDF for download")

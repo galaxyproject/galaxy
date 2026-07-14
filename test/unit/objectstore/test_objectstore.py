@@ -16,7 +16,10 @@ import pytest
 from requests import get
 
 from galaxy.exceptions import ObjectInvalid
-from galaxy.objectstore import persist_extra_files_for_dataset
+from galaxy.objectstore import (
+    ObjectStoreAuth,
+    persist_extra_files_for_dataset,
+)
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.caching import (
     CacheTarget,
@@ -524,6 +527,21 @@ def test_distributed_store_start_propagates_to_backends():
         object_store.start()
         for backend in object_store.backends.values():
             backend.start.assert_called_once()
+
+
+def test_distributed_store_get_filename_forwards_auth_to_backend():
+    auth = ObjectStoreAuth(user=None)
+    dataset = MockDataset(1)
+    dataset.object_store_id = "files1"
+    with TestConfig(DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
+        directory.write("Hello World!", "files1/000/dataset_1.dat")
+        backend = object_store.backends["files1"]
+        backend._get_filename = MagicMock(wraps=backend._get_filename)
+
+        object_store.get_filename(dataset, auth=auth)
+
+        backend._get_filename.assert_called_once()
+        assert backend._get_filename.call_args.kwargs["auth"] is auth
 
 
 HIERARCHICAL_MUST_HAVE_UNIFIED_QUOTA_SOURCE = """<?xml version="1.0"?>

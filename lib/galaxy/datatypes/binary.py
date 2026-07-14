@@ -76,6 +76,7 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.text import Html
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import (
     compression_utils,
     nice_size,
@@ -721,15 +722,16 @@ class BamNative(CompressedArchive, _BamOrSam):
         except Exception:
             return f"Binary bam alignments file ({nice_size(dataset.get_size())})"
 
-    def to_archive(self, dataset: DatasetProtocol, name: str = "") -> Iterable:
+    def to_archive(self, dataset: DatasetProtocol, name: str = "", auth: ObjectStoreAuth | None = None) -> Iterable:
+        file_name = dataset.get_file_name(auth=auth)
         rel_paths = []
         file_paths = []
-        rel_paths.append(f"{name or dataset.get_file_name()}.{dataset.extension}")
-        file_paths.append(dataset.get_file_name())
+        rel_paths.append(f"{name or file_name}.{dataset.extension}")
+        file_paths.append(file_name)
         # We may or may not have a bam index file (BamNative doesn't have it, but also index generation may have failed)
         if dataset.metadata.bam_index:
-            rel_paths.append(f"{name or dataset.get_file_name()}.{dataset.extension}.bai")
-            file_paths.append(dataset.metadata.bam_index.get_file_name())
+            rel_paths.append(f"{name or file_name}.{dataset.extension}.bai")
+            file_paths.append(dataset.metadata.bam_index.get_file_name(auth=auth))
         return zip(file_paths, rel_paths)
 
     def groom_dataset_content(self, file_name: str) -> None:
@@ -767,7 +769,11 @@ class BamNative(CompressedArchive, _BamOrSam):
     def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
         if not offset == -1:
             try:
-                with pysam.AlignmentFile(dataset.get_file_name(), "rb", check_sq=False) as bamfile:
+                with pysam.AlignmentFile(
+                    dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user) if trans else None),
+                    "rb",
+                    check_sq=False,
+                ) as bamfile:
                     if ck_size is None:
                         ck_size = 300  # 300 lines
                     if offset < bamfile.tell():
@@ -2224,11 +2230,12 @@ class H5MLM(H5):
 
         if to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(dataset, to_ext, headers, **kwd)
+            return self._serve_raw(dataset, to_ext, headers, auth=ObjectStoreAuth(user=trans.user), **kwd)
 
         out_dict: dict = {}
+        fname = dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user))
         try:
-            with h5py.File(dataset.get_file_name(), "r", locking=False) as handle:
+            with h5py.File(fname, "r", locking=False) as handle:
                 out_dict["Attributes"] = {}
                 attributes = handle.attrs
                 for k in set(attributes.keys()) - {self.HTTP_REPR, self.REPR, self.URL}:
@@ -2236,13 +2243,13 @@ class H5MLM(H5):
         except Exception as e:
             log.warning(e)
 
-        config = self.get_config_string(dataset.get_file_name())
+        config = self.get_config_string(fname)
         out_dict["Config"] = json.loads(config) if config else ""
         out = json.dumps(out_dict, sort_keys=True, indent=2)
         out = out[: self.max_preview_size]
 
-        repr = self.get_repr(dataset.get_file_name())
-        html_repr = self.get_html_repr(dataset.get_file_name())
+        repr = self.get_repr(fname)
+        html_repr = self.get_html_repr(fname)
 
         return f"<div>{html_repr}</div><div><pre>{repr}</pre></div><div><pre>{out}</pre></div>", headers
 

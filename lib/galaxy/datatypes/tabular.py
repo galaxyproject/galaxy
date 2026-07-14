@@ -62,6 +62,7 @@ from galaxy.datatypes.sniff import (
     validate_tabular,
 )
 from galaxy.exceptions import InvalidFileFormatError
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import compression_utils
 from galaxy.util.compression_utils import (
     FileObjType,
@@ -183,23 +184,24 @@ class TabularData(Text):
     ):
         headers = kwd.pop("headers", {})
         preview = util.string_as_bool(preview)
+        fname = dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user))
         if offset is not None:
             return self.get_chunk(trans, dataset, offset, ck_size), headers
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(dataset, to_ext, headers, **kwd)
+            return self._serve_raw(dataset, to_ext, headers, auth=ObjectStoreAuth(user=trans.user), **kwd)
         elif dataset.metadata.columns > 100:
             # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000  # 1 MB
-            if os.stat(dataset.get_file_name()).st_size < max_peek_size:
+            if os.stat(fname).st_size < max_peek_size:
                 self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
-                return open(dataset.get_file_name(), mode="rb"), headers
+                return open(fname, mode="rb"), headers
             else:
                 headers["content-type"] = "text/html"
                 headers["x-content-truncated"] = max_peek_size
-                with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as fh:
+                with compression_utils.get_fileobj(fname, "rb") as fh:
                     return util.unicodify(fh.read(max_peek_size)), headers
         else:
             headers["x-content-chunked"] = "true"

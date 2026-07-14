@@ -166,7 +166,10 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
 )
 from galaxy.model.orm.util import add_object_to_object_session
-from galaxy.objectstore import USER_OBJECTS_SCHEME
+from galaxy.objectstore import (
+    ObjectStoreAuth,
+    USER_OBJECTS_SCHEME,
+)
 from galaxy.objectstore.templates import (
     ObjectStoreConfiguration,
     ObjectStoreTemplate,
@@ -3152,9 +3155,9 @@ class FakeDatasetAssociation:
         self.metadata: dict = {}
         self.has_deferred_data = False
 
-    def get_file_name(self, sync_cache: bool = True) -> str:
+    def get_file_name(self, sync_cache: bool = True, auth: ObjectStoreAuth | None = None) -> str:
         assert self.dataset
-        return self.dataset.get_file_name(sync_cache)
+        return self.dataset.get_file_name(sync_cache=sync_cache, auth=auth)
 
     def __eq__(self, other):
         return isinstance(other, FakeDatasetAssociation) and self.dataset == other.dataset
@@ -4847,14 +4850,14 @@ class Dataset(Base, StorableObject, Serializable):
         if not self.shareable:
             raise galaxy.exceptions.MessageException(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
 
-    def get_file_name(self, sync_cache: bool = True) -> str:
+    def get_file_name(self, sync_cache: bool = True, auth: ObjectStoreAuth | None = None) -> str:
         if self.purged:
             log.warning(f"Attempt to get file name of purged dataset {self.id}")
             return ""
         if not self.external_filename:
             object_store = self._assert_object_store_set()
             if object_store.exists(self):
-                file_name = object_store.get_filename(self, sync_cache=sync_cache)
+                file_name = object_store.get_filename(self, sync_cache=sync_cache, auth=auth)
             else:
                 file_name = ""
             if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
@@ -5029,10 +5032,10 @@ class Dataset(Base, StorableObject, Serializable):
             and len(self.history_associations) == len(self.purged_history_associations)
         )
 
-    def full_delete(self):
+    def full_delete(self, user=None):
         """Remove the file and extra files, marks deleted and purged"""
         try:
-            self.object_store.delete(self)
+            self.object_store.delete(self, auth=ObjectStoreAuth(user=user) if user else None)
         except galaxy.exceptions.ObjectNotFound:
             pass
         if (rel_path := self._extra_files_rel_path) is not None:
@@ -5576,9 +5579,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.peek = null
         self.set_total_size()
 
-    def get_file_name(self, sync_cache: bool = True) -> str:
+    def get_file_name(self, sync_cache: bool = True, auth: ObjectStoreAuth | None = None) -> str:
         assert self.dataset is not None
-        return self.dataset.get_file_name(sync_cache=sync_cache)
+        return self.dataset.get_file_name(sync_cache=sync_cache, auth=auth)
 
     def set_file_name(self, filename: str):
         assert self.dataset is not None
@@ -6202,7 +6205,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
             copied_hda.copy_from(self, include_tags=include_tags, include_metadata=include_metadata)
 
         if old_dataset:
-            old_dataset.full_delete()
+            old_dataset.full_delete(user=self.user)
 
     def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
         """
@@ -11229,7 +11232,7 @@ class MetadataFile(Base, StorableObject, Serializable):
                 alt_name=os.path.basename(self.get_file_name()),
             )
 
-    def get_file_name(self, sync_cache: bool = True) -> str:
+    def get_file_name(self, sync_cache: bool = True, auth: ObjectStoreAuth | None = None) -> str:
         # Ensure the directory structure and the metadata file object exist
         try:
             da = self.history_dataset or self.library_dataset
@@ -11247,7 +11250,12 @@ class MetadataFile(Base, StorableObject, Serializable):
             if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
                 object_store.create(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name)
             path = object_store.get_filename(
-                self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, sync_cache=sync_cache
+                self,
+                extra_dir="_metadata_files",
+                extra_dir_at_root=True,
+                alt_name=alt_name,
+                sync_cache=sync_cache,
+                auth=auth,
             )
             return path
         except (AssertionError, AttributeError):

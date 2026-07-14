@@ -43,6 +43,7 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.exceptions import ObjectNotFound
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import (
     compression_utils,
     file_reader,
@@ -443,9 +444,15 @@ class Data(metaclass=DataMeta):
                 yield fpath, rpath
 
     def _serve_raw(
-        self, dataset: DatasetHasHidProtocol, to_ext: str | None, headers: Headers, **kwd
+        self,
+        dataset: DatasetHasHidProtocol,
+        to_ext: str | None,
+        headers: Headers,
+        auth: ObjectStoreAuth | None = None,
+        **kwd,
     ) -> tuple[IO, Headers]:
-        headers["Content-Length"] = str(os.stat(dataset.get_file_name()).st_size)
+        file_name = dataset.get_file_name(auth=auth)
+        headers["Content-Length"] = str(os.stat(file_name).st_size)
         headers["content-type"] = (
             "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
         )
@@ -457,28 +464,30 @@ class Data(metaclass=DataMeta):
             filename_pattern=kwd.get("filename_pattern"),
         )
         headers["Content-Disposition"] = to_content_disposition(filename)
-        return open(dataset.get_file_name(), mode="rb"), headers
+        return open(file_name, mode="rb"), headers
 
-    def to_archive(self, dataset: DatasetProtocol, name: str = "") -> Iterable:
+    def to_archive(self, dataset: DatasetProtocol, name: str = "", auth: ObjectStoreAuth | None = None) -> Iterable:
         """
         Collect archive paths and file handles that need to be exported when archiving `dataset`.
 
         :param dataset: HistoryDatasetAssociation
         :param name: archive name, in collection context corresponds to collection name(s) and element_identifier,
                      joined by '/', e.g 'fastq_collection/sample1/forward'
+        :param auth: object store auth context
         """
         rel_paths = []
         file_paths = []
         if dataset.datatype.composite_type or dataset.extension.endswith("html"):
             main_file = f"{name}.html"
             rel_paths.append(main_file)
-            file_paths.append(dataset.get_file_name())
+            file_paths.append(dataset.get_file_name(auth=auth))
             for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
                 rel_paths.append(os.path.join(name, rpath))
                 file_paths.append(fpath)
         else:
-            rel_paths.append(f"{name or dataset.get_file_name()}.{dataset.extension}")
-            file_paths.append(dataset.get_file_name())
+            file_name = dataset.get_file_name(auth=auth)
+            rel_paths.append(f"{name or file_name}.{dataset.extension}")
+            file_paths.append(file_name)
         return zip(file_paths, rel_paths)
 
     def is_archive_download(self, datatypes_registry, extension) -> bool:
@@ -518,7 +527,7 @@ class Data(metaclass=DataMeta):
                 "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
             )
             headers["Content-Disposition"] = self.download_content_disposition(data, to_ext, **kwd)
-            return open(data.get_file_name(), "rb"), headers
+            return open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb"), headers
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
         # Use text/plain so the browser preserves whitespace and line endings
@@ -526,7 +535,7 @@ class Data(metaclass=DataMeta):
         headers["content-type"] = "text/plain; charset=utf-8"
         if file_size > max_peek_size:
             headers["x-content-truncated"] = str(max_peek_size)
-        with open(data.get_file_name(), "rb") as fh:
+        with open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb") as fh:
             return unicodify(fh.read(max_peek_size)), headers
 
     def _serve_file_contents(self, trans, data, headers, preview, file_size, max_peek_size):
@@ -534,9 +543,14 @@ class Data(metaclass=DataMeta):
 
         preview = util.string_as_bool(preview)
         if not preview or isinstance(data.datatype, images.Image) or file_size < max_peek_size:
-            return self._yield_user_file_content(trans, data, data.get_file_name(), headers), headers
+            return (
+                self._yield_user_file_content(
+                    trans, data, data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), headers
+                ),
+                headers,
+            )
 
-        with compression_utils.get_fileobj(data.get_file_name(), "rb") as fh:
+        with compression_utils.get_fileobj(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb") as fh:
             # preview large text file - serve as text/plain so the browser
             # preserves whitespace/newlines and does not interpret content as HTML.
             headers["content-type"] = "text/plain; charset=utf-8"
@@ -569,7 +583,9 @@ class Data(metaclass=DataMeta):
         if filename and filename != "index":
             # For files in extra_files_path
             extra_dir = dataset.dataset.extra_files_path_name
-            file_path = trans.app.object_store.get_filename(dataset.dataset, extra_dir=extra_dir, alt_name=filename)
+            file_path = trans.app.object_store.get_filename(
+                dataset.dataset, extra_dir=extra_dir, alt_name=filename, auth=ObjectStoreAuth(user=trans.user)
+            )
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
                     with tempfile.NamedTemporaryFile(
@@ -612,7 +628,7 @@ class Data(metaclass=DataMeta):
         downloading = to_ext is not None
         file_size = _get_file_size(dataset)
 
-        if not os.path.exists(dataset.get_file_name()):
+        if not os.path.exists(dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user))):
             raise ObjectNotFound(f"File Not Found ({dataset.get_file_name()}).")
 
         if downloading:
