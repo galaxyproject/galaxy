@@ -1,0 +1,74 @@
+- id: github
+  version: 0
+  name: GitHub Repository
+  description: |
+      [GitHub](https://github.com) hosts Git repositories for code and data.
+      Using this template you can connect a single GitHub repository as a Galaxy file source
+      to browse and download its files, and optionally upload files back to it.
+
+      You authorize Galaxy to access GitHub on your behalf through GitHub's OAuth flow - no
+      personal access token is required. Each repository is a separate file source: create one
+      instance of this template per repository you want to access.
+  form_alerts:
+      - condition: repository_picker_empty
+        variant: warning
+        content: |
+            The GitHub App isn't installed on any repository you can access, so there are no owners or
+            repositories to choose. Install it on at least one repository from your
+            <a href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer">installed GitHub Apps</a>,
+            then reload this page.
+      - condition: repository_picker_available
+        variant: info
+        content: |
+            Need access to another repository? Update the GitHub App's repository access from your
+            <a href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer">installed GitHub Apps</a>
+            in a new tab, then reload this page.
+  variables:
+      org:
+          label: Repository Owner
+          type: select
+          dynamic_options: github_repository_owners
+          help: |
+              The owner of the repository - a GitHub username or organization name. Choose from
+              the owners of the repositories you granted the GitHub App access to.
+              For ``github.com/<owner>/<repository>``, choose ``<owner>``.
+      repo:
+          label: Repository Name
+          type: select
+          dynamic_options: github_repository_names
+          help: |
+              The name of the repository, restricted to repositories the selected owner has
+              granted the GitHub App access to.
+              For ``github.com/<owner>/<repository>``, choose ``<repository>``.
+      branch:
+          label: Branch or Commit
+          type: string
+          optional: true
+          default: ""
+          help: |
+              The branch name, tag, or commit SHA to browse. Leave this blank to use the
+              repository's default branch.
+      writable:
+          label: Writable?
+          type: boolean
+          optional: true
+          default: false
+          help: |
+              Enable to upload files to the repository. Uploads are committed to the selected
+              branch with an automatic commit message. The connected GitHub App must grant
+              write access to the repository contents.
+  configuration:
+      type: github
+      org: "{{ variables.org }}"
+      repo: "{{ variables.repo }}"
+      branch: "{{ variables.branch }}"
+      writable: "{{ variables.writable }}"
+      oauth2_client_id: "{{ environment.oauth2_client_id }}"
+      oauth2_client_secret: "{{ environment.oauth2_client_secret }}"
+  environment:
+      oauth2_client_id:
+          type: variable
+          variable: GALAXY_GITHUB_APP_CLIENT_ID
+      oauth2_client_secret:
+          type: variable
+          variable: GALAXY_GITHUB_APP_CLIENT_SECRET

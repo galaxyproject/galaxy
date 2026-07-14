@@ -1554,6 +1554,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/file_source_templates/{template_id}/{template_version}/form-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get dynamic data for a file source template form. */
+        post: operations["file_sources__template_form_data"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/file_source_templates/{template_id}/{template_version}/oauth2": {
         parameters: {
             query?: never;
@@ -13119,12 +13136,30 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * FileSourceTemplateAlert
+         * @description An administrator-authored alert shown while creating a file source.
+         */
+        FileSourceTemplateAlert: {
+            /** Condition */
+            condition?: string | null;
+            /** Content */
+            content: string;
+            /**
+             * Variant
+             * @default info
+             * @enum {string}
+             */
+            variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+        };
         /** FileSourceTemplateSummaries */
         FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
         /** FileSourceTemplateSummary */
         FileSourceTemplateSummary: {
             /** Description */
             description: string | null;
+            /** Form Alerts */
+            form_alerts?: components["schemas"]["FileSourceTemplateAlert"][] | null;
             /**
              * Hidden
              * @default false
@@ -13159,6 +13194,7 @@ export interface components {
                 | "dataverse"
                 | "cbioportal"
                 | "huggingface"
+                | "github"
                 | "iiif"
                 | "mavedb"
                 | "omero"
@@ -13170,6 +13206,7 @@ export interface components {
                       | components["schemas"]["TemplateVariableInteger"]
                       | components["schemas"]["TemplateVariablePathComponent"]
                       | components["schemas"]["TemplateVariableBoolean"]
+                      | components["schemas"]["TemplateVariableSelect"]
                   )[]
                 | null;
             /**
@@ -19917,6 +19954,7 @@ export interface components {
                       | components["schemas"]["TemplateVariableInteger"]
                       | components["schemas"]["TemplateVariablePathComponent"]
                       | components["schemas"]["TemplateVariableBoolean"]
+                      | components["schemas"]["TemplateVariableSelect"]
                   )[]
                 | null;
             /**
@@ -23629,6 +23667,27 @@ export interface components {
          * @enum {string}
          */
         TaskState: "PENDING" | "STARTED" | "RETRY" | "FAILURE" | "SUCCESS";
+        /**
+         * TemplateFormDataRequest
+         * @description Values available while rendering a post-authorization template form.
+         */
+        TemplateFormDataRequest: {
+            /** Uuid */
+            uuid: string;
+            /** Variables */
+            variables?: {
+                [key: string]: string | boolean | number;
+            };
+        };
+        /** TemplateFormDataResponse */
+        TemplateFormDataResponse: {
+            /** Alert Conditions */
+            alert_conditions?: string[];
+            /** Dynamic Options */
+            dynamic_options?: {
+                [key: string]: [string, string][];
+            };
+        };
         /** TemplateSecret */
         TemplateSecret: {
             /** Help */
@@ -23725,6 +23784,45 @@ export interface components {
                       | components["schemas"]["LengthParameterValidatorModel"]
                   )[]
                 | null;
+        };
+        /** TemplateVariableSelect */
+        TemplateVariableSelect: {
+            /** Default */
+            default?: string | null;
+            /** Dynamic Options */
+            dynamic_options?: string | null;
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional?: boolean | null;
+            /** Options */
+            options?: components["schemas"]["TemplateVariableSelectOption"][] | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "select";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
+        };
+        /** TemplateVariableSelectOption */
+        TemplateVariableSelectOption: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
         };
         /** TemplateVariableString */
         TemplateVariableString: {
@@ -25470,6 +25568,7 @@ export interface components {
                 | "dataverse"
                 | "cbioportal"
                 | "huggingface"
+                | "github"
                 | "iiif"
                 | "mavedb"
                 | "omero"
@@ -35448,6 +35547,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__template_form_data: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The template ID of the target file source template. */
+                template_id: string;
+                /** @description The template version of the target file source template. */
+                template_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateFormDataRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateFormDataResponse"];
                 };
             };
             /** @description Request Error */
