@@ -492,14 +492,11 @@ def _fill_default_for(tool_state: dict[str, Any], parameter: ToolParameterT) -> 
             # see test_tools.py -> expression_null_handling_boolean or test cases for gx_boolean_optional.xml
             tool_state[parameter_name] = parameter.value or False
 
-    if isinstance(parameter, (IntegerParameterModel, FloatParameterModel, HiddenParameterModel)):
+    if isinstance(
+        parameter, (IntegerParameterModel, FloatParameterModel, HiddenParameterModel, ColorParameterModel)
+    ):
         if parameter_name not in tool_state:
             tool_state[parameter_name] = parameter.value
-    elif isinstance(parameter, ColorParameterModel):
-        # Legacy ``value=""`` on an optional color means "no default"; treat as unset (arriba).
-        if parameter_name not in tool_state:
-            default = parameter.value
-            tool_state[parameter_name] = None if default == "" else default
     elif isinstance(parameter, GenomeBuildParameterModel):
         if parameter_name not in tool_state and parameter.optional:
             tool_state[parameter_name] = None
@@ -636,8 +633,7 @@ def _initialize_repeat_state(parameter: RepeatParameterModel, tool_state: dict[s
     if parameter_name not in tool_state:
         tool_state[parameter_name] = []
     repeat_instances = cast(list[dict[str, Any]], tool_state[parameter_name])
-    # Match sync's ``Repeat.get_initial_value()``: seed ``max(min, default)`` empty
-    # instances when the request supplies none (bigscape).
+    # Seed ``max(min, default)`` empty instances when the request supplies none.
     floor = max(parameter.min or 0, parameter.default or 0)
     while len(repeat_instances) < floor:
         repeat_instances.append({})

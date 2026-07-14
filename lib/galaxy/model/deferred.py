@@ -270,7 +270,12 @@ class DatasetInstanceMaterializer:
         path: str,
         dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation,
     ) -> None:
-        """Replace ``extension="auto"`` with a sniffed extension after download."""
+        """Resolve ``extension="auto"`` once the deferred source is streamed to ``path``.
+
+        A deferred fetch/upload with no explicit ``ext`` is registered as ``auto`` because
+        the content is not available to sniff at request time. ``path`` is the first point
+        the bytes exist locally, so we sniff here while materializing.
+        """
         if self._datatypes_registry is None:
             return
         if dataset_instance.extension != "auto":

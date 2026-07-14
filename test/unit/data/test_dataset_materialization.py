@@ -435,8 +435,11 @@ def test_deferred_hdas_with_deferred_metadata():
 
 
 def test_deferred_hda_with_auto_extension_gets_sniffed_from_content():
-    # An HDA created with extension="auto" should get a real extension after materialize
-    # when a datatypes_registry is provided.
+    # Scenario: a deferred fetch/upload with no explicit ``ext`` is stored as
+    # extension="auto" because the bytes aren't available to sniff at request time
+    # (data_fetch.py: ``requested_ext = item.get("ext", "auto")``). When the dataset is
+    # later materialized for a tool run, the real type is sniffed from the downloaded
+    # content. Requires a datatypes_registry.
     fixture_context = setup_fixture_context_with_history()
     store_dict = deferred_hda_model_store_dict()
     store_dict["datasets"][0]["extension"] = "auto"
@@ -460,7 +463,8 @@ def test_deferred_hda_with_auto_extension_gets_sniffed_from_content():
 
 
 def test_deferred_hda_without_registry_keeps_auto_extension():
-    # Without a datatypes_registry the sniff step is a no-op; extension stays "auto".
+    # Guards backward compatibility: existing materializer callers that don't pass a
+    # datatypes_registry keep the prior behavior (no sniffing); extension stays "auto".
     fixture_context = setup_fixture_context_with_history()
     store_dict = deferred_hda_model_store_dict()
     store_dict["datasets"][0]["extension"] = "auto"

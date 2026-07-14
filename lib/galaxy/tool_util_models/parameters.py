@@ -2397,8 +2397,8 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameters: list["ToolParameterT"]
     min: int | None = None
     max: int | None = None
-    # XML ``<repeat default="N">``; matches sync's ``Repeat.get_initial_value()`` to seed
-    # N empty instances when the request supplies none.
+    # Legacy XML ``<repeat default="N">``: number of empty instances to seed when the
+    # request supplies none.
     default: int = 0
 
     def field_kwargs(self) -> dict[str, Any]:
