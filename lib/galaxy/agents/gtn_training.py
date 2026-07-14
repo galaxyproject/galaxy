@@ -129,8 +129,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         async def search_gtn_tutorial_vectors(
             ctx: RunContext[GalaxyAgentDependencies],
             query: str,
-            topic: Optional[str] = None,
-            difficulty: Optional[str] = None,
+            topic: str | None = None,
+            difficulty: str | None = None,
             hands_on_only: bool = False,
             limit: int = 5,
         ) -> str:

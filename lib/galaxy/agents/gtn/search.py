@@ -302,8 +302,8 @@ class FAQResult:
 class GTNSearchDB:
     """Interface to the GTN search database."""
 
-    def __init__(self, db_path: Optional[str] = None, vector_db_path: Optional[str] = None, \
-                 download_url: Optional[str] = None, vector_db_url: Optional[str] = None):
+    def __init__(self, db_path: str | None = None, vector_db_path:str | None = None, \
+                 download_url: str | None = None, vector_db_url: str | None = None):
         if db_path is None and vector_db_path is None:
             current_dir = Path(__file__).parent
             self.db_path = current_dir / "data" / "gtn_search.db"
@@ -660,7 +660,7 @@ class GTNSearchDB:
         persist_dir: Path,
         collection_name: str = "gtn_tutorials",
         limit: int = 5,
-        doc_type: Optional[str] = None,
+        doc_type: str | None = None,
     ) -> list[GTNVectorSearchResults]:
         try:
             # Check if the persist directory exists
