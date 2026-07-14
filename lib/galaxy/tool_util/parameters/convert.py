@@ -492,9 +492,7 @@ def _fill_default_for(tool_state: dict[str, Any], parameter: ToolParameterT) -> 
             # see test_tools.py -> expression_null_handling_boolean or test cases for gx_boolean_optional.xml
             tool_state[parameter_name] = parameter.value or False
 
-    if isinstance(
-        parameter, (IntegerParameterModel, FloatParameterModel, HiddenParameterModel, ColorParameterModel)
-    ):
+    if isinstance(parameter, (IntegerParameterModel, FloatParameterModel, HiddenParameterModel, ColorParameterModel)):
         if parameter_name not in tool_state:
             tool_state[parameter_name] = parameter.value
     elif isinstance(parameter, GenomeBuildParameterModel):
