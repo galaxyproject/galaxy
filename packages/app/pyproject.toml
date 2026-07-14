@@ -100,6 +100,7 @@ test = [
 [project.scripts]
 galaxy-main = "galaxy.main:main"
 galaxy-dependencies = "galaxy.dependencies.script:main"
+galaxy-populate-tool-source-store = "galaxy.tools.source_store.populator:main"
 galaxy-sse-monitor = "galaxy.sse_monitor.__main__:main"
 
 [project.urls]

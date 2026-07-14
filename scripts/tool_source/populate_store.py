@@ -6,8 +6,9 @@ invoked directly (no venv-installed galaxy package required), then delegates
 to :func:`galaxy.tools.source_store.populator.main`. All flags, including
 ``--watch``, are documented on that function's argparse setup.
 
-In-process callers should import the populator module directly rather than
-shelling out to this script.
+Installations using the ``galaxy-app`` package should prefer the
+``galaxy-populate-tool-source-store`` console script it installs; in-process
+callers should import the populator module directly.
 """
 
 import sys

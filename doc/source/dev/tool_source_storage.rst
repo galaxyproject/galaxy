@@ -44,6 +44,10 @@ Module Layout
 
     scripts/tool_source/populate_store.py    Thin CLI wrapper over populator.main
 
+The same ``populator.main`` is registered as the
+``galaxy-populate-tool-source-store`` console script in the ``galaxy-app``
+package metadata (``packages/app/pyproject.toml``).
+
 Data Model
 ----------
 

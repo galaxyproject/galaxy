@@ -127,6 +127,14 @@ Basic Usage
 
     $ python scripts/tool_source/populate_store.py --config /path/to/galaxy.yml
 
+Deployments that install Galaxy from packages get the same command as the
+``galaxy-populate-tool-source-store`` console script (shipped with the
+``galaxy-app`` package), so no Galaxy source checkout is needed:
+
+.. code-block:: console
+
+    $ galaxy-populate-tool-source-store --config /path/to/galaxy.yml
+
 This will:
 
 1. Discover tools from your tool configs (uses the same logic as Galaxy startup)
