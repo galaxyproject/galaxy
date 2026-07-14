@@ -36,10 +36,8 @@ from typing import (
     Any,
     Generic,
     NamedTuple,
-    Optional,
     TYPE_CHECKING,
     TypeVar,
-    Union,
 )
 
 import sqlalchemy
@@ -79,7 +77,7 @@ class ParsedFilter(NamedTuple):
 
 
 parsed_filter = ParsedFilter
-OrmFilterParserType = Union[None, dict[str, Any], Callable]
+OrmFilterParserType = None | dict[str, Any] | Callable
 OrmFilterParsersType = dict[str, OrmFilterParserType]
 FunctionFilterParserType = dict[str, Any]
 FunctionFilterParsersType = dict[str, Any]
@@ -149,17 +147,17 @@ def get_class(class_name):
     return item_class
 
 
-def decode_id(app: BasicSharedApp, id: Any, kind: Optional[str] = None) -> int:
+def decode_id(app: BasicSharedApp, id: Any, kind: str | None = None) -> int:
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
     return decode_with_security(app.security, id, kind=kind)
 
 
-def decode_with_security(security: IdEncodingHelper, id: Any, kind: Optional[str] = None):
+def decode_with_security(security: IdEncodingHelper, id: Any, kind: str | None = None):
     return security.decode_id(str(id), kind=kind)
 
 
-def encode_with_security(security: IdEncodingHelper, id: Any, kind: Optional[str] = None):
+def encode_with_security(security: IdEncodingHelper, id: Any, kind: str | None = None):
     return security.encode_id(id, kind=kind)
 
 
@@ -169,7 +167,7 @@ def get_object(
     class_name,
     check_ownership: bool = False,
     check_accessible: bool = False,
-    deleted: Union[bool, None] = None,
+    deleted: bool | None = None,
 ):
     """
     Convenience method to get a model object with the specified checks. This is
@@ -236,8 +234,8 @@ class ModelManager(Generic[U]):
         eagerloads: bool = True,
         filters=None,
         order_by=None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> Query:
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
@@ -251,7 +249,7 @@ class ModelManager(Generic[U]):
         return self._filter_and_order_query(query, filters=filters, order_by=order_by, limit=limit, offset=offset)
 
     def _filter_and_order_query(
-        self, query: Query, filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None
+        self, query: Query, filters=None, order_by=None, limit: int | None = None, offset: int | None = None
     ) -> Query:
         # TODO: not a lot of functional cohesion here
         query = self._apply_orm_filters(query, filters)
@@ -294,7 +292,7 @@ class ModelManager(Generic[U]):
         """
         return (self.model_class.__table__.c.create_time,)
 
-    def _apply_orm_limit_offset(self, query: Query, limit: Optional[int], offset: Optional[int]) -> Query:
+    def _apply_orm_limit_offset(self, query: Query, limit: int | None, offset: int | None) -> Query:
         """
         Return the query after applying the given limit and offset (if not None).
         """
@@ -409,7 +407,7 @@ class ModelManager(Generic[U]):
                 orm_filters.append(filter_.filter)
         return (orm_filters, fn_filters)
 
-    def _orm_list(self, query: Optional[Query] = None, **kwargs) -> builtins.list[U]:
+    def _orm_list(self, query: Query | None = None, **kwargs) -> builtins.list[U]:
         """
         Sends kwargs to build the query return all models found.
         """
@@ -626,7 +624,7 @@ class ModelSerializer(HasAModelManager[T]):
         item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
 
-    default_view: Optional[str]
+    default_view: str | None
     views: dict[str, list[str]]
 
     def __init__(self, app: MinimalManagerApp, **kwargs):
@@ -810,7 +808,7 @@ class ModelValidator:
     """
 
     @staticmethod
-    def matches_type(key: str, val: Any, types: Union[type, tuple[Union[type, tuple[Any, ...]], ...]]):
+    def matches_type(key: str, val: Any, types: type | tuple[type | tuple[Any, ...], ...]):
         """
         Check `val` against the type (or tuple of types) in `types`.
 
@@ -838,7 +836,7 @@ class ModelValidator:
         return ModelValidator.matches_type(key, val, ((str,), type(None)))
 
     @staticmethod
-    def int_range(key: str, val: Any, min: Optional[int] = None, max: Optional[int] = None) -> int:
+    def int_range(key: str, val: Any, min: int | None = None, max: int | None = None) -> int:
         """
         Must be a int between min and max.
         """
@@ -1153,7 +1151,7 @@ class ModelFilterParser(HasAModelManager):
         return self.parsed_filter(filter_type="function", filter=lambda i: filter_fn(i, val))
 
     # ---- ORM filters
-    def _parse_orm_filter(self, attr, op, val) -> Optional[ParsedFilter]:
+    def _parse_orm_filter(self, attr, op, val) -> ParsedFilter | None:
         """
         Attempt to parse a ORM-based filter.
 
@@ -1282,7 +1280,7 @@ class ModelFilterParser(HasAModelManager):
         return any(filter.filter_type == "function" for filter in filters)
 
 
-def parse_bool(bool_string: Union[str, bool]) -> bool:
+def parse_bool(bool_string: str | bool) -> bool:
     """
     Parse a boolean from a string.
     """
@@ -1326,9 +1324,9 @@ class StorageCleanerManager(Protocol):
     def get_discarded(
         self,
         user: model.User,
-        offset: Optional[int],
-        limit: Optional[int],
-        order: Optional[StoredItemOrderBy],
+        offset: int | None,
+        limit: int | None,
+        order: StoredItemOrderBy | None,
     ) -> list[StoredItem]:
         """Returns a paginated list of items deleted by the given user that are not yet purged."""
         raise NotImplementedError
@@ -1344,9 +1342,9 @@ class StorageCleanerManager(Protocol):
     def get_archived(
         self,
         user: model.User,
-        offset: Optional[int],
-        limit: Optional[int],
-        order: Optional[StoredItemOrderBy],
+        offset: int | None,
+        limit: int | None,
+        order: StoredItemOrderBy | None,
     ) -> list[StoredItem]:
         """Returns a paginated list of items archived by the given user that are not yet purged."""
         raise NotImplementedError

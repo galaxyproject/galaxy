@@ -1,7 +1,6 @@
 import os
 from typing import (
     Any,
-    Optional,
 )
 
 from webob.compat import cgi_FieldStorage
@@ -57,13 +56,13 @@ class TourGenerator:
         self._tool: Tool = self._get_and_ensure_tool(tool_id, tool_version)
         self._use_datasets = True
         self._data_inputs: dict[str, Any] = {}
-        self._tour: Optional[TourDetails] = None
+        self._tour: TourDetails | None = None
         self._hids: dict[str, Any] = {}
         self._test: ToolTestDescription
         self._upload_test_data(performs_upload=performs_upload)
         self._generate_tour(performs_upload=performs_upload)
 
-    def _get_and_ensure_tool(self, tool_id: str, tool_version: Optional[str]) -> Tool:
+    def _get_and_ensure_tool(self, tool_id: str, tool_version: str | None) -> Tool:
         """Get the tool and ensure it exists."""
         tool = self._trans.app.toolbox.get_tool(tool_id, tool_version)
         if not tool:

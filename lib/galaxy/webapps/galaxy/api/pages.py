@@ -4,7 +4,6 @@ API for updating Galaxy Pages
 
 import io
 import logging
-from typing import Optional
 
 from fastapi import (
     Body,
@@ -31,6 +30,7 @@ from galaxy.schema.schema import (
     SharingStatus,
     UpdatePagePayload,
 )
+from galaxy.webapps.base.api import GalaxyStreamingResponse
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -49,7 +49,7 @@ DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to include deleted pages in the result."
 )
 
-UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+UserIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Encoded user ID to restrict query to, must be own id if not an admin user",
 )
@@ -82,7 +82,11 @@ OffsetQueryParam: int = Query(
     title="Number of pages to skip in sorted query (to enable pagination).",
 )
 
-HistoryIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+InvocationIdQueryParam: DecodedDatabaseIdField | None = Query(
+    default=None, title="Invocation ID", description="Filter pages by this workflow invocation ID."
+)
+
+HistoryIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Filter pages by history ID.",
 )
@@ -97,7 +101,7 @@ query_tags = [
     IndexQueryTag("type", "Page type filter: 'standalone', 'history_attached', or 'all'."),
 ]
 
-SearchQueryParam: Optional[str] = search_query_param(
+SearchQueryParam: str | None = search_query_param(
     model_name="Page",
     tags=query_tags,
     free_text_fields=["title", "slug", "tag", "user"],
@@ -120,14 +124,15 @@ class FastAPIPages:
         deleted: bool = DeletedQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-        search: Optional[str] = SearchQueryParam,
+        search: str | None = SearchQueryParam,
         show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
         sort_by: PageSortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
-        history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
+        user_id: DecodedDatabaseIdField | None = UserIdQueryParam,
+        invocation_id: DecodedDatabaseIdField | None = InvocationIdQueryParam,
+        history_id: DecodedDatabaseIdField | None = HistoryIdQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
         payload = PageIndexQueryPayload.model_construct(
@@ -141,6 +146,7 @@ class FastAPIPages:
             sort_by=sort_by,
             sort_desc=sort_desc,
             user_id=user_id,
+            invocation_id=invocation_id,
             history_id=history_id,
         )
         pages, total_matches = self.service.index(trans, payload, include_total_count=True)
@@ -210,7 +216,7 @@ class FastAPIPages:
         This feature may not be available in this Galaxy.
         """
         pdf_bytes = self.service.show_pdf(trans, id)
-        return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
+        return GalaxyStreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
 
     @router.post(
         "/api/pages/{id}/prepare_download",

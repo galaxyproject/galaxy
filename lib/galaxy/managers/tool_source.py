@@ -18,7 +18,6 @@ import hashlib
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 from sqlalchemy import select
@@ -76,7 +75,7 @@ def tool_source_identity_hash(tool: Any) -> str:
     return hashlib.sha256("\0".join(identity).encode("utf-8")).hexdigest()
 
 
-def _lookup(session: Session, content_hash: str, source_class: str, identity_hash: str) -> Optional[ToolSource]:
+def _lookup(session: Session, content_hash: str, source_class: str, identity_hash: str) -> ToolSource | None:
     return session.scalars(
         select(ToolSource)
         .where(

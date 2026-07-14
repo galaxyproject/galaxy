@@ -21,9 +21,9 @@ NODE_ENGINE = os.path.join(FILE_DIRECTORY, "cwlNodeEngine.js")
 def do_eval(
     expression: str,
     jobinput: CWLObjectType,
-    javascript_requirements: Optional[list[JavascriptRequirement]] = None,
-    outdir: Optional[str] = None,
-    tmpdir: Optional[str] = None,
+    javascript_requirements: list[JavascriptRequirement] | None = None,
+    outdir: str | None = None,
+    tmpdir: str | None = None,
     context: Optional["CWLOutputType"] = None,
 ):
     requirements: list[CWLObjectType] = []

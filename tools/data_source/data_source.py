@@ -49,7 +49,7 @@ def __main__():
 
     for data_dict in params["output_data"]:
         cur_filename = data_dict["file_name"]
-        cur_URL = params["param_dict"].get("%s|%s|URL" % (GALAXY_PARAM_PREFIX, data_dict["out_data_name"]), URL)
+        cur_URL = params["param_dict"].get("{}|{}|URL".format(GALAXY_PARAM_PREFIX, data_dict["out_data_name"]), URL)
         if not cur_URL or urlparse(cur_URL).scheme not in ("http", "https", "ftp"):
             open(cur_filename, "w").write("")
             sys.exit("The remote data source application has not sent back a URL parameter in the request.")
@@ -82,7 +82,7 @@ def __main__():
                 source_encoding=get_charset_from_http_headers(page.headers),
             )
         except Exception as e:
-            sys.exit("Unable to fetch %s:\n%s" % (cur_URL, e))
+            sys.exit(f"Unable to fetch {cur_URL}:\n{e}")
 
         # here import checks that upload tool performs
         try:

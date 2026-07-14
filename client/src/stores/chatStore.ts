@@ -11,13 +11,25 @@ export type ChatLocation = "center" | "right" | "bottom";
 export const useChatStore = defineStore("chatStore", () => {
     const chatLocation = useUserLocalStorage<ChatLocation>("chat-location", "center");
     const chatVisible = useUserLocalStorage("chat-visible", false);
-    const activeChatId = ref<string | null>(null);
+    const cachedActiveChatId = useUserLocalStorage<string>("active-chat-id", "");
     const chatHistory = ref<ChatHistoryItem[]>([]);
     const loading = ref(false);
+    const newChatRequestCount = ref(0);
 
     const isRightPanelOpen = computed(() => chatLocation.value === "right" && chatVisible.value);
     const isBottomPanelOpen = computed(() => chatLocation.value === "bottom" && chatVisible.value);
     const isCenterMode = computed(() => chatLocation.value === "center");
+
+    const activeChatId = computed({
+        get: () => cachedActiveChatId.value || null,
+        set: (id: string | null) => {
+            if (id) {
+                cachedActiveChatId.value = id;
+            } else {
+                cachedActiveChatId.value = "";
+            }
+        },
+    });
 
     function deleteChats(ids: Set<string>) {
         chatHistory.value = chatHistory.value.filter((item) => !ids.has(item.id));
@@ -71,11 +83,16 @@ export const useChatStore = defineStore("chatStore", () => {
         }
     }
 
-    async function loadHistory() {
+    async function loadHistory(pageId?: string) {
         loading.value = true;
-        const { data, error } = await GalaxyApi().GET("/api/chat/history", {
-            params: { query: { limit: 50 } },
-        });
+
+        const { data, error } = pageId
+            ? await GalaxyApi().GET("/api/chat/page/{page_id}/history", {
+                  params: { path: { page_id: pageId }, query: { limit: 50 } },
+              })
+            : await GalaxyApi().GET("/api/chat/history", {
+                  params: { query: { limit: 50 } },
+              });
 
         loading.value = false;
 
@@ -100,6 +117,14 @@ export const useChatStore = defineStore("chatStore", () => {
         if (activeChatId.value !== id) {
             activeChatId.value = id;
         }
+    }
+
+    /** Ask chat surfaces to reset to a fresh conversation. A counter bump rather than
+     * an id change, so the reset also fires for an unsaved conversation whose identity
+     * (activeChatId / route param) wouldn't change. */
+    function requestNewChat() {
+        setActiveChatId(null);
+        newChatRequestCount.value++;
     }
 
     /** Returns the active chat id, falling back to the most recent history item, or null. */
@@ -128,6 +153,8 @@ export const useChatStore = defineStore("chatStore", () => {
         hideChat,
         loadHistory,
         loading,
+        newChatRequestCount,
+        requestNewChat,
         toggleChat,
         setLocation,
         setActiveChatId,

@@ -115,6 +115,9 @@ $h6-font-size: $font-size-base * 0.85; // default 1
 $dropdown-link-hover-color: $brand-light;
 $dropdown-link-hover-bg: $brand-primary;
 
+// Code elements (override Bootstrap default $code-color: $pink which fails WCAG AA contrast)
+$code-color: #c2266e;
+
 // Color of input elements
 $input-color: $text-color;
 $input-color-placeholder: $text-muted;

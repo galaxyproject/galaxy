@@ -3,7 +3,6 @@
 import os
 from typing import (
     Any,
-    Optional,
 )
 
 import pytest
@@ -43,7 +42,7 @@ class AbstractTestCases:
 
         # Move helpers to populators.py
         def wait_on_proxied_content(self, target: str) -> str:
-            def get_hosted_content() -> Optional[str]:
+            def get_hosted_content() -> str | None:
                 try:
                     scheme, rest = target.split("://", 1)
                     prefix, host_and_port = rest.split(".interactivetool.")
@@ -69,7 +68,7 @@ class AbstractTestCases:
             return access_json["target"]
 
         def wait_on_entry_points_active(self, job_id: str, expected_num: int = 1) -> list[dict[str, Any]]:
-            def active_entry_points() -> Optional[list[dict[str, Any]]]:
+            def active_entry_points() -> list[dict[str, Any]] | None:
                 entry_points = self.entry_points_for_job(job_id)
                 if len(entry_points) != expected_num:
                     return None
@@ -122,7 +121,7 @@ class AbstractTestCases:
 
             content1 = self.wait_on_proxied_content(target1)
             assert content1 == "moo cow\n", content1
-            stop_response = self.dataset_populator._delete(f'entry_points/{entry_point0["id"]}')
+            stop_response = self.dataset_populator._delete(f"entry_points/{entry_point0['id']}")
             stop_response.raise_for_status()
             self.dataset_populator.wait_for_job(job0["id"], assert_ok=True)
             job_details_response = self.dataset_populator.get_job_details(job0["id"], full=True)

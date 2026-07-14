@@ -14,7 +14,6 @@ Header sensitivity is determined by the URL headers configuration file.
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.config.url_headers import UrlHeadersConfig
@@ -31,7 +30,7 @@ log = logging.getLogger(__name__)
 
 
 def is_sensitive_header(
-    header_name: str, url_headers_config: Optional[UrlHeadersConfig] = None, url: Optional[str] = None
+    header_name: str, url_headers_config: UrlHeadersConfig | None = None, url: str | None = None
 ) -> bool:
     """
     Check if a header contains sensitive information and should be encrypted.
@@ -64,7 +63,7 @@ def is_sensitive_header(
 
 
 def has_sensitive_headers(
-    data: dict, url_headers_config: Optional[UrlHeadersConfig] = None, url: Optional[str] = None
+    data: dict, url_headers_config: UrlHeadersConfig | None = None, url: str | None = None
 ) -> bool:
     """
     Check if the data structure contains any sensitive headers that would require encryption.
@@ -140,7 +139,7 @@ def has_sensitive_headers(
     return check_sensitivity(data, url)
 
 
-def create_vault_key(context_id: str, header_name: str, key_prefix: Optional[str] = None) -> str:
+def create_vault_key(context_id: str, header_name: str, key_prefix: str | None = None) -> str:
     """
     Create a vault key for storing a header value.
 
@@ -176,9 +175,9 @@ def encrypt_headers_in_data(
     data: dict,
     context_id: str,
     vault: Vault,
-    key_prefix: Optional[str] = None,
+    key_prefix: str | None = None,
     reference_prefix: str = "VAULT_HEADER",
-    url_headers_config: Optional[UrlHeadersConfig] = None,
+    url_headers_config: UrlHeadersConfig | None = None,
 ) -> dict:
     """
     Recursively process data structure to encrypt sensitive headers.
@@ -239,9 +238,9 @@ def decrypt_headers_in_data(
     data: dict,
     context_id: str,
     vault: Vault,
-    key_prefix: Optional[str] = None,
+    key_prefix: str | None = None,
     reference_prefix: str = "VAULT_HEADER",
-    url_headers_config: Optional[UrlHeadersConfig] = None,
+    url_headers_config: UrlHeadersConfig | None = None,
 ) -> dict:
     """
     Recursively process data structure to decrypt sensitive headers from vault.
@@ -291,10 +290,10 @@ def _encrypt_headers_dict(
     headers: dict[str, str],
     context_id: str,
     vault: Vault,
-    key_prefix: Optional[str] = None,
+    key_prefix: str | None = None,
     reference_prefix: str = "VAULT_HEADER",
-    url_headers_config: Optional[UrlHeadersConfig] = None,
-    url: Optional[str] = None,
+    url_headers_config: UrlHeadersConfig | None = None,
+    url: str | None = None,
 ) -> dict[str, str]:
     """
     Encrypt sensitive headers in a headers dictionary.
@@ -328,7 +327,7 @@ def _decrypt_headers_dict(
     headers: dict[str, str],
     context_id: str,
     vault: Vault,
-    key_prefix: Optional[str] = None,
+    key_prefix: str | None = None,
     reference_prefix: str = "VAULT_HEADER",
 ) -> dict[str, str]:
     """

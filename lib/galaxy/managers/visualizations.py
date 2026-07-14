@@ -8,7 +8,6 @@ reproduce a specific view in a Galaxy visualization.
 import logging
 from typing import (
     TYPE_CHECKING,
-    Union,
 )
 
 from sqlalchemy import (
@@ -78,7 +77,7 @@ class VisualizationManager(sharable.SharableModelManager[model.Visualization]):
 
     def index_query(
         self, trans: ProvidesUserContext, payload: VisualizationIndexQueryPayload, include_total_count: bool = False
-    ) -> tuple["ScalarResult[model.Visualization]", Union[int, None]]:
+    ) -> tuple["ScalarResult[model.Visualization]", int | None]:
         show_deleted = payload.deleted
         show_own = payload.show_own
         show_published = payload.show_published

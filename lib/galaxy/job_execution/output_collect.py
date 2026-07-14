@@ -12,7 +12,6 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy.model import (
@@ -234,7 +233,7 @@ def collect_dynamic_outputs(
 
 class BaseJobContext(ModelPersistenceContext):
     final_job_state: "JobState"
-    max_discovered_files: Union[int, float]
+    max_discovered_files: int | float
     tool_provided_metadata: BaseToolProvidedMetadata
     job_working_directory: str
 
@@ -258,7 +257,7 @@ class BaseJobContext(ModelPersistenceContext):
     def change_datatype_actions(self) -> dict[str, Any]: ...
 
     @abc.abstractmethod
-    def create_hdca(self, name: str, structure: UninitializedTree) -> Union[HistoryDatasetCollectionAssociation]: ...
+    def create_hdca(self, name: str, structure: UninitializedTree) -> HistoryDatasetCollectionAssociation: ...
 
     @abc.abstractmethod
     def get_hdca(self, object_id) -> HistoryDatasetCollectionAssociation: ...
@@ -267,10 +266,10 @@ class BaseJobContext(ModelPersistenceContext):
     def get_library_folder(self, destination: dict[str, Any]) -> "LibraryFolder": ...
 
     @abc.abstractmethod
-    def output_collection_def(self, name: str) -> Union[None, ToolOutputCollection]: ...
+    def output_collection_def(self, name: str) -> None | ToolOutputCollection: ...
 
     @abc.abstractmethod
-    def output_def(self, name: str) -> Union[None, ToolOutput]: ...
+    def output_def(self, name: str) -> None | ToolOutput: ...
 
 
 class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
@@ -280,12 +279,12 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self,
         metadata_params,
         tool_provided_metadata: BaseToolProvidedMetadata,
-        object_store: Optional[ObjectStore],
+        object_store: ObjectStore | None,
         export_store: Optional["DirectoryModelExportStore"],
         import_store: "BaseDirectoryImportModelStore",
         working_directory: str,
         final_job_state: "JobState",
-        max_discovered_files: Optional[int],
+        max_discovered_files: int | None,
         job: Optional["Job"] = None,
     ):
         # TODO: use a metadata source provider... (pop from inputs and add parameter)

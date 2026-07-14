@@ -5,7 +5,6 @@ import time
 from functools import partial
 from typing import (
     Any,
-    Optional,
 )
 
 import anyio
@@ -127,11 +126,9 @@ class AgentAPI:
     async def analyze_error(
         self,
         query: str = Body(..., description="Description of the error or problem"),
-        job_id: Optional[DecodedDatabaseIdField] = Body(None, description="Job ID for context"),
-        error_details: Optional[dict[str, Any]] = Body(None, description="Additional error details"),
-        save_exchange: Optional[bool] = Body(
-            None, description="Save exchange for feedback tracking. Defaults to false."
-        ),
+        job_id: DecodedDatabaseIdField | None = Body(None, description="Job ID for context"),
+        error_details: dict[str, Any] | None = Body(None, description="Additional error details"),
+        save_exchange: bool | None = Body(None, description="Save exchange for feedback tracking. Defaults to false."),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
@@ -182,10 +179,8 @@ class AgentAPI:
     async def create_custom_tool(
         self,
         query: str = Body(..., description="Description of the tool to create"),
-        context: Optional[dict[str, Any]] = Body(None, description="Additional context for tool creation"),
-        save_exchange: Optional[bool] = Body(
-            None, description="Save exchange for feedback tracking. Defaults to false."
-        ),
+        context: dict[str, Any] | None = Body(None, description="Additional context for tool creation"),
+        save_exchange: bool | None = Body(None, description="Save exchange for feedback tracking. Defaults to false."),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:

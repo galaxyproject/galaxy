@@ -3,11 +3,7 @@ from collections import defaultdict
 from functools import lru_cache
 from typing import (
     cast,
-    Dict,
-    List,
     NamedTuple,
-    Optional,
-    Tuple,
 )
 
 import yaml
@@ -20,12 +16,12 @@ from galaxy.util.resources import resource_string
 log = logging.getLogger(__name__)
 
 
-def _multi_dict_mapping(content: str) -> Dict[str, List[str]]:
-    mapping: Dict[str, List[str]] = {}
+def _multi_dict_mapping(content: str) -> dict[str, list[str]]:
+    mapping: dict[str, list[str]] = {}
     for x in content.splitlines():
         if x.startswith("#"):
             continue
-        key, value = cast(Tuple[str, str], tuple(x.split("\t")))
+        key, value = cast(tuple[str, str], tuple(x.split("\t")))
         mapping.setdefault(key, []).append(value)
     return mapping
 
@@ -41,8 +37,8 @@ TOOL_TAG_MAPPING_FILENAME = "tool_tag_mappings.yml"
 
 
 @lru_cache(maxsize=1)
-def _biotools_mapping() -> Dict[str, List[str]]:
-    mapping: Dict[str, List[str]] = defaultdict(list)
+def _biotools_mapping() -> dict[str, list[str]]:
+    mapping: dict[str, list[str]] = defaultdict(list)
     for line in _read_ontology_data_text(BIOTOOLS_MAPPING_FILENAME).splitlines():
         if not line.startswith("#"):
             tool_id, xref = line.split("\t")
@@ -51,18 +47,18 @@ def _biotools_mapping() -> Dict[str, List[str]]:
 
 
 @lru_cache(maxsize=1)
-def _edam_operation_mapping() -> Dict[str, List[str]]:
+def _edam_operation_mapping() -> dict[str, list[str]]:
     return _multi_dict_mapping(_read_ontology_data_text(EDAM_OPERATION_MAPPING_FILENAME))
 
 
 @lru_cache(maxsize=1)
-def _edam_topic_mapping() -> Dict[str, List[str]]:
+def _edam_topic_mapping() -> dict[str, list[str]]:
     return _multi_dict_mapping(_read_ontology_data_text(EDAM_TOPIC_MAPPING_FILENAME))
 
 
-def _load_tool_tag_mapping(content: str) -> Dict[str, List[str]]:
+def _load_tool_tag_mapping(content: str) -> dict[str, list[str]]:
     raw = cast(
-        Dict[str, List[str]],
+        dict[str, list[str]],
         (yaml.safe_load(content) or {}).get("tool_tags", {}),
     )
     # `Tool.all_ids` is built from lowercased tool ids (see `Tool.parse` in
@@ -73,21 +69,21 @@ def _load_tool_tag_mapping(content: str) -> Dict[str, List[str]]:
     return {tool_id.lower(): tags for tool_id, tags in raw.items()}
 
 
-_TOOL_TAG_MAPPING_OVERRIDE: Optional[Dict[str, List[str]]] = None
+_TOOL_TAG_MAPPING_OVERRIDE: dict[str, list[str]] | None = None
 
 
-def _tool_tag_mapping() -> Dict[str, List[str]]:
+def _tool_tag_mapping() -> dict[str, list[str]]:
     if _TOOL_TAG_MAPPING_OVERRIDE is not None:
         return _TOOL_TAG_MAPPING_OVERRIDE
     return _bundled_tool_tag_mapping()
 
 
 @lru_cache(maxsize=1)
-def _bundled_tool_tag_mapping() -> Dict[str, List[str]]:
+def _bundled_tool_tag_mapping() -> dict[str, list[str]]:
     return _load_tool_tag_mapping(_read_ontology_data_text(TOOL_TAG_MAPPING_FILENAME))
 
 
-def configure_tool_tag_mapping(file_path: Optional[str]) -> None:
+def configure_tool_tag_mapping(file_path: str | None) -> None:
     """Replace the in-memory curated tool → tag mapping.
 
     Galaxy calls this once at startup with the value of the
@@ -114,10 +110,10 @@ def configure_tool_tag_mapping(file_path: Optional[str]) -> None:
 
 
 class OntologyData(NamedTuple):
-    xrefs: List[XrefDict]
-    edam_operations: Optional[List[str]]
-    edam_topics: Optional[List[str]]
-    tool_tags: List[str]
+    xrefs: list[XrefDict]
+    edam_operations: list[str] | None
+    edam_topics: list[str] | None
+    tool_tags: list[str]
 
 
 def biotools_reference(xrefs):
@@ -127,7 +123,7 @@ def biotools_reference(xrefs):
     return None
 
 
-def legacy_biotools_external_reference(all_ids: List[str]) -> List[str]:
+def legacy_biotools_external_reference(all_ids: list[str]) -> list[str]:
     biotools_mapping = _biotools_mapping()
     for tool_id in all_ids:
         if tool_id in biotools_mapping:
@@ -135,10 +131,10 @@ def legacy_biotools_external_reference(all_ids: List[str]) -> List[str]:
     return []
 
 
-def curated_tool_tags(all_ids: List[str]) -> List[str]:
+def curated_tool_tags(all_ids: list[str]) -> list[str]:
     mapping = _tool_tag_mapping()
     seen = set()
-    tags: List[str] = []
+    tags: list[str] = []
     for tool_id in all_ids:
         for tag in mapping.get(tool_id, []):
             if tag not in seen:
@@ -148,7 +144,7 @@ def curated_tool_tags(all_ids: List[str]) -> List[str]:
 
 
 def expand_ontology_data(
-    tool_source: ToolSource, all_ids: List[str], biotools_metadata_source: Optional[BiotoolsMetadataSource]
+    tool_source: ToolSource, all_ids: list[str], biotools_metadata_source: BiotoolsMetadataSource | None
 ) -> OntologyData:
     xrefs = tool_source.parse_xrefs()
     has_biotools_reference = any(x["type"] == "bio.tools" for x in xrefs)

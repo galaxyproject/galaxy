@@ -644,10 +644,7 @@ pages:
       toolbar:
         type: data-description
         selector: 'page editor toolbar'
-      toolbar_title: '[data-description="page editor title"] > span'
-      manage_button:
-        type: data-description
-        selector: 'page manage button'
+      toolbar_title: '[data-description="page editor title"]'
       save_button:
         type: data-description
         selector: 'page save button'
@@ -661,9 +658,8 @@ pages:
       item:
         type: data-description
         selector: 'page item'
-      item_title:
-        type: data-description
-        selector: 'page title'
+      item_edit: '[id^="g-card-action-edit-notebook-page-"]'
+      item_title: '[id^="g-card-title-link-page-"]'
       rendered_view:
         type: data-description
         selector: 'page rendered view'
@@ -688,9 +684,7 @@ pages:
       revision_restore_button:
         type: data-description
         selector: 'revision restore button'
-      view_button:
-        type: data-description
-        selector: 'page view button'
+      view_button: '[id^="g-card-action-view-notebook-page-"]'
       display_toolbar:
         type: data-description
         selector: 'page display toolbar'
@@ -700,36 +694,15 @@ pages:
       edit_button:
         type: data-description
         selector: 'page edit button'
-      toolbar_title_input: '[data-description="page editor title"] input'
+      rename_button:
+        type: data-description
+        selector: 'page rename button'
       back_button:
         type: data-description
         selector: 'page back button'
       permissions_button:
         type: data-description
         selector: 'page permissions button'
-      save_view_button:
-        type: data-description
-        selector: 'page save-view button'
-      chat_button:
-        type: data-description
-        selector: 'page chat button'
-      chat_panel:
-        type: data-description
-        selector: 'page chat panel'
-      chat_input: '.page-chat-panel #chat-input'
-      chat_send_button: '.page-chat-panel .send-button'
-      chat_loading: '.page-chat-panel [data-description="chat loading indicator"]'
-      chat_query_cell: '.page-chat-panel .entry-query .query-text'
-      chat_response_content: '.page-chat-panel .entry-response .response-content'
-      chat_new_conversation:
-        type: data-description
-        selector: 'new conversation button'
-      chat_history_button:
-        type: data-description
-        selector: 'chat history button'
-      chat_history_sidebar:
-        type: data-description
-        selector: 'page chat history list'
       revision_compare_current_button:
         type: data-description
         selector: 'revision compare current button'

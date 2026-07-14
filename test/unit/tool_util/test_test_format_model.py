@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import List
 
 import pytest
 import yaml
@@ -12,14 +11,14 @@ from galaxy.util import galaxy_directory
 from galaxy.util.unittest_utils import skip_unless_environ
 
 TEST_WORKFLOW_DIRECTORY = os.path.join(galaxy_directory(), "lib", "galaxy_test", "workflow")
-IWC_WORKFLOWS_USING_UNVERIFIED_SYNTAX: List[str] = []
+IWC_WORKFLOWS_USING_UNVERIFIED_SYNTAX: list[str] = []
 
 # replacement_parameters_legacy.gxwf-tests.yml is a deliberate regression test
 # for Planemo-era implicit replacement_parameters: {...} dicts embedded in
 # job:. That key is popped out by WorkflowPopulator.run_workflow before
 # staging, so the runtime accepts it but it is not canonical workflow-test
 # input syntax and the strict Job schema does not model it.
-WORKFLOW_TESTS_SKIP_STRICT_VALIDATION: List[str] = [
+WORKFLOW_TESTS_SKIP_STRICT_VALIDATION: list[str] = [
     "replacement_parameters_legacy.gxwf-tests.yml",
 ]
 

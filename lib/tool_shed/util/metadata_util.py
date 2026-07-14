@@ -1,7 +1,6 @@
 import logging
 from operator import itemgetter
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -268,7 +267,7 @@ def get_repository_dependency_tups_from_repository_metadata(
 
 def get_repository_metadata_by_changeset_revision(
     app: "ToolShedApp", id: str, changeset_revision: str
-) -> Optional[RepositoryMetadata]:
+) -> RepositoryMetadata | None:
     """Get metadata for a specified repository change set from the database."""
     decoded_id = app.security.decode_id(id)
     return repository_metadata_by_changeset_revision(app.model, decoded_id, changeset_revision)
@@ -276,7 +275,7 @@ def get_repository_metadata_by_changeset_revision(
 
 def repository_metadata_by_changeset_revision(
     model_mapping: "ToolShedModelMapping", id: int, changeset_revision: str
-) -> Optional[RepositoryMetadata]:
+) -> RepositoryMetadata | None:
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
     # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
     # leave this method as is for a while longer to ensure all duplicate records are removed.

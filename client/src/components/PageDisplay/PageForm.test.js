@@ -1,12 +1,21 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
+import { Toast } from "@/composables/toast";
 
 import PageForm from "./PageForm.vue";
+
+vi.mock("@/composables/toast", () => {
+    const toastInstance = { success: vi.fn(), error: vi.fn() };
+    return {
+        Toast: toastInstance,
+        useToast: () => toastInstance,
+    };
+});
 
 const { server, http } = useServerMock();
 const localVue = getLocalVue();
@@ -35,6 +44,10 @@ function mountTarget(props = {}) {
 }
 
 describe("PageForm.vue - Create mode", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
     it("renders loading spinner when fetching report", async () => {
         server.use(
             http.get("/api/invocations/:invocation_id/report", ({ response }) =>
@@ -79,14 +92,10 @@ describe("PageForm.vue - Create mode", () => {
         expect(alert.text()).toContain("Failed to fetch report");
     });
 
-    it("shows validation error when required fields are missing on submit", async () => {
+    it("submit button is disabled when required fields are missing", async () => {
         const wrapper = mountTarget({ mode: "create" });
         await flushPromises();
-        await wrapper.find("#page-submit").trigger("click");
-        await flushPromises();
-        const alert = wrapper.findComponent({ name: "BAlert" });
-        expect(alert.exists()).toBe(true);
-        expect(alert.text()).toContain("Please complete all required inputs.");
+        expect(wrapper.find("#page-submit").classes()).toContain("g-disabled");
     });
 
     it("submits page creation with correct fields", async () => {
@@ -118,13 +127,15 @@ describe("PageForm.vue - Create mode", () => {
         await wrapper.find("#page-slug").setValue("some-title");
         await wrapper.find("#page-submit").trigger("click");
         await flushPromises();
-        const alert = wrapper.findComponent({ name: "BAlert" });
-        expect(alert.exists()).toBe(true);
-        expect(alert.text()).toContain("Creation failed");
+        expect(Toast.error).toHaveBeenCalledWith("Creation failed", "Error Creating Page");
     });
 });
 
 describe("PageForm.vue - Edit mode", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
     it("renders loading spinner and fetches page details", async () => {
         server.use(
             http.get("/api/pages/:id", ({ response }) =>
@@ -154,14 +165,10 @@ describe("PageForm.vue - Edit mode", () => {
         expect(alert.text()).toContain("Page load failed");
     });
 
-    it("shows validation error if required fields are missing on update", async () => {
+    it("submit button is disabled when required fields are missing", async () => {
         const wrapper = mountTarget({ mode: "edit", id: "123" });
         await flushPromises();
-        await wrapper.find("#page-submit").trigger("click");
-        await flushPromises();
-        const alert = wrapper.findComponent({ name: "BAlert" });
-        expect(alert.exists()).toBe(true);
-        expect(alert.text()).toContain("Please complete all required inputs.");
+        expect(wrapper.find("#page-submit").classes()).toContain("g-disabled");
     });
 
     it("submits page update with correct fields", async () => {
@@ -192,8 +199,6 @@ describe("PageForm.vue - Edit mode", () => {
         await wrapper.find("#page-slug").setValue("error-title");
         await wrapper.find("#page-submit").trigger("click");
         await flushPromises();
-        const alert = wrapper.findComponent({ name: "BAlert" });
-        expect(alert.exists()).toBe(true);
-        expect(alert.text()).toContain("Update failed");
+        expect(Toast.error).toHaveBeenCalledWith("Update failed", "Error Updating Page");
     });
 });

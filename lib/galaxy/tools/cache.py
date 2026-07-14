@@ -2,7 +2,6 @@ import logging
 import os
 from threading import Lock
 from typing import (
-    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -142,15 +141,15 @@ class ToolCache:
 
 
 class ToolHash:
-    def __init__(self, path: "StrPath", modtime: Optional[float] = None, lazy_hash: bool = False) -> None:
+    def __init__(self, path: "StrPath", modtime: float | None = None, lazy_hash: bool = False) -> None:
         self.path = path
         self.modtime = modtime or os.path.getmtime(path)
-        self._tool_hash: Optional[str] = None
+        self._tool_hash: str | None = None
         if not lazy_hash:
             self.hash  # noqa: B018
 
     @property
-    def hash(self) -> Union[str, None]:
+    def hash(self) -> str | None:
         if self._tool_hash is None:
             self._tool_hash = md5_hash_file(self.path)
         return self._tool_hash

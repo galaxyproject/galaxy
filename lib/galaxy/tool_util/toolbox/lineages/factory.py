@@ -1,6 +1,4 @@
 from typing import (
-    Dict,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -15,7 +13,7 @@ class LineageMap:
     """Map each unique tool id to a lineage object."""
 
     def __init__(self, app):
-        self.lineage_map: Dict[str, ToolLineage] = {}
+        self.lineage_map: dict[str, ToolLineage] = {}
         self.app = app
 
     def register(self, tool: "Tool") -> ToolLineage:
@@ -37,7 +35,7 @@ class LineageMap:
             self.lineage_map[tool_id] = lineage
         return self.lineage_map[tool_id]
 
-    def get(self, tool_id: str) -> Optional[ToolLineage]:
+    def get(self, tool_id: str) -> ToolLineage | None:
         """
         Get lineage for `tool_id`.
 
@@ -63,7 +61,7 @@ class LineageMap:
                 self.lineage_map[tool_id] = lineage
         return self.lineage_map.get(tool_id)
 
-    def _get_versionless(self, tool_id: str) -> Optional[ToolLineage]:
+    def _get_versionless(self, tool_id: str) -> ToolLineage | None:
         versionless_tool_id = remove_version_from_guid(tool_id)
         if not versionless_tool_id:
             return None

@@ -13,7 +13,11 @@ import ChatModeSelector from "./ChatModeSelector.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 const mockPush = vi.fn();
-let mockRoute: { path: string; params: Record<string, string> } = { path: "/", params: {} };
+let mockRoute: { path: string; params: Record<string, string>; query: Record<string, string> } = {
+    path: "/",
+    params: {},
+    query: {},
+};
 
 vi.mock("vue-router/composables", () => ({
     useRouter: () => ({ push: mockPush }),
@@ -41,7 +45,7 @@ function getButtons(wrapper: Wrapper<Vue>) {
 
 describe("ChatModeSelector", () => {
     beforeEach(() => {
-        mockRoute = { path: "/", params: {} };
+        mockRoute = { path: "/", params: {}, query: {} };
         vi.clearAllMocks();
     });
 
@@ -53,7 +57,7 @@ describe("ChatModeSelector", () => {
 
     describe("button active states", () => {
         it("full view button is pressed when in center mode on /galaxyai route", async () => {
-            mockRoute = { path: "/galaxyai/chat-1", params: { exchangeId: "chat-1" } };
+            mockRoute = { path: "/galaxyai/chat-1", params: { exchangeId: "chat-1" }, query: {} };
             const { wrapper, store } = mountComponent();
             store.chatLocation = "center";
             await nextTick();
@@ -100,6 +104,28 @@ describe("ChatModeSelector", () => {
         });
     });
 
+    // ── notebook context ──────────────────────────────────────────────────────
+
+    describe("notebook context", () => {
+        it("hides full view button when in notebook context", async () => {
+            mockRoute = {
+                path: "/histories/hist-1/pages/page-1",
+                params: { historyId: "hist-1", pageId: "page-1" },
+                query: {},
+            };
+            const { wrapper } = mountComponent();
+            await nextTick();
+            // Only 2 buttons should be rendered (side panel + bottom panel)
+            expect(getButtons(wrapper).length).toBe(2);
+        });
+
+        it("shows full view button when not in notebook context", async () => {
+            const { wrapper } = mountComponent();
+            await nextTick();
+            expect(getButtons(wrapper).length).toBe(3);
+        });
+    });
+
     // ── openCenterChat ─────────────────────────────────────────────────────────
 
     describe("openCenterChat", () => {
@@ -134,21 +160,21 @@ describe("ChatModeSelector", () => {
 
     describe("openDockedChat — navigation", () => {
         it("pushes '/' when on /galaxyai root route", async () => {
-            mockRoute = { path: "/galaxyai", params: {} };
+            mockRoute = { path: "/galaxyai", params: {}, query: {} };
             const { wrapper } = mountComponent();
             await getButtons(wrapper).at(1).trigger("click");
             expect(mockPush).toHaveBeenCalledWith("/");
         });
 
         it("pushes '/' when on /galaxyai/:id route", async () => {
-            mockRoute = { path: "/galaxyai/chat-1", params: { exchangeId: "chat-1" } };
+            mockRoute = { path: "/galaxyai/chat-1", params: { exchangeId: "chat-1" }, query: {} };
             const { wrapper } = mountComponent();
             await getButtons(wrapper).at(1).trigger("click");
             expect(mockPush).toHaveBeenCalledWith("/");
         });
 
         it("does not navigate when on an unrelated route", async () => {
-            mockRoute = { path: "/histories", params: {} };
+            mockRoute = { path: "/histories", params: {}, query: {} };
             const { wrapper } = mountComponent();
             await getButtons(wrapper).at(1).trigger("click");
             expect(mockPush).not.toHaveBeenCalled();
@@ -173,7 +199,7 @@ describe("ChatModeSelector", () => {
         });
 
         it("uses routedChatId when coming from center mode with exchangeId in route", async () => {
-            mockRoute = { path: "/galaxyai/routed-chat", params: { exchangeId: "routed-chat" } };
+            mockRoute = { path: "/galaxyai/routed-chat", params: { exchangeId: "routed-chat" }, query: {} };
             const { wrapper, store } = mountComponent();
             store.chatLocation = "center";
             await getButtons(wrapper).at(1).trigger("click");
@@ -181,7 +207,7 @@ describe("ChatModeSelector", () => {
         });
 
         it("uses activeChatId fallback when in center mode but no exchangeId in route", async () => {
-            mockRoute = { path: "/galaxyai", params: {} };
+            mockRoute = { path: "/galaxyai", params: {}, query: {} };
             const { wrapper, store } = mountComponent();
             store.chatLocation = "center";
             store.activeChatId = "active-chat";
@@ -222,7 +248,7 @@ describe("ChatModeSelector", () => {
         });
 
         it("does NOT use routedChatId when not in center mode even with exchangeId in route", async () => {
-            mockRoute = { path: "/galaxyai/some-chat", params: { exchangeId: "some-chat" } };
+            mockRoute = { path: "/galaxyai/some-chat", params: { exchangeId: "some-chat" }, query: {} };
             const { wrapper, store } = mountComponent();
             store.chatLocation = "right";
             store.activeChatId = "active-chat";

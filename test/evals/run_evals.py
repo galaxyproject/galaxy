@@ -31,7 +31,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 import yaml
@@ -85,8 +84,7 @@ def _require_model_entry(model: str, model_config: dict[str, Any]) -> dict[str, 
     entry = model_config.get(model)
     if not entry:
         raise SystemExit(
-            f"Model '{model}' is not declared in the model-config YAML. "
-            f"Known: {', '.join(model_config) or '(none)'}."
+            f"Model '{model}' is not declared in the model-config YAML. Known: {', '.join(model_config) or '(none)'}."
         )
     return entry
 
@@ -108,8 +106,7 @@ def _resolve_api_key(model: str, model_config: dict[str, Any]) -> str:
     entry = _require_model_entry(model, model_config)
     if "api_key" in entry:
         return entry["api_key"]
-    api_key_env = entry.get("api_key_env")
-    if api_key_env:
+    if api_key_env := entry.get("api_key_env"):
         api_key = os.environ.get(api_key_env)
         if not api_key:
             raise SystemExit(f"Model '{model}' requires env var {api_key_env} (not set).")
@@ -117,7 +114,7 @@ def _resolve_api_key(model: str, model_config: dict[str, Any]) -> str:
     raise SystemExit(f"Model '{model}' needs either api_key or api_key_env in the YAML.")
 
 
-def _load_model_config(path: Optional[str]) -> tuple[str, dict[str, Any]]:
+def _load_model_config(path: str | None) -> tuple[str, dict[str, Any]]:
     """Resolve the model-config YAML path and load it. Falls back to .sample.
 
     Returns (path_used, parsed_dict).
@@ -190,7 +187,7 @@ def _score_pass_count(
     return passed, total
 
 
-def _median_duration_s(report: EvaluationReport[Any, Any, Any]) -> Optional[float]:
+def _median_duration_s(report: EvaluationReport[Any, Any, Any]) -> float | None:
     durations = [c.task_duration for c in report.cases if c.task_duration is not None]
     return statistics.median(durations) if durations else None
 
@@ -207,7 +204,7 @@ def _all_score_names(reports: list[EvaluationReport[Any, Any, Any]]) -> list[str
     return names
 
 
-def _base_case_name(name: Optional[str]) -> Optional[str]:
+def _base_case_name(name: str | None) -> str | None:
     """Strip pydantic-evals' " [N/M]" repeat suffix from a case name."""
     if not name:
         return name
@@ -341,7 +338,7 @@ def _render_dataset_section(results: list[DatasetResult]) -> str:
                 continue
             ok_count = 0
             judge_values: list[float] = []
-            wrong_sample: Optional[str] = None
+            wrong_sample: str | None = None
             pass_threshold = 0.7 if r.primary_score == "LLMJudge" else 1.0
             for case in cases:
                 scores = case.scores or {}
@@ -389,7 +386,7 @@ def _render_dataset_section(results: list[DatasetResult]) -> str:
 
 def render_markdown(
     all_results: list["DatasetResult"],
-    baseline: Optional[list["DatasetResult"]] = None,
+    baseline: list["DatasetResult"] | None = None,
 ) -> str:
     """Render a single markdown document covering every dataset evaluated."""
     by_dataset: dict[str, list[DatasetResult]] = {}
@@ -585,7 +582,7 @@ async def run_eval_suite(
     model_config: dict[str, dict[str, str]],
     judge_model_name: str,
     deps_factory: DepsFactory,
-    only: Optional[list[str]] = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
     max_concurrency: int = 4,
     repeat: int = 1,
@@ -645,7 +642,7 @@ def write_eval_report(
     results: list[DatasetResult],
     datasets: list[str],
     results_dir: Path,
-    baseline_path: Optional[Path] = None,
+    baseline_path: Path | None = None,
 ) -> tuple[Path, Path]:
     """Render markdown + JSON and write to results_dir. Returns (md_path, json_path)."""
     baseline = _load_baseline(str(baseline_path)) if baseline_path else None

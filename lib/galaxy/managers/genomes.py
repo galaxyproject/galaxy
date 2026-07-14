@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -31,10 +30,10 @@ class GenomesManager:
         self._app = app
         self.genomes = app.genomes
 
-    def get_dbkeys(self, user: Optional[User], chrom_info: bool) -> list[list[str]]:
+    def get_dbkeys(self, user: User | None, chrom_info: bool) -> list[list[str]]:
         return self.genomes.get_dbkeys(user, chrom_info)
 
-    def is_registered_dbkey(self, dbkey: str, user: Optional[User]) -> bool:
+    def is_registered_dbkey(self, dbkey: str, user: User | None) -> bool:
         dbkeys = self.get_dbkeys(user, chrom_info=False)
         for _, key in dbkeys:
             if dbkey == key:

@@ -61,6 +61,7 @@
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_in_conditional.xml" />
+  <tool file="conditional_name_digit_suffix.xml" />
   <tool file="select_from_csvdataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
   <tool file="drill_down.xml" />
@@ -119,6 +120,10 @@
   <tool file="output_format_collection.xml" />
   <tool file="format_source_in_conditional.xml" />
   <tool file="output_filter.xml" />
+  <tool file="async_conditional_no_default_nested_data.xml" />
+  <tool file="async_ambiguous_unqualified_name.xml" />
+  <tool file="async_nested_conditional_shared_discriminator.xml" />
+  <tool file="async_nested_conditional_shared_discriminator_bare.xml" />
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />

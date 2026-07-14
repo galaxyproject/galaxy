@@ -1,9 +1,6 @@
 """Code around assigning implicit list identifiers for collections."""
 
 import os.path
-from typing import (
-    Optional,
-)
 from urllib.parse import urlparse
 
 from pydantic import BaseModel
@@ -26,13 +23,13 @@ def filename_to_element_identifier(filename_or_uri: str):
 
 
 def fill_in_identifiers(
-    uris_to_identifiers: list[tuple[str, Optional[str]]], config: Optional[FillIdentifiers]
-) -> list[Optional[str]]:
+    uris_to_identifiers: list[tuple[str, str | None]], config: FillIdentifiers | None
+) -> list[str | None]:
     if config is None:
         config = FillIdentifiers()
 
-    new_identifiers: list[Optional[str]] = []
-    seen_identifiers: set[Optional[str]] = set()
+    new_identifiers: list[str | None] = []
+    seen_identifiers: set[str | None] = set()
     for uri, identifier in uris_to_identifiers:
         if identifier is None and config.fill_inner_list_identifiers:
             basename = filename_to_element_identifier(uri)

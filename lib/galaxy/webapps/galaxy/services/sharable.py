@@ -1,8 +1,4 @@
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.managers import base
 from galaxy.managers.sharable import (
@@ -38,12 +34,7 @@ from galaxy.webapps.galaxy.services.notifications import NotificationService
 
 log = logging.getLogger(__name__)
 
-SharableItem = Union[
-    History,
-    StoredWorkflow,
-    Visualization,
-    Page,
-]
+SharableItem = History | StoredWorkflow | Visualization | Page
 
 
 class ShareableService:
@@ -124,7 +115,7 @@ class ShareableService:
         item,
         users: set[User],
         errors: set[str],
-        share_option: Optional[SharingOptions] = None,
+        share_option: SharingOptions | None = None,
     ):
         new_users = None
         extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
@@ -175,7 +166,7 @@ class ShareableService:
         return send_to_users, send_to_err
 
     def _send_notification_to_users(
-        self, users_to_notify: set[User], item: SharableItem, status: ShareWithStatus, galaxy_url: Optional[str] = None
+        self, users_to_notify: set[User], item: SharableItem, status: ShareWithStatus, galaxy_url: str | None = None
     ):
         if self.notification_service.notifications_enabled and not status.errors and users_to_notify:
             request = SharedItemNotificationFactory.build_notification_request(
@@ -198,7 +189,7 @@ class SharedItemNotificationFactory:
 
     @staticmethod
     def build_notification_request(
-        item: SharableItem, users_to_notify: set[User], status: ShareWithStatus, galaxy_url: Optional[str] = None
+        item: SharableItem, users_to_notify: set[User], status: ShareWithStatus, galaxy_url: str | None = None
     ) -> NotificationCreateRequest:
         user_ids = [user.id for user in users_to_notify]
         request = NotificationCreateRequest(

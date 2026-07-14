@@ -1,51 +1,46 @@
 <script setup lang="ts">
-import {
-    faArrowLeft,
-    faComments,
-    faEdit,
-    faEye,
-    faHistory,
-    faSave,
-    faSpinner,
-    faUsers,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faSpinner, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { getGalaxyInstance } from "@/app";
-import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
-import { PAGE_LABELS, PERMISSIONS_LABELS } from "@/components/Page/constants";
-import { useConfig } from "@/composables/config";
+// import { getGalaxyInstance } from "@/app";
+// import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
+import { PAGE_LABELS } from "@/components/Page/constants";
+import { useConfirmDialog } from "@/composables/confirmDialog.js";
 import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type PageEditorMode, usePageEditorStore } from "@/stores/pageEditorStore";
+import { useUserStore } from "@/stores/userStore.js";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GModal from "../BaseComponents/GModal.vue";
 import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
-import PageChatPanel from "./PageChatPanel.vue";
+import PageDisplayOnly from "./PageDisplayOnly.vue";
+import PageDisplayToolbar from "./PageDisplayToolbar.vue";
 import PageRevisionList from "./PageRevisionList.vue";
 import PageRevisionView from "./PageRevisionView.vue";
-import ClickToEdit from "@/components/ClickToEdit.vue";
-import SplitView from "@/components/Common/SplitView.vue";
-import Markdown from "@/components/Markdown/Markdown.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 
 const props = defineProps<{
     pageId: string;
     historyId?: string;
+    invocationId?: string;
     displayOnly?: boolean;
+    hideHeader?: boolean;
 }>();
 
+const { confirm } = useConfirmDialog();
 const router = useRouter();
 const { pushToFrameOrPage } = useWindowAwareNavigation();
 const store = usePageEditorStore();
 const historyStore = useHistoryStore();
-const { config } = useConfig();
+const userStore = useUserStore();
 
-const agentsAvailable = computed(() => !!config.value?.llm_api_configured);
-
-const editorMode = computed<PageEditorMode>(() => (props.historyId ? "history" : "standalone"));
+const editorMode = computed<PageEditorMode>(() =>
+    props.invocationId ? "invocation" : props.historyId ? "history" : "standalone",
+);
 const isStandalone = computed(() => editorMode.value === "standalone");
 
 const labels = computed(() => PAGE_LABELS[editorMode.value]);
@@ -53,7 +48,7 @@ const labels = computed(() => PAGE_LABELS[editorMode.value]);
 const editorTitle = computed(() => {
     if (props.historyId) {
         const history = historyStore.getHistoryById(props.historyId);
-        return history?.name || labels.value.entityName;
+        return `History: ${history?.name}` || labels.value.entityName;
     }
     return store.currentTitle || labels.value.defaultTitle;
 });
@@ -74,12 +69,14 @@ const markdownConfig = computed(() => {
     };
 });
 
+const isOwnedPage = computed(() => userStore.matchesCurrentUsername(store.currentPage?.username));
+
 const showPermissions = ref(false);
 
 onMounted(async () => {
     store.mode = editorMode.value;
     if (props.historyId) {
-        store.historyId = props.historyId;
+        store.setCurrentContext(props.historyId);
     }
     await store.loadPage(props.pageId);
 });
@@ -104,71 +101,105 @@ watch(
 
 function handleBack() {
     store.clearCurrentPage();
-    if (props.historyId) {
+    if (props.invocationId) {
+        router.push(`/workflows/invocations/${props.invocationId}/reports`);
+    } else if (props.historyId) {
         router.push(`/histories/${props.historyId}/pages`);
     } else {
         router.push("/pages/list");
     }
 }
 
+/** Open basic md display in window manager when active, else navigate inline according to context */
 function handlePreview() {
-    if (props.historyId) {
-        router.push(`/histories/${props.historyId}/pages/${props.pageId}?displayOnly=true`);
+    const framedUrl = `/pages/editor?id=${props.pageId}&displayOnly=true&hideHeader=true`;
+
+    let inlineUrl: string;
+    if (props.invocationId) {
+        inlineUrl = `/workflows/invocations/${props.invocationId}/reports?id=${props.pageId}`;
+    } else if (props.historyId) {
+        inlineUrl = `/histories/${props.historyId}/pages/${props.pageId}?displayOnly=true`;
     } else {
-        // Standalone: open in window manager when active, else navigate inline.
-        const previewUrl = `/pages/editor?id=${props.pageId}&displayOnly=true`;
-        pushToFrameOrPage({
-            framedUrl: previewUrl,
-            inlineUrl: previewUrl,
-            title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
+        inlineUrl = `/pages/editor?id=${props.pageId}&displayOnly=true`;
+    }
+
+    pushToFrameOrPage({
+        framedUrl,
+        inlineUrl,
+        title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
+    });
+}
+
+async function handleEdit() {
+    let editingPageId: string | undefined = props.pageId;
+
+    if (!isOwnedPage.value) {
+        const entity = labels.value.entityName;
+
+        const confirmed = await confirm(
+            `You are not the owner of this ${entity}. To edit it, a copy with its contents, owned by you, will be created. Do you want to proceed?`,
+            {
+                title: `Copy this ${entity}?`,
+                okText: `Copy ${entity}`,
+                okIcon: faCopy,
+            },
+        );
+        if (!confirmed) {
+            return;
+        }
+
+        const copiedPage = await store.createPage({
+            title: store.currentTitle ? `Copy of "${store.currentTitle}"` : labels.value.defaultTitle,
+            content: store.currentContent,
         });
+
+        editingPageId = copiedPage?.id;
     }
-}
 
-function handleEdit() {
-    if (props.historyId) {
-        router.push(`/histories/${props.historyId}/pages/${props.pageId}`);
-    } else {
-        router.push(`/pages/editor?id=${props.pageId}`);
-    }
-}
-
-async function handleSave() {
-    await store.savePage();
-}
-
-async function handleSaveAndView() {
-    await store.savePage();
-    if (store.currentPage) {
-        const Galaxy = getGalaxyInstance();
-        const isWmActive = Galaxy?.frame?.active;
-        if (isWmActive) {
-            const url = `/published/page?id=${props.pageId}&embed=true`;
-            const options: RouterPushOptions = {
-                title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
-                preventWindowManager: false,
-            };
-            // @ts-ignore - monkeypatched router
-            router.push(url, options);
+    if (editingPageId) {
+        if (props.historyId) {
+            router.push(`/histories/${props.historyId}/pages/${editingPageId}`);
         } else {
-            const data = store.currentPage as any;
-            if (data.username && data.slug) {
-                window.location.href = `/u/${data.username}/p/${data.slug}`;
-            }
+            router.push(`/pages/editor?id=${editingPageId}`);
         }
     }
 }
 
-function handleTitleChange(newTitle: string) {
-    store.updateTitle(newTitle);
-}
+// TODO: Uncomment when router guards with unsaved changes protection are implemented
+//       Before, we had a Save & View button that is now removed.
+// async function handleSaveAndView() {
+//     await store.savePage();
+//     if (props.invocationId) {
+//         router.push(`/workflows/invocations/${props.invocationId}/reports?id=${props.pageId}`);
+//         return;
+//     }
+//     if (store.currentPage) {
+//         const Galaxy = getGalaxyInstance();
+//         const isWmActive = Galaxy?.frame?.active;
+//         if (isWmActive) {
+//             const url = `/published/page?id=${props.pageId}&embed=true`;
+//             const options: RouterPushOptions = {
+//                 title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
+//                 preventWindowManager: false,
+//             };
+//             // @ts-ignore - monkeypatched router
+//             router.push(url, options);
+//         } else {
+//             const data = store.currentPage as any;
+//             if (data.username && data.slug) {
+//                 window.location.href = `/u/${data.username}/p/${data.slug}`;
+//             }
+//         }
+//     }
+// }
 
 function handleContentUpdate(newContent: string) {
     store.updateContent(newContent);
 }
 
-function handleRevisionSelect(revisionId: string) {
-    store.loadRevision(revisionId);
+async function handleRevisionSelect(revisionId: string) {
+    await store.loadRevision(revisionId);
+    store.showRevisions = false;
 }
 
 function handleRevisionRestore(revisionId: string) {
@@ -188,166 +219,77 @@ function handleRevisionRestore(revisionId: string) {
         </BAlert>
 
         <!-- Display-only mode: rendered view -->
-        <template v-else-if="store.hasCurrentPage && displayOnly">
-            <div
-                class="page-display-toolbar d-flex align-items-center p-2 border-bottom"
-                data-description="page display toolbar">
-                <BButton variant="link" size="sm" data-description="page back button" @click="handleBack">
-                    <FontAwesomeIcon :icon="faArrowLeft" />
-                    {{ labels.editorBackLabel }}
-                </BButton>
-                <span class="flex-grow-1 text-center font-weight-bold">
-                    {{ store.currentTitle || labels.defaultTitle }}
-                </span>
-                <BButton variant="outline-primary" size="sm" data-description="page edit button" @click="handleEdit">
-                    <FontAwesomeIcon :icon="faEdit" />
-                    Edit
-                </BButton>
-            </div>
-            <div class="page-display-content overflow-auto flex-grow-1" data-description="page rendered view">
-                <Markdown
-                    v-if="markdownConfig"
-                    :markdown-config="markdownConfig"
-                    :read-only="true"
-                    download-endpoint="" />
-            </div>
-        </template>
-
-        <!-- Viewing a specific revision -->
-        <template v-else-if="store.hasCurrentPage && store.selectedRevision">
-            <PageRevisionView
-                :revision="store.selectedRevision"
-                :current-content="store.currentContent"
-                :previous-content="store.previousRevisionContent"
-                :is-newest-revision="store.isNewestRevision"
-                :is-oldest-revision="store.isOldestRevision"
-                :view-mode="store.revisionViewMode"
-                :is-reverting="store.isReverting"
-                @back="store.clearSelectedRevision"
-                @restore="handleRevisionRestore"
-                @update:viewMode="store.revisionViewMode = $event" />
-        </template>
+        <PageDisplayOnly
+            v-else-if="store.hasCurrentPage && (displayOnly || !isOwnedPage || store.currentPage?.deleted)"
+            :labels="labels"
+            :markdown-config="markdownConfig || undefined"
+            :hide-header="props.hideHeader"
+            @back="handleBack"
+            @edit="handleEdit" />
 
         <!-- Edit mode: toolbar + editor + optional chat/revision panels -->
         <template v-else-if="store.hasCurrentPage">
-            <div
-                class="page-toolbar d-flex align-items-center p-2 border-bottom"
-                data-description="page editor toolbar">
-                <BButton variant="link" size="sm" data-description="page back button" @click="handleBack">
-                    <FontAwesomeIcon :icon="faArrowLeft" />
-                    {{ labels.editorBackLabel }}
-                </BButton>
-                <ClickToEdit
-                    :value="store.currentTitle || labels.defaultTitle"
-                    tag-name="span"
-                    :placeholder="labels.defaultTitle"
-                    class="flex-grow-1 text-center font-weight-bold"
-                    data-description="page editor title"
-                    @input="handleTitleChange" />
-                <BButton
-                    variant="outline-primary"
-                    size="sm"
-                    class="mr-2"
-                    data-description="page revisions button"
-                    @click="store.toggleRevisions">
-                    <FontAwesomeIcon :icon="faHistory" />
-                    Revisions
-                    <BBadge v-if="store.revisionCount > 0" variant="light" class="ml-1">
-                        {{ store.revisionCount }}
-                    </BBadge>
-                </BButton>
-                <BButton
-                    variant="outline-primary"
-                    size="sm"
-                    class="mr-2"
-                    data-description="page preview button"
-                    @click="handlePreview">
-                    <FontAwesomeIcon :icon="faEye" />
-                    Preview
-                </BButton>
-                <BButton
-                    v-if="agentsAvailable"
-                    :variant="store.showChatPanel ? 'primary' : 'outline-primary'"
-                    size="sm"
-                    class="mr-2"
-                    data-description="page chat button"
-                    @click="store.toggleChatPanel">
-                    <FontAwesomeIcon :icon="faComments" />
-                    Chat
-                </BButton>
-                <template v-if="isStandalone">
+            <PageDisplayToolbar :labels="labels" mode="editor" @preview="handlePreview" @back="handleBack">
+                <template v-if="isStandalone" v-slot:extra-actions>
                     <ObjectPermissionsModal
                         id="object-permissions-modal"
                         v-model="showPermissions"
                         :markdown-content="store.currentContent" />
-                    <BButton
+                    <GButton
                         v-b-modal:object-permissions-modal
-                        variant="outline-primary"
-                        size="sm"
-                        class="mr-2"
-                        data-description="page permissions button">
+                        color="blue"
+                        outline
+                        size="small"
+                        data-description="page permissions button"
+                        @click="showPermissions = true">
                         <FontAwesomeIcon :icon="faUsers" />
                         Permissions
-                    </BButton>
+                    </GButton>
                 </template>
-                <BButton
-                    variant="primary"
-                    size="sm"
-                    :class="{ 'mr-2': isStandalone }"
-                    data-description="page save button"
-                    :disabled="!store.canSave"
-                    @click="handleSave">
-                    <FontAwesomeIcon :icon="store.isSaving ? faSpinner : faSave" :spin="store.isSaving" />
-                    Save
-                </BButton>
-                <BButton
-                    v-if="isStandalone"
-                    variant="primary"
-                    size="sm"
-                    data-description="page save-view button"
-                    :disabled="!store.canSave"
-                    @click="handleSaveAndView">
-                    <FontAwesomeIcon :icon="faEye" />
-                    Save &amp; View
-                </BButton>
-                <span v-if="store.isDirty" class="ml-2 text-warning small" data-description="page unsaved indicator">
-                    Unsaved
-                </span>
-            </div>
+            </PageDisplayToolbar>
 
             <div class="page-body d-flex flex-grow-1 overflow-hidden">
-                <SplitView v-if="store.showChatPanel">
-                    <template v-slot:left>
-                        <div class="page-editor-pane">
-                            <MarkdownEditor
-                                :markdown-text="store.currentContent"
-                                :mode="markdownEditorMode"
-                                :title="editorTitle"
-                                :hide-toolbox="true"
-                                @update="handleContentUpdate" />
+                <div class="page-content flex-grow-1 overflow-auto">
+                    <PageRevisionView
+                        v-if="store.selectedRevision"
+                        :revision="store.selectedRevision"
+                        :current-content="store.currentContent"
+                        :previous-content="store.previousRevisionContent"
+                        :is-newest-revision="store.isNewestRevision"
+                        :is-oldest-revision="store.isOldestRevision"
+                        :view-mode="store.revisionViewMode"
+                        :is-reverting="store.isReverting"
+                        @back="store.clearSelectedRevision"
+                        @restore="handleRevisionRestore"
+                        @update:viewMode="store.revisionViewMode = $event" />
+                    <MarkdownEditor
+                        v-else
+                        class="h-100"
+                        :markdown-text="store.currentContent"
+                        :mode="markdownEditorMode"
+                        :title="editorTitle"
+                        @update="handleContentUpdate" />
+                </div>
+                <GModal
+                    data-description="page revisions modal"
+                    fixed-height
+                    :show.sync="store.showRevisions"
+                    size="small"
+                    :title="`${labels.entityName} Revisions`">
+                    <template v-slot:header>
+                        <div class="d-flex align-items-center flex-gapx-1">
+                            <FontAwesomeIcon v-if="store.isLoadingRevision" :icon="faSpinner" spin fixed-width />
+                            Click to select and view a revision in the editor
                         </div>
                     </template>
-                    <template v-slot:right>
-                        <PageChatPanel :history-id="historyId" :page-id="pageId" :page-content="store.currentContent" />
-                    </template>
-                </SplitView>
-                <template v-else>
-                    <div class="page-content flex-grow-1 overflow-auto">
-                        <MarkdownEditor
-                            :markdown-text="store.currentContent"
-                            :mode="markdownEditorMode"
-                            :title="editorTitle"
-                            @update="handleContentUpdate" />
-                    </div>
-                    <div v-if="store.showRevisions" class="page-revision-panel border-left">
-                        <PageRevisionList
-                            :revisions="store.revisions"
-                            :is-loading="store.isLoadingRevisions"
-                            :is-reverting="store.isReverting"
-                            @select="handleRevisionSelect"
-                            @restore="handleRevisionRestore" />
-                    </div>
-                </template>
+                    <PageRevisionList
+                        :revisions="store.revisions"
+                        :is-loading="store.isLoadingRevisions"
+                        :is-reverting="store.isReverting"
+                        :selected-revision-id="store.selectedRevision?.id"
+                        @select="handleRevisionSelect"
+                        @restore="handleRevisionRestore" />
+                </GModal>
             </div>
         </template>
     </div>
@@ -355,19 +297,6 @@ function handleRevisionRestore(revisionId: string) {
 
 <style scoped>
 .page-editor-view {
-    background: var(--body-bg);
-}
-.page-toolbar,
-.page-display-toolbar {
-    background: var(--panel-header-bg);
-}
-.page-content {
-    padding: 1rem;
-}
-.page-revision-panel {
-    width: 300px;
-    min-width: 300px;
-    overflow-y: auto;
     background: var(--body-bg);
 }
 .page-editor-pane {

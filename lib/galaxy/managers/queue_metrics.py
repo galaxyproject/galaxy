@@ -1,18 +1,23 @@
-"""Periodic gauge emitter for control-queue depth and SSE-connection counts.
+"""Periodic gauge emitter for control-queue depth and worker-process counts.
 
 Scheduled by Celery beat (see ``galaxy.celery.__init__.setup_periodic_tasks``)
 at a fixed cadence. Opens a short-lived kombu connection, iterates the control
 queues returned by ``all_control_queues_for_declare`` and samples each queue's
-message-count via a passive declare. Also samples in-memory connection counts
-from ``SSEConnectionManager`` and the active-``WorkerProcess`` count from the
-database.
+message-count via a passive declare. Also samples the active-``WorkerProcess``
+count from the database.
+
+SSE connection counts are deliberately *not* sampled here: the
+``SSEConnectionManager`` is per-process state held by the web workers, so the
+Celery worker would only ever see an empty manager. Each web worker emits its
+own ``galaxy.sse.connections.active`` gauge instead (see
+``galaxy.managers.sse.SSEConnectionGaugeEmitter``).
 
 All instrumentation no-ops when ``statsd_client`` is ``None`` — i.e. statsd
 isn't configured.
 
 The sub-emitters take narrow, typed collaborators (a kombu connection, an
-application stack, a model mapping, the statsd client, an SSE manager) rather
-than the whole ``StructuredApp``. The Celery task in
+application stack, a model mapping, the statsd client) rather than the whole
+``StructuredApp``. The Celery task in
 ``galaxy.celery.tasks.emit_queue_metrics_task`` is the composition root that
 resolves those narrow deps from the app and passes them in.
 """
@@ -22,7 +27,6 @@ import logging
 from collections import defaultdict
 from collections.abc import Callable
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -31,7 +35,6 @@ from sqlalchemy import (
     select,
 )
 
-from galaxy.managers.sse import SSEConnectionManager
 from galaxy.model import WorkerProcess
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.queues import (
@@ -49,26 +52,9 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def emit_sse_connection_gauges(
-    statsd_client: "VanillaGalaxyStatsdClient",
-    sse_manager: SSEConnectionManager,
-) -> None:
-    """Emit ``galaxy.sse.connections.active`` gauges by connection kind."""
-    statsd_client.timing(
-        "galaxy.sse.connections.active",
-        sse_manager.total_broadcast_connections,
-        tags={"kind": "broadcast"},
-    )
-    statsd_client.timing(
-        "galaxy.sse.connections.active",
-        sse_manager.total_per_user_connections,
-        tags={"kind": "per_user"},
-    )
-
-
 def emit_control_queue_depth(
     statsd_client: "VanillaGalaxyStatsdClient",
-    connection: "Optional[Connection]",
+    connection: "Connection | None",
     application_stack: ApplicationStack,
 ) -> None:
     """Emit ``galaxy.control_queue.depth`` per active webapp/handler queue.
@@ -97,7 +83,7 @@ def emit_control_queue_depth(
                         exc_info=True,
                     )
                     continue
-                statsd_client.timing(
+                statsd_client.gauge(
                     "galaxy.control_queue.depth",
                     declared.message_count,
                     tags={"queue_name": queue.name},
@@ -122,7 +108,7 @@ def emit_worker_process_gauge(
         for app_type, count in session.execute(stmt):
             counts[app_type or "unknown"] = int(count)
     for app_type, count in counts.items():
-        statsd_client.timing(
+        statsd_client.gauge(
             "galaxy.worker_process.active",
             count,
             tags={"app_type": app_type},
@@ -145,17 +131,14 @@ def _run(name: str, statsd_client: "VanillaGalaxyStatsdClient", fn: Callable[[],
 
 
 def emit_queue_metrics(
-    statsd_client: "Optional[VanillaGalaxyStatsdClient]",
-    connection: "Optional[Connection]",
+    statsd_client: "VanillaGalaxyStatsdClient | None",
+    connection: "Connection | None",
     application_stack: ApplicationStack,
     model: GalaxyModelMapping,
-    sse_manager: Optional[SSEConnectionManager],
 ) -> None:
     """Periodic entry-point — no-ops when statsd isn't configured."""
     if statsd_client is None:
         return
-    if sse_manager is not None:
-        _run("sse_connections", statsd_client, lambda: emit_sse_connection_gauges(statsd_client, sse_manager))
     _run(
         "control_queue_depth",
         statsd_client,

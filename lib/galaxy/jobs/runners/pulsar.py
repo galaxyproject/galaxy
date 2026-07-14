@@ -14,7 +14,6 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 import pulsar.core
@@ -311,7 +310,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         """Convert a legacy URL to a job destination."""
         return JobDestination(runner="pulsar", params=url_to_destination_params(url))
 
-    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
+    def check_watched_item(self, job_state: AsynchronousJobState) -> AsynchronousJobState | None:
         if self.use_mq:
             # Might still need to check pod IPs.
             job_wrapper = job_state.job_wrapper
@@ -342,7 +341,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         else:
             return self.check_watched_item_state(job_state)
 
-    def check_watched_item_state(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
+    def check_watched_item_state(self, job_state: AsynchronousJobState) -> AsynchronousJobState | None:
         try:
             client = self.get_client_from_state(job_state)
             status = client.get_status()
@@ -359,9 +358,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     def _update_job_state_for_status(
         self,
         job_state: AsynchronousJobState,
-        pulsar_status: Union[str, None],
-        full_status: Union[dict[str, Any], None] = None,
-    ) -> Union[AsynchronousJobState, None]:
+        pulsar_status: str | None,
+        full_status: dict[str, Any] | None = None,
+    ) -> AsynchronousJobState | None:
         log.debug("(%s) Received status update: %s", job_state.job_id, pulsar_status)
         if pulsar_status in ["complete", "cancelled"]:
             self.mark_as_finished(job_state)
@@ -516,7 +515,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         command_line = None
         client = None
         remote_job_config = None
-        compute_environment: Optional[PulsarComputeEnvironment] = None
+        compute_environment: PulsarComputeEnvironment | None = None
         remote_container = None
 
         fail_or_resubmit = False
@@ -674,9 +673,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         job_id = job_state.job_wrapper.job_id  # we want the Galaxy ID here, job_state.job_id is the external one.
         return self.get_client(job_destination_params, job_id)
 
-    def get_client(
-        self, job_destination_params: dict[str, Any], job_id, env: Union[list, None] = None
-    ) -> "BaseJobClient":
+    def get_client(self, job_destination_params: dict[str, Any], job_id, env: list | None = None) -> "BaseJobClient":
         # Cannot use url_for outside of web thread.
         # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
         if env is None:

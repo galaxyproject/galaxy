@@ -40,10 +40,10 @@ def stream_url_to_file(
     url: str,
     file_sources: Optional["ConfiguredFileSources"] = None,
     prefix: str = "gx_file_stream",
-    dir: Optional[str] = None,
+    dir: str | None = None,
     user_context=None,
-    target_path: Optional[str] = None,
-    file_source_opts: Optional[FilesSourceOptions] = None,
+    target_path: str | None = None,
+    file_source_opts: FilesSourceOptions | None = None,
 ) -> str:
     file_sources = ensure_file_sources(file_sources)
     file_source, rel_path = file_sources.get_file_source_path(url)

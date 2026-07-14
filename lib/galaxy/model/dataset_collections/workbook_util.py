@@ -20,9 +20,7 @@ from textwrap import wrap
 from typing import (
     Any,
     Literal,
-    Optional,
     Protocol,
-    Union,
 )
 
 from openpyxl import (
@@ -131,11 +129,11 @@ class ExcelReadOnlyWorkbook(ReadOnlyWorkbook):
 
 class CsvDialect(BaseModel):
     delimiter: str
-    quote_character: Optional[str]
+    quote_character: str | None
     double_quote: bool
     skip_initial_space: bool
     line_terminator: str
-    escape_character: Optional[str]
+    escape_character: str | None
 
     @staticmethod
     def from_csv_dialect(dialect: type[Dialect]) -> "CsvDialect":
@@ -199,9 +197,9 @@ class CsvReaderReadOnlyWorkbook(ReadOnlyWorkbook):
 
 def parse_format_messages(
     workbook: ReadOnlyWorkbook,
-) -> list[Union[ContentTypeMessage, CsvDialectInferenceMessage]]:
+) -> list[ContentTypeMessage | CsvDialectInferenceMessage]:
     """Parse and return client-facing messages about parsing the target workbook."""
-    messages: list[Union[ContentTypeMessage, CsvDialectInferenceMessage]] = []
+    messages: list[ContentTypeMessage | CsvDialectInferenceMessage] = []
 
     if isinstance(workbook, ExcelReadOnlyWorkbook):
         excel_content_type = workbook.content_type

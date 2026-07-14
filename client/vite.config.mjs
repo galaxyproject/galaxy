@@ -160,8 +160,21 @@ export default defineConfig(({ command }) => ({
             // Proxy everything except Vite's own routes to Galaxy backend
             "^/(?!(@|src/|node_modules/|__vite))": {
                 target: process.env.GALAXY_URL || "http://127.0.0.1:8080",
-                changeOrigin: !!process.env.CHANGE_ORIGIN,
-                secure: process.env.CHANGE_ORIGIN ? false : true,
+                changeOrigin: true,
+                secure: false,
+                cookieDomainRewrite: "",
+                configure: (proxy) => {
+                    // Strip Secure flag and fix SameSite from upstream HTTPS cookies so
+                    // they are accepted by the browser on http://localhost.
+                    proxy.on("proxyRes", (proxyRes) => {
+                        const cookies = proxyRes.headers["set-cookie"];
+                        if (cookies) {
+                            proxyRes.headers["set-cookie"] = cookies.map((cookie) =>
+                                cookie.replace(/;\s*Secure/gi, "").replace(/;\s*SameSite=None/gi, "; SameSite=Lax"),
+                            );
+                        }
+                    });
+                },
             },
         },
         cors: true,

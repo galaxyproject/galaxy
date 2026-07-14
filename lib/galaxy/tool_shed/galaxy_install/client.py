@@ -1,11 +1,9 @@
 import threading
 from typing import (
     Any,
-    Optional,
     runtime_checkable,
     TYPE_CHECKING,
     TypeVar,
-    Union,
 )
 
 from typing_extensions import Protocol
@@ -38,11 +36,11 @@ class DataManagersInterface(Protocol):
 
     def load_manager_from_elem(
         self, data_manager_elem, tool_path=None, add_manager=True
-    ) -> Optional[DataManagerInterface]: ...
+    ) -> DataManagerInterface | None: ...
 
-    def get_manager(self, data_manager_id: str) -> Optional[DataManagerInterface]: ...
+    def get_manager(self, data_manager_id: str) -> DataManagerInterface | None: ...
 
-    def remove_manager(self, manager_ids: Union[str, list[str]]) -> None: ...
+    def remove_manager(self, manager_ids: str | list[str]) -> None: ...
 
 
 ToolBoxType = TypeVar("ToolBoxType", bound="AbstractToolBox", contravariant=True)

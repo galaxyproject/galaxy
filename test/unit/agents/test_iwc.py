@@ -48,6 +48,47 @@ def test_fetch_manifest_caches_response():
     assert mock_get.call_count == 1
 
 
+def test_refresh_manifest_replaces_cached_value():
+    with patch("galaxy.agents.iwc.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = SAMPLE_MANIFEST
+        mock_get.return_value.raise_for_status.return_value = None
+
+        first = iwc.refresh_manifest()
+        assert first == SAMPLE_MANIFEST
+
+        new_manifest = [{"workflows": [{"trsID": "#workflow/x/y/main"}]}]
+        mock_get.return_value.json.return_value = new_manifest
+
+        second = iwc.refresh_manifest()
+        assert second == new_manifest
+        # And the next on-demand fetch sees the refreshed value
+        assert iwc.fetch_manifest() == new_manifest
+
+
+def test_refresh_manifest_failure_leaves_prior_cache():
+    with patch("galaxy.agents.iwc.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = SAMPLE_MANIFEST
+        mock_get.return_value.raise_for_status.return_value = None
+        iwc.fetch_manifest()  # prime the cache
+
+        mock_get.side_effect = RuntimeError("boom")
+        with pytest.raises(RuntimeError):
+            iwc.refresh_manifest()
+
+        # fetch_manifest still returns the previously-cached value
+        mock_get.side_effect = None
+        assert iwc.fetch_manifest() == SAMPLE_MANIFEST
+
+
+def test_refresh_manifest_rejects_non_list_payload():
+    with patch("galaxy.agents.iwc.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = {"not": "a list"}
+        mock_get.return_value.raise_for_status.return_value = None
+
+        with pytest.raises(ValueError, match="did not return a JSON array"):
+            iwc.refresh_manifest()
+
+
 def test_clean_readme_summary_strips_headers_and_truncates():
     body = "First line that has plenty of content. Second line continues the thought. "
     readme = "# Heading\n\n" + (body * 10)

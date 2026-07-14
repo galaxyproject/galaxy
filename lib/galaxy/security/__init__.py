@@ -5,7 +5,6 @@ Galaxy Security
 
 from typing import (
     Literal,
-    Optional,
 )
 
 from galaxy.util.bunch import Bunch
@@ -54,7 +53,7 @@ class RBACAgent:
         ),
     )
 
-    def get_action(self, name: str, default: Optional[Action] = None) -> Optional[Action]:
+    def get_action(self, name: str, default: Action | None = None) -> Action | None:
         """Get a permitted action by its dict key or action name"""
         for k, v in self.permitted_actions.items():
             if k == name or v.action == name:

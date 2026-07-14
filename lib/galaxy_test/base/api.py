@@ -53,7 +53,7 @@ class UsesCeleryTasks:
     @classmethod
     def handle_galaxy_config_kwds(cls, config: dict[str, Any]) -> None:
         config["enable_celery_tasks"] = True
-        config["metadata_strategy"] = f'{config.get("metadata_strategy", "directory")}_celery'
+        config["metadata_strategy"] = f"{config.get('metadata_strategy', 'directory')}_celery"
         celery_conf: dict[str, Any] = config.get("celery_conf", {})
         celery_conf.update(DEFAULT_CELERY_CONFIG)
         config["celery_conf"] = celery_conf
@@ -153,7 +153,7 @@ class UsesApiTestCaseMixin:
         return user, self._post(f"users/{user['id']}/api_key", admin=True).json()
 
     @contextmanager
-    def _different_user(self, email: Optional[str] = None, anon=False):
+    def _different_user(self, email: str | None = None, anon=False):
         """Use in test cases to switch get/post operations to act as new user
 
         ..code-block:: python
@@ -304,7 +304,5 @@ class AnonymousGalaxyInteractor(ApiTestInteractor):
     def __init__(self, test_case):
         super().__init__(test_case)
 
-    def _get_user_key(
-        self, user_key: Optional[str], admin_key: Optional[str], test_user: Optional[str] = None
-    ) -> Optional[str]:
+    def _get_user_key(self, user_key: str | None, admin_key: str | None, test_user: str | None = None) -> str | None:
         return None

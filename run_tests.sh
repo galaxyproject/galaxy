@@ -154,7 +154,7 @@ Selenium can also be setup a remote service - to target a service set
 GALAXY_TEST_SELENIUM_REMOTE to 1. The target service may be configured
 with GALAXY_TEST_SELENIUM_REMOTE_PORT and
 GALAXY_TEST_SELENIUM_REMOTE_HOST. By default Galaxy will assume the
-remote service being targetted is CHROME - but this can be overridden
+remote service being targeted is CHROME - but this can be overridden
 with GALAXY_TEST_SELENIUM_BROWSER.
 
 In this remote mode, please ensure that GALAXY_TEST_HOST is set to a
@@ -251,7 +251,7 @@ GALAXY_TEST_VERBOSE_ERRORS      Enable more verbose errors during API tests.
 GALAXY_TEST_UPLOAD_ASYNC        Upload tool test inputs asynchronously (may
                                 overwhelm sqlite database).
 GALAXY_TEST_RAW_DIFF            Don't slice up tool test diffs to keep output
-                                managable - print all output. (default off)
+                                manageable - print all output. (default off)
 GALAXY_TEST_DEFAULT_WAIT        Max time allowed for a tool test before Galaxy
                                 gives up (default 86400) - tools may define a
                                 maxseconds attribute to extend this.
@@ -297,10 +297,10 @@ GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages.
 GALAXY_TEST_LOG_LEVEL           Set Galaxy server log level for tests
                                 (default: DEBUG). E.g. WARNING to reduce output.
 GALAXY_TEST_AXE_SCRIPT_URL      URL of aXe script to use for accessibility testing.
-GALAXY_TEST_SKIP_AXE            Set this to '1' to skip aXe accessibilty testing when
+GALAXY_TEST_SKIP_AXE            Set this to '1' to skip aXe accessibility testing when
                                 running selenium tests.
 
-We're tyring annotate API and Selenium tests with the resources they require
+We're trying annotate API and Selenium tests with the resources they require
 and create to make them more appropriate to run on established Galaxy instances.
 The following variables can be used to disable certain classes of properly tests.
 

@@ -6,7 +6,6 @@ from ._framework import ApiTestCase
 
 
 class TestBuildWorkflowModule(ApiTestCase):
-
     def setUp(self):
         super().setUp()
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)

@@ -1,5 +1,4 @@
 import urllib.parse
-from typing import Union
 
 try:
     from fs.ftpfs import FTPFS
@@ -17,14 +16,14 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class FTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    host: Union[str, TemplateExpansion] = ""
-    port: Union[int, TemplateExpansion] = 21
-    user: Union[str, TemplateExpansion] = "anonymous"
-    passwd: Union[str, TemplateExpansion] = ""
-    acct: Union[str, TemplateExpansion] = ""
-    timeout: Union[int, TemplateExpansion] = 10
-    proxy: Union[str, TemplateExpansion, None] = None
-    tls: Union[bool, TemplateExpansion] = False
+    host: str | TemplateExpansion = ""
+    port: int | TemplateExpansion = 21
+    user: str | TemplateExpansion = "anonymous"
+    passwd: str | TemplateExpansion = ""
+    acct: str | TemplateExpansion = ""
+    timeout: int | TemplateExpansion = 10
+    proxy: str | TemplateExpansion | None = None
+    tls: bool | TemplateExpansion = False
 
 
 class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
@@ -34,7 +33,7 @@ class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
     passwd: str = ""
     acct: str = ""
     timeout: int = 10
-    proxy: Union[str, None] = None
+    proxy: str | None = None
     tls: bool = False
 
 

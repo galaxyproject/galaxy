@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import (
     Any,
     Literal,
-    Optional,
 )
 
 from pydantic_ai import Agent
@@ -32,6 +31,9 @@ class HistoryAgent(BaseGalaxyAgent):
     """Agent for understanding and answering questions about Galaxy histories."""
 
     agent_type = AgentType.HISTORY
+    capability_blurb = (
+        "Summarize a history, draft a methods section, and describe or interpret your datasets and results."
+    )
     DEFAULT_MAX_TOKENS = 16384
 
     def __init__(self, deps: GalaxyAgentDependencies):
@@ -43,6 +45,7 @@ class HistoryAgent(BaseGalaxyAgent):
             self._get_model(),
             deps_type=GalaxyAgentDependencies,
             system_prompt=self.get_system_prompt(),
+            retries=self._get_retries(),
         )
 
         @agent.tool
@@ -128,8 +131,8 @@ class HistoryAgent(BaseGalaxyAgent):
         async def get_history_graph(
             ctx: RunContext[GalaxyAgentDependencies],
             history_id: str,
-            seed_src: Optional[Literal["hda", "hdca", "tool_request"]] = None,
-            seed_id: Optional[str] = None,
+            seed_src: Literal["hda", "hdca", "tool_request"] | None = None,
+            seed_id: str | None = None,
             direction: Literal["backward", "forward", "both"] = "both",
             depth: int = 5,
             limit: int = 200,

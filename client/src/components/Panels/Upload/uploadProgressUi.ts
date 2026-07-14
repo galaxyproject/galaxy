@@ -1,6 +1,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
     faCheck,
+    faClock,
     faCloud,
     faExclamationTriangle,
     faLayerGroup,
@@ -45,7 +46,7 @@ export interface BatchWithProgress extends CollectionBatchState {
 
 const FILE_PROGRESS_UI: Record<UploadItem["status"], FileProgressUi> = {
     queued: {
-        icon: faSpinner,
+        icon: faClock,
         textClass: "text-muted",
         spin: false,
     },

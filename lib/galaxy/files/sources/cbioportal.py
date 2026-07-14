@@ -6,8 +6,6 @@ import tarfile
 import urllib.request
 from typing import (
     Annotated,
-    Optional,
-    Union,
 )
 
 from pydantic import Field
@@ -44,8 +42,8 @@ HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 
 class CBioPortalFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    api_url: Union[str, TemplateExpansion]
-    datahub_url: Union[str, TemplateExpansion]
+    api_url: str | TemplateExpansion
+    datahub_url: str | TemplateExpansion
     study_files: list[str] = Field(default_factory=lambda: list(DEFAULT_STUDY_FILES))
 
 
@@ -108,10 +106,10 @@ class CBioPortalFilesSource(
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         normalized_path = self._normalize_path(path)
         if write_intent:
@@ -276,7 +274,7 @@ class CBioPortalFilesSource(
             path = f"/{path}"
         return posixpath.normpath(path)
 
-    def _split_study_path(self, path: str) -> tuple[str, Optional[str]]:
+    def _split_study_path(self, path: str) -> tuple[str, str | None]:
         parts = self._normalize_path(path).strip("/").split("/")
         if len(parts) < 2 or parts[0] != "studies" or not parts[1]:
             raise ObjectNotFound(f"Invalid cBioPortal path [{path}]. Expected /studies/<study_id>[/<filename>].")
@@ -287,7 +285,7 @@ class CBioPortalFilesSource(
         raise ObjectNotFound(f"Invalid cBioPortal path [{path}]. Expected /studies/<study_id>[/<filename>].")
 
     def _apply_pagination(
-        self, entries: list[AnyRemoteEntry], limit: Optional[int], offset: Optional[int]
+        self, entries: list[AnyRemoteEntry], limit: int | None, offset: int | None
     ) -> list[AnyRemoteEntry]:
         if offset is None and limit is None:
             return entries

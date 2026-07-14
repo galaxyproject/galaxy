@@ -12,6 +12,10 @@ import WorkflowInvocationState from "./WorkflowInvocationState.vue";
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
+}));
+
 const selectors = {
     invocationSummary: ".invocation-overview",
     bAlertStub: "balert-stub",

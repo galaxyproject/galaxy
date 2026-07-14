@@ -14,7 +14,6 @@ from inspect import (
 from types import ModuleType
 from typing import (
     TYPE_CHECKING,
-    Union,
 )
 
 from sqlalchemy import event
@@ -48,7 +47,7 @@ log = logging.getLogger(__name__)
 # of a request (which run within a threadpool) to see changes to the ContextVar
 # state. See https://github.com/tiangolo/fastapi/issues/953#issuecomment-586006249
 # for details
-REQUEST_ID: ContextVar[Union[dict[str, str], None]] = ContextVar("request_id", default=None)
+REQUEST_ID: ContextVar[dict[str, str] | None] = ContextVar("request_id", default=None)
 
 
 def check_database_connection(session):
@@ -142,10 +141,10 @@ class SharedModelMapping(ModelMapping):
     a way to do app.model.<CLASS> for common code shared by the tool shed and Galaxy.
     """
 
-    User: Union[type["GalaxyUser"], type["ToolShedUser"]]
-    GalaxySession: Union[type["GalaxyGalaxySession"], type["ToolShedGalaxySession"]]
-    APIKeys: Union[type["GalaxyAPIKeys"], type["ToolShedAPIKeys"]]
-    PasswordResetToken: Union[type["GalaxyPasswordResetToken"], type["ToolShedPasswordResetToken"]]
+    User: type["GalaxyUser"] | type["ToolShedUser"]
+    GalaxySession: type["GalaxyGalaxySession"] | type["ToolShedGalaxySession"]
+    APIKeys: type["GalaxyAPIKeys"] | type["ToolShedAPIKeys"]
+    PasswordResetToken: type["GalaxyPasswordResetToken"] | type["ToolShedPasswordResetToken"]
 
 
 def versioned_objects(iter):

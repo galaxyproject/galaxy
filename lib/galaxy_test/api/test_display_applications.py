@@ -1,6 +1,5 @@
 import random
 import time
-from typing import Optional
 
 from galaxy.util import UNKNOWN
 from galaxy_test.base.decorators import requires_admin
@@ -60,7 +59,7 @@ class TestDisplayApplicationsApi(ApiTestCase):
         self._assert_status_code_is(response, 403)
 
     def test_create_link(self):
-        cases: list[dict[str, Optional[str]]] = [
+        cases: list[dict[str, str | None]] = [
             {"file": "1.interval", "app": "igv_interval_as_bed", "step": "bed_file"},
             {"file": "1.bam", "app": "igv_bam", "step": None},
             {"file": "test.vcf", "app": "igv_vcf", "step": "bgzip_file"},

@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import string
-from typing import Optional
 
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.config_watchers import ConfigWatchers
@@ -55,7 +54,7 @@ class SimplifiedToolBox(ToolBox):
 
 
 class BaseToolBoxTestCase(TestCase, UsesTools):
-    _toolbox: Optional[SimplifiedToolBox] = None
+    _toolbox: SimplifiedToolBox | None = None
 
     @property
     def integrated_tool_panel_path(self):

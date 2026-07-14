@@ -1,10 +1,5 @@
 import os
-from typing import (
-    Callable,
-    Dict,
-    Optional,
-    Union,
-)
+from collections.abc import Callable
 from unittest.mock import Mock
 
 from galaxy.tool_util.parser.factory import get_tool_source
@@ -22,8 +17,8 @@ def mock_trans(has_user=True, is_admin=False):
     return trans
 
 
-def t_data_downloader_for(content: Union[Dict[Optional[str], bytes], bytes]) -> Callable[[str], bytes]:
-    def get_content(filename: Optional[str]) -> bytes:
+def t_data_downloader_for(content: dict[str | None, bytes] | bytes) -> Callable[[str], bytes]:
+    def get_content(filename: str | None) -> bytes:
         if isinstance(content, dict):
             assert filename in content, f"failed to find {filename} in {content}"
             return content[filename]

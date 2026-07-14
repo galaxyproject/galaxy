@@ -519,7 +519,7 @@ mapping:
         desc: |
           Location of files available for a short time as downloads (short term storage).
           This directory is exclusively used for serving dynamically generated downloadable
-          content. Galaxy may uses the new_file_path parameter as a general temporary directory
+          content. Galaxy may use the new_file_path parameter as a general temporary directory
           and that directory should be monitored by a tool such as tmpwatch in production
           environments. short_term_storage_dir on the other hand is monitored by Galaxy's task
           framework and should not require such external tooling.
@@ -738,7 +738,7 @@ mapping:
         required: false
         desc: |
           XML config file that contains data table entries for the
-          ToolDataTableManager.  This file is manually # maintained by the Galaxy
+          ToolDataTableManager.  This file is manually maintained by the Galaxy
           administrator (.sample used if default does not exist).
 
       shed_tool_data_table_config:
@@ -934,7 +934,7 @@ mapping:
           defaults to bash for all jobs and can be overridden at the destination
           level for heterogeneous clusters. conda job resolution requires bash or zsh
           so if this is switched to /bin/sh for instance - conda resolution
-          should be disabled. Containerized jobs always use /bin/sh - so more maximum
+          should be disabled. Containerized jobs always use /bin/sh - so for maximum
           portability tool authors should assume generated commands run in sh.
 
       tool_search_index_dir:
@@ -971,7 +971,7 @@ mapping:
         required: false
         desc: |
           Set this to true to attempt to resolve bio.tools metadata for tools for tool not
-          resovled via biotools_content_directory.
+          resolved via biotools_content_directory.
 
       biotools_service_cache_type:
         type: str
@@ -1894,7 +1894,7 @@ mapping:
 
       citation_bibtex:
         type: str
-        default: '@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}'
+        default: '@article{Galaxy2026, title="Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2026", doi="10.1093/nar/gkag469", url="https://doi.org/10.1093/nar/gkag469"}'
         required: false
         per_host: true
         desc: |
@@ -2577,8 +2577,22 @@ mapping:
         default: 15
         required: false
         desc: |
-          How often (in seconds) the Celery beat task emits queue-depth, SSE-connection,
-          and WorkerProcess gauges. Only active when statsd_host is set. Set to 0 to disable.
+          How often (in seconds) background observability gauges are sampled: control-queue
+          depth and WorkerProcess counts from the Celery beat task, and (when
+          enable_sse_connection_metrics is set) active SSE-connection counts from each web
+          worker. This is the shared cadence for all of them. Only active when statsd_host is
+          set. Set to 0 to disable all background gauges.
+
+      enable_sse_connection_metrics:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Emit the galaxy.sse.connections.active gauge from each web worker, reporting how
+          many Server-Sent Events connections that worker currently holds (tagged by kind and
+          server_name). Sampled on the queue_metrics_interval cadence. Off by default so that
+          enabling statsd does not by itself start measuring SSE connections; requires
+          statsd_host to be set and queue_metrics_interval greater than 0.
 
       library_import_dir:
         type: str
@@ -4235,7 +4249,7 @@ mapping:
         required: false
         desc: |
           Configuration for AI inference services used by agents and visualization plugins.
-          Supports per-agent or per-plugin model, temperature, max_tokens, api_key, api_base_url, and enabled settings.
+          Supports per-agent or per-plugin model, temperature, max_tokens, retries, api_key, api_base_url, and enabled settings.
           Valid keys include agent types (e.g. router, error_analysis) and plugin names (e.g. jupyterlite).
           Agents and plugins inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
           All agents are enabled by default.
@@ -4246,6 +4260,12 @@ mapping:
           Per-agent or default-block ``structured_output_override: true|false``
           beats the model capability table -- see ``agent_model_capabilities_file``
           for the table's location and contents.
+          Per-agent or default-block ``retries`` sets the pydantic-ai retry budget
+          (tool calls and output validation); it defaults to 3. Raise it if a model
+          intermittently fails to produce conforming output ("Exceeded maximum output
+          retries"). custom_tool's producer keeps a budget of 0 because it runs its
+          own reflection loop; a shared ``default`` block does not change that -- set
+          ``custom_tool.retries`` explicitly to override it.
 
       agent_model_capabilities_file:
         type: str
@@ -4280,6 +4300,38 @@ mapping:
         desc: |
           URL used to download the GTN search database when the local file at
           ``gtn_database_path`` is missing.
+
+      gtn_database_refresh_interval:
+        type: int
+        default: 86400
+        required: false
+        desc: |
+          Time (in seconds) between celery-beat triggered freshness checks of
+          the GTN search database from ``gtn_database_url``. The task HEADs
+          depot and only re-downloads when its ``Last-Modified`` is newer than
+          the local file -- steady-state cost is a few hundred bytes per tick.
+          When a download does happen it atomically replaces
+          ``gtn_database_path``; live handlers pick up the new copy on their
+          next query since GTNSearchDB opens a read-only connection per call.
+          Only registered when ``inference_services`` is configured (i.e.
+          GalaxyAI is in use). Set to 0 to disable automatic refresh -- admins
+          can still refresh on demand via
+          ``python -m galaxy.agents.gtn --refresh``. Requires celery.
+
+      iwc_manifest_refresh_interval:
+        type: int
+        default: 3600
+        required: false
+        desc: |
+          Time (in seconds) between celery-beat triggered refreshes of the
+          in-process IWC workflow manifest cache used by the agent-ops layer.
+          Default matches the cache's in-process TTL so the cache stays
+          continuously warm rather than expiring between user-driven hits.
+          Failures are logged and the prior cached copy is retained. Only
+          registered when ``inference_services`` is configured (i.e. GalaxyAI
+          is in use). Set to 0 to disable automatic refresh -- agent-ops
+          callers will then fall back to lazy on-demand fetching with the
+          same hour TTL. Requires celery.
 
       enable_tool_recommendations:
         type: bool

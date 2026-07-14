@@ -1,6 +1,5 @@
 from typing import (
     Literal,
-    Optional,
 )
 
 from pydantic import (
@@ -38,11 +37,11 @@ class GroupResponse(Model, WithModelClass):
         ...,
         title="URL for the group",
     )
-    roles_url: Optional[str] = Field(
+    roles_url: str | None = Field(
         None,
         title="URL for the roles of the group",
     )
-    users_url: Optional[str] = Field(
+    users_url: str | None = Field(
         None,
         title="URL for the users of the group",
     )
@@ -84,11 +83,11 @@ class GroupUpdatePayload(Model):
         ...,
         title="name of the group",
     )
-    user_ids: Optional[list[DecodedDatabaseIdField]] = Field(
+    user_ids: list[DecodedDatabaseIdField] | None = Field(
         None,
         title="user IDs",
     )
-    role_ids: Optional[list[DecodedDatabaseIdField]] = Field(
+    role_ids: list[DecodedDatabaseIdField] | None = Field(
         None,
         title="role IDs",
     )

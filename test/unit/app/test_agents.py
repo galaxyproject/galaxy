@@ -47,6 +47,7 @@ from pydantic_ai.messages import (
     TextPart,
     UserPromptPart,
 )
+from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.models.test import TestModel
 
 from galaxy.agents import (
@@ -63,6 +64,7 @@ from galaxy.agents.base import truncate_message_history
 from galaxy.agents.custom_tool import CritiqueReport
 from galaxy.agents.registry import build_default_registry
 from galaxy.agents.tools import SimplifiedToolRecommendationResult
+from galaxy.managers.agents import AgentService
 
 agent_registry = build_default_registry()
 from galaxy.agents import base as agents_base
@@ -83,6 +85,7 @@ from galaxy.agents.page_assistant import (
     FullReplacementEdit,
     SectionPatchEdit,
 )
+from galaxy.exceptions import ConfigurationError
 from galaxy.schema.agents import ConfidenceLevel
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
@@ -91,6 +94,7 @@ from galaxy.util.unittest_utils import pytestmark_live_llm
 class TestAgentUnitMocked:
     def setup_method(self):
         self.mock_config = mock.Mock()
+        self.mock_job_manager = mock.Mock()
         self.mock_config.ai_api_key = "test-key"
         self.mock_config.ai_model = "llama-4-scout"
         self.mock_config.ai_api_base_url = "http://localhost:4000/v1/"
@@ -156,6 +160,88 @@ class TestAgentUnitMocked:
         # Test custom default value
         assert router_agent._get_agent_config("temperature", 0.5) == 0.5
         assert router_agent._get_agent_config("max_tokens", 1500) == 1500
+
+    def test_get_retries_resolution(self):
+        # Unset -> builtin default (bumped above pydantic-ai's default of 1).
+        self.mock_config.inference_services = None
+        router = QueryRouterAgent(self.deps)
+        assert router._get_retries() == agents_base.BaseGalaxyAgent.DEFAULT_AGENT_RETRIES == 3
+        # A caller-supplied default wins over the builtin when the key is unset
+        # (custom_tool's producer relies on this to keep its reflection-loop 0).
+        assert router._get_retries(default=0) == 0
+
+        # default entry applies to every agent; a per-agent entry overrides it.
+        # String values from YAML are coerced to int.
+        self.mock_config.inference_services = {
+            "default": {"retries": "4"},
+            "router": {"retries": 2},
+        }
+        assert QueryRouterAgent(self.deps)._get_retries() == 2
+        error_retries = ErrorAnalysisAgent(self.deps)._get_retries()
+        assert error_retries == 4 and isinstance(error_retries, int)
+
+    def test_configured_retries_wired_into_agent(self):
+        # The configured budget reaches the constructed pydantic-ai Agent
+        # (both tool and output budgets, via Agent(retries=N)).
+        self.mock_config.inference_services = {"default": {"retries": 4}}
+        router = QueryRouterAgent(self.deps)
+        assert router.agent._max_output_retries == 4
+        assert router.agent._max_tool_retries == 4
+
+        # custom_tool's producer keeps its reflection-loop default of 0 when unconfigured.
+        self.mock_config.inference_services = None
+        producer = CustomToolAgent(self.deps)
+        assert producer.agent._max_output_retries == 0
+
+    def test_producer_retries_default_ignores_default_block(self):
+        # custom_tool's producer pins retries=0 so its own reflection loop owns
+        # the retry. A shared `default` block must NOT silently re-enable
+        # pydantic-ai retries there -- only an explicit per-agent entry may.
+        producer = CustomToolAgent(self.deps)
+
+        self.mock_config.inference_services = {"default": {"retries": 5}}
+        assert producer._get_retries(default=0) == 0
+        # The normal (critic) lookup still honors the default block.
+        assert producer._get_retries() == 5
+
+        # An explicit custom_tool entry still overrides the pinned builtin.
+        self.mock_config.inference_services = {"custom_tool": {"retries": 7}}
+        assert producer._get_retries(default=0) == 7
+
+    def test_invalid_retries_config_raises_configuration_error(self):
+        # Non-numeric, blank, or negative `retries` is operator misconfiguration;
+        # it must surface as a clear ConfigurationError rather than a bare
+        # TypeError/ValueError (which the manager mistakes for an unknown-agent
+        # fallback) or a silently-broken negative budget that fails every request.
+        router = QueryRouterAgent(self.deps)
+
+        for bad in ("three", None, -1):
+            self.mock_config.inference_services = {"default": {"retries": bad}}
+            with pytest.raises(ConfigurationError, match="retries"):
+                router._get_retries()
+
+        # 0 is valid (custom_tool's producer relies on it) and must not raise.
+        self.mock_config.inference_services = {"default": {"retries": 0}}
+        assert router._get_retries() == 0
+
+    @pytest.mark.asyncio
+    async def test_router_falls_back_on_output_retry_exhaustion(self):
+        # When the model never produces a valid structured output, pydantic-ai
+        # raises UnexpectedModelBehavior after exhausting the output-retry budget.
+        # The router must degrade to its graceful fallback rather than propagate.
+        self.mock_config.inference_services = None
+        router = QueryRouterAgent(self.deps)
+
+        # Empty response (not text): str is in the router's output_type union, so
+        # any text would succeed via the str branch and never trigger a retry.
+        def empty_response(messages, info):
+            return ModelResponse(parts=[])
+
+        with router.agent.override(model=FunctionModel(empty_response)):
+            response = await router.process("Summarize my history")
+
+        assert isinstance(response, AgentResponse)
+        assert "unavailable" in response.content.lower()
 
     @pytest.mark.asyncio
     async def test_custom_tool_agent_structured_output(self):
@@ -249,6 +335,70 @@ class TestAgentUnitMocked:
         registry = build_default_registry(config)
         with pytest.raises(ValueError, match="Unknown agent type"):
             registry.get_agent("custom_tool", self.deps)
+
+    def test_specialists_define_capability_blurbs(self):
+        """Specialists advertised in the router's 'what can you do' answer define a blurb."""
+        for agent_cls in (
+            ToolRecommendationAgent,
+            HistoryAgent,
+            GTNTrainingAgent,
+            ErrorAnalysisAgent,
+            WorkflowOrchestratorAgent,
+            CustomToolAgent,
+        ):
+            assert isinstance(agent_cls.capability_blurb, str) and agent_cls.capability_blurb.strip()
+        # The router itself and the notebook-only page assistant are not advertised there.
+        assert QueryRouterAgent.capability_blurb is None
+        assert PageAssistantAgent.capability_blurb is None
+
+    def test_registry_capability_blurb_respects_enablement(self):
+        """get_capability_blurb returns the blurb only for registered (enabled) agents."""
+        config = mock.Mock()
+        config.inference_services = {"custom_tool": {"enabled": False}}
+        registry = build_default_registry(config)
+        assert registry.get_capability_blurb("history") == HistoryAgent.capability_blurb
+        # Disabled agents are not registered, so no blurb is surfaced.
+        assert registry.get_capability_blurb("custom_tool") is None
+        assert registry.get_capability_blurb("nonexistent") is None
+
+    def test_agent_service_wires_capability_blurb(self):
+        """AgentService.create_dependencies wires get_capability_blurb to the live registry.
+
+        Guards against the silent default-None seam: if the wiring is dropped, deps fall
+        back to no capability lookups and the router renders an empty list with no error.
+        """
+        service = AgentService(config=self.mock_config, job_manager=self.mock_job_manager, registry=agent_registry)
+        deps = service.create_dependencies(self.mock_trans, self.mock_user)
+        assert deps.get_capability_blurb is not None
+        assert deps.get_capability_blurb("history") == HistoryAgent.capability_blurb
+        assert deps.get_capability_blurb("nonexistent") is None
+
+    def test_router_prompt_lists_enabled_capabilities_and_limitation(self):
+        """The composed router prompt states the limitation and lists enabled blurbs."""
+        self.mock_config.inference_services = None
+        registry = build_default_registry()
+        self.deps.get_capability_blurb = registry.get_capability_blurb
+        prompt = QueryRouterAgent(self.deps).get_system_prompt()
+
+        assert "{{CAPABILITIES}}" not in prompt
+        # Limitation stated up front: answers/guides, does not act, read-only access.
+        assert "do not upload data" in prompt.lower()
+        assert "read-only" in prompt.lower()
+        # Enabled specialist capabilities are listed verbatim from their blurbs.
+        assert HistoryAgent.capability_blurb in prompt
+        assert CustomToolAgent.capability_blurb in prompt
+
+    def test_router_prompt_omits_disabled_capabilities(self):
+        """A capability whose agent is disabled must not appear in the prompt."""
+        self.mock_config.inference_services = None
+        config = mock.Mock()
+        config.inference_services = {"custom_tool": {"enabled": False}}
+        registry = build_default_registry(config)
+        self.deps.get_capability_blurb = registry.get_capability_blurb
+        prompt = QueryRouterAgent(self.deps).get_system_prompt()
+
+        assert CustomToolAgent.capability_blurb not in prompt
+        assert HistoryAgent.capability_blurb in prompt
 
     def test_agent_registry(self):
         required_agents = [
@@ -480,32 +630,112 @@ class TestAgentUnitMocked:
         )
 
     @pytest.mark.asyncio
-    async def test_router_withholds_history_for_routing(self):
-        """Router routes on the current message, withholding conversation history from the
-        model. Feeding history dilutes the routing signal (evals show it degrades routing
-        monotonically), so ``message_history`` is not forwarded; specialists still get the
-        full history via the handoff context."""
+    async def test_router_forwards_prior_turn_for_followup(self):
+        """A follow-up to a normal answer ("what about a workflow for this?") needs the prior
+        turn for its referent, so the router forwards the whole last turn -- the prior request
+        AND its assistant reply. (A bare user message with no reply reads as a dangling request
+        and mis-routes.) Deep history is still withheld; specialists get it via the handoff."""
         router = QueryRouterAgent(self.deps)
         history: list[ModelMessage] = [
-            ModelRequest(parts=[UserPromptPart(content="What histories do I have?")]),
-            ModelResponse(parts=[TextPart(content="You have 3.")]),
+            ModelRequest(parts=[UserPromptPart(content="Is there a tutorial for quantifying histological staining?")]),
+            ModelResponse(parts=[TextPart(content="Yes -- here is a GTN tutorial on color deconvolution.")]),
         ]
 
         with mock.patch.object(router, "_run_with_retry") as mock_run:
             mock_result = mock.Mock(spec=["output"])
-            mock_result.output = "Following up: here is more detail."
+            mock_result.output = "Routed."
             mock_run.return_value = mock_result
 
             await router.process(
-                "Tell me more about the second one",
+                "What about a workflow for this?",
                 context={"conversation_history": history},
             )
 
             mock_run.assert_called_once()
             args, kwargs = mock_run.call_args
-            # Routing decision is made on the current message, not the accumulated history.
-            assert kwargs["message_history"] is None
-            assert args[0] == "Tell me more about the second one"
+            assert args[0] == "What about a workflow for this?"
+            forwarded = kwargs["message_history"]
+            assert forwarded is not None
+            # The whole prior turn rides along -- request and reply both.
+            contents = [part.content for message in forwarded for part in message.parts]
+            assert any("histological staining" in content for content in contents)
+            assert any("color deconvolution" in content for content in contents)
+
+    @pytest.mark.asyncio
+    async def test_router_followup_history_capped_to_last_turn(self):
+        """Across a deeper conversation the router forwards only the most recent turn
+        (ROUTING_HISTORY_TURNS) -- both its messages, not the older turns -- enough to resolve
+        the referent without re-diluting the routing signal that #22791 protects."""
+        router = QueryRouterAgent(self.deps)
+        history: list[ModelMessage] = [
+            ModelRequest(parts=[UserPromptPart(content="What histories do I have?")]),
+            ModelResponse(parts=[TextPart(content="You have 3.")]),
+            ModelRequest(parts=[UserPromptPart(content="Tell me about RNA-seq alignment tools")]),
+            ModelResponse(parts=[TextPart(content="HISAT2 and STAR are common aligners.")]),
+        ]
+
+        with mock.patch.object(router, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = "Routed."
+            mock_run.return_value = mock_result
+
+            await router.process("Is there a workflow for that?", context={"conversation_history": history})
+
+            _, kwargs = mock_run.call_args
+            forwarded = kwargs["message_history"]
+            assert forwarded is not None
+            # Only the last turn (both messages), not the earlier "What histories" turn.
+            contents = [part.content for message in forwarded for part in message.parts]
+            assert contents == ["Tell me about RNA-seq alignment tools", "HISAT2 and STAR are common aligners."]
+
+    @pytest.mark.asyncio
+    async def test_router_injects_interface_context_into_prompt(self):
+        """The router must fold the active interface context (e.g. the tool the user is
+        viewing) into the prompt it sends to the model. Without this, "how do I use this
+        tool?" reaches the model with no referent and it answers "what tool?" even though
+        the UI shows the context. Specialists get this via _prepare_prompt; the router has
+        to do the same for the queries it answers directly rather than handing off."""
+        router = QueryRouterAgent(self.deps)
+
+        with mock.patch.object(router, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = "Here is how to use Random Lines."
+            mock_run.return_value = mock_result
+
+            await router.process(
+                "how do I use this tool?",
+                context={
+                    "interface_context": {
+                        "contextType": "tool",
+                        "toolName": "Random Lines",
+                        "toolId": "random_lines1",
+                    }
+                },
+            )
+
+            mock_run.assert_called_once()
+            prompt = mock_run.call_args[0][0]
+            assert "Random Lines" in prompt
+            assert "how do I use this tool?" in prompt
+
+    @pytest.mark.asyncio
+    async def test_router_does_not_leak_routing_flags_into_prompt(self):
+        """Routing-only bookkeeping (responding_to_clarification) is for the router's own
+        logic, not the model -- it must never surface in the prompt text."""
+        router = QueryRouterAgent(self.deps)
+
+        with mock.patch.object(router, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = "Routed."
+            mock_run.return_value = mock_result
+
+            await router.process(
+                "the second one",
+                context={"responding_to_clarification": True},
+            )
+
+            prompt = mock_run.call_args[0][0]
+            assert "responding_to_clarification" not in prompt
 
     @pytest.mark.asyncio
     async def test_router_asks_for_clarification(self):
@@ -1324,6 +1554,21 @@ class TestAgentUnitMocked:
         assert suggestion.parameters["name"] == "RNA-seq"
         assert suggestion.priority == 1  # promoted when no tool comes back
 
+    def test_tool_rec_tool_budget_caps_then_returns_stop_message(self):
+        # Past MAX_TOOL_CALLS the budget hands back a terminal "stop searching"
+        # message instead of more data, so the model answers from what it already
+        # found rather than looping until pydantic-ai's request_limit trips and
+        # the whole turn errors out.
+        agent = ToolRecommendationAgent.__new__(ToolRecommendationAgent)
+        agent._tool_calls = 0
+
+        allowed = [agent._charge_tool_budget() for _ in range(agent.MAX_TOOL_CALLS)]
+        assert allowed == [None] * agent.MAX_TOOL_CALLS
+
+        over_budget = agent._charge_tool_budget()
+        assert over_budget is not None
+        assert "SEARCH BUDGET REACHED" in over_budget
+
     def test_tool_rec_workflow_suggestion_demoted_when_tool_present(self):
         agent = self._make_tool_rec_agent()
         # Stub _verify_tool_exists so the tool path produces a TOOL_RUN.
@@ -1380,6 +1625,58 @@ class TestAgentUnitMocked:
         assert "#workflow/github.com/iwc-workflows/atac/main" in rendered
         assert "Steps: 12" in rendered
         assert "bowtie2" in rendered
+
+    @pytest.mark.asyncio
+    async def test_route_and_execute_uses_page_assistant_when_page_id_in_context(self):
+        """AgentService.route_and_execute bypasses the router and calls page_assistant
+        directly when 'page_id' is present in the context dict."""
+        service = AgentService(
+            config=self.mock_config,
+            job_manager=self.mock_job_manager,
+            registry=build_default_registry(),
+        )
+
+        sentinel = object()
+        with mock.patch.object(service, "execute_agent", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = sentinel
+            result = await service.route_and_execute(
+                "help me edit this page",
+                trans=self.mock_trans,
+                user=self.mock_user,
+                context={"page_id": 42, "page_content": "# My Page"},
+                agent_type="auto",
+            )
+
+        mock_exec.assert_awaited_once_with(
+            "page_assistant",
+            "help me edit this page",
+            self.mock_trans,
+            self.mock_user,
+            {"page_id": 42, "page_content": "# My Page"},
+        )
+        assert result is sentinel
+
+    @pytest.mark.asyncio
+    async def test_route_and_execute_falls_through_to_router_without_page_id(self):
+        """Without page_id in context, auto-routing goes to the router, not page_assistant."""
+        service = AgentService(
+            config=self.mock_config,
+            job_manager=self.mock_job_manager,
+            registry=build_default_registry(),
+        )
+
+        with mock.patch.object(service, "execute_agent", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = mock.Mock()
+            await service.route_and_execute(
+                "how do I run BWA?",
+                trans=self.mock_trans,
+                user=self.mock_user,
+                context={"interface_context": {"contextType": "notebook", "someId": "abc"}},
+                agent_type="auto",
+            )
+
+        mock_exec.assert_awaited_once()
+        assert mock_exec.call_args[0][0] == "router"
 
     @pytest.mark.asyncio
     async def test_tool_rec_search_iwc_workflows_uses_module_helper(self):
@@ -1792,6 +2089,78 @@ class TestCustomToolAgentReflection:
         # Retry prompt embeds the formatted error list as guidance.
         retry_prompt = mock_run.call_args_list[1][0][0]
         assert "previous attempt" in retry_prompt.lower()
+
+    @pytest.mark.asyncio
+    async def test_lint_failure_retry_anchors_prior_yaml(self):
+        """A first-attempt lint failure (tool validates but lints dirty) feeds the
+        rendered YAML back into the retry prompt so the model fixes it in place,
+        rather than regenerating blind from the error list alone."""
+        agent = CustomToolAgent(self.deps)
+
+        with mock.patch.object(
+            agent.agent,
+            "run",
+            side_effect=[
+                _mock_run_result(_valid_tool()),
+                _mock_run_result(_valid_tool()),
+            ],
+        ) as mock_run:
+            # Tool validates both times; lint fails the first attempt, passes the second.
+            with mock.patch(
+                "galaxy.agents.custom_tool.lint_user_tool_source",
+                side_effect=[["container 'busybox' has an unexpected shape"], []],
+            ):
+                response = await agent.process("Create a tool")
+
+        assert mock_run.call_count == 2
+        retry_prompt = mock_run.call_args_list[1][0][0]
+        # The previous attempt's YAML is embedded and the model is told to patch it.
+        assert "```yaml" in retry_prompt
+        assert "fix it in place" in retry_prompt.lower()
+        # The specific lint error is carried through as a numbered problem.
+        assert "unexpected shape" in retry_prompt
+        assert response.confidence == ConfidenceLevel.HIGH
+
+    def test_invalid_attempt_yaml_recovers_rejected_tool_call_args(self):
+        """A schema-validation failure has no constructed model, but the model's
+        rejected tool-call args can still be recovered from the run messages and
+        rendered as YAML for the retry to patch."""
+        from pydantic_ai.messages import (
+            ModelResponse,
+            ToolCallPart,
+        )
+
+        from galaxy.agents.custom_tool import _invalid_attempt_yaml
+
+        messages = [
+            ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        tool_name="final_result",
+                        args='{"class": "GalaxyUserTool", "name": "My Tool", '
+                        '"inputs": [{"type": "data", "name": "x", "min": 1}]}',
+                    )
+                ]
+            )
+        ]
+        out = _invalid_attempt_yaml(messages)
+        assert out is not None
+        assert "name: My Tool" in out
+        assert "min: 1" in out
+
+    def test_invalid_attempt_yaml_unrecoverable_returns_none(self):
+        from pydantic_ai.messages import (
+            ModelResponse,
+            ToolCallPart,
+        )
+
+        from galaxy.agents.custom_tool import _invalid_attempt_yaml
+
+        # No tool call at all.
+        assert _invalid_attempt_yaml([]) is None
+        # Malformed JSON surfaces as pydantic-ai's INVALID_JSON sentinel, not a tool.
+        malformed = [ModelResponse(parts=[ToolCallPart(tool_name="final_result", args="{not json")])]
+        assert _invalid_attempt_yaml(malformed) is None
 
     @pytest.mark.asyncio
     async def test_validator_retry_exhausted_returns_validation_failure(self):

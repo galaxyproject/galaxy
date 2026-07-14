@@ -6,7 +6,6 @@ reusing test setup infrastructure from API tests.
 
 from typing import (
     cast,
-    Optional,
 )
 
 from galaxy_test.base.populators import skip_without_tool
@@ -60,7 +59,7 @@ class TestWorkflowExtractionSelenium(SeleniumTestCase, WorkflowStructureAssertio
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         return hdca, job_ids_run1 + job_ids_run2
 
-    def setup_copied_cat1_history(self, history_id: str) -> Optional[str]:
+    def setup_copied_cat1_history(self, history_id: str) -> str | None:
         """Run cat1 in one history, copy outputs to given history.
 
         Returns: cat1 job_id associated with the copied datasets.
@@ -175,7 +174,7 @@ test_data:
         workflow_id = self.find_workflow_by_name(name)
         return self.workflow_populator.download_workflow(workflow_id)
 
-    def extract_workflow_and_download(self, name: str, screenshot_name: Optional[str] = None) -> dict:
+    def extract_workflow_and_download(self, name: str, screenshot_name: str | None = None) -> dict:
         """Navigate to extraction, submit form, return downloaded workflow."""
         self.navigate_to_workflow_extraction()
         if screenshot_name:

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pytest
 
 from galaxy.config.url_headers import UrlHeadersConfigFactory
@@ -26,7 +24,7 @@ class MockVault(Vault):
     def write_secret(self, key: str, value: str) -> None:
         self.storage[key] = value
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         return self.storage.get(key)
 
     def list_secrets(self, key: str) -> list[str]:

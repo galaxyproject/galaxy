@@ -17,7 +17,6 @@ from dataclasses import (
 )
 from typing import (
     Any,
-    Optional,
 )
 from unittest.mock import MagicMock
 
@@ -38,14 +37,14 @@ class FakeStatsdClient:
     counters: dict[tuple[str, tuple[tuple[str, str], ...]], int] = field(default_factory=dict)
     timings: list[tuple[str, float, tuple[tuple[str, str], ...]]] = field(default_factory=list)
 
-    def incr(self, metric: str, tags: Optional[dict[str, str]] = None) -> None:
+    def incr(self, metric: str, tags: dict[str, str] | None = None) -> None:
         key = (metric, tuple(sorted((tags or {}).items())))
         self.counters[key] = self.counters.get(key, 0) + 1
 
-    def timing(self, metric: str, value: float, tags: Optional[dict[str, str]] = None) -> None:
+    def timing(self, metric: str, value: float, tags: dict[str, str] | None = None) -> None:
         self.timings.append((metric, value, tuple(sorted((tags or {}).items()))))
 
-    def counter(self, metric: str, tags: Optional[dict[str, str]] = None) -> int:
+    def counter(self, metric: str, tags: dict[str, str] | None = None) -> int:
         return self.counters.get((metric, tuple(sorted((tags or {}).items()))), 0)
 
 
@@ -53,7 +52,7 @@ class FakeStatsdClient:
 class RecordedTask:
     payload: dict[str, Any]
     routing_key: str
-    expiration: Optional[int]
+    expiration: int | None
     declare_queues: Any
 
 
@@ -71,7 +70,7 @@ class FakeControlTask:
         self,
         payload: dict[str, Any],
         routing_key: str,
-        expiration: Optional[int] = None,
+        expiration: int | None = None,
         declare_queues: Any = None,
         **_: Any,
     ) -> None:

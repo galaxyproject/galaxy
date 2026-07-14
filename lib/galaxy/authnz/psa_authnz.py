@@ -200,6 +200,17 @@ class PSAAuthnz(IdentityProvider):
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER"]
             if "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config:
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT"]
+        elif (
+            "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config
+            and "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config
+        ):
+            # Google secondary AuthZ needs the cloud-platform scope. Request it
+            # via the SCOPE setting (which social-core combines with the backend's
+            # DEFAULT_SCOPE) instead of mutating the shared class-level
+            # DEFAULT_SCOPE, which would accumulate the scope across logins.
+            scope = list(self.config.get(setting_name("SCOPE")) or [])
+            scope.append("https://www.googleapis.com/auth/cloud-platform")
+            self.config[setting_name("SCOPE")] = scope
 
     def _is_oidc_backend(self) -> bool:
         """
@@ -223,7 +234,6 @@ class PSAAuthnz(IdentityProvider):
         self.config["SECRET"] = oidc_backend_config.get("client_secret")
         self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")  # Azure/Tapis
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
-        self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
         self.config["LABEL"] = oidc_backend_config.get("label", self.config["provider"].capitalize())
 
         # Galaxy-specific pipeline settings (affect all backends)
@@ -240,6 +250,8 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name("USERNAME_KEY")] = oidc_backend_config.get("username_key")
         if oidc_backend_config.get("domain") is not None:
             self.config[setting_name("DOMAIN")] = oidc_backend_config.get("domain")
+        if oidc_backend_config.get("extra_scopes") is not None:
+            self.config[setting_name("SCOPE")] = oidc_backend_config.get("extra_scopes")
 
         # OIDC-specific settings (only set for OIDC backends)
         if self._is_oidc_backend():
@@ -308,17 +320,6 @@ class PSAAuthnz(IdentityProvider):
         on_the_fly_config(trans.sa_session)
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
-        backend.DEFAULT_SCOPE = backend.DEFAULT_SCOPE or []
-        if (
-            backend.name is BACKENDS_NAME["google"]
-            and "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config
-            and "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config
-        ):
-            backend.DEFAULT_SCOPE.append("https://www.googleapis.com/auth/cloud-platform")
-
-        if self.config["EXTRA_SCOPES"] is not None:
-            backend.DEFAULT_SCOPE.extend(self.config["EXTRA_SCOPES"])
-
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):

@@ -24,7 +24,6 @@ lattice diagram and worked examples.
 
 import re
 from typing import (
-    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -47,7 +46,7 @@ class CollectionTypeDescriptionFactory:
         # I think.
         self.type_registry = type_registry
 
-    def for_collection_type(self, collection_type, fields: Optional[Union[str, list["FieldDict"]]] = None):
+    def for_collection_type(self, collection_type, fields: str | list["FieldDict"] | None = None):
         assert collection_type is not None
         return CollectionTypeDescription(collection_type, self, fields=fields)
 
@@ -63,7 +62,7 @@ class CollectionTypeDescription:
         self,
         collection_type: Union[str, "CollectionTypeDescription"],
         collection_type_description_factory: CollectionTypeDescriptionFactory,
-        fields: Optional[Union[str, list["FieldDict"]]] = None,
+        fields: str | list["FieldDict"] | None = None,
     ):
         if isinstance(collection_type, CollectionTypeDescription):
             self.collection_type = collection_type.collection_type

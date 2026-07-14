@@ -26,6 +26,7 @@ const expectedOptions = [
     "Extract Workflow",
     "Show Invocations",
     "Show History Graph",
+    "Show History Notebooks",
     "Share & Manage Access",
 ];
 

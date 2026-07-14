@@ -20,7 +20,6 @@ TEST_SERVER_ERROR_EMAIL_TO = "admin@email.to"  # setup in mock config
 
 
 class TestErrorReporter(TestCase, UsesApp):
-
     def setUp(self):
         self.setup_app()
         self.app.config.email_from = TEST_SERVER_EMAIL_FROM

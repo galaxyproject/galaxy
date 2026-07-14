@@ -1,7 +1,5 @@
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 import galaxy.managers.base as managers_base
@@ -87,7 +85,7 @@ class UsersService(ServiceBase):
             )
             return None
 
-    def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> Optional[APIKeyModel]:
+    def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> APIKeyModel | None:
         """Returns the current API key or None if the user doesn't have any valid API key."""
         user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.get_api_key(user)
@@ -120,8 +118,8 @@ class UsersService(ServiceBase):
     def _anon_user_api_value(self, trans: ProvidesHistoryContext):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         if not trans.user and not trans.history:
-            usage: Optional[float] = 0.0
-            percent: Optional[int] = 0
+            usage: float | None = 0.0
+            percent: int | None = 0
         else:
             usage = self.quota_agent.get_usage(trans, history=trans.history)
             percent = self.quota_agent.get_percent(trans=trans, usage=usage)
@@ -148,7 +146,7 @@ class UsersService(ServiceBase):
         trans: ProvidesUserContext,
         user_id: FlexibleUserIdType,
         deleted: bool,
-    ) -> Optional[User]:
+    ) -> User | None:
         try:
             # user is requesting data about themselves
             if user_id == "current":
@@ -181,7 +179,7 @@ class UsersService(ServiceBase):
         trans: ProvidesHistoryContext,
         user_id: FlexibleUserIdType,
         deleted: bool,
-    ) -> Union[DetailedUserModel, AnonUserModel]:
+    ) -> DetailedUserModel | AnonUserModel:
         user = self.get_user_full(trans=trans, deleted=deleted, user_id=user_id)
         if user is not None:
             return self.user_to_detailed_model(user)
@@ -199,11 +197,11 @@ class UsersService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         deleted: bool,
-        f_email: Optional[str],
-        f_name: Optional[str],
-        f_any: Optional[str],
-        limit: Optional[int] = None,
-        offset: Optional[int] = 0,
+        f_email: str | None,
+        f_name: str | None,
+        f_any: str | None,
+        limit: int | None = None,
+        offset: int | None = 0,
     ) -> list[MaybeLimitedUserModel]:
         # never give any info to non-authenticated users
         if not trans.user and not trans.user_is_bootstrap_admin:

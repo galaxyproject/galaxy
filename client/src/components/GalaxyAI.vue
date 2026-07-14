@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFile, faMagic, faSitemap, faTimes, faTrash, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faMagic, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
@@ -12,7 +12,9 @@ import { useMarkdown } from "@/composables/markdown";
 import { useToast } from "@/composables/toast";
 import { useActiveContext } from "@/composables/useActiveContext";
 import { buildEntityContext, parseMentions, resolveMentions } from "@/composables/useEntityMentions";
+import { usePageProposals } from "@/composables/usePageProposals";
 import { useChatStore } from "@/stores/chatStore";
+import { usePageEditorStore } from "@/stores/pageEditorStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getAgentIcon } from "./GalaxyAI/agentTypes";
@@ -22,6 +24,8 @@ import { generateId, scrollToBottom } from "./GalaxyAI/chatUtils";
 import ChatActions from "./GalaxyAI/ChatActions.vue";
 import ChatInput from "./GalaxyAI/ChatInput.vue";
 import ChatMessageCell from "./GalaxyAI/ChatMessageCell.vue";
+import ProposalDiffView from "./PageEditor/ProposalDiffView.vue";
+import SectionPatchView from "./PageEditor/SectionPatchView.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 const props = withDefaults(
@@ -45,11 +49,49 @@ const router = useRouter();
 const chatStore = useChatStore();
 const Toast = useToast();
 
-const { activeContext, contextLabel } = useActiveContext();
+const { activeContext, contextLabel, contextIcon } = useActiveContext();
+const pageEditorStore = usePageEditorStore();
 const contextDismissed = ref(false);
 
-watch(activeContext, () => {
+watch(activeContext, async (newCtx, oldCtx) => {
     contextDismissed.value = false;
+
+    if (!props.docked && !props.panel) {
+        return;
+    }
+
+    const switchingToNotebook =
+        newCtx?.contextType === "notebook" && (oldCtx?.contextType !== "notebook" || oldCtx.pageId !== newCtx.pageId);
+
+    if (switchingToNotebook) {
+        // Switched to a notebook page (or to a different notebook page): restore this page's
+        // cached exchange, or fall back to the most recent chat in this page's history.
+        const pageId = newCtx.pageId;
+        const cachedId = pageEditorStore.getCurrentChatExchangeId(pageId);
+        if (cachedId) {
+            await fetchConversation(cachedId);
+            if (messages.value.length === 0) {
+                pageEditorStore.clearCurrentChatExchangeId(pageId);
+                startNewChat();
+            }
+        } else {
+            try {
+                await chatStore.loadHistory(pageId);
+            } catch (e) {
+                Toast.error(errorMessageAsString(e), "Failed to load chat history");
+            }
+            const latestChat = chatStore.chatHistory[0];
+            if (latestChat) {
+                await fetchConversation(latestChat.id);
+            } else {
+                startNewChat();
+            }
+        }
+    } else if (oldCtx?.contextType === "notebook" && newCtx?.contextType !== "notebook") {
+        // Switched away from notebook: drop notebook-specific state and start fresh.
+        clearProposals();
+        startNewChat();
+    }
 });
 
 const effectiveContext = computed(() => {
@@ -57,20 +99,6 @@ const effectiveContext = computed(() => {
         return null;
     }
     return activeContext.value;
-});
-
-const contextIcon = computed(() => {
-    switch (effectiveContext.value?.contextType) {
-        case "tool":
-            return faWrench;
-        case "dataset":
-            return faFile;
-        case "workflow_editor":
-        case "workflow_run":
-            return faSitemap;
-        default:
-            return faMagic;
-    }
 });
 
 /** The chat is in "route mode": It's being viewed in the center and the route starts with `/galaxyai`
@@ -85,14 +113,69 @@ const selectedAgentType = ref("auto");
 const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
 
+// Bumped whenever the displayed conversation changes so that responses still in
+// flight for a previous conversation can be recognized as stale and dropped.
+let conversationGeneration = 0;
+
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 const { processingAction, handleAction } = useAgentActions();
+
+// Proposal rendering (notebook / page_assistant context)
+const {
+    pageContent,
+    loadForPage: loadProposalsForPage,
+    clear: clearProposals,
+    getEditProposal,
+    isProposalStale,
+    isProposalVisible,
+    buildProposedContent,
+    applyFullReplacement,
+    applySectionPatched,
+    dismissProposal,
+} = usePageProposals(activeContext);
 
 onMounted(async () => {
     if (props.exchangeId && props.exchangeId !== "new") {
         await fetchConversation(props.exchangeId);
-    } else if (props.docked || props.panel || props.exchangeId === "new") {
+    } else if (props.exchangeId === "new") {
         startNewChat();
+    } else if (props.docked || props.panel) {
+        const ctx = activeContext.value;
+        // For notebook pages, always prefer the per-page cached exchange over the global
+        // activeChatId — the global one may belong to a completely unrelated normal chat.
+        const notebookPageId = ctx?.contextType === "notebook" ? ctx.pageId : null;
+
+        if (notebookPageId) {
+            // Notebook context: prefer per-page cached exchange, fall back to page history.
+            const cachedId = pageEditorStore.getCurrentChatExchangeId(notebookPageId);
+            if (cachedId) {
+                await fetchConversation(cachedId);
+                if (messages.value.length === 0) {
+                    pageEditorStore.clearCurrentChatExchangeId(notebookPageId);
+                    startNewChat();
+                }
+            } else {
+                try {
+                    await chatStore.loadHistory(notebookPageId);
+                } catch (e) {
+                    Toast.error(errorMessageAsString(e), "Failed to load chat history");
+                }
+                const latestChat = chatStore.chatHistory[0];
+                if (latestChat) {
+                    await fetchConversation(latestChat.id);
+                } else {
+                    startNewChat();
+                }
+            }
+        } else {
+            // Non-notebook context: use global activeChatId if available.
+            const chatId = chatStore.activeChatId;
+            if (chatId) {
+                await fetchConversation(chatId);
+            } else {
+                startNewChat();
+            }
+        }
     } else {
         await loadLatestChat();
     }
@@ -105,7 +188,7 @@ onMounted(async () => {
 watch(
     () => props.exchangeId,
     async (newId, oldId) => {
-        if (newId === oldId) {
+        if (newId === oldId || newId === currentChatId.value) {
             return;
         }
         if (newId && newId !== "new") {
@@ -114,6 +197,14 @@ watch(
             startNewChat();
         }
     },
+);
+
+// A "new chat" request must work even when the conversation identity wouldn't
+// change (an unsaved conversation has no exchange id), so it arrives as a counter
+// bump rather than through the exchangeId prop.
+watch(
+    () => chatStore.newChatRequestCount,
+    () => startNewChat(),
 );
 
 function showWelcome() {
@@ -152,6 +243,10 @@ async function submitQuery() {
     scrollToBottom(chatContainer.value);
 
     busy.value = true;
+    const generation = conversationGeneration;
+    // False once the conversation changes while we're waiting (e.g. the user
+    // started a new chat) — stale responses must not touch the current one.
+    const stillCurrent = () => generation === conversationGeneration;
 
     try {
         const parsed = parseMentions(currentQuery);
@@ -171,6 +266,10 @@ async function submitQuery() {
                 entity_context: entityContext,
             },
         });
+
+        if (!stillCurrent()) {
+            return;
+        }
 
         if (error) {
             const errorText = errorMessageAsString(error, "Failed to get response from GalaxyAI.");
@@ -215,23 +314,29 @@ async function submitQuery() {
         }
     } catch (e) {
         console.error("Unexpected chat error:", e);
-        const errorMsg: ChatMessage = {
-            id: generateId(),
-            role: "assistant",
-            content: "Unexpected error occurred. Please try again.",
-            timestamp: new Date(),
-            agentType: selectedAgentType.value,
-            confidence: "low",
-            feedback: null,
-        };
-        messages.value.push(errorMsg);
+        if (stillCurrent()) {
+            const errorMsg: ChatMessage = {
+                id: generateId(),
+                role: "assistant",
+                content: "Unexpected error occurred. Please try again.",
+                timestamp: new Date(),
+                agentType: selectedAgentType.value,
+                confidence: "low",
+                feedback: null,
+            };
+            messages.value.push(errorMsg);
 
-        await nextTick();
-        scrollToBottom(chatContainer.value);
+            await nextTick();
+            scrollToBottom(chatContainer.value);
+        }
     } finally {
-        busy.value = false;
-        await nextTick();
-        scrollToBottom(chatContainer.value);
+        // Only clear the busy indicator if it still belongs to this request — the
+        // current conversation may have its own request in flight by now.
+        if (stillCurrent()) {
+            busy.value = false;
+            await nextTick();
+            scrollToBottom(chatContainer.value);
+        }
     }
 }
 
@@ -276,11 +381,19 @@ async function fetchConversation(exchangeId: string) {
         return;
     }
 
+    const generation = ++conversationGeneration;
+
     const { data: fullConversation, error } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
         params: {
             path: { exchange_id: exchangeId },
         },
     });
+
+    if (generation !== conversationGeneration) {
+        // A newer conversation was loaded (or a new chat started) while this one
+        // was being fetched — don't overwrite it.
+        return;
+    }
 
     if (error) {
         Toast.error(errorMessageAsString(error, "Failed to load conversation."), "Error loading conversation");
@@ -300,7 +413,7 @@ async function fetchConversation(exchangeId: string) {
         };
 
         if (msg.role === "assistant") {
-            message.agentType = msg.agent_type;
+            message.agentType = msg.agent_response?.agent_type || msg.agent_type;
             message.confidence = msg.agent_response?.confidence || "medium";
             message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
 
@@ -315,6 +428,11 @@ async function fetchConversation(exchangeId: string) {
 
     currentChatId.value = exchangeId;
     nextTick(() => scrollToBottom(chatContainer.value));
+
+    const ctx = activeContext.value;
+    if (ctx?.contextType === "notebook") {
+        loadProposalsForPage(ctx.pageId);
+    }
 
     hasLoadedInitialChat.value = true;
 }
@@ -335,7 +453,9 @@ async function loadLatestChat() {
 }
 
 function startNewChat() {
+    conversationGeneration++;
     hasLoadedInitialChat.value = true;
+    busy.value = false;
     messages.value = [
         {
             id: generateId(),
@@ -350,6 +470,7 @@ function startNewChat() {
     ];
     currentChatId.value = null;
     query.value = "";
+    clearProposals();
     if (props.docked || props.panel) {
         chatStore.setActiveChatId(null);
     }
@@ -389,11 +510,18 @@ function dockTo(location: "right" | "bottom") {
 watch(currentChatId, async (newId) => {
     if (props.docked || props.panel) {
         chatStore.setActiveChatId(newId);
+
+        // Keep the per-page cache in sync so reopening the panel restores this exchange.
+        const ctx = activeContext.value;
+        if (ctx?.contextType === "notebook") {
+            pageEditorStore.setCurrentChatExchangeId(ctx.pageId, newId);
+        }
     }
 
     if (newId && !chatStore.chatHistory.some((item) => item.id === newId)) {
+        const pageId = activeContext.value?.contextType === "notebook" ? activeContext.value.pageId : undefined;
         try {
-            await chatStore.loadHistory();
+            await chatStore.loadHistory(pageId);
         } catch (e) {
             Toast.error(errorMessageAsString(e), "Failed to load chat history");
         }
@@ -446,7 +574,24 @@ watch(currentChatId, async (newId) => {
                 :processing-action="processingAction"
                 @feedback="sendFeedback"
                 @handle-action="handleAction"
-                @select-clarification-option="selectClarificationOption" />
+                @select-clarification-option="selectClarificationOption">
+                <template v-if="isProposalVisible(message)" v-slot:after-content>
+                    <ProposalDiffView
+                        v-if="getEditProposal(message)?.mode === 'full_replacement'"
+                        :original="pageContent"
+                        :proposed="buildProposedContent(message)"
+                        :stale="isProposalStale(message)"
+                        @accept="applyFullReplacement(message)"
+                        @reject="dismissProposal(message)" />
+                    <SectionPatchView
+                        v-else-if="getEditProposal(message)?.mode === 'section_patch'"
+                        :original="pageContent"
+                        :proposed="buildProposedContent(message)"
+                        :stale="isProposalStale(message)"
+                        @accept="applySectionPatched($event, message)"
+                        @reject="dismissProposal(message)" />
+                </template>
+            </ChatMessageCell>
 
             <!-- Loading state -->
             <div v-if="busy" class="loading-entry">

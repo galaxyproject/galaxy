@@ -72,7 +72,6 @@ def test_get_sharing_roles(session, make_user):
 
 
 class TestSetGroupUserAndRoleAssociations:
-
     def test_add_associations_to_existing_group(self, session, make_user_and_role, make_role, make_group):
         """
         State: group exists in database, has no user and role associations.

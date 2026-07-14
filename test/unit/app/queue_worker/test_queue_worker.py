@@ -6,7 +6,6 @@ from dataclasses import (
 )
 from math import inf
 from types import SimpleNamespace
-from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -28,14 +27,14 @@ class FakeStatsdClient:
     counters: dict[tuple[str, tuple[tuple[str, str], ...]], int] = field(default_factory=dict)
     timings: list[tuple[str, float, tuple[tuple[str, str], ...]]] = field(default_factory=list)
 
-    def incr(self, metric: str, tags: Optional[dict[str, str]] = None) -> None:
+    def incr(self, metric: str, tags: dict[str, str] | None = None) -> None:
         key = (metric, tuple(sorted((tags or {}).items())))
         self.counters[key] = self.counters.get(key, 0) + 1
 
-    def timing(self, metric: str, value: float, tags: Optional[dict[str, str]] = None) -> None:
+    def timing(self, metric: str, value: float, tags: dict[str, str] | None = None) -> None:
         self.timings.append((metric, value, tuple(sorted((tags or {}).items()))))
 
-    def counter(self, metric: str, tags: Optional[dict[str, str]] = None) -> int:
+    def counter(self, metric: str, tags: dict[str, str] | None = None) -> int:
         return self.counters.get((metric, tuple(sorted((tags or {}).items()))), 0)
 
     def timings_for(self, metric: str) -> list[tuple[float, dict[str, str]]]:

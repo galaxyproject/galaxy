@@ -3,6 +3,7 @@ import {
     faArchive,
     faBars,
     faBezierCurve,
+    faBook,
     faBurn,
     faClone,
     faColumns,
@@ -235,6 +236,14 @@ watch(
             <BDropdownItem :title="localize('View History Graph')" :to="`/histories/${history.id}/graph`">
                 <FontAwesomeIcon fixed-width :icon="faBezierCurve" />
                 <span v-localize>Show History Graph</span>
+            </BDropdownItem>
+
+            <BDropdownItem
+                :disabled="isAnonymous || !canEditHistory"
+                :title="userTitle('View History Notebooks')"
+                :to="`/histories/${history.id}/pages`">
+                <FontAwesomeIcon fixed-width :icon="faBook" />
+                <span v-localize>Show History Notebooks</span>
             </BDropdownItem>
 
             <BDropdownDivider />

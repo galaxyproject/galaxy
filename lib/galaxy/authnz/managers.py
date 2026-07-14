@@ -3,7 +3,6 @@ from __future__ import annotations
 import builtins
 import logging
 from typing import (
-    Optional,
     TYPE_CHECKING,
     TypedDict,
 )
@@ -347,9 +346,7 @@ class AuthnzManager:
             log.warning(f"An error occurred when refreshing user token: {e}")
             return {"refreshed": False, "reauthentication_required": False}
 
-    def refresh_expiring_oidc_tokens(
-        self, trans: GalaxyWebTransaction, user: Optional[model.User] = None
-    ) -> str | None:
+    def refresh_expiring_oidc_tokens(self, trans: GalaxyWebTransaction, user: model.User | None = None) -> str | None:
         """
         Refresh expiring OIDC tokens for all providers associated with a user.
 

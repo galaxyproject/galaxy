@@ -11,7 +11,10 @@ import pytest
 from pydantic import ValidationError
 
 from galaxy.tool_util.parameters.convert import assert_yaml_v1_parameters
-from galaxy.tool_util_models import UserToolSource
+from galaxy.tool_util_models import (
+    UserToolSource,
+    UserToolSourceAuthoringView,
+)
 from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ConditionalParameterModel,
@@ -176,6 +179,16 @@ def test_data_rejects_extensions_key():
     # exposes `format` only.
     with pytest.raises(ValidationError):
         _validate({"name": "input1", "type": "data", "extensions": ["txt"]})
+
+
+@pytest.mark.parametrize("bound", [{"min": 1}, {"max": 5}, {"min": 1, "max": 5}])
+def test_data_rejects_min_max(bound):
+    # min/max (dataset-count bounds) are not part of the user-defined-tool data
+    # parameter -- they only apply to `multiple` inputs and authors misuse `min: 1`
+    # to mean "required". extra="forbid" rejects them up front rather than letting
+    # the tool fail at build time.
+    with pytest.raises(ValidationError):
+        _validate({"name": "input1", "type": "data", **bound})
 
 
 # ---------------------------------------------------------------------------
@@ -343,6 +356,133 @@ def test_assert_yaml_v1_parameters_walks_nested_groups():
     repeat = RepeatParameterModel(type="repeat", name="r", parameters=[hidden], min=None, max=None)
     with pytest.raises(AssertionError):
         assert_yaml_v1_parameters([repeat])
+
+
+def test_authoring_view_drops_tests_and_shrinks_schema():
+    """The LLM-facing authoring view omits the `tests` block, which pulls in the
+    test-assertion DSL (~70% of the full schema). This is what keeps the
+    structured-output schema small; guard against `tests` creeping back onto the
+    shared base (which would silently re-inflate it)."""
+    import json
+
+    assert "tests" not in UserToolSourceAuthoringView.model_fields
+    assert "tests" in UserToolSource.model_fields
+    # A produced view is a strict subset and promotes to a full UserToolSource.
+    assert issubclass(UserToolSource, UserToolSourceAuthoringView)
+
+    full = len(json.dumps(UserToolSource.model_json_schema()))
+    slim = len(json.dumps(UserToolSourceAuthoringView.model_json_schema()))
+    # Generous bound; the real reduction is ~80%. Catches accidental re-inflation.
+    assert slim < full * 0.5, f"authoring view not slim enough: {slim} vs {full}"
+
+
+def test_collection_discovery_only_requires_pattern():
+    """A discovery descriptor should validate from just a `pattern`; the boilerplate
+    attributes default to the XML parser's values (visible=False, recurse=False,
+    sort_key=filename, sort_comp=lexical, discover_via=pattern). Requiring all of
+    them made `discover_datasets` nearly impossible to author by hand."""
+    from galaxy.tool_util_models.tool_outputs import (
+        FilePatternDatasetCollectionDescription,
+        IncomingToolOutputCollection,
+    )
+
+    out = IncomingToolOutputCollection.model_validate(
+        {
+            "type": "collection",
+            "name": "seqs",
+            "collection_type": "list",
+            "discover_datasets": [{"pattern": "split_.*\\.fasta", "format": "fasta"}],
+        }
+    )
+    assert out.discover_datasets is not None
+    d = out.discover_datasets[0]
+    assert isinstance(d, FilePatternDatasetCollectionDescription)
+    assert d.discover_via == "pattern"
+    assert (d.visible, d.assign_primary_output, d.recurse, d.match_relative_path) == (False, False, False, False)
+    assert (d.sort_key, d.sort_comp) == ("filename", "lexical")
+
+
+def test_collection_discovery_rejects_underspecified_descriptors():
+    """An under-specified or typo'd discovery descriptor must error -- it must NOT
+    silently resolve to tool_provided_metadata (which lints clean but, with no
+    galaxy.json written, collects nothing). `discover_via` is required on the metadata
+    arm and `extra="forbid"` catches typos; explicit pattern / tool_provided_metadata
+    forms still validate."""
+    from galaxy.tool_util_models.tool_outputs import (
+        FilePatternDatasetCollectionDescription,
+        IncomingToolOutputCollection,
+        ToolProvidedMetadataDatasetCollection,
+    )
+
+    def first(descriptor):
+        out = IncomingToolOutputCollection.model_validate(
+            {"type": "collection", "name": "o", "collection_type": "list", "discover_datasets": [descriptor]}
+        )
+        assert out.discover_datasets is not None
+        return out.discover_datasets[0]
+
+    # Explicit forms resolve to the right arm.
+    assert isinstance(first({"pattern": "x"}), FilePatternDatasetCollectionDescription)
+    assert isinstance(first({"discover_via": "tool_provided_metadata"}), ToolProvidedMetadataDatasetCollection)
+
+    # Under-specified / typo'd descriptors error instead of becoming tool_provided_metadata.
+    for bad in ({}, {"format": "fasta"}, {"patern": "x"}):
+        with pytest.raises(ValidationError):
+            first(bad)
+
+
+def test_simple_outputs_require_name_but_not_hidden_in_authoring_schema():
+    """Regression: text/integer/float/boolean outputs must require `name` (a value
+    output with no name can never be referenced) but must NOT require `hidden`.
+    They previously reused the strict internal output types whose unbound type vars
+    forced `hidden` to be required too, so the published schema demanded a `hidden`
+    flag on every simple output."""
+    defs = UserToolSourceAuthoringView.model_json_schema()["$defs"]
+    for name in (
+        "IncomingToolOutputText",
+        "IncomingToolOutputInteger",
+        "IncomingToolOutputFloat",
+        "IncomingToolOutputBoolean",
+    ):
+        required = set(defs[name]["required"])
+        assert "name" in required, f"{name} should require 'name'"
+        assert "hidden" not in required, f"{name} should not require 'hidden'"
+
+    # A named text output without `hidden` validates.
+    tool = UserToolSourceAuthoringView.model_validate(
+        {
+            "class": "GalaxyUserTool",
+            "name": "pvalue tool",
+            "version": "0.1.0",
+            "container": "busybox",
+            "shell_command": "echo 0.03 > p.txt",
+            "outputs": [
+                {"type": "data", "name": "plot", "from_work_dir": "p.txt"},
+                {"type": "text", "name": "pvalue"},
+            ],
+        }
+    )
+    assert tool.outputs[1].hidden is None
+
+    # A simple output WITHOUT a name is rejected.
+    with pytest.raises(ValidationError):
+        UserToolSourceAuthoringView.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "name": "pvalue tool",
+                "container": "busybox",
+                "shell_command": "echo 0.03 > p.txt",
+                "outputs": [{"type": "text"}],
+            }
+        )
+
+
+def test_authoring_view_round_trips_to_user_tool_source():
+    view = UserToolSourceAuthoringView.model_validate(CAT_USER_DEFINED)
+    tool = UserToolSource.model_validate(view.model_dump(by_alias=True))
+    assert isinstance(tool, UserToolSource)
+    assert tool.id == view.id
+    assert tool.tests is None
 
 
 def test_published_tool_source_schema_has_no_xml_only_leaks():

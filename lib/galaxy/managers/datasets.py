@@ -7,7 +7,6 @@ import logging
 import os
 from typing import (
     Any,
-    Optional,
     TypeVar,
 )
 
@@ -37,6 +36,7 @@ from galaxy.model.db.role import (
     get_private_role_user_emails_dict,
     role_name_id_pairs,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     PurgeDatasetsTaskRequest,
@@ -72,7 +72,7 @@ class DatasetManager(
     def copy(self, item, **kwargs):
         raise exceptions.NotImplemented("Datasets cannot be copied")
 
-    def purge(self, item, flush=True, **kwargs):
+    def purge(self, item, flush=True, user=None, **kwargs):
         """
         Remove the object_store/file for this dataset from storage and mark
         as purged.
@@ -82,14 +82,14 @@ class DatasetManager(
         self.error_unless_dataset_purge_allowed(item)
 
         # the following also marks dataset as purged and deleted
-        item.full_delete()
+        item.full_delete(user=user)
         self.session().add(item)
         if flush:
             session = self.session()
             session.commit()
         return item
 
-    def purge_datasets(self, request: PurgeDatasetsTaskRequest):
+    def purge_datasets(self, request: PurgeDatasetsTaskRequest, user: model.User | None = None):
         """
         Caution: any additional security checks must be done before executing this action.
 
@@ -98,10 +98,10 @@ class DatasetManager(
         """
         self.error_unless_dataset_purge_allowed()
         for dataset_id in request.dataset_ids:
-            dataset: Optional[Dataset] = self.session().get(Dataset, dataset_id)
+            dataset: Dataset | None = self.session().get(Dataset, dataset_id)
             if dataset and dataset.user_can_purge:
                 try:
-                    dataset.full_delete()
+                    dataset.full_delete(user)
                 except Exception:
                     log.exception(f"Unable to purge dataset ({dataset.id})")
         self.session().commit()
@@ -116,7 +116,7 @@ class DatasetManager(
     # .... accessibility
     # datasets can implement the accessible interface, but accessibility is checked in an entirely different way
     #   than those resources that have a user attribute (histories, pages, etc.)
-    def is_accessible(self, item: Any, user: Optional[model.User], **kwargs) -> bool:
+    def is_accessible(self, item: Any, user: model.User | None, **kwargs) -> bool:
         """
         Is this dataset readable/viewable to user?
         """
@@ -166,14 +166,24 @@ class DatasetManager(
         if dataset.purged:
             log.warning("Unable to calculate hash for purged dataset [%s].", dataset.id)
             return
+        sa_session = self.session()
+        user = None
+        if request.user and request.user.user_id:
+            user = sa_session.get(model.User, request.user.user_id)
+        auth = ObjectStoreAuth(user=user) if user else None
         # For files in extra_files_path
         extra_files_path = request.extra_files_path
         try:
             if extra_files_path:
                 extra_dir = dataset.extra_files_path_name
-                file_path = self.app.object_store.get_filename(dataset, extra_dir=extra_dir, alt_name=extra_files_path)
+                file_path = self.app.object_store.get_filename(
+                    dataset,
+                    extra_dir=extra_dir,
+                    alt_name=extra_files_path,
+                    auth=auth,
+                )
             else:
-                file_path = dataset.get_file_name()
+                file_path = dataset.get_file_name(auth=auth)
         except ObjectInvalid:
             log.warning(
                 "Unable to calculate hash for dataset [%s]: object is invalid (dataset may have failed or been purged).",
@@ -190,7 +200,6 @@ class DatasetManager(
         dataset_hash.dataset = dataset
         # TODO: replace/update if the combination of dataset_id/hash_function has already
         # been stored.
-        sa_session = self.session()
         hash = get_dataset_hash(sa_session, dataset.id, hash_function, extra_files_path)
         if hash is None:
             sa_session.add(dataset_hash)
@@ -358,7 +367,7 @@ class DatasetAssociationManager(
         super().__init__(app)
         self.dataset_manager = DatasetManager(app)
 
-    def is_accessible(self, item: U, user: Optional[model.User], **kwargs: Any) -> bool:
+    def is_accessible(self, item: U, user: model.User | None, **kwargs: Any) -> bool:
         """
         Is this DA accessible to `user`?
         """
@@ -672,7 +681,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             # TODO: Replace string cast with https://github.com/pydantic/pydantic/pull/9137 on 24.1
             "genome_build": lambda item, key, **context: str(item.dbkey) if item.dbkey is not None else None,
             # derived (not mapped) attributes
-            "data_type": lambda item, key, **context: f"{item.datatype.__class__.__module__}.{item.datatype.__class__.__name__}",
+            "data_type": lambda item, key, **context: (
+                f"{item.datatype.__class__.__module__}.{item.datatype.__class__.__name__}"
+            ),
             "converted": self.serialize_converted_datasets,
             # TODO: metadata/extra files
         }
@@ -681,7 +692,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         # because of that: we need to add a few keys that will use the default serializer
         self.serializable_keyset.update(["name", "state", "tool_version", "extension", "visible", "dbkey"])
 
-    def _proxy_to_dataset(self, serializer: Optional[base.Serializer] = None, proxy_key: Optional[str] = None):
+    def _proxy_to_dataset(self, serializer: base.Serializer | None = None, proxy_key: str | None = None):
         # dataset associations are (rough) proxies to datasets - access their serializer using this remapping fn
         # remapping done by either kwarg key: IOW dataset attr key (e.g. uuid)
         # or by kwarg serializer: a function that's passed in (e.g. permissions)

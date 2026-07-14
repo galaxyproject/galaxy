@@ -1,30 +1,27 @@
 from typing import (
+    Annotated,
     Any,
-    List,
-    Optional,
-    Union,
 )
 
 from typing_extensions import (
-    Annotated,
     Protocol,
 )
 
 
 class AssertionParameter:
     doc: str
-    xml_type: Optional[str]
-    json_type: Optional[str]
+    xml_type: str | None
+    json_type: str | None
     deprecated: bool
-    validators: List[str]
+    validators: list[str]
 
     def __init__(
         self,
-        doc: Optional[str],
-        xml_type: Optional[str] = None,
-        json_type: Optional[str] = None,
+        doc: str | None,
+        xml_type: str | None = None,
+        json_type: str | None = None,
         deprecated: bool = False,
-        validators: Optional[List[str]] = None,
+        validators: list[str] | None = None,
     ):
         self.doc = doc or ""
         self.xml_type = xml_type
@@ -33,20 +30,19 @@ class AssertionParameter:
         self.validators = validators or []
 
 
-XmlInt = Union[int, str]
-XmlFloat = Union[float, str]
-XmlBool = Union[bool, str]
+XmlInt = int | str
+XmlFloat = float | str
+XmlBool = bool | str
 XmlRegex = str
-OptionalXmlInt = Optional[XmlInt]
-OptionalXmlFloat = Optional[XmlFloat]
-OptionalXmlBool = Optional[XmlBool]
+OptionalXmlInt = XmlInt | None
+OptionalXmlFloat = XmlFloat | None
+OptionalXmlBool = XmlBool | None
 
 Output = Annotated[str, "The target output of a tool or workflow read as a UTF-8 string"]
 OutputBytes = Annotated[bytes, "The target output of a tool or workflow read as raw Python 'bytes'"]
 
 
 class VerifyAssertionsFunction(Protocol):
-
     def __call__(self, data: bytes, assertion_description_list: list, decompress: bool = False):
         """Callback for recursirve functions."""
 
@@ -61,7 +57,7 @@ Negate = Annotated[
 NEGATE_DEFAULT = False
 
 N = Annotated[
-    Optional[XmlInt], AssertionParameter("Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``", xml_type="Bytes")
+    XmlInt | None, AssertionParameter("Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``", xml_type="Bytes")
 ]
 Delta = Annotated[
     XmlInt,
@@ -70,11 +66,11 @@ Delta = Annotated[
     ),
 ]
 Min = Annotated[
-    Optional[XmlInt],
+    XmlInt | None,
     AssertionParameter("Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``", xml_type="Bytes"),
 ]
 Max = Annotated[
-    Optional[XmlInt],
+    XmlInt | None,
     AssertionParameter("Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``", xml_type="Bytes"),
 ]
 

@@ -1,7 +1,4 @@
 from collections.abc import Iterator
-from typing import (
-    Optional,
-)
 from unittest import SkipTest
 
 import pytest
@@ -22,7 +19,7 @@ except ImportError:
 
 class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks):
     galaxy_driver_class = GalaxyTestDriver
-    _test_driver: Optional[GalaxyTestDriver]
+    _test_driver: GalaxyTestDriver | None
 
     def setUp(self):
         super().setUp()

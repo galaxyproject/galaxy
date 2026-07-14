@@ -795,13 +795,11 @@ gx_select_multiple:
   - parameter: [{__class__: 'ConnectedValue'}]
   - {}
   - parameter: null
+  - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: ["Ex1"]
   - parameter: {}
   - parameter: 5
-  # might be wrong? I guess we would expect the semantic of this to do like a map-over
-  # but as far as I am aware that is not implemented https://github.com/galaxyproject/galaxy/issues/18541
-  - parameter: {__class__: 'ConnectedValue'}
 
 gx_select_multiple_optional:
   request_valid:
@@ -1117,6 +1115,8 @@ gx_float:
   test_case_xml_valid:
     - parameter: 5
     - parameter: 5.0
+    - parameter: "__Infinity__"
+    - parameter: "__-Infinity__"
     - {}
   test_case_xml_invalid:
     - parameter: null
@@ -1137,6 +1137,8 @@ gx_float:
     - parameter: null
     - parameter: 'foobar'
     - parameter: {__class__: 'ConnectedValue2'}
+  _json_schema_valid_skip:
+    test_case_xml_valid: "Galaxy infinity sentinels (__Infinity__, __-Infinity__) are strings not expressible as JSON Schema numbers"
 
 
 gx_float_optional:
@@ -1188,6 +1190,8 @@ gx_float_optional:
   test_case_xml_valid:
     - parameter: 5
     - parameter: 5.0
+    - parameter: "__Infinity__"
+    - parameter: "__-Infinity__"
     - {}
     - parameter: null
   test_case_xml_invalid:
@@ -1208,6 +1212,8 @@ gx_float_optional:
   workflow_step_linked_invalid:
     - parameter: 'foobar'
     - parameter: {__class__: 'ConnectedValue2'}
+  _json_schema_valid_skip:
+    test_case_xml_valid: "Galaxy infinity sentinels (__Infinity__, __-Infinity__) are strings not expressible as JSON Schema numbers"
 
 gx_float_validation_range:
   request_valid:
@@ -1233,10 +1239,12 @@ gx_color:
   request_valid:
    - parameter: '#aabbcc'
    - parameter: '#000000'
+   - parameter: '#abcd'
+   - parameter: 'red'
   request_invalid:
    - parameter: null
    - parameter: {}
-   - parameter: '#abcd'
+   - parameter: 'foobar'
   workflow_step_valid:
    - parameter: '#aabbcc'
    - parameter: '#000000'
@@ -1589,9 +1597,16 @@ gx_data_multiple_optional:
 gx_data_collection:
   request_valid:
    - parameter: {src: hdca, id: abcdabcd}
+   # dce subcollection reference - e.g. rerunning a job that mapped over a list:paired
+   - parameter: {src: dce, id: abcdabcd}
+   # batching (multirun) over dce subcollections
+   - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd}]}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: paired}]}
    - parameter: {class: "Collection", collection_type: "list", elements: []}
   request_invalid:
    - parameter: {src: hdca, id: 7}
+   # external request ids must be encoded strings, not decoded ints - for hdca and dce alike
+   - parameter: {src: dce, id: 7}
    - parameter: null
    - parameter: {src: fooda, id: abcdabcd}
    - parameter: {id: abcdabcd}
@@ -1603,9 +1618,12 @@ gx_data_collection:
    - parameter: {class: "CollectionX", collection_type: "list", elements: []}
   request_internal_valid:
    - parameter: {src: hdca, id: 5}
+   - parameter: {src: dce, id: 5}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: 5}]}
    - parameter: {class: "Collection", collection_type: "list", elements: []}
   request_internal_invalid:
    - parameter: {src: hdca, id: abcdabcd}
+   - parameter: {src: dce, id: abcdabcd}
    - parameter: null
    - parameter: {src: fooda, id: abcdabcd}
    - parameter: {id: abcdabcd}
@@ -1617,6 +1635,7 @@ gx_data_collection:
    - parameter: {class: "CollectionX", collection_type: "list", elements: []}
   request_internal_dereferenced_valid:
    - parameter: {src: hdca, id: 5}
+   - parameter: {src: dce, id: 5}
   request_internal_dereferenced_invalid:
    - parameter: {src: hdca, id: abcdabcd}
    # At thsi point the collection should have been dereferenced into datasets,
@@ -1757,6 +1776,7 @@ gx_data_collection:
 gx_data_collection_optional:
   request_valid:
    - parameter: {src: hdca, id: abcdabcd}
+   - parameter: {src: dce, id: abcdabcd}
    - parameter: null
    - {}
   request_invalid:
@@ -1769,6 +1789,7 @@ gx_data_collection_optional:
    - parameter: {}
   request_internal_valid:
    - parameter: {src: hdca, id: 5}
+   - parameter: {src: dce, id: 5}
    - parameter: null
    - {}
   request_internal_invalid:

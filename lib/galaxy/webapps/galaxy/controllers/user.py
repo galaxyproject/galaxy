@@ -233,9 +233,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             username = trans.user.username
         is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
         if is_activation_sent:
-            message = f"This account has not been activated yet. The activation link has been sent again. Please check your email address <b>{escape(email)}</b> including the spam/trash folder. <a target=\"_top\" href=\"{url_for('/')}\">Return to the home page</a>."
+            message = f'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>{escape(email)}</b> including the spam/trash folder. <a target="_top" href="{url_for("/")}">Return to the home page</a>.'
         else:
-            message = f"This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator. <a target=\"_top\" href=\"{url_for('/')}\">Return to the home page</a>."
+            message = f'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator. <a target="_top" href="{url_for("/")}">Return to the home page</a>.'
             if trans.app.config.error_email_to is not None:
                 message += f" Error contact: {trans.app.config.error_email_to}."
         return message, is_activation_sent

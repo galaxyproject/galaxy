@@ -82,7 +82,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     max_discovered_files = float("inf")
     discovered_file_count: int
 
-    def get_job(self) -> Optional[galaxy.model.Job]:
+    def get_job(self) -> galaxy.model.Job | None:
         return getattr(self, "job", None)
 
     def create_dataset(
@@ -514,7 +514,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def sa_session(self) -> Optional[Union["scoped_session", "SessionlessContext"]]:
+    def sa_session(self) -> Union["scoped_session", "SessionlessContext"] | None:
         """If bound to a database, return the SQL Alchemy session.
 
         Return None otherwise.
@@ -528,16 +528,16 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         Return None otherwise.
         """
 
-    def get_implicit_collection_jobs_association_id(self) -> Optional[str]:
+    def get_implicit_collection_jobs_association_id(self) -> str | None:
         """No-op, no job context."""
         return None
 
     @property
     @abc.abstractmethod
-    def job(self) -> Optional[galaxy.model.Job]:
+    def job(self) -> galaxy.model.Job | None:
         """Return associated job object if bound to a job finish context connected to a database."""
 
-    def override_object_store_id(self, output_name: Optional[str] = None) -> Optional[str]:
+    def override_object_store_id(self, output_name: str | None = None) -> str | None:
         """Object store ID to assign to a dataset before populating its contents."""
         job = self.job
         if not job:
@@ -555,12 +555,12 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def object_store(self) -> Union[ObjectStore, None]:
+    def object_store(self) -> ObjectStore | None:
         """Return object store to use for populating discovered dataset contents."""
 
     @property
     @abc.abstractmethod
-    def flush_per_n_datasets(self) -> Optional[int]:
+    def flush_per_n_datasets(self) -> int | None:
         pass
 
     @property
@@ -657,7 +657,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
     """A variant of ModelPersistenceContext that persists to an export store instead of database directly."""
 
     def __init__(
-        self, object_store: Optional[ObjectStore], export_store: Optional["ModelExportStore"], working_directory: str
+        self, object_store: ObjectStore | None, export_store: Optional["ModelExportStore"], working_directory: str
     ) -> None:
         self._permission_provider = UnusedPermissionProvider()
         self._metadata_source_provider = UnusedMetadataSourceProvider()
@@ -693,11 +693,11 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         return self._metadata_source_provider
 
     @property
-    def object_store(self) -> Union[ObjectStore, None]:
+    def object_store(self) -> ObjectStore | None:
         return self._object_store
 
     @property
-    def flush_per_n_datasets(self) -> Optional[int]:
+    def flush_per_n_datasets(self) -> int | None:
         return self._flush_per_n_datasets
 
     def add_tags_to_datasets(self, datasets, tag_lists):
@@ -1015,7 +1015,7 @@ def replace_request_syntax_sugar(obj):
 
 class DiscoveredFile(NamedTuple):
     path: str
-    collector: Optional[CollectorT]
+    collector: CollectorT | None
     match: "JsonCollectedDatasetMatch"
 
     def discovered_state(self, element: dict[str, Any], final_job_state="ok") -> "DiscoveredResultState":
@@ -1024,12 +1024,12 @@ class DiscoveredFile(NamedTuple):
 
 
 class DiscoveredResultState(NamedTuple):
-    info: Optional[str]
+    info: str | None
     state: str
 
 
 class DiscoveredDeferredFile(NamedTuple):
-    collector: Optional[CollectorT]
+    collector: CollectorT | None
     match: "JsonCollectedDatasetMatch"
 
     def discovered_state(self, element: dict[str, Any], final_job_state="ok") -> DiscoveredResultState:
@@ -1100,7 +1100,7 @@ def discover_target_directory(dir_name, job_working_directory):
 
 
 class JsonCollectedDatasetMatch:
-    def __init__(self, as_dict, collector: Optional[CollectorT], filename, path=None, parent_identifiers=None):
+    def __init__(self, as_dict, collector: CollectorT | None, filename, path=None, parent_identifiers=None):
         parent_identifiers = parent_identifiers or []
         self.as_dict = as_dict
         self.collector = collector
@@ -1199,15 +1199,15 @@ class JsonCollectedDatasetMatch:
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
-    def __init__(self, re_match, collector: Optional[CollectorT], filename, path=None):
+    def __init__(self, re_match, collector: CollectorT | None, filename, path=None):
         super().__init__(re_match.groupdict(), collector, filename, path=path)
 
 
 class DiscoveredFileError(NamedTuple):
     error_message: str
-    collector: Optional[CollectorT]
+    collector: CollectorT | None
     match: JsonCollectedDatasetMatch
-    path: Optional[str] = None
+    path: str | None = None
 
     def discovered_state(self, element: dict[str, Any], final_job_state="ok") -> DiscoveredResultState:
         info = self.error_message

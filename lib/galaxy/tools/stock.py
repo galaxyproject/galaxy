@@ -6,6 +6,7 @@ from lxml.etree import XMLSyntaxError
 
 # Set GALAXY_INCLUDES_ROOT from tool shed to point this at a Galaxy root
 # (once we are running the tool shed from packages not rooted with Galaxy).
+import galaxy.datatypes.converters
 import galaxy.tools
 from galaxy.tool_util.loader_directory import looks_like_a_tool_xml
 from galaxy.tool_util.parser import get_tool_source
@@ -15,6 +16,7 @@ from galaxy.util.resources import files
 
 def stock_tool_paths():
     yield from _walk_directory_for_tools(files(galaxy.tools))
+    yield from _walk_directory_for_tools(files(galaxy.datatypes.converters))
     yield from _walk_directory_for_tools(Path(galaxy_directory()) / "test" / "functional" / "tools")
     yield from _walk_directory_for_tools(Path(galaxy_directory()) / "tools")
 

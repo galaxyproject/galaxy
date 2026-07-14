@@ -22,9 +22,7 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 import yaml
@@ -71,7 +69,7 @@ GALAXY_MAIN_FRAME_ID = "galaxy_main"
 GALAXY_VISUALIZATION_FRAME_ID = "galaxy_visualization"
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
-EditorNodeReference = Union[int, str]  # can reference nodes by order_index (starting at 0 as int or label)
+EditorNodeReference = int | str  # can reference nodes by order_index (starting at 0 as int or label)
 
 
 class HistoryEntry(NamedTuple):
@@ -105,7 +103,7 @@ class WAIT_TYPES:
 
 def galaxy_timeout_handler(timeout_multiplier: float = 1):
 
-    def callback(wait_type: Optional[WaitType] = None) -> float:
+    def callback(wait_type: WaitType | None = None) -> float:
         if wait_type is None:
             wait_type = DEFAULT_WAIT_TYPE
         return wait_type.default_length * timeout_multiplier
@@ -225,7 +223,7 @@ class ConfigTemplateParameter:
 class FileSourceInstance:
     template_id: str
     name: str
-    description: Optional[str]
+    description: str | None
     parameters: list[ConfigTemplateParameter] = field(default_factory=list)
 
 
@@ -233,7 +231,7 @@ class FileSourceInstance:
 class ObjectStoreInstance:
     template_id: str
     name: str
-    description: Optional[str]
+    description: str | None
     parameters: list[ConfigTemplateParameter] = field(default_factory=list)
 
 
@@ -244,7 +242,7 @@ class ColumnDefinition:
     # I wish these were set by value instead of by text in the text box but this is how select_set_value seems to work
     type: Literal["Text", "Integer", "Element Identifier"] = "Text"
     optional: bool = False
-    default_value: Optional[str] = None
+    default_value: str | None = None
 
 
 class NavigatesGalaxy(HasDriverProxy[WaitType]):
@@ -311,7 +309,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def screenshot(self, label: str) -> None:
         """Take a screenshot of the current browser with the specified label."""
 
-    def screenshot_if(self, label: Optional[str]) -> Optional[str]:
+    def screenshot_if(self, label: str | None) -> str | None:
         target = None
         if label:
             target = self.screenshot(label)
@@ -374,7 +372,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def wait_for_masthead(self):
         self.components.masthead._.wait_for_visible()
 
-    def go_to_workflow_landing(self, uuid: str, public: Literal["false", "true"], client_secret: Optional[str]):
+    def go_to_workflow_landing(self, uuid: str, public: Literal["false", "true"], client_secret: str | None):
         path = f"workflow_landings/{uuid}?public={public}"
         if client_secret:
             path = f"{path}&client_secret={client_secret}"
@@ -385,26 +383,23 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
         # The wizard auto-navigates to TRS method selection on mount
-        # Click the "Search workflow registries" card then advance the wizard
+        # Clicking the "Search workflow registries" card auto-navigates to the search form
         self.components.workflows.import_trs_search_link.wait_for_and_click()
-        self.components.workflows.import_next_button.wait_for_and_click()
 
     def go_to_trs_by_id(self) -> None:
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
         # The wizard auto-navigates to TRS method selection on mount
-        # Click the TRS ID sub-card then advance the wizard
+        # Clicking the TRS ID card auto-navigates to the TRS ID form
         self.components.workflows.import_trs_id_link.wait_for_and_click()
-        self.components.workflows.import_next_button.wait_for_and_click()
 
     def go_to_trs_by_url(self) -> None:
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
         # The wizard auto-navigates to TRS method selection on mount
-        # Click the TRS URL sub-card then advance the wizard
+        # Clicking the TRS URL card auto-navigates to the TRS URL form
         self.components.workflows.import_trs_url_link.wait_for_and_click()
-        self.components.workflows.import_next_button.wait_for_and_click()
-        # Wait for the URL input to be visible after wizard navigates to the form
+        # Wait for the URL input to be visible after wizard auto-navigates to the form
         self.components.trs_import.url_input.wait_for_visible()
 
     def go_to_workflow_sharing(self, workflow_id: str) -> None:
@@ -430,7 +425,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.switch_to_frame(GALAXY_MAIN_FRAME_ID)
 
     @contextlib.contextmanager
-    def local_storage(self, key: str, value: Union[float, str]):
+    def local_storage(self, key: str, value: float | str):
         """Method decorator to modify localStorage for the scope of the supplied context."""
         self.set_local_storage(key, value)
         try:
@@ -439,7 +434,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.remove_local_storage(key)
 
     @contextlib.contextmanager
-    def in_frame(self, frame_reference: Union[str, int, Any] = "frame"):
+    def in_frame(self, frame_reference: str | int | Any = "frame"):
         """Context manager to operate within the context of an iframe."""
         try:
             self.switch_to_frame(frame_reference)
@@ -504,7 +499,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def history_panel_name(self):
         return self.history_panel_name_element().text
 
-    def history_panel_collection_rename(self, hid: int, new_name: str, assert_old_name: Optional[str] = None):
+    def history_panel_collection_rename(self, hid: int, new_name: str, assert_old_name: str | None = None):
         self.history_panel_rename(new_name)
 
     def history_panel_expand_collection(self, collection_hid: int) -> SmartComponent:
@@ -561,7 +556,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         assert return_value, "Attempted to get latest history item on empty history."
         return return_value
 
-    def _latest_history_item(self) -> Optional[dict[str, Any]]:
+    def _latest_history_item(self) -> dict[str, Any] | None:
         history_contents = self.history_contents()
         if len(history_contents) > 0:
             entry_dict = history_contents[-1]
@@ -612,8 +607,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def _wait_on(
         self,
         f,
-        on_str: Optional[str] = None,
-        timeout: Optional[float] = None,
+        on_str: str | None = None,
+        timeout: float | None = None,
         wait_type: WaitType = WAIT_TYPES.JOB_COMPLETION,
     ):
         if timeout is None:
@@ -864,7 +859,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             search_term,
         )
 
-    def get_logged_in_user(self) -> Optional[dict[str, Any]]:
+    def get_logged_in_user(self) -> dict[str, Any] | None:
         # for user's not logged in - this just returns a {} so lets
         # key this on an id being available?
         if "id" in (user_dict := self.api_get("users/current")):
@@ -872,7 +867,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         else:
             return None
 
-    def get_api_key(self, force=False) -> Optional[str]:
+    def get_api_key(self, force=False) -> str | None:
         user_id = self.get_user_id()
         if user_id is None:
             if force:
@@ -885,7 +880,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         else:
             return self.api_post(f"users/{user_id}/api_key")
 
-    def get_user_id(self) -> Optional[str]:
+    def get_user_id(self) -> str | None:
         if (user := self.get_logged_in_user()) is not None:
             return user["id"]
         else:
@@ -1508,23 +1503,23 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def workflow_editor_add_tool_step(self, tool_id: str):
         self.tool_open(tool_id)
 
-    def workflow_editor_set_tool_vesrion(self, version: str, node: Optional[EditorNodeReference] = None) -> None:
+    def workflow_editor_set_tool_vesrion(self, version: str, node: EditorNodeReference | None = None) -> None:
         editor = self.components.workflow_editor
         self.workflow_editor_ensure_tool_form_open(node)
         editor.tool_version_button.wait_for_and_click()
         assert self.select_dropdown_item(f"Switch to {version}"), "Switch to tool version dropdown item not found"
 
-    def workflow_editor_set_node_label(self, label: str, node: Optional[EditorNodeReference] = None):
+    def workflow_editor_set_node_label(self, label: str, node: EditorNodeReference | None = None):
         self.workflow_editor_ensure_tool_form_open(node)
         editor = self.components.workflow_editor
         editor.label_input.wait_for_and_clear_and_send_keys(label)
 
-    def workflow_editor_set_node_annotation(self, annotation: str, node: Optional[EditorNodeReference] = None):
+    def workflow_editor_set_node_annotation(self, annotation: str, node: EditorNodeReference | None = None):
         self.workflow_editor_ensure_tool_form_open(node)
         editor = self.components.workflow_editor
         editor.annotation_input.wait_for_and_clear_and_send_keys(annotation)
 
-    def workflow_editor_ensure_tool_form_open(self, node: Optional[EditorNodeReference] = None):
+    def workflow_editor_ensure_tool_form_open(self, node: EditorNodeReference | None = None):
         # if node is_empty just assume current tool step is open
         editor = self.components.workflow_editor
         if node is not None:
@@ -1724,11 +1719,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def create_quota(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        amount: Optional[str] = None,
-        quota_source_label: Optional[str] = None,
-        user: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
+        amount: str | None = None,
+        quota_source_label: str | None = None,
+        user: str | None = None,
     ):
         admin_component = self.components.admin
 
@@ -1964,10 +1959,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         action_chains = self.action_chains()
         action_chains.move_to_element(workflow).perform()
         workflow.find_element(By.CSS_SELECTOR, ".g-card-rename").click()
-        self.components.workflows.rename_input.wait_for_visible().clear()
-        self.components.workflows.rename_input.wait_for_and_send_keys(new_name)
-        self.components.workflows.rename_input.wait_for_and_send_keys(Keys.ENTER)
-        self.wait_for_selector_absent_or_hidden(".g-modal")
+        self.rename_modal_rename("workflow", new_name)
 
     def workflow_delete_by_name(self, name):
         self.workflow_index_search_for(name)
@@ -2037,9 +2029,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def workflow_import_submit_url(self, url):
         # Click the "Fetch URL" card to select that import method
+        # (auto-navigates to the URL input step)
         self.components.workflows.import_url_link.wait_for_and_click()
-        # Click the wizard's Next button to proceed to the URL input step
-        self.wait_for_and_click_selector(".wizard-actions .go-next-btn")
         # Enter the URL
         url_element = self.wait_for_selector_visible("#workflow-import-url-input")
         url_element.send_keys(url)
@@ -2108,7 +2099,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             workflow_run.expanded_form.wait_for_visible()
 
     def workflow_create_new(
-        self, annotation: Optional[str] = None, clear_placeholder: bool = False, save_workflow: bool = True
+        self, annotation: str | None = None, clear_placeholder: bool = False, save_workflow: bool = True
     ):
         self.workflow_index_open()
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -2179,7 +2170,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.scroll_into_view(tool_element)
         tool_link.wait_for_and_click()
 
-    def run_environment_test_tool(self, inttest_value="42", select_storage: Optional[str] = None):
+    def run_environment_test_tool(self, inttest_value="42", select_storage: str | None = None):
         self.home()
         self.tool_open("environment_variables")
         if select_storage:
@@ -2294,6 +2285,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def history_page_create(self, screenshot_name=None):
         """Click the create button on the page list. Returns to editor view."""
         self.components.pages.history.create_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.components.pages.history.toolbar.wait_for_visible()
         if screenshot_name:
             self.screenshot(screenshot_name)
@@ -2334,40 +2327,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         items = self.components.pages.history.revision_item.all()
         assert len(items) == n, f"Expected {n} revision items, found {len(items)}"
 
-    def history_page_rename(self, new_name):
-        """Rename page via ClickToEdit in toolbar."""
-        self.components.pages.history.toolbar_title.wait_for_and_click()
-        title_input = self.components.pages.history.toolbar_title_input.wait_for_visible()
-        self.aggressive_clear(title_input)
-        title_input.send_keys(new_name)
-        self.send_enter(title_input)
-        self.sleep_for(self.wait_types.UX_RENDER)
+    def history_page_rename(self, page_type: str, new_name: str):
+        """Rename page via RenameModal in toolbar."""
+        self.components.pages.history.rename_button.wait_for_and_click()
+        self.rename_modal_rename(page_type, new_name)
 
-    def history_page_open_chat(self):
-        """Click chat button in page toolbar, wait for chat panel visible."""
-        self.components.pages.history.chat_button.wait_for_and_click()
-        self.components.pages.history.chat_panel.wait_for_visible()
+    def rename_modal_rename(self, item_type: str, new_name: str):
+        """Rename via RenameModal: opens the rename modal, types new name, and submits."""
+        # Clear via JS + dispatch Vue-compatible input event so nameModel is updated to empty,
+        # then type the new name so each keystroke fires input events and updates nameModel.
+        item_name_input = self.wait_for_selector(f"[data-description='{item_type} name input']")
+        self.execute_script(
+            "arguments[0].value = ''; arguments[0].dispatchEvent(new Event('input', {bubbles: true}));",
+            item_name_input,
+        )
+        item_name_input.send_keys(new_name)
 
-    def history_page_chat_send_message(self, text):
-        """Type into chat input, click send, wait for response."""
-        chat = self.components.pages.history
-        chat.chat_input.wait_for_and_send_keys(text)
-        chat.chat_send_button.wait_for_and_click()
-        chat.chat_loading.wait_for_absent_or_hidden()
-        chat.chat_response_content.wait_for_visible()
-
-    def history_page_chat_ensure_new(self):
-        """Click new conversation button if messages exist."""
-        chat = self.components.pages.history
-        if len(chat.chat_query_cell.all()) > 0 or len(chat.chat_response_content.all()) > 0:
-            chat.chat_new_conversation.wait_for_and_click()
-        self._history_page_chat_assert_empty()
-
-    @retry_during_transitions
-    def _history_page_chat_assert_empty(self):
-        chat = self.components.pages.history
-        assert len(chat.chat_query_cell.all()) == 0
-        assert len(chat.chat_response_content.all()) == 0
+        self.wait_for_and_click_selector(".g-modal-confirm-buttons button:last-child")
+        # Wait for the rename promise to resolve (modal closes in the finally block)
+        self.wait_for_selector_absent_or_hidden(f"#{item_type}-name-input")
 
     @retry_during_transitions
     def click_history_options(self):
@@ -2668,7 +2646,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         )
         visualize_tab_button.click()
 
-    def show_dataset_visualization(self, hid: int, visualization_id: str, screenshot_name: Optional[str] = None):
+    def show_dataset_visualization(self, hid: int, visualization_id: str, screenshot_name: str | None = None):
         self.show_dataset_visualizations(hid)
         self.components.visualization.matched_plugin(id=visualization_id).wait_for_visible()
         self.screenshot_if(screenshot_name)
@@ -2887,7 +2865,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return self.wait_for_selector(selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
 
     def _clear_tooltip(self, tooltip_component):
-        last_timeout: Optional[SeleniumTimeoutException] = None
+        last_timeout: SeleniumTimeoutException | None = None
         for _ in range(2):
             if not tooltip_component.is_absent:
                 move_away_chain = self.action_chains()
@@ -2939,15 +2917,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """
         return super().assert_absent_or_hidden_after_transitions(selector)
 
-    def assert_tooltip_text(self, element, expected: Union[str, HasText], sleep: int = 0, click_away: bool = True):
+    def assert_tooltip_text(self, element, expected: str | HasText, sleep: int = 0, click_away: bool = True):
         if hasattr(expected, "text"):
             expected = cast(HasText, expected).text
         text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
         assert text == expected, f"Tooltip text [{text}] was not expected text [{expected}]."
 
-    def assert_tooltip_text_contains(
-        self, element, expected: Union[str, HasText], sleep: int = 0, click_away: bool = True
-    ):
+    def assert_tooltip_text_contains(self, element, expected: str | HasText, sleep: int = 0, click_away: bool = True):
         if hasattr(expected, "text"):
             expected = cast(HasText, expected).text
         text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
@@ -3189,7 +3165,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return object_store_id
 
     def _fill_configuration_template(
-        self, name: str, description: Optional[str], parameters: list[ConfigTemplateParameter]
+        self, name: str, description: str | None, parameters: list[ConfigTemplateParameter]
     ):
         self.components.tool_form.parameter_input(parameter="_meta_name").wait_for_and_send_keys(
             name,
@@ -3257,10 +3233,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def mouse_drag(
         self,
         from_element: WebElementProtocol,
-        to_element: Optional[WebElementProtocol] = None,
+        to_element: WebElementProtocol | None = None,
         from_offset=(0, 0),
         to_offset=(0, 0),
-        via_offsets: Optional[list[tuple[int, int]]] = None,
+        via_offsets: list[tuple[int, int]] | None = None,
     ):
         if self._driver_impl.backend_type == "playwright":
             pw_driver = cast("HasPlaywrightDriver", self._driver_impl)

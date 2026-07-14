@@ -7,14 +7,13 @@ dynamic = ["readme"]
 name = "galaxy-job-metrics"
 version = "26.1.dev0"
 description = "Galaxy job metrics"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {"text" = "MIT"}
 authors = [
     {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
 ]
 dependencies = [
     "galaxy-util",
-    "backports.zoneinfo;python_version<'3.9'",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -23,8 +22,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

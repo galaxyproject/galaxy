@@ -28,7 +28,7 @@ metadata = mapper_registry.metadata
 class GalaxyModelMapping(SharedModelMapping):
     User: type["GalaxyUser"]
     security_agent: GalaxyRBACAgent
-    thread_local_log: Optional[local]
+    thread_local_log: local | None
 
 
 def init(
@@ -41,7 +41,7 @@ def init(
     trace_logger=None,
     use_pbkdf2=True,
     slow_query_log_threshold=0,
-    thread_local_log: Optional[local] = None,
+    thread_local_log: local | None = None,
     log_query_counts=False,
 ) -> GalaxyModelMapping:
     # Build engine

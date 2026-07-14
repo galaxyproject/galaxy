@@ -65,19 +65,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.select_history_card_operation("Unnamed history", '[id^="g-card-rename-history-"]')
 
-        # Rename the history using the RenameModal.
-        # Clear via JS + dispatch Vue-compatible input event so nameModel is updated to empty,
-        # then type the new name so each keystroke fires input events and updates nameModel.
-        history_name_input = self.wait_for_selector("#history-name-input")
-        self.execute_script(
-            "arguments[0].value = ''; arguments[0].dispatchEvent(new Event('input', {bubbles: true}));",
-            history_name_input,
-        )
-        history_name_input.send_keys(self.history1_name)
-
-        self.wait_for_and_click_selector(".g-modal-confirm-buttons button:last-child")
-        # Wait for the rename API call to complete (modal closes in the finally block)
-        self.wait_for_selector_absent_or_hidden("#history-name-input")
+        self.rename_modal_rename("history", self.history1_name)
 
         self.navigate_to_histories_page()
 

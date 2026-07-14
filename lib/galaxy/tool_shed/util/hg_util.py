@@ -1,9 +1,6 @@
 import logging
 import os
 import subprocess
-from typing import (
-    Optional,
-)
 
 from galaxy.tool_shed.util import basic_util
 from galaxy.util import unicodify
@@ -13,7 +10,7 @@ log = logging.getLogger(__name__)
 INITIAL_CHANGELOG_HASH = "000000000000"
 
 
-def clone_repository(repository_clone_url: str, repository_file_dir: str, ctx_rev=None) -> tuple[bool, Optional[str]]:
+def clone_repository(repository_clone_url: str, repository_file_dir: str, ctx_rev=None) -> tuple[bool, str | None]:
     """
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.
@@ -62,7 +59,7 @@ def get_changectx_for_changeset(repo, changeset_revision, **kwd):
     return None
 
 
-def get_config_from_disk(config_file: str, relative_install_dir: str) -> Optional[str]:
+def get_config_from_disk(config_file: str, relative_install_dir: str) -> str | None:
     for root, _dirs, files in os.walk(relative_install_dir):
         if root.find(".hg") < 0:
             for name in files:

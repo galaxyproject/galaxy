@@ -1,7 +1,5 @@
 from typing import (
     Annotated,
-    Optional,
-    Union,
 )
 
 from pydantic import (
@@ -24,14 +22,14 @@ except ImportError:
 
 
 class WebDavFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    root: Optional[Union[str, TemplateExpansion]] = None
-    base_url: Union[str, TemplateExpansion]
-    login: Optional[Union[str, TemplateExpansion]] = None
-    password: Optional[Union[str, TemplateExpansion]] = None
+    root: str | TemplateExpansion | None = None
+    base_url: str | TemplateExpansion
+    login: str | TemplateExpansion | None = None
+    password: str | TemplateExpansion | None = None
 
 
 class WebDavFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
-    root: Optional[str] = None
+    root: str | None = None
     base_url: Annotated[
         str,
         Field(
@@ -39,8 +37,8 @@ class WebDavFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
             description="The fully-qualified WebDAV endpoint URL used to access this file source.",
         ),
     ]
-    login: Optional[str] = None
-    password: Optional[str] = None
+    login: str | None = None
+    password: str | None = None
 
 
 class WebDavFilesSource(FsspecFilesSource[WebDavFileSourceTemplateConfiguration, WebDavFileSourceConfiguration]):
@@ -52,7 +50,7 @@ class WebDavFilesSource(FsspecFilesSource[WebDavFileSourceTemplateConfiguration,
     resolved_config_class = WebDavFileSourceConfiguration
 
     @staticmethod
-    def _webdav_endpoint(base_url: str, root: Optional[str]) -> str:
+    def _webdav_endpoint(base_url: str, root: str | None) -> str:
         # WebDAV "root" is the service endpoint path (for example Nextcloud's
         # /remote.php/dav/files/user), not a directory prefix inside the file source.
         base_url = base_url.strip().rstrip("/")

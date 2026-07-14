@@ -6,7 +6,6 @@ from typing import (
     Any,
     cast,
     Literal,
-    Optional,
 )
 from urllib.error import HTTPError
 from urllib.parse import quote
@@ -81,7 +80,7 @@ class RecordPersonOrOrg(TypedDict):
 
 class Creator(TypedDict):
     person_or_org: RecordPersonOrOrg
-    affiliations: Optional[list[AffiliationEntry]]
+    affiliations: list[AffiliationEntry] | None
 
 
 class RecordMetadata(TypedDict):
@@ -190,10 +189,10 @@ class InvenioRDMFilesSource(RDMFilesSource):
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         is_root_path = path == "/"
         if is_root_path:
@@ -254,17 +253,17 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def user_records_url(self) -> str:
         return f"{self.repository_url}/api/user/records"
 
-    def to_plugin_uri(self, record_id: str, filename: Optional[str] = None) -> str:
+    def to_plugin_uri(self, record_id: str, filename: str | None = None) -> str:
         return f"{self.plugin.get_uri_root()}/{record_id}{f'/{filename}' if filename else ''}"
 
     def get_file_containers(
         self,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         write_intent: bool,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[RemoteDirectory], int]:
         """Gets the records in the repository and returns the total count of records."""
         params: dict[str, Any] = {}
@@ -285,7 +284,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         total_hits = response_data["hits"]["total"]
         return self._get_records_from_response(response_data), total_hits
 
-    def _to_size_page(self, limit: Optional[int], offset: Optional[int]) -> tuple[Optional[int], Optional[int]]:
+    def _to_size_page(self, limit: int | None, offset: int | None) -> tuple[int | None, int | None]:
         if limit is None and offset is None:
             return None, None
         size = limit or DEFAULT_PAGE_LIMIT
@@ -297,7 +296,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         container_id: str,
         writeable: bool,
-        query: Optional[str] = None,
+        query: str | None = None,
     ) -> list[RemoteFile]:
         conditionally_draft = "/draft" if writeable or self._is_draft_record(container_id, context) else ""
         request_url = f"{self.records_url}/{container_id}{conditionally_draft}/files"
@@ -492,7 +491,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
                 )
         return rval
 
-    def _get_file_hashes(self, info: dict) -> Optional[list[RemoteFileHash]]:
+    def _get_file_hashes(self, info: dict) -> list[RemoteFileHash] | None:
         """Get optional file hashes provided by InvenioRDM for the RemoteFile entry."""
         # InvenioRDM may provide an optional "checksum" field with the file hash.
         checksum = info.get("checksum")
@@ -506,7 +505,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
                     return [RemoteFileHash(hash_function=hash_function_name, hash_value=hash_value)]
         return None
 
-    def _get_creator_from_public_name(self, public_name: Optional[str] = None) -> Creator:
+    def _get_creator_from_public_name(self, public_name: str | None = None) -> Creator:
         given_name = "Anonymous"
         family_name = "Galaxy User"
         if public_name:
@@ -531,7 +530,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         self,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         request_url: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         auth_required: bool = False,
     ) -> dict:
         headers = self._get_request_headers(context, auth_required)

@@ -983,6 +983,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{history_content_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Downloads the dataset, redirecting to the object store when possible.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        get: operations["download_api_datasets__history_content_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Returns download metadata (size, filename) for the dataset.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        head: operations["download_api_datasets__history_content_id__download_head"];
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{history_content_id}/metadata_file": {
         parameters: {
             query?: never;
@@ -1524,6 +1548,23 @@ export interface paths {
         get: operations["file_sources__templates_index"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/file_source_templates/{template_id}/{template_version}/form-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get dynamic data for a file source template form. */
+        post: operations["file_sources__template_form_data"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2526,6 +2567,30 @@ export interface paths {
          * @description Streams the dataset for download or the contents preview to be displayed in a browser.
          */
         head: operations["history_contents_display_api_histories__history_id__contents__history_content_id__display_head"];
+        patch?: never;
+        trace?: never;
+    };
+    "/api/histories/{history_id}/contents/{history_content_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Downloads the dataset, redirecting to the object store when possible.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        get: operations["history_contents_download_api_histories__history_id__contents__history_content_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Returns download metadata (size, filename) for the dataset.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        head: operations["history_contents_download_api_histories__history_id__contents__history_content_id__download_head"];
         patch?: never;
         trace?: never;
     };
@@ -9126,6 +9191,8 @@ export interface components {
             description?: string | null;
             /** Device */
             device?: string | null;
+            /** Enable Direct Download */
+            enable_direct_download?: boolean | null;
             /** Name */
             name?: string | null;
             /** Object Expires After Days */
@@ -11110,6 +11177,8 @@ export interface components {
              * @constant
              */
             type: "data";
+            /** Url Default */
+            url_default?: string | null;
         };
         /** DataRequestCollectionUri */
         DataRequestCollectionUri: {
@@ -12973,30 +13042,42 @@ export interface components {
         };
         /** FilePatternDatasetCollectionDescription */
         FilePatternDatasetCollectionDescription: {
-            /** Assign Primary Output */
+            /**
+             * Assign Primary Output
+             * @default false
+             */
             assign_primary_output: boolean;
             /** Directory */
-            directory: string | null;
+            directory?: string | null;
             /**
              * Discover Via
+             * @default pattern
              * @constant
              */
             discover_via: "pattern";
             /** Format */
-            format: string | null;
-            /** Match Relative Path */
+            format?: string | null;
+            /**
+             * Match Relative Path
+             * @default false
+             */
             match_relative_path: boolean;
             /** Pattern */
             pattern: string;
-            /** Recurse */
+            /**
+             * Recurse
+             * @default false
+             */
             recurse: boolean;
             /**
              * Sort Comp
+             * @default lexical
              * @enum {string}
              */
             sort_comp: "lexical" | "numeric";
             /**
              * Sort Key
+             * @default filename
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey";
@@ -13005,7 +13086,10 @@ export interface components {
              * @default false
              */
             sort_reverse: boolean;
-            /** Visible */
+            /**
+             * Visible
+             * @default false
+             */
             visible: boolean;
         };
         /** FileRequestUri */
@@ -13052,12 +13136,30 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * FileSourceTemplateAlert
+         * @description An administrator-authored alert shown while creating a file source.
+         */
+        FileSourceTemplateAlert: {
+            /** Condition */
+            condition?: string | null;
+            /** Content */
+            content: string;
+            /**
+             * Variant
+             * @default info
+             * @enum {string}
+             */
+            variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+        };
         /** FileSourceTemplateSummaries */
         FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
         /** FileSourceTemplateSummary */
         FileSourceTemplateSummary: {
             /** Description */
             description: string | null;
+            /** Form Alerts */
+            form_alerts?: components["schemas"]["FileSourceTemplateAlert"][] | null;
             /**
              * Hidden
              * @default false
@@ -13092,6 +13194,7 @@ export interface components {
                 | "dataverse"
                 | "cbioportal"
                 | "huggingface"
+                | "github"
                 | "iiif"
                 | "mavedb"
                 | "omero"
@@ -13103,6 +13206,7 @@ export interface components {
                       | components["schemas"]["TemplateVariableInteger"]
                       | components["schemas"]["TemplateVariablePathComponent"]
                       | components["schemas"]["TemplateVariableBoolean"]
+                      | components["schemas"]["TemplateVariableSelect"]
                   )[]
                 | null;
             /**
@@ -16079,6 +16183,29 @@ export interface components {
              */
             type: "in_range";
         };
+        /** IncomingToolOutputBoolean */
+        IncomingToolOutputBoolean: {
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
+            hidden?: boolean | null;
+            /**
+             * Label
+             * @description Output label. Will be used as dataset name in history.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "boolean";
+        };
         /** IncomingToolOutputCollection */
         IncomingToolOutputCollection: {
             /** Collection Type */
@@ -16171,6 +16298,75 @@ export interface components {
              * @enum {string}
              */
             type: "data";
+        };
+        /** IncomingToolOutputFloat */
+        IncomingToolOutputFloat: {
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
+            hidden?: boolean | null;
+            /**
+             * Label
+             * @description Output label. Will be used as dataset name in history.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "float";
+        };
+        /** IncomingToolOutputInteger */
+        IncomingToolOutputInteger: {
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
+            hidden?: boolean | null;
+            /**
+             * Label
+             * @description Output label. Will be used as dataset name in history.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "integer";
+        };
+        /** IncomingToolOutputText */
+        IncomingToolOutputText: {
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
+            hidden?: boolean | null;
+            /**
+             * Label
+             * @description Output label. Will be used as dataset name in history.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
         };
         /** InferredCollectionTypeLogEntry */
         InferredCollectionTypeLogEntry: {
@@ -19758,6 +19954,7 @@ export interface components {
                       | components["schemas"]["TemplateVariableInteger"]
                       | components["schemas"]["TemplateVariablePathComponent"]
                       | components["schemas"]["TemplateVariableBoolean"]
+                      | components["schemas"]["TemplateVariableSelect"]
                   )[]
                 | null;
             /**
@@ -23470,6 +23667,27 @@ export interface components {
          * @enum {string}
          */
         TaskState: "PENDING" | "STARTED" | "RETRY" | "FAILURE" | "SUCCESS";
+        /**
+         * TemplateFormDataRequest
+         * @description Values available while rendering a post-authorization template form.
+         */
+        TemplateFormDataRequest: {
+            /** Uuid */
+            uuid: string;
+            /** Variables */
+            variables?: {
+                [key: string]: string | boolean | number;
+            };
+        };
+        /** TemplateFormDataResponse */
+        TemplateFormDataResponse: {
+            /** Alert Conditions */
+            alert_conditions?: string[];
+            /** Dynamic Options */
+            dynamic_options?: {
+                [key: string]: [string, string][];
+            };
+        };
         /** TemplateSecret */
         TemplateSecret: {
             /** Help */
@@ -23566,6 +23784,45 @@ export interface components {
                       | components["schemas"]["LengthParameterValidatorModel"]
                   )[]
                 | null;
+        };
+        /** TemplateVariableSelect */
+        TemplateVariableSelect: {
+            /** Default */
+            default?: string | null;
+            /** Dynamic Options */
+            dynamic_options?: string | null;
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional?: boolean | null;
+            /** Options */
+            options?: components["schemas"]["TemplateVariableSelectOption"][] | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "select";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
+        };
+        /** TemplateVariableSelectOption */
+        TemplateVariableSelectOption: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
         };
         /** TemplateVariableString */
         TemplateVariableString: {
@@ -24205,116 +24462,36 @@ export interface components {
              */
             uuid: string;
         };
-        /** ToolOutputBoolean */
-        ToolOutputBoolean: {
-            /**
-             * Hidden
-             * @description If true, the output will not be shown in the history.
-             */
-            hidden: unknown;
-            /**
-             * Label
-             * @description Output label. Will be used as dataset name in history.
-             */
-            label?: string | null;
-            /**
-             * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
-             */
-            name: unknown;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "boolean";
-        };
-        /** ToolOutputFloat */
-        ToolOutputFloat: {
-            /**
-             * Hidden
-             * @description If true, the output will not be shown in the history.
-             */
-            hidden: unknown;
-            /**
-             * Label
-             * @description Output label. Will be used as dataset name in history.
-             */
-            label?: string | null;
-            /**
-             * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
-             */
-            name: unknown;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "float";
-        };
-        /** ToolOutputInteger */
-        ToolOutputInteger: {
-            /**
-             * Hidden
-             * @description If true, the output will not be shown in the history.
-             */
-            hidden: unknown;
-            /**
-             * Label
-             * @description Output label. Will be used as dataset name in history.
-             */
-            label?: string | null;
-            /**
-             * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
-             */
-            name: unknown;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "integer";
-        };
-        /** ToolOutputText */
-        ToolOutputText: {
-            /**
-             * Hidden
-             * @description If true, the output will not be shown in the history.
-             */
-            hidden: unknown;
-            /**
-             * Label
-             * @description Output label. Will be used as dataset name in history.
-             */
-            label?: string | null;
-            /**
-             * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
-             */
-            name: unknown;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "text";
-        };
         /** ToolProvidedMetadataDatasetCollection */
         ToolProvidedMetadataDatasetCollection: {
-            /** Assign Primary Output */
+            /**
+             * Assign Primary Output
+             * @default false
+             */
             assign_primary_output: boolean;
             /** Directory */
-            directory: string | null;
+            directory?: string | null;
             /**
              * Discover Via
              * @constant
              */
             discover_via: "tool_provided_metadata";
             /** Format */
-            format: string | null;
-            /** Match Relative Path */
+            format?: string | null;
+            /**
+             * Match Relative Path
+             * @default false
+             */
             match_relative_path: boolean;
-            /** Recurse */
+            /**
+             * Recurse
+             * @default false
+             */
             recurse: boolean;
-            /** Visible */
+            /**
+             * Visible
+             * @default false
+             */
             visible: boolean;
         };
         /** ToolReportForDataset */
@@ -25272,6 +25449,8 @@ export interface components {
             description?: string | null;
             /** Device */
             device?: string | null;
+            /** Enable Direct Download */
+            enable_direct_download?: boolean | null;
             /** Hidden */
             hidden: boolean;
             /** Name */
@@ -25389,6 +25568,7 @@ export interface components {
                 | "dataverse"
                 | "cbioportal"
                 | "huggingface"
+                | "github"
                 | "iiif"
                 | "mavedb"
                 | "omero"
@@ -25721,7 +25901,15 @@ export interface components {
              */
             version: string;
         };
-        /** UserToolSource */
+        /**
+         * UserToolSource
+         * @description Full unprivileged tool source, including the optional ``tests`` block.
+         *
+         *     This is the model persisted and validated on the API surface
+         *     (``DynamicUnprivilegedToolCreatePayload.representation``). LLM authoring
+         *     uses the slimmer ``UserToolSourceAuthoringView`` parent; ``tests`` is added
+         *     back here so direct authors and stored rows can still carry tests.
+         */
         "UserToolSource-Input": {
             /** citations */
             citations?: components["schemas"]["Citation"][] | null;
@@ -25784,10 +25972,10 @@ export interface components {
             outputs: (
                 | components["schemas"]["IncomingToolOutputDataset"]
                 | components["schemas"]["IncomingToolOutputCollection"]
-                | components["schemas"]["ToolOutputText"]
-                | components["schemas"]["ToolOutputInteger"]
-                | components["schemas"]["ToolOutputFloat"]
-                | components["schemas"]["ToolOutputBoolean"]
+                | components["schemas"]["IncomingToolOutputText"]
+                | components["schemas"]["IncomingToolOutputInteger"]
+                | components["schemas"]["IncomingToolOutputFloat"]
+                | components["schemas"]["IncomingToolOutputBoolean"]
             )[];
             /** profile */
             profile?: number | null;
@@ -25806,7 +25994,7 @@ export interface components {
             /**
              * shell_command
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
-             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
+             * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
              */
             shell_command: string;
             /** tests */
@@ -25816,11 +26004,19 @@ export interface components {
              * @description Version for the tool.
              * @example 0.1.0
              */
-            version?: string | null;
+            version: string;
             /** xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
-        /** UserToolSource */
+        /**
+         * UserToolSource
+         * @description Full unprivileged tool source, including the optional ``tests`` block.
+         *
+         *     This is the model persisted and validated on the API surface
+         *     (``DynamicUnprivilegedToolCreatePayload.representation``). LLM authoring
+         *     uses the slimmer ``UserToolSourceAuthoringView`` parent; ``tests`` is added
+         *     back here so direct authors and stored rows can still carry tests.
+         */
         "UserToolSource-Output": {
             /** citations */
             citations?: components["schemas"]["Citation"][] | null;
@@ -25883,10 +26079,10 @@ export interface components {
             outputs: (
                 | components["schemas"]["IncomingToolOutputDataset"]
                 | components["schemas"]["IncomingToolOutputCollection"]
-                | components["schemas"]["ToolOutputText"]
-                | components["schemas"]["ToolOutputInteger"]
-                | components["schemas"]["ToolOutputFloat"]
-                | components["schemas"]["ToolOutputBoolean"]
+                | components["schemas"]["IncomingToolOutputText"]
+                | components["schemas"]["IncomingToolOutputInteger"]
+                | components["schemas"]["IncomingToolOutputFloat"]
+                | components["schemas"]["IncomingToolOutputBoolean"]
             )[];
             /** profile */
             profile?: number | null;
@@ -25905,7 +26101,7 @@ export interface components {
             /**
              * shell_command
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
-             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
+             * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
              */
             shell_command: string;
             /** tests */
@@ -25915,7 +26111,7 @@ export interface components {
              * @description Version for the tool.
              * @example 0.1.0
              */
-            version?: string | null;
+            version: string;
             /** xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
@@ -27281,12 +27477,9 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
-            /** Max */
-            max?: number | null;
-            /** Min */
-            min?: number | null;
             /**
              * Multiple
+             * @description Set true to accept several datasets (a list) for this input instead of one.
              * @default false
              */
             multiple: boolean;
@@ -27690,10 +27883,10 @@ export interface components {
             outputs: (
                 | components["schemas"]["IncomingToolOutputDataset"]
                 | components["schemas"]["IncomingToolOutputCollection"]
-                | components["schemas"]["ToolOutputText"]
-                | components["schemas"]["ToolOutputInteger"]
-                | components["schemas"]["ToolOutputFloat"]
-                | components["schemas"]["ToolOutputBoolean"]
+                | components["schemas"]["IncomingToolOutputText"]
+                | components["schemas"]["IncomingToolOutputInteger"]
+                | components["schemas"]["IncomingToolOutputFloat"]
+                | components["schemas"]["IncomingToolOutputBoolean"]
             )[];
             /** profile */
             profile?: number | null;
@@ -27712,7 +27905,7 @@ export interface components {
             /**
              * shell_command
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
-             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
+             * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
              */
             shell_command: string;
             /** tests */
@@ -33785,6 +33978,105 @@ export interface operations {
             };
         };
     };
+    download_api_datasets__history_content_id__download_get: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redirect to a URL serving the dataset directly from the backing object store. Only returned for whole-file downloads when the dataset's object store has `enable_direct_download` set. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    download_api_datasets__history_content_id__download_head: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     datasets__get_metadata_file: {
         parameters: {
             query: {
@@ -35255,6 +35547,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__template_form_data: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The template ID of the target file source template. */
+                template_id: string;
+                /** @description The template version of the target file source template. */
+                template_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateFormDataRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateFormDataResponse"];
                 };
             };
             /** @description Request Error */
@@ -38888,6 +39230,107 @@ export interface operations {
                 offset?: number | null;
                 /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+                history_id: string | null;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents_download_api_histories__history_id__contents__history_content_id__download_get: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+                history_id: string | null;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redirect to a URL serving the dataset directly from the backing object store. Only returned for whole-file downloads when the dataset's object store has `enable_direct_download` set. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents_download_api_histories__history_id__contents__history_content_id__download_head: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -44953,6 +45396,8 @@ export interface operations {
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
                 user_id?: string | null;
+                /** @description Filter pages by this workflow invocation ID. */
+                invocation_id?: string | null;
                 history_id?: string | null;
             };
             header?: {

@@ -15,7 +15,6 @@ from typing import (
     cast,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 from urllib.parse import (
     quote_plus,
@@ -125,7 +124,7 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
         changeset_revision: str,
         install_tool_dependencies: bool,
         install_repository_dependencies: bool,
-        new_tool_panel_section_label: Optional[str],
+        new_tool_panel_section_label: str | None,
     ) -> None:
         """"""
 
@@ -179,8 +178,8 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_installed_repository_for(
-        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
-    ) -> Optional[dict[str, Any]]:
+        self, owner: str | None = None, name: str | None = None, changeset: str | None = None
+    ) -> dict[str, Any] | None:
         """"""
 
     @abc.abstractmethod
@@ -268,7 +267,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         changeset_revision: str,
         install_tool_dependencies: bool,
         install_repository_dependencies: bool,
-        new_tool_panel_section_label: Optional[str],
+        new_tool_panel_section_label: str | None,
     ):
         payload = {
             "tool_shed_url": self.testcase.url,
@@ -380,8 +379,8 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         )
 
     def get_installed_repository_for(
-        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
-    ) -> Optional[dict[str, Any]]:
+        self, owner: str | None = None, name: str | None = None, changeset: str | None = None
+    ) -> dict[str, Any] | None:
         return self.testcase.get_installed_repository_for(owner=owner, name=name, changeset=changeset)
 
     def get_all_installed_repositories(self) -> list[galaxy_model.ToolShedRepository]:
@@ -505,7 +504,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
         changeset_revision: str,
         install_tool_dependencies: bool,
         install_repository_dependencies: bool,
-        new_tool_panel_section_label: Optional[str],
+        new_tool_panel_section_label: str | None,
     ):
         tool_shed_url = self.testcase.url
         payload = {
@@ -584,8 +583,8 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
         )
 
     def get_installed_repository_for(
-        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
-    ) -> Optional[dict[str, Any]]:
+        self, owner: str | None = None, name: str | None = None, changeset: str | None = None
+    ) -> dict[str, Any] | None:
         repository = get_installed_repository(self._installation_target.install_model.context, name, owner, changeset)
         if repository:
             return repository.to_dict()
@@ -623,8 +622,8 @@ class ShedTestCase(ShedApiTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     requires_galaxy: bool = False
-    _installation_client: Optional[ToolShedInstallationClient] = None
-    __browser: Optional[ShedBrowser] = None
+    _installation_client: ToolShedInstallationClient | None = None
+    __browser: ShedBrowser | None = None
     _logged_in_populator: Optional["ToolShedPopulator"] = None
 
     def setUp(self):
@@ -642,9 +641,9 @@ class ShedTestCase(ShedApiTestCase):
         if os.environ.get("TOOL_SHED_TEST_INSTALL_CLIENT") == "standalone":
             # TODO: once nose is out of the way - try to get away without
             # instantiating the unused Galaxy server here.
-            installation_client_class: Union[
-                type[StandaloneToolShedInstallationClient], type[GalaxyInteractorToolShedInstallationClient]
-            ] = StandaloneToolShedInstallationClient
+            installation_client_class: (
+                type[StandaloneToolShedInstallationClient] | type[GalaxyInteractorToolShedInstallationClient]
+            ) = StandaloneToolShedInstallationClient
             full_stack_galaxy = False
         else:
             installation_client_class = GalaxyInteractorToolShedInstallationClient
@@ -683,7 +682,7 @@ class ShedTestCase(ShedApiTestCase):
         self._browser.check_string_not_in_page(patt)
 
     # Functions associated with user accounts
-    def _submit_register_form(self, email: str, password: str, username: str, redirect: Optional[str] = None):
+    def _submit_register_form(self, email: str, password: str, username: str, redirect: str | None = None):
         self._browser.fill_form_value("registration", "email", email)
         if redirect is not None:
             self._browser.fill_form_value("registration", "redirect", redirect)
@@ -702,7 +701,7 @@ class ShedTestCase(ShedApiTestCase):
         email: str = "test@bx.psu.edu",
         password: str = "testuser",
         username: str = "admin-user",
-        redirect: Optional[str] = None,
+        redirect: str | None = None,
     ) -> tuple[bool, bool, bool]:
         return self._ensure_user_via_api(email, password, username)
 
@@ -739,7 +738,7 @@ class ShedTestCase(ShedApiTestCase):
         email: str = "test@bx.psu.edu",
         password: str = "testuser",
         username: str = "admin-user",
-        redirect: Optional[str] = None,
+        redirect: str | None = None,
         logout_first: bool = True,
         explicit_logout: bool = False,
     ):
@@ -829,7 +828,7 @@ class ShedTestCase(ShedApiTestCase):
             url += f"?{urlencode(params)}"
         return url
 
-    def visit_url(self, url: str, params=None, allowed_codes: Optional[list[int]] = None) -> str:
+    def visit_url(self, url: str, params=None, allowed_codes: list[int] | None = None) -> str:
         parsed_url = urlparse(url)
         if len(parsed_url.netloc) == 0:
             url = f"http://{self.host}:{self.port}{parsed_url.path}"
@@ -957,7 +956,7 @@ class ShedTestCase(ShedApiTestCase):
         # each tool via /repository/load_invalid_tool. That Mako route is being removed.
         # The metadata only stores which tool configs are invalid, not the error messages.
 
-    def check_string_count_in_page(self, pattern, min_count: int, max_count: Optional[int] = None):
+    def check_string_count_in_page(self, pattern, min_count: int, max_count: int | None = None):
         """Checks the number of 'pattern' occurrences in the current browser page"""
         page = self.last_page()
         pattern_count = page.count(pattern)
@@ -1092,9 +1091,9 @@ class ShedTestCase(ShedApiTestCase):
         self,
         repository: Repository,
         source: str,
-        target: Optional[str] = None,
+        target: str | None = None,
         strings_displayed=None,
-        commit_message: Optional[str] = None,
+        commit_message: str | None = None,
     ):
         with self.cloned_repo(repository) as temp_directory:
             if target is None:
@@ -1461,9 +1460,9 @@ class ShedTestCase(ShedApiTestCase):
         category_name: str,
         install_tool_dependencies: bool = False,
         install_repository_dependencies: bool = True,
-        changeset_revision: Optional[str] = None,
-        preview_strings_displayed: Optional[list[str]] = None,
-        new_tool_panel_section_label: Optional[str] = None,
+        changeset_revision: str | None = None,
+        preview_strings_displayed: list[str] | None = None,
+        new_tool_panel_section_label: str | None = None,
     ) -> None:
         self.browse_tool_shed(url=self.url)
         category = self.populator.get_category_with_name(category_name)
@@ -1538,7 +1537,7 @@ class ShedTestCase(ShedApiTestCase):
         self,
         name: str,
         owner: str,
-        changeset_revision: Optional[str] = None,
+        changeset_revision: str | None = None,
         strings_displayed=None,
         strings_not_displayed=None,
     ):
@@ -1745,7 +1744,7 @@ class ShedTestCase(ShedApiTestCase):
         return self._installation_client.get_installed_repositories_by_name_owner(repository_name, repository_owner)
 
     def _get_installed_repository_for(
-        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
+        self, owner: str | None = None, name: str | None = None, changeset: str | None = None
     ):
         assert self._installation_client
         return self._installation_client.get_installed_repository_for(owner=owner, name=name, changeset=changeset)
@@ -1783,7 +1782,7 @@ class ShedTestCase(ShedApiTestCase):
         self,
         installed_repository: galaxy_model.ToolShedRepository,
         repository_name: str,
-        changeset: Optional[str] = None,
+        changeset: str | None = None,
     ) -> None:
         json = self.display_installed_repository_manage_json(installed_repository)
         if "repository_dependencies" not in json:

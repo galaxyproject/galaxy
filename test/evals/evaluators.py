@@ -89,6 +89,63 @@ class OrchestratorPlanIncludes(Evaluator[Any, Any, dict]):
 
 
 @dataclass
+class ToolProduced(Evaluator[Any, Any, dict]):
+    """Score 1.0 if the custom-tool agent produced a usable, validated tool.
+
+    Reads ``ctx.output["ok"]`` from :func:`tasks.make_custom_tool_task`. ``ok`` is
+    True only when the agent returned a structured, schema-valid, lint-clean tool
+    (after at most one validator retry). This is the headline pass/fail: it folds
+    in structured-output reliability on the nested schema plus every authoring-time
+    validator.
+    """
+
+    def evaluate(self, ctx: EvaluatorContext[Any, Any, dict]) -> float:
+        output = ctx.output if isinstance(ctx.output, dict) else {}
+        return 1.0 if output.get("ok") else 0.0
+
+
+@dataclass
+class FirstAttemptOk(Evaluator[Any, Any, dict]):
+    """Score 1.0 if a usable tool was produced on the FIRST attempt (no retry).
+
+    Reads ``ok`` and ``attempts`` from the task output. This isolates how easy the
+    schema + prompt make it for a model to get it right first time -- the quantity
+    that schema-shrinking, low temperature, and retry-anchoring aim to improve.
+    A model that only succeeds via the validator retry scores 0.0 here but 1.0 on
+    :class:`ToolProduced`, so the two together separate "can do it" from "does it
+    cleanly".
+    """
+
+    def evaluate(self, ctx: EvaluatorContext[Any, Any, dict]) -> float:
+        output = ctx.output if isinstance(ctx.output, dict) else {}
+        return 1.0 if output.get("ok") and output.get("attempts") == 1 else 0.0
+
+
+@dataclass
+class ToolYamlContains(Evaluator[Any, Any, dict]):
+    """Score = fraction of metadata['yaml_must_contain'] substrings present in the
+    produced tool YAML (case-insensitive).
+
+    Lets a case assert structural expectations about the generated tool -- e.g.
+    ``from_work_dir`` (an output is actually claimed), ``type: select`` (a choice
+    input was modeled), ``$(inputs.`` (the command references inputs). Scores 0.0
+    if no tool was produced. Partial credit so a near-miss is distinguishable from
+    a total miss.
+    """
+
+    def evaluate(self, ctx: EvaluatorContext[Any, Any, dict]) -> float:
+        needles = (ctx.metadata or {}).get("yaml_must_contain") or []
+        if not needles:
+            return 1.0
+        output = ctx.output if isinstance(ctx.output, dict) else {}
+        yaml_text = str(output.get("tool_yaml") or "").lower()
+        if not yaml_text:
+            return 0.0
+        hits = sum(1 for n in needles if n.lower() in yaml_text)
+        return hits / len(needles)
+
+
+@dataclass
 class ToolCallMatch(Evaluator[Any, Any, dict]):
     """Score 1.0 if the model called any tool named in metadata['expected_tool_calls'].
 

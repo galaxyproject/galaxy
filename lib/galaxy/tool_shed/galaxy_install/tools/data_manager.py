@@ -4,7 +4,6 @@ import os
 import time
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.tool_shed.galaxy_install.client import (
@@ -32,13 +31,13 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 
 class DataManagerHandler:
     app: InstallationTarget
-    root: Optional[Element] = None
+    root: Element | None = None
 
     def __init__(self, app: InstallationTarget):
         self.app = app
 
     @property
-    def data_managers_path(self) -> Optional[str]:
+    def data_managers_path(self) -> str | None:
         tree, error_message = parse_xml(self.app.config.shed_data_manager_config_file)
         if tree:
             root = tree.getroot()

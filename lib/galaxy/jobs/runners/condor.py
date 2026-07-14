@@ -16,7 +16,6 @@ import os
 import subprocess
 from typing import (
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy import model
@@ -50,7 +49,7 @@ class CondorJobState(AsynchronousJobState):
         user_log: str,
         *,
         files_dir=None,
-        job_id: Union[str, None] = None,
+        job_id: str | None = None,
         job_file=None,
         output_file=None,
         error_file=None,

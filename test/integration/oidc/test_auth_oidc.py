@@ -9,7 +9,6 @@ import time
 from string import Template
 from typing import (
     ClassVar,
-    Union,
 )
 from unittest.mock import (
     _patch,
@@ -111,7 +110,7 @@ class AbstractTestCases:
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
-        saved_env_vars: ClassVar[dict[str, Union[str, None]]]
+        saved_env_vars: ClassVar[dict[str, str | None]]
         config_patcher: ClassVar[_patch]
 
         @classmethod

@@ -53,7 +53,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "vault_conf.yml")
 
 
-def docker_run(image, name, *args, detach=True, remove=True, ports=None, env_vars: Optional[dict[str, str]] = None):
+def docker_run(image, name, *args, detach=True, remove=True, ports=None, env_vars: dict[str, str] | None = None):
     cmd = ["docker", "run"]
 
     if ports:
@@ -310,7 +310,7 @@ class ConfiguresObjectStores:
         cls,
         template: string.Template,
         config: dict[str, Any],
-        template_params: Optional[dict[str, Any]] = None,
+        template_params: dict[str, Any] | None = None,
         format: ObjectStoreConfigFormat = "xml",
     ):
         temp_directory = cls._test_driver.mkdtemp()

@@ -2,7 +2,7 @@
 import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
@@ -34,6 +34,18 @@ watch(
     },
     { immediate: true },
 );
+
+/** A list of paths for which `p-3` should not be applied
+ *
+ * TODO: Maybe we remove this global `p-3` and add it to the individual components that need it instead?
+ */
+const isNoPaddingPath = computed(() => {
+    return (
+        route.path.startsWith("/galaxyai") ||
+        (route.path.startsWith("/histories/") && route.path.includes("/pages/")) ||
+        route.path.startsWith("/pages/editor")
+    );
+});
 
 const showCenter = ref(false);
 const { showPanels } = usePanels();
@@ -71,10 +83,7 @@ onUnmounted(() => {
     <div id="columns" class="d-flex">
         <ActivityBar v-if="showPanels" />
         <div id="center" class="d-flex flex-column w-100" style="min-width: 0">
-            <div
-                class="flex-grow-1 overflow-auto"
-                :class="{ 'p-3': !route.path.startsWith('/galaxyai') }"
-                style="min-height: 0">
+            <div class="flex-grow-1 overflow-auto" :class="{ 'p-3': !isNoPaddingPath }" style="min-height: 0">
                 <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
                 <div v-show="!showCenter" class="h-100">
                     <router-view :key="$route.fullPath" class="h-100" />

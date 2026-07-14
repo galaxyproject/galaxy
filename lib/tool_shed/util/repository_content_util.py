@@ -2,7 +2,6 @@ import os
 import shutil
 import tempfile
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -34,8 +33,8 @@ def upload_tar(
     dry_run: bool = False,
     remove_repo_files_not_in_tar: bool = True,
     new_repo_alert: bool = False,
-    rdah: Optional[RepositoryDependencyAttributeHandler] = None,
-    tdah: Optional[ToolDependencyAttributeHandler] = None,
+    rdah: RepositoryDependencyAttributeHandler | None = None,
+    tdah: ToolDependencyAttributeHandler | None = None,
 ) -> ChangeResponseT:
     host = trans.repositories_hostname
     app = trans.app

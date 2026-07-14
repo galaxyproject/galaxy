@@ -156,8 +156,8 @@ these are the tool panel views defined by the EDAM ontology (see configuration
 ``edam_panel_views``).
 
 The static admin-defined tool panel views are defined by YAML files contained
-in the directory specified by ``panel_views_dir``. A default tool panel views
-can be defined by ``default_tool_panel``.
+in the directory specified by ``panel_views_dir``. A default tool panel view
+can be defined by ``default_panel_view``.
 
 The following example defines a tool panel view ``rna_analysis`` that will be
 shown to the user as ``"RNA Analysis"``. The tool panel view just uses existing

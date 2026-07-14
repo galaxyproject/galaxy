@@ -10,7 +10,7 @@ import AdminRoutes from "@/entry/analysis/routes/admin-routes";
 import LibraryRoutes from "@/entry/analysis/routes/library-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
 import { getAppRoot } from "@/onload/loadConfig";
-import { requireAuth } from "@/router/guards";
+import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -257,6 +257,7 @@ export function getRouter(Galaxy) {
                         path: "upload/:methodId",
                         component: UploadMethodView,
                         props: true,
+                        beforeEnter: requireAuthForUploadMethod,
                     },
                     {
                         path: "help/terms/:term",
@@ -467,6 +468,7 @@ export function getRouter(Galaxy) {
                             historyId: route.params.historyId,
                             pageId: route.params.pageId,
                             displayOnly: route.query.displayOnly === "true",
+                            invocationId: route.query.invocation_id,
                         }),
                     },
                     {
@@ -556,6 +558,7 @@ export function getRouter(Galaxy) {
                             invocationId: route.query.invocation_id,
                             mode: "create",
                         }),
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "pages/edit",
@@ -564,6 +567,7 @@ export function getRouter(Galaxy) {
                             id: route.query.id,
                             mode: "edit",
                         }),
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "/pages/editor",
@@ -571,6 +575,7 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             pageId: route.query.id,
                             displayOnly: route.query.displayOnly === "true",
+                            hideHeader: route.query.hideHeader === "true",
                         }),
                     },
                     {
@@ -589,8 +594,8 @@ export function getRouter(Galaxy) {
                         component: Sharing,
                         props: (route) => ({
                             id: route.query.id,
-                            pluralName: "Reports",
-                            modelClass: "Report",
+                            pluralName: "Pages",
+                            modelClass: "Page",
                         }),
                     },
                     {

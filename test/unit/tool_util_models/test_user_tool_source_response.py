@@ -9,7 +9,6 @@ the API doesn't 500. See Sentry GALAXY-TEST-588ZYT7JSX3V0.
 
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.tool_util_models import (
@@ -21,7 +20,7 @@ from galaxy.tool_util_models.tool_outputs import (
     IncomingToolOutputCollection,
 )
 
-LEGACY_DATA_INPUT: Dict[str, Any] = {
+LEGACY_DATA_INPUT: dict[str, Any] = {
     "type": "data",
     "name": "input",
     "format": ["data"],
@@ -32,7 +31,7 @@ LEGACY_DATA_INPUT: Dict[str, Any] = {
     "extensions": ["data"],
 }
 
-LEGACY_TEXT_INPUT: Dict[str, Any] = {
+LEGACY_TEXT_INPUT: dict[str, Any] = {
     "type": "text",
     "name": "msg",
     "value": "hello",
@@ -43,10 +42,11 @@ LEGACY_TEXT_INPUT: Dict[str, Any] = {
     "default_options": [],
 }
 
-BASE_TOOL: Dict[str, Any] = {
+BASE_TOOL: dict[str, Any] = {
     "class": "GalaxyUserTool",
     "id": "legacy-tool",
     "name": "Legacy",
+    "version": "1.0.0",
     "container": "busybox",
     "shell_command": "echo $(inputs.msg)",
     "outputs": [],
@@ -85,6 +85,18 @@ def test_lift_status_lifted_for_drift_only():
     for inp in dumped["inputs"]:
         assert "parameter_type" not in inp
         assert "argument" not in inp
+
+
+def test_lift_status_invalid_for_missing_version_still_returns_tool():
+    """`version` is required, so a stored row that predates the requirement can't be
+    auto-lifted. It is still returned to its author -- as the raw dict with an
+    'invalid' status -- so they can see and fix what they defined, rather than the
+    endpoint 500-ing or hiding the tool."""
+    versionless = {k: v for k, v in BASE_TOOL.items() if k != "version"}
+    status, parsed, errors = lift_user_tool_source(versionless)
+    assert status == "invalid"
+    assert parsed == versionless  # returned verbatim
+    assert any("version" in e for e in errors)
 
 
 def test_lift_handles_nested_conditional_drift():
@@ -141,7 +153,7 @@ def test_lift_does_not_mutate_input():
     assert original["inputs"][1] == snapshot["inputs"][1]
 
 
-LEGACY_NESTED_COLLECTION_OUTPUT: Dict[str, Any] = {
+LEGACY_NESTED_COLLECTION_OUTPUT: dict[str, Any] = {
     "type": "collection",
     "name": "outs",
     "label": None,

@@ -1,9 +1,5 @@
 import logging
 import os
-from typing import (
-    Dict,
-    List,
-)
 
 import yaml
 
@@ -16,14 +12,14 @@ EXTENSIONS = [".yml", ".yaml", ".json"]
 
 
 class StaticToolBoxViewSources:
-    view_directories: List[str]
-    view_dicts: List[Dict]
+    view_directories: list[str]
+    view_dicts: list[dict]
 
     def __init__(self, view_directories=None, view_dicts=None):
         self.view_directories = config_directories_from_setting(view_directories) or []
         self.view_dicts = view_dicts or []
 
-    def get_definitions(self) -> List[StaticToolBoxView]:
+    def get_definitions(self) -> list[StaticToolBoxView]:
         view_definitions = []
 
         for view_dict in self.view_dicts:

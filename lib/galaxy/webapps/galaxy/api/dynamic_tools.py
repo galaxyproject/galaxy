@@ -3,8 +3,6 @@ from datetime import datetime
 from typing import (
     Any,
     Literal,
-    Optional,
-    Union,
 )
 
 from fastapi import Response
@@ -50,7 +48,7 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["dynamic_tools"])
 
-DatabaseIdOrUUID = Union[DecodedDatabaseIdField, str]
+DatabaseIdOrUUID = DecodedDatabaseIdField | str
 
 
 def _set_lift_headers(response: Response, status: str, errors: list[str]) -> None:
@@ -74,12 +72,12 @@ class UnprivilegedToolResponse(BaseModel):
     uuid: str
     active: bool
     hidden: bool
-    tool_id: Optional[str]
-    tool_format: Optional[str]
+    tool_id: str | None
+    tool_format: str | None
     create_time: datetime
     # Either a strict UserToolSource (status="ok" or "lifted") or the raw
     # stored dict (status="invalid"). Consumers narrow on `representation_status`.
-    representation: Union[UserToolSource, dict[str, Any]]
+    representation: UserToolSource | dict[str, Any]
     representation_status: Literal["ok", "lifted", "invalid"] = "ok"
     representation_errors: list[str] = []
 
@@ -201,7 +199,7 @@ class DynamicToolApi:
         return [t.to_dict() for t in self.dynamic_tools_manager.list_tools()]
 
     @router.get("/api/dynamic_tools/{dynamic_tool_id}", public=True)
-    def show(self, dynamic_tool_id: Union[DatabaseIdOrUUID, str]):
+    def show(self, dynamic_tool_id: DatabaseIdOrUUID | str):
         dynamic_tool = self.dynamic_tools_manager.get_tool_by_id_or_uuid(dynamic_tool_id)
         if dynamic_tool is None:
             raise ObjectNotFound()

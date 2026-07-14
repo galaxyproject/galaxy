@@ -186,6 +186,16 @@ interface Props {
      * @default false
      */
     highlighted?: boolean;
+
+    /** Whether the card is disabled (non-interactive, dimmed appearance)
+     * @default false
+     */
+    disabled?: boolean;
+
+    /** Tooltip text to show when the card is disabled
+     * @default undefined
+     */
+    disabledTitle?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -218,6 +228,8 @@ const props = withDefaults(defineProps<Props>(), {
     updateTimeIcon: () => faEdit,
     updateTimeTitle: "Last updated",
     highlighted: false,
+    disabled: false,
+    disabledTitle: undefined,
 });
 
 /**
@@ -304,6 +316,9 @@ const getActionId = (cardId: string, actionId: string) => `g-card-action-${actio
 const allowedTitleLines = computed(() => props.titleNLines);
 
 function onKeyDown(event: KeyboardEvent) {
+    if (props.disabled) {
+        return;
+    }
     if ((props.clickable && event.key === "Enter") || event.key === " ") {
         event.stopPropagation();
         emit("click", event);
@@ -318,20 +333,22 @@ function onKeyDown(event: KeyboardEvent) {
     <component
         :is="'div'"
         :id="`g-card-${props.id}`"
-        :role="props.clickable ? 'button' : undefined"
+        :role="props.clickable && !props.disabled ? 'button' : undefined"
         class="g-card pt-0 px-1 mb-2"
         :class="[
             { 'g-card-grid-view': gridView },
             { 'g-card-selected': selected },
             { 'g-card-current': current },
             { 'g-card-published': published },
-            { 'g-card-clickable': props.clickable },
+            { 'g-card-clickable': props.clickable && !props.disabled },
+            { 'g-card-disabled': props.disabled },
             { 'g-card-dim': props.dimWhenUnselected && !props.selected },
             { 'g-card-dropdown-open': extraActionsOpen },
             containerClass,
         ]"
-        :tabindex="props.clickable ? 0 : undefined"
-        @click="props.clickable ? emit('click', $event) : undefined"
+        :tabindex="props.clickable && !props.disabled ? 0 : undefined"
+        :title="props.disabled ? props.disabledTitle : undefined"
+        @click="props.clickable && !props.disabled ? emit('click', $event) : undefined"
         @keydown="onKeyDown">
         <div
             :id="`g-card-content-${props.id}`"
@@ -762,6 +779,15 @@ function onKeyDown(event: KeyboardEvent) {
 
     &.g-card-highlighted .g-card-content {
         box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
+    }
+
+    &.g-card-disabled {
+        cursor: default;
+
+        .g-card-content {
+            filter: saturate(0.3);
+            opacity: 0.5;
+        }
     }
 
     &.g-card-clickable {

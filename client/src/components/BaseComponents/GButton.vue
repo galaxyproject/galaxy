@@ -241,8 +241,9 @@ const buttonElementRef = useResolveElement(buttonRef);
         background-color: var(--color-grey-100) !important;
         border-color: var(--color-grey-200) !important;
         color: var(--color-grey-500) !important;
+        // No `pointer-events: none` here: clicks/routing are already blocked in JS, and
+        // suppressing pointer events would also kill hover, hiding the `disabledTitle` tooltip.
         cursor: default;
-        pointer-events: none;
 
         &:focus-visible {
             border-color: var(--color-grey-500) !important;

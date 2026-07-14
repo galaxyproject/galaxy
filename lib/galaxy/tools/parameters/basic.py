@@ -19,13 +19,13 @@ from typing import (
     cast,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from packaging.version import Version
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
+from galaxy.exceptions import ToolExecutionError
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.managers.dbkeys import read_dbnames
 from galaxy.model import (
@@ -93,6 +93,7 @@ from . import (
 from .dataset_matcher import get_dataset_matcher_factory
 from .sanitize import ToolParameterSanitizer
 from .workflow_utils import (
+    ConnectedValue,
     is_runtime_value,
     runtime_to_json,
     runtime_to_object,
@@ -102,6 +103,7 @@ from .workflow_utils import (
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
+    from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.model import (
         History,
         HistoryItem,
@@ -444,7 +446,7 @@ class TextToolParameter(SimpleTextToolParameter):
             return super().validate(value, trans)
 
     @property
-    def wrapper_default(self) -> Optional[str]:
+    def wrapper_default(self) -> str | None:
         """Handle change in default handling pre and post 23.0 profiles."""
         profile = self.profile
         legacy_behavior = profile is None or Version(str(profile)) < Version("23.0")
@@ -722,6 +724,9 @@ class FileToolParameter(ToolParameter):
                 assert local_filename.startswith(
                     upload_store
                 ), f"Filename provided by nginx ({local_filename}) is not in correct directory ({upload_store})."
+            if not os.path.exists(local_filename):
+                log.error("Local file missing for local_filename=%s upload_store=%s", local_filename, upload_store)
+                raise ToolExecutionError("File upload failed, missing local file.")
             value = dict(filename=value["name"], local_filename=local_filename)
         return value
 
@@ -1006,7 +1011,7 @@ class SelectToolParameter(ToolParameter):
             call_other_values.update(other_values.dict)
         return call_other_values
 
-    def get_options(self, trans, other_values) -> Sequence[Union[ParameterOption, DrillDownOptionsDict]]:
+    def get_options(self, trans, other_values) -> Sequence[ParameterOption | DrillDownOptionsDict]:
         if self.options:
             return self.options.get_options(trans, other_values)
         elif self.dynamic_options:
@@ -1116,6 +1121,17 @@ class SelectToolParameter(ToolParameter):
                         )
             if is_runtime_value(value):
                 return None
+            if isinstance(value, dict):
+                # A dict is unhashable and can never be a legal value, but
+                # testing membership against the set of legal values would
+                # raise an opaque "unhashable type" TypeError. Treat it as an
+                # invalid option instead.
+                raise ParameterValueError(
+                    f"an invalid option ({value!r}) was selected (valid options: {','.join(iter_to_string(legal_values))})",
+                    self.name,
+                    value,
+                    is_dynamic=self.is_dynamic,
+                )
             if value in legal_values:
                 return value
             elif value in fallback_values:
@@ -1174,7 +1190,7 @@ class SelectToolParameter(ToolParameter):
             if not self.optional and not self.multiple and options:
                 # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
-                value2: Optional[Union[str, list[str]]] = options[0].value
+                value2: str | list[str] | None = options[0].value
             else:
                 value2 = None
         elif len(value) == 1 or not self.multiple:
@@ -1874,6 +1890,70 @@ def _carried_state_label(value) -> str:
     return "not in current history"
 
 
+def _is_connected_value(value) -> bool:
+    """True iff ``value`` is a workflow ``ConnectedValue`` (an input fed by an
+    upstream step's output rather than chosen at runtime)."""
+    return is_runtime_value(value) and isinstance(runtime_to_object(value), ConnectedValue)
+
+
+def _paginated_visible_datasets(
+    trans: "ProvidesHistoryContext",
+    history: "History",
+    *,
+    extensions: set[str] | None,
+    valid_states: tuple[str, ...] | None,
+    search: str | None = None,
+    offset: int = 0,
+    limit: int = 50,
+) -> tuple[list[HistoryDatasetAssociation], int]:
+    """``history.paginated_active_visible_datasets`` memoized on the request.
+
+    Building one form with many ``data`` parameters (most notably the workflow
+    Run form, which renders every step in a single request) otherwise re-issues
+    the same paginated SQL against the same, unchanging history once per
+    parameter -- O(parameters) round-trips, slow even on an empty history
+    (issue #22927). Results are memoized by signature on the request context's
+    short-term cache (see ``ProvidesUserContext.get_or_set_cache_value``); the
+    cache is shared across every step's proxy work context for the request and
+    never outlives it, so the history cannot change underneath it.
+    """
+    key = (
+        "data_param_hda_page",
+        history.id,
+        frozenset(extensions) if extensions is not None else None,
+        tuple(valid_states) if valid_states is not None else None,
+        search or None,
+        offset,
+        limit,
+    )
+    return trans.get_or_set_cache_value(
+        key,
+        lambda: history.paginated_active_visible_datasets(
+            extensions=extensions, valid_states=valid_states, search=search, offset=offset, limit=limit
+        ),
+    )
+
+
+def _paginated_dataset_collections(
+    trans: "ProvidesHistoryContext",
+    history: "History",
+    *,
+    visible_only: bool,
+    search: str | None = None,
+    offset: int = 0,
+    limit: int = 50,
+) -> tuple[list[HistoryDatasetCollectionAssociation], int]:
+    """``history.paginated_active_dataset_collections`` memoized on the request
+    context's short-term cache (see :func:`_paginated_visible_datasets`)."""
+    key = ("data_param_hdca_page", history.id, bool(visible_only), search or None, offset, limit)
+    return trans.get_or_set_cache_value(
+        key,
+        lambda: history.paginated_active_dataset_collections(
+            visible_only=visible_only, search=search, offset=offset, limit=limit
+        ),
+    )
+
+
 class BaseDataToolParameter(ToolParameter):
     multiple: bool
 
@@ -1942,7 +2022,7 @@ class BaseDataToolParameter(ToolParameter):
             self.options_filter_attribute = options_elem.get("options_filter_attribute", None)
         self.is_dynamic = self.options is not None
 
-    def _acceptable_extensions(self) -> Optional[set[str]]:
+    def _acceptable_extensions(self) -> set[str] | None:
         """Return a set of HDA extensions that match this parameter's formats
         directly or via implicit conversion. ``None`` means no extension filter
         (the parameter accepts all formats)."""
@@ -1951,11 +2031,10 @@ class BaseDataToolParameter(ToolParameter):
             return cached
         formats = getattr(self, "formats", None)
         if not formats:
-            self._acceptable_extensions_cache: Optional[set[str]] = None
+            self._acceptable_extensions_cache: set[str] | None = None
             return None
         accepted: set[str] = set(getattr(self, "extensions", []))
-        registry = self.datatypes_registry
-        if registry is not None:
+        if (registry := self.datatypes_registry) is not None:
             try:
                 all_exts = list(registry.datatypes_by_extension.keys())
             except AttributeError:
@@ -1984,6 +2063,10 @@ class BaseDataToolParameter(ToolParameter):
             return RuntimeValue()
         if self.optional:
             return None
+        if _is_connected_value((other_values or {}).get(self.name)):
+            # Connected inputs are supplied by an upstream step; there is no
+            # default to pick from the history, so skip the scan (issue #22927).
+            return None
         if (history := trans.history) is not None:
             dataset_matcher_factory = get_dataset_matcher_factory(trans)
             dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
@@ -1993,7 +2076,9 @@ class BaseDataToolParameter(ToolParameter):
                 chunk_size = MAX_OPTIONS_PAGE_SIZE
                 db_offset = 0
                 while True:
-                    rows, total = history.paginated_active_visible_datasets(
+                    rows, total = _paginated_visible_datasets(
+                        trans,
+                        history,
                         extensions=self._acceptable_extensions(),
                         valid_states=dataset_matcher_factory.valid_input_states,
                         offset=db_offset,
@@ -2013,17 +2098,19 @@ class BaseDataToolParameter(ToolParameter):
                 chunk_size = MAX_OPTIONS_PAGE_SIZE
                 db_offset = 0
                 while True:
-                    rows, total = history.paginated_active_dataset_collections(
+                    collection_rows, total = _paginated_dataset_collections(
+                        trans,
+                        history,
                         visible_only=True,
                         offset=db_offset,
                         limit=chunk_size,
                     )
-                    if not rows:
+                    if not collection_rows:
                         return None
-                    for hdca in rows:
+                    for hdca in collection_rows:
                         if dataset_collection_matcher.hdca_match(hdca):
                             return hdca
-                    db_offset += len(rows)
+                    db_offset += len(collection_rows)
                     if db_offset >= total:
                         return None
 
@@ -2120,18 +2207,14 @@ class BaseDataToolParameter(ToolParameter):
                 raise ParameterValueError(f"at most {self.max} datasets are required", self.name)
 
 
-ItemFromSrcAny = Union[
-    DatasetCollectionElement,
-    HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
-    LibraryDatasetDatasetAssociation,
-    CollectionAdapter,
-]
-ItemFromSrcCollection = Union[
-    DatasetCollectionElement,
-    HistoryDatasetCollectionAssociation,
-    CollectionAdapter,
-]
+ItemFromSrcAny = (
+    DatasetCollectionElement
+    | HistoryDatasetAssociation
+    | HistoryDatasetCollectionAssociation
+    | LibraryDatasetDatasetAssociation
+    | CollectionAdapter
+)
+ItemFromSrcCollection = DatasetCollectionElement | HistoryDatasetCollectionAssociation | CollectionAdapter
 
 
 def _decode_dataset_id(value, security: "IdEncodingHelper", parameter_name: str) -> int:
@@ -2284,13 +2367,11 @@ class DataToolParameter(BaseDataToolParameter):
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
         rval: list[
-            Union[
-                DatasetCollectionElement,
-                HistoryDatasetAssociation,
-                HistoryDatasetCollectionAssociation,
-                LibraryDatasetDatasetAssociation,
-                CollectionAdapter,
-            ]
+            DatasetCollectionElement
+            | HistoryDatasetAssociation
+            | HistoryDatasetCollectionAssociation
+            | LibraryDatasetDatasetAssociation
+            | CollectionAdapter
         ] = []
         if isinstance(value, list):
             found_srcs = set()
@@ -2343,13 +2424,13 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
-            value_to_check: Union[
-                DatasetInstance,
-                DatasetCollection,
-                DatasetCollectionElement,
-                HistoryDatasetCollectionAssociation,
-                CollectionAdapter,
-            ] = v
+            value_to_check: (
+                DatasetInstance
+                | DatasetCollection
+                | DatasetCollectionElement
+                | HistoryDatasetCollectionAssociation
+                | CollectionAdapter
+            ) = v
             if isinstance(v, DatasetCollectionElement):
                 if hda := v.hda:
                     value_to_check = hda
@@ -2493,7 +2574,7 @@ class DataToolParameter(BaseDataToolParameter):
             ref = ref()
         return str(ref)
 
-    def to_dict(self, trans, other_values=None, pagination: Optional[ParameterPaginationT] = None):
+    def to_dict(self, trans, other_values=None, pagination: ParameterPaginationT | None = None):
         other_values = other_values or {}
         d = super().to_dict(trans)
         self._fill_to_dict_static(d)
@@ -2503,6 +2584,12 @@ class DataToolParameter(BaseDataToolParameter):
 
         history = trans.history
         if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED:
+            return d
+
+        if _is_connected_value(other_values.get(self.name)):
+            # Input is wired to an upstream step: the run form renders it as
+            # "connected" (no dropdown) and never uses these options, so skip the
+            # per-parameter history scan entirely (issue #22927).
             return d
 
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
@@ -2517,7 +2604,7 @@ class DataToolParameter(BaseDataToolParameter):
         job_input_values = util.listify(other_values.get(self.name))
 
         job_input_values = self._page_hda_matches(
-            builder, history, dataset_matcher, dataset_matcher_factory, job_input_values
+            trans, builder, history, dataset_matcher, dataset_matcher_factory, job_input_values
         )
         unresolved = self._pin_live_hda_inputs(builder, history, dataset_matcher, job_input_values)
         self._carry_unresolved_inputs(builder, history, unresolved)
@@ -2553,6 +2640,7 @@ class DataToolParameter(BaseDataToolParameter):
 
     def _page_hda_matches(
         self,
+        trans,
         builder: DataOptionsBuilder,
         history,
         dataset_matcher,
@@ -2569,7 +2657,9 @@ class DataToolParameter(BaseDataToolParameter):
         valid_states = dataset_matcher_factory.valid_input_states
 
         def hda_query(*, offset, limit):
-            return history.paginated_active_visible_datasets(
+            return _paginated_visible_datasets(
+                trans,
+                history,
                 extensions=acceptable_extensions,
                 valid_states=valid_states,
                 search=hda_search,
@@ -2677,8 +2767,8 @@ class DataToolParameter(BaseDataToolParameter):
         _offset, _limit, hdca_search = builder.page("hdca")
 
         def hdca_query(*, offset, limit):
-            return history.paginated_active_dataset_collections(
-                visible_only=True, search=hdca_search, offset=offset, limit=limit
+            return _paginated_dataset_collections(
+                trans, history, visible_only=True, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -2737,7 +2827,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             )
 
     @property
-    def collection_types(self) -> Optional[list[str]]:
+    def collection_types(self) -> list[str] | None:
         return self._collection_types
 
     def _history_query(self, trans):
@@ -2773,7 +2863,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         session = trans.sa_session
 
         other_values = other_values or {}
-        rval: Optional[ItemFromSrcCollection] = None
+        rval: ItemFromSrcCollection | None = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional and not self.default_object:
@@ -2843,7 +2933,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             display_text = "No dataset collection."
         return display_text
 
-    def to_dict(self, trans, other_values=None, pagination: Optional[ParameterPaginationT] = None):
+    def to_dict(self, trans, other_values=None, pagination: ParameterPaginationT | None = None):
         other_values = other_values or {}
         d = super().to_dict(trans)
         d["collection_types"] = self.collection_types
@@ -2858,6 +2948,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
 
         history = trans.history
         if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED:
+            return d
+
+        if _is_connected_value(other_values.get(self.name)):
+            # Connected collection input: fed by an upstream step, rendered as
+            # "connected" with no dropdown, so skip the history scan (issue #22927).
             return d
 
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
@@ -2902,8 +2997,8 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         history_query = self._history_query(trans)
 
         def hdca_query(*, offset, limit):
-            return history.paginated_active_dataset_collections(
-                visible_only=False, search=hdca_search, offset=offset, limit=limit
+            return _paginated_dataset_collections(
+                trans, history, visible_only=False, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -3195,7 +3290,7 @@ def history_item_to_json(value, app, use_security):
     src = None
 
     # unwrap adapter
-    collection_adapter: Optional[CollectionAdapter] = None
+    collection_adapter: CollectionAdapter | None = None
     if isinstance(value, CollectionAdapter):
         collection_adapter = value
         return collection_adapter.to_adapter_model().model_dump()

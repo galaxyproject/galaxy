@@ -9,8 +9,6 @@ from functools import partial
 from typing import (
     Annotated,
     Any,
-    Optional,
-    Union,
 )
 
 import anyio
@@ -93,7 +91,7 @@ Please only say that something went wrong when configuring the ai prompt in your
 """
 
 JobIdQueryParam = Annotated[
-    Optional[DecodedDatabaseIdField],
+    DecodedDatabaseIdField | None,
     Field(
         default=None,
         title="Job ID",
@@ -122,14 +120,14 @@ class ChatAPI:
     @router.post("/api/chat", unstable=True)
     async def query(
         self,
-        job_id: Optional[
+        job_id: (
             Annotated[
-                DecodedDatabaseIdField,
-                Query(title="Job ID", description="The Job ID for backwards compatibility"),
+                DecodedDatabaseIdField, Query(title="Job ID", description="The Job ID for backwards compatibility")
             ]
-        ] = None,
-        payload: Optional[ChatPayload] = None,
-        query: Optional[str] = Query(default=None, description="Query string for general chat"),
+            | None
+        ) = None,
+        payload: ChatPayload | None = None,
+        query: str | None = Query(default=None, description="Query string for general chat"),
         agent_type: str = Query(default="auto", description="Agent type to use for the query"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
@@ -197,6 +195,9 @@ class ChatAPI:
             # being masked as 500.
             page_obj = self.chat_manager.get_accessible_page(trans, page_id)
 
+        if page_id is None:
+            page_id, page_obj = self.chat_manager.resolve_page_from_interface_context(trans, query_context)
+
         try:
             if HAS_AGENTS:
                 full_context: dict[str, Any] = query_context.copy() if query_context else {}
@@ -204,6 +205,7 @@ class ChatAPI:
                 # Export page content (encodes IDs) so the agent sees the same
                 # text the editor has -- hashes and proposals match the client.
                 if page_id:
+                    full_context["page_id"] = page_id
                     if page_obj:
                         full_context["history_id"] = page_obj.history_id
                         if not full_context.get("history_id"):
@@ -261,7 +263,7 @@ class ChatAPI:
                     conversation_data = {
                         "query": query_text,
                         "response": result.get("response", ""),
-                        "agent_type": agent_type,
+                        "agent_type": agent_resp.agent_type if agent_resp else agent_type,
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
                     }
                     message_content = json.dumps(conversation_data)
@@ -276,7 +278,7 @@ class ChatAPI:
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
                     }
                     exchange = self.chat_manager.create_page_chat(
-                        trans, page_id, query_text, storable_result, agent_type
+                        trans, page_id, query_text, storable_result, agent_resp.agent_type if agent_resp else agent_type
                     )
                     result["exchange_id"] = exchange.id
                 else:
@@ -286,7 +288,13 @@ class ChatAPI:
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
                     }
                     exchange = await anyio.to_thread.run_sync(
-                        partial(self.chat_manager.create_general_chat, trans, query_text, storable_result, agent_type)
+                        partial(
+                            self.chat_manager.create_general_chat,
+                            trans,
+                            query_text,
+                            storable_result,
+                            agent_resp.agent_type if agent_resp else agent_type,
+                        )
                     )
                     result["exchange_id"] = exchange.id
 
@@ -389,7 +397,7 @@ class ChatAPI:
         feedback: int,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> Union[int, None]:
+    ) -> int | None:
         """Provide feedback on the chatbot response."""
         job = self.job_manager.get_accessible_job(trans, job_id)
         chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)
@@ -399,7 +407,7 @@ class ChatAPI:
     async def generate_report(
         self,
         workflow_id: str = Path(..., description="Workflow ID to generate the report for"),
-        version: Optional[int] = Query(None, description="Version of the workflow"),
+        version: int | None = Query(None, description="Version of the workflow"),
         instance: bool = Query(False, description="Whether the workflow_id is an instance ID"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
@@ -461,48 +469,7 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> list[dict[str, Any]]:
         """Get all messages for a specific chat exchange."""
-        exchange = self.chat_manager.get_exchange_by_id(trans, exchange_id)
-        if not exchange:
-            return []
-
-        messages = []
-
-        for msg in exchange.messages:
-            try:
-                # Parse JSON content to extract individual messages
-                data = json.loads(msg.message)
-                # Add both user query and assistant response
-                if "query" in data:
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": data["query"],
-                            "timestamp": msg.create_time.isoformat() if msg.create_time else None,
-                        }
-                    )
-                if "response" in data:
-                    messages.append(
-                        {
-                            "role": "assistant",
-                            "content": data["response"],
-                            "agent_type": data.get("agent_type", "unknown"),
-                            "agent_response": data.get("agent_response"),
-                            "timestamp": msg.create_time.isoformat() if msg.create_time else None,
-                            "feedback": msg.feedback,
-                        }
-                    )
-            except (json.JSONDecodeError, AttributeError):
-                # Fallback for non-JSON messages
-                messages.append(
-                    {
-                        "role": "assistant",
-                        "content": msg.message,
-                        "timestamp": msg.create_time.isoformat() if msg.create_time else None,
-                        "feedback": msg.feedback,
-                    }
-                )
-
-        return messages
+        return self.chat_manager.get_exchange_messages(trans, exchange_id)
 
     def _format_exchange_history(self, exchanges) -> list[ChatHistoryItemResponse]:
         """Convert a list of ChatExchange ORM objects into API response models."""
@@ -520,7 +487,7 @@ class ChatAPI:
                         id=exchange.id,
                         query=data.get("query", ""),
                         response=data.get("response", ""),
-                        agent_type=data.get("agent_type", "unknown"),
+                        agent_type=self.chat_manager.responder_agent_type(data),
                         agent_response=agent_response,
                         timestamp=message.create_time.isoformat() if message.create_time else None,
                         feedback=message.feedback,
@@ -536,7 +503,7 @@ class ChatAPI:
         if self.config.ai_api_key is None:
             raise ConfigurationError("AI API key is not configured for this instance.")
 
-    async def _get_ai_response(self, query: str, trans: ProvidesUserContext, context_type: Optional[str] = None) -> str:
+    async def _get_ai_response(self, query: str, trans: ProvidesUserContext, context_type: str | None = None) -> str:
         """Get response from AI using pydantic-ai Agent"""
         system_prompt = self._get_system_prompt()
         username = trans.user.username if trans.user else "Anonymous User"
@@ -599,7 +566,7 @@ class ChatAPI:
         trans: ProvidesUserContext,
         user: User,
         job=None,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> str:
         """Get response using the new agent system (legacy method for compatibility)."""
         result = await self._get_agent_response_full(query, agent_type, trans, user, job, context)
@@ -612,7 +579,7 @@ class ChatAPI:
         trans: ProvidesUserContext,
         user: User,
         job=None,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> AgentResponse:
         """Get full agent response with metadata and suggestions."""
         # Prepare context - merge passed context with job context

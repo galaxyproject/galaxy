@@ -67,7 +67,7 @@ function onItemKeydown(item: any, index: number, event: KeyboardEvent) {
     overflow-y: auto;
 }
 .sidebar-item:hover {
-    background: var(--gray-200);
+    background: var(--color-grey-200);
     cursor: pointer;
 }
 </style>

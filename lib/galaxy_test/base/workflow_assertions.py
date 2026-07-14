@@ -6,7 +6,6 @@ Mixin providing workflow structure assertions shared between API and Selenium te
 import operator
 from json import loads
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -18,7 +17,7 @@ class WorkflowStructureAssertions:
     """Mixin providing workflow structure verification methods."""
 
     def assert_steps_of_type(
-        self, workflow: "dict[str, Any]", step_type: str, expected_len: Optional[int] = None
+        self, workflow: "dict[str, Any]", step_type: str, expected_len: int | None = None
     ) -> "list[dict[str, Any]]":
         """Get steps of given type from workflow, optionally asserting count."""
         steps = [s for s in workflow["steps"].values() if s["type"] == step_type]
@@ -89,11 +88,11 @@ class WorkflowStructureAssertions:
     def check_workflow(
         self,
         workflow: "dict[str, Any]",
-        step_count: Optional[int] = None,
+        step_count: int | None = None,
         verify_connected: bool = False,
-        data_input_count: Optional[int] = None,
-        data_collection_input_count: Optional[int] = None,
-        tool_ids: "Optional[list[str]]" = None,
+        data_input_count: int | None = None,
+        data_collection_input_count: int | None = None,
+        tool_ids: "list[str] | None" = None,
     ) -> None:
         """Check workflow against expected structure."""
         steps = workflow["steps"]

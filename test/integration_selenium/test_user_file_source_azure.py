@@ -13,7 +13,6 @@ from .framework import (
 
 
 class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumIntegration):
-
     @skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
     @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
     @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")

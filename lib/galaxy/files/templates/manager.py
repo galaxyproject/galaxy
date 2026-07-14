@@ -1,6 +1,5 @@
 import os
 from typing import (
-    Optional,
     Protocol,
 )
 
@@ -26,8 +25,8 @@ SECRETS_NEED_VAULT_MESSAGE = "The file source templates configuration can not be
 
 
 class AppConfigProtocol(Protocol):
-    file_source_templates: Optional[list[RawTemplateConfig]]
-    file_source_templates_config_file: Optional[str]
+    file_source_templates: list[RawTemplateConfig] | None
+    file_source_templates_config_file: str | None
 
 
 class ConfiguredFileSourceTemplates:

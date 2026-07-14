@@ -200,10 +200,18 @@ export interface BuildPayloadOptions {
 // Configuration Types
 // ============================================================================
 
+/** Per-file progress tracking options */
+interface PerFileProgressOptions {
+    /** Upload item IDs corresponding to files (one per file, for per-file progress tracking) */
+    uploadIds?: string[];
+    /** Callback for per-file progress updates (fileId, percentage) */
+    perFileProgress?: (fileId: string, percentage: number) => void;
+}
+
 /**
  * Configuration for upload submission.
  */
-export interface UploadSubmitConfig extends FetchDatasetsCallbacks {
+export interface UploadSubmitConfig extends FetchDatasetsCallbacks, PerFileProgressOptions {
     /** The upload payload data */
     data: UploadDataPayload;
     /** Whether this is a composite upload */
@@ -215,7 +223,7 @@ export interface UploadSubmitConfig extends FetchDatasetsCallbacks {
 /**
  * Configuration for the uploadDatasets function.
  */
-export interface UploadDatasetsConfig extends FetchDatasetsCallbacks, BuildPayloadOptions {
+export interface UploadDatasetsConfig extends FetchDatasetsCallbacks, BuildPayloadOptions, PerFileProgressOptions {
     /** Chunk size for TUS uploads in bytes (default: 10MB) */
     chunkSize?: number;
     /** Optional preferred object store id for uploaded datasets. */
@@ -843,14 +851,27 @@ function toApiPayload(data: UploadPayload): FetchDataPayload {
 
 /**
  * Uploads files via TUS protocol, then submits the complete payload.
+ *
+ * @param data - Upload payload containing files and targets
+ * @param tusEndpoint - TUS upload endpoint URL
+ * @param chunkSize - Chunk size for TUS uploads in bytes
+ * @param callbacks - Standard fetch callbacks (success, error, warning, progress)
+ * @param uploadIds - Optional array of upload item IDs (one per file) for per-file progress tracking
+ * @param perFileProgress - Optional callback for per-file progress updates
  */
 async function uploadFilesViaTus(
     data: UploadPayload,
     tusEndpoint: string,
     chunkSize: number,
     callbacks: FetchDatasetsCallbacks,
+    uploadIds?: string[],
+    perFileProgress?: (fileId: string, percentage: number) => void,
 ): Promise<void> {
     const files = data.files || [];
+    const hasPerFileTracking = uploadIds && perFileProgress && uploadIds.length === files.length;
+
+    // Track per-file progress for aggregate calculation
+    const fileProgressMap = new Map<string, number>();
 
     // Build API payload with TUS session info
     const apiPayload: Record<string, unknown> = {
@@ -871,12 +892,28 @@ async function uploadFilesViaTus(
                 continue;
             }
 
+            const fileId = hasPerFileTracking ? uploadIds[index] : undefined;
+
             const result = await createTusUpload({
                 file,
                 endpoint: tusEndpoint,
                 historyId: data.history_id,
                 chunkSize,
-                onProgress: callbacks.progress || (() => {}),
+                onProgress: (percentage: number) => {
+                    if (hasPerFileTracking && fileId) {
+                        fileProgressMap.set(fileId, percentage);
+                        perFileProgress!(fileId, percentage);
+
+                        // Compute aggregate progress from all files uploaded so far
+                        const values = Array.from(fileProgressMap.values());
+                        const aggregate = Math.round(
+                            values.reduce((sum: number, p: number) => sum + p, 0) / values.length,
+                        );
+                        callbacks.progress?.(aggregate);
+                    } else {
+                        callbacks.progress?.(percentage);
+                    }
+                },
                 onError: (err: Error) => {
                     callbacks.error?.(err);
                 },
@@ -913,6 +950,8 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
         progress = () => {},
         isComposite = false,
         chunkSize = DEFAULT_CHUNK_SIZE,
+        uploadIds,
+        perFileProgress,
     } = config;
 
     // Initial validation
@@ -929,7 +968,7 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
 
     if (hasFiles || isComposite) {
         // Upload files via TUS, then submit payload
-        await uploadFilesViaTus(data, tusEndpoint, chunkSize, callbacks);
+        await uploadFilesViaTus(data, tusEndpoint, chunkSize, callbacks, uploadIds, perFileProgress);
     } else if (data.targets && data.targets.length > 0) {
         const firstTarget = data.targets[0];
 
@@ -959,7 +998,7 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
                     blob.name = String(firstElement.name || DEFAULT_FILE_NAME);
 
                     const filesData: UploadPayload = { ...data, files: [blob] };
-                    await uploadFilesViaTus(filesData, tusEndpoint, chunkSize, callbacks);
+                    await uploadFilesViaTus(filesData, tusEndpoint, chunkSize, callbacks, uploadIds, perFileProgress);
                 }
             }
         }
@@ -1006,6 +1045,8 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
         warning,
         progress,
         preferredObjectStoreId,
+        uploadIds,
+        perFileProgress,
     } = config;
 
     try {
@@ -1030,6 +1071,8 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
             error,
             warning,
             progress,
+            uploadIds,
+            perFileProgress,
         });
     } catch (err) {
         const errorMessage = errorMessageAsString(err);
@@ -1095,7 +1138,7 @@ export async function uploadCollectionDatasets(
     collectionOptions: CollectionUploadOptions,
     config: UploadDatasetsConfig = {},
 ): Promise<void> {
-    const { chunkSize, success, error, warning, progress, preferredObjectStoreId } = config;
+    const { chunkSize, success, error, warning, progress, preferredObjectStoreId, uploadIds, perFileProgress } = config;
 
     try {
         const payload = buildCollectionUploadPayload(items, collectionOptions);
@@ -1115,6 +1158,8 @@ export async function uploadCollectionDatasets(
             error,
             warning,
             progress,
+            uploadIds,
+            perFileProgress,
         });
     } catch (err) {
         config.error?.(errorMessageAsString(err));

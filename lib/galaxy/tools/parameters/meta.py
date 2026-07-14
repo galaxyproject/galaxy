@@ -4,8 +4,6 @@ import logging
 from collections import namedtuple
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from galaxy import (
@@ -182,7 +180,7 @@ def expand_workflow_inputs(param_inputs, inputs=None):
     return WorkflowParameterExpansion(param_combinations, params_keys, input_combinations)
 
 
-ExpandedT = tuple[list[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
+ExpandedT = tuple[list[ToolStateJobInstanceT], matching.MatchingCollections | None]
 
 
 def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> dict[str, Any]:
@@ -191,6 +189,23 @@ def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> dict[str, A
         if not incoming_key.startswith("__"):
             process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
     return nested_dict
+
+
+def _remove_internal_state_keys(state: Any) -> None:
+    """Remove ``__``-prefixed keys from every dict in the nested state.
+
+    ``visit_input_values`` injects internal book-keeping entries such as
+    ``__current_case__`` and ``__index__`` as side-effects.  These must not
+    reach the job-internal Pydantic validation layer, which uses ``extra='forbid'``.
+    """
+    if isinstance(state, dict):
+        for key in [k for k in state if k.startswith("__")]:
+            del state[key]
+        for v in state.values():
+            _remove_internal_state_keys(v)
+    elif isinstance(state, list):
+        for item in state:
+            _remove_internal_state_keys(item)
 
 
 def expand_meta_parameters(
@@ -319,7 +334,6 @@ def split_inputs_flat(inputs: dict[str, Any], classifier):
 
 
 def split_inputs_nested(inputs, nested_dict, classifier):
-    single_inputs: dict[str, Any] = {}
     matched_multi_inputs: dict[str, Any] = {}
     multiplied_multi_inputs: dict[str, Any] = {}
     unset_value = object()
@@ -330,9 +344,7 @@ def split_inputs_nested(inputs, nested_dict, classifier):
             return
 
         input_type, expanded_val = classifier(value, prefixed_name)
-        if input_type == input_classification.SINGLE:
-            single_inputs[prefixed_name] = expanded_val
-        elif input_type == input_classification.MATCHED:
+        if input_type == input_classification.MATCHED:
             matched_multi_inputs[prefixed_name] = expanded_val
         elif input_type == input_classification.MULTIPLIED:
             multiplied_multi_inputs[prefixed_name] = expanded_val
@@ -340,12 +352,12 @@ def split_inputs_nested(inputs, nested_dict, classifier):
     visit_input_values(
         inputs=inputs, input_values=nested_dict, callback=visitor, allow_case_inference=True, unset_value=unset_value
     )
-    single_inputs_nested = expand_flat_parameters_to_nested(single_inputs)
-    return (single_inputs_nested, matched_multi_inputs, multiplied_multi_inputs)
+    _remove_internal_state_keys(nested_dict)
+    return (nested_dict, matched_multi_inputs, multiplied_multi_inputs)
 
 
 ExpandedAsyncT = tuple[
-    list[ToolStateJobInstanceT], list[ToolStateDumpedToJsonInternalT], Optional[matching.MatchingCollections]
+    list[ToolStateJobInstanceT], list[ToolStateDumpedToJsonInternalT], matching.MatchingCollections | None
 ]
 
 
@@ -422,9 +434,9 @@ def to_decoded_json(has_objects):
         return has_objects
 
 
-CollectionExpansionListT = Union[
-    list[Union[DatasetCollectionElement, PromoteCollectionElementToCollectionAdapter]], list[DatasetInstance]
-]
+CollectionExpansionListT = (
+    list[DatasetCollectionElement | PromoteCollectionElementToCollectionAdapter] | list[DatasetInstance]
+)
 
 
 def __expand_collection_parameter(
@@ -461,7 +473,7 @@ def __expand_collection_parameter(
         raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
     collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
-        subcollection_elements: list[Union[DatasetCollectionElement, PromoteCollectionElementToCollectionAdapter]] = (
+        subcollection_elements: list[DatasetCollectionElement | PromoteCollectionElementToCollectionAdapter] = (
             subcollections._split_dataset_collection(collection, subcollection_type)
         )
         return subcollection_elements

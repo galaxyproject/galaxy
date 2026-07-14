@@ -5,7 +5,13 @@ result types against tiny in-memory fixture databases built via
 GTNDatabaseBuilder.
 """
 
+import os
 import sqlite3
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 from pathlib import Path
 
 import pytest
@@ -217,3 +223,87 @@ def test_refresh_database_rejects_invalid_payload(tmp_path: Path):
 
     # Target was not replaced with the bogus payload.
     assert target.read_text(errors="replace") != "not a sqlite database"
+
+
+def _build_fixture_db(target: Path, marker_title: str) -> None:
+    """Build a tiny valid GTN DB whose only tutorial title is ``marker_title``."""
+    builder = GTNDatabaseBuilder(gtn_path=target.parent, output_path=target)
+    builder.tutorials = [
+        Tutorial(
+            topic="freshness",
+            tutorial="marker",
+            title=marker_title,
+            description="",
+            url="https://example.invalid",
+            content="content",
+            content_hash="hash",
+        )
+    ]
+    builder.create_database()
+    builder.insert_tutorials()
+    builder.add_metadata()
+
+
+def _tutorial_titles(db_path: Path) -> list[str]:
+    with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True) as conn:
+        return [row[0] for row in conn.execute("SELECT title FROM tutorials")]
+
+
+def test_refresh_database_if_stale_downloads_when_remote_is_newer(tmp_path: Path):
+    remote_path = tmp_path / "remote.db"
+    local_path = tmp_path / "local.db"
+    _build_fixture_db(remote_path, "REMOTE")
+    _build_fixture_db(local_path, "LOCAL")
+
+    # Push local mtime well into the past so remote is unambiguously newer.
+    past = (datetime.now(timezone.utc) - timedelta(days=30)).timestamp()
+    os.utime(local_path, (past, past))
+
+    metadata = GTNSearchDB.refresh_database_if_stale(local_path, remote_path.as_uri())
+
+    assert metadata is not None
+    assert _tutorial_titles(local_path) == ["REMOTE"]
+
+
+def test_refresh_database_if_stale_skips_when_local_is_current(tmp_path: Path):
+    remote_path = tmp_path / "remote.db"
+    local_path = tmp_path / "local.db"
+    _build_fixture_db(remote_path, "REMOTE")
+    _build_fixture_db(local_path, "LOCAL")
+
+    # Push remote into the past so local always looks current.
+    past = (datetime.now(timezone.utc) - timedelta(days=30)).timestamp()
+    os.utime(remote_path, (past, past))
+
+    local_mtime_before = local_path.stat().st_mtime
+    metadata = GTNSearchDB.refresh_database_if_stale(local_path, remote_path.as_uri())
+
+    assert metadata is None
+    assert _tutorial_titles(local_path) == ["LOCAL"]
+    assert local_path.stat().st_mtime == local_mtime_before
+
+
+def test_refresh_database_if_stale_downloads_when_local_is_missing(tmp_path: Path):
+    remote_path = tmp_path / "remote.db"
+    _build_fixture_db(remote_path, "REMOTE")
+    local_path = tmp_path / "cold-start.db"
+
+    metadata = GTNSearchDB.refresh_database_if_stale(local_path, remote_path.as_uri())
+
+    assert metadata is not None
+    assert local_path.exists()
+    assert _tutorial_titles(local_path) == ["REMOTE"]
+
+
+def test_download_stamps_local_mtime_to_remote_last_modified(tmp_path: Path):
+    remote_path = tmp_path / "remote.db"
+    _build_fixture_db(remote_path, "REMOTE")
+    # Pin the remote file's mtime to a known past second so we can assert
+    # the local copy ends up with the same second after download.
+    pinned = (datetime.now(timezone.utc) - timedelta(days=7)).replace(microsecond=0).timestamp()
+    os.utime(remote_path, (pinned, pinned))
+
+    local_path = tmp_path / "local.db"
+    GTNSearchDB.refresh_database(local_path, remote_path.as_uri())
+
+    assert int(local_path.stat().st_mtime) == int(pinned)

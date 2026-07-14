@@ -185,7 +185,7 @@ class TestPages(SeleniumTestCase):
         assert "Beta" in diff_text or "Alpha" in diff_text
 
         # Go back, click oldest revision
-        self.components.pages.history.revision_back_button.wait_for_and_click()
+        self.history_page_open_revisions()
         items = self.components.pages.history.revision_item.all()
         items[-1].click()
         self.components.pages.history.revision_view.wait_for_visible()
@@ -213,7 +213,6 @@ class TestPages(SeleniumTestCase):
         self.components.pages.history.revisions_button.wait_for_visible()
         self.components.pages.history.preview_button.wait_for_visible()
         self.components.pages.history.permissions_button.wait_for_visible()
-        self.components.pages.history.save_view_button.wait_for_visible()
 
         # Back button says "Back to Reports" not "This History's Notebooks"
         back_text = self.components.pages.history.back_button.wait_for_text()

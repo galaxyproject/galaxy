@@ -149,16 +149,32 @@ you use for Gunicorn worker health:
 
 | Metric                                     | Type    | Source                | Meaning                                                      |
 | ------------------------------------------ | ------- | --------------------- | ------------------------------------------------------------ |
+| `galaxy.sse.connections.active` (tags: `kind`, `server_name`) | gauge | each web worker | Currently open SSE connections, split into `broadcast` (all, including anonymous) and `per_user` (bound to a specific user). |
 | `galaxy.sse.connections.dropped`           | counter | `SSEConnectionManager` | A per-connection asyncio queue filled up; an event was lost. |
 | `galaxy.sse.dispatch.count` (tag: `task`) | counter | `SSEEventDispatcher`  | Control-task fan-outs by event kind.                         |
 | `galaxy.sse.dispatch.latency_ms` (tag: `task`) | timing | `SSEEventDispatcher`  | Wall time spent enqueueing the control task.                 |
 | `galaxy.sse.dispatch.skipped_no_qw`        | counter | `SSEEventDispatcher`  | Producer tried to dispatch with no queue worker bound — events would have been dropped. |
+| `galaxy.control_queue.depth` (tag: `queue_name`) | gauge | Celery beat | Pending message count per webapp/handler control queue. |
+| `galaxy.worker_process.active` (tag: `app_type`) | gauge | Celery beat | Recently-active worker rows in the database, grouped by app type. |
 
-You can also expose a "currently connected SSE clients" gauge if you wire
-one up: each `SSEConnectionManager` instance publishes
-`total_broadcast_connections` (all connections, including anonymous) and
-`total_per_user_connections` (connections bound to a specific user). These
-are per-worker numbers; sum across workers for a cluster total.
+All three are emitted as statsd **gauges** — point-in-time values, not timings —
+so the datasource stores a single current value per series rather than the
+mean/percentile aggregation statsd applies to timing metrics.
+
+`galaxy.control_queue.depth` and `galaxy.worker_process.active` are sampled by
+the `emit_queue_metrics_task` Celery beat task (cadence:
+`queue_metrics_interval`).
+
+`galaxy.sse.connections.active` is sampled differently: the
+`SSEConnectionManager` is per-process state, so each **web worker** emits its
+own counts (the Celery worker holds no connections and would only ever report
+zero). Every worker tags its sample with its `server_name` so the per-worker
+series don't collide — sum across `server_name` for a cluster total.
+
+This gauge is **opt-in**: set `enable_sse_connection_metrics: true` (it is off
+by default, so turning on statsd does not by itself start measuring SSE
+connections). It then samples on the shared `queue_metrics_interval` cadence,
+so that must be greater than 0.
 
 Alerting recommendations:
 
@@ -271,9 +287,9 @@ stream is healthy end-to-end:
    that connection within a second or two, and the history panel
    refreshes without a polling round-trip.
 3. On the server side, `galaxy.sse.dispatch.count` should be ticking up
-   for each event kind your users exercise. If you wired up the
-   connection gauges, they should reflect roughly one connection per
-   open browser tab.
+   for each event kind your users exercise, and
+   `galaxy.sse.connections.active` should reflect roughly one connection
+   per open browser tab (summed across the reporting processes).
 
 If the connection opens but no events arrive, the most common causes
 are: a proxy buffering responses (revisit the NGINX section), or a

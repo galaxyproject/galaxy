@@ -4,8 +4,6 @@ import logging
 from collections import namedtuple
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 from galaxy.util import (
@@ -147,15 +145,15 @@ class CgroupPlugin(InstrumentPlugin):
             params = list(DEFAULT_PARAMS)
         self.params = params
 
-    def post_execute_instrument(self, job_directory: str) -> List[str]:
-        commands: List[str] = []
+    def post_execute_instrument(self, job_directory: str) -> list[str]:
+        commands: list[str] = []
         if self.version in ("auto", "1"):
             commands.append(self.__record_cgroup_v1_usage(job_directory))
         if self.version in ("auto", "2"):
             commands.append(self.__record_cgroup_v2_usage(job_directory))
         return commands
 
-    def job_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
+    def job_properties(self, job_id, job_directory: str) -> dict[str, Any]:
         metrics = self.__read_metrics(self.__cgroup_metrics_file(job_directory))
         return metrics
 
@@ -173,7 +171,7 @@ class CgroupPlugin(InstrumentPlugin):
         return self._instrument_file_path(job_directory, "_metrics")
 
     def __read_metrics(self, path):
-        metrics: Dict[str, str] = {}
+        metrics: dict[str, str] = {}
         key = None
         with open(path) as infile:
             for line in infile:

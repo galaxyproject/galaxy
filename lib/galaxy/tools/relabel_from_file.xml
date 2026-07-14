@@ -52,8 +52,10 @@
                     </element>
                 </collection>
             </param>
-            <param name="how_select" value="txt" />
-            <param name="labels" value="new_labels_1.txt" ftype="txt" />
+            <conditional name="how">
+                <param name="how_select" value="txt" />
+                <param name="labels" value="new_labels_1.txt" ftype="txt" />
+            </conditional>
             <output_collection name="output" type="list:paired">
               <element name="new_i1">
                 <element name="forward">
@@ -80,8 +82,10 @@
                     </element>
                 </collection>
             </param>
-            <param name="how_select" value="tabular" />
-            <param name="labels" value="new_labels_2.txt" ftype="tabular" />
+            <conditional name="how">
+                <param name="how_select" value="tabular" />
+                <param name="labels" value="new_labels_2.txt" ftype="tabular" />
+            </conditional>
             <output_collection name="output" type="list:paired">
               <element name="new_i1">
                 <element name="forward">
@@ -109,10 +113,12 @@
                     </element>
                 </collection>
             </param>
-            <param name="how_select" value="tabular_extended" />
-            <param name="labels" value="new_labels_3.txt" ftype="tabular" />
-            <param name="from" value="3" />
-            <param name="to" value="1" />
+            <conditional name="how">
+                <param name="how_select" value="tabular_extended" />
+                <param name="labels" value="new_labels_3.txt" ftype="tabular" />
+                <param name="from" value="3" />
+                <param name="to" value="1" />
+            </conditional>
             <output_collection name="output" type="list:paired">
               <element name="new_i1">
                 <element name="forward">
@@ -140,9 +146,11 @@
                     </element>
                 </collection>
             </param>
-            <param name="strict" value="true" />
-            <param name="how_select" value="tabular" />
-            <param name="labels" value="new_labels_2.txt" ftype="tabular" />
+            <conditional name="how">
+                <param name="how_select" value="tabular" />
+                <param name="labels" value="new_labels_2.txt" ftype="tabular" />
+                <param name="strict" value="true" />
+            </conditional>
         </test>
         <test expect_failure="true">
             <param name="input">
@@ -151,8 +159,10 @@
                     <element name="i3" value="simple_line_alternative.txt" />
                 </collection>
             </param>
-            <param name="how_select" value="txt" />
-            <param name="labels" value="new_labels_1.txt" ftype="txt" />
+            <conditional name="how">
+                <param name="how_select" value="txt" />
+                <param name="labels" value="new_labels_1.txt" ftype="txt" />
+            </conditional>
         </test>
         <!-- test label bad characters -->
         <test expect_failure="true">
@@ -161,8 +171,10 @@
                     <element name="i1" value="simple_line.txt" />
                 </collection>
             </param>
-            <param name="how_select" value="txt" />
-            <param name="labels" value="new_labels_bad_1.txt" ftype="txt" />
+            <conditional name="how">
+                <param name="how_select" value="txt" />
+                <param name="labels" value="new_labels_bad_1.txt" ftype="txt" />
+            </conditional>
         </test>
         <!-- test label bad because of duplicates -->
         <test expect_failure="true">
@@ -172,8 +184,10 @@
                     <element name="i2" value="simple_line.txt" />
                 </collection>
             </param>
-            <param name="how_select" value="txt" />
-            <param name="labels" value="new_labels_bad_2.txt" ftype="txt" />
+            <conditional name="how">
+                <param name="how_select" value="txt" />
+                <param name="labels" value="new_labels_bad_2.txt" ftype="txt" />
+            </conditional>
         </test>
     </tests>
     <help><![CDATA[

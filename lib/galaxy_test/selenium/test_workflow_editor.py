@@ -1,7 +1,6 @@
 import json
 from typing import (
     cast,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -1810,7 +1809,7 @@ steps:
 
         assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 comment") != -1
 
-    def create_and_wait_for_new_workflow_in_editor(self, annotation: Optional[str] = None) -> str:
+    def create_and_wait_for_new_workflow_in_editor(self, annotation: str | None = None) -> str:
         editor = self.components.workflow_editor
         name = self.workflow_create_new(annotation=annotation)
         editor.canvas_body.wait_for_visible()
@@ -1845,7 +1844,7 @@ steps:
         return (int(width_stripped), int(height_stripped))
 
     @retry_assertion_during_transitions
-    def assert_node_output_is(self, label: str, output_type: str, subcollection_type: Optional[str] = None):
+    def assert_node_output_is(self, label: str, output_type: str, subcollection_type: str | None = None):
         editor = self.components.workflow_editor
         node_label, output_name = label.split("#")
         node = editor.node._(label=node_label)

@@ -6,7 +6,6 @@ from io import StringIO
 from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
-from typing import Optional
 
 import yaml
 
@@ -39,7 +38,7 @@ class Config:
         config_str=DISK_TEST_CONFIG,
         clazz=None,
         store_by="id",
-        user_object_store_resolver: Optional[objectstore.UserObjectStoreResolver] = None,
+        user_object_store_resolver: objectstore.UserObjectStoreResolver | None = None,
         template_vars=None,
         inject_galaxy_test_env=False,
     ):

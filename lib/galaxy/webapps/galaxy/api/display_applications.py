@@ -3,7 +3,6 @@ API operations on annotations.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import Body
 
@@ -78,7 +77,7 @@ class FastAPIDisplayApplications:
     )
     def reload(
         self,
-        payload: Optional[dict[str, list[str]]] = Body(default=None),
+        payload: dict[str, list[str]] | None = Body(default=None),
     ) -> ReloadFeedback:
         """
         Reloads the list of display applications.

@@ -1,9 +1,6 @@
 import abc
-from typing import (
-    Union,
-)
 
-FormValueType = Union[str, bool]
+FormValueType = str | bool
 
 
 class ShedBrowser(metaclass=abc.ABCMeta):

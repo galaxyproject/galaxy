@@ -8,7 +8,6 @@ from typing import (
     cast,
     NamedTuple,
     Optional,
-    Union,
 )
 
 from galaxy.files import (
@@ -49,8 +48,8 @@ class JobOutput(NamedTuple):
 class JobOutputs(threading.local):
     def __init__(self) -> None:
         super().__init__()
-        self.output_hdas_and_paths: Optional[OutputHdasAndType] = None
-        self.output_paths: Optional[OutputPaths] = None
+        self.output_hdas_and_paths: OutputHdasAndType | None = None
+        self.output_paths: OutputPaths | None = None
 
     @property
     def populated(self) -> bool:
@@ -105,13 +104,13 @@ class JobIO(UsesDictVisibleKeys):
         len_file_path: str,
         builds_file_path: str,
         check_job_script_integrity: bool,
-        check_job_script_integrity_count: Optional[int],
-        check_job_script_integrity_sleep: Optional[float],
+        check_job_script_integrity_count: int | None,
+        check_job_script_integrity_sleep: float | None,
         file_sources_dict: dict[str, Any],
-        user_context: Union[FileSourcesUserContext, dict[str, Any]],
-        tool_source: Optional[str] = None,
+        user_context: FileSourcesUserContext | dict[str, Any],
+        tool_source: str | None = None,
         tool_source_class: Optional["str"] = "XmlToolSource",
-        tool_dir: Optional[StrPath] = None,
+        tool_dir: StrPath | None = None,
         is_task: bool = False,
     ):
         user_context_instance: FileSourcesUserContext
@@ -144,7 +143,7 @@ class JobIO(UsesDictVisibleKeys):
         self.tool_source = tool_source
         self.tool_source_class = tool_source_class
         self.job_outputs = JobOutputs()
-        self._dataset_path_rewriter: Optional[DatasetPathRewriter] = None
+        self._dataset_path_rewriter: DatasetPathRewriter | None = None
 
     @property
     def job(self) -> Job:
@@ -217,7 +216,7 @@ class JobIO(UsesDictVisibleKeys):
         return filenames
 
     def get_input_datasets(
-        self, materialized_objects: Optional[dict[str, DeferrableObjectsT]] = None
+        self, materialized_objects: dict[str, DeferrableObjectsT] | None = None
     ) -> list[DatasetInstance]:
         job = self.job
         datasets: list[DatasetInstance] = []
@@ -236,7 +235,7 @@ class JobIO(UsesDictVisibleKeys):
             filenames.extend(self.get_input_dataset_fnames(ds))
         return filenames
 
-    def get_input_paths(self, materialized_objects: Optional[dict[str, DeferrableObjectsT]]) -> list[DatasetPath]:
+    def get_input_paths(self, materialized_objects: dict[str, DeferrableObjectsT] | None) -> list[DatasetPath]:
         paths = []
         for ds in self.get_input_datasets(materialized_objects):
             paths.append(self.get_input_path(ds))
@@ -313,7 +312,7 @@ class JobIO(UsesDictVisibleKeys):
 
         self.job_outputs.set_job_outputs(job_outputs)
 
-    def get_output_file_id(self, file: str) -> Optional[int]:
+    def get_output_file_id(self, file: str) -> int | None:
         for dp in self.output_paths:
             if self.outputs_to_working_directory and os.path.basename(dp.false_path) == file:
                 return dp.dataset_id

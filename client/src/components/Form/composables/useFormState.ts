@@ -122,26 +122,61 @@ export function useFormState(options: UseFormStateOptions = {}): UseFormStateRet
      * Only copies server-owned fields; value, error, and warning are excluded
      * to maintain the separation between server state (attributes) and client
      * state (the clone's own properties).
+     *
+     * Uses a structural recursive approach so that conditional cases with the
+     * same parameter name (e.g. "feature" in every `when` branch) are each
+     * synced from their corresponding server case rather than from the last
+     * case (which is what a flat-key dict would produce).
      */
     function syncServerAttributes(newInputs: FormInputNode[]): void {
-        const newAttributes: Record<string, FormInputNode> = {};
-        visitAllInputs(newInputs, (input: FormInputNode, name: string) => {
-            newAttributes[name] = input;
-        });
-        visitAllInputs(formInputs.value, (input: FormInputNode, name: string) => {
-            const serverNode = newAttributes[name];
-            if (serverNode != undefined) {
-                const attrs: Record<string, unknown> = {};
-                const raw = serverNode as unknown as Record<string, unknown>;
-                for (const key in raw) {
-                    if (!CLIENT_OWNED_FIELDS.has(key)) {
-                        attrs[key] = raw[key];
+        syncInputsStructural(formInputs.value, newInputs);
+    }
+
+    function syncInputsStructural(cloneInputs: FormInputNode[], serverInputs: FormInputNode[]): void {
+        const serverByName = new Map(serverInputs.map((n) => [String(n.name ?? ""), n]));
+        cloneInputs.forEach((cloneNode) => {
+            const serverNode = serverByName.get(String(cloneNode.name ?? ""));
+            if (!serverNode) {
+                return;
+            }
+            if (cloneNode.type === "conditional" && cloneNode.cases && serverNode.cases) {
+                syncNodeAttributes(cloneNode.test_param, serverNode.test_param);
+                cloneNode.cases.forEach((cloneCase, i) => {
+                    const serverCase = serverNode.cases![i];
+                    if (serverCase) {
+                        syncInputsStructural(cloneCase.inputs, serverCase.inputs);
                     }
+                });
+            } else if (cloneNode.type === "section" && cloneNode.inputs && serverNode.inputs) {
+                syncInputsStructural(cloneNode.inputs, serverNode.inputs);
+            } else if (cloneNode.type === "repeat") {
+                if (cloneNode.cache && serverNode.cache) {
+                    cloneNode.cache.forEach((instance, i) => {
+                        const serverInstance = serverNode.cache![i];
+                        if (serverInstance) {
+                            syncInputsStructural(instance, serverInstance);
+                        }
+                    });
                 }
-                // set() required: attributes is a genuinely new property on clone nodes.
-                set(input, "attributes", attrs);
+            } else {
+                syncNodeAttributes(cloneNode, serverNode);
             }
         });
+    }
+
+    function syncNodeAttributes(cloneNode: FormInputNode | undefined, serverNode: FormInputNode | undefined): void {
+        if (!cloneNode || !serverNode) {
+            return;
+        }
+        const attrs: Record<string, unknown> = {};
+        const raw = serverNode as unknown as Record<string, unknown>;
+        for (const key in raw) {
+            if (!CLIENT_OWNED_FIELDS.has(key)) {
+                attrs[key] = raw[key];
+            }
+        }
+        // set() required: attributes is a genuinely new property on clone nodes.
+        set(cloneNode, "attributes", attrs);
     }
 
     function applyErrors(errors: FormMessages | null): void {

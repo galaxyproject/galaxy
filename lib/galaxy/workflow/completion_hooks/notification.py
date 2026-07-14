@@ -133,13 +133,12 @@ class SendNotificationHook(WorkflowCompletionHook):
             The formatted message string with Markdown.
         """
         invocation = completion.workflow_invocation
-        summary = completion.job_state_summary or {}
 
         lines = [
             f"Your workflow **{workflow_name}** has completed.",
         ]
 
-        if summary:
+        if summary := completion.job_state_summary or {}:
             lines.extend(["", "**Job Summary:**", ""])
             for state, count in sorted(summary.items()):
                 lines.append(f"- {state}: {count}")

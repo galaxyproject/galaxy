@@ -4,7 +4,6 @@ import threading
 import time
 from typing import (
     cast,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -179,7 +178,7 @@ class MockJobWrapper:
         self.remote_command_line = False
 
         # Cruft for setting metadata externally, axe at some point.
-        self.external_output_metadata: Optional[bunch.Bunch] = bunch.Bunch()
+        self.external_output_metadata: bunch.Bunch | None = bunch.Bunch()
         self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(build_dependency_shell_commands=lambda: [])
 
     def check_tool_output(*args, **kwds):

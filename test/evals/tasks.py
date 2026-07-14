@@ -13,7 +13,6 @@ from collections.abc import (
 from typing import (
     Any,
     cast,
-    Optional,
     TYPE_CHECKING,
 )
 from unittest.mock import MagicMock
@@ -26,13 +25,14 @@ from galaxy.agents.base import (
     extract_usage_info,
     GalaxyAgentDependencies,
 )
+from galaxy.agents.custom_tool import CustomToolAgent
 from galaxy.agents.error_analysis import ErrorAnalysisAgent
 from galaxy.agents.registry import build_default_registry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.agents.tools import ToolRecommendationAgent
 from .datasets import build_history
 
-UsageBuffer = Optional[list[dict[str, int]]]
+UsageBuffer = list[dict[str, int]] | None
 
 
 def _record_response_usage(buffer: UsageBuffer, response: Any) -> None:
@@ -118,6 +118,7 @@ def make_deps(
         user=MagicMock(),
         config=config,
         get_agent=_registry.get_agent,
+        get_capability_blurb=_registry.get_capability_blurb,
     )
 
 
@@ -177,12 +178,13 @@ def make_live_deps(
         # through to base_config via __getattr__.
         config=cast("GalaxyAppConfiguration", config),
         get_agent=_registry.get_agent,
+        get_capability_blurb=_registry.get_capability_blurb,
     )
 
 
 def make_router_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[str]]:
     """Build an async callable: query -> router's chosen agent_type."""
@@ -254,9 +256,42 @@ def make_router_clarification_task(
     return router_clarification_task
 
 
+def make_router_followup_task(
+    deps: GalaxyAgentDependencies,
+    route_followup: bool = True,
+    usage_buffer: UsageBuffer = None,
+) -> Callable[[dict], Awaitable[str]]:
+    """Build an async callable for the followup dataset.
+
+    The case input is ``{"original_query", "assistant_answer", "followup"}``. Reconstructs the
+    prior turn (the user's request + a normal assistant answer) as conversation_history and
+    routes the elliptical ``followup``. With ``route_followup=True`` (the shipped default) the
+    router forwards the prior turn so "this"/"that" has a referent; with ``False`` it sets
+    ``ROUTING_HISTORY_TURNS = 0`` to withhold it -- the A/B that quantifies the fix's value.
+    Returns the router's chosen agent_type.
+    """
+
+    async def router_followup_task(case_input: dict) -> str:
+        history = [
+            {"role": "user", "content": case_input["original_query"]},
+            {"role": "assistant", "content": case_input["assistant_answer"]},
+        ]
+        router = QueryRouterAgent(deps)
+        if not route_followup:
+            router.ROUTING_HISTORY_TURNS = 0
+        response = await router.process(
+            case_input["followup"],
+            context={"conversation_history": history},
+        )
+        _record_response_usage(usage_buffer, response)
+        return response.agent_type
+
+    return router_followup_task
+
+
 def make_router_content_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[str]]:
     """Build an async callable: query -> router final response content.
@@ -278,7 +313,7 @@ def make_router_content_task(
 
 def make_error_analysis_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[str]]:
     """Build an async callable: query -> error-analysis response content."""
@@ -294,7 +329,7 @@ def make_error_analysis_task(
 
 def make_tool_recommendation_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[str]]:
     """Build an async callable: query -> tool-recommendation response content.
@@ -314,6 +349,46 @@ def make_tool_recommendation_task(
         return response.content
 
     return tool_recommendation_task
+
+
+def make_custom_tool_task(
+    deps: GalaxyAgentDependencies,
+    context: dict | None = None,
+    usage_buffer: UsageBuffer = None,
+) -> Callable[[str], Awaitable[dict[str, Any]]]:
+    """Build an async callable: NL request -> custom-tool generation result dict.
+
+    Returns the signals the custom-tool evaluators read:
+
+    - ``ok``: a structured, schema-valid, lint-clean tool was produced
+      (``response.metadata["method"] == "structured"``).
+    - ``attempts``: 1 if produced first try, 2 if a validator retry was spent.
+    - ``tool_yaml``: the generated tool definition (for structural checks / judge).
+    - ``content``: the agent's full response text.
+    - ``error`` / ``validation_errors``: failure detail when ``ok`` is False.
+
+    Unlike the recommendation tasks this needs no live toolbox -- tool authoring
+    is self-contained (validate + lint), so the mocked-deps path is a faithful
+    measurement. (An end-to-end "does it build into a real Galaxy tool" check
+    belongs in the live integration eval, where a real toolbox exists.)
+    """
+
+    async def custom_tool_task(query: str) -> dict[str, Any]:
+        agent = CustomToolAgent(deps)
+        response = await agent.process(query, context=context)
+        _record_response_usage(usage_buffer, response)
+        meta = response.metadata or {}
+        agent_data = meta.get("agent_data") or {}
+        return {
+            "ok": meta.get("method") == "structured",
+            "attempts": agent_data.get("attempts"),
+            "tool_yaml": agent_data.get("tool_yaml") or "",
+            "content": response.content,
+            "error": meta.get("error"),
+            "validation_errors": agent_data.get("validation_errors") or [],
+        }
+
+    return custom_tool_task
 
 
 def _extract_tool_calls(result: Any) -> list[dict[str, Any]]:
@@ -337,7 +412,7 @@ def _extract_tool_calls(result: Any) -> list[dict[str, Any]]:
 
 def make_orchestrator_plan_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[dict[str, Any]]]:
     """Build an async callable: query -> {"agent_type": str, "agents_used": list[str]}.
@@ -375,7 +450,7 @@ def make_orchestrator_plan_task(
 
 def make_router_inspect_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[dict[str, Any]]]:
     """Build an async callable: query -> {"content": str, "tool_calls": list}.

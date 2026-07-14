@@ -10,7 +10,6 @@ import re
 from threading import Lock
 from typing import (
     Any,
-    Optional,
 )
 
 from cachetools import TTLCache
@@ -33,6 +32,16 @@ def clear_manifest_cache() -> None:
         _manifest_cache.clear()
 
 
+def _download_manifest(timeout: float) -> list[dict[str, Any]]:
+    """Fetch and validate the IWC manifest over the network, bypassing the cache."""
+    response = requests.get(IWC_MANIFEST_URL, timeout=timeout)
+    response.raise_for_status()
+    manifest = response.json()
+    if not isinstance(manifest, list):
+        raise ValueError(f"IWC manifest at {IWC_MANIFEST_URL} did not return a JSON array")
+    return manifest
+
+
 def fetch_manifest(timeout: float = 30.0) -> list[dict[str, Any]]:
     """Fetch the IWC manifest, returning a cached copy when fresh.
 
@@ -44,13 +53,28 @@ def fetch_manifest(timeout: float = 30.0) -> list[dict[str, Any]]:
         if cached is not None:
             return cached
 
-        response = requests.get(IWC_MANIFEST_URL, timeout=timeout)
-        response.raise_for_status()
-        manifest = response.json()
-        if not isinstance(manifest, list):
-            raise ValueError(f"IWC manifest at {IWC_MANIFEST_URL} did not return a JSON array")
+        manifest = _download_manifest(timeout)
         _manifest_cache[_CACHE_KEY] = manifest
         return manifest
+
+
+def refresh_manifest(timeout: float = 30.0) -> list[dict[str, Any]]:
+    """Force-fetch the manifest and replace the cached entry.
+
+    Used by the celery-beat pre-warm task. The network fetch runs outside
+    the cache lock so a slow or hanging iwc.galaxyproject.org doesn't block
+    on-demand ``fetch_manifest`` readers -- they keep getting the previous
+    cached copy. Only the single-assignment cache write is locked, so a
+    concurrent reader sees either the previous value or the new one, never
+    an empty cache mid-write. Kept separate from ``fetch_manifest`` because
+    the error contracts differ: lazy fetch propagates (caller can't
+    continue without the data); this one is called from a periodic task
+    that has to tolerate transient failure.
+    """
+    manifest = _download_manifest(timeout)
+    with _manifest_cache_lock:
+        _manifest_cache[_CACHE_KEY] = manifest
+    return manifest
 
 
 def all_workflows(manifest: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -135,7 +159,7 @@ def _score(query_tokens: list[str], text: str) -> int:
     return sum(1 for t in query_tokens if t in text_tokens)
 
 
-def search_workflows(workflows: list[dict[str, Any]], query: str, limit: Optional[int] = None) -> list[dict[str, Any]]:
+def search_workflows(workflows: list[dict[str, Any]], query: str, limit: int | None = None) -> list[dict[str, Any]]:
     """Rank workflows by token overlap against name/description/readme/tags.
 
     Each returned entry has ``match_score`` attached so callers can surface

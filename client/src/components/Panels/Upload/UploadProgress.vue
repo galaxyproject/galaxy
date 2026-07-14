@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { BPagination } from "bootstrap-vue";
 
+import { usePagination } from "@/composables/pagination";
 import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
@@ -14,11 +15,14 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const uploadBatchOperations = useUploadBatchOperations();
 const uploadState = useUploadState();
-const { orderedUploadItems, batchesWithProgress, standaloneUploads, activeItems, hasCompleted } = uploadState;
+const { orderedUploadItems, batchesWithProgress, activeItems, hasCompleted } = uploadState;
+
+const { paginatedItems, currentPage, itemsPerPage, showPagination, onPageChange } = usePagination(orderedUploadItems, {
+    itemsPerPage: 24,
+});
 
 const breadcrumbItems = [getUploadRootBreadcrumb("/upload"), { title: "Upload Progress" }];
 
-const fileListRef = ref<HTMLElement | null>(null);
 const expandedBatches = useUserLocalStorage<string[]>("uploadPanel.expandedBatches", []);
 
 function cleanupExpandedBatches() {
@@ -55,29 +59,6 @@ function onClearAll() {
 async function retryBatch(batchId: string) {
     await uploadBatchOperations.retryCollectionCreation(batchId);
 }
-
-const uploadItemCount = computed(() => {
-    return batchesWithProgress.value.length + standaloneUploads.value.length;
-});
-
-watch(uploadItemCount, async (newCount, oldCount) => {
-    if (newCount > oldCount) {
-        await nextTick();
-        fileListRef.value?.scrollTo({
-            top: fileListRef.value.scrollHeight,
-            behavior: "smooth",
-        });
-    }
-});
-
-onMounted(() => {
-    nextTick(() => {
-        fileListRef.value?.scrollTo({
-            top: fileListRef.value.scrollHeight,
-            behavior: "auto",
-        });
-    });
-});
 </script>
 
 <template>
@@ -93,10 +74,8 @@ onMounted(() => {
 
         <div class="upload-progress-content flex-grow-1 overflow-auto p-3">
             <div v-if="activeItems.length > 0 || batchesWithProgress.length > 0" class="h-100 d-flex flex-column">
-                <div ref="fileListRef" class="file-details-list flex-grow-1 overflow-auto">
-                    <div
-                        v-for="item in orderedUploadItems"
-                        :key="item.type === 'batch' ? item.batch.id : item.upload.id">
+                <div class="file-details-list flex-grow-1 overflow-auto pt-1">
+                    <div v-for="item in paginatedItems" :key="item.type === 'batch' ? item.batch.id : item.upload.id">
                         <BatchUploadGroup
                             v-if="item.type === 'batch'"
                             :batch="item.batch"
@@ -106,6 +85,18 @@ onMounted(() => {
 
                         <UploadFileRow v-else :file="item.upload" />
                     </div>
+                </div>
+
+                <div v-if="showPagination" class="d-flex justify-content-center mt-3">
+                    <BPagination
+                        :value="currentPage"
+                        :total-rows="orderedUploadItems.length"
+                        :per-page="itemsPerPage"
+                        align="center"
+                        size="sm"
+                        first-number
+                        last-number
+                        @change="onPageChange" />
                 </div>
             </div>
             <div v-else class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">

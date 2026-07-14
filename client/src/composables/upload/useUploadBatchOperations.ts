@@ -152,8 +152,9 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
                     collectionType: batch.type,
                 },
                 {
-                    progress: (percentage) => {
-                        ids.forEach((id) => uploadState.updateProgress(id, percentage));
+                    uploadIds: ids,
+                    perFileProgress: (fileId, percentage) => {
+                        uploadState.updateProgress(fileId, percentage);
                     },
                     success: () => {
                         ids.forEach((id) => uploadState.updateProgress(id, 100));

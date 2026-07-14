@@ -56,23 +56,31 @@ const windowStyle = computed(() => {
 const iframeSrc = computed(() => store.buildUrl(props.window.url));
 
 // --- Drag ---
+let dragPointerId = -1;
 let dragStartMouseX = 0;
 let dragStartMouseY = 0;
 let dragStartX = 0;
 let dragStartY = 0;
 
-function onDragStart(e: MouseEvent) {
-    if (props.window.maximized || props.window.minimized) {
+function onDragStart(e: PointerEvent) {
+    // ignore further pointers while a drag is active (first pointer wins)
+    if (props.window.maximized || props.window.minimized || dragPointerId !== -1) {
         return;
     }
     e.preventDefault();
     store.focus(props.window.id);
+    dragPointerId = e.pointerId;
     dragStartMouseX = e.clientX;
     dragStartMouseY = e.clientY;
     dragStartX = props.window.x;
     dragStartY = props.window.y;
-    document.addEventListener("mousemove", onDragMove);
-    document.addEventListener("mouseup", onDragEnd);
+    // Capture the pointer so move/up events keep reaching this document even
+    // when the cursor crosses an iframe (the center frame or this window's own
+    // body), which would otherwise swallow them and leave the drag stuck.
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    document.addEventListener("pointermove", onDragMove);
+    document.addEventListener("pointerup", onDragEnd);
+    document.addEventListener("pointercancel", onDragEnd);
 }
 
 function clampPosition(rawX: number, rawY: number): { x: number; y: number } {
@@ -86,42 +94,57 @@ function clampPosition(rawX: number, rawY: number): { x: number; y: number } {
     };
 }
 
-function onDragMove(e: MouseEvent) {
+function onDragMove(e: PointerEvent) {
+    if (e.pointerId !== dragPointerId) {
+        return;
+    }
     const rawX = dragStartX + (e.clientX - dragStartMouseX);
     const rawY = dragStartY + (e.clientY - dragStartMouseY);
     const { x, y } = clampPosition(rawX, rawY);
     store.updatePosition(props.window.id, x, y);
 }
 
-function onDragEnd() {
-    document.removeEventListener("mousemove", onDragMove);
-    document.removeEventListener("mouseup", onDragEnd);
+function onDragEnd(e?: PointerEvent) {
+    if (e && e.pointerId !== dragPointerId) {
+        return;
+    }
+    dragPointerId = -1;
+    document.removeEventListener("pointermove", onDragMove);
+    document.removeEventListener("pointerup", onDragEnd);
+    document.removeEventListener("pointercancel", onDragEnd);
 }
 
 // --- Resize ---
 const MIN_WIDTH = 200;
 const MIN_HEIGHT = 120;
+let resizePointerId = -1;
 let resizeStartMouseX = 0;
 let resizeStartMouseY = 0;
 let resizeStartW = 0;
 let resizeStartH = 0;
 
-function onResizeStart(e: MouseEvent) {
-    if (props.window.maximized) {
+function onResizeStart(e: PointerEvent) {
+    if (props.window.maximized || resizePointerId !== -1) {
         return;
     }
     e.preventDefault();
     e.stopPropagation();
     store.focus(props.window.id);
+    resizePointerId = e.pointerId;
     resizeStartMouseX = e.clientX;
     resizeStartMouseY = e.clientY;
     resizeStartW = props.window.width;
     resizeStartH = props.window.height;
-    document.addEventListener("mousemove", onResizeMove);
-    document.addEventListener("mouseup", onResizeEnd);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    document.addEventListener("pointermove", onResizeMove);
+    document.addEventListener("pointerup", onResizeEnd);
+    document.addEventListener("pointercancel", onResizeEnd);
 }
 
-function onResizeMove(e: MouseEvent) {
+function onResizeMove(e: PointerEvent) {
+    if (e.pointerId !== resizePointerId) {
+        return;
+    }
     const maxW = window.innerWidth - props.window.x;
     const maxH = window.innerHeight - props.window.y;
     store.updateSize(
@@ -131,9 +154,14 @@ function onResizeMove(e: MouseEvent) {
     );
 }
 
-function onResizeEnd() {
-    document.removeEventListener("mousemove", onResizeMove);
-    document.removeEventListener("mouseup", onResizeEnd);
+function onResizeEnd(e?: PointerEvent) {
+    if (e && e.pointerId !== resizePointerId) {
+        return;
+    }
+    resizePointerId = -1;
+    document.removeEventListener("pointermove", onResizeMove);
+    document.removeEventListener("pointerup", onResizeEnd);
+    document.removeEventListener("pointercancel", onResizeEnd);
 }
 
 // --- Actions ---
@@ -154,10 +182,8 @@ function onMaximize() {
 }
 
 onBeforeUnmount(() => {
-    document.removeEventListener("mousemove", onDragMove);
-    document.removeEventListener("mouseup", onDragEnd);
-    document.removeEventListener("mousemove", onResizeMove);
-    document.removeEventListener("mouseup", onResizeEnd);
+    onDragEnd();
+    onResizeEnd();
 });
 </script>
 
@@ -170,10 +196,12 @@ onBeforeUnmount(() => {
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             class="window-manager-window-header"
-            @mousedown.left="window.minimized ? onMinimize() : onDragStart($event)">
+            @pointerdown.left="window.minimized ? onMinimize() : onDragStart($event)">
             <span class="window-manager-window-title">{{ window.title }}</span>
+            <!-- pointerdown.stop keeps control presses from starting a drag; mousedown.stop
+                 keeps the compatibility mouse event from reaching the root focus handler -->
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-            <div class="window-manager-window-controls" @mousedown.stop>
+            <div class="window-manager-window-controls" @pointerdown.stop @mousedown.stop>
                 <button class="window-manager-window-btn" aria-label="Minimize" @click="onMinimize">&#8722;</button>
                 <button class="window-manager-window-btn" aria-label="Maximize" @click="onMaximize">
                     <span v-if="window.maximized">&#9724;</span>
@@ -193,7 +221,7 @@ onBeforeUnmount(() => {
                 <div v-if="!isFocused" class="iframe-focus-overlay" @mousedown="onFocus" />
             </div>
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-            <div v-if="!window.maximized" class="window-manager-resize-handle" @mousedown.left="onResizeStart" />
+            <div v-if="!window.maximized" class="window-manager-resize-handle" @pointerdown.left="onResizeStart" />
         </template>
     </div>
 </template>
@@ -234,6 +262,7 @@ onBeforeUnmount(() => {
     border-bottom: 1px solid var(--color-grey-200);
     cursor: move;
     user-select: none;
+    touch-action: none;
 }
 
 .window-manager-window-title {
@@ -303,5 +332,6 @@ onBeforeUnmount(() => {
     width: 12px;
     height: 12px;
     cursor: nwse-resize;
+    touch-action: none;
 }
 </style>

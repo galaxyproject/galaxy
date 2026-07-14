@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -29,7 +29,7 @@ describe("RefactorConfirmationModal.vue", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockConfirm.mockReset();
-        wrapper = shallowMount(RefactorConfirmationModal as object, {
+        wrapper = mount(RefactorConfirmationModal as object, {
             propsData: {
                 refactorActions: [],
                 workflowId: TEST_WORKFLOW_ID,
@@ -87,7 +87,7 @@ describe("RefactorConfirmationModal.vue", () => {
         expect(wrapper.emitted().onRefactor!.length).toBe(1);
     });
 
-    it("should show confirmation dialog if there are messages from the server", async () => {
+    it("should show confirmation modal if there are messages from the server", async () => {
         vi.mocked(refactor).mockReturnValue(
             new Promise((then) => {
                 then({
@@ -121,7 +121,19 @@ describe("RefactorConfirmationModal.vue", () => {
         // but didn't follow up with executing the action because we need to confirm
         expect(vi.mocked(refactor).mock.calls.length).toBe(1);
 
+        // Modal should now be shown with the message from the server
         expect(wrapper.findComponent(GModal).props().show).toBeTruthy();
+        expect(wrapper.find(".workflow-refactor-modal").text()).toContain(
+            "hey, a connection was dropped - better respond",
+        );
+
+        // Simulate confirming the modal
+        const saveButton = wrapper.findComponent(GModal).find(".g-modal-confirm-buttons .g-button.g-blue");
+        await saveButton.trigger("click");
+
+        // On save, refactor should be called again to execute the action (not a dry run this time)
+        expect(vi.mocked(refactor).mock.calls[1]![0]).toEqual(TEST_WORKFLOW_ID);
+        expect(vi.mocked(refactor).mock.calls[1]![3]).toBeFalsy();
     });
 
     it("should show confirm dialog when refactoring a non-latest version", async () => {

@@ -1,5 +1,6 @@
 import contextlib
 import json
+from collections.abc import Hashable
 from typing import (
     Any,
 )
@@ -1052,6 +1053,7 @@ class MockTrans(ProvidesAppContext):
         self.history = None
         self.workflow_building_mode = workflow_building_modes.ENABLED
         self.tag_handler = app.tag_handler
+        self._short_term_cache: dict[tuple[Hashable, ...], Any] = {}
 
     @property
     def galaxy_session(self):

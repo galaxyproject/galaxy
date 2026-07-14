@@ -18,6 +18,9 @@ alignmentviewer:
 annotateimage:
     package: "@galaxyproject/annotateimage"
     version: 0.0.0
+atlas:
+    package: "@galaxyproject/atlas"
+    version: 0.0.0
 chiraviz:
     package: "@galaxyproject/chiraviz"
     version: 0.0.2
@@ -83,13 +86,13 @@ phylocanvas:
     version: 0.0.11
 plotly:
     package: "@galaxyproject/plotly"
-    version: 0.0.28
+    version: 0.0.30
 plotly_box:
     package: "@galaxyproject/plotly_box"
     version: 0.0.0
 plotly_heatmap:
     package: "@galaxyproject/plotly_heatmap"
-    version: 0.0.1
+    version: 0.0.2
 plotly_histogram:
     package: "@galaxyproject/plotly_histogram"
     version: 0.0.0
@@ -98,7 +101,7 @@ plotly_pie:
     version: 0.0.3
 plotly_surface:
     package: "@galaxyproject/plotly_surface"
-    version: 0.0.0
+    version: 0.0.1
 plyr:
     package: "@galaxyproject/plyr"
     version: 0.0.4
@@ -107,10 +110,10 @@ rerunio:
     version: 0.0.0
 tabulator:
     package: "@galaxyproject/tabulator"
-    version: 0.0.9
+    version: 0.0.11
 tiffviewer:
     package: "@galaxyproject/tiffviewer"
-    version: 0.0.4
+    version: 0.0.5
 ts_visjs:
     package: "@galaxyproject/ts_visjs"
     version: 0.0.6

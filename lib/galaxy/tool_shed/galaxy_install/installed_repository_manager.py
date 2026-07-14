@@ -9,7 +9,6 @@ import shutil
 from typing import (
     Any,
     no_type_check,
-    Optional,
 )
 
 from galaxy import util
@@ -611,7 +610,7 @@ class InstalledRepositoryManager:
             str(repository.installed_changeset_revision),
         )
 
-    def get_repository_install_dir(self, tool_shed_repository: ToolShedRepository) -> Optional[str]:
+    def get_repository_install_dir(self, tool_shed_repository: ToolShedRepository) -> str | None:
         for tool_path in self.tool_paths:
             ts = common_util.remove_port_from_tool_shed_url(str(tool_shed_repository.tool_shed))
             relative_path = os.path.join(

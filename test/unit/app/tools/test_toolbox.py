@@ -1,7 +1,6 @@
 import logging
 import time
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 from unittest.mock import MagicMock
@@ -145,6 +144,16 @@ class TestToolBox(BaseToolBoxTestCase):
             assert len(test_section["elems"]) == 1
             assert test_section["elems"][0]["id"] == "test_tool"
 
+    def test_panel_entry_matches_to_dict(self):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect("tool_runner", "/test/tool_runner")
+        tool = self.toolbox.get_tool("test_tool")
+        for is_admin in (False, True):
+            trans = mock_trans(is_admin=is_admin)
+            assert tool.to_panel_entry(trans) == tool.to_dict(trans)
+            assert ("config_file" in tool.to_panel_entry(trans)) is is_admin
+
     def test_to_dict_out_of_panel(self):
         for json_conf in [True, False]:
             self._init_tool_in_section(json=json_conf)
@@ -261,7 +270,7 @@ class TestToolBox(BaseToolBoxTestCase):
         return user
 
     def _persist_dynamic_tool(
-        self, public: bool, active: bool = True, owner: Optional[model.User] = None
+        self, public: bool, active: bool = True, owner: model.User | None = None
     ) -> model.DynamicTool:
         session = self.app.model.context
         dyn = model.DynamicTool(

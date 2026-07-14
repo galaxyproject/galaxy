@@ -158,6 +158,53 @@ cases:
       - code: dynamic_tool.output_unclaimed
         msg_contains: discover_datasets
 
+  - name: collection_discover_underspecified_rejected
+    # A discovery descriptor with no usable pattern must NOT silently resolve to
+    # tool_provided_metadata (which lints clean but, writing no galaxy.json, collects
+    # nothing). discover_via is required on the metadata arm, so this errors.
+    doc:
+      outputs:
+        - type: collection
+          name: outs
+          collection_type: list
+          discover_datasets:
+            - {}
+    expected_errors:
+      - code: missing
+
+  - name: collection_discover_typo_rejected
+    # extra="forbid" on the descriptor catches a misspelled key instead of letting
+    # the metadata arm absorb it.
+    doc:
+      outputs:
+        - type: collection
+          name: outs
+          collection_type: list
+          discover_datasets:
+            - {patern: "*.txt"}
+    expected_errors:
+      - code: extra_forbidden
+
+  - name: collection_discover_pattern_accepted
+    doc:
+      outputs:
+        - type: collection
+          name: outs
+          collection_type: list
+          discover_datasets:
+            - {pattern: "*.txt"}
+    valid: true
+
+  - name: collection_discover_tool_provided_accepted
+    doc:
+      outputs:
+        - type: collection
+          name: outs
+          collection_type: list
+          discover_datasets:
+            - {discover_via: tool_provided_metadata}
+    valid: true
+
   - name: invalid_doi_citation
     doc:
       citations:

@@ -3,11 +3,12 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
+import { useActiveContext } from "@/composables/useActiveContext";
 import { convertDropData } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
@@ -83,6 +84,15 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const chatStore = useChatStore();
+const { activeContext } = useActiveContext();
+
+// Notebook context must never use center mode — the chat panel floats alongside
+// the page editor, so force right-panel whenever we enter a notebook context.
+watch(activeContext, (ctx) => {
+    if (ctx?.contextType === "notebook" && chatStore.isCenterMode) {
+        chatStore.setLocation("right");
+    }
+});
 
 const eventStore = useEventStore();
 const activityStore = useActivityStore(props.activityBarId);
@@ -240,6 +250,18 @@ function toggleSidebar(toggle: string = "", to: string | null = null) {
 }
 
 function onChatGxyClick() {
+    // On notebook routes, always use the right panel — never navigate to center.
+    if (activeContext.value?.contextType === "notebook") {
+        if (chatStore.isCenterMode) {
+            chatStore.setLocation("right");
+        }
+        chatStore.toggleChat();
+        if (isActiveSideBar("galaxyai")) {
+            toggleSidebar("galaxyai");
+        }
+        return;
+    }
+
     if (chatStore.isCenterMode) {
         toggleSidebar("galaxyai");
         if (!route.path.startsWith("/galaxyai")) {

@@ -16,7 +16,6 @@ from collections.abc import (
 from itertools import islice
 from typing import (
     Any,
-    Optional,
 )
 
 import bx.align.maf
@@ -219,7 +218,7 @@ class Sequence(data.Text):
         return directories
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -324,8 +323,8 @@ class Sequence(data.Text):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
         **kwd,
     ):
         headers = kwd.get("headers", {})
@@ -356,7 +355,7 @@ class Alignment(data.Text):
     )
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -444,7 +443,7 @@ class Fasta(Sequence):
         return False
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Split a FASTA file sequence by sequence.
 
         Note that even if split_mode="number_of_parts", the actual number of
@@ -792,7 +791,7 @@ class BaseFastq(Sequence):
         return self.check_first_block(file_prefix)
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
         """
@@ -1008,11 +1007,11 @@ class Maf(Alignment):
         optional=True,
     )
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         """
         Parses and sets species, chromosomes, index from MAF file.
@@ -1064,7 +1063,7 @@ class Maf(Alignment):
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 
-    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[list] = None) -> str:
+    def make_html_table(self, dataset: DatasetProtocol, skipchars: list | None = None) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
         try:

@@ -9,7 +9,6 @@ from os.path import (
     abspath,
     join,
 )
-from typing import Optional
 
 from galaxy import util
 from galaxy.job_execution.output_collect import default_exit_code_file
@@ -39,7 +38,7 @@ SETUP_GALAXY_FOR_METADATA = """
 def build_command(
     runner: "BaseJobRunner",
     job_wrapper: "MinimalJobWrapper",
-    container: Optional[Container] = None,
+    container: Container | None = None,
     modify_command_for_container: bool = True,
     include_metadata: bool = False,
     include_work_dir_outputs: bool = True,
@@ -166,7 +165,7 @@ def __externalize_commands(
     commands_builder,
     remote_command_params,
     script_name="tool_script.sh",
-    container: Optional[Container] = None,
+    container: Container | None = None,
 ):
     local_container_script = join(job_wrapper.working_directory, script_name)
     tool_commands = commands_builder.build()

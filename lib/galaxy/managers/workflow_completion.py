@@ -8,7 +8,6 @@ This module provides the WorkflowCompletionManager class which handles:
 """
 
 import logging
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm.scoping import scoped_session
@@ -38,7 +37,7 @@ class WorkflowCompletionManager:
     def sa_session(self) -> scoped_session:
         return self.app.model.context
 
-    def check_and_record_completion(self, invocation_id: int) -> Optional[WorkflowInvocationCompletion]:
+    def check_and_record_completion(self, invocation_id: int) -> WorkflowInvocationCompletion | None:
         """
         Check if invocation is complete and record completion if so.
 
@@ -85,7 +84,7 @@ class WorkflowCompletionManager:
 
         return completion
 
-    def poll_pending_completions(self, limit: int = 100, handler: Optional[str] = None) -> list[int]:
+    def poll_pending_completions(self, limit: int = 100, handler: str | None = None) -> list[int]:
         """
         Find invocations that are SCHEDULED but not yet recorded as complete.
 
@@ -114,7 +113,7 @@ class WorkflowCompletionManager:
         session = self.sa_session
         return list(session.execute(stmt).scalars())
 
-    def get_completion(self, invocation_id: int) -> Optional[WorkflowInvocationCompletion]:
+    def get_completion(self, invocation_id: int) -> WorkflowInvocationCompletion | None:
         """
         Get the completion record for an invocation.
 
@@ -153,8 +152,7 @@ class WorkflowCompletionManager:
         if not completion:
             return False
 
-        hooks_executed = completion.hooks_executed or []
-        if hook_name not in hooks_executed:
+        if hook_name not in (hooks_executed := completion.hooks_executed or []):
             hooks_executed.append(hook_name)
             completion.hooks_executed = hooks_executed
             session.commit()

@@ -1,6 +1,5 @@
 from typing import (
     Literal,
-    Optional,
 )
 
 from pydantic import (
@@ -28,16 +27,16 @@ class NodeRef(BaseModel):
 class GraphNode(BaseModel):
     src: NodeSrc
     id: str
-    name: Optional[str] = None
-    hid: Optional[int] = None
-    state: Optional[str] = None
-    extension: Optional[str] = None
-    collection_type: Optional[str] = None
-    deleted: Optional[bool] = None
-    visible: Optional[bool] = None
-    tool_id: Optional[str] = None
-    tool_name: Optional[str] = None
-    job_state_summary: Optional[dict[str, int]] = None
+    name: str | None = None
+    hid: int | None = None
+    state: str | None = None
+    extension: str | None = None
+    collection_type: str | None = None
+    deleted: bool | None = None
+    visible: bool | None = None
+    tool_id: str | None = None
+    tool_name: str | None = None
+    job_state_summary: dict[str, int] | None = None
 
     @property
     def ref(self) -> NodeRef:
@@ -59,7 +58,7 @@ class GraphEdge(BaseModel):
 class TruncationInfo(BaseModel):
     item_count_capped: bool = False
     scope_type: Literal["recent", "seed_centered"] = "recent"
-    seed_in_scope: Optional[bool] = None
+    seed_in_scope: bool | None = None
 
 
 class HistoryGraphResponse(BaseModel):

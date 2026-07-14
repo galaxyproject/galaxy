@@ -2,7 +2,6 @@
 
 import re
 from typing import (
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -30,7 +29,7 @@ PROFILE_PATTERN = re.compile(r"^[12]\d\.\d{1,2}$")
 lint_tool_types = ["*"]
 
 
-def _tool_xml_and_root(tool_source: "ToolSource") -> Tuple["ElementTree", "Element"]:
+def _tool_xml_and_root(tool_source: "ToolSource") -> tuple["ElementTree", "Element"]:
     tool_xml = getattr(tool_source, "xml_tree", None)
     if tool_xml:
         tool_node = tool_xml.getroot()
@@ -241,7 +240,7 @@ class BioToolsValid(Linter):
                 continue
             metadata_source = ApiBiotoolsMetadataSource()
             if not metadata_source.get_biotools_metadata(xref["value"]):
-                lint_ctx.warn(f'No entry {xref["value"]} in bio.tools.', linter=cls.name(), node=tool_node)
+                lint_ctx.warn(f"No entry {xref['value']} in bio.tools.", linter=cls.name(), node=tool_node)
 
 
 class EDAMTermsValid(Linter):

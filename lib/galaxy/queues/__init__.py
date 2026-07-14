@@ -8,7 +8,6 @@ import datetime
 import logging
 import socket
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -17,7 +16,10 @@ from kombu import (
     Exchange,
     Queue,
 )
-from sqlalchemy import select
+from sqlalchemy import (
+    or_,
+    select,
+)
 
 from galaxy.model import WorkerProcess
 from galaxy.util import now
@@ -33,6 +35,10 @@ galaxy_exchange = Exchange("galaxy_core_exchange", type="topic")
 DEFAULT_ACTIVE_PROCESS_WINDOW_SECONDS = 120
 # Matches WorkerProcess.app_type set by DatabaseHeartbeat for webapp processes.
 WEBAPP_APP_TYPE = "webapp"
+# Matches WorkerProcess.app_type for the standalone SSE monitor. It registers a
+# liveness heartbeat for the audit-monitor election but runs no control
+# consumer, so it must be kept out of the control-queue routing table.
+SSE_MONITOR_APP_TYPE = "sse_monitor"
 
 
 def all_control_queues_for_declare(application_stack: "ApplicationStack", webapp_only: bool = False) -> list[Queue]:
@@ -51,6 +57,11 @@ def all_control_queues_for_declare(application_stack: "ApplicationStack", webapp
     registered themselves with ``app_type='webapp'``. This is what the SSE
     dispatcher wants: job handlers and workflow schedulers have no browser
     connections, so routing SSE events to them is wasted work.
+
+    Otherwise (the general control-task path) every consumer is included
+    except the standalone SSE monitor: it registers a liveness heartbeat for
+    the audit-monitor election but runs no control consumer, so declaring and
+    feeding a queue it never drains would just leak messages.
     """
     app = application_stack.app
     try:
@@ -59,6 +70,9 @@ def all_control_queues_for_declare(application_stack: "ApplicationStack", webapp
         )
         if webapp_only:
             stmt = stmt.where(WorkerProcess.app_type == WEBAPP_APP_TYPE)
+        else:
+            # ``!=`` alone would drop NULL app_type rows (job handlers); keep them.
+            stmt = stmt.where(or_(WorkerProcess.app_type != SSE_MONITOR_APP_TYPE, WorkerProcess.app_type.is_(None)))
         with app.model.new_session() as session:
             processes = session.scalars(stmt).all()
     except Exception:
@@ -79,7 +93,7 @@ def control_queues_from_config(config):
     return exchange_queue, non_exchange_queue
 
 
-def connection_from_config(config) -> Optional[Connection]:
+def connection_from_config(config) -> Connection | None:
     if config.amqp_internal_connection:
         return Connection(config.amqp_internal_connection)
     else:

@@ -10,10 +10,6 @@ from abc import (
 )
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Union,
 )
 
 from .. import formatting
@@ -23,13 +19,13 @@ from ..safety import (
 )
 
 INSTRUMENT_FILE_PREFIX = "__instrument"
-InstrumentableT = Optional[Union[str, List[str]]]
+InstrumentableT = str | list[str] | None
 
 
 class InstrumentPlugin(metaclass=ABCMeta):
     """Describes how to instrument job scripts and retrieve collected metrics."""
 
-    formatter: Optional[formatting.JobMetricFormatter] = formatting.JobMetricFormatter()
+    formatter: formatting.JobMetricFormatter | None = formatting.JobMetricFormatter()
     default_safety = DEFAULT_SAFETY
 
     @property
@@ -52,7 +48,7 @@ class InstrumentPlugin(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def job_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
+    def job_properties(self, job_id, job_directory: str) -> dict[str, Any]:
         """Collect properties for this plugin from specified job directory.
         This method will run on the Galaxy server and can assume files created
         in job_directory with pre_execute_instrument and

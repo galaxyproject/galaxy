@@ -24,6 +24,7 @@ const selectors = {
 const mockSetCurrentHistory = vi.fn();
 const mockApplyFilters = vi.fn();
 const mockWindowOpen = vi.fn(() => null);
+const mockGetHistoryLoadError = vi.fn(() => null as Error | null);
 
 vi.mock("vue-router/composables", () => ({
     useRouter: () => ({
@@ -42,6 +43,7 @@ vi.mock("@/stores/historyStore", async () => {
             ...(originalModule as any).useHistoryStore(),
             currentHistoryId: "current-history-id",
             setCurrentHistory: mockSetCurrentHistory,
+            getHistoryLoadError: mockGetHistoryLoadError,
             applyFilters: vi.fn().mockImplementation((historyId: string) => {
                 // We mock what the actual method does: set the current history if not current
                 if (historyId !== "current-history-id") {
@@ -67,6 +69,7 @@ function initializeMocks() {
     mockSetCurrentHistory.mockClear();
     mockApplyFilters.mockClear();
     mockWindowOpen.mockClear();
+    mockGetHistoryLoadError.mockReturnValue(null);
     const windowSpy = vi.spyOn(window, "open");
     windowSpy.mockImplementation(() => mockWindowOpen());
 }
@@ -268,5 +271,24 @@ describe("SwitchToHistoryLink", () => {
         await expectActionForHistory("View in new tab", history, true);
     });
 
-    // if the history is inaccessible, the HistorySummary would never be fetched in the first place
+    it("shows an error badge when the history is inaccessible (backend error)", async () => {
+        initializeMocks();
+
+        // The history store is fully mocked, so mockGetHistoryLoadError is used to emulate a 403
+        mockGetHistoryLoadError.mockReturnValue(new Error("History is not accessible to the current user"));
+
+        const pinia = createTestingPinia({ createSpy: vi.fn });
+        const wrapper = mount(SwitchToHistoryLink as object, {
+            propsData: { historyId: "inaccessible-history-id" },
+            localVue,
+            pinia,
+            stubs: { FontAwesomeIcon: true },
+        });
+
+        await flushPromises();
+
+        expect(wrapper.find(selectors.historyLink).exists()).toBe(false);
+        expect(wrapper.html()).toContain("Error loading history");
+        expect(wrapper.html()).not.toContain("Loading");
+    });
 });

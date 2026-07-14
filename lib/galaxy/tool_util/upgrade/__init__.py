@@ -12,14 +12,10 @@ from json import loads
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
-    Optional,
-    Type,
+    Literal,
 )
 
 from typing_extensions import (
-    Literal,
     NotRequired,
     TypedDict,
 )
@@ -47,7 +43,7 @@ class AdviceCode(TypedDict):
 
 
 upgrade_codes_json = resource_string(__name__, "upgrade_codes.json")
-upgrade_codes_by_name: Dict[str, AdviceCode] = {}
+upgrade_codes_by_name: dict[str, AdviceCode] = {}
 
 for name, upgrade_object in loads(upgrade_codes_json).items():
     upgrade_object["name"] = name
@@ -56,14 +52,14 @@ for name, upgrade_object in loads(upgrade_codes_json).items():
 
 class Advice:
     advice_code: AdviceCode
-    message: Optional[str]
+    message: str | None
 
-    def __init__(self, advice_code: AdviceCode, message: Optional[str]):
+    def __init__(self, advice_code: AdviceCode, message: str | None):
         self.advice_code = advice_code
         self.message = message
 
     @property
-    def url(self) -> Optional[str]:
+    def url(self) -> str | None:
         return self.advice_code.get("url")
 
     @property
@@ -78,23 +74,23 @@ class Advice:
     def advice_code_message(self) -> str:
         return self.advice_code["message"]
 
-    def to_dict(self) -> Dict[str, Any]:
-        as_dict = cast(Dict[str, Any], self.advice_code.copy())
+    def to_dict(self) -> dict[str, Any]:
+        as_dict = cast(dict[str, Any], self.advice_code.copy())
         as_dict["advice_code_message"] = self.advice_code_message
         as_dict["message"] = self.message
         return as_dict
 
 
 class AdviceCollection:
-    _advice: List[Advice]
+    _advice: list[Advice]
 
     def __init__(self):
         self._advice = []
 
-    def add(self, code: str, message: Optional[str] = None):
+    def add(self, code: str, message: str | None = None):
         self._advice.append(Advice(upgrade_codes_by_name[code], message))
 
-    def to_list(self) -> List[Advice]:
+    def to_list(self) -> list[Advice]:
         return self._advice
 
 
@@ -202,8 +198,7 @@ class ProfileMigration20_09(ProfileMigration):
                 if output_collection.get("element_tests"):
                     advice_collection.add("20_09_consider_output_collection_order")
 
-        command_el = tool_source._command_el
-        if command_el is not None:
+        if (command_el := tool_source._command_el) is not None:
             strict = command_el.get("strict", None)
             if strict is None:
                 advice_collection.add("20_09_consider_set_e")
@@ -266,7 +261,7 @@ class ProfileMigration24_2(ProfileMigration):
                 advice_collection.add("24_2_fix_test_case_validation", str(result.validation_error))
 
 
-profile_migrations: List[Type[ProfileMigration]] = [
+profile_migrations: list[type[ProfileMigration]] = [
     ProfileMigration16_04,
     ProfileMigration17_09,
     ProfileMigration18_01,
@@ -282,7 +277,7 @@ profile_migrations: List[Type[ProfileMigration]] = [
 latest_supported_version = "24.2"
 
 
-def advise_on_upgrade(xml_file: str, to_version: Optional[str] = None) -> List[Advice]:
+def advise_on_upgrade(xml_file: str, to_version: str | None = None) -> list[Advice]:
     to_version = to_version or latest_supported_version
     tool_source = _xml_tool_source(xml_file)
     initial_version = tool_source.parse_profile()
@@ -315,5 +310,5 @@ def _has_matching_xpath(tool_source: XmlToolSource, xpath: str) -> bool:
     return tool_source.xml_tree.find(xpath) is not None
 
 
-def _find_all(tool_source: XmlToolSource, xpath: str) -> List[Element]:
-    return cast(List[Element], tool_source.xml_tree.findall(".//data[@from_work_dir]") or [])
+def _find_all(tool_source: XmlToolSource, xpath: str) -> list[Element]:
+    return cast(list[Element], tool_source.xml_tree.findall(".//data[@from_work_dir]") or [])

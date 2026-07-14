@@ -7,10 +7,7 @@ import os
 import shlex
 import sys
 from typing import (
-    List,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 if TYPE_CHECKING:
@@ -32,26 +29,26 @@ DEFAULT_SET_USER = None if sys.platform == "darwin" else "$UID"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
-def kill_command(container: str, signal: Optional[str] = None, **kwds) -> List[str]:
+def kill_command(container: str, signal: str | None = None, **kwds) -> list[str]:
     args = (["-s", signal] if signal else []) + [container]
     return command_list("kill", args, **kwds)
 
 
-def logs_command(container: str, **kwds) -> List[str]:
+def logs_command(container: str, **kwds) -> list[str]:
     return command_list("logs", [container], **kwds)
 
 
-def build_command(image: str, docker_build_path: str, **kwds) -> List[str]:
+def build_command(image: str, docker_build_path: str, **kwds) -> list[str]:
     if os.path.isfile(docker_build_path):
         docker_build_path = os.path.dirname(os.path.abspath(docker_build_path))
     return command_list("build", ["-t", image, docker_build_path], **kwds)
 
 
-def build_save_image_command(image: str, destination: str, **kwds) -> List[str]:
+def build_save_image_command(image: str, destination: str, **kwds) -> list[str]:
     return command_list("save", ["-o", destination, image], **kwds)
 
 
-def build_pull_command(tag: str, **kwds) -> List[str]:
+def build_pull_command(tag: str, **kwds) -> list[str]:
     return command_list("pull", [tag], **kwds)
 
 
@@ -63,7 +60,7 @@ def build_docker_cache_command(image: str, **kwds) -> str:
     return cache_command
 
 
-def build_docker_images_command(truncate=True, format: Optional[str] = None, **kwds) -> Union[str, List[str]]:
+def build_docker_images_command(truncate=True, format: str | None = None, **kwds) -> str | list[str]:
     args = []
     if not truncate:
         args.append("--no-trunc")
@@ -72,7 +69,7 @@ def build_docker_images_command(truncate=True, format: Optional[str] = None, **k
     return command_shell("images", args, **kwds)
 
 
-def build_docker_load_command(**kwds) -> Union[str, List[str]]:
+def build_docker_load_command(**kwds) -> str | list[str]:
     return command_shell("load", [])
 
 
@@ -81,7 +78,7 @@ def build_docker_simple_command(
     docker_cmd: str = DEFAULT_DOCKER_COMMAND,
     sudo: bool = DEFAULT_SUDO,
     sudo_cmd: str = DEFAULT_SUDO_COMMAND,
-    container_name: Optional[str] = None,
+    container_name: str | None = None,
     **kwd,
 ) -> str:
     command_parts = _docker_prefix(
@@ -99,24 +96,24 @@ def build_docker_run_command(
     image: str,
     interactive: bool = False,
     terminal: bool = False,
-    tag: Optional[str] = None,
-    volumes: Optional[List["DockerVolume"]] = None,
-    volumes_from: Optional[str] = DEFAULT_VOLUMES_FROM,
-    memory: Optional[str] = DEFAULT_MEMORY,
-    env_directives: Optional[List[str]] = None,
-    working_directory: Optional[str] = DEFAULT_WORKING_DIRECTORY,
-    name: Optional[str] = None,
-    net: Optional[str] = DEFAULT_NET,
-    run_extra_arguments: Optional[str] = DEFAULT_RUN_EXTRA_ARGUMENTS,
+    tag: str | None = None,
+    volumes: list["DockerVolume"] | None = None,
+    volumes_from: str | None = DEFAULT_VOLUMES_FROM,
+    memory: str | None = DEFAULT_MEMORY,
+    env_directives: list[str] | None = None,
+    working_directory: str | None = DEFAULT_WORKING_DIRECTORY,
+    name: str | None = None,
+    net: str | None = DEFAULT_NET,
+    run_extra_arguments: str | None = DEFAULT_RUN_EXTRA_ARGUMENTS,
     docker_cmd: str = DEFAULT_DOCKER_COMMAND,
     sudo: bool = DEFAULT_SUDO,
     sudo_cmd: str = DEFAULT_SUDO_COMMAND,
     auto_rm: bool = DEFAULT_AUTO_REMOVE,
-    set_user: Optional[str] = DEFAULT_SET_USER,
-    host: Optional[str] = DEFAULT_HOST,
-    guest_ports: Union[bool, str, List[str]] = False,
-    host_port_cmd: Optional[str] = None,
-    container_name: Optional[str] = None,
+    set_user: str | None = DEFAULT_SET_USER,
+    host: str | None = DEFAULT_HOST,
+    guest_ports: bool | str | list[str] = False,
+    host_port_cmd: str | None = None,
+    container_name: str | None = None,
 ) -> str:
     env_directives = env_directives or []
     volumes = volumes or []
@@ -179,7 +176,7 @@ def build_docker_run_command(
     return " ".join(command_parts)
 
 
-def command_list(command: str, command_args: Optional[List[str]] = None, **kwds) -> List[str]:
+def command_list(command: str, command_args: list[str] | None = None, **kwds) -> list[str]:
     """Return Docker command as an argv list."""
     command_args = command_args or []
     command_parts = _docker_prefix(**kwds)
@@ -188,7 +185,7 @@ def command_list(command: str, command_args: Optional[List[str]] = None, **kwds)
     return command_parts
 
 
-def command_shell(command: str, command_args: Optional[List[str]] = None, **kwds) -> Union[str, List[str]]:
+def command_shell(command: str, command_args: list[str] | None = None, **kwds) -> str | list[str]:
     """Return Docker command as a string for a shell or command-list."""
     command_args = command_args or []
     cmd = command_list(command, command_args, **kwds)
@@ -203,9 +200,9 @@ def _docker_prefix(
     docker_cmd: str = DEFAULT_DOCKER_COMMAND,
     sudo: bool = DEFAULT_SUDO,
     sudo_cmd: str = DEFAULT_SUDO_COMMAND,
-    host: Optional[str] = DEFAULT_HOST,
+    host: str | None = DEFAULT_HOST,
     **kwds,
-) -> List[str]:
+) -> list[str]:
     """Prefix to issue a docker command."""
     command_parts = []
     if sudo:

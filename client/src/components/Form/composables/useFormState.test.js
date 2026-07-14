@@ -153,6 +153,59 @@ describe("useFormState", () => {
         expect(caseBInput.attributes.options).toEqual([["col1", "col1"]]);
     });
 
+    it("should not overwrite earlier case attributes when multiple conditional cases share a parameter name", () => {
+        const { cloneInputs, formInputs, syncServerAttributes } = useFormState();
+
+        // All cases have a "feature" parameter — same name, different options per case
+        cloneInputs([
+            {
+                name: "col_choice",
+                type: "conditional",
+                test_param: { name: "col", type: "select", value: "0" },
+                cases: [
+                    { value: "0", inputs: [{ name: "feature", type: "select", value: null }] },
+                    { value: "2", inputs: [{ name: "feature", type: "select", value: null }] },
+                ],
+            },
+        ]);
+
+        // Server returns distinct options for each case
+        syncServerAttributes([
+            {
+                name: "col_choice",
+                type: "conditional",
+                test_param: { name: "col", type: "select" },
+                cases: [
+                    { value: "0", inputs: [{ name: "feature", type: "select", options: [["seqA", "seqA"]] }] },
+                    {
+                        value: "2",
+                        inputs: [
+                            {
+                                name: "feature",
+                                type: "select",
+                                options: [
+                                    ["mRNA", "mRNA"],
+                                    ["exon", "exon"],
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        ]);
+
+        const cond = formInputs.value[0];
+        const case0Feature = cond.cases[0].inputs[0];
+        const case2Feature = cond.cases[1].inputs[0];
+
+        // Each case must keep its OWN options, not inherit the last case's options
+        expect(case0Feature.attributes.options).toEqual([["seqA", "seqA"]]);
+        expect(case2Feature.attributes.options).toEqual([
+            ["mRNA", "mRNA"],
+            ["exon", "exon"],
+        ]);
+    });
+
     it("should update formIndex and formData on conditional switch", () => {
         const { cloneInputs, formInputs, rebuildIndex, buildFormData, formIndex, formData } = useFormState();
         cloneInputs(makeConditionalInputs());

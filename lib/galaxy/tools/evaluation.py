@@ -10,9 +10,7 @@ from datetime import datetime
 from typing import (
     Any,
     Literal,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from packaging.version import Version
@@ -117,15 +115,14 @@ global_tool_errors = ToolErrorLog()
 
 
 class ToolTemplatingException(Exception):
-
-    def __init__(self, *args: object, tool_id: Optional[str], tool_version: str, is_latest: bool) -> None:
+    def __init__(self, *args: object, tool_id: str | None, tool_version: str, is_latest: bool) -> None:
         super().__init__(*args)
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.is_latest = is_latest
 
 
-def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool: "Tool"):
+def global_tool_logs(func, config_file: StrPath | None, action_str: str, tool: "Tool"):
     try:
         return func()
     except Exception as e:
@@ -158,13 +155,13 @@ class ToolEvaluator:
         self.param_dict: dict[str, Any] = {}
         self.extra_filenames: list[str] = []
         self.environment_variables: list[dict[str, str]] = []
-        self.version_command_line: Optional[str] = None
-        self.command_line: Optional[str] = None
+        self.version_command_line: str | None = None
+        self.command_line: str | None = None
         self.interactivetools: list[dict[str, Any]] = []
         self.consumes_names = False
         self.use_cached_job = False
 
-    def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
+    def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Callable | None = None):
         """
         Setup the compute environment and established the outline of the param_dict
         for evaluating command and config cheetah templates.
@@ -218,7 +215,7 @@ class ToolEvaluator:
             self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
 
         else:
-            tool_state: Optional[JobInternalToolState] = None
+            tool_state: JobInternalToolState | None = None
             if job.tool_state:
                 tool_state = JobInternalToolState(job.tool_state)
             self.param_dict = self.build_param_dict(
@@ -244,7 +241,7 @@ class ToolEvaluator:
         input_datasets: InpDataDictT,
         output_datasets: OutDataDictT,
         output_collections: OutCollectionsDictT,
-        validated_tool_state: Optional[JobInternalToolState] = None,
+        validated_tool_state: JobInternalToolState | None = None,
     ):
         """
         Build the dictionary of parameters for substituting into the command
@@ -323,9 +320,7 @@ class ToolEvaluator:
                 undeferred_objects[key] = undeferred
             elif isinstance(value, list):
                 undeferred_list: list[
-                    Union[
-                        model.DatasetInstance, model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement
-                    ]
+                    model.DatasetInstance | model.HistoryDatasetCollectionAssociation | model.DatasetCollectionElement
                 ] = []
                 for potentially_deferred in value:
                     if isinstance(potentially_deferred, model.DatasetInstance):
@@ -354,7 +349,7 @@ class ToolEvaluator:
     def _eval_format_source(
         self,
         job: model.Job,
-        inp_data: dict[str, Optional[model.DatasetInstance]],
+        inp_data: dict[str, model.DatasetInstance | None],
         out_data: dict[str, model.DatasetInstance],
     ):
         for output_name, output in out_data.items():
@@ -371,7 +366,7 @@ class ToolEvaluator:
 
     def _replaced_deferred_objects(
         self,
-        inp_data: dict[str, Optional[model.DatasetInstance]],
+        inp_data: dict[str, model.DatasetInstance | None],
         incoming: dict,
         materalized_objects: dict[str, DeferrableObjectsT],
     ):
@@ -825,7 +820,7 @@ class ToolEvaluator:
             environment_variable = environment_variable_def.copy()
             environment_variable_template = environment_variable_def["template"]
             inject = environment_variable_def.get("inject")
-            template_type: Optional[Literal["cheetah"]] = None
+            template_type: Literal["cheetah"] | None = None
             if inject == "api_key":
                 if self._user and isinstance(self.app, BasicSharedApp):
                     from galaxy.managers import api_keys
@@ -915,7 +910,7 @@ class ToolEvaluator:
         else:
             return None
 
-    def _build_config_file_text(self, config_file: Union[TemplateConfigFile, InputConfigFile, FileSourceConfigFile]):
+    def _build_config_file_text(self, config_file: TemplateConfigFile | InputConfigFile | FileSourceConfigFile):
         if isinstance(config_file, (XmlTemplateConfigFile, YamlTemplateConfigFile)):
             return config_file.content, config_file.eval_engine
 
@@ -942,7 +937,7 @@ class ToolEvaluator:
         config_filename,
         content,
         context,
-        template_type: Optional[Literal["cheetah", "ecmascript"]] = None,
+        template_type: Literal["cheetah", "ecmascript"] | None = None,
         strip=False,
     ):
         parent_dir = os.path.dirname(config_filename)
@@ -1036,7 +1031,6 @@ class PartialToolEvaluator(ToolEvaluator):
 
 
 class UserToolEvaluator(ToolEvaluator):
-
     param_dict_style = "json"
 
     def _build_config_files(self):
@@ -1077,7 +1071,7 @@ class UserToolEvaluator(ToolEvaluator):
         input_datasets: InpDataDictT,
         output_datasets: OutDataDictT,
         output_collections: OutCollectionsDictT,
-        validated_tool_state: Optional[JobInternalToolState] = None,
+        validated_tool_state: JobInternalToolState | None = None,
     ):
         """
         Build the dictionary of parameters for substituting into the command

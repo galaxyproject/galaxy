@@ -9,8 +9,8 @@ import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import HistoryPageList from "./HistoryPageList.vue";
 import HistoryPageView from "./HistoryPageView.vue";
+import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageEditorView from "./PageEditorView.vue";
-import Markdown from "@/components/Markdown/Markdown.vue";
 
 vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(() => ({
@@ -26,6 +26,19 @@ vi.mock("vue-router/composables", () => ({
     })),
     useRoute: vi.fn(() => ({
         params: {},
+    })),
+}));
+
+const mockPushToFrameOrPage = vi.fn();
+vi.mock("@/composables/windowAwareNavigation", () => ({
+    useWindowAwareNavigation: vi.fn(() => ({
+        pushToFrameOrPage: mockPushToFrameOrPage,
+    })),
+}));
+
+vi.mock("@/composables/confirmDialog.js", () => ({
+    useConfirmDialog: vi.fn(() => ({
+        confirm: vi.fn().mockResolvedValue(true),
     })),
 }));
 
@@ -53,10 +66,7 @@ const PAGE_ID = "page-1";
 const SELECTORS = {
     INFO_ALERT: "balert-stub[variant='info']",
     ERROR_ALERT: "balert-stub[variant='danger']",
-    DISPLAY_TOOLBAR: "[data-description='page display toolbar']",
-    EDIT_BUTTON: "[data-description='page edit button']",
-    MANAGE_BUTTON: "[data-description='page manage button']",
-};
+} as const;
 
 let pinia: Pinia;
 
@@ -80,6 +90,7 @@ describe("HistoryPageView", () => {
     beforeEach(() => {
         pinia = createTestingPinia({ createSpy: vi.fn });
         vi.clearAllMocks();
+        mockPushToFrameOrPage.mockReset();
     });
 
     afterEach(() => {
@@ -195,7 +206,7 @@ describe("HistoryPageView", () => {
             await flushPromises();
 
             expect(wrapper.findComponent(PageEditorView).exists()).toBe(false);
-            expect(wrapper.findComponent(Markdown).exists()).toBe(true);
+            expect(wrapper.findComponent(PageDisplayOnly).exists()).toBe(true);
         });
     });
 
@@ -214,6 +225,8 @@ describe("HistoryPageView", () => {
             } as any;
             store.currentContent = "# Hello";
             store.currentTitle = "My Page";
+            // hasCurrentPage is a computed (readonly) — stub it so the display toolbar renders
+            vi.spyOn(store, "hasCurrentPage", "get").mockReturnValue(true);
             return store;
         }
 
@@ -222,30 +235,19 @@ describe("HistoryPageView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
-            expect(wrapper.findComponent(Markdown).exists()).toBe(true);
+            expect(wrapper.findComponent(PageDisplayOnly).exists()).toBe(true);
         });
 
-        it("passes correct markdownConfig to Markdown", async () => {
+        it("passes correct markdownConfig to PageDisplayOnly", async () => {
             setupLoadedPage();
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
-            const md = wrapper.findComponent(Markdown);
+            const md = wrapper.findComponent(PageDisplayOnly);
             const config = md.props("markdownConfig");
             expect(config.id).toBe(PAGE_ID);
             expect(config.title).toBe("My Page");
             expect(config.content).toBe("# Hello");
-        });
-
-        it("shows display toolbar with Edit button", async () => {
-            setupLoadedPage();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
-
-            expect(wrapper.find(SELECTORS.DISPLAY_TOOLBAR).exists()).toBe(true);
-            const editBtn = wrapper.find(SELECTORS.EDIT_BUTTON);
-            expect(editBtn.exists()).toBe(true);
-            expect(editBtn.text()).toContain("Edit");
         });
 
         it("Edit button navigates to edit mode (no displayOnly)", async () => {
@@ -253,8 +255,7 @@ describe("HistoryPageView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
-            const editBtn = wrapper.find(SELECTORS.EDIT_BUTTON);
-            await editBtn.trigger("click");
+            wrapper.findComponent(PageDisplayOnly).vm.$emit("edit");
 
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/${PAGE_ID}`);
         });
@@ -280,13 +281,13 @@ describe("HistoryPageView", () => {
     });
 
     describe("Navigation/Events", () => {
-        it("handleSelect navigates to page URL via router.push", async () => {
+        it("edit emit from list navigates to page edit URL", async () => {
             setupListViewStore([{ id: "nb-1", history_id: HISTORY_ID, title: "NB1" }]);
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
             const list = wrapper.findComponent(HistoryPageList);
-            list.vm.$emit("select", "nb-1");
+            list.vm.$emit("edit", "nb-1");
             await wrapper.vm.$nextTick();
 
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/nb-1`);
@@ -307,11 +308,11 @@ describe("HistoryPageView", () => {
             list.vm.$emit("create");
             await flushPromises();
 
-            expect(store.createPage).toHaveBeenCalledWith({ title: "Untitled Notebook" });
+            expect(store.createPage).toHaveBeenCalledWith({ title: undefined, content: undefined });
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/new-page`);
         });
 
-        it("view emit from list navigates to displayOnly URL", async () => {
+        it("view emit from list navigates to displayOnly URL via pushToFrameOrPage", async () => {
             setupListViewStore([{ id: "nb-1", history_id: HISTORY_ID, title: "NB1" }]);
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
@@ -320,7 +321,11 @@ describe("HistoryPageView", () => {
             list.vm.$emit("view", "nb-1");
             await wrapper.vm.$nextTick();
 
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/nb-1?displayOnly=true`);
+            expect(mockPushToFrameOrPage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    inlineUrl: `/histories/${HISTORY_ID}/pages/nb-1?displayOnly=true`,
+                }),
+            );
         });
     });
 
@@ -329,20 +334,22 @@ describe("HistoryPageView", () => {
             mockGalaxyInstance.frame.active = false;
         });
 
-        it("handleSelect opens in WinBox when WM is active", async () => {
+        it("view emit opens in WinBox when WM is active", async () => {
             mockGalaxyInstance.frame.active = true;
             setupListViewStore([{ id: "nb-1", history_id: HISTORY_ID, title: "NB1" }]);
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
             const list = wrapper.findComponent(HistoryPageList);
-            list.vm.$emit("select", "nb-1");
+            list.vm.$emit("view", "nb-1");
             await wrapper.vm.$nextTick();
 
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/nb-1?displayOnly=true`, {
-                title: "Galaxy Notebook: NB1",
-                preventWindowManager: false,
-            });
+            expect(mockPushToFrameOrPage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    inlineUrl: `/histories/${HISTORY_ID}/pages/nb-1?displayOnly=true`,
+                    title: "Galaxy Notebook: NB1",
+                }),
+            );
         });
     });
 
@@ -352,7 +359,7 @@ describe("HistoryPageView", () => {
             mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            expect(store.loadPages).toHaveBeenCalledWith(HISTORY_ID);
+            expect(store.loadPages).toHaveBeenCalledWith(HISTORY_ID, undefined);
         });
 
         it("does not call store.loadPageById on mount when no pageId", async () => {

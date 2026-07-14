@@ -1,9 +1,6 @@
 import functools
 import logging
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Union
 
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -22,7 +19,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 CitationT = Union["BibtexCitation", "DoiCitation"]
-OptionalCitationT = Optional[CitationT]
+OptionalCitationT = CitationT | None
 
 
 class CitationsManager:
@@ -156,7 +153,6 @@ BIBTEX_UNSET = object()
 
 
 class DoiCitation(BaseCitation):
-
     def __init__(self, citation_model: Citation, citation_manager: CitationsManager):
         self.__doi = citation_model.content
         self.doi_cache = citation_manager.doi_cache

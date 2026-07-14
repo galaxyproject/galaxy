@@ -1,6 +1,5 @@
 import hashlib
 import logging
-from typing import Optional
 
 from galaxy import exceptions
 from galaxy.files import (
@@ -37,14 +36,14 @@ class RemoteFilesManager:
         self,
         user_ctx: ProvidesUserContext,
         target: str,
-        format: Optional[RemoteFilesFormat],
-        recursive: Optional[bool],
-        disable: Optional[RemoteFilesDisableMode],
-        write_intent: Optional[bool] = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        format: RemoteFilesFormat | None,
+        recursive: bool | None,
+        disable: RemoteFilesDisableMode | None,
+        write_intent: bool | None = False,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[AnyRemoteFilesListResponse, int]:
         """Returns a list of remote files and directories available to the user and the total count of them."""
 
@@ -141,9 +140,9 @@ class RemoteFilesManager:
     def get_files_source_plugins(
         self,
         user_context: ProvidesUserContext,
-        browsable_only: Optional[bool] = True,
-        include_kind: Optional[set[PluginKind]] = None,
-        exclude_kind: Optional[set[PluginKind]] = None,
+        browsable_only: bool | None = True,
+        include_kind: set[PluginKind] | None = None,
+        exclude_kind: set[PluginKind] | None = None,
     ):
         """Display plugin information for each of the gxfiles:// URI targets available."""
         user_file_source_context = ProvidesFileSourcesUserContext(user_context)

@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
+import { useActiveContext } from "@/composables/useActiveContext";
 import { useChatStore } from "@/stores/chatStore.js";
 
 import GButton from "../BaseComponents/GButton.vue";
@@ -14,6 +15,9 @@ const route = useRoute();
 const router = useRouter();
 
 const chatStore = useChatStore();
+const { activeContext } = useActiveContext();
+
+const isNotebookContext = computed(() => activeContext.value?.contextType === "notebook");
 
 const { activeChatId, isBottomPanelOpen, isCenterMode, isRightPanelOpen } = storeToRefs(chatStore);
 
@@ -45,7 +49,14 @@ function openDockedChat(location: "right" | "bottom") {
 
 <template>
     <GButtonGroup class="chat-mode-selector" size="small">
-        <GButton color="blue" outline :pressed="isOnCenter" title="Enable Full View" tooltip @click="openCenterChat">
+        <GButton
+            v-if="!isNotebookContext"
+            color="blue"
+            outline
+            :pressed="isOnCenter"
+            title="Enable Full View"
+            tooltip
+            @click="openCenterChat">
             <FontAwesomeIcon :icon="faExpand" />
         </GButton>
         <GButton

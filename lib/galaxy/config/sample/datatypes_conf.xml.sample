@@ -619,6 +619,11 @@
     <datatype extension="vg.dist" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG distance index storing minimum distances between graph positions." description_url="https://github.com/vgteam/vg/wiki/File-Types#miscellaneous-formats" display_in_upload="true"/>
     <datatype extension="vg.snarls" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG snarl decomposition index defining nested variation sites in a graph." description_url="https://github.com/vgteam/vg/wiki/File-Types#miscellaneous-formats" display_in_upload="true"/>
     <datatype extension="vg.gamp" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG GAM position index enabling random access to graph alignments." description_url="https://github.com/vgteam/vg/wiki/File-Types#read-and-alignment-formats" display_in_upload="true"/>
+    <datatype extension="vg.min" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG minimizer index used to find minimizer substrings in a graph." description_url="https://github.com/vgteam/vg/wiki/File-Types#miscellaneous-formats" display_in_upload="true"/>
+    <datatype extension="vg.zipcodes" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG zipcodes stores supplemental distance information for substrings in a graph." description_url="https://github.com/vgteam/vg/wiki/File-Types#miscellaneous-formats" display_in_upload="true"/>
+    <datatype extension="vg.gg" type="galaxy.datatypes.binary:Binary" subclass="true" description="A supplemental information to turn a GBWT file into a graph." description_url="https://github.com/vgteam/vg/wiki/File-Types#reference-formats" display_in_upload="true"/>
+    <datatype extension="gbz" type="galaxy.datatypes.binary:Binary" subclass="true" description="A compressed format storing a graph as traversed by sample haplotypes." description_url="https://github.com/vgteam/vg/wiki/File-Types#reference-formats" display_in_upload="true"/>
+    <datatype extension="gbwt" type="galaxy.datatypes.binary:Binary" subclass="true" description="A multi-string FM-index for indexing large collections of similar paths over a graph." description_url="https://github.com/jltsiren/gbwt/blob/master/README.md" display_in_upload="true"/>
     <datatype extension="hal" type="galaxy.datatypes.binary:Binary" subclass="true" description="Hierarchical Alignment Format" display_in_upload="true" description_url="https://github.com/ComparativeGenomicsToolkit/hal"/>
     <datatype extension="hal.pg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Pairwise genome alignment graph." display_in_upload="true"/>
     <datatype extension="hal.hg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Hierarchical multi-genome alignment graph." display_in_upload="true"/>
@@ -763,6 +768,7 @@
     <datatype extension="fuzznuc" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="fuzzpro" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="fuzztran" type="galaxy.datatypes.data:Text" subclass="true"/>
+    <datatype extension="gaf" type="galaxy.datatypes.data:Text" subclass="true" description="Graph Alignment Format. A tab-delimited file format for sequence alignments to bidirected sequence graphs." description_url="https://github.com/vgteam/vg/blob/master/doc/static/GAF.md"/>
     <datatype extension="garnier" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="geecee" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="helixturnhelix" type="galaxy.datatypes.data:Text" subclass="true"/>

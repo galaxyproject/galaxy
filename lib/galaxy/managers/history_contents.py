@@ -7,7 +7,6 @@ import json
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 from sqlalchemy import (
@@ -174,8 +173,7 @@ class HistoryContentsManager(base.SortableManager):
             .where(HDA.history_id == history_id, HDA.hid == hid, HDA.visible == true())
             .order_by(HDA.id.asc())
         )
-        result = session.execute(stmt).scalars().first()
-        if result is not None:
+        if (result := session.execute(stmt).scalars().first()) is not None:
             return result
         not_a_conversion = ~select(ICDA.id).where(ICDA.hda_id == HDA.id).exists()
         stmt = select(HDA).where(HDA.history_id == history_id, HDA.hid == hid, not_a_conversion).order_by(HDA.id.asc())
@@ -607,7 +605,7 @@ class HistoryContentsFilters(
     # history. ``None`` means the filter is being parsed outside a history
     # scope (e.g. ``/api/datasets``); in that case the HDCA branch of the
     # extension filter degrades to a no-op (HDA filter still applies).
-    _current_history_id: Optional[int] = None
+    _current_history_id: int | None = None
 
     def parse_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, history_id):
         """Parse query filters but consider case where related filter is included."""

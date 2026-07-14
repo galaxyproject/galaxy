@@ -3,9 +3,6 @@ API operations on User storage management.
 """
 
 import logging
-from typing import (
-    Optional,
-)
 
 from fastapi import (
     Body,
@@ -36,7 +33,7 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["storage management"])
 
-OrderQueryParam: Optional[StoredItemOrderBy] = Query(
+OrderQueryParam: StoredItemOrderBy | None = Query(
     default=None,
     title="Order",
     description=(
@@ -67,9 +64,9 @@ class FastAPIStorageCleaner:
     def discarded_histories(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        offset: Optional[int] = OffsetQueryParam,
-        limit: Optional[int] = LimitQueryParam,
-        order: Optional[StoredItemOrderBy] = OrderQueryParam,
+        offset: int | None = OffsetQueryParam,
+        limit: int | None = LimitQueryParam,
+        order: StoredItemOrderBy | None = OrderQueryParam,
     ) -> list[StoredItem]:
         return self.service.get_discarded(trans, "history", offset, limit, order)
 
@@ -102,9 +99,9 @@ class FastAPIStorageCleaner:
     def discarded_datasets(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        offset: Optional[int] = OffsetQueryParam,
-        limit: Optional[int] = LimitQueryParam,
-        order: Optional[StoredItemOrderBy] = OrderQueryParam,
+        offset: int | None = OffsetQueryParam,
+        limit: int | None = LimitQueryParam,
+        order: StoredItemOrderBy | None = OrderQueryParam,
     ) -> list[StoredItem]:
         return self.service.get_discarded(trans, "dataset", offset, limit, order)
 
@@ -137,8 +134,8 @@ class FastAPIStorageCleaner:
     def archived_histories(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        offset: Optional[int] = OffsetQueryParam,
-        limit: Optional[int] = LimitQueryParam,
-        order: Optional[StoredItemOrderBy] = OrderQueryParam,
+        offset: int | None = OffsetQueryParam,
+        limit: int | None = LimitQueryParam,
+        order: StoredItemOrderBy | None = OrderQueryParam,
     ) -> list[StoredItem]:
         return self.service.get_archived(trans, "history", offset, limit, order)

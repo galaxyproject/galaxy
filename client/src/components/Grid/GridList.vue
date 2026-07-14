@@ -470,9 +470,10 @@ watch(operationMessage, () => {
                                             fieldText(fieldEntry, rowData)
                                         }}</span>
                                     </GButton>
-                                    <SwitchToHistoryLink
-                                        v-else-if="fieldEntry.type == 'history'"
-                                        :history-id="rowData[fieldEntry.key]" />
+                                    <template v-else-if="fieldEntry.type == 'history'">
+                                        <span v-if="!rowData[fieldEntry.key]" v-localize> No history found </span>
+                                        <SwitchToHistoryLink v-else :history-id="rowData[fieldEntry.key]" />
+                                    </template>
                                     <HelpText
                                         v-else-if="fieldEntry.type == 'helptext' && fieldEntry.converter"
                                         :uri="fieldEntry.converter(rowData)"

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from galaxy.tool_util.parser.parameter_validators import parse_xml_validators
 from galaxy.tool_util.unittest_utils.sample_data import (
     INVALID_XML_VALIDATORS,
@@ -15,7 +13,7 @@ def test_xml_validation_valid():
 
 def test_xml_validation_invalid():
     for xml_validator in INVALID_XML_VALIDATORS:
-        exc: Optional[Exception] = None
+        exc: Exception | None = None
         try:
             _validate_xml_str(xml_validator)
         except ValueError as e:

@@ -16,8 +16,12 @@ echo $float.floattest >> '$out_file1'
     </outputs>
     <tests>
         <test>
-            <param name="inttest" value="12456" />
-            <param name="floattest" value="6.789" />
+            <section name="int">
+                <param name="inttest" value="12456" />
+            </section>
+            <section name="float">
+                <param name="floattest" value="6.789" />
+            </section>
             <output name="out_file1">
                 <assert_contents>
                     <has_line line="12456" />

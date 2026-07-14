@@ -1,8 +1,10 @@
 <template>
     <div>
-        <LoadingSpan v-if="loading" />
+        <BAlert v-if="loading" show>
+            <LoadingSpan />
+        </BAlert>
+        <BAlert v-else-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <div v-else>
-            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
             <FormCard :title="cardTitle" icon="fa-file-contract">
                 <template v-slot:body>
                     <FormElementLabel title="Title" :required="true" :condition="!!title">
@@ -20,26 +22,34 @@
                     </FormElementLabel>
                 </template>
             </FormCard>
-            <BButton id="page-submit" class="my-2" variant="primary" @click="onSubmit">
-                <FontAwesomeIcon :icon="faSave" class="mr-1" />
+            <GButton
+                id="page-submit"
+                class="my-2"
+                color="blue"
+                :disabled="submitting || !title || !slug"
+                :disabled-title="disabledTitle"
+                @click="onSubmit">
+                <FontAwesomeIcon :icon="submitting ? faSpinner : faSave" class="mr-1" :spin="submitting" />
                 <span v-localize>{{ buttonText }}</span>
-            </BButton>
+            </GButton>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { faSave } from "@fortawesome/free-solid-svg-icons";
+import { faSave, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
-import { ref, watch } from "vue";
+import { BAlert } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { fetchInvocationReport } from "@/api/invocations";
 import { FORM_LABELS } from "@/components/Page/constants";
 import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
+import { useToast } from "@/composables/toast";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
@@ -55,10 +65,23 @@ const annotation = ref("");
 const content = ref(pageTemplate.content);
 const errorMessage = ref("");
 const loading = ref(false);
+const submitting = ref(false);
 const slug = ref("");
 const title = ref("");
 
+const disabledTitle = computed(() => {
+    if (submitting.value) {
+        return "Submitting";
+    }
+    if (!title.value || !slug.value) {
+        return "Please complete all required inputs.";
+    }
+    return "";
+});
+
 const router = useRouter();
+
+const Toast = useToast();
 
 const cardTitle = props.mode === "edit" ? FORM_LABELS.editTitle : FORM_LABELS.createTitle;
 const buttonText = props.mode === "edit" ? "Update" : "Create";
@@ -97,10 +120,11 @@ async function fetchData() {
 
 async function onSubmit() {
     if (!slug.value || !title.value) {
-        errorMessage.value = "Please complete all required inputs.";
+        Toast.error("Please complete all required inputs.");
         return;
     }
 
+    submitting.value = true;
     if (props.mode === "create") {
         const { data, error } = await GalaxyApi().POST("/api/pages", {
             body: {
@@ -113,8 +137,12 @@ async function onSubmit() {
             },
         });
         if (error) {
-            errorMessage.value = error.err_msg;
+            Toast.error(error.err_msg, "Error Creating Page");
+        } else if (data.history_id) {
+            Toast.success("Galaxy Notebook created successfully");
+            router.push(`/histories/${data.history_id}/pages/${data.id}`);
         } else {
+            Toast.success("Report created successfully");
             router.push(`/pages/editor?id=${data.id}`);
         }
     } else {
@@ -127,11 +155,13 @@ async function onSubmit() {
             },
         });
         if (error) {
-            errorMessage.value = error.err_msg;
+            Toast.error(error.err_msg, "Error Updating Page");
         } else {
+            Toast.success("Page updated successfully");
             router.push("/pages/list");
         }
     }
+    submitting.value = false;
 }
 
 watch(() => [props.id, props.invocationId], fetchData, { immediate: true });

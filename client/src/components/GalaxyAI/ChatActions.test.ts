@@ -70,17 +70,31 @@ describe("ChatActions", () => {
             expect(mockPush).toHaveBeenCalledWith("/galaxyai/new");
         });
 
-        it("calls chatStore.showChat(null) in docked mode", async () => {
-            const { wrapper, store } = mountComponent("docked");
+        it("requests a new chat in all modes", async () => {
+            for (const source of ["center", "docked", "panel"] as const) {
+                const { wrapper, store } = mountComponent(source);
+                await findButton(wrapper, "Start New Chat").trigger("click");
+                expect(store.requestNewChat).toHaveBeenCalled();
+            }
+        });
+
+        it("still requests a new chat when already at /galaxyai/new, without re-routing", async () => {
+            mockRoute = { path: "/galaxyai/new", params: { exchangeId: "new" } };
+            const { wrapper, store } = mountComponent("center");
             await findButton(wrapper, "Start New Chat").trigger("click");
-            expect(store.showChat).toHaveBeenCalledWith(null);
+            expect(mockPush).not.toHaveBeenCalled();
+            expect(store.requestNewChat).toHaveBeenCalled();
+        });
+
+        it("does not route in docked mode", async () => {
+            const { wrapper } = mountComponent("docked");
+            await findButton(wrapper, "Start New Chat").trigger("click");
             expect(mockPush).not.toHaveBeenCalled();
         });
 
-        it("calls chatStore.showChat(null) in panel mode", async () => {
-            const { wrapper, store } = mountComponent("panel");
+        it("does not route in panel mode", async () => {
+            const { wrapper } = mountComponent("panel");
             await findButton(wrapper, "Start New Chat").trigger("click");
-            expect(store.showChat).toHaveBeenCalledWith(null);
             expect(mockPush).not.toHaveBeenCalled();
         });
 

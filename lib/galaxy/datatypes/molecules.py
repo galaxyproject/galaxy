@@ -2,9 +2,6 @@ import logging
 import os
 import re
 from collections.abc import Callable
-from typing import (
-    Optional,
-)
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
@@ -387,7 +384,7 @@ class SDF(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines(r"^\$\$\$\$$", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         Split the input files by molecule records.
         """
@@ -400,7 +397,7 @@ class SDF(GenericMolFile):
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
-            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for SD-files.")
+            raise Exception(f'Split mode "{split_params["split_mode"]}" is currently not implemented for SD-files.')
         elif split_params["split_mode"] == "to_size":
             chunk_size = int(split_params["split_size"])
         else:
@@ -470,7 +467,7 @@ class MOL2(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines("@<TRIPOS>MOLECULE", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         Split the input files by molecule records.
         """
@@ -483,7 +480,7 @@ class MOL2(GenericMolFile):
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
-            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for MOL2-files.")
+            raise Exception(f'Split mode "{split_params["split_mode"]}" is currently not implemented for MOL2-files.')
         elif split_params["split_mode"] == "to_size":
             chunk_size = int(split_params["split_size"])
         else:
@@ -556,7 +553,7 @@ class FPS(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines("^#", dataset.get_file_name(), invert=True)
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         Split the input files by fingerprint records.
         """
@@ -569,7 +566,7 @@ class FPS(GenericMolFile):
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
-            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for MOL2-files.")
+            raise Exception(f'Split mode "{split_params["split_mode"]}" is currently not implemented for MOL2-files.')
         elif split_params["split_mode"] == "to_size":
             chunk_size = int(split_params["split_size"])
         else:
@@ -680,7 +677,7 @@ class OBFS(Binary):
         raise NotImplementedError("Merging Fastsearch indices is not supported.")
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Splitting Fastsearch indices is not supported."""
         if split_params is None:
             return None
@@ -1410,7 +1407,7 @@ class CML(GenericXml):
         return True
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         Split the input files by molecule records.
         """
@@ -1423,7 +1420,7 @@ class CML(GenericXml):
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
-            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for CML-files.")
+            raise Exception(f'Split mode "{split_params["split_mode"]}" is currently not implemented for CML-files.')
         elif split_params["split_mode"] == "to_size":
             chunk_size = int(split_params["split_size"])
         else:

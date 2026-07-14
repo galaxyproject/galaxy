@@ -5,19 +5,18 @@ This is capturing code shared by file source templates and object store template
 
 import logging
 import os
-from collections.abc import Iterable
-from typing import (
-    Any,
+from collections.abc import (
     Callable,
-    cast,
-    Dict,
-    List,
-    Optional,
+    Iterable,
     Sequence,
-    Tuple,
-    Type,
+)
+from typing import (
+    Annotated,
+    Any,
+    cast,
+    Literal,
+    Optional,
     TypeVar,
-    Union,
 )
 from urllib.parse import urlencode
 
@@ -33,8 +32,6 @@ from pydantic import (
 )
 from pydantic.fields import FieldInfo
 from typing_extensions import (
-    Annotated,
-    Literal,
     NotRequired,
     Protocol,
     TypedDict,
@@ -61,15 +58,15 @@ from galaxy.util import asbool
 
 log = logging.getLogger(__name__)
 
-TemplateVariableType = Literal["string", "path_component", "boolean", "integer"]
-TemplateVariableValueType = Union[str, bool, int]
+TemplateVariableType = Literal["string", "path_component", "boolean", "integer", "select"]
+TemplateVariableValueType = str | bool | int
 TemplateExpansion = str
 MarkdownContent = str
-RawTemplateConfig = Dict[str, Any]
-UserDetailsDict = Dict[str, Any]
-VariablesDict = Dict[str, TemplateVariableValueType]
-SecretsDict = Dict[str, str]
-EnvironmentDict = Dict[str, str]
+RawTemplateConfig = dict[str, Any]
+UserDetailsDict = dict[str, Any]
+VariablesDict = dict[str, TemplateVariableValueType]
+SecretsDict = dict[str, str]
+EnvironmentDict = dict[str, str]
 
 
 class StrictModel(BaseModel):
@@ -78,63 +75,84 @@ class StrictModel(BaseModel):
 
 class BaseTemplateVariable(StrictModel):
     name: str
-    label: Optional[str] = None
-    help: Optional[MarkdownContent] = None
-    optional: Optional[bool] = None
-    multiline: Optional[bool] = None
-    validators: Optional[Sequence[AnySafeValidatorModel]] = None
+    label: str | None = None
+    help: MarkdownContent | None = None
+    optional: bool | None = None
+    multiline: bool | None = None
+    validators: Sequence[AnySafeValidatorModel] | None = None
 
 
 class TemplateVariableString(BaseTemplateVariable):
     type: Literal["string"]
-    default: Optional[str] = None
+    default: str | None = None
 
 
 class TemplateVariableInteger(BaseTemplateVariable):
     type: Literal["integer"]
-    default: Optional[int] = None
+    default: int | None = None
     # add min/max
 
 
 class TemplateVariablePathComponent(BaseTemplateVariable):
     type: Literal["path_component"]
-    default: Optional[str] = None
+    default: str | None = None
 
 
 class TemplateVariableBoolean(BaseTemplateVariable):
     type: Literal["boolean"]
-    default: Optional[bool] = None
+    default: bool | None = None
 
 
-TemplateVariable = Union[
-    TemplateVariableString, TemplateVariableInteger, TemplateVariablePathComponent, TemplateVariableBoolean
-]
+class TemplateVariableSelectOption(StrictModel):
+    label: str
+    value: str
+
+
+class TemplateVariableSelect(BaseTemplateVariable):
+    type: Literal["select"]
+    default: str | None = None
+    # Statically declared options. When omitted, options are expected to be
+    # supplied at form-render time by the client based on ``dynamic_options``.
+    options: list[TemplateVariableSelectOption] | None = None
+    # Marker naming a client-side provider that populates the options
+    # dynamically (e.g. "github_repository_owners"). The generic framework does
+    # not resolve this - it only carries the marker to the frontend.
+    dynamic_options: str | None = None
+
+
+TemplateVariable = (
+    TemplateVariableString
+    | TemplateVariableInteger
+    | TemplateVariablePathComponent
+    | TemplateVariableBoolean
+    | TemplateVariableSelect
+)
 
 
 class TemplateSecret(StrictModel):
     name: str
-    label: Optional[str] = None
-    help: Optional[MarkdownContent] = None
-    optional: Optional[bool] = None
-    multiline: Optional[bool] = None
+    label: str | None = None
+    help: MarkdownContent | None = None
+    optional: bool | None = None
+    multiline: bool | None = None
 
 
 class TemplateEnvironmentSecret(StrictModel):
     type: Literal["secret"]
     name: str
     vault_key: str
-    default: Optional[str] = None
+    default: str | None = None
 
 
 class TemplateEnvironmentVariable(StrictModel):
     type: Literal["variable"]
     name: str
     variable: str
-    default: Optional[str] = None
+    default: str | None = None
 
 
-TemplateEnvironmentEntry = Union[TemplateEnvironmentVariable, TemplateEnvironmentSecret]
-TemplateEnvironment = RootModel[List[TemplateEnvironmentEntry]]
+TemplateEnvironmentEntry = TemplateEnvironmentVariable | TemplateEnvironmentSecret
+TemplateEnvironment = RootModel[list[TemplateEnvironmentEntry]]
 
 
 def _ensure_path_component(input: Any):
@@ -157,26 +175,25 @@ def _environment(template_start: str, template_end: str) -> NativeEnvironment:
 
 
 class TemplateConfiguration(Protocol):
-
-    def model_dump(self) -> Dict[str, Any]:
+    def model_dump(self) -> dict[str, Any]:
         """Implements a pydantic model dump to build simple JSON dictionary."""
 
     @property
-    def template_start(self) -> Optional[str]:
+    def template_start(self) -> str | None:
         """Set a custom variable start for Jinja variable substitution.
 
         https://stackoverflow.com/questions/12083319/add-custom-tokens-in-jinja2-e-g-somevar
         """
 
     @property
-    def template_end(self) -> Optional[str]:
+    def template_end(self) -> str | None:
         """Set a custom variable end for Jinja variable substitution.
 
         https://stackoverflow.com/questions/12083319/add-custom-tokens-in-jinja2-e-g-somevar
         """
 
 
-def populate_default_variables(variables: Optional[List[TemplateVariable]], variable_values: VariablesDict):
+def populate_default_variables(variables: list[TemplateVariable] | None, variable_values: VariablesDict):
     if variables:
         for variable in variables:
             name = variable.name
@@ -203,7 +220,9 @@ def expand_raw_config(
 
 
 def _expand_raw_config(
-    template_configuration: TemplateConfiguration, template_variables: Dict[str, Any]
+    template_configuration: TemplateConfiguration,
+    template_variables: dict[str, Any],
+    only_keys: set[str] | None = None,
 ) -> RawTemplateConfig:
     template_start = template_configuration.template_start or "{{"
     template_end = template_configuration.template_end or "}}"
@@ -215,6 +234,11 @@ def _expand_raw_config(
         return key, value
 
     template_model_as_json = template_configuration.model_dump()
+    if only_keys is not None:
+        # Restrict expansion to the given top-level keys. Used when only a subset of the
+        # configuration can be expanded because the full template variables/secrets are not
+        # available yet (e.g. reading oauth2 client fields before the user provides variables).
+        template_model_as_json = {k: v for k, v in template_model_as_json.items() if k in only_keys}
     raw_config = remap(template_model_as_json, visit=expand_template)
     _clean_template_meta_parameters(raw_config)
     return raw_config
@@ -255,7 +279,7 @@ def _clean_template_meta_parameters(config: RawTemplateConfig) -> RawTemplateCon
 
 # cwl-like - convert simple dictionary to list of dictionaries for quickly
 # configuring variables and secrets
-def apply_syntactic_sugar(raw_templates: List[RawTemplateConfig]) -> List[RawTemplateConfig]:
+def apply_syntactic_sugar(raw_templates: list[RawTemplateConfig]) -> list[RawTemplateConfig]:
     templates = []
     expanded_raw_templates = _expand_includes(raw_templates)
     for template in expanded_raw_templates:
@@ -266,14 +290,14 @@ def apply_syntactic_sugar(raw_templates: List[RawTemplateConfig]) -> List[RawTem
     return templates
 
 
-def _expand_includes(raw_templates: List[RawTemplateConfig]) -> List[RawTemplateConfig]:
+def _expand_includes(raw_templates: list[RawTemplateConfig]) -> list[RawTemplateConfig]:
     expanded_raw_templates = []
     for raw_template in raw_templates:
         expanded_raw_templates.extend(_expand_include(raw_template))
     return expanded_raw_templates
 
 
-def _expand_include(raw_template: RawTemplateConfig) -> List[RawTemplateConfig]:
+def _expand_include(raw_template: RawTemplateConfig) -> list[RawTemplateConfig]:
     has_one_key = len(raw_template.keys()) == 1
     has_include = "include" in raw_template
 
@@ -281,7 +305,7 @@ def _expand_include(raw_template: RawTemplateConfig) -> List[RawTemplateConfig]:
         include = raw_template["include"]
         with open(include) as f:
             included = yaml.safe_load(f)
-            raw_templates: List[RawTemplateConfig]
+            raw_templates: list[RawTemplateConfig]
             if isinstance(included, list):
                 raw_templates = included
             else:
@@ -307,7 +331,7 @@ class TemplateReference(Protocol):
 
 
 class InstanceDefinition(TemplateReference, Protocol):
-    variables: Dict[str, Any]
+    variables: dict[str, Any]
     secrets: SecretsDict
 
 
@@ -322,25 +346,25 @@ class Template(Protocol):
     def type(self) -> str: ...
 
     @property
-    def variables(self) -> Optional[List[TemplateVariable]]: ...
+    def variables(self) -> list[TemplateVariable] | None: ...
 
     @property
-    def secrets(self) -> Optional[List[TemplateSecret]]: ...
+    def secrets(self) -> list[TemplateSecret] | None: ...
 
     @property
-    def environment(self) -> Optional[List[TemplateEnvironmentEntry]]: ...
+    def environment(self) -> list[TemplateEnvironmentEntry] | None: ...
 
 
 T = TypeVar("T", bound=Template, covariant=True)
 
 
-def find_template(templates: List[T], instance_reference: TemplateReference, what: str) -> T:
+def find_template(templates: list[T], instance_reference: TemplateReference, what: str) -> T:
     template_id = instance_reference.template_id
     template_version = instance_reference.template_version
     return find_template_by(templates, template_id, template_version, what)
 
 
-def find_template_by(templates: List[T], template_id: str, template_version: int, what: str) -> T:
+def find_template_by(templates: list[T], template_id: str, template_version: int, what: str) -> T:
     for template in templates:
         if template.id == template_id and template.version == template_version:
             return template
@@ -390,7 +414,7 @@ def validate_specified_datatypes(instance: InstanceDefinition, template: Templat
     validate_specified_datatypes_variables(variables, template)
 
 
-def validate_specified_datatypes_variables(variables: Dict[str, Any], template: Template):
+def validate_specified_datatypes_variables(variables: dict[str, Any], template: Template):
     for template_variable in template.variables or []:
         name = template_variable.name
         # Only fall back to default for optional variables
@@ -424,6 +448,17 @@ def validate_specified_datatypes_variables(variables: Dict[str, Any], template: 
         if template_type == "boolean":
             if not _is_of_exact_type(variable_value, bool):
                 raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type bool")
+        if isinstance(template_variable, TemplateVariableSelect):
+            if not isinstance(variable_value, str):
+                raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type str")
+            # Only statically declared options can be validated generically;
+            # dynamic options are resolved and validated elsewhere (e.g. the
+            # github membership check in the file source instances manager).
+            options = template_variable.options
+            if options is not None and variable_value not in [option.value for option in options]:
+                raise RequestParameterInvalidException(
+                    f"Variable value for variable '{name}' must be one of the allowed options"
+                )
 
         # Run custom validators if present.
         if template_variable.validators:
@@ -431,14 +466,14 @@ def validate_specified_datatypes_variables(variables: Dict[str, Any], template: 
                 _run_variable_validator(validator, variable_value, name)
 
 
-def validate_no_extra_secrets_defined(secrets: Dict[str, str], template: Template) -> None:
+def validate_no_extra_secrets_defined(secrets: dict[str, str], template: Template) -> None:
     template_secrets = secrets_as_dict(template.secrets)
     for secret in secrets.keys():
         if secret not in template_secrets:
             raise RequestParameterInvalidException(f"No secret named {secret} for this template")
 
 
-def validate_no_extra_variables_defined(variables: Dict[str, Any], template: Template):
+def validate_no_extra_variables_defined(variables: dict[str, Any], template: Template):
     template_variables = _variables_as_dict(template.variables)
     for variable in variables.keys():
         if variable not in template_variables:
@@ -453,21 +488,21 @@ def validate_secrets_and_variables(instance: InstanceDefinition, template: Templ
     validate_no_extra_variables_defined(instance.variables, template)
 
 
-def secrets_as_dict(secrets: Optional[List[TemplateSecret]]) -> Dict[str, TemplateSecret]:
+def secrets_as_dict(secrets: list[TemplateSecret] | None) -> dict[str, TemplateSecret]:
     as_dict = {}
     for secret in secrets or []:
         as_dict[secret.name] = secret
     return as_dict
 
 
-def _variables_as_dict(variables: Optional[List[TemplateVariable]]) -> Dict[str, TemplateVariable]:
+def _variables_as_dict(variables: list[TemplateVariable] | None) -> dict[str, TemplateVariable]:
     as_dict = {}
     for variable in variables or []:
         as_dict[variable.name] = variable
     return as_dict
 
 
-def _is_of_exact_type(object: Any, target_type: Type):
+def _is_of_exact_type(object: Any, target_type: type):
     # isinstance(False, int) and False == 0 are both True in Python...
     # We are creating a DSL here that is intentionally more strict than Python
     # so we are using type() instead of isinstance and we have the test coverage
@@ -502,8 +537,8 @@ class PluginAspectStatus(StrictModel):
 
 class PluginStatus(StrictModel):
     template_definition: PluginAspectStatus
-    template_settings: Optional[PluginAspectStatus] = None
-    connection: Optional[PluginAspectStatus] = None
+    template_settings: PluginAspectStatus | None = None
+    connection: PluginAspectStatus | None = None
     # I would love to disambiguate connection vs auth errors but would
     # attempting to do that cause confusion. Maybe not if the user interface
     # skipped presenting the one that couldn't be disambiguated for that
@@ -511,10 +546,10 @@ class PluginStatus(StrictModel):
 
     # TODO: Fill in writable checks.
     # writable: Optional[PluginAspectStatus] = None
-    oauth2_access_token_generation: Optional[PluginAspectStatus] = None
+    oauth2_access_token_generation: PluginAspectStatus | None = None
 
 
-def status_template_definition(template: Optional[Template]) -> PluginAspectStatus:
+def status_template_definition(template: Template | None) -> PluginAspectStatus:
     # if we found a template in the catalog, it was validated at load time. Reflect
     # this as a PluginAspectStatus
     if template:
@@ -523,7 +558,7 @@ def status_template_definition(template: Optional[Template]) -> PluginAspectStat
         return PluginAspectStatus(state="not_ok", message="Template not found or not loaded")
 
 
-def settings_exception_to_status(exception: Optional[Exception]) -> PluginAspectStatus:
+def settings_exception_to_status(exception: Exception | None) -> PluginAspectStatus:
     if exception is None:
         status = PluginAspectStatus(state="ok", message="Valid configuration resulted from supplied settings")
     elif isinstance(exception, UndefinedError):
@@ -538,7 +573,7 @@ def settings_exception_to_status(exception: Optional[Exception]) -> PluginAspect
     return status
 
 
-def connection_exception_to_status(what: str, exception: Optional[Exception]) -> PluginAspectStatus:
+def connection_exception_to_status(what: str, exception: Exception | None) -> PluginAspectStatus:
     if exception is None:
         connection_status = PluginAspectStatus(state="ok", message="Valid connection resulted from supplied settings")
     else:
@@ -554,11 +589,16 @@ class OAuth2Info(StrictModel):
 class OAuth2Configuration(StrictModel):
     authorize_url: str
     token_url: str
-    authorize_params: Optional[Dict[str, str]]
-    scope: Optional[str] = None
+    authorize_params: dict[str, str] | None
+    scope: str | None = None
 
 
-ConfiguredOAuth2Sources = Dict[str, OAuth2Configuration]
+ConfiguredOAuth2Sources = dict[str, OAuth2Configuration]
+
+# OAuth2 token endpoints are required to return application/json (RFC 6749 section 5.1), but some
+# providers (notably GitHub) only do so when the client explicitly requests it. Sending this on
+# every token request is correct for all providers and avoids per-provider special-casing.
+OAUTH2_TOKEN_REQUEST_HEADERS = {"Accept": "application/json"}
 
 
 class OAuth2ClientPair(StrictModel):
@@ -567,11 +607,11 @@ class OAuth2ClientPair(StrictModel):
 
 
 def get_authorize_url(
-    client_id_or_pair: Union[str, OAuth2ClientPair],
+    client_id_or_pair: str | OAuth2ClientPair,
     config: OAuth2Configuration,
-    redirect_uri: Optional[str],
-    state: Optional[str] = None,
-    scope: Optional[str] = None,
+    redirect_uri: str | None,
+    state: str | None = None,
+    scope: str | None = None,
 ) -> str:
     client_id = client_id_or_pair if isinstance(client_id_or_pair, str) else client_id_or_pair.client_id
     query_data = dict(
@@ -592,7 +632,7 @@ def get_authorize_url(
 
 
 def get_token_from_code_raw(
-    code: str, client_pair: OAuth2ClientPair, config: OAuth2Configuration, redirect_uri: Optional[str]
+    code: str, client_pair: OAuth2ClientPair, config: OAuth2Configuration, redirect_uri: str | None
 ) -> requests.Response:
     data = {
         "code": code,
@@ -603,7 +643,7 @@ def get_token_from_code_raw(
     if redirect_uri is not None:
         data["redirect_uri"] = redirect_uri
 
-    return requests.post(config.token_url, data=data)
+    return requests.post(config.token_url, data=data, headers=OAUTH2_TOKEN_REQUEST_HEADERS)
 
 
 def get_token_from_refresh_raw(
@@ -616,7 +656,7 @@ def get_token_from_refresh_raw(
         "client_secret": client_pair.client_secret,
     }
 
-    return requests.post(config.token_url, data=data)
+    return requests.post(config.token_url, data=data, headers=OAUTH2_TOKEN_REQUEST_HEADERS)
 
 
 def get_oauth2_config_from(template, sources: ConfiguredOAuth2Sources) -> OAuth2Configuration:
@@ -630,16 +670,24 @@ def read_oauth2_info_from_configuration(
     template_configuration: TemplateConfiguration,
     user_details: UserDetailsDict,
     environment: EnvironmentDict,
-) -> Tuple[OAuth2ClientPair, Optional[str]]:
+) -> tuple[OAuth2ClientPair, str | None]:
     template_variables = {
         "user": user_details,
         "environment": environment,
     }
 
-    expanded_config = _expand_raw_config(template_configuration, template_variables)
+    # Only the admin-provided oauth2 client fields are needed here, and they must not depend
+    # on the user's variables/secrets (which are not collected until after authorization).
+    # Restrict expansion to these fields so a configuration that references user variables
+    # elsewhere (e.g. a per-repository GitHub source) can still be read at this stage.
+    expanded_config = _expand_raw_config(
+        template_configuration,
+        template_variables,
+        only_keys={"oauth2_client_id", "oauth2_client_secret", "oauth2_scope"},
+    )
     oauth2_client_id = expanded_config["oauth2_client_id"]
     oauth2_client_secret = expanded_config["oauth2_client_secret"]
-    oauth2_scope = cast(Optional[str], expanded_config.get("oauth2_scope"))
+    oauth2_scope = cast(str | None, expanded_config.get("oauth2_scope"))
     client_pair = OAuth2ClientPair(client_id=oauth2_client_id, client_secret=oauth2_client_secret)
     return client_pair, oauth2_scope
 
@@ -659,12 +707,12 @@ def _make_field_optional(field_info: FieldInfo):
     annotation = field_info.annotation
     assert annotation is not None
     if field_info.is_required():
-        return Annotated[Union[annotation, None], field_info], None
+        return Annotated[annotation | None, field_info], None
     else:
         return Annotated[annotation, field_info]
 
 
-def make_model_with_all_fields_optional(model: Type[M], fields=None) -> Type[M]:
+def make_model_with_all_fields_optional(model: type[M], fields=None) -> type[M]:
     """Returns a new Pydantic model based on `model`, but with all fields optional."""
     if fields is None:
         fields = model.model_fields.items()
@@ -679,15 +727,13 @@ def make_model_with_all_fields_optional(model: Type[M], fields=None) -> Type[M]:
 # TODO: This is a workaround to make all fields optional.
 #       It should be removed when Python/pydantic supports this feature natively.
 # https://github.com/pydantic/pydantic/issues/1673
-def partial_model(
-    include: Optional[List[str]] = None, exclude: Optional[List[str]] = None
-) -> Callable[[Type[M]], Type[M]]:
+def partial_model(include: list[str] | None = None, exclude: list[str] | None = None) -> Callable[[type[M]], type[M]]:
     """Decorator to make all model fields optional"""
 
     if exclude is None:
         exclude = []
 
-    def decorator(model: Type[M]) -> Type[M]:
+    def decorator(model: type[M]) -> type[M]:
         if include is None:
             fields: Iterable[tuple[str, FieldInfo]] = model.model_fields.items()
         else:

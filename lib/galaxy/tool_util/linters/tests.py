@@ -1,10 +1,8 @@
 """This module contains a linting functions for tool tests."""
 
+from collections.abc import Iterator
 from io import StringIO
 from typing import (
-    Iterator,
-    List,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -12,10 +10,16 @@ from packaging.version import Version
 
 from galaxy.tool_util.lint import Linter
 from galaxy.tool_util.parameters import validate_test_cases_for_tool_source
+from galaxy.tool_util.parameters.factory import input_models_for_tool_source
 from galaxy.tool_util.verify.parse import tag_structure_to_that_structure
 from galaxy.tool_util_models.assertions import (
     assertion_list,
     relaxed_assertion_list,
+)
+from galaxy.tool_util_models.parameters import (
+    iter_parameter_models,
+    SelectParameterModel,
+    ToolParameterT,
 )
 from galaxy.util import asbool
 from ._util import is_datasource
@@ -206,6 +210,41 @@ def _cleanup_pydantic_error(error) -> str:
         else:
             new_error.write(f"{line}\n")
     return new_error.getvalue().strip()
+
+
+def _collect_multiple_select_names(parameters: list["ToolParameterT"]) -> set[str]:
+    return {
+        param.name
+        for param in iter_parameter_models(parameters)
+        if isinstance(param, SelectParameterModel) and param.multiple
+    }
+
+
+class TestsMultipleSelectEmptyValue(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        profile = tool_source.parse_profile()
+        lint_log = lint_ctx.warn if Version(profile) < Version("26.1") else lint_ctx.error
+        try:
+            bundle = input_models_for_tool_source(tool_source)
+        except Exception:
+            return
+        multiple_select_names = _collect_multiple_select_names(bundle.parameters)
+        if not multiple_select_names:
+            return
+        tests = tool_xml.findall("./tests/test")
+        for test_idx, test in enumerate(tests, start=1):
+            for param in test.iter("param"):
+                name = param.attrib.get("name", "")
+                if name in multiple_select_names and param.attrib.get("value", None) == "":
+                    lint_log(
+                        f'Test {test_idx}: param \'{name}\' uses value="" for a multiple select — use value_json="[]" to express an empty selection explicitly.',
+                        linter=cls.name(),
+                        node=param,
+                    )
 
 
 class TestsExpectNumOutputs(Linter):
@@ -606,7 +645,7 @@ class TestsValid(Linter):
             lint_ctx.warn("No valid test(s) found.", linter=cls.name(), node=general_node)
 
 
-def _iter_tests(tests: List["Element"], valid: bool) -> Iterator[Tuple[int, "Element"]]:
+def _iter_tests(tests: list["Element"], valid: bool) -> Iterator[tuple[int, "Element"]]:
     for test_idx, test in enumerate(tests, start=1):
         is_valid = False
         is_valid |= bool(set(test.attrib) & {"expect_failure", "expect_exit_code", "expect_num_outputs"})

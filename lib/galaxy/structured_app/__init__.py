@@ -4,7 +4,6 @@ import abc
 import threading
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -122,7 +121,7 @@ class MinimalApp(BasicSharedApp):
 
 class MinimalManagerApp(MinimalApp):
     # Minimal App that is sufficient to run Celery tasks
-    amqp_internal_connection_obj: Optional[Connection]
+    amqp_internal_connection_obj: Connection | None
     execution_timer_factory: "ExecutionTimerFactory"
     carbon_intensity: float
     file_sources: ConfiguredFileSources
@@ -172,7 +171,7 @@ class StructuredApp(MinimalManagerApp):
     dependency_resolvers_view: DependencyResolversView
     installed_repository_manager: "InstalledRepositoryManager"
     container_finder: ContainerFinder
-    tool_dependency_dir: Optional[str]
+    tool_dependency_dir: str | None
     test_data_resolver: test_data.TestDataResolver
     trs_proxy: TrsProxy
     vault: Vault
@@ -180,7 +179,7 @@ class StructuredApp(MinimalManagerApp):
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_cache: "ToolCache"
-    tool_shed_repository_cache: Optional[ToolShedRepositoryCache]
+    tool_shed_repository_cache: ToolShedRepositoryCache | None
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'

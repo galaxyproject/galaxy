@@ -38,7 +38,7 @@ def write_if_not_exists(file_sources, target_uri, real_data_path):
 def get_directory_uri(args):
     directory_uri = args.directory_uri
     if not directory_uri:
-        inputs = json.load(open(args.inputs, "r"))
+        inputs = json.load(open(args.inputs))
         directory_uri = inputs["d_uri"]
     if not directory_uri.endswith("/"):
         directory_uri = f"{directory_uri}/"

@@ -8,7 +8,6 @@ from enum import Enum
 from typing import (
     Any,
     NamedTuple,
-    Optional,
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
@@ -61,7 +60,7 @@ class TypeRepresentation(NamedTuple):
     name: str
     galaxy_param_type: Any
     label: str
-    collection_type: Optional[str]
+    collection_type: str | None
 
     @property
     def uses_param(self):

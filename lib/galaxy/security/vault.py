@@ -2,9 +2,6 @@ import abc
 import logging
 import os
 import re
-from typing import (
-    Optional,
-)
 
 import yaml
 from cryptography.fernet import (
@@ -38,8 +35,14 @@ class Vault(abc.ABC):
     A simple abstraction for reading/writing from external vaults.
     """
 
+    # Whether this backend uses canonical (no-leading-slash) keys.
+    # Hashicorp Vault 2.0 rejects leading/double slashes, so it must use
+    # canonical keys. DatabaseVault keeps using the legacy /{prefix}/{key}
+    # form used by Galaxy <= 26.0, so existing rows are found in place.
+    use_canonical_keys = True
+
     @abc.abstractmethod
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         """
         Reads a secret from the vault.
 
@@ -83,7 +86,7 @@ class Vault(abc.ABC):
 
 
 class NullVault(Vault):
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         raise InvalidVaultConfigException(
             "No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml"
         )
@@ -136,13 +139,12 @@ class HashicorpVault(Vault):
         renewable = auth_data.get("renewable", False)
         if not renewable:
             log.error(
-                "Hashicorp Vault token is no longer renewable (max TTL likely reached). "
-                "A new token must be configured."
+                "Hashicorp Vault token is no longer renewable (max TTL likely reached). A new token must be configured."
             )
         else:
             log.debug("Hashicorp Vault token renewed successfully (new TTL: %ds).", new_ttl)
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         try:
             response = self.client.secrets.kv.read_secret_version(path=key)
             return response["data"]["data"].get("value")
@@ -156,7 +158,7 @@ class HashicorpVault(Vault):
             )
             return None
 
-    def _read_legacy_and_migrate(self, key: str) -> Optional[str]:
+    def _read_legacy_and_migrate(self, key: str) -> str | None:
         # Galaxy <= 26.0 emitted a leading slash in Vault paths, which hvac's
         # format_url turned into a double-slash KV v2 key. Vault 1.x accepted
         # it silently; Vault 2.0 rejects it. Fall back to reading the legacy
@@ -191,6 +193,8 @@ class HashicorpVault(Vault):
 
 
 class DatabaseVault(Vault):
+    use_canonical_keys = False
+
     def __init__(self, sa_session, config):
         self.sa_session = sa_session
         self.encryption_keys = config.get("encryption_keys")
@@ -199,7 +203,7 @@ class DatabaseVault(Vault):
     def _get_multi_fernet(self) -> MultiFernet:
         return MultiFernet(self.fernet_keys)
 
-    def _update_or_create(self, key: str, value: Optional[str]) -> model.Vault:
+    def _update_or_create(self, key: str, value: str | None) -> model.Vault:
         vault_entry = self._get_vault_value(key)
         if vault_entry:
             if value:
@@ -216,7 +220,7 @@ class DatabaseVault(Vault):
             self.sa_session.commit()
         return vault_entry
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         key_obj = self._get_vault_value(key)
         if key_obj and key_obj.value:
             f = self._get_multi_fernet()
@@ -246,7 +250,7 @@ class UserVaultWrapper(Vault):
         self.vault = vault
         self.user = user
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         if self.user:
             return self.vault.read_secret(f"user/{self.user.id}/{key}")
         else:
@@ -283,7 +287,7 @@ class VaultKeyValidationWrapper(Vault):
             )
         return key
 
-    def read_secret(self, key: str) -> Optional[str]:
+    def read_secret(self, key: str) -> str | None:
         key = self.normalize_key(key)
         return self.vault.read_secret(key)
 
@@ -303,8 +307,9 @@ class VaultKeyPrefixWrapper(Vault):
     def __init__(self, vault: Vault, prefix: str):
         self.vault = vault
         # Strip conventional outer slashes so admins can write `/galaxy`,
-        # `galaxy`, or `/galaxy/` interchangeably in config. Reject anything
-        # that would still produce a non-canonical Vault path after stripping.
+        # `galaxy`, or `/galaxy/` interchangeably in config. Reject empty
+        # prefixes or prefixes that would be invalid in either canonical or
+        # legacy form (double slashes or whitespace adjacent to a slash).
         stripped = prefix.strip("/")
         if not stripped or VAULT_KEY_INVALID_REGEX.search(stripped):
             raise InvalidVaultConfigException(
@@ -313,11 +318,16 @@ class VaultKeyPrefixWrapper(Vault):
             )
         self.prefix = stripped
 
-    def read_secret(self, key: str) -> Optional[str]:
-        return self.vault.read_secret(f"{self.prefix}/{key}")
+    def _prefixed(self, key: str) -> str:
+        if self.vault.use_canonical_keys:
+            return f"{self.prefix}/{key}"
+        return f"/{self.prefix}/{key}"
+
+    def read_secret(self, key: str) -> str | None:
+        return self.vault.read_secret(self._prefixed(key))
 
     def write_secret(self, key: str, value: str) -> None:
-        return self.vault.write_secret(f"{self.prefix}/{key}", value)
+        return self.vault.write_secret(self._prefixed(key), value)
 
     def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
@@ -325,14 +335,14 @@ class VaultKeyPrefixWrapper(Vault):
 
 class VaultFactory:
     @staticmethod
-    def load_vault_config(vault_conf_yml: str) -> Optional[dict]:
+    def load_vault_config(vault_conf_yml: str) -> dict | None:
         if os.path.exists(vault_conf_yml):
             with open(vault_conf_yml) as f:
                 return yaml.safe_load(f)
         return None
 
     @staticmethod
-    def from_vault_type(app, vault_type: Optional[str], cfg: dict) -> Vault:
+    def from_vault_type(app, vault_type: str | None, cfg: dict) -> Vault:
         vault: Vault
         if vault_type == "hashicorp":
             token_renewal_enabled = app.config.vault_token_renewal_interval > 0

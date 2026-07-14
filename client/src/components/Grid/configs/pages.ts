@@ -31,13 +31,18 @@ type PageEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const typeFilteredSearch = search ? `type:standalone ${search}` : "type:standalone";
+    if (search.includes("is:standalone")) {
+        // Pages that are not attached to a history have their type set to "standalone" on the backend
+        // We convert the search term here before sending to the backend
+        search = search.replace("is:standalone", "type:standalone");
+    }
+
     const { response, data, error } = await GalaxyApi().GET("/api/pages", {
         params: {
             query: {
                 limit,
                 offset,
-                search: typeFilteredSearch,
+                search: search,
                 sort_by: sort_by as SortKeyLiteral,
                 sort_desc,
                 show_published: false,
@@ -193,6 +198,11 @@ const fields: FieldArray = [
         title: "Status",
         type: "sharing",
     },
+    {
+        key: "history_id",
+        title: "History",
+        type: "history",
+    },
 ];
 
 /**
@@ -220,6 +230,13 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         type: Boolean,
         boolType: "is",
         handler: equals("deleted", "deleted", toBool),
+        menuItem: true,
+    },
+    standalone: {
+        placeholder: "Only standalone",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("standalone", "type", toBool),
         menuItem: true,
     },
 };

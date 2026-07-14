@@ -3,9 +3,6 @@ Manager and Serializer for libraries.
 """
 
 import logging
-from typing import (
-    Optional,
-)
 
 from sqlalchemy.exc import (
     MultipleResultsFound,
@@ -68,7 +65,7 @@ class LibraryManager:
         library = self.secure(trans, library, check_accessible)
         return library
 
-    def create(self, trans, name: str, description: Optional[str] = "", synopsis: Optional[str] = "") -> Library:
+    def create(self, trans, name: str, description: str | None = "", synopsis: str | None = "") -> Library:
         """
         Create a new library.
         """
@@ -86,9 +83,9 @@ class LibraryManager:
         self,
         trans,
         library: Library,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        synopsis: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
+        synopsis: str | None = None,
     ) -> Library:
         """
         Update the given library
@@ -119,7 +116,7 @@ class LibraryManager:
             trans.sa_session.commit()
         return library
 
-    def delete(self, trans, library: Library, undelete: Optional[bool] = False) -> Library:
+    def delete(self, trans, library: Library, undelete: bool | None = False) -> Library:
         """
         Mark given library deleted/undeleted based on the flag.
         """
@@ -133,7 +130,7 @@ class LibraryManager:
         trans.sa_session.commit()
         return library
 
-    def list(self, trans, deleted: Optional[bool] = False) -> tuple[Query, dict[str, set]]:
+    def list(self, trans, deleted: bool | None = False) -> tuple[Query, dict[str, set]]:
         """
         Return a list of libraries from the DB.
 
@@ -215,7 +212,7 @@ class LibraryManager:
         else:
             return library
 
-    def get_library_dict(self, trans, library: Library, prefetched_ids: Optional[dict[str, set]] = None) -> dict:
+    def get_library_dict(self, trans, library: Library, prefetched_ids: dict[str, set] | None = None) -> dict:
         """
         Return library data in the form of a dictionary.
 
@@ -339,7 +336,7 @@ class LibraryManager:
         return trans.app.security_agent.library_is_public(library)
 
 
-def get_containing_library_from_library_dataset(trans, library_dataset) -> Optional[Library]:
+def get_containing_library_from_library_dataset(trans, library_dataset) -> Library | None:
     """Given a library_dataset, get the containing library"""
     folder = library_dataset.folder
     while folder.parent:

@@ -1,10 +1,10 @@
 <tool id="data_manager" name="Test Data Manager" tool_type="manage_data" version="0.0.1">
     <configfiles>
-        <configfile name="static_test_data">{"data_tables": {"testbeta": [{"value": "newvalue", "path": "newvalue.txt"}]}}</configfile>
+        <configfile name="static_test_data">{"data_tables": {"testbeta": [{"value": "asyncvalue", "path": "asyncvalue.txt"}]}}</configfile>
     </configfiles>
     <command detect_errors="exit_code">
         mkdir $out_file.files_path ;
-        echo "A new value" > '$out_file.files_path/newvalue.txt';
+        echo "A new value" > '$out_file.files_path/asyncvalue.txt';
         cp '$static_test_data' '$out_file';
         exit $exit_code
     </command>

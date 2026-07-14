@@ -1,8 +1,4 @@
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from sqlalchemy import select
 from sqlalchemy.orm import scoped_session
@@ -32,7 +28,7 @@ from galaxy.util import now
 
 log = logging.getLogger(__name__)
 
-CredentialsModelsSet = set[Union[UserCredentials, CredentialsGroup, Credential]]
+CredentialsModelsSet = set[UserCredentials | CredentialsGroup | Credential]
 CredentialsAssociation = list[tuple[UserCredentials, CredentialsGroup, Credential]]
 
 
@@ -56,13 +52,13 @@ def build_credentials_context_response(
 
 def _build_user_credentials_query(
     user_id: DecodedDatabaseIdField,
-    source_type: Optional[str] = None,
-    source_id: Optional[str] = None,
-    source_version: Optional[str] = None,
-    service_name: Optional[str] = None,
-    service_version: Optional[str] = None,
-    user_credentials_id: Optional[DecodedDatabaseIdField] = None,
-    group_id: Optional[DecodedDatabaseIdField] = None,
+    source_type: str | None = None,
+    source_id: str | None = None,
+    source_version: str | None = None,
+    service_name: str | None = None,
+    service_version: str | None = None,
+    user_credentials_id: DecodedDatabaseIdField | None = None,
+    group_id: DecodedDatabaseIdField | None = None,
     current_group_only: bool = False,
 ):
     """
@@ -130,11 +126,11 @@ class CredentialsManager:
     def get_user_credentials(
         self,
         user_id: DecodedDatabaseIdField,
-        source_type: Optional[SOURCE_TYPE] = None,
-        source_id: Optional[str] = None,
-        source_version: Optional[str] = None,
-        user_credentials_id: Optional[DecodedDatabaseIdField] = None,
-        group_id: Optional[DecodedDatabaseIdField] = None,
+        source_type: SOURCE_TYPE | None = None,
+        source_id: str | None = None,
+        source_version: str | None = None,
+        user_credentials_id: DecodedDatabaseIdField | None = None,
+        group_id: DecodedDatabaseIdField | None = None,
     ) -> CredentialsAssociation:
         stmt = _build_user_credentials_query(
             user_id=user_id,
@@ -216,7 +212,7 @@ class CredentialsManager:
     def update_credential(
         self,
         credential: Credential,
-        value: Optional[str] = None,
+        value: str | None = None,
         is_secret: bool = False,
     ) -> None:
         credential.is_set = bool(value)
@@ -227,7 +223,7 @@ class CredentialsManager:
         self,
         group_id: DecodedDatabaseIdField,
         name: str,
-        value: Optional[str] = None,
+        value: str | None = None,
         is_secret: bool = False,
     ) -> None:
         credential = Credential(
@@ -243,7 +239,7 @@ class CredentialsManager:
     def update_current_group(
         self,
         user_credentials: UserCredentials,
-        group_id: Optional[DecodedDatabaseIdField] = None,
+        group_id: DecodedDatabaseIdField | None = None,
     ) -> None:
         user_credentials.current_group_id = group_id
         self.session.add(user_credentials)

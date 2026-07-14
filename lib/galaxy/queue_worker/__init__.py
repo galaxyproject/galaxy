@@ -15,7 +15,6 @@ from inspect import ismodule
 from typing import (
     Any,
     cast,
-    Optional,
     TYPE_CHECKING,
     TypedDict,
 )
@@ -56,14 +55,14 @@ class NotifyUsersPayload(TypedDict, total=False):
 
     user_ids: list[int]
     payload: str
-    event_id: Optional[str]
+    event_id: str | None
 
 
 class NotifyBroadcastPayload(TypedDict, total=False):
     """Wire contract for the ``notify_broadcast`` control-task kwargs."""
 
     payload: str
-    event_id: Optional[str]
+    event_id: str | None
 
 
 class HistoryUpdatePayload(TypedDict, total=False):
@@ -78,14 +77,14 @@ class HistoryUpdatePayload(TypedDict, total=False):
 
     user_updates: dict[str, list[int]]
     session_updates: dict[str, list[int]]
-    event_id: Optional[str]
+    event_id: str | None
 
 
 class EntryPointUpdatePayload(TypedDict, total=False):
     """Wire contract for the ``entry_point_update`` control-task kwargs."""
 
     user_id: int
-    event_id: Optional[str]
+    event_id: str | None
 
 
 class HistoryViewerSubscriptionPayload(TypedDict, total=False):
@@ -106,7 +105,7 @@ def send_local_control_task(
     app: "StructuredApp",
     task: str,
     get_response: bool = False,
-    kwargs: Optional[dict] = None,
+    kwargs: dict | None = None,
 ) -> Any:
     """
     This sends a message to the process-local control worker, which is useful
@@ -127,9 +126,9 @@ def send_control_task(
     noop_self: bool = False,
     get_response: bool = False,
     routing_key: str = "control.*",
-    kwargs: Optional[dict] = None,
-    expiration: Optional[int] = None,
-    declare_queues: Optional[list[Queue]] = None,
+    kwargs: dict | None = None,
+    expiration: int | None = None,
+    declare_queues: list[Queue] | None = None,
 ) -> Any:
     """
     This sends a control task out to all processes, useful for things like
@@ -196,8 +195,8 @@ class ControlTask:
         local: bool = False,
         get_response: bool = False,
         timeout: int = 10,
-        expiration: Optional[int] = None,
-        declare_queues: Optional[list[Queue]] = None,
+        expiration: int | None = None,
+        declare_queues: list[Queue] | None = None,
     ):
         if local:
             declare_queues = self.control_queues

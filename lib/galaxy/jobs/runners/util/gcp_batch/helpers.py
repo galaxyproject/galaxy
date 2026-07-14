@@ -12,6 +12,16 @@ DEFAULT_NFS_MOUNT_PATH = "/mnt/nfs"
 DEFAULT_NFS_PATH = "/"
 DEFAULT_MEMORY_MIB = 2048
 DEFAULT_CPU_MILLI = 1000
+
+# Memory-unit conversion factors to MiB (1 MiB = 1024 * 1024 bytes). Decimal units
+# (KB/MB/GB) scale by powers of 1000; binary units (KiB/GiB) by powers of 1024.
+# Precomputed so the constant arithmetic isn't re-evaluated on every conversion.
+BYTES_PER_MIB = 1024 * 1024
+KIB_TO_MIB = 1 / 1024
+GIB_TO_MIB = 1024
+KB_TO_MIB = 1000 / BYTES_PER_MIB
+MB_TO_MIB = 1000 * 1000 / BYTES_PER_MIB
+GB_TO_MIB = 1000 * 1000 * 1000 / BYTES_PER_MIB
 DEFAULT_CVMFS_DOCKER_VOLUME = (
     '-v "/cvmfs/data.galaxyproject.org:/cvmfs/data.galaxyproject.org:ro" '
     '-v "/cvmfs/cloud.galaxyproject.org:/cvmfs/cloud.galaxyproject.org:ro"'
@@ -166,15 +176,15 @@ def convert_memory_to_mib(memory_str):
     if unit in ["", "mib", "mi"]:
         return int(value)
     elif unit in ["gib", "gi"]:
-        return int(value * 1024)  # GiB to MiB
+        return int(value * GIB_TO_MIB)  # GiB to MiB
     elif unit in ["mb", "m"]:
-        return int(value * 1000 / 1024)  # MB to MiB (decimal to binary)
+        return int(value * MB_TO_MIB)  # MB to MiB (decimal to binary)
     elif unit in ["gb", "g"]:
-        return int(value * 1000 * 1000 / 1024 / 1024)  # GB to MiB
+        return int(value * GB_TO_MIB)  # GB to MiB (decimal to binary)
     elif unit in ["kib", "ki"]:
-        return int(value / 1024)  # KiB to MiB
+        return int(value * KIB_TO_MIB)  # KiB to MiB
     elif unit in ["kb", "k"]:
-        return int(value * 1000 / 1024 / 1024)  # KB to MiB
+        return int(value * KB_TO_MIB)  # KB to MiB (decimal to binary)
     else:
         log.warning("Unknown memory unit: %s, treating as MiB", unit)
         return int(value)

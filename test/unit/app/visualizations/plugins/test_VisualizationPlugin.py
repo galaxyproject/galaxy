@@ -8,7 +8,6 @@ from . import VisualizationsBase_TestCase
 
 
 class TestVisualizationsPlugin(VisualizationsBase_TestCase):
-
     def test_default_init(self):
         """
         A plugin with no context passed in should have sane defaults.

@@ -239,8 +239,9 @@ defineExpose({ showModal, hideModal });
 
     padding: var(--spacing-3);
 
+    max-height: calc(100vh - 4rem);
+
     section {
-        height: 100%;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -253,9 +254,14 @@ defineExpose({ showModal, hideModal });
             padding: var(--spacing-2);
             margin: calc(var(--spacing-2) * -1);
 
-            max-height: 100%;
             display: flex;
             flex-direction: column;
+        }
+    }
+
+    &.g-fixed-height {
+        section {
+            height: 100%;
         }
     }
 
@@ -306,6 +312,10 @@ defineExpose({ showModal, hideModal });
         height: calc(100vh - 6rem);
         max-width: calc(100vw - 6rem);
         max-height: calc(100vh - 6rem);
+
+        section {
+            height: 100%;
+        }
     }
 
     header {

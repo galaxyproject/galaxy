@@ -719,7 +719,7 @@ galaxy:
 
   # Location of files available for a short time as downloads (short
   # term storage). This directory is exclusively used for serving
-  # dynamically generated downloadable content. Galaxy may uses the
+  # dynamically generated downloadable content. Galaxy may use the
   # new_file_path parameter as a general temporary directory and that
   # directory should be monitored by a tool such as tmpwatch in
   # production environments. short_term_storage_dir on the other hand is
@@ -866,7 +866,7 @@ galaxy:
   #hours_between_check: 12
 
   # XML config file that contains data table entries for the
-  # ToolDataTableManager.  This file is manually # maintained by the
+  # ToolDataTableManager.  This file is manually maintained by the
   # Galaxy administrator (.sample used if default does not exist).
   # The value of this option will be resolved with respect to
   # <config_dir>.
@@ -999,7 +999,7 @@ galaxy:
   # destination level for heterogeneous clusters. conda job resolution
   # requires bash or zsh so if this is switched to /bin/sh for instance
   # - conda resolution should be disabled. Containerized jobs always use
-  # /bin/sh - so more maximum portability tool authors should assume
+  # /bin/sh - so for maximum portability tool authors should assume
   # generated commands run in sh.
   #default_job_shell: /bin/bash
 
@@ -1007,13 +1007,24 @@ galaxy:
   # this option will be resolved with respect to <data_dir>.
   #tool_search_index_dir: tool_search_index
 
+  # Optional YAML file mapping tool ids to curated tag names. Tags drive
+  # the `tag:` autocompletion, the favorite-tags grouping in the My
+  # Tools panel, and the `tool_tags` Whoosh search field. If unset,
+  # Galaxy ships a small example covering the tools used by its own
+  # integration tests; admins who want production-grade tag coverage can
+  # generate a snapshot for their instance with
+  # `scripts/extract_tool_sections_from_api.py`. The file must be a YAML
+  # document with a top-level `tool_tags:` mapping from tool id to a
+  # list of tag names.
+  #tool_tag_mappings_file: null
+
   # Point Galaxy at a repository consisting of a copy of the bio.tools
   # database (e.g. https://github.com/bio-tools/content/) to resolve
   # bio.tools data for tool metadata.
   #biotools_content_directory: null
 
   # Set this to true to attempt to resolve bio.tools metadata for tools
-  # for tool not resovled via biotools_content_directory.
+  # for tool not resolved via biotools_content_directory.
   #biotools_use_api: false
 
   # bio.tools web service request related caching. The type of beaker
@@ -1582,7 +1593,7 @@ galaxy:
 
   # The BibTeX citation for Galaxy, to be displayed in the History Tool
   # Reference List
-  #citation_bibtex: '@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}'
+  #citation_bibtex: '@article{Galaxy2026, title="Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2026", doi="10.1093/nar/gkag469", url="https://doi.org/10.1093/nar/gkag469"}'
 
   # The URL linked by the "Galaxy Version" link in the "Help" menu.
   #release_doc_base_url: https://docs.galaxyproject.org/en/release_
@@ -1993,10 +2004,21 @@ galaxy:
   # really. Do not set this in production environments.
   #statsd_mock_calls: false
 
-  # How often (in seconds) the Celery beat task emits queue-depth,
-  # SSE-connection, and WorkerProcess gauges. Only active when
-  # statsd_host is set. Set to 0 to disable.
+  # How often (in seconds) background observability gauges are sampled:
+  # control-queue depth and WorkerProcess counts from the Celery beat
+  # task, and (when enable_sse_connection_metrics is set) active
+  # SSE-connection counts from each web worker. This is the shared
+  # cadence for all of them. Only active when statsd_host is set. Set to
+  # 0 to disable all background gauges.
   #queue_metrics_interval: 15
+
+  # Emit the galaxy.sse.connections.active gauge from each web worker,
+  # reporting how many Server-Sent Events connections that worker
+  # currently holds (tagged by kind and server_name). Sampled on the
+  # queue_metrics_interval cadence. Off by default so that enabling
+  # statsd does not by itself start measuring SSE connections; requires
+  # statsd_host to be set and queue_metrics_interval greater than 0.
+  #enable_sse_connection_metrics: false
 
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
@@ -3079,7 +3101,7 @@ galaxy:
 
   # Configuration for AI inference services used by agents and
   # visualization plugins. Supports per-agent or per-plugin model,
-  # temperature, max_tokens, api_key, api_base_url, and enabled
+  # temperature, max_tokens, retries, api_key, api_base_url, and enabled
   # settings. Valid keys include agent types (e.g. router,
   # error_analysis) and plugin names (e.g. jupyterlite). Agents and
   # plugins inherit from 'default' configuration, which itself falls
@@ -3092,7 +3114,14 @@ galaxy:
   # test/integration/static_agents.yml } Per-agent or default-block
   # ``structured_output_override: true|false`` beats the model
   # capability table -- see ``agent_model_capabilities_file`` for the
-  # table's location and contents.
+  # table's location and contents. Per-agent or default-block
+  # ``retries`` sets the pydantic-ai retry budget (tool calls and output
+  # validation); it defaults to 3. Raise it if a model intermittently
+  # fails to produce conforming output ("Exceeded maximum output
+  # retries"). custom_tool's producer keeps a budget of 0 because it
+  # runs its own reflection loop; a shared ``default`` block does not
+  # change that -- set ``custom_tool.retries`` explicitly to override
+  # it.
   #inference_services: null
 
   # YAML file with capability hints for agent inference models. Maps
@@ -3118,6 +3147,30 @@ galaxy:
   # URL used to download the GTN search database when the local file at
   # ``gtn_database_path`` is missing.
   #gtn_database_url: https://depot.galaxyproject.org/chatgxy/gtn_search.db
+
+  # Time (in seconds) between celery-beat triggered freshness checks of
+  # the GTN search database from ``gtn_database_url``. The task HEADs
+  # depot and only re-downloads when its ``Last-Modified`` is newer than
+  # the local file -- steady-state cost is a few hundred bytes per tick.
+  # When a download does happen it atomically replaces
+  # ``gtn_database_path``; live handlers pick up the new copy on their
+  # next query since GTNSearchDB opens a read-only connection per call.
+  # Only registered when ``inference_services`` is configured (i.e.
+  # GalaxyAI is in use). Set to 0 to disable automatic refresh -- admins
+  # can still refresh on demand via ``python -m galaxy.agents.gtn
+  # --refresh``. Requires celery.
+  #gtn_database_refresh_interval: 86400
+
+  # Time (in seconds) between celery-beat triggered refreshes of the
+  # in-process IWC workflow manifest cache used by the agent-ops layer.
+  # Default matches the cache's in-process TTL so the cache stays
+  # continuously warm rather than expiring between user-driven hits.
+  # Failures are logged and the prior cached copy is retained. Only
+  # registered when ``inference_services`` is configured (i.e. GalaxyAI
+  # is in use). Set to 0 to disable automatic refresh -- agent-ops
+  # callers will then fall back to lazy on-demand fetching with the same
+  # hour TTL. Requires celery.
+  #iwc_manifest_refresh_interval: 3600
 
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please

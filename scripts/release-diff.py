@@ -105,7 +105,9 @@ def report_diff(added, changed, removed, new_files):
             "Changed",
             "The following configuration options have been changed",
             changed,
-            lambda x: f"-  {x[0]} has changed from\n\n   ::\n\n{_indent(x[1])}\n\n   to\n\n   ::\n\n{_indent(x[2])}\n\n",
+            lambda x: (
+                f"-  {x[0]} has changed from\n\n   ::\n\n{_indent(x[1])}\n\n   to\n\n   ::\n\n{_indent(x[2])}\n\n"
+            ),
         )
 
     if removed:

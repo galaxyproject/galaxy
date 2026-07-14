@@ -1,4 +1,3 @@
-from galaxy_test.base.populators import skip_without_agents
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
@@ -88,7 +87,7 @@ class TestHistoryPages(SeleniumTestCase):
         self.history_page_manage()
         self.history_page_assert_item_count(1)
 
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
         self.components.pages.history.editor.wait_for_visible()
 
         editor = self.components.pages.history.markdown_editor
@@ -105,7 +104,7 @@ class TestHistoryPages(SeleniumTestCase):
         self.components.pages.history.editor.wait_for_visible()
 
         save_button = self.components.pages.history.save_button
-        save_button.assert_disabled()
+        assert save_button.has_class("g-disabled")
 
         self.components.pages.history.unsaved_indicator.assert_absent_or_hidden()
 
@@ -113,7 +112,7 @@ class TestHistoryPages(SeleniumTestCase):
 
         @retry_assertion_during_transitions
         def assert_save_enabled():
-            assert not save_button.has_class("disabled")
+            assert not save_button.has_class("g-disabled")
 
         assert_save_enabled()
 
@@ -121,7 +120,7 @@ class TestHistoryPages(SeleniumTestCase):
 
         @retry_assertion_during_transitions
         def assert_save_disabled_again():
-            save_button.assert_disabled()
+            assert save_button.has_class("g-disabled")
 
         assert_save_disabled_again()
         self.screenshot("history_page_save_disabled")
@@ -229,7 +228,7 @@ class TestHistoryPages(SeleniumTestCase):
 
         self.navigate_to_history_pages()
         self.history_page_assert_item_count(1)
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
 
         self.components.pages.history.editor.wait_for_visible()
         assert self.window_manager_window_count() == 0
@@ -270,7 +269,7 @@ class TestHistoryPages(SeleniumTestCase):
 
         self.navigate_to_history_pages()
         self.history_page_assert_item_count(1)
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
         self.components.pages.history.editor.wait_for_visible()
 
         self.history_page_open_revisions()
@@ -286,7 +285,7 @@ class TestHistoryPages(SeleniumTestCase):
         self.dataset_populator.update_history_page(nb["id"], content="Modified")
 
         self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
         self.components.pages.history.editor.wait_for_visible()
 
         self.history_page_open_revisions()
@@ -330,7 +329,7 @@ class TestHistoryPages(SeleniumTestCase):
         self.dataset_populator.update_history_page(nb["id"], content="# New Content")
 
         self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
         self.components.pages.history.editor.wait_for_visible()
 
         self.history_page_open_revisions()
@@ -421,7 +420,7 @@ class TestHistoryPages(SeleniumTestCase):
         self.dataset_populator.new_history_page(history_id, title="Toggle Test", content="# Preview Me")
 
         self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
         self.components.pages.history.editor.wait_for_visible()
 
         self.components.pages.history.preview_button.wait_for_and_click()
@@ -440,16 +439,16 @@ class TestHistoryPages(SeleniumTestCase):
 
     @selenium_test
     @managed_history
-    def test_inline_rename_page(self):
-        """Rename page title via ClickToEdit, save, verify persistence."""
+    def test_rename_page(self):
+        """Rename page title via the RenameModal, save, verify persistence."""
         history_id = self.current_history_id()
         self.dataset_populator.new_history_page(history_id, title="Original Name", content="# Content")
 
         self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
         self.components.pages.history.editor.wait_for_visible()
 
-        self.history_page_rename("Renamed Page")
+        self.history_page_rename("galaxy notebook", "Renamed Page")
 
         self.components.pages.history.unsaved_indicator.wait_for_visible()
         self.screenshot("history_page_renamed_unsaved")
@@ -462,7 +461,7 @@ class TestHistoryPages(SeleniumTestCase):
         title_text = self.components.pages.history.item_title.wait_for_text()
         assert "Renamed Page" in title_text
 
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
         self.components.pages.history.editor.wait_for_visible()
         toolbar_title = self.components.pages.history.toolbar_title.wait_for_text()
         assert "Renamed Page" in toolbar_title
@@ -502,7 +501,7 @@ class TestHistoryPages(SeleniumTestCase):
         self.dataset_populator.update_history_page(nb["id"], content="# V1\n\nModified content\n\nNew section")
 
         self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
         self.components.pages.history.editor.wait_for_visible()
 
         self.history_page_open_revisions()
@@ -526,7 +525,7 @@ class TestHistoryPages(SeleniumTestCase):
         assert "Modified content" in diff_text or "New section" in diff_text
 
         # Go back, click oldest revision
-        self.components.pages.history.revision_back_button.wait_for_and_click()
+        self.history_page_open_revisions()
         items = self.components.pages.history.revision_item.all()
         items[-1].click()
         self.components.pages.history.revision_view.wait_for_visible()
@@ -548,7 +547,7 @@ class TestHistoryPages(SeleniumTestCase):
         self.dataset_populator.new_history_page(history_id, title="Toolbar Test", content="# Toolbar")
 
         self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.item_edit.wait_for_and_click()
         self.components.pages.history.editor.wait_for_visible()
 
         # History-page controls visible
@@ -558,112 +557,9 @@ class TestHistoryPages(SeleniumTestCase):
 
         # Standalone-only controls absent
         self.components.pages.history.permissions_button.assert_absent_or_hidden()
-        self.components.pages.history.save_view_button.assert_absent_or_hidden()
 
         # Back button says "This History's Pages" not "Back to Pages"
         back_text = self.components.pages.history.back_button.wait_for_text()
         assert "This History's Notebooks" in back_text
         assert "Back to Reports" not in back_text
         self.screenshot("history_toolbar_controls")
-
-    # --- Page Chat Panel Tests ---
-
-    @skip_without_agents
-    @selenium_test
-    @managed_history
-    def test_chat_panel_toggle(self):
-        """Open page, click chat button, verify panel visible; click again, verify hidden."""
-        history_id = self.current_history_id()
-        self.dataset_populator.new_history_page(history_id, title="Chat Toggle", content="# Test")
-
-        self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
-        self.components.pages.history.editor.wait_for_visible()
-
-        # Open chat panel
-        self.history_page_open_chat()
-        self.screenshot("history_page_chat_open")
-
-        # Close chat panel
-        self.components.pages.history.chat_button.wait_for_and_click()
-        self.components.pages.history.chat_panel.assert_absent_or_hidden()
-        self.screenshot("history_page_chat_closed")
-
-    @skip_without_agents
-    @selenium_test
-    @managed_history
-    def test_page_chat_greeting_flow(self):
-        """Send greeting, verify query cell and response content."""
-        history_id = self.current_history_id()
-        self.dataset_populator.new_history_page(history_id, title="Chat Greeting", content="# Test")
-
-        self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
-        self.components.pages.history.editor.wait_for_visible()
-
-        self.history_page_open_chat()
-        self.history_page_chat_ensure_new()
-        self.history_page_chat_send_message("Hello!")
-
-        chat = self.components.pages.history
-        assert chat.chat_query_cell.wait_for_text() == "Hello!"
-
-        @retry_assertion_during_transitions
-        def assert_response():
-            text = chat.chat_response_content.wait_for_text()
-            assert len(text) > 0
-
-        assert_response()
-        self.screenshot("history_page_chat_greeting")
-
-    @skip_without_agents
-    @selenium_test
-    @managed_history
-    def test_page_chat_multi_turn(self):
-        """Send two messages, assert 2 query cells and 2 response cells."""
-        history_id = self.current_history_id()
-        self.dataset_populator.new_history_page(history_id, title="Chat Multi", content="# Test")
-
-        self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
-        self.components.pages.history.editor.wait_for_visible()
-
-        self.history_page_open_chat()
-        self.history_page_chat_ensure_new()
-        self.history_page_chat_send_message("Hello!")
-        self.history_page_chat_send_message("Summarize this history")
-
-        chat = self.components.pages.history
-
-        @retry_assertion_during_transitions
-        def assert_two_exchanges():
-            assert len(chat.chat_query_cell.all()) == 2
-            assert len(chat.chat_response_content.all()) >= 2
-
-        assert_two_exchanges()
-        self.screenshot("history_page_chat_multi_turn")
-
-    @skip_without_agents
-    @selenium_test
-    @managed_history
-    def test_page_chat_new_conversation(self):
-        """Send message, click new conversation, assert chat is empty."""
-        history_id = self.current_history_id()
-        self.dataset_populator.new_history_page(history_id, title="Chat New Conv", content="# Test")
-
-        self.navigate_to_history_pages()
-        self.components.pages.history.item.wait_for_and_click()
-        self.components.pages.history.editor.wait_for_visible()
-
-        self.history_page_open_chat()
-        self.history_page_chat_ensure_new()
-        self.history_page_chat_send_message("Hello!")
-
-        # Verify message exists
-        chat = self.components.pages.history
-        assert len(chat.chat_query_cell.all()) >= 1
-
-        # New conversation
-        chat.chat_new_conversation.wait_for_and_click()
-        self._history_page_chat_assert_empty()
-        self.screenshot("history_page_chat_new_conversation")

@@ -3,8 +3,6 @@ import os
 import shutil
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from galaxy import exceptions
@@ -33,7 +31,7 @@ DEFAULT_PREFER_LINKS = False
 class PosixTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     """Posix template configuration with templating support."""
 
-    root: Union[str, TemplateExpansion, None] = None
+    root: str | TemplateExpansion | None = None
     # These are not using TemplateExpansion because they are not user-configurable.
     enforce_symlink_security: bool = DEFAULT_ENFORCE_SYMLINK_SECURITY
     delete_on_realize: bool = DEFAULT_DELETE_ON_REALIZE
@@ -44,7 +42,7 @@ class PosixTemplateConfiguration(BaseFileSourceTemplateConfiguration):
 class PosixConfiguration(BaseFileSourceConfiguration):
     """Posix resolved configuration with proper types."""
 
-    root: Optional[str] = None
+    root: str | None = None
     enforce_symlink_security: bool = DEFAULT_ENFORCE_SYMLINK_SECURITY
     delete_on_realize: bool = DEFAULT_DELETE_ON_REALIZE
     allow_subdir_creation: bool = DEFAULT_ALLOW_SUBDIR_CREATION
@@ -69,7 +67,7 @@ class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfigur
         return self.template_config.prefer_links
 
     @property
-    def root(self) -> Optional[str]:
+    def root(self) -> str | None:
         """Return the root directory for backward compatibility."""
         return self.template_config.root
 
@@ -79,10 +77,10 @@ class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfigur
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         if not context.config.root:
             raise exceptions.ItemAccessibilityException("Listing files at file:// URLs has been disabled.")

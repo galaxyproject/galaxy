@@ -1,7 +1,6 @@
 from typing import (
     Any,
     cast,
-    Optional,
 )
 
 from starlette.datastructures import URL
@@ -87,7 +86,7 @@ def get_repository_metadata_by_tool_version(
     versions = {}
     for _, changeset in repository.installable_revisions(app):
         metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changeset)
-        tools: Optional[list[dict[str, Any]]] = metadata.metadata.get("tools")
+        tools: list[dict[str, Any]] | None = metadata.metadata.get("tools")
         if not tools:
             continue
         for tool_metadata in tools:
@@ -98,7 +97,7 @@ def get_repository_metadata_by_tool_version(
 
 
 def get_tools_for(repository_metadata: RepositoryMetadata) -> list[dict[str, Any]]:
-    tools: Optional[list[dict[str, Any]]] = repository_metadata.metadata.get("tools")
+    tools: list[dict[str, Any]] | None = repository_metadata.metadata.get("tools")
     assert tools
     return tools
 

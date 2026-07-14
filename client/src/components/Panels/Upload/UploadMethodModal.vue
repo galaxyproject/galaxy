@@ -40,7 +40,8 @@ const { currentHistoryId } = storeToRefs(historyStore);
 const { submitPreparedUpload } = useUploadSubmission();
 
 const modalConfig = computed<UploadModalConfig>(() => props.config ?? {});
-const availableMethods = useFilteredUploadMethods(modalConfig);
+const allowedMethods = computed(() => modalConfig.value.allowedMethods);
+const availableMethods = useFilteredUploadMethods(allowedMethods);
 const selectedMethod = ref<UploadMethodConfig | null>(null);
 const uploadMethodRef = ref<UploadMethodComponent | null>(null);
 const canUpload = ref(false);
@@ -210,6 +211,8 @@ async function handleStartClick() {
                             :description="method.description"
                             :title-icon="{ icon: method.icon, class: 'text-primary', size: 'lg' }"
                             :selected="selectedMethod?.id === method.id"
+                            :disabled="method.disabled"
+                            :disabled-title="method.disabledTitle"
                             @click="selectMethod(method)" />
                     </div>
                 </aside>

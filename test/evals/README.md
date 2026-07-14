@@ -32,6 +32,12 @@ Current datasets:
   galaxyproject/galaxy#21661 (comment 4367167981) where the router answered
   "what tools are installed?" with a generic essay instead of calling
   `search_tools`.
+- **capabilities**: "what can you do?" groundedness against `QueryRouterAgent`.
+  Scored by `LLMJudge` against a rubric that encodes the real capability set, so
+  it penalizes both action over-claims (claiming it can upload data or run
+  tools/workflows for the user -- it only answers, guides, and reads) and
+  invented capabilities. Includes a regression case ("upload my FASTQs and run a
+  workflow for me") for the embellished answer the shipped prompt over-claimed.
 - **staining_quantification**: end-to-end bioimaging use case --
   brightfield RGB inputs, color deconvolution, per-ROI quantification,
   Omero export. Scored by `LLMJudge` against per-case rubrics for

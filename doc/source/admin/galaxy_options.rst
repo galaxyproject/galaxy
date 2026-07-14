@@ -1288,7 +1288,7 @@
     destination level for heterogeneous clusters. conda job resolution
     requires bash or zsh so if this is switched to /bin/sh for
     instance - conda resolution should be disabled. Containerized jobs
-    always use /bin/sh - for maximum portability tool authors
+    always use /bin/sh - so for maximum portability tool authors
     should assume generated commands run in sh.
 :Default: ``/bin/bash``
 :Type: str
@@ -1302,6 +1302,24 @@
     Directory in which the toolbox search index is stored. The value
     of this option will be resolved with respect to <data_dir>.
 :Default: ``tool_search_index``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_tag_mappings_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional YAML file mapping tool ids to curated tag names. Tags
+    drive the `tag:` autocompletion, the favorite-tags grouping in the
+    My Tools panel, and the `tool_tags` Whoosh search field. If unset,
+    Galaxy ships a small example covering the tools used by its own
+    integration tests; admins who want production-grade tag coverage
+    can generate a snapshot for their instance with
+    `scripts/extract_tool_sections_from_api.py`. The file must be a
+    YAML document with a top-level `tool_tags:` mapping from tool id
+    to a list of tag names.
+:Default: ``None``
 :Type: str
 
 
@@ -2532,7 +2550,7 @@
 :Description:
     The BibTeX citation for Galaxy, to be displayed in the History
     Tool Reference List
-:Default: ``@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}``
+:Default: ``@article{Galaxy2026, title="Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2026", doi="10.1093/nar/gkag469", url="https://doi.org/10.1093/nar/gkag469"}``
 :Type: str
 
 
@@ -3480,11 +3498,30 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    How often (in seconds) the Celery beat task emits queue-depth,
-    SSE-connection, and WorkerProcess gauges. Only active when
-    statsd_host is set. Set to 0 to disable.
+    How often (in seconds) background observability gauges are
+    sampled: control-queue depth and WorkerProcess counts from the
+    Celery beat task, and (when enable_sse_connection_metrics is set)
+    active SSE-connection counts from each web worker. This is the
+    shared cadence for all of them. Only active when statsd_host is
+    set. Set to 0 to disable all background gauges.
 :Default: ``15``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_sse_connection_metrics``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Emit the galaxy.sse.connections.active gauge from each web worker,
+    reporting how many Server-Sent Events connections that worker
+    currently holds (tagged by kind and server_name). Sampled on the
+    queue_metrics_interval cadence. Off by default so that enabling
+    statsd does not by itself start measuring SSE connections;
+    requires statsd_host to be set and queue_metrics_interval greater
+    than 0.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -5710,8 +5747,8 @@
 :Description:
     Configuration for AI inference services used by agents and
     visualization plugins. Supports per-agent or per-plugin model,
-    temperature, max_tokens, api_key, api_base_url, and enabled
-    settings. Valid keys include agent types (e.g. router,
+    temperature, max_tokens, retries, api_key, api_base_url, and
+    enabled settings. Valid keys include agent types (e.g. router,
     error_analysis) and plugin names (e.g. jupyterlite). Agents and
     plugins inherit from 'default' configuration, which itself falls
     back to global ai_model/ai_api_key settings. All agents are
@@ -5720,9 +5757,102 @@
     false }, jupyterlite: { model: gpt-4o } } Set static_responses to
     a YAML file path to replace all LLM calls with deterministic
     responses for testing: inference_services: { static_responses:
-    test/integration/static_agents.yml }
+    test/integration/static_agents.yml } Per-agent or default-block
+    ``structured_output_override: true|false`` beats the model
+    capability table -- see ``agent_model_capabilities_file`` for the
+    table's location and contents. Per-agent or default-block
+    ``retries`` sets the pydantic-ai retry budget (tool calls and
+    output validation); it defaults to 3. Raise it if a model
+    intermittently fails to produce conforming output ("Exceeded
+    maximum output retries"). custom_tool's producer keeps a budget of
+    0 because it runs its own reflection loop; a shared ``default``
+    block does not change that -- set ``custom_tool.retries``
+    explicitly to override it.
 :Default: ``None``
 :Type: any
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``agent_model_capabilities_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    YAML file with capability hints for agent inference models. Maps
+    fnmatch-style globs against model names to features such as
+    structured-output (tool-calling / JSON-mode) support. Galaxy ships
+    a sample populated with common model families; admins can drop a
+    file named ``agent_model_capabilities.yml`` in ``config_dir`` to
+    override the shipped table for private models.
+    ``inference_services`` ``structured_output_override`` overrides
+    this table for a specific agent or default block.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``agent_model_capabilities.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``gtn_database_path``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to the SQLite FTS5 database used by the GTN training agent.
+    Resolves against ``data_dir`` so admins can place it in a
+    mutable-data directory. The file is downloaded automatically on
+    first use from ``gtn_database_url`` if it does not exist.
+    The value of this option will be resolved with respect to
+    <data_dir>.
+:Default: ``gtn/gtn_search.db``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``gtn_database_url``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL used to download the GTN search database when the local file
+    at ``gtn_database_path`` is missing.
+:Default: ``https://depot.galaxyproject.org/chatgxy/gtn_search.db``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``gtn_database_refresh_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between celery-beat triggered freshness checks
+    of the GTN search database from ``gtn_database_url``. The task
+    HEADs depot and only re-downloads when its ``Last-Modified`` is
+    newer than the local file -- steady-state cost is a few hundred
+    bytes per tick. When a download does happen it atomically replaces
+    ``gtn_database_path``; live handlers pick up the new copy on their
+    next query since GTNSearchDB opens a read-only connection per
+    call. Only registered when ``inference_services`` is configured
+    (i.e. GalaxyAI is in use). Set to 0 to disable automatic refresh
+    -- admins can still refresh on demand via ``python -m
+    galaxy.agents.gtn --refresh``. Requires celery.
+:Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``iwc_manifest_refresh_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between celery-beat triggered refreshes of the
+    in-process IWC workflow manifest cache used by the agent-ops
+    layer. Default matches the cache's in-process TTL so the cache
+    stays continuously warm rather than expiring between user-driven
+    hits. Failures are logged and the prior cached copy is retained.
+    Only registered when ``inference_services`` is configured (i.e.
+    GalaxyAI is in use). Set to 0 to disable automatic refresh --
+    agent-ops callers will then fall back to lazy on-demand fetching
+    with the same hour TTL. Requires celery.
+:Default: ``3600``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

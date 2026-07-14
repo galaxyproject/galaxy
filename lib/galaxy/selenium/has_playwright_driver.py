@@ -118,8 +118,6 @@ from typing import (
     Any,
     Generic,
     NamedTuple,
-    Optional,
-    Union,
 )
 
 from playwright.sync_api import (
@@ -215,7 +213,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
     keys: type[PlaywrightKeys] = PlaywrightKeys
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
-    _current_frame: Optional[Union[Frame, FrameLocator]] = None
+    _current_frame: Frame | FrameLocator | None = None
     _playwright_resources: PlaywrightResources
 
     @property
@@ -440,7 +438,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """Check if element is absent."""
         return len(self.find_elements(selector_template)) == 0
 
-    def find_element_by_link_text(self, text: str, element: Optional[ElementHandle] = None) -> WebElementProtocol:
+    def find_element_by_link_text(self, text: str, element: ElementHandle | None = None) -> WebElementProtocol:
         """Find element by link text."""
         if element is not None:
             # Find within element context - need to use element as locator root
@@ -449,7 +447,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         element_handle = self._frame_or_page.locator(selector).first.element_handle()
         return PlaywrightElement(element_handle, self)
 
-    def find_element_by_xpath(self, xpath: str, element: Optional[ElementHandle] = None) -> WebElementProtocol:
+    def find_element_by_xpath(self, xpath: str, element: ElementHandle | None = None) -> WebElementProtocol:
         """Find element by XPath."""
         if element is not None:
             raise NotImplementedError("Finding within element context not yet implemented")
@@ -457,7 +455,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         element_handle = self._frame_or_page.locator(selector).first.element_handle()
         return PlaywrightElement(element_handle, self)
 
-    def find_element_by_id(self, id: str, element: Optional[ElementHandle] = None) -> WebElementProtocol:
+    def find_element_by_id(self, id: str, element: ElementHandle | None = None) -> WebElementProtocol:
         """Find element by ID."""
         if element is not None:
             raise NotImplementedError("Finding within element context not yet implemented")
@@ -465,7 +463,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         element_handle = self._frame_or_page.locator(selector).first.element_handle()
         return PlaywrightElement(element_handle, self)
 
-    def find_element_by_selector(self, selector: str, element: Optional[ElementHandle] = None) -> WebElementProtocol:
+    def find_element_by_selector(self, selector: str, element: ElementHandle | None = None) -> WebElementProtocol:
         """Find element by CSS selector."""
         if element is not None:
             raise NotImplementedError("Finding within element context not yet implemented")
@@ -473,7 +471,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         return PlaywrightElement(element_handle, self)
 
     def find_elements_by_selector(
-        self, selector: str, element: Optional[ElementHandle] = None
+        self, selector: str, element: ElementHandle | None = None
     ) -> list[WebElementProtocol]:
         """
         Find multiple elements by CSS selector.
@@ -526,7 +524,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             selector = self._selenium_locator_to_playwright_selector(*selector_template)
         self._frame_or_page.locator(selector).first.select_option(value=value)
 
-    def _timeout_in_ms(self, timeout=UNSPECIFIED_TIMEOUT, wait_type: Optional[WaitTypeT] = None, **kwds) -> float:
+    def _timeout_in_ms(self, timeout=UNSPECIFIED_TIMEOUT, wait_type: WaitTypeT | None = None, **kwds) -> float:
         """
         Convert timeout from seconds to milliseconds.
 
@@ -706,7 +704,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         self._frame_or_page.locator(selector).first.click()
 
-    def send_enter(self, element: Optional[WebElementProtocol] = None) -> None:
+    def send_enter(self, element: WebElementProtocol | None = None) -> None:
         """
         Send ENTER key.
 
@@ -718,7 +716,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         else:
             self._send_key_to_element(self.keys.ENTER, self._unwrap_element(element))
 
-    def send_escape(self, element: Optional[WebElementProtocol] = None) -> None:
+    def send_escape(self, element: WebElementProtocol | None = None) -> None:
         """
         Send ESCAPE key.
 
@@ -730,7 +728,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         else:
             self._send_key_to_element(self.keys.ESCAPE, self._unwrap_element(element))
 
-    def send_backspace(self, element: Optional[WebElementProtocol] = None) -> None:
+    def send_backspace(self, element: WebElementProtocol | None = None) -> None:
         """
         Send BACKSPACE key.
 
@@ -844,7 +842,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         # that indicates it exists but isn't used the same way
         return self
 
-    def switch_to_frame(self, frame_reference: Union[str, int, ElementHandle, PlaywrightElement] = "frame"):
+    def switch_to_frame(self, frame_reference: str | int | ElementHandle | PlaywrightElement = "frame"):
         """
         Switch to an iframe or frame.
 
@@ -1089,7 +1087,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             msg += f" {timeout_exception.message}"
         return PlaywrightTimeoutException(msg)
 
-    def axe_eval(self, context: Optional[str] = None, write_to: Optional[str] = None) -> AxeResults:
+    def axe_eval(self, context: str | None = None, write_to: str | None = None) -> AxeResults:
         """
         Run axe-core accessibility tests on the current page.
 

@@ -2,7 +2,6 @@
 
 import os
 import tempfile
-from typing import Optional
 
 from galaxy.files import (
     ConfiguredFileSources,
@@ -24,11 +23,11 @@ def serialize_and_recover(file_sources_o: ConfiguredFileSources, user_context: O
     return file_sources
 
 
-def find_file_a(dir_list: list[AnyRemoteEntry]) -> Optional[AnyRemoteEntry]:
+def find_file_a(dir_list: list[AnyRemoteEntry]) -> AnyRemoteEntry | None:
     return find(dir_list, class_="File", name="a")
 
 
-def find(dir_list: list[AnyRemoteEntry], class_=None, name=None) -> Optional[AnyRemoteEntry]:
+def find(dir_list: list[AnyRemoteEntry], class_=None, name=None) -> AnyRemoteEntry | None:
     for ent in dir_list:
         if class_ is not None and ent.class_ != class_:
             continue
@@ -161,7 +160,7 @@ def write_from(
         return file_source_path.file_source.write_from(file_source_path.path, f.name, user_context=user_context)
 
 
-def configured_file_sources(conf_file, file_sources_config: Optional[FileSourcePluginsConfig] = None):
+def configured_file_sources(conf_file, file_sources_config: FileSourcePluginsConfig | None = None):
     file_sources_config = file_sources_config or FileSourcePluginsConfig()
     assert file_sources_config
     if isinstance(conf_file, str):

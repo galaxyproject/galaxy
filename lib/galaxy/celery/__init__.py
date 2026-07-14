@@ -6,7 +6,10 @@ from functools import (
     wraps,
 )
 from multiprocessing import get_context
-from threading import local
+from threading import (
+    local,
+    Lock,
+)
 from typing import (
     Any,
 )
@@ -93,8 +96,7 @@ class GalaxyTask(Task):
         """
         if status == "RETRY":
             return  # Don't clean up on retry — the task will run again
-        app = get_galaxy_app()
-        if app:
+        if app := get_galaxy_app():
             app[GalaxyTaskAfterReturn](self, task_id, args, kwargs)
 
 
@@ -113,16 +115,32 @@ def get_galaxy_app():
     return build_app()
 
 
-@lru_cache(maxsize=1)
-def build_app():
-    if kwargs := get_app_properties():
-        kwargs["check_migrate_databases"] = False
-        kwargs["use_display_applications"] = False
-        kwargs["use_converters"] = False
-        import galaxy.app
+_build_app_lock = Lock()
+_built_app = None
 
-        galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
-        return galaxy_app
+
+def build_app():
+    # Build the app under a double-checked lock so that a cold start with N
+    # concurrent threads (celery ``--pool threads``) builds exactly one app; the
+    # losing threads wait on the lock and reuse the winner's result.
+    global _built_app
+    if _built_app is not None:
+        return _built_app
+    with _build_app_lock:
+        if _built_app is not None:
+            return _built_app
+        if kwargs := get_app_properties():
+            kwargs["check_migrate_databases"] = False
+            kwargs["use_display_applications"] = False
+            kwargs["use_converters"] = True
+            import galaxy.app
+
+            galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
+            # GalaxyManagerApplication has no toolbox, so the converter tools the async
+            # execution path relies on must be loaded directly into the datatypes registry.
+            galaxy_app.datatypes_registry.load_datatype_converters_without_toolbox(galaxy_app)
+            _built_app = galaxy_app
+    return _built_app
 
 
 @lru_cache(maxsize=1)
@@ -282,6 +300,18 @@ def setup_periodic_tasks(config, celery_app):
 
     if config.vault_token_renewal_interval:
         schedule_task("renew_vault_token", config.vault_token_renewal_interval)
+
+    # Only schedule if GalaxyAI infrastructure is configured -- the GTN database
+    # serves the gtn_training agent, which only functions when inference_services
+    # is set up. Without this gate every Galaxy install would pull from depot
+    # on the default interval, even ones that don't use the agent.
+    if config.inference_services and config.gtn_database_refresh_interval and config.gtn_database_path:
+        schedule_task("refresh_gtn_database", config.gtn_database_refresh_interval)
+
+    # IWC manifest pre-warm only matters when the agent-ops layer is exposed --
+    # same inference_services gate as the GTN refresh above.
+    if config.inference_services and config.iwc_manifest_refresh_interval:
+        schedule_task("refresh_iwc_manifest", config.iwc_manifest_refresh_interval)
 
     if config.celery_user_concurrency_limit:
         # Run cleanup every 5 minutes (300 seconds)

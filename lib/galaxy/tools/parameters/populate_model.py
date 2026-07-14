@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.util.expressions import ExpressionContext
@@ -14,7 +13,7 @@ def populate_model(
     state_inputs,
     group_inputs: list[dict[str, Any]],
     other_values=None,
-    options_pagination: Optional[OptionsPaginationT] = None,
+    options_pagination: OptionsPaginationT | None = None,
     name_prefix: str = "",
 ):
     """

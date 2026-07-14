@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 from lxml.etree import XMLSyntaxError
 
@@ -40,7 +39,7 @@ AttributeExpression = Annotated[
 ]
 Attribute = Annotated[str, AssertionParameter("The XML attribute name to test against from the target XML element.")]
 OptionalAttribute = Annotated[
-    Optional[str], AssertionParameter("The XML attribute name to test against from the target XML element.")
+    str | None, AssertionParameter("The XML attribute name to test against from the target XML element.")
 ]
 ElementText = Annotated[
     str, AssertionParameter("The expected element text (body of the XML tag) to test against on the target XML element")
@@ -210,7 +209,7 @@ def assert_element_text(
 def assert_xml_element(
     output: Output,
     path: Path,
-    verify_assertions_function: Optional[VerifyAssertionsFunction] = None,
+    verify_assertions_function: VerifyAssertionsFunction | None = None,
     children: ChildAssertions = None,
     attribute: OptionalAttribute = None,
     all: All = False,

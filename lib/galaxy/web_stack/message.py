@@ -3,9 +3,6 @@
 import json
 import logging
 import types
-from typing import (
-    Optional,
-)
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +104,7 @@ class ApplicationStackMessage(dict):
         )
 
     @property
-    def target(self) -> Optional[str]:
+    def target(self) -> str | None:
         return self["target"]
 
     @target.setter  # type: ignore[attr-defined]

@@ -104,7 +104,7 @@ describe("usePageEditorStore", () => {
         it("isDirty is false when content reverted to original", async () => {
             useDefaultHandlers();
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             await store.loadPageById(TEST_PAGE_ID);
             const originalContent = store.currentContent;
 
@@ -203,7 +203,7 @@ describe("usePageEditorStore", () => {
         it("populates currentPage and content on success", async () => {
             useDefaultHandlers();
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
 
             await store.loadPageById(TEST_PAGE_ID);
 
@@ -215,7 +215,7 @@ describe("usePageEditorStore", () => {
         it("sets originalContent to match currentContent", async () => {
             useDefaultHandlers();
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
 
             await store.loadPageById(TEST_PAGE_ID);
 
@@ -225,7 +225,7 @@ describe("usePageEditorStore", () => {
         it("sets isLoadingPage during load", async () => {
             useDefaultHandlers();
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
 
             const promise = store.loadPageById(TEST_PAGE_ID);
             expect(store.isLoadingPage).toBe(true);
@@ -241,7 +241,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
 
             await store.loadPageById(TEST_PAGE_ID);
 
@@ -262,7 +262,7 @@ describe("usePageEditorStore", () => {
         it("creates page, sets as current, refreshes list", async () => {
             useDefaultHandlers();
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
 
             const result = await store.createPage({ title: "New Page" });
 
@@ -277,7 +277,7 @@ describe("usePageEditorStore", () => {
         it("sets isLoadingPage during creation", async () => {
             useDefaultHandlers();
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
 
             const promise = store.createPage();
             expect(store.isLoadingPage).toBe(true);
@@ -293,7 +293,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
 
             await expect(store.createPage()).rejects.toThrow();
             expect(store.error).toBeTruthy();
@@ -310,7 +310,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             store.currentPage = TEST_PAGE_DETAILS;
 
             await store.savePage();
@@ -322,7 +322,7 @@ describe("usePageEditorStore", () => {
 
         it("does nothing if no currentPage", async () => {
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             store.updateContent("dirty");
 
             await store.savePage();
@@ -368,7 +368,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             await store.loadPageById(TEST_PAGE_ID);
             expect(store.isDirty).toBe(false);
 
@@ -391,7 +391,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             await store.loadPageById(TEST_PAGE_ID);
             store.updateContent("new content");
 
@@ -412,7 +412,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             await store.loadPageById(TEST_PAGE_ID);
             store.updateContent("new content");
 
@@ -437,7 +437,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             await store.loadPageById(TEST_PAGE_ID);
             store.updateContent("");
             expect(store.isDirty).toBe(true);
@@ -453,7 +453,7 @@ describe("usePageEditorStore", () => {
     describe("deleteCurrentPage", () => {
         it("does nothing if no currentPage", async () => {
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
 
             await store.deleteCurrentPage();
 
@@ -482,7 +482,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             await store.loadPageById(TEST_PAGE_ID);
             expect(store.currentPage).not.toBeNull();
 
@@ -508,7 +508,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             store.currentPage = TEST_PAGE_DETAILS;
 
             await expect(store.deleteCurrentPage()).rejects.toThrow();
@@ -592,7 +592,7 @@ describe("usePageEditorStore", () => {
         it("loadPageById updates stored current ID", async () => {
             useDefaultHandlers();
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
 
             await store.loadPageById(TEST_PAGE_ID);
 
@@ -612,7 +612,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             await store.loadPageById(TEST_PAGE_ID);
             expect(store.getCurrentPageId(TEST_HISTORY_ID)).toBe(TEST_PAGE_ID);
 
@@ -634,295 +634,6 @@ describe("usePageEditorStore", () => {
             store.clearCurrentPageId("h1");
             expect(store.getCurrentPageId("h1")).toBeNull();
             expect(store.getCurrentPageId("h2")).toBe("p2");
-        });
-    });
-
-    describe("panel toggle mutual exclusion", () => {
-        it("toggleChatPanel opens and closes chat", () => {
-            const store = usePageEditorStore();
-            expect(store.showChatPanel).toBe(false);
-
-            store.toggleChatPanel();
-            expect(store.showChatPanel).toBe(true);
-
-            store.toggleChatPanel();
-            expect(store.showChatPanel).toBe(false);
-        });
-
-        it("toggleChatPanel closes revisions and clears selectedRevision when opening chat", () => {
-            const store = usePageEditorStore();
-            store.$patch({ showRevisions: true });
-            store.selectedRevision = {
-                id: "rev-1",
-                page_id: TEST_PAGE_ID,
-                content: "# Old",
-                content_format: "markdown",
-                edit_source: "user",
-                create_time: "2024-01-01T00:00:00",
-                update_time: "2024-01-01T00:00:00",
-            } as any;
-
-            store.toggleChatPanel();
-
-            expect(store.showChatPanel).toBe(true);
-            expect(store.showRevisions).toBe(false);
-            expect(store.selectedRevision).toBeNull();
-        });
-
-        it("toggleChatPanel does not touch revisions when closing chat", () => {
-            const store = usePageEditorStore();
-            store.$patch({ showChatPanel: true, showRevisions: false });
-
-            store.toggleChatPanel();
-
-            expect(store.showChatPanel).toBe(false);
-            expect(store.showRevisions).toBe(false);
-        });
-
-        it("toggleRevisions closes chat when opening revisions", () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID, showChatPanel: true });
-            store.currentPage = TEST_PAGE_DETAILS;
-
-            store.toggleRevisions();
-
-            expect(store.showRevisions).toBe(true);
-            expect(store.showChatPanel).toBe(false);
-        });
-
-        it("toggleRevisions does not touch chat when closing revisions", () => {
-            const store = usePageEditorStore();
-            store.$patch({ showRevisions: true, showChatPanel: false });
-
-            store.toggleRevisions();
-
-            expect(store.showRevisions).toBe(false);
-            expect(store.showChatPanel).toBe(false);
-        });
-
-        it("$reset clears showChatPanel", () => {
-            const store = usePageEditorStore();
-            store.$patch({ showChatPanel: true });
-
-            store.$reset();
-
-            expect(store.showChatPanel).toBe(false);
-        });
-
-        it("clearCurrentPage clears showChatPanel", () => {
-            const store = usePageEditorStore();
-            store.$patch({ showChatPanel: true });
-
-            store.clearCurrentPage();
-
-            expect(store.showChatPanel).toBe(false);
-        });
-    });
-
-    describe("chat exchange persistence", () => {
-        it("get/set/clear exchange ID", () => {
-            const store = usePageEditorStore();
-
-            expect(store.getCurrentChatExchangeId("p-1")).toBeNull();
-
-            store.setCurrentChatExchangeId("p-1", "42");
-            expect(store.getCurrentChatExchangeId("p-1")).toBe("42");
-
-            store.setCurrentChatExchangeId("p-2", "99");
-            expect(store.getCurrentChatExchangeId("p-2")).toBe("99");
-
-            store.clearCurrentChatExchangeId("p-1");
-            expect(store.getCurrentChatExchangeId("p-1")).toBeNull();
-            expect(store.getCurrentChatExchangeId("p-2")).toBe("99");
-        });
-
-        it("setCurrentChatExchangeId with null stores null", () => {
-            const store = usePageEditorStore();
-            store.setCurrentChatExchangeId("p-1", "42");
-            store.setCurrentChatExchangeId("p-1", null);
-            expect(store.getCurrentChatExchangeId("p-1")).toBeNull();
-        });
-
-        it("clearCurrentPage preserves chat exchange ID", async () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
-            await store.loadPageById(TEST_PAGE_ID);
-            store.setCurrentChatExchangeId(TEST_PAGE_ID, "abc123exchangeid");
-
-            store.clearCurrentPage();
-
-            expect(store.getCurrentChatExchangeId(TEST_PAGE_ID)).toBe("abc123exchangeid");
-        });
-
-        it("deleteCurrentPage clears chat exchange ID", async () => {
-            server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
-                http.get("/api/pages", ({ response }: any) => {
-                    return response(200).json([]);
-                }) as any,
-                http.delete("/api/pages/{id}", ({ response }: any) => {
-                    return response(204).empty();
-                }) as any,
-            );
-            const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
-            await store.loadPageById(TEST_PAGE_ID);
-            store.setCurrentChatExchangeId(TEST_PAGE_ID, "77");
-
-            await store.deleteCurrentPage();
-
-            expect(store.getCurrentChatExchangeId(TEST_PAGE_ID)).toBeNull();
-        });
-    });
-
-    describe("chatError", () => {
-        it("is null initially", () => {
-            const store = usePageEditorStore();
-            expect(store.chatError).toBeNull();
-        });
-
-        it("can be set directly", () => {
-            const store = usePageEditorStore();
-            store.chatError = "Failed to load chat";
-            expect(store.chatError).toBe("Failed to load chat");
-        });
-
-        it("is cleared by clearCurrentPage", () => {
-            const store = usePageEditorStore();
-            store.chatError = "some error";
-
-            store.clearCurrentPage();
-
-            expect(store.chatError).toBeNull();
-        });
-
-        it("is cleared by $reset", () => {
-            const store = usePageEditorStore();
-            store.chatError = "some error";
-
-            store.$reset();
-
-            expect(store.chatError).toBeNull();
-        });
-    });
-
-    describe("chat history state", () => {
-        const MOCK_HISTORY = [
-            {
-                id: "enc1",
-                query: "What is this?",
-                response: "It is a page.",
-                agent_type: "page_assistant",
-                timestamp: "2025-06-15T10:00:00Z",
-                feedback: null,
-                message_count: 2,
-            },
-            {
-                id: "enc2",
-                query: "Summarize",
-                response: "Summary here.",
-                agent_type: "page_assistant",
-                timestamp: "2025-06-14T09:00:00Z",
-                feedback: 1,
-                message_count: 4,
-            },
-        ];
-
-        it("initial state is empty / not loading / no error", () => {
-            const store = usePageEditorStore();
-            expect(store.pageChatHistory).toEqual([]);
-            expect(store.isLoadingChatHistory).toBe(false);
-            expect(store.showChatHistory).toBe(false);
-            expect(store.chatHistoryError).toBeNull();
-        });
-
-        it("loadPageChatHistory populates pageChatHistory on success", async () => {
-            server.use(
-                http.get("/api/chat/page/{page_id}/history", ({ response }: any) => {
-                    return response(200).json(MOCK_HISTORY);
-                }) as any,
-            );
-            const store = usePageEditorStore();
-
-            await store.loadPageChatHistory(TEST_PAGE_ID);
-
-            expect(store.pageChatHistory).toEqual(MOCK_HISTORY);
-            expect(store.isLoadingChatHistory).toBe(false);
-            expect(store.chatHistoryError).toBeNull();
-        });
-
-        it("loadPageChatHistory sets chatHistoryError on failure", async () => {
-            server.use(
-                http.get("/api/chat/page/{page_id}/history", ({ response }: any) => {
-                    return response("5XX").json({ err_msg: "DB down", err_code: 500 }, { status: 500 });
-                }) as any,
-            );
-            const store = usePageEditorStore();
-
-            await store.loadPageChatHistory(TEST_PAGE_ID);
-
-            expect(store.pageChatHistory).toEqual([]);
-            expect(store.chatHistoryError).toBeTruthy();
-            expect(store.isLoadingChatHistory).toBe(false);
-        });
-
-        it("loadPageChatHistory clears previous error on retry", async () => {
-            server.use(
-                http.get("/api/chat/page/{page_id}/history", ({ response }: any) => {
-                    return response(200).json(MOCK_HISTORY);
-                }) as any,
-            );
-            const store = usePageEditorStore();
-            store.$patch({ chatHistoryError: "old error" });
-
-            await store.loadPageChatHistory(TEST_PAGE_ID);
-
-            expect(store.chatHistoryError).toBeNull();
-        });
-
-        it("toggleChatHistory toggles showChatHistory", () => {
-            const store = usePageEditorStore();
-            expect(store.showChatHistory).toBe(false);
-
-            store.toggleChatHistory();
-            expect(store.showChatHistory).toBe(true);
-
-            store.toggleChatHistory();
-            expect(store.showChatHistory).toBe(false);
-        });
-
-        it("clearCurrentPage resets chat history state", () => {
-            const store = usePageEditorStore();
-            store.$patch({
-                pageChatHistory: MOCK_HISTORY as any,
-                showChatHistory: true,
-                chatHistoryError: "some error",
-            });
-
-            store.clearCurrentPage();
-
-            expect(store.pageChatHistory).toEqual([]);
-            expect(store.showChatHistory).toBe(false);
-            expect(store.chatHistoryError).toBeNull();
-        });
-
-        it("$reset clears chat history state", () => {
-            const store = usePageEditorStore();
-            store.$patch({
-                pageChatHistory: MOCK_HISTORY as any,
-                showChatHistory: true,
-                chatHistoryError: "some error",
-            });
-
-            store.$reset();
-
-            expect(store.pageChatHistory).toEqual([]);
-            expect(store.showChatHistory).toBe(false);
-            expect(store.chatHistoryError).toBeNull();
         });
     });
 
@@ -951,7 +662,7 @@ describe("usePageEditorStore", () => {
                 }) as any,
             );
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             await store.loadPageById(TEST_PAGE_ID);
             expect(store.currentContent).toBe("original content");
 
@@ -967,7 +678,7 @@ describe("usePageEditorStore", () => {
         it("clearCurrentPage resets current page state", async () => {
             useDefaultHandlers();
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             await store.loadPageById(TEST_PAGE_ID);
             store.updateContent("modified");
             expect(store.currentPage).not.toBeNull();
@@ -983,7 +694,7 @@ describe("usePageEditorStore", () => {
 
         it("clearCurrentPage does not affect pages list or historyId", () => {
             const store = usePageEditorStore();
-            store.$patch({ historyId: TEST_HISTORY_ID });
+            store.setCurrentContext(TEST_HISTORY_ID);
             store.pages = [TEST_PAGE_SUMMARY];
             store.currentPage = TEST_PAGE_DETAILS;
 
@@ -1254,98 +965,6 @@ describe("usePageEditorStore", () => {
         });
     });
 
-    describe("deletePageChatExchanges", () => {
-        const MOCK_HISTORY = [
-            {
-                id: "enc1",
-                query: "First question",
-                response: "First answer",
-                agent_type: "page_assistant",
-                timestamp: "2025-06-15T10:00:00Z",
-                feedback: null,
-                message_count: 2,
-            },
-            {
-                id: "enc2",
-                query: "Second question",
-                response: "Second answer",
-                agent_type: "page_assistant",
-                timestamp: "2025-06-14T09:00:00Z",
-                feedback: 1,
-                message_count: 4,
-            },
-            {
-                id: "enc3",
-                query: "Third question",
-                response: "Third answer",
-                agent_type: "page_assistant",
-                timestamp: "2025-06-13T08:00:00Z",
-                feedback: null,
-                message_count: 2,
-            },
-        ];
-
-        it("removes deleted items from pageChatHistory", async () => {
-            server.use(
-                http.put("/api/chat/exchanges/batch/delete", ({ response }: any) => {
-                    return response(200).json({});
-                }) as any,
-            );
-            const store = usePageEditorStore();
-            store.$patch({ pageChatHistory: MOCK_HISTORY as any });
-
-            await store.deletePageChatExchanges(TEST_PAGE_ID, ["enc1", "enc3"]);
-
-            expect(store.pageChatHistory).toHaveLength(1);
-            expect(store.pageChatHistory[0]!.id).toBe("enc2");
-        });
-
-        it("clears active exchange when it is in the delete set", async () => {
-            server.use(
-                http.put("/api/chat/exchanges/batch/delete", ({ response }: any) => {
-                    return response(200).json({});
-                }) as any,
-            );
-            const store = usePageEditorStore();
-            store.$patch({ pageChatHistory: MOCK_HISTORY as any });
-            store.setCurrentChatExchangeId(TEST_PAGE_ID, "enc2");
-
-            await store.deletePageChatExchanges(TEST_PAGE_ID, ["enc2"]);
-
-            expect(store.getCurrentChatExchangeId(TEST_PAGE_ID)).toBeNull();
-        });
-
-        it("preserves active exchange when it is NOT in the delete set", async () => {
-            server.use(
-                http.put("/api/chat/exchanges/batch/delete", ({ response }: any) => {
-                    return response(200).json({});
-                }) as any,
-            );
-            const store = usePageEditorStore();
-            store.$patch({ pageChatHistory: MOCK_HISTORY as any });
-            store.setCurrentChatExchangeId(TEST_PAGE_ID, "enc2");
-
-            await store.deletePageChatExchanges(TEST_PAGE_ID, ["enc1"]);
-
-            expect(store.getCurrentChatExchangeId(TEST_PAGE_ID)).toBe("enc2");
-            expect(store.pageChatHistory).toHaveLength(2);
-        });
-
-        it("throws and leaves pageChatHistory unchanged on API error", async () => {
-            server.use(
-                http.put("/api/chat/exchanges/batch/delete", ({ response }: any) => {
-                    return response("5XX").json({ err_msg: "Server error", err_code: 500 }, { status: 500 });
-                }) as any,
-            );
-            const store = usePageEditorStore();
-            store.$patch({ pageChatHistory: MOCK_HISTORY as any });
-
-            await expect(store.deletePageChatExchanges(TEST_PAGE_ID, ["enc1"])).rejects.toThrow();
-
-            expect(store.pageChatHistory).toHaveLength(3);
-        });
-    });
-
     describe("standalone mode", () => {
         const STANDALONE_PAGE: HistoryPageDetails = {
             ...TEST_PAGE_DETAILS,
@@ -1445,6 +1064,64 @@ describe("usePageEditorStore", () => {
 
             expect(store.selectedRevision).toBeNull();
             expect(store.showRevisions).toBe(false);
+        });
+    });
+
+    describe("chatError", () => {
+        it("is null by default", () => {
+            const store = usePageEditorStore();
+            expect(store.chatError).toBeNull();
+        });
+
+        it("is reset to null on clearCurrentPage", () => {
+            const store = usePageEditorStore();
+            store.chatError = "some error";
+            store.clearCurrentPage();
+            expect(store.chatError).toBeNull();
+        });
+
+        it("is reset to null on $reset", () => {
+            const store = usePageEditorStore();
+            store.chatError = "some error";
+            store.$reset();
+            expect(store.chatError).toBeNull();
+        });
+    });
+
+    describe("chat exchange IDs", () => {
+        it("returns null for an unknown page", () => {
+            const store = usePageEditorStore();
+            expect(store.getCurrentChatExchangeId("page-1")).toBeNull();
+        });
+
+        it("stores and retrieves an exchange ID per page", () => {
+            const store = usePageEditorStore();
+            store.setCurrentChatExchangeId("page-1", "exchange-abc");
+            expect(store.getCurrentChatExchangeId("page-1")).toBe("exchange-abc");
+        });
+
+        it("isolates IDs across different pages", () => {
+            const store = usePageEditorStore();
+            store.setCurrentChatExchangeId("page-1", "ex-1");
+            store.setCurrentChatExchangeId("page-2", "ex-2");
+            expect(store.getCurrentChatExchangeId("page-1")).toBe("ex-1");
+            expect(store.getCurrentChatExchangeId("page-2")).toBe("ex-2");
+        });
+
+        it("clears a specific page ID without affecting others", () => {
+            const store = usePageEditorStore();
+            store.setCurrentChatExchangeId("page-1", "ex-1");
+            store.setCurrentChatExchangeId("page-2", "ex-2");
+            store.clearCurrentChatExchangeId("page-1");
+            expect(store.getCurrentChatExchangeId("page-1")).toBeNull();
+            expect(store.getCurrentChatExchangeId("page-2")).toBe("ex-2");
+        });
+
+        it("overrides an existing entry when set again", () => {
+            const store = usePageEditorStore();
+            store.setCurrentChatExchangeId("page-1", "ex-1");
+            store.setCurrentChatExchangeId("page-1", "ex-2");
+            expect(store.getCurrentChatExchangeId("page-1")).toBe("ex-2");
         });
     });
 });

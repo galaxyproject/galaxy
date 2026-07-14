@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Optional,
 )
 
 import pytest
@@ -237,7 +236,7 @@ class MockHistoryDatasetAssociation:
         self.deleted = False
         self.dataset = test_dataset
         self.visible = True
-        self.conversion_destination: tuple[bool, Optional[str], Optional[Any]] = (True, None, None)
+        self.conversion_destination: tuple[bool, str | None, Any | None] = (True, None, None)
         self.extension = "txt"
         self.dbkey = "hg19"
         self.implicitly_converted_parent_datasets = False

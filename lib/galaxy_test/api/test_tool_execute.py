@@ -947,6 +947,48 @@ def test_deferred_multi_input(required_tool: RequiredTool, target_history: Targe
     output.assert_contains("chr1    4225    19670")
 
 
+def _assert_input_is_compressed_fasta_gz(target_history: TargetHistory, has_src_dict) -> None:
+    details = target_history._dataset_populator.get_history_dataset_details(
+        target_history.id, dataset_id=has_src_dict.id, assert_ok=False
+    )
+    assert (
+        details["file_ext"] == "fasta.gz"
+    ), f"Test precondition failed: input HDA was stored as {details['file_ext']!r}, not compressed 'fasta.gz'"
+
+
+@requires_tool_id("implicit_conversion")
+def test_implicit_gz_conversion_sync(required_tool: RequiredTool, target_history: TargetHistory):
+    # Upload a compressed fasta.gz HDA (kept compressed, ext=fasta.gz). The tool wants
+    # tabular, so this needs a double implicit conversion fasta.gz -> fasta -> tabular.
+    has_src_dict = target_history.with_dataset_for_test_file("1.fasta.gz", file_type="fasta.gz")
+    _assert_input_is_compressed_fasta_gz(target_history, has_src_dict)
+    inputs = {"input1": has_src_dict.src_dict}
+    output = required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("hg17")
+
+
+@requires_tool_id("implicit_conversion")
+def test_implicit_gz_conversion_async(required_tool: RequiredTool, target_history: TargetHistory):
+    # Same as the sync test above but submitted via the tool-request (async) API. This
+    # reproduces the bug where the async path runs the tool against the raw fasta.gz
+    # instead of the implicitly-converted (decompressed) dataset.
+    has_src_dict = target_history.with_dataset_for_test_file("1.fasta.gz", file_type="fasta.gz")
+    inputs = {"input1": has_src_dict.src_dict}
+    output = required_tool.execute().with_request(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("hg17")
+
+
+@requires_tool_id("implicit_conversion")
+def test_implicit_gz_conversion_async_deferred(required_tool: RequiredTool, target_history: TargetHistory):
+    # Same conversion, but the fasta.gz input is a DEFERRED dataset (as the async
+    # tool-request test harness stages test data). It is materialized at job time; the
+    # question is whether the implicit fasta.gz -> fasta decompression still happens.
+    has_src_dict = target_history.with_deferred_dataset_for_test_file("1.fasta.gz", ext="fasta.gz")
+    inputs = {"input1": has_src_dict.src_dict}
+    output = required_tool.execute().with_request(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("hg17")
+
+
 @requires_tool_id("collection_mixed_param")
 def test_combined_mapping_and_subcollection_mapping(
     target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs

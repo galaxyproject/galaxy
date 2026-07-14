@@ -126,39 +126,42 @@ describe("PageRevisionView", () => {
             expect(wrapper.find('[data-description="revision compare previous button"]').exists()).toBe(false);
         });
 
-        it("preview button is primary in preview mode", () => {
+        it("preview button is pressed in preview mode", () => {
             const wrapper = mountComponent({ viewMode: "preview" });
             const previewBtn = wrapper.find('[data-description="revision preview button"]');
-            expect(previewBtn.attributes("variant")).toBe("primary");
+            expect(previewBtn.props("pressed")).toBe(true);
         });
 
-        it("compare current button is primary in changes_current mode", () => {
+        it("compare current button is pressed in changes_current mode", () => {
             const wrapper = mountComponent({ viewMode: "changes_current" });
             const btn = wrapper.find('[data-description="revision compare current button"]');
-            expect(btn.attributes("variant")).toBe("primary");
+            expect(btn.props("pressed")).toBe(true);
         });
 
-        it("compare previous button is primary in changes_previous mode", () => {
+        it("compare previous button is pressed in changes_previous mode", () => {
             const wrapper = mountComponent({ viewMode: "changes_previous" });
             const btn = wrapper.find('[data-description="revision compare previous button"]');
-            expect(btn.attributes("variant")).toBe("primary");
+            expect(btn.props("pressed")).toBe(true);
         });
 
         it("clicking Compare to Current emits update:viewMode with 'changes_current'", async () => {
             const wrapper = mountComponent({ viewMode: "preview" });
-            await wrapper.find('[data-description="revision compare current button"]').trigger("click");
+            wrapper.find('[data-description="revision compare current button"]').vm.$emit("click");
+            await wrapper.vm.$nextTick();
             expect(wrapper.emitted("update:viewMode")).toEqual([["changes_current"]]);
         });
 
         it("clicking Compare to Previous emits update:viewMode with 'changes_previous'", async () => {
             const wrapper = mountComponent({ viewMode: "preview" });
-            await wrapper.find('[data-description="revision compare previous button"]').trigger("click");
+            wrapper.find('[data-description="revision compare previous button"]').vm.$emit("click");
+            await wrapper.vm.$nextTick();
             expect(wrapper.emitted("update:viewMode")).toEqual([["changes_previous"]]);
         });
 
         it("clicking Preview emits update:viewMode with 'preview'", async () => {
             const wrapper = mountComponent({ viewMode: "changes_current" });
-            await wrapper.find('[data-description="revision preview button"]').trigger("click");
+            wrapper.find('[data-description="revision preview button"]').vm.$emit("click");
+            await wrapper.vm.$nextTick();
             expect(wrapper.emitted("update:viewMode")).toEqual([["preview"]]);
         });
     });
@@ -181,19 +184,22 @@ describe("PageRevisionView", () => {
 
         it("restore button emits restore with revision id", async () => {
             const wrapper = mountComponent();
-            await wrapper.find('[data-description="revision restore button"]').trigger("click");
+            wrapper.find('[data-description="revision restore button"]').vm.$emit("click");
+            await wrapper.vm.$nextTick();
             expect(wrapper.emitted("restore")).toEqual([[REVISION.id]]);
         });
 
         it("back button emits back in preview mode", async () => {
             const wrapper = mountComponent({ viewMode: "preview" });
-            await wrapper.find('[data-description="revision back button"]').trigger("click");
+            wrapper.find('[data-description="revision back button"]').vm.$emit("click");
+            await wrapper.vm.$nextTick();
             expect(wrapper.emitted("back")).toHaveLength(1);
         });
 
         it("back button emits back in changes_current mode", async () => {
             const wrapper = mountComponent({ viewMode: "changes_current" });
-            await wrapper.find('[data-description="revision back button"]').trigger("click");
+            wrapper.find('[data-description="revision back button"]').vm.$emit("click");
+            await wrapper.vm.$nextTick();
             expect(wrapper.emitted("back")).toHaveLength(1);
         });
     });

@@ -4,9 +4,7 @@ from typing import (
     Any,
     cast,
     NamedTuple,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy.model.migrations import (
@@ -72,7 +70,7 @@ class Config:
     integrated_tool_panel_config: str
     shed_tool_config_file: str
     shed_tool_data_path: str
-    migrated_tools_config: Optional[str] = None
+    migrated_tools_config: str | None = None
     shed_tools_dir: str
     edam_panel_views: list = []
     tool_configs: list = []
@@ -111,7 +109,7 @@ class TestToolBox(AbstractToolBox):
         return tool
 
     def _get_tool_shed_repository(
-        self, tool_shed: str, name: str, owner: str, installed_changeset_revision: Optional[str]
+        self, tool_shed: str, name: str, owner: str, installed_changeset_revision: str | None
     ) -> "ToolShedRepository":
         return get_installed_repository(
             self.app,
@@ -155,13 +153,13 @@ class StandaloneDataManagers(DataManagersInterface):
 
     def load_manager_from_elem(
         self, data_manager_elem, tool_path=None, add_manager=True
-    ) -> Optional[DataManagerInterface]:
+    ) -> DataManagerInterface | None:
         return DummyDataManager()
 
-    def get_manager(self, data_manager_id: str) -> Optional[DataManagerInterface]:
+    def get_manager(self, data_manager_id: str) -> DataManagerInterface | None:
         return None
 
-    def remove_manager(self, manager_ids: Union[str, list[str]]) -> None:
+    def remove_manager(self, manager_ids: str | list[str]) -> None:
         return None
 
     @property
@@ -176,13 +174,13 @@ class StandaloneInstallationTarget(InstallationTarget):
     security: IdEncodingHelper
     _toolbox: TestToolBox
     _toolbox_lock: threading.RLock = threading.RLock()
-    tool_shed_repository_cache: Optional[ToolShedRepositoryCache] = None
+    tool_shed_repository_cache: ToolShedRepositoryCache | None = None
     data_managers = StandaloneDataManagers()
 
     def __init__(
         self,
         target_directory: Path,
-        tool_shed_target: Optional[ToolShedTarget] = None,
+        tool_shed_target: ToolShedTarget | None = None,
     ):
         tool_root_dir = target_directory / "tools"
         config: Config = Config()
@@ -210,7 +208,7 @@ class StandaloneInstallationTarget(InstallationTarget):
             False,
         ).run()
         self.install_model = install_mapping.configure_model_mapping(install_engine)
-        registry_config: Optional[Path] = None
+        registry_config: Path | None = None
         if tool_shed_target:
             registry_config = target_directory / "tool_sheds_conf.xml"
             with registry_config.open("w") as f:
@@ -236,7 +234,7 @@ class StandaloneInstallationTarget(InstallationTarget):
         return self._tool_data_tables
 
     @property
-    def tool_dependency_dir(self) -> Optional[str]:
+    def tool_dependency_dir(self) -> str | None:
         return None
 
     def reload_toolbox(self):

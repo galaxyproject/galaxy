@@ -713,6 +713,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                                 class="mr-2 text-warning"
                                 fixed-width />
                             <span
+                                class="remote-files-browser-label"
                                 data-test-id="remote-files-browser-label"
                                 :data-label="item.label"
                                 :data-entry-kind="item.isLeaf ? 'file' : 'directory'">
@@ -941,6 +942,10 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
         &:hover {
             background-color: rgba($brand-primary, 0.05);
         }
+    }
+
+    .remote-files-browser-label {
+        text-align: start;
     }
 }
 

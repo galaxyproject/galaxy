@@ -1,8 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
 
 from galaxy.exceptions import (
@@ -22,6 +19,8 @@ from galaxy.util.config_templates import (
     TemplateVariableBoolean,
     TemplateVariableInteger,
     TemplateVariablePathComponent,
+    TemplateVariableSelect,
+    TemplateVariableSelectOption,
     TemplateVariableString,
     validate_secrets_and_variables,
 )
@@ -34,9 +33,9 @@ class TestTemplate(StrictModel):
     id: str
     type: str = "test"
     version: int
-    variables: Optional[List[TemplateVariable]]
-    secrets: Optional[List[TemplateSecret]]
-    environment: Optional[List[TemplateEnvironmentEntry]]
+    variables: list[TemplateVariable] | None
+    secrets: list[TemplateSecret] | None
+    environment: list[TemplateEnvironmentEntry] | None
 
 
 def _template_with_variable(variable: TemplateVariable) -> TestTemplate:
@@ -63,11 +62,11 @@ def _template_with_secret(name: str) -> TestTemplate:
 class TestInstanceDefinition(StrictModel):
     template_id: str
     template_version: int
-    variables: Dict[str, Any]
-    secrets: Dict[str, str]
+    variables: dict[str, Any]
+    secrets: dict[str, str]
 
 
-def _test_instance_with_variables(variables: Dict[str, Any]) -> TestInstanceDefinition:
+def _test_instance_with_variables(variables: dict[str, Any]) -> TestInstanceDefinition:
     return TestInstanceDefinition(
         template_id=TEST_TEMPLATE_ID,
         template_version=TEST_TEMPLATE_VERSION,
@@ -76,7 +75,7 @@ def _test_instance_with_variables(variables: Dict[str, Any]) -> TestInstanceDefi
     )
 
 
-def _test_instance_with_secrets(secrets: Dict[str, str]) -> TestInstanceDefinition:
+def _test_instance_with_secrets(secrets: dict[str, str]) -> TestInstanceDefinition:
     return TestInstanceDefinition(
         template_id=TEST_TEMPLATE_ID,
         template_version=TEST_TEMPLATE_VERSION,
@@ -157,6 +156,40 @@ def test_variable_typing_path_component():
     assert isinstance(e, RequestParameterInvalidException)
 
     instance = _test_instance_with_variables({"test_var": "simple_directory", "extra": "4"})
+    e = assert_validation_throws(instance, template)
+    assert isinstance(e, RequestParameterInvalidException)
+
+
+def test_variable_typing_select():
+    # A select without static options accepts any string (dynamic options are validated elsewhere).
+    template = _template_with_variable(
+        TemplateVariableSelect(name="test_var", help=None, type="select", dynamic_options="github_repository_owners")
+    )
+    instance = _test_instance_with_variables({"test_var": "galaxyproject/galaxy"})
+    validate_secrets_and_variables(instance, template)
+
+    instance = _test_instance_with_variables({"test_var": 5})
+    e = assert_validation_throws(instance, template)
+    assert isinstance(e, RequestParameterInvalidException)
+
+
+def test_variable_typing_select_static_options():
+    template = _template_with_variable(
+        TemplateVariableSelect(
+            name="test_var",
+            help=None,
+            type="select",
+            options=[
+                TemplateVariableSelectOption(label="First", value="first"),
+                TemplateVariableSelectOption(label="Second", value="second"),
+            ],
+        )
+    )
+    instance = _test_instance_with_variables({"test_var": "first"})
+    validate_secrets_and_variables(instance, template)
+
+    # A value outside the declared static options is rejected.
+    instance = _test_instance_with_variables({"test_var": "third"})
     e = assert_validation_throws(instance, template)
     assert isinstance(e, RequestParameterInvalidException)
 

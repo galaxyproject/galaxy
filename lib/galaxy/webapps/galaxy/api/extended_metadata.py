@@ -5,7 +5,6 @@ API operations on annotations.
 import logging
 from typing import (
     Generic,
-    Optional,
     TypeVar,
 )
 
@@ -34,7 +33,7 @@ class BaseExtendedMetadataController(
 ):
     exmeta_item_id: str
 
-    def _get_item_from_id(self, trans, idstr, check_writable=True) -> Optional[T]: ...
+    def _get_item_from_id(self, trans, idstr, check_writable=True) -> T | None: ...
 
     @web.expose_api
     def index(self, trans, **kwd):
@@ -62,7 +61,7 @@ class LibraryDatasetExtendMetadataController(BaseExtendedMetadataController[mode
     controller_name = "library_dataset_extended_metadata"
     exmeta_item_id = "library_content_id"
 
-    def _get_item_from_id(self, trans, idstr, check_writable=True) -> Optional[model.LibraryDatasetDatasetAssociation]:
+    def _get_item_from_id(self, trans, idstr, check_writable=True) -> model.LibraryDatasetDatasetAssociation | None:
         if check_writable:
             item = self.get_library_dataset_dataset_association(trans, idstr)
             if trans.app.security_agent.can_modify_library_item(trans.get_current_user_roles(), item):
@@ -79,7 +78,7 @@ class HistoryDatasetExtendMetadataController(BaseExtendedMetadataController[mode
     exmeta_item_id = "history_content_id"
     hda_manager: managers.hdas.HDAManager = depends(managers.hdas.HDAManager)
 
-    def _get_item_from_id(self, trans, idstr, check_writable=True) -> Optional[model.HistoryDatasetAssociation]:
+    def _get_item_from_id(self, trans, idstr, check_writable=True) -> model.HistoryDatasetAssociation | None:
         decoded_idstr = self.decode_id(idstr)
         if check_writable:
             return self.hda_manager.get_owned(decoded_idstr, trans.user, current_history=trans.history)

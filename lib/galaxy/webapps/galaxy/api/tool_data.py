@@ -1,5 +1,4 @@
 from functools import partial
-from typing import Optional
 
 import anyio
 from fastapi import (
@@ -78,7 +77,7 @@ class FastAPIToolData:
         require_admin=True,
     )
     def create(
-        self, tool_data_file_path: Optional[str] = None, import_bundle_model: ImportToolDataBundle = Body(...)
+        self, tool_data_file_path: str | None = None, import_bundle_model: ImportToolDataBundle = Body(...)
     ) -> AsyncTaskResultSummary:
         source = import_bundle_model.source
         result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.model_dump())

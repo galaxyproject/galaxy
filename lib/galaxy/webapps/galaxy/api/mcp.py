@@ -9,7 +9,6 @@ import logging
 from contextlib import contextmanager
 from typing import (
     Any,
-    Optional,
 )
 from urllib.parse import urlparse
 
@@ -42,8 +41,7 @@ def get_mcp_url_builder(fallback_base_url: str):
 
     from galaxy.webapps.galaxy.api import UrlBuilder
 
-    request = _current_http_request.get(None)
-    if request is not None:
+    if (request := _current_http_request.get(None)) is not None:
         return UrlBuilder(request)
 
     class MCPUrlBuilder:
@@ -110,7 +108,7 @@ class _StaticRequest(GalaxyAbstractRequest):
     def is_secure(self) -> bool:
         return self._parsed.scheme == "https"
 
-    def get_cookie(self, name: str) -> Optional[str]:
+    def get_cookie(self, name: str) -> str | None:
         return None
 
     @property
@@ -132,13 +130,13 @@ class _StaticResponse(GalaxyAbstractResponse):
         self,
         key: str,
         value: str = "",
-        max_age: Optional[int] = None,
-        expires: Optional[int] = None,
+        max_age: int | None = None,
+        expires: int | None = None,
         path: str = "/",
-        domain: Optional[str] = None,
+        domain: str | None = None,
         secure: bool = False,
         httponly: bool = False,
-        samesite: Optional[str] = "lax",
+        samesite: str | None = "lax",
     ) -> None:
         return None
 

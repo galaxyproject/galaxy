@@ -1,7 +1,6 @@
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.managers import base as manager_base
@@ -33,7 +32,7 @@ class LDDAManager(DatasetAssociationManager[LibraryDatasetDatasetAssociation]):
             trans, id, "LibraryDatasetDatasetAssociation", check_ownership=False, check_accessible=check_accessible
         )
 
-    def is_owner(self, item, user: Optional[User], **kwargs: Any) -> bool:
+    def is_owner(self, item, user: User | None, **kwargs: Any) -> bool:
         """
         Return True if user owns the item.
         """

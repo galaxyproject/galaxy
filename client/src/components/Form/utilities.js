@@ -190,8 +190,9 @@ function _buildLevel(inputs, formData, prefix) {
                 const condResult = {};
                 if (node.test_param) {
                     const testKey = `${flatKey}|${node.test_param.name}`;
-                    condResult[node.test_param.name] = _convertValue(node.test_param, formData[testKey]);
-                    const selectedCase = matchCase(node, node.test_param.value);
+                    const testValue = _convertValue(node.test_param, formData[testKey]);
+                    condResult[node.test_param.name] = testValue;
+                    const selectedCase = matchCase(node, testValue ?? node.test_param.value);
                     if (selectedCase !== -1) {
                         Object.assign(condResult, _buildLevel(node.cases[selectedCase].inputs, formData, flatKey));
                     }

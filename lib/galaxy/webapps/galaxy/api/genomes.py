@@ -53,7 +53,9 @@ FormatQueryParam: str = Query(None, title="Format", description="Format")
 ReferenceQueryParam: bool = Query(None, title="Reference", description="If true, return reference data")
 
 IndexTypeQueryParam: str = Query(
-    "fasta_indexes", title="Index type", description="Index type"  # currently this is the only supported index type
+    "fasta_indexes",
+    title="Index type",
+    description="Index type",  # currently this is the only supported index type
 )
 
 

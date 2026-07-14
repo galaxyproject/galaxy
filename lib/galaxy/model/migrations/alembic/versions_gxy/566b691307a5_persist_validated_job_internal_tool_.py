@@ -6,6 +6,7 @@ Create Date: 2025-09-30 04:48:19.727414
 
 """
 
+from alembic import op
 from sqlalchemy import (
     Column,
     Integer,
@@ -55,7 +56,18 @@ def upgrade():
         # Add tool_source.source_class as a new NOT NULL string column
         add_column(
             tool_source_table_name,
-            Column(tool_source_source_class_column, String(255), nullable=False),
+            Column(tool_source_source_class_column, String(255)),
+        )
+
+        # Set tool_source.source_class on existing rows
+        op.execute("UPDATE tool_source SET source_class = 'YamlToolSource' WHERE source_class IS NULL")
+
+        # Set nullable on tool_source.source_class
+        alter_column(
+            tool_source_table_name,
+            tool_source_source_class_column,
+            existing_type=String(255),
+            nullable=False,
         )
 
 

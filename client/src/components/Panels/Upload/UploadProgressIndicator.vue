@@ -11,11 +11,13 @@ const emit = defineEmits<{
     (e: "show-details"): void;
 }>();
 
+const hasActiveUploads = computed(() => uploads.value.some((f) => f.status !== "completed" && f.status !== "error"));
+
 const statusIcon = computed(() => {
     if (errorCount.value > 0) {
         return faTimes;
     }
-    if (uploadingCount.value > 0) {
+    if (hasActiveUploads.value) {
         return faSpinner;
     }
     return faCheck;
@@ -25,14 +27,14 @@ const statusClass = computed(() => {
     if (errorCount.value > 0) {
         return "text-danger";
     }
-    if (uploadingCount.value > 0) {
+    if (hasActiveUploads.value) {
         return "text-primary";
     }
     return "text-success";
 });
 
 const statusText = computed(() => {
-    if (uploadingCount.value > 0 || uploads.value.some((f) => f.status === "queued")) {
+    if (hasActiveUploads.value) {
         return "Uploading";
     }
     if (uploads.value.length > 0 && completedCount.value === uploads.value.length) {

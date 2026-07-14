@@ -105,6 +105,24 @@ describe("chatStore", () => {
         });
     });
 
+    describe("requestNewChat", () => {
+        it("bumps the request counter so chat surfaces reset even when the id would not change", () => {
+            const store = useChatStore();
+            expect(store.newChatRequestCount).toBe(0);
+            store.requestNewChat();
+            expect(store.newChatRequestCount).toBe(1);
+            store.requestNewChat();
+            expect(store.newChatRequestCount).toBe(2);
+        });
+
+        it("clears the active chat id", () => {
+            const store = useChatStore();
+            store.setActiveChatId("abc");
+            store.requestNewChat();
+            expect(store.activeChatId).toBeNull();
+        });
+    });
+
     describe("deleteChats", () => {
         it("removes the given ids from history", () => {
             const store = useChatStore();

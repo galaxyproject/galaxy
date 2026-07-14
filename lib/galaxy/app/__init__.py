@@ -9,7 +9,6 @@ import time
 from collections.abc import Callable
 from typing import (
     Any,
-    Optional,
 )
 
 from beaker.cache import CacheManager
@@ -78,7 +77,10 @@ from galaxy.managers.notification import NotificationManager
 from galaxy.managers.object_store_instances import UserObjectStoreResolverImpl
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
-from galaxy.managers.sse import SSEConnectionManager
+from galaxy.managers.sse import (
+    SSEConnectionGaugeEmitter,
+    SSEConnectionManager,
+)
 from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.managers.tasks import (
     AsyncTasksManager,
@@ -99,7 +101,10 @@ from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
 )
-from galaxy.model.database_heartbeat import DatabaseHeartbeat
+from galaxy.model.database_heartbeat import (
+    DatabaseHeartbeat,
+    WEBAPP,
+)
 from galaxy.model.database_utils import (
     database_exists,
     is_one_database,
@@ -293,8 +298,8 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     container_finder: containers.ContainerFinder
     install_model: ModelMapping
     object_store: BaseObjectStore
-    _tool_data_tables: Optional[BaseToolDataTableManager]
-    _genome_builds: Optional[GenomeBuilds]
+    _tool_data_tables: BaseToolDataTableManager | None
+    _genome_builds: GenomeBuilds | None
 
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
@@ -341,7 +346,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         if self.config.fluent_log:
             from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
 
-            self.trace_logger: Optional[FluentTraceLogger] = FluentTraceLogger(
+            self.trace_logger: FluentTraceLogger | None = FluentTraceLogger(
                 "galaxy", self.config.fluent_host, self.config.fluent_port
             )
         else:
@@ -610,7 +615,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 time.sleep(pause)
 
     @property
-    def tool_dependency_dir(self) -> Optional[str]:
+    def tool_dependency_dir(self) -> str | None:
         return self.toolbox.dependency_manager.default_base_path
 
     def _shutdown_object_store(self):
@@ -845,6 +850,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             ("queue worker", self._shutdown_queue_worker),
             ("file watcher", self._shutdown_watcher),
             ("database heartbeat", self._shutdown_database_heartbeat),
+            ("SSE connection gauge emitter", self._shutdown_sse_connection_gauge_emitter),
             ("history audit monitor", self._shutdown_history_audit_monitor),
             ("workflow scheduler", self._shutdown_scheduling_manager),
             ("object store", self._shutdown_object_store),
@@ -986,7 +992,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # but monitor only runs on workflow scheduler processes)
         self.workflow_completion_manager = WorkflowCompletionManager(self)
         self.workflow_completion_hook_registry = WorkflowCompletionHookRegistry(self)
-        self.workflow_completion_monitor: Optional[WorkflowCompletionMonitor] = None
+        self.workflow_completion_monitor: WorkflowCompletionMonitor | None = None
         if self.workflow_scheduling_manager._is_workflow_handler():
             self.workflow_completion_monitor = WorkflowCompletionMonitor(
                 self,
@@ -1014,7 +1020,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
 
-        self.database_heartbeat = DatabaseHeartbeat(application_stack=self.application_stack)
+        self.database_heartbeat = DatabaseHeartbeat(
+            application_stack=self.application_stack,
+            app_type=WEBAPP if self.is_webapp else None,
+        )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
@@ -1027,6 +1036,31 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         if self.config.enable_sse_updates:
             monitor = self._register_singleton(HistoryAuditMonitor)
             self.database_heartbeat.add_audit_monitor_change_callback(monitor.on_role_change)
+
+        # Per-worker SSE connection-count gauge. The SSEConnectionManager is
+        # per-process state, so it must be sampled here in each web worker
+        # rather than from the Celery beat task (which holds no connections and
+        # would always report zero). Opt-in (enable_sse_connection_metrics) and
+        # only when statsd is actually configured (a non-None client) and the
+        # shared queue_metrics_interval cadence is enabled. The server_name is
+        # read post-fork so each worker tags its own series.
+        self.sse_connection_gauge_emitter: SSEConnectionGaugeEmitter | None = None
+        statsd_client = self.execution_timer_factory.galaxy_statsd_client
+        if (
+            statsd_client is not None
+            and self.config.enable_sse_connection_metrics
+            and self.config.queue_metrics_interval > 0
+        ):
+
+            def _start_sse_connection_gauge_emitter():
+                self.sse_connection_gauge_emitter = SSEConnectionGaugeEmitter(
+                    self[SSEConnectionManager],
+                    self.config.server_name,
+                    interval=self.config.queue_metrics_interval,
+                )
+                self.sse_connection_gauge_emitter.start()
+
+            self.application_stack.register_postfork_function(_start_sse_connection_gauge_emitter)
 
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
@@ -1061,6 +1095,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
 
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()
+
+    def _shutdown_sse_connection_gauge_emitter(self):
+        if self.sse_connection_gauge_emitter is not None:
+            self.sse_connection_gauge_emitter.shutdown()
 
     def _shutdown_history_audit_monitor(self):
         if not self.config.enable_sse_updates:
@@ -1099,7 +1137,7 @@ class ExecutionTimerFactory:
         if statsd_host := getattr(config, "statsd_host", None):
             from galaxy.web.statsd_client import GalaxyStatsdClient
 
-            self.galaxy_statsd_client: Optional[GalaxyStatsdClient] = GalaxyStatsdClient(
+            self.galaxy_statsd_client: GalaxyStatsdClient | None = GalaxyStatsdClient(
                 statsd_host,
                 getattr(config, "statsd_port", 8125),
                 getattr(config, "statsd_prefix", "galaxy"),

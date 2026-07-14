@@ -2,7 +2,6 @@ import abc
 from collections.abc import Callable
 from typing import (
     Any,
-    Optional,
 )
 from unittest import SkipTest
 
@@ -37,7 +36,7 @@ class UsesShedApi:
         name: str,
         changeset: str,
         tool_shed_url: str = DEFAULT_TOOL_SHED_URL,
-        tool_panel_section_id: Optional[str] = None,
+        tool_panel_section_id: str | None = None,
     ) -> dict[str, Any]:
         payload = {"tool_shed_url": tool_shed_url, "name": name, "owner": owner, "changeset_revision": changeset}
         if tool_panel_section_id:
@@ -52,7 +51,7 @@ class UsesShedApi:
         name: str,
         changeset: str,
         tool_shed_url: str = DEFAULT_TOOL_SHED_URL,
-        tool_panel_section_id: Optional[str] = None,
+        tool_panel_section_id: str | None = None,
     ) -> dict[str, Any]:
         try:
             return self.repository_operation(
@@ -76,7 +75,7 @@ class UsesShedApi:
         )
 
     def index_repositories(
-        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
+        self, owner: str | None = None, name: str | None = None, changeset: str | None = None
     ) -> list[dict[str, Any]]:
         params: dict[str, str] = {}
         if owner is not None:
@@ -92,8 +91,8 @@ class UsesShedApi:
         return response.json()
 
     def get_installed_repository_for(
-        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
-    ) -> Optional[dict[str, Any]]:
+        self, owner: str | None = None, name: str | None = None, changeset: str | None = None
+    ) -> dict[str, Any] | None:
         index = self.index_repositories(owner, name, changeset)
         if len(index) == 0:
             return None

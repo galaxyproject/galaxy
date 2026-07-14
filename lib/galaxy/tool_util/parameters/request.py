@@ -2,12 +2,8 @@
 
 from typing import (
     Any,
-    Dict,
-    List,
     Literal,
     NamedTuple,
-    Optional,
-    Set,
 )
 
 from boltons.iterutils import remap
@@ -25,10 +21,10 @@ class RequestInputRef(NamedTuple):
 class RequestUrlInputRef(NamedTuple):
     input_name: str
     url: str
-    request: Dict[str, Any]
+    request: dict[str, Any]
 
 
-_SRC_TO_CONTENT_TYPE: Dict[str, RequestInputContentType] = {
+_SRC_TO_CONTENT_TYPE: dict[str, RequestInputContentType] = {
     "hda": "dataset",
     "hdca": "collection",
     "dce": "dataset_collection_element",
@@ -37,15 +33,15 @@ _SRC_TO_CONTENT_TYPE: Dict[str, RequestInputContentType] = {
 
 def request_internal_input_refs(
     payload: dict,
-    allowed_srcs: Optional[Set[str]] = None,
-) -> List[RequestInputRef]:
+    allowed_srcs: set[str] | None = None,
+) -> list[RequestInputRef]:
     """Walk a request_internal payload and return declared data refs.
 
     The walk intentionally follows the same ``remap`` idiom used by job
     request handling: when visiting an ``id`` leaf, inspect the sibling ``src``
     value on the parent container to decide whether the value is a data ref.
     """
-    refs: List[RequestInputRef] = []
+    refs: list[RequestInputRef] = []
 
     def visit(path, key, value):
         if key == "id" and isinstance(value, int) and not isinstance(value, bool):
@@ -64,9 +60,9 @@ def request_internal_input_refs(
     return refs
 
 
-def request_internal_url_inputs(payload: dict) -> List[RequestUrlInputRef]:
+def request_internal_url_inputs(payload: dict) -> list[RequestUrlInputRef]:
     """Walk a request_internal payload and return declared URL inputs."""
-    refs: List[RequestUrlInputRef] = []
+    refs: list[RequestUrlInputRef] = []
 
     def visit(path, key, value):
         if key == "url" and isinstance(value, str):
@@ -83,7 +79,7 @@ def request_internal_url_inputs(payload: dict) -> List[RequestUrlInputRef]:
 
 def _input_name_from_request_path(path) -> str:
     """Convert a request payload path to a workflow input connection name."""
-    parts: List[str] = []
+    parts: list[str] = []
     i = 0
     while i < len(path):
         segment = path[i]

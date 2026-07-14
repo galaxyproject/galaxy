@@ -1,8 +1,6 @@
 import urllib.parse
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from galaxy_test.api._framework import ApiTestCase
@@ -336,8 +334,8 @@ class TestHistoryContentsApi(ApiTestCase):
         history_id: str,
         content_id: str,
         item_type: str,
-        expected_view: Optional[str] = None,
-        expected_keys: Optional[list[str]] = None,
+        expected_view: str | None = None,
+        expected_keys: list[str] | None = None,
     ):
         view = f"&view={expected_view}" if expected_view else ""
         keys = f"&keys={','.join(expected_keys)}" if expected_keys else ""
@@ -480,7 +478,7 @@ class TestHistoryContentsApi(ApiTestCase):
         hda = self.dataset_populator.get_history_dataset_details(history_id=history_id, content_id=dataset["id"])
         assert hda["name"] != dataset["name"]
         with self._different_user():
-            exception: Union[Exception, None] = None
+            exception: Exception | None = None
             try:
                 self.dataset_populator.rename_dataset(dataset["id"])
             except AssertionError as e:
@@ -498,7 +496,7 @@ class TestHistoryContentsApi(ApiTestCase):
         )
         assert hdca["name"] != dataset_collection["name"]
         with self._different_user():
-            exception: Union[Exception, None] = None
+            exception: Exception | None = None
             try:
                 self.dataset_populator.rename_collection(dataset_collection_id)
             except AssertionError as e:
@@ -1813,15 +1811,15 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
     def _get_hidden_items_from_history_contents(self, history_contents) -> list[Any]:
         return [content for content in history_contents if not content["visible"]]
 
-    def _get_collection_with_id_from_history_contents(self, history_contents, collection_id: str) -> Optional[Any]:
+    def _get_collection_with_id_from_history_contents(self, history_contents, collection_id: str) -> Any | None:
         return self._get_item_with_id_from_history_contents(history_contents, "dataset_collection", collection_id)
 
-    def _get_dataset_with_id_from_history_contents(self, history_contents, dataset_id: str) -> Optional[Any]:
+    def _get_dataset_with_id_from_history_contents(self, history_contents, dataset_id: str) -> Any | None:
         return self._get_item_with_id_from_history_contents(history_contents, "dataset", dataset_id)
 
     def _get_item_with_id_from_history_contents(
         self, history_contents, history_content_type: str, dataset_id: str
-    ) -> Optional[Any]:
+    ) -> Any | None:
         for item in history_contents:
             if item["history_content_type"] == history_content_type and item["id"] == dataset_id:
                 return item

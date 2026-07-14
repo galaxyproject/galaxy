@@ -13,7 +13,6 @@ A sharable Galaxy object:
 import logging
 from typing import (
     Any,
-    Optional,
     TypeVar,
 )
 
@@ -70,7 +69,7 @@ class SharableModelManager(
     user_share_model: type[UserShareAssociation]
 
     #: the single character abbreviation used in username_and_slug: e.g. 'h' for histories: u/user/h/slug
-    SINGLE_CHAR_ABBR: Optional[str] = None
+    SINGLE_CHAR_ABBR: str | None = None
 
     def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
@@ -89,7 +88,7 @@ class SharableModelManager(
         return self.list(filters=filters, **kwargs)
 
     # .... owned/accessible interfaces
-    def is_owner(self, item: model.Base, user: Optional[User], **kwargs: Any) -> bool:
+    def is_owner(self, item: model.Base, user: User | None, **kwargs: Any) -> bool:
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
@@ -98,7 +97,7 @@ class SharableModelManager(
             return True
         return item.user == user  # type: ignore[attr-defined]
 
-    def is_accessible(self, item, user: Optional[User], **kwargs: Any) -> bool:
+    def is_accessible(self, item, user: User | None, **kwargs: Any) -> bool:
         """
         If the item is importable, is owned by `user`, or (the valid) `user`
         is in 'users shared with' list for the item: return True.
@@ -245,8 +244,8 @@ class SharableModelManager(
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
     def get_sharing_extra_information(
-        self, trans, item, users: set[User], errors: set[str], option: Optional[SharingOptions] = None
-    ) -> Optional[ShareWithExtra]:
+        self, trans, item, users: set[User], errors: set[str], option: SharingOptions | None = None
+    ) -> ShareWithExtra | None:
         """Returns optional extra information about the shareability of the given item.
 
         This function should be overridden in the particular manager class that wants
@@ -356,7 +355,7 @@ class SharableModelSerializer(
     ratable.RatableSerializerMixin,
 ):
     # TODO: stub
-    SINGLE_CHAR_ABBR: Optional[str] = None
+    SINGLE_CHAR_ABBR: str | None = None
 
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)

@@ -8,7 +8,6 @@ import abc
 import logging
 import re
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -393,8 +392,8 @@ class Vtk:
         return dataset
 
     def set_structure_metadata(
-        self, line: str, dataset: DatasetProtocol, dataset_type: Optional[str]
-    ) -> tuple[DatasetProtocol, Optional[str]]:
+        self, line: str, dataset: DatasetProtocol, dataset_type: str | None
+    ) -> tuple[DatasetProtocol, str | None]:
         """
         The fourth part of legacy VTK files is the dataset structure. The
         geometry part describes the geometry and topology of the dataset.
@@ -685,7 +684,7 @@ class NeperPoints(data.Text):
             with open(dataset.get_file_name(), errors="ignore") as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
 
-    def _get_dimension(self, fh: "TextIOBase", maxlines: int = 100, sep: Optional[str] = None) -> Optional[float]:
+    def _get_dimension(self, fh: "TextIOBase", maxlines: int = 100, sep: str | None = None) -> float | None:
         dim = None
         try:
             for i, line in enumerate(fh):
@@ -1030,14 +1029,12 @@ class GocadSGrid(data.Text):
     MetadataElement(name="name", default=None, desc="Grid name", readonly=True, optional=True, visible=True)
 
     def extract_version(self, line: str) -> str:
-        match = re.search(r"GOCAD SGrid\s+([\d.]+)", line)
-        if match:
+        if match := re.search(r"GOCAD SGrid\s+([\d.]+)", line):
             return match.group(1)
         return "?"
 
     def extract_name(self, line: str) -> str:
-        match = re.search(r"name:\s*(.*)", line)
-        if match:
+        if match := re.search(r"name:\s*(.*)", line):
             return match.group(1).strip()
         return "?"
 
@@ -1082,8 +1079,7 @@ class FeflowFem(data.Text):
     MetadataElement(name="problem_type", default=None, desc="Problem type", readonly=True, optional=True, visible=True)
 
     def extract_version(self, line: str) -> str:
-        match = re.search(r"\(([Vv][^)]+)\)", line)
-        if match:
+        if match := re.search(r"\(([Vv][^)]+)\)", line):
             return match.group(1)
         return "?"
 

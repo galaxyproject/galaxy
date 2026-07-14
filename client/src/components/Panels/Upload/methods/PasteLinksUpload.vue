@@ -84,7 +84,13 @@ function createPasteUrlItem(id: number, url: string, name: string): PasteUrlItem
 
 const urlItems = ref<PasteUrlItem[]>([]);
 const urlText = ref("");
-const showInputArea = ref(true);
+const showInputOverride = ref(false);
+const showInputArea = computed(() => {
+    if (urlItems.value.length > 0) {
+        return showInputOverride.value;
+    }
+    return true;
+});
 const { clear: clearStaging } = useUploadStaging<PasteUrlItem>(props.method.id, urlItems, {
     disableStore: props.transient,
 });
@@ -143,16 +149,16 @@ function addUrlsFromText() {
     }
 
     urlText.value = "";
-    showInputArea.value = false;
+    showInputOverride.value = false;
     scrollToBottom();
 }
 
 function showUrlInput() {
-    showInputArea.value = true;
+    showInputOverride.value = true;
 }
 
 function showUrlList() {
-    showInputArea.value = false;
+    showInputOverride.value = false;
 }
 
 function scrollToBottom() {
@@ -168,7 +174,7 @@ function removeItem(id: number) {
     urlItems.value = urlItems.value.filter((item) => item.id !== id);
 
     if (urlItems.value.length === 0) {
-        showInputArea.value = true;
+        showInputOverride.value = false;
         resetCollection();
     }
 }
@@ -221,7 +227,7 @@ function reset() {
     urlItems.value = [];
     urlText.value = "";
     clearStaging();
-    showInputArea.value = true;
+    showInputOverride.value = false;
     resetCollection();
 }
 

@@ -23,6 +23,7 @@ const localVue = getLocalVue();
 
 const WORKFLOW_ID = "workflow-abc123";
 const WORKFLOW_NAME = "My Test Workflow";
+const INPUT_SELECTOR = "[data-description='workflow name input']";
 
 async function mountRenameModal(name = WORKFLOW_NAME) {
     const wrapper = mount(RenameModal as object, {
@@ -52,7 +53,7 @@ describe("RenameModal tested for renaming workflows", () => {
 
         const wrapper = await mountRenameModal();
 
-        await createWrapper(document.body).find("#workflow-name-input").setValue("Renamed Workflow");
+        await createWrapper(document.body).find(INPUT_SELECTOR).setValue("Renamed Workflow");
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
@@ -65,7 +66,7 @@ describe("RenameModal tested for renaming workflows", () => {
 
         const wrapper = await mountRenameModal();
 
-        await createWrapper(document.body).find("#workflow-name-input").setValue("Attempted New Name");
+        await createWrapper(document.body).find(INPUT_SELECTOR).setValue("Attempted New Name");
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
@@ -77,7 +78,7 @@ describe("RenameModal tested for renaming workflows", () => {
         // Simulate parent closing and reopening the modal (destroys old instance)
         wrapper.destroy();
         await mountRenameModal();
-        expect((createWrapper(document.body).find("#workflow-name-input").element as HTMLInputElement).value).toBe(
+        expect((createWrapper(document.body).find(INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
             WORKFLOW_NAME,
         );
     });

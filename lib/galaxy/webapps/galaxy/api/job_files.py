@@ -6,7 +6,6 @@ import logging
 import os
 import re
 import shutil
-from typing import Union
 
 from galaxy import (
     exceptions,
@@ -230,7 +229,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         """Check if is an output path for this job or a file in the an
         output's extra files path.
         """
-        all_output_assocs: list[Union[JobToOutputDatasetAssociation, JobToOutputLibraryDatasetAssociation]] = [
+        all_output_assocs: list[JobToOutputDatasetAssociation | JobToOutputLibraryDatasetAssociation] = [
             *job.output_datasets,
             *job.output_library_datasets,
         ]

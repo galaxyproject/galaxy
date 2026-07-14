@@ -28,7 +28,6 @@ TEST_TOOL_IDS = [
 
 
 class TestRucioObjectStoreIntegration(BaseRucioObjectStoreIntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

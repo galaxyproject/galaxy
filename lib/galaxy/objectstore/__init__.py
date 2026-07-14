@@ -5,6 +5,8 @@ all providers ensure that data can be accessed on the filesystem for running
 tools
 """
 
+from __future__ import annotations
+
 import abc
 import logging
 import os
@@ -12,15 +14,11 @@ import random
 import shutil
 import threading
 import time
+from dataclasses import dataclass
 from typing import (
     Any,
-    Dict,
-    List,
+    Literal,
     NamedTuple,
-    Optional,
-    Set,
-    Tuple,
-    Type,
     TYPE_CHECKING,
 )
 from uuid import uuid4
@@ -28,7 +26,6 @@ from uuid import uuid4
 import yaml
 from pydantic import BaseModel
 from typing_extensions import (
-    Literal,
     Protocol,
 )
 
@@ -66,6 +63,7 @@ if TYPE_CHECKING:
     from galaxy.model import (
         Dataset,
         DatasetInstance,
+        User,
     )
 
 NO_SESSION_ERROR_MESSAGE = (
@@ -80,7 +78,13 @@ USER_OBJECTS_SCHEME = "user_objects://"
 log = logging.getLogger(__name__)
 
 
-def is_user_object_store(object_store_id: Optional[str]) -> bool:
+@dataclass(frozen=True)
+class ObjectStoreAuth:
+    user: User | None = None
+    token: str | None = None
+
+
+def is_user_object_store(object_store_id: str | None) -> bool:
     return object_store_id is not None and object_store_id.startswith(USER_OBJECTS_SCHEME)
 
 
@@ -88,19 +92,19 @@ class UserObjectStoreResolver(Protocol):
     def resolve_object_store_uri_config(self, uri: str) -> ObjectStoreConfiguration:
         pass
 
-    def resolve_object_store_uri(self, uri: str) -> "ConcreteObjectStore":
+    def resolve_object_store_uri(self, uri: str) -> ConcreteObjectStore:
         pass
 
 
 class BaseUserObjectStoreResolver(UserObjectStoreResolver, metaclass=abc.ABCMeta):
-    _app_config: "UserObjectStoresAppConfig"
+    _app_config: UserObjectStoresAppConfig
 
     @abc.abstractmethod
     def resolve_object_store_uri_config(self, uri: str) -> ObjectStoreConfiguration:
         """Resolve the supplied object store URI into a concrete object store configuration."""
         pass
 
-    def resolve_object_store_uri(self, uri: str) -> "ConcreteObjectStore":
+    def resolve_object_store_uri(self, uri: str) -> ConcreteObjectStore:
         object_store_configuration = self.resolve_object_store_uri_config(uri)
         return concrete_object_store(object_store_configuration, self._app_config)
 
@@ -229,6 +233,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir: bool = False,
+        auth: ObjectStoreAuth | None = None,
     ) -> bool:
         """
         Delete the object identified by `obj`.
@@ -277,6 +282,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         alt_name=None,
         obj_dir: bool = False,
         sync_cache: bool = True,
+        auth: ObjectStoreAuth | None = None,
     ) -> str:
         """
         Get the expected filename with absolute path for object with id `obj.id`.
@@ -325,6 +331,19 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def get_direct_download_url(
+        self, obj, content_disposition: str | None = None, content_type: str | None = None
+    ) -> str | None:
+        """Return a URL a client can be redirected to in order to download `obj` directly from the backing store.
+
+        Returns None unless the concrete store supports direct access *and* the admin has opted in via the
+        ``enable_direct_download`` configuration flag. ``content_disposition`` and ``content_type``, when
+        supported by the backend, are baked into the URL so the client receives the right download filename
+        and content type.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def get_concrete_store_name(self, obj):
         """Return a display name or title of the objectstore corresponding to obj.
 
@@ -347,7 +366,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def get_concrete_store_badges(self, obj) -> List[BadgeDict]:
+    def get_concrete_store_badges(self, obj) -> list[BadgeDict]:
         """Return a list of dictified badges summarizing the object store configuration."""
 
     @abc.abstractmethod
@@ -367,16 +386,16 @@ class ObjectStore(metaclass=abc.ABCMeta):
         """Return True if this object store respects object_store_id and allow selection of this."""
         return False
 
-    def validate_selected_object_store_id(self, user, object_store_id: Optional[str]) -> Optional[str]:
+    def validate_selected_object_store_id(self, user, object_store_id: str | None) -> str | None:
         if object_store_id and not self.object_store_allows_id_selection():
             return "The current configuration doesn't allow selecting preferred object stores."
         return None
 
-    def object_store_ids_allowing_selection(self) -> List[str]:
+    def object_store_ids_allowing_selection(self) -> list[str]:
         """Return a non-emtpy list of allowed selectable object store IDs during creation."""
         return []
 
-    def get_concrete_store_by_object_store_id(self, object_store_id: str) -> Optional["ConcreteObjectStore"]:
+    def get_concrete_store_by_object_store_id(self, object_store_id: str) -> ConcreteObjectStore | None:
         """If this is a distributed object store, get ConcreteObjectStore by object_store_id."""
         return None
 
@@ -394,20 +413,20 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def cache_targets(self) -> List[CacheTarget]:
+    def cache_targets(self) -> list[CacheTarget]:
         """Return a list of CacheTargets used by this object store."""
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_quota_source_map(self) -> "QuotaSourceMap":
+    def get_quota_source_map(self) -> QuotaSourceMap:
         """Return QuotaSourceMap describing mapping of object store IDs to quota sources."""
 
     @abc.abstractmethod
-    def get_device_source_map(self) -> "DeviceSourceMap":
+    def get_device_source_map(self) -> DeviceSourceMap:
         """Return DeviceSourceMap describing mapping of object store IDs to device sources."""
 
 
@@ -584,6 +603,7 @@ class BaseObjectStore(ObjectStore):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir: bool = False,
+        auth: ObjectStoreAuth | None = None,
     ) -> bool:
         return self._invoke(
             "delete",
@@ -595,6 +615,7 @@ class BaseObjectStore(ObjectStore):
             extra_dir_at_root=extra_dir_at_root,
             alt_name=alt_name,
             obj_dir=obj_dir,
+            auth=auth,
         )
 
     def get_data(
@@ -630,6 +651,7 @@ class BaseObjectStore(ObjectStore):
         alt_name=None,
         obj_dir: bool = False,
         sync_cache: bool = True,
+        auth: ObjectStoreAuth | None = None,
     ) -> str:
         return self._invoke(
             "get_filename",
@@ -641,6 +663,7 @@ class BaseObjectStore(ObjectStore):
             alt_name=alt_name,
             obj_dir=obj_dir,
             sync_cache=sync_cache,
+            auth=auth,
         )
 
     def update_from_file(
@@ -678,13 +701,24 @@ class BaseObjectStore(ObjectStore):
             obj_dir=obj_dir,
         )
 
+    def get_direct_download_url(
+        self, obj, content_disposition: str | None = None, content_type: str | None = None
+    ) -> str | None:
+        return self._invoke(
+            "get_direct_download_url", obj, content_disposition=content_disposition, content_type=content_type
+        )
+
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
+        # Stores that don't support direct download (or haven't opted in) get this no-op default.
+        return None
+
     def get_concrete_store_name(self, obj):
         return self._invoke("get_concrete_store_name", obj)
 
     def get_concrete_store_description_markdown(self, obj):
         return self._invoke("get_concrete_store_description_markdown", obj)
 
-    def get_concrete_store_badges(self, obj) -> List[BadgeDict]:
+    def get_concrete_store_badges(self, obj) -> list[BadgeDict]:
         return self._invoke("get_concrete_store_badges", obj)
 
     def get_store_usage_percent(self):
@@ -696,7 +730,7 @@ class BaseObjectStore(ObjectStore):
     def is_private(self, obj) -> bool:
         return self._invoke("is_private", obj)
 
-    def cache_targets(self) -> List[CacheTarget]:
+    def cache_targets(self) -> list[CacheTarget]:
         return []
 
     @classmethod
@@ -707,6 +741,13 @@ class BaseObjectStore(ObjectStore):
         return private
 
     @classmethod
+    def parse_enable_direct_download_from_config_xml(clazz, config_xml):
+        enable_direct_download = False
+        if config_xml is not None:
+            enable_direct_download = asbool(config_xml.attrib.get("enable_direct_download", False))
+        return enable_direct_download
+
+    @classmethod
     def parse_badges_from_config_xml(clazz, badges_xml):
         badges = []
         for e in badges_xml:
@@ -715,7 +756,7 @@ class BaseObjectStore(ObjectStore):
             badges.append({"type": type, "message": message})
         return badges
 
-    def get_quota_source_map(self) -> "QuotaSourceMap":
+    def get_quota_source_map(self) -> QuotaSourceMap:
         # I'd rather keep this abstract... but register_singleton wants it to be instantiable...
         raise NotImplementedError()
 
@@ -731,8 +772,8 @@ class ConcreteObjectStore(BaseObjectStore):
     persisted, not how a file is routed to a persistence source.
     """
 
-    badges: List[StoredBadgeDict]
-    device_id: Optional[str] = None
+    badges: list[StoredBadgeDict]
+    device_id: str | None = None
     cloud: bool = False
 
     def __init__(self, config, config_dict=None, **kwargs):
@@ -763,6 +804,10 @@ class ConcreteObjectStore(BaseObjectStore):
         self.quota_source = quota_config.get("source", DEFAULT_QUOTA_SOURCE)
         self.quota_enabled = quota_config.get("enabled", DEFAULT_QUOTA_ENABLED)
         self.device_id = config_dict.get("device", None)
+        # Allow clients to download this store's datasets directly from the backing store (e.g. via a
+        # presigned URL) instead of streaming through Galaxy. Opt-in; only meaningful for stores whose
+        # _get_object_url returns a usable URL.
+        self.enable_direct_download = asbool(config_dict.get("enable_direct_download", False))
         self.badges = read_badges(config_dict)
 
     def to_dict(self):
@@ -777,10 +822,11 @@ class ConcreteObjectStore(BaseObjectStore):
         }
         rval["badges"] = self._get_concrete_store_badges(None)
         rval["device"] = self.device_id
+        rval["enable_direct_download"] = self.enable_direct_download
         rval["object_expires_after_days"] = self.object_expires_after_days
         return rval
 
-    def to_model(self, object_store_id: str) -> "ConcreteObjectStoreModel":
+    def to_model(self, object_store_id: str) -> ConcreteObjectStoreModel:
         return ConcreteObjectStoreModel(
             object_store_id=object_store_id,
             private=self.private,
@@ -789,10 +835,20 @@ class ConcreteObjectStore(BaseObjectStore):
             quota=QuotaModel(source=self.quota_source, enabled=self.quota_enabled),
             badges=self._get_concrete_store_badges(None),
             device=self.device_id,
+            enable_direct_download=self.enable_direct_download,
             object_expires_after_days=self.object_expires_after_days,
         )
 
-    def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
+        if not self.enable_direct_download:
+            return None
+        # _get_object_url is resolved via dynamic dispatch on each concrete backend; it is not
+        # declared on ConcreteObjectStore so static analysis can't see it here.
+        return self._get_object_url(  # type: ignore[attr-defined]
+            obj, content_disposition=content_disposition, content_type=content_type
+        )
+
+    def _get_concrete_store_badges(self, obj) -> list[BadgeDict]:
         return serialize_badges(
             self.badges,
             self.galaxy_enable_quotas and self.quota_enabled,
@@ -814,10 +870,10 @@ class ConcreteObjectStore(BaseObjectStore):
         return self.private
 
     @property
-    def cache_target(self) -> Optional[CacheTarget]:
+    def cache_target(self) -> CacheTarget | None:
         return None
 
-    def cache_targets(self) -> List[CacheTarget]:
+    def cache_targets(self) -> list[CacheTarget]:
         cache_target = self.cache_target
         return [cache_target] if cache_target is not None else []
 
@@ -828,7 +884,7 @@ class ConcreteObjectStore(BaseObjectStore):
         )
         return quota_source_map
 
-    def get_device_source_map(self) -> "DeviceSourceMap":
+    def get_device_source_map(self) -> DeviceSourceMap:
         return DeviceSourceMap(self.device_id)
 
 
@@ -957,6 +1013,7 @@ class DiskObjectStore(ConcreteObjectStore):
         obj_dir: bool = False,
         in_cache: bool = False,
         old_style=False,
+        auth: ObjectStoreAuth | None = None,
     ) -> str:
         """
         Construct the absolute path for accessing the object identified by `obj.id`.
@@ -1170,7 +1227,7 @@ class NestedObjectStore(BaseObjectStore):
     Example: DistributedObjectStore, HierarchicalObjectStore
     """
 
-    backends: Dict
+    backends: dict
 
     def __init__(self, config, config_xml=None):
         """Extend `ObjectStore`'s constructor."""
@@ -1192,7 +1249,7 @@ class NestedObjectStore(BaseObjectStore):
         objectstore = random.choice(list(self.backends.values()))
         return objectstore.create(obj, **kwargs)
 
-    def cache_targets(self) -> List[CacheTarget]:
+    def cache_targets(self) -> list[CacheTarget]:
         cache_targets = []
         for backend in self.backends.values():
             cache_targets.extend(backend.cache_targets())
@@ -1260,13 +1317,24 @@ class NestedObjectStore(BaseObjectStore):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method("_get_object_url", obj, None, False, **kwargs)
 
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> str | None:
+        """For the first backend that has this `obj`, get its direct download URL."""
+        return self._call_method(
+            "_get_direct_download_url",
+            obj,
+            None,
+            False,
+            content_disposition=content_disposition,
+            content_type=content_type,
+        )
+
     def _get_concrete_store_name(self, obj):
         return self._call_method("_get_concrete_store_name", obj, None, False)
 
     def _get_concrete_store_description_markdown(self, obj):
         return self._call_method("_get_concrete_store_description_markdown", obj, None, False)
 
-    def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
+    def _get_concrete_store_badges(self, obj) -> list[BadgeDict]:
         return self._call_method("_get_concrete_store_badges", obj, [], False)
 
     def _is_private(self, obj) -> bool:
@@ -1310,7 +1378,7 @@ class NestedObjectStore(BaseObjectStore):
             return default
 
 
-def user_object_store_configuration_to_config_dict(object_store_config: ObjectStoreConfiguration, id) -> Dict[str, Any]:
+def user_object_store_configuration_to_config_dict(object_store_config: ObjectStoreConfiguration, id) -> dict[str, Any]:
     # convert a pydantic model describing a user object store into a config dict ready to be
     # slotted into a distributed job runner or stand alone.
     dynamic_object_store_as_dict = object_store_config.model_dump()
@@ -1330,13 +1398,13 @@ class DistributedObjectStore(NestedObjectStore):
     with weighting.
     """
 
-    backends: Dict[str, Any]  # BaseObjectStore or ConcreteObjectStore?
+    backends: dict[str, Any]  # BaseObjectStore or ConcreteObjectStore?
     store_type = "distributed"
-    _quota_source_map: Optional["QuotaSourceMap"]
-    _device_source_map: Optional["DeviceSourceMap"]
+    _quota_source_map: QuotaSourceMap | None
+    _device_source_map: DeviceSourceMap | None
 
     def __init__(
-        self, config, config_dict, fsmon=False, user_object_store_resolver: Optional[UserObjectStoreResolver] = None
+        self, config, config_dict, fsmon=False, user_object_store_resolver: UserObjectStoreResolver | None = None
     ):
         """
         :type config: object
@@ -1400,7 +1468,7 @@ class DistributedObjectStore(NestedObjectStore):
         else:
             backends_root = config_xml.find("backends")
 
-        backends: List[Dict[str, Any]] = []
+        backends: list[dict[str, Any]] = []
         config_dict = {
             "search_for_missing": asbool(backends_root.get("search_for_missing", True)),
             "global_max_percent_full": float(backends_root.get("maxpctfull", 0)),
@@ -1434,7 +1502,7 @@ class DistributedObjectStore(NestedObjectStore):
         config,
         config_xml,
         fsmon=False,
-        user_object_store_resolver: Optional[UserObjectStoreResolver] = None,
+        user_object_store_resolver: UserObjectStoreResolver | None = None,
         **kwd,
     ):
         legacy = False
@@ -1455,11 +1523,11 @@ class DistributedObjectStore(NestedObjectStore):
         config_dict = clazz.parse_xml(config_xml, legacy=legacy)
         return clazz(config, config_dict, fsmon=fsmon, user_object_store_resolver=user_object_store_resolver)
 
-    def to_dict(self, object_store_uris: Optional[Set[str]] = None) -> Dict[str, Any]:
+    def to_dict(self, object_store_uris: set[str] | None = None) -> dict[str, Any]:
         as_dict = super().to_dict()
         as_dict["global_max_percent_full"] = self.global_max_percent_full
         as_dict["search_for_missing"] = self.search_for_missing
-        backends: List[Dict[str, Any]] = []
+        backends: list[dict[str, Any]] = []
         for backend_id, backend in self.backends.items():
             backend_as_dict = backend.to_dict()
             backend_as_dict["id"] = backend_id
@@ -1533,8 +1601,7 @@ class DistributedObjectStore(NestedObjectStore):
             return self._resolve_backend(object_store_id)
 
     def _call_method(self, method, obj, default, default_is_exception, **kwargs):
-        object_store_id = self.__get_store_id_for(obj, **kwargs)
-        if object_store_id is not None:
+        if (object_store_id := self.__get_store_id_for(obj, **kwargs)) is not None:
             return self._resolve_backend(object_store_id).__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default(
@@ -1551,7 +1618,7 @@ class DistributedObjectStore(NestedObjectStore):
                 return self.user_object_store_resolver.resolve_object_store_uri(object_store_id)
             raise
 
-    def get_quota_source_map(self) -> "QuotaSourceMap":
+    def get_quota_source_map(self) -> QuotaSourceMap:
         if self._quota_source_map is None:
             quota_source_map = QuotaSourceMap()
             self._merge_quota_source_map(quota_source_map, self)
@@ -1559,7 +1626,7 @@ class DistributedObjectStore(NestedObjectStore):
         assert self._quota_source_map is not None
         return self._quota_source_map
 
-    def get_device_source_map(self) -> "DeviceSourceMap":
+    def get_device_source_map(self) -> DeviceSourceMap:
         if self._device_source_map is None:
             device_source_map = DeviceSourceMap()
             self._merge_device_source_map(device_source_map, self)
@@ -1576,7 +1643,7 @@ class DistributedObjectStore(NestedObjectStore):
                 quota_source_map.backends[backend_id] = backend.get_quota_source_map()
 
     @classmethod
-    def _merge_device_source_map(clz, device_source_map: "DeviceSourceMap", object_store):
+    def _merge_device_source_map(clz, device_source_map: DeviceSourceMap, object_store):
         for backend_id, backend in object_store.backends.items():
             if isinstance(backend, DistributedObjectStore):
                 clz._merge_device_source_map(device_source_map, backend)
@@ -1637,7 +1704,7 @@ class DistributedObjectStore(NestedObjectStore):
         """Return True if this object store respects object_store_id and allow selection of this."""
         return self.allow_user_selection
 
-    def validate_selected_object_store_id(self, user, object_store_id: Optional[str]) -> Optional[str]:
+    def validate_selected_object_store_id(self, user, object_store_id: str | None) -> str | None:
         parent_check = super().validate_selected_object_store_id(user, object_store_id)
         if parent_check or object_store_id is None:
             return parent_check
@@ -1655,11 +1722,11 @@ class DistributedObjectStore(NestedObjectStore):
             return "Supplied object store id is not an allowed object store selection"
         return None
 
-    def object_store_ids_allowing_selection(self) -> List[str]:
+    def object_store_ids_allowing_selection(self) -> list[str]:
         """Return a non-empty list of allowed selectable object store IDs during creation."""
         return self.user_selection_allowed
 
-    def get_concrete_store_by_object_store_id(self, object_store_id: str) -> Optional["ConcreteObjectStore"]:
+    def get_concrete_store_by_object_store_id(self, object_store_id: str) -> ConcreteObjectStore | None:
         """If this is a distributed object store, get ConcreteObjectStore by object_store_id."""
         return self.backends.get(object_store_id)
 
@@ -1672,7 +1739,7 @@ class HierarchicalObjectStore(NestedObjectStore):
     When creating objects only the first store is used.
     """
 
-    backends: Dict[int, BaseObjectStore]
+    backends: dict[int, BaseObjectStore]
     store_type = "hierarchical"
 
     def __init__(self, config, config_dict, fsmon=False):
@@ -1754,7 +1821,7 @@ class HierarchicalObjectStore(NestedObjectStore):
         return quota_source_map
 
 
-def serialize_static_object_store_config(object_store: ObjectStore, object_store_uris: Set[str]) -> Dict[str, Any]:
+def serialize_static_object_store_config(object_store: ObjectStore, object_store_uris: set[str]) -> dict[str, Any]:
     """Serialize a static object store configuration for database-less serialization.
 
     The database-less part here comes from the fact these are used in job directories
@@ -1773,26 +1840,27 @@ def serialize_static_object_store_config(object_store: ObjectStore, object_store
 
 
 class QuotaModel(BaseModel):
-    source: Optional[str] = None
+    source: str | None = None
     enabled: bool
 
 
 class ConcreteObjectStoreModel(BaseModel):
-    object_store_id: Optional[str] = None
+    object_store_id: str | None = None
     private: bool
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
     quota: QuotaModel
-    badges: List[BadgeDict]
-    device: Optional[str] = None
-    object_expires_after_days: Optional[int] = None
+    badges: list[BadgeDict]
+    device: str | None = None
+    enable_direct_download: bool | None = None
+    object_expires_after_days: int | None = None
 
 
 def type_to_object_store_class(
-    store: str, fsmon: bool = False, user_object_store_resolver: Optional[UserObjectStoreResolver] = None
-) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
-    objectstore_class: Type[BaseObjectStore]
-    objectstore_constructor_kwds: Dict[str, Any] = {}
+    store: str, fsmon: bool = False, user_object_store_resolver: UserObjectStoreResolver | None = None
+) -> tuple[type[BaseObjectStore], dict[str, Any]]:
+    objectstore_class: type[BaseObjectStore]
+    objectstore_constructor_kwds: dict[str, Any] = {}
     if store == "disk":
         objectstore_class = DiskObjectStore
     elif store == "boto3":
@@ -1869,7 +1937,7 @@ def build_object_store_from_config(
     config_xml=None,
     config_dict=None,
     disable_process_management=False,
-    user_object_store_resolver: Optional[UserObjectStoreResolver] = None,
+    user_object_store_resolver: UserObjectStoreResolver | None = None,
 ):
     """
     Invoke the appropriate object store.
@@ -1991,7 +2059,7 @@ def config_to_dict(config):
 
 
 class QuotaSourceInfo(NamedTuple):
-    label: Optional[str]
+    label: str | None
     use: bool
 
 
@@ -2000,7 +2068,7 @@ class DeviceSourceMap:
         self.default_device_id = device_id
         self.backends = {}
 
-    def get_device_id(self, object_store_id: str) -> Optional[str]:
+    def get_device_id(self, object_store_id: str) -> str | None:
         if object_store_id in self.backends:
             device_map = self.backends.get(object_store_id)
             if device_map:
@@ -2019,7 +2087,7 @@ class QuotaSourceMap:
         self.backends = {}
         self._labels = None
 
-    def get_quota_source_info(self, object_store_id: Optional[str]) -> QuotaSourceInfo:
+    def get_quota_source_info(self, object_store_id: str | None) -> QuotaSourceInfo:
         if object_store_id in self.backends:
             return self.backends[object_store_id].get_quota_source_info(object_store_id)
         elif is_user_object_store(object_store_id):
@@ -2062,7 +2130,7 @@ class QuotaSourceMap:
         return pairs
 
     def ids_per_quota_source(self, include_default_quota_source=False):
-        quota_sources: Dict[Optional[str], List[str]] = {}
+        quota_sources: dict[str | None, list[str]] = {}
         for object_id, quota_source_label in self.get_id_to_source_pairs(
             include_default_quota_source=include_default_quota_source
         ):
@@ -2102,11 +2170,11 @@ class ObjectStorePopulator:
         self.object_store_id = None
         self.user = user
 
-    def set_object_store_id(self, data: "DatasetInstance", require_shareable: bool = False) -> None:
+    def set_object_store_id(self, data: DatasetInstance, require_shareable: bool = False) -> None:
         assert data.dataset is not None
         self.set_dataset_object_store_id(data.dataset, require_shareable=require_shareable)
 
-    def set_dataset_object_store_id(self, dataset: "Dataset", require_shareable: bool = True) -> None:
+    def set_dataset_object_store_id(self, dataset: Dataset, require_shareable: bool = True) -> None:
         # Create an empty file immediately.  The first dataset will be
         # created in the "default" store, all others will be created in
         # the same store as the first.
@@ -2123,8 +2191,8 @@ class ObjectStorePopulator:
 def persist_extra_files(
     object_store: ObjectStore,
     src_extra_files_path: str,
-    primary_data: "DatasetInstance",
-    extra_files_path_name: Optional[str] = None,
+    primary_data: DatasetInstance,
+    extra_files_path_name: str | None = None,
 ) -> None:
     assert primary_data.dataset is not None
     if not primary_data.dataset.purged and os.path.exists(src_extra_files_path):
@@ -2137,7 +2205,7 @@ def persist_extra_files(
 def persist_extra_files_for_dataset(
     object_store: ObjectStore,
     src_extra_files_path: str,
-    dataset: "Dataset",
+    dataset: Dataset,
     extra_files_path_name: str,
 ):
     for root, _dirs, files in safe_walk(src_extra_files_path):

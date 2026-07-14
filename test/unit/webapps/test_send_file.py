@@ -15,7 +15,7 @@ from galaxy.web.framework.base import (
 CONTENT = "content"
 
 
-def setup_fastAPI(fh, nginx_x_accel_redirect_base=None, apache_xsendfile=None):
+def setup_fastAPI(fh, nginx_x_accel_redirect_base=None, apache_xsendfile=None, set_content_length=True):
     def wsgi_application(env, start_response):
         trans = Bunch(
             response=Response(),
@@ -24,7 +24,8 @@ def setup_fastAPI(fh, nginx_x_accel_redirect_base=None, apache_xsendfile=None):
                 config=Bunch(nginx_x_accel_redirect_base=nginx_x_accel_redirect_base, apache_xsendfile=apache_xsendfile)
             ),
         )
-        trans.response.headers["content-length"] = len(CONTENT)
+        if set_content_length:
+            trans.response.headers["content-length"] = len(CONTENT)
         trans.response.set_content_type("application/octet-stream")
         return send_file(start_response, trans, fh)
 
@@ -72,3 +73,34 @@ def test_sendfile_in_process(test_file_handle):
     assert "x-accel-redirect" not in response.headers
     assert response.headers["content-length"] == str(len(CONTENT))
     assert response.content.decode() == "content"
+
+
+def test_sendfile_range(test_file_handle):
+    app = setup_fastAPI(test_file_handle)
+    client = TestClient(app)
+    response = client.get("/test/send_file", headers={"Range": "bytes=0-3"})
+    assert response.status_code == 206
+    assert response.headers["content-range"] == f"bytes 0-3/{len(CONTENT)}"
+    assert response.headers["content-length"] == "4"
+    assert response.content.decode() == "cont"
+
+
+def test_sendfile_range_open_ended(test_file_handle):
+    app = setup_fastAPI(test_file_handle)
+    client = TestClient(app)
+    response = client.get("/test/send_file", headers={"Range": "bytes=2-"})
+    assert response.status_code == 206
+    assert response.headers["content-range"] == f"bytes 2-{len(CONTENT) - 1}/{len(CONTENT)}"
+    assert response.headers["content-length"] == str(len(CONTENT) - 2)
+    assert response.content.decode() == "ntent"
+
+
+def test_sendfile_range_without_content_length(test_file_handle):
+    # Files served out of a dataset's extra_files_path (e.g. JBrowse track data) don't set
+    # a content-length header; a Range request on a non-nginx deployment must still succeed.
+    app = setup_fastAPI(test_file_handle, set_content_length=False)
+    client = TestClient(app)
+    response = client.get("/test/send_file", headers={"Range": "bytes=0-3"})
+    assert response.status_code == 206
+    assert response.headers["content-range"] == f"bytes 0-3/{len(CONTENT)}"
+    assert response.content.decode() == "cont"

@@ -7,7 +7,6 @@ requires_galaxy=True need a running Galaxy session and are skipped by default.
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_evals import (
@@ -194,8 +193,8 @@ ROUTING_CASES: list[Case[str, str, dict[str, Any]]] = [
     _case(
         "import_iwc_workflow",
         "Import a histological staining workflow from IWC.",
-        "router",
-        "Router-direct action. On agent-ops-iwc-reintroduce this triggers search_iwc_workflows + import_workflow_from_iwc tool calls.",
+        "tool_recommendation",
+        "tool_recommendation owns IWC search (search_iwc_workflows) and emits a WORKFLOW_IMPORT action for the surfaced workflow; no in-app agent calls import_workflow_from_iwc directly.",
     ),
     _case(
         "omero_upload_guidance",
@@ -223,12 +222,18 @@ ROUTING_CASES: list[Case[str, str, dict[str, Any]]] = [
         "custom_tool",
         "Explicit custom_tool request -- writing a tool wrapper, not running an existing one.",
     ),
+    _case(
+        "recommend_iwc_workflow",
+        "Recommend an IWC workflow for histological staining quantification.",
+        "tool_recommendation",
+        "Recommendation-style IWC ask -- discovery phrasing routes to tool_recommendation, which searches IWC and surfaces an importable workflow.",
+    ),
 ]
 
 
 def routing_dataset(
     include_galaxy_required: bool = False,
-    only: Optional[list[str]] = None,
+    only: list[str] | None = None,
 ) -> Dataset[str, str, dict[str, Any]]:
     """Build the routing Dataset.
 

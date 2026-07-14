@@ -13,7 +13,6 @@ from textwrap import TextWrapper
 from typing import (
     Any,
     NamedTuple,
-    Optional,
 )
 
 import yaml
@@ -239,7 +238,7 @@ REPORTS_APP = App(
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
 
-def main(argv: Optional[list[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     """Entry point for conversion process."""
     if argv is None:
         argv = sys.argv[1:]

@@ -6,7 +6,7 @@ on:  # zizmor: ignore[dangerous-triggers]
     branches:
       - dev
       - release_*
-
+permissions: {}
 jobs:
   update-title:
     if: github.repository_owner == 'galaxyproject' && (github.event.action != 'edited' || github.event.changes.base.ref.from != '')

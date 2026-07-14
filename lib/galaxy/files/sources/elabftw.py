@@ -62,9 +62,7 @@ from typing import (
     Generic,
     get_type_hints,
     Literal,
-    Optional,
     TypeVar,
-    Union,
 )
 from urllib.parse import (
     ParseResult,
@@ -113,7 +111,7 @@ class eLabFTWRemoteEntryWrapper(Generic[eLabFTWRemoteEntryWrapperType]):  # noqa
     Wrap a remote entry produced by this module to easily access its entity type, entity id, and attachment id.
     """
 
-    def __init__(self, entry: eLabFTWRemoteEntryWrapperType, source: Optional[dict] = None):
+    def __init__(self, entry: eLabFTWRemoteEntryWrapperType, source: dict | None = None):
         """
         Initialize the remote entry wrapper.
 
@@ -126,27 +124,27 @@ class eLabFTWRemoteEntryWrapper(Generic[eLabFTWRemoteEntryWrapperType]):  # noqa
         self.source = source
 
     @property
-    def entity_type(self) -> Optional[str]:
+    def entity_type(self) -> str | None:
         """
         Get the entity type for the wrapped entry.
         """
         return self._get_part("entity_type")
 
     @property
-    def entity_id(self) -> Optional[str]:
+    def entity_id(self) -> str | None:
         """
         Get the entity id for the wrapped entry.
         """
         return self._get_part("entity_id")
 
     @property
-    def attachment_id(self) -> Optional[str]:
+    def attachment_id(self) -> str | None:
         """
         Get the attachment id for the wrapped entry.
         """
         return self._get_part("attachment_id")
 
-    def _get_part(self, part: Literal["entity_type", "entity_id", "attachment_id"]) -> Optional[str]:
+    def _get_part(self, part: Literal["entity_type", "entity_id", "attachment_id"]) -> str | None:
         """
         Get the entity type, entity id or attachment id for the wrapped entry.
         """
@@ -156,8 +154,8 @@ class eLabFTWRemoteEntryWrapper(Generic[eLabFTWRemoteEntryWrapperType]):  # noqa
 
 
 class eLabFTWFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    endpoint: Union[str, TemplateExpansion]
-    api_key: Union[str, TemplateExpansion]
+    endpoint: str | TemplateExpansion
+    api_key: str | TemplateExpansion
 
 
 class eLabFTWFileSourceConfiguration(BaseFileSourceConfiguration):
@@ -166,7 +164,6 @@ class eLabFTWFileSourceConfiguration(BaseFileSourceConfiguration):
 
 
 class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration, eLabFTWFileSourceConfiguration]):
-
     plugin_type = "elabftw"
     plugin_kind = PluginKind.rfs
     supports_pagination = False
@@ -178,7 +175,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
     template_config_class = eLabFTWFileSourceTemplateConfiguration
     resolved_config_class = eLabFTWFileSourceConfiguration
 
-    def get_prefix(self) -> Optional[str]:
+    def get_prefix(self) -> str | None:
         endpoint: ParseResult = self._get_endpoint()
         return self.id if self.scheme not in {"elabftw", DEFAULT_SCHEME} else (endpoint.netloc or None)
         # it would make better sense to return
@@ -253,10 +250,10 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
         # in particular, expecting
         # `sort_by: Optional[Literal["name", "uri", "path", "class", "size", "ctime"]] = None,`
         # from Python 3.9 on, the following would be possible, although barely readable
@@ -295,10 +292,10 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         context: FilesSourceRuntimeContext[eLabFTWFileSourceConfiguration],
         path="/",
         recursive=False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
         # in particular, expecting
         # `sort_by: Optional[Literal["name", "uri", "path", "class", "size", "ctime"]] = None,`
     ) -> tuple[list[AnyRemoteEntry], int]:
@@ -356,7 +353,6 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
                 return [value async for value in async_iter]
 
             fetch_entity_types_tasks: list[asyncio.Task] = (
-                # fmt: off
                 [
                     asyncio.create_task(
                         collect_async_iterator(
@@ -367,7 +363,6 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
                         )
                     )
                 ]
-                # fmt: on
                 if retrieve_entity_types
                 else []
             )
@@ -488,8 +483,11 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
             wrapped_entries,
             key=lambda x: (
                 (
-                    getattr(x.entry, sort_by, constructors[sort_by]())  # fall back to the default object for this key type
-                    if sort_by is not None else None  # fmt: skip
+                    getattr(
+                        x.entry, sort_by, constructors[sort_by]()
+                    )  # fall back to the default object for this key type
+                    if sort_by is not None
+                    else None
                 ),
                 x.entry.uri,  # ensure deterministic ordering (URIs are unique)
             ),
@@ -561,10 +559,10 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         entity_type: str,
         endpoint: ParseResult,
         session: aiohttp.ClientSession,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        order: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        order: str | None = None,
         writable: bool = False,
     ) -> AsyncIterator[eLabFTWRemoteEntryWrapper[RemoteDirectory]]:
         """List an entity type, i.e. either "/experiments" or "/resources"."""
@@ -796,8 +794,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
 
         url = urljoin(
             f"{endpoint.scheme}://{endpoint.netloc}/",
-            f"/api/v2/{entity_type.replace('resources', 'items')}/{entity_id}/uploads/{attachment_id}"
-            f"?format=binary",
+            f"/api/v2/{entity_type.replace('resources', 'items')}/{entity_id}/uploads/{attachment_id}?format=binary",
         )
         try:
             with (
@@ -816,7 +813,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
             raise exception
 
 
-def split_path(path: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
+def split_path(path: str) -> tuple[str | None, str | None, str | None]:
     """
     Split and validate an eLabFTW path.
 
@@ -886,16 +883,12 @@ class InvalidPath(
     - `attachment_id` is the id (an integer) of an attachment
     """
 
-    message_path_form = (
-        # fmt: off
-        "path '%' is invalid, paths must be of the form "
-        "`/entity_type/entity_id/attachment_id`, where:"
-        + dedent("""
+    message_path_form = "path '%' is invalid, paths must be of the form `/entity_type/entity_id/attachment_id`, where:" + dedent(
+        """
             - `entity_type` is either 'experiments' or 'resources'
             - `entity_id` is the id of an experiment or resource
             - `attachment_id` is the id of an attachment
-        """[1:])
-        # fmt: on
+        """[1:]
     )
     message_path_absolute = "path '%' is invalid, paths must be absolute"
     message_path_entity_type = "path '%' is invalid, paths must start with /experiments or /resources"

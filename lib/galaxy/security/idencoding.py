@@ -1,10 +1,6 @@
 import codecs
 import collections
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from Crypto.Cipher import Blowfish
 from Crypto.Random import get_random_bytes
@@ -88,7 +84,7 @@ class IdEncodingHelper:
                     rval[k] = [self.encode_all_ids(el, True) for el in v]
         return rval
 
-    def decode_id(self, obj_id, kind=None, object_name: Optional[str] = None):
+    def decode_id(self, obj_id, kind=None, object_name: str | None = None):
         try:
             id_cipher = self.__id_cipher(kind)
             return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, "hex"))).lstrip("!"))
@@ -109,7 +105,7 @@ class IdEncodingHelper:
         # Encrypt
         return codecs.encode(self.id_cipher.encrypt(s), "hex")
 
-    def decode_guid(self, session_key: Union[bytes, str]) -> str:
+    def decode_guid(self, session_key: bytes | str) -> str:
         # Session keys are strings
         try:
             decoded_session_key = codecs.decode(session_key, "hex")

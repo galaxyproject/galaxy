@@ -80,10 +80,7 @@ def _write_vault_config(vault_addr, vault_token, path_prefix="/galaxy_integratio
     fd, path = tempfile.mkstemp(prefix="vault_hashicorp_integ_", suffix=".yml")
     with os.fdopen(fd, "w") as f:
         f.write(
-            f"type: hashicorp\n"
-            f"path_prefix: {path_prefix}\n"
-            f"vault_address: {vault_addr}\n"
-            f"vault_token: {vault_token}\n"
+            f"type: hashicorp\npath_prefix: {path_prefix}\nvault_address: {vault_addr}\nvault_token: {vault_token}\n"
         )
     return path
 

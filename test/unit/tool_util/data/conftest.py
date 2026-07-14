@@ -23,6 +23,10 @@ TOOL_DATA_TABLE_CONF_XML = """<tables>
     <columns>value, name, path</columns>
     <file path="${__HERE__}/testalpha.loc" />
   </table>
+  <table name="testcat" comment_char="#">
+    <columns>value, name, database_folder</columns>
+    <file path="${__HERE__}/testcat.loc" />
+  </table>
 </tables>
 """
 
@@ -66,6 +70,9 @@ def merged_tdt_manager(tmp_path) -> ToolDataTableManager:
 def _write_loc_files(tmp_path):
     loc1 = tmp_path / "testalpha.loc"
     loc1.write_text(LOC_ALPHA_CONTENTS)
+
+    loc_cat = tmp_path / "testcat.loc"
+    loc_cat.write_text("")
 
     loc2 = tmp_path / "testbeta1.loc"
     loc2.write_text(LOC_BETA_CONTENTS_1)

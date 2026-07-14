@@ -18,7 +18,6 @@ search results come back. Not a substitute for an end-to-end test.
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_ai.models import Model
@@ -122,8 +121,8 @@ Return a number; no commentary.
 
 
 def tool_recommendation_dataset(
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
 ) -> Dataset[str, str, dict[str, Any]]:
     """Build the tool_recommendation Dataset.
 

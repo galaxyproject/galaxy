@@ -192,7 +192,7 @@ export function useUploadState() {
                 upload,
             }));
 
-        return [...batchItems, ...standaloneItems].sort((a, b) => a.createdAt - b.createdAt);
+        return [...batchItems, ...standaloneItems].sort((a, b) => b.createdAt - a.createdAt);
     });
 
     /**
@@ -309,7 +309,7 @@ export function useUploadState() {
      */
     function updateProgress(id: string, progress: number) {
         const item = items.value.find((u) => u.id === id);
-        if (item) {
+        if (item && item.status !== "completed") {
             item.progress = Math.max(0, Math.min(100, Math.round(progress)));
             if (item.progress >= 100 && item.status !== "error") {
                 item.status = "completed";

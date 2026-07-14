@@ -136,7 +136,6 @@ class PromoteCollectionElementToCollectionAdapter(DCECollectionAdapter):
 
 
 class PromoteDatasetToCollection(CollectionAdapter):
-
     def __init__(self, hda: "HistoryDatasetAssociation", collection_type: str):
         assert collection_type in ["list", "paired_or_unpaired"]
         self._hda = hda

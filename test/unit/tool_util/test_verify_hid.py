@@ -1,17 +1,11 @@
-from typing import (
-    Callable,
-    Dict,
-    Optional,
-)
+from collections.abc import Callable
 
 from galaxy.tool_util.unittest_utils import t_data_downloader_for
 from galaxy.tool_util.verify.interactor import verify_hid
 
 
-def dataset_fetcher_for(
-    expected_hda_id: str, content: Dict[Optional[str], bytes]
-) -> Callable[[str, Optional[str]], bytes]:
-    def get_content(hda_id, filename: Optional[str] = None) -> bytes:
+def dataset_fetcher_for(expected_hda_id: str, content: dict[str | None, bytes]) -> Callable[[str, str | None], bytes]:
+    def get_content(hda_id, filename: str | None = None) -> bytes:
         assert expected_hda_id == hda_id
         return content[filename]
 

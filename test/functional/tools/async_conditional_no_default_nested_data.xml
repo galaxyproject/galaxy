@@ -1,0 +1,54 @@
+<tool id="async_conditional_no_default_nested_data" name="async_conditional_no_default_nested_data" version="1.0.0" profile="22.01">
+    <description>async regression: omitted discriminator of a default-less conditional + nested required data param</description>
+    <!--
+      Models deseq2 select_data: a conditional whose discriminator (`how`) has NO
+      selected="true" default, containing a repeat with a REQUIRED data param.
+      The test omits `how` and supplies the repeat unqualified (legacy access).
+
+      Sync (POST /api/tools): an omitted discriminator selects the FIRST when
+      (datasets_per_level); the unqualified repeat is mapped into it; job runs.
+
+      Async (POST tool request, GALAXY_TEST_USE_LEGACY_TOOL_API=if_needed): the
+      missing discriminator resolves to a phantom "__absent__" branch, so the
+      nested required `countsFile` is reported missing and request validation
+      fails:
+        select_data.__absent__.rep_level.0.countsFile - Field required
+    -->
+    <command><![CDATA[
+#for $lvl in $select_data.rep_level:
+cat '$lvl.countsFile' >> '$out_file1' &&
+#end for
+echo "done" >> '$out_file1'
+    ]]></command>
+    <inputs>
+        <conditional name="select_data">
+            <param name="how" type="select" label="How">
+                <option value="datasets_per_level">Datasets per level</option>
+                <option value="group_tags">Group tags</option>
+            </param>
+            <when value="datasets_per_level">
+                <repeat name="rep_level" title="Level" min="1">
+                    <param name="countsFile" type="data" format="txt" label="Counts file" />
+                </repeat>
+            </when>
+            <when value="group_tags">
+                <param name="countsFile" type="data" format="txt" label="Counts file" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <repeat name="rep_level">
+                <param name="countsFile" value="simple_line.txt" />
+            </repeat>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_text text="done" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

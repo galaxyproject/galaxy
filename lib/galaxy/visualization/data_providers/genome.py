@@ -16,8 +16,6 @@ from json import loads
 from typing import (
     Any,
     IO,
-    Optional,
-    Union,
 )
 
 import pysam
@@ -44,7 +42,7 @@ from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and
 
 log = logging.getLogger(__name__)
 
-IntWebParam = Union[str, int]
+IntWebParam = str | int
 
 #
 # Utility functions.
@@ -54,7 +52,7 @@ IntWebParam = Union[str, int]
 # Can be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
 pysam.set_verbosity(0)
 
-PAYLOAD_LIST_TYPE = list[Optional[Union[str, int, float, list[tuple[int, int]]]]]
+PAYLOAD_LIST_TYPE = list[str | int | float | list[tuple[int, int]] | None]
 
 
 def float_nan(n):
@@ -174,7 +172,7 @@ class GenomeDataProvider(BaseDataProvider):
     # filters. Key is column name, value is a dict with mandatory key 'index'
     # and optional key 'name'. E.g. this defines column 4:
     # col_name_data_attr_mapping = {4 : { index: 5, name: 'Score' } }
-    col_name_data_attr_mapping: dict[Union[str, int], dict] = {}
+    col_name_data_attr_mapping: dict[str | int, dict] = {}
 
     def __init__(
         self,
@@ -358,7 +356,7 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
 
     dataset_type = "tabix"
 
-    col_name_data_attr_mapping: dict[Union[str, int], dict] = {4: {"index": 4, "name": "Score"}}
+    col_name_data_attr_mapping: dict[str | int, dict] = {4: {"index": 4, "name": "Score"}}
 
     @contextmanager
     def open_data_file(self):
@@ -622,7 +620,7 @@ class VcfDataProvider(GenomeDataProvider):
 
     """
 
-    col_name_data_attr_mapping: dict[Union[str, int], dict] = {"Qual": {"index": 6, "name": "Qual"}}
+    col_name_data_attr_mapping: dict[str | int, dict] = {"Qual": {"index": 6, "name": "Qual"}}
 
     dataset_type = "variant"
 
@@ -762,7 +760,7 @@ class RawVcfDataProvider(VcfDataProvider):
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
         # Skip comments.
-        line: Optional[str] = None
+        line: str | None = None
         for line in data_file:
             if not line.startswith("#"):
                 break
@@ -1107,7 +1105,7 @@ class BBIDataProvider(GenomeDataProvider):
     dataset_type = "bigwig"
 
     @abc.abstractmethod
-    def _get_dataset(self) -> tuple[IO[bytes], Union[BigBedFile, BigWigFile]]: ...
+    def _get_dataset(self) -> tuple[IO[bytes], BigBedFile | BigWigFile]: ...
 
     def valid_chroms(self):
         # No way to return this info as of now

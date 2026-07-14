@@ -1,7 +1,3 @@
-from typing import (
-    Optional,
-)
-
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
@@ -13,7 +9,7 @@ class TestGroupsApi(ApiTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    def _create_valid_group(self, group_name: Optional[str] = None):
+    def _create_valid_group(self, group_name: str | None = None):
         payload = self._build_valid_group_payload(group_name)
         response = self._post("groups", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
@@ -249,7 +245,7 @@ class TestGroupsApi(ApiTestCase):
         for role in roles:
             assert role["id"] in role_ids
 
-    def _build_valid_group_payload(self, name: Optional[str] = None):
+    def _build_valid_group_payload(self, name: str | None = None):
         name = name or self.dataset_populator.get_random_name()
         user_id = self.dataset_populator.user_id()
         role_id = self.dataset_populator.user_private_role_id()

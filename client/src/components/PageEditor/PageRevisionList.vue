@@ -11,6 +11,7 @@ const props = defineProps<{
     revisions: PageRevisionSummary[];
     isLoading: boolean;
     isReverting: boolean;
+    selectedRevisionId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -62,6 +63,9 @@ function onSelect(rev: PageRevisionSummary) {
                         <span class="font-weight-bold">{{ formatDate(rev.create_time) }}</span>
                         <span class="text-muted ml-1">({{ sourceLabel(rev.edit_source) }})</span>
                         <span v-if="index === 0" class="badge badge-primary ml-1">Current</span>
+                        <span v-if="rev.id === props.selectedRevisionId" class="badge badge-secondary ml-1">
+                            Viewing
+                        </span>
                     </div>
                 </div>
                 <BButton

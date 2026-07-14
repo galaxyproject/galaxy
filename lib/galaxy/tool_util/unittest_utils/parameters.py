@@ -15,7 +15,6 @@ from . import functional_test_tool_path
 
 
 class ParameterBundle(ToolParameterBundle):
-
     def __init__(self, parameter: ToolParameterT):
         self.parameters = [parameter]
 

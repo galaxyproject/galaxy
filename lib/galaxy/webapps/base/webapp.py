@@ -7,11 +7,11 @@ import os
 import re
 import socket
 import time
+from collections.abc import Hashable
 from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
     Any,
-    Optional,
 )
 from urllib.parse import urlparse
 
@@ -40,6 +40,7 @@ from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import History
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.orm.now import now as utc_now
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalApp,
@@ -109,9 +110,7 @@ class WebApplication(base.WebApplication):
 
     injection_aware: bool = False
 
-    def __init__(
-        self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: Optional[str] = None
-    ) -> None:
+    def __init__(self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: str | None = None) -> None:
         super().__init__()
         self.name = name
         galaxy_app.is_webapp = True
@@ -317,7 +316,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     """
 
     def __init__(
-        self, environ: dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: Optional[str] = None
+        self, environ: dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: str | None = None
     ) -> None:
         self._app = app
         self.webapp = webapp
@@ -337,7 +336,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.galaxy_session = None
         self.error_message = None
         self.host = self.request.host
-        self._short_term_cache: dict[tuple[str, ...], Any] = {}
+        self._short_term_cache: dict[tuple[Hashable, ...], Any] = {}
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
@@ -382,7 +381,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 #
                 # Make sure we're not past the duration, and either log out or
                 # update timestamp.
-                now = datetime.datetime.now()
+                now = utc_now()
                 if self.galaxy_session.last_action:
                     expiration_time = self.galaxy_session.last_action + datetime.timedelta(
                         minutes=config.session_duration
@@ -546,7 +545,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if self.app.config.cookie_domain is not None:
             self.response.cookies[name]["domain"] = self.app.config.cookie_domain
 
-    def _authenticate_api(self, session_cookie: str) -> Optional[str]:
+    def _authenticate_api(self, session_cookie: str) -> str | None:
         """
         Authenticate for the API via key or session (if available).
         """

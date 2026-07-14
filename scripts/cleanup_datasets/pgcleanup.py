@@ -29,7 +29,10 @@ sys.path.insert(1, os.path.join(galaxy_root, "lib"))
 import galaxy.config
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model import calculate_user_disk_usage_statements
-from galaxy.objectstore import build_object_store_from_config
+from galaxy.objectstore import (
+    build_object_store_from_config,
+    is_user_object_store,
+)
 from galaxy.util.script import (
     app_properties_from_args,
     populate_config_args,
@@ -118,6 +121,7 @@ class Action:
             self._object_store_id_sql = ""
         self._epoch_time = str(int(time.time()))
         self._days = app.args.days
+        self._batch_size = app.args.batch_size
         self._config = app.config
         self._update = app._update
         self.__log = None
@@ -213,37 +217,41 @@ class Action:
         args = self._action_sql_args.copy()
         if "days" not in args:
             args["days"] = self._days
+        args["batch_size"] = self._batch_size
         return args
 
-    def _collect_row_results(self, row, results, primary_key):
-        primary_key = row._fields[0]
-        primary = getattr(row, primary_key)
-        if primary not in results:
-            results[primary] = [set() for x in range(len(self.causals))]
+    def _collect_row_results(self, row, results):
         rowgetter = partial(getattr, row)
         for i, causal in enumerate(self.causals):
             vals = tuple(map(rowgetter, causal))
             if any(vals[1:]):
-                results[primary][i].add(vals)
+                results[i].add(vals)
 
-    def _log_results(self, results, primary_key):
-        for primary in sorted(results.keys()):
-            self.log.info(f"{primary_key}: {primary}")
-            for causal, s in zip(self.causals, results[primary]):
-                for r in sorted(s):
-                    secondaries = ", ".join(f"{x[0]}: {x[1]}" for x in zip(causal[1:], r[1:]))
-                    self.log.info(f"{causal[0]} {r[0]} caused {secondaries}")
+    def _log_results(self, primary, results, primary_key):
+        self.log.info(f"{primary_key}: {primary}")
+        for causal, s in zip(self.causals, results):
+            for r in sorted(s):
+                secondaries = ", ".join(f"{x[0]}: {x[1]}" for x in zip(causal[1:], r[1:]))
+                self.log.info(f"{causal[0]} {r[0]} caused {secondaries}")
 
     def handle_results(self, cur):
-        results = {}
         primary_key = self.primary_key
+        primary = None
+        results = None
         for row in cur:
             if primary_key is None:
                 primary_key = row._fields[0]
-            self._collect_row_results(row, results, primary_key)
+            row_primary = getattr(row, primary_key)
+            if results is None or row_primary != primary:
+                if results is not None:
+                    self._log_results(primary, results, primary_key)
+                primary = row_primary
+                results = [set() for x in range(len(self.causals))]
+            self._collect_row_results(row, results)
             for method in self.__row_methods:
                 method(row)
-        self._log_results(results, primary_key)
+        if results is not None:
+            self._log_results(primary, results, primary_key)
         for method in self.__post_methods:
             method()
 
@@ -261,6 +269,7 @@ class RemovesObjects:
     """Base class for mixins that remove objects from object stores."""
 
     requires_objectstore = True
+    object_removal_batch_size = 1000
 
     def _init(self):
         super()._init()
@@ -272,14 +281,28 @@ class RemovesObjects:
     def collect_removed_object_info(self, row):
         object_id = getattr(row, self.id_column, None)
         object_uuid = getattr(row, self.uuid_column, None)
+        object_store_id = row.object_store_id
+        if is_user_object_store(object_store_id):
+            self.log.warning(
+                "Skipping removal of %s (id: %s): object is stored in user-defined object store (%s) "
+                "which cannot be resolved by this script. The database record has been updated "
+                "but the physical file has not been removed.",
+                self.object_class.__name__,
+                object_id,
+                object_store_id,
+            )
+            return
         if object_uuid:
             object_uuid = str(uuid.UUID(object_uuid))
         if object_id:
             self.objects_to_remove.add(self.object_class(object_id, row.object_store_id, object_uuid))
+            if len(self.objects_to_remove) >= self.object_removal_batch_size:
+                self.remove_objects()
 
     def remove_objects(self):
         for object_to_remove in sorted(self.objects_to_remove):
             self.remove_object(object_to_remove)
+        self.objects_to_remove.clear()
 
     def remove_from_object_store(self, object_to_remove, object_store_kwargs, entire_dir=False, check_exists=False):
         # only remove the "object store path" - if it's at an external_filename, that file will be untouched anyway
@@ -405,6 +428,7 @@ class RequiresDiskUsageRecalculation:
                 self._update(sql, args, add_event=False)
 
             self.log.info("recalculate_disk_usage user_id %i", user_id)
+        self.__recalculate_disk_usage_user_ids.clear()
 
 
 class RemovesMetadataFiles(RemovesObjects):
@@ -464,13 +488,19 @@ class UpdateHDAPurgedFlag(Action):
 
     # update_time is intentionally left unmodified.
     _action_sql = """
-        WITH purged_hda_ids
+        WITH batch_ids
+          AS (SELECT history_dataset_association.id
+                FROM history_dataset_association
+                JOIN dataset ON history_dataset_association.dataset_id = dataset.id
+               WHERE dataset.purged
+                     AND NOT history_dataset_association.purged
+               ORDER BY history_dataset_association.id
+               LIMIT :batch_size),
+              purged_hda_ids
           AS (     UPDATE history_dataset_association
                       SET purged = true, deleted = true
-                     FROM dataset
-                        WHERE history_dataset_association.dataset_id = dataset.id
-                          AND dataset.purged
-                          AND NOT history_dataset_association.purged
+                    FROM batch_ids
+                   WHERE history_dataset_association.id = batch_ids.id
                 RETURNING history_dataset_association.id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
@@ -479,7 +509,6 @@ class UpdateHDAPurgedFlag(Action):
                      FROM purged_hda_ids)
       SELECT id AS purged_hda_id
         FROM purged_hda_ids
-    ORDER BY id;
     """
 
 
@@ -905,7 +934,8 @@ class PurgeHistorylessHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRe
           AS (     UPDATE history_dataset_association
                       SET purged = true, deleted = true{update_time_sql}
                      FROM dataset
-                    WHERE history_id IS NULL{force_retry_sql}{object_store_id_sql}
+                    WHERE history_dataset_association.dataset_id = dataset.id
+                          AND history_id IS NULL{force_retry_sql}{object_store_id_sql}
                           AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING history_dataset_association.id as id,
                           history_dataset_association.history_id as history_id),
@@ -1255,6 +1285,14 @@ class Cleanup:
         )
         parser.add_argument(
             "-w", "--work-mem", dest="work_mem", default=None, help="Set PostgreSQL work_mem for this connection"
+        )
+        parser.add_argument(
+            "-b",
+            "--batch-size",
+            dest="batch_size",
+            type=int,
+            default=5000,
+            help="Process rows in batches of the given size (default: 5000)",
         )
         parser.add_argument("-l", "--log-dir", default=DEFAULT_LOG_DIR, help="Log file directory")
         parser.add_argument("-g", "--log-file", default=None, help="Log file name")

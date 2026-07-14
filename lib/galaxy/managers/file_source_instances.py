@@ -3,13 +3,12 @@ from typing import (
     Any,
     cast,
     Literal,
-    Optional,
-    Union,
 )
 from uuid import uuid4
 
 from pydantic import (
     BaseModel,
+    Field,
     UUID4,
     ValidationError,
 )
@@ -39,6 +38,7 @@ from galaxy.files.sources import (
     PluginKind,
     SupportsBrowsing,
 )
+from galaxy.files.sources.github_fsspec import list_authorized_repositories
 from galaxy.files.templates import (
     ConfiguredFileSourceTemplates,
     FileSourceConfiguration,
@@ -74,6 +74,7 @@ from galaxy.util.config_templates import (
 from galaxy.util.plugin_config import plugin_source_from_dict
 from galaxy.work.context import SessionRequestContext
 from ._config_templates import (
+    access_token_for_uuid,
     CanTestPluginStatus,
     CreateInstancePayload,
     CreateTestTarget,
@@ -110,19 +111,47 @@ log = logging.getLogger(__name__)
 USER_FILE_SOURCES_SCHEME = "gxuserfiles"
 
 
+def _variable_name_for_dynamic_options(template: FileSourceTemplate, marker: str) -> str | None:
+    for variable in template.variables or []:
+        if variable.type == "select" and variable.dynamic_options == marker:
+            return variable.name
+    return None
+
+
 class UserFileSourceModel(BaseModel):
     uuid: UUID4
     uri_root: str
     name: str
-    description: Optional[str]
+    description: str | None
     hidden: bool
     active: bool
     purged: bool
     type: FileSourceTemplateType
     template_id: str
     template_version: int
-    variables: Optional[dict[str, TemplateVariableValueType]]
+    variables: dict[str, TemplateVariableValueType] | None
     secrets: list[str]
+
+
+GITHUB_TEMPLATE_TYPE = "github"
+
+
+class GithubRepository(BaseModel):
+    owner: str
+    repo: str
+    full_name: str
+
+
+class TemplateFormDataRequest(BaseModel):
+    """Values available while rendering a post-authorization template form."""
+
+    uuid: str
+    variables: dict[str, TemplateVariableValueType] = Field(default_factory=dict)
+
+
+class TemplateFormDataResponse(BaseModel):
+    dynamic_options: dict[str, list[tuple[str, str]]] = Field(default_factory=dict)
+    alert_conditions: list[str] = Field(default_factory=list)
 
 
 class UserDefinedFileSourcesConfig(BaseModel):
@@ -229,6 +258,90 @@ class FileSourceInstancesManager:
         redirect_uri = f"{galaxy_root}/oauth2_callback"
         return redirect_uri
 
+    def list_github_repositories(
+        self, trans: ProvidesUserContext, template_id: str, template_version: int, uuid: str
+    ) -> list[GithubRepository]:
+        """List the repositories the user authorized the GitHub App to access.
+
+        Uses the refresh token stored at the pre-allocated ``uuid`` during the OAuth callback to
+        mint an access token, then queries GitHub for the granted repositories.
+        """
+        template = self._catalog.find_template_by(template_id, template_version)
+        if template.configuration.type != GITHUB_TEMPLATE_TYPE:
+            raise RequestParameterInvalidException(
+                "Listing repositories is only supported for GitHub file source templates."
+            )
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template_id, template_version
+        )
+        if not template_server_configuration.uses_oauth2:
+            raise RequestParameterInvalidException(
+                f"The file source template {template_id} is not configured for OAuth2 authorization."
+            )
+        access_token = access_token_for_uuid(
+            trans, template_server_configuration, uuid, UserFileSource, self._app_config
+        )
+        return [GithubRepository(**repository) for repository in list_authorized_repositories(access_token)]
+
+    def template_form_data(
+        self,
+        trans: ProvidesUserContext,
+        template_id: str,
+        template_version: int,
+        payload: TemplateFormDataRequest,
+    ) -> TemplateFormDataResponse:
+        """Return dynamic form data supplied by built-in template capabilities."""
+        template = self._catalog.find_template_by(template_id, template_version)
+        if template.configuration.type != GITHUB_TEMPLATE_TYPE:
+            return TemplateFormDataResponse()
+
+        repositories = self.list_github_repositories(trans, template_id, template_version, payload.uuid)
+        owner_variable_name = _variable_name_for_dynamic_options(template, "github_repository_owners")
+        repository_variable_name = _variable_name_for_dynamic_options(template, "github_repository_names")
+        if not owner_variable_name or not repository_variable_name:
+            return TemplateFormDataResponse()
+
+        if not repositories:
+            return TemplateFormDataResponse(alert_conditions=["repository_picker_empty"])
+
+        owner = payload.variables.get(owner_variable_name)
+        owners = sorted({repository.owner for repository in repositories})
+        dynamic_options = {owner_variable_name: [(owner, owner) for owner in owners]}
+        if isinstance(owner, str):
+            dynamic_options[repository_variable_name] = [
+                (repository.repo, repository.repo) for repository in repositories if repository.owner == owner
+            ]
+        else:
+            dynamic_options[repository_variable_name] = []
+        return TemplateFormDataResponse(
+            dynamic_options=dynamic_options,
+            alert_conditions=["repository_picker_available"],
+        )
+
+    def assert_repository_authorized(
+        self, trans: ProvidesUserContext, template_id: str, template_version: int, uuid: str, org: str, repo: str
+    ) -> None:
+        """Raise a clear error if ``org/repo`` is not among the App's authorized repositories."""
+        full_name = f"{org}/{repo}"
+        authorized = self.list_github_repositories(trans, template_id, template_version, uuid)
+        if not any(repository.full_name == full_name for repository in authorized):
+            raise RequestParameterInvalidException(
+                f"The GitHub App isn't installed on {full_name}. Authorize access to this "
+                "repository on GitHub, or pick one of the repositories you have granted access to."
+            )
+
+    def _assert_github_repository_authorized(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> None:
+        """For a github create/test payload with a pre-allocated uuid, validate the chosen repo."""
+        template = self._catalog.find_template(payload)
+        if not template or template.configuration.type != GITHUB_TEMPLATE_TYPE or not payload.uuid:
+            return
+        org = payload.variables.get("org")
+        repo = payload.variables.get("repo")
+        if org and repo:
+            self.assert_repository_authorized(
+                trans, template.id, template.version, str(payload.uuid), str(org), str(repo)
+            )
+
     def index(self, trans: ProvidesUserContext) -> list[UserFileSourceModel]:
         stores = self._sa_session.query(UserFileSource).filter(UserFileSource.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
@@ -270,7 +383,7 @@ class FileSourceInstancesManager:
         return self._to_model(trans, persisted_file_source)
 
     def _get_and_validate_target_upgrade_template(
-        self, persisted_file_source: UserFileSource, payload: Union[UpgradeInstancePayload, TestUpgradeInstancePayload]
+        self, persisted_file_source: UserFileSource, payload: UpgradeInstancePayload | TestUpgradeInstancePayload
     ) -> FileSourceTemplate:
         template = self._get_template(persisted_file_source, payload.template_version)
         validate_no_extra_variables_defined(payload.variables, template)
@@ -298,6 +411,7 @@ class FileSourceInstancesManager:
         catalog.validate(payload)
         template = catalog.find_template(payload)
         assert template
+        self._assert_github_repository_authorized(trans, payload)
         user_vault = trans.user_vault
         persisted_file_source = UserFileSource()
         persisted_file_source.user_id = trans.user.id
@@ -361,6 +475,7 @@ class FileSourceInstancesManager:
 
     def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
         target = CreateTestTarget(payload, UserFileSource)
+        self._assert_github_repository_authorized(trans, payload)
         return self._plugin_status(trans, target, payload)
 
     def _plugin_status(
@@ -408,7 +523,7 @@ class FileSourceInstancesManager:
         trans: ProvidesUserContext,
         payload: CanTestPluginStatus,
         template: FileSourceTemplate,
-    ) -> tuple[Optional[TemplateParameters], Optional[PluginAspectStatus]]:
+    ) -> tuple[TemplateParameters | None, PluginAspectStatus | None]:
         template_server_configuration = self._resolver.template_server_configuration(
             trans.user, template.id, template.version
         )
@@ -431,7 +546,7 @@ class FileSourceInstancesManager:
         payload: CanTestPluginStatus,
         template: FileSourceTemplate,
         template_parameters: TemplateParameters,
-    ) -> tuple[Optional[FileSourceConfiguration], PluginAspectStatus]:
+    ) -> tuple[FileSourceConfiguration | None, PluginAspectStatus]:
         configuration = None
         exception = None
         try:
@@ -442,13 +557,13 @@ class FileSourceInstancesManager:
 
     def _connection_status(
         self, trans: ProvidesUserContext, target: CanTestPluginStatus, configuration: FileSourceConfiguration
-    ) -> tuple[Optional[BaseFilesSource], PluginAspectStatus]:
+    ) -> tuple[BaseFilesSource | None, PluginAspectStatus]:
         file_source = None
         exception = None
-        if isinstance(target, (UpgradeTestTarget, UpdateTestTarget)):
+        if isinstance(target, UpgradeTestTarget | UpdateTestTarget):
             label = target.instance.name
             doc = target.instance.description
-        elif isinstance(target, (CreateTestTarget)):
+        elif isinstance(target, CreateTestTarget):
             label = target.payload.name
             doc = target.payload.description
         else:
@@ -492,7 +607,7 @@ class FileSourceInstancesManager:
         return user_file_source
 
     def _get_template(
-        self, persisted_object_store: UserFileSource, template_version: Optional[int] = None
+        self, persisted_object_store: UserFileSource, template_version: int | None = None
     ) -> FileSourceTemplate:
         catalog = self._catalog
         target_template_version = template_version or persisted_object_store.template_version
@@ -546,7 +661,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         self._app_vault = vault
         self._catalog = catalog
 
-    def _user_file_source(self, uri: str) -> Optional[UserFileSource]:
+    def _user_file_source(self, uri: str) -> UserFileSource | None:
         if "://" not in uri:
             return None
         uri_scheme, uri_rest = uri.split("://", 1)
@@ -560,7 +675,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         user_object_store: UserFileSource = self._sa_session.query(UserFileSource).filter(index_filter).one()
         return user_object_store
 
-    def _file_source_properties_from_uri(self, uri: str) -> Optional[dict[str, Any]]:
+    def _file_source_properties_from_uri(self, uri: str) -> dict[str, Any] | None:
         user_file_source = self._user_file_source(uri)
         if not user_file_source:
             return None
@@ -599,7 +714,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         if user_object_store.user.username != user_context.username:
             raise ItemOwnershipException("Your Galaxy user does not have access to the requested resource.")
 
-    def find_best_match(self, url: str) -> Optional[FileSourceScore]:
+    def find_best_match(self, url: str) -> FileSourceScore | None:
         files_source_properties = self._file_source_properties_from_uri(url)
         if files_source_properties is None:
             return None
@@ -616,7 +731,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
 
     def _all_user_file_source_properties(self, user_context: FileSourcesUserContext) -> list[dict[str, Any]]:
         username_filter = User.__table__.c.username == user_context.username
-        user: Optional[User] = self._sa_session.query(User).filter(username_filter).one_or_none()
+        user: User | None = self._sa_session.query(User).filter(username_filter).one_or_none()
         if user is None:
             return []
         all_file_source_properties: list[dict[str, Any]] = []
@@ -672,9 +787,9 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         self,
         for_serialization: bool,
         user_context: FileSourcesUserContext,
-        browsable_only: Optional[bool] = False,
-        include_kind: Optional[set[PluginKind]] = None,
-        exclude_kind: Optional[set[PluginKind]] = None,
+        browsable_only: bool | None = False,
+        include_kind: set[PluginKind] | None = None,
+        exclude_kind: set[PluginKind] | None = None,
     ) -> list[dict[str, Any]]:
         """Write out user file sources as list of config dictionaries."""
         if user_context.anonymous:
@@ -702,7 +817,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
 def configuration_to_file_source_properties(
     file_source_configuration: FileSourceConfiguration,
     label: str,
-    doc: Optional[str],
+    doc: str | None,
     id: str,
 ) -> dict[str, Any]:
     file_source_properties = file_source_configuration.model_dump()

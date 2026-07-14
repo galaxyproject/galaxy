@@ -2,8 +2,6 @@ import logging
 import re
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from pydantic import UUID4
@@ -72,8 +70,8 @@ def _sanitize_output_label(label: str) -> str:
 
 
 def _validate_input_names(
-    dataset_names: Optional[list[str]],
-    dataset_collection_names: Optional[list[str]],
+    dataset_names: list[str] | None,
+    dataset_collection_names: list[str] | None,
 ) -> None:
     """Validate user-supplied workflow input names (step labels).
 
@@ -117,7 +115,7 @@ class WorkflowsService(ServiceBase):
         trans: ProvidesUserContext,
         payload: WorkflowIndexPayload,
         include_total_count: bool = False,
-    ) -> tuple[list[dict[str, Any]], Optional[int]]:
+    ) -> tuple[list[dict[str, Any]], int | None]:
         user = trans.user
         missing_tools = payload.missing_tools
         query, total_matches = self._workflows_manager.index_query(trans, payload, include_total_count)
@@ -178,7 +176,7 @@ class WorkflowsService(ServiceBase):
         trans,
         workflow_id,
         payload: InvokeWorkflowPayload,
-    ) -> Union[WorkflowInvocationResponse, list[WorkflowInvocationResponse]]:
+    ) -> WorkflowInvocationResponse | list[WorkflowInvocationResponse]:
         if trans.anonymous:
             raise exceptions.AuthenticationRequired("You need to be logged in to run workflows.")
         trans.check_user_activation()
@@ -453,7 +451,7 @@ class WorkflowsService(ServiceBase):
         return None
 
     def _create_landing_request_association(
-        self, trans: ProvidesUserContext, landing_uuid: Optional[UUID4], invocations: list[WorkflowInvocation]
+        self, trans: ProvidesUserContext, landing_uuid: UUID4 | None, invocations: list[WorkflowInvocation]
     ):
         """Create association between landing request and workflow invocations."""
         # Look up the workflow landing request by UUID

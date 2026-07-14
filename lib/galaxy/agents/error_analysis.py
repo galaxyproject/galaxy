@@ -8,7 +8,6 @@ from functools import partial
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 import anyio
@@ -49,6 +48,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
     """Agent for diagnosing tool failures and providing solutions."""
 
     agent_type = AgentType.ERROR_ANALYSIS
+    capability_blurb = "Troubleshoot a failed job when you share its error message or job details."
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         if self._supports_structured_output():
@@ -57,12 +57,14 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 deps_type=GalaxyAgentDependencies,
                 output_type=ErrorAnalysisResult,
                 system_prompt=self.get_system_prompt(),
+                retries=self._get_retries(),
             )
         else:
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
                 system_prompt=self._get_simple_system_prompt(),
+                retries=self._get_retries(),
             )
 
         return agent
@@ -101,7 +103,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error getting job details for {job_id}: {e}")
             return {"error": f"Failed to retrieve job details: {str(e)}"}
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)

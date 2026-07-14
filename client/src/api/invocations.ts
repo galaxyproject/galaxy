@@ -30,6 +30,8 @@ export function isWorkflowInvocationElementView(
     return item !== null && "steps" in item;
 }
 
+// TODO: Consider caching this in the store given this doesn't change as it is generated once
+// when an invocation is complete?
 /**
  * Fetches the invocation report for a given invocation ID
  * @param {string} invocationId The ID of the invocation to fetch the report for

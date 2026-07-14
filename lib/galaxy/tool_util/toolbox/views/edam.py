@@ -1,10 +1,5 @@
 import logging
 from enum import Enum
-from typing import (
-    Dict,
-    List,
-    Tuple,
-)
 
 from galaxy.tool_util.edam_util import (
     ROOT_OPERATION,
@@ -33,7 +28,7 @@ class EdamPanelMode(str, Enum):
 
 
 class EdamToolPanelView(ToolPanelView):
-    def __init__(self, edam: Dict[str, Dict], mode: EdamPanelMode = EdamPanelMode.merged):
+    def __init__(self, edam: dict[str, dict], mode: EdamPanelMode = EdamPanelMode.merged):
         self.edam = edam
         self.mode = mode
         self.include_topics = mode in [EdamPanelMode.merged, EdamPanelMode.topics]
@@ -51,9 +46,9 @@ class EdamToolPanelView(ToolPanelView):
         # topics = sorted(topics, key=lambda x: self.edam[x]['label'])
 
         # Convert these to list of dicts, wherein we'll add our tools/etc.
-        operations: Dict[str, Dict] = {x: {} for x in operations_list}
-        topics: Dict[str, Dict] = {x: {} for x in topics_list}
-        uncategorized: List[Tuple] = []
+        operations: dict[str, dict] = {x: {} for x in operations_list}
+        topics: dict[str, dict] = {x: {} for x in topics_list}
+        uncategorized: list[tuple] = []
 
         for tool_id, key, val, val_name in walk_loaded_tools(base_tool_panel, toolbox_registry):
             for term in self._get_edam_sec(val):

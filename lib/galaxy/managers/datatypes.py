@@ -1,8 +1,3 @@
-from typing import (
-    Optional,
-    Union,
-)
-
 from pydantic import TypeAdapter
 
 from galaxy.datatypes._schema import (
@@ -19,8 +14,8 @@ from galaxy.datatypes.registry import Registry
 
 
 def view_index(
-    datatypes_registry: Registry, extension_only: Optional[bool] = True, upload_only: Optional[bool] = True
-) -> Union[list[DatatypeDetails], list[str]]:
+    datatypes_registry: Registry, extension_only: bool | None = True, upload_only: bool | None = True
+) -> list[DatatypeDetails] | list[str]:
     if extension_only:
         if upload_only:
             return datatypes_registry.upload_file_formats
@@ -59,7 +54,7 @@ def view_mapping(datatypes_registry: Registry) -> DatatypesMap:
 
 
 def view_types_and_mapping(
-    datatypes_registry: Registry, extension_only: Optional[bool] = True, upload_only: Optional[bool] = True
+    datatypes_registry: Registry, extension_only: bool | None = True, upload_only: bool | None = True
 ) -> DatatypesCombinedMap:
     return DatatypesCombinedMap(
         datatypes=view_index(datatypes_registry, extension_only, upload_only),
@@ -105,8 +100,8 @@ def _get_edam_details(datatypes_registry: Registry, edam_ids: dict[str, str]) ->
 
 
 def view_edam_formats(
-    datatypes_registry: Registry, detailed: Optional[bool] = False
-) -> Union[dict[str, str], dict[str, dict[str, str]]]:
+    datatypes_registry: Registry, detailed: bool | None = False
+) -> dict[str, str] | dict[str, dict[str, str]]:
     if detailed:
         return _get_edam_details(datatypes_registry, datatypes_registry.edam_formats)
     else:
@@ -114,8 +109,8 @@ def view_edam_formats(
 
 
 def view_edam_data(
-    datatypes_registry: Registry, detailed: Optional[bool] = False
-) -> Union[dict[str, str], dict[str, dict[str, str]]]:
+    datatypes_registry: Registry, detailed: bool | None = False
+) -> dict[str, str] | dict[str, dict[str, str]]:
     if detailed:
         return _get_edam_details(datatypes_registry, datatypes_registry.edam_data)
     else:
@@ -123,7 +118,7 @@ def view_edam_data(
 
 
 def view_visualization_mappings(
-    datatypes_registry: Registry, datatype: Optional[str] = None
+    datatypes_registry: Registry, datatype: str | None = None
 ) -> DatatypeVisualizationMappingsList:
     """
     Get datatype visualization mappings from the registry.
@@ -161,7 +156,7 @@ def view_visualization_mappings(
     return TypeAdapter(DatatypeVisualizationMappingsList).validate_python(mappings)
 
 
-def get_preferred_visualization(datatypes_registry: Registry, datatype_extension: str) -> Optional[dict[str, str]]:
+def get_preferred_visualization(datatypes_registry: Registry, datatype_extension: str) -> dict[str, str] | None:
     """
     Get the preferred visualization mapping for a specific datatype extension.
     Returns a dictionary with 'visualization' and 'default_params' keys, or None if no mapping exists.

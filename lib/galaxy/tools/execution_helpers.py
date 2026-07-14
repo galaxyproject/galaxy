@@ -5,7 +5,6 @@ tool execution code, and tool action code.
 """
 
 import logging
-from typing import Optional
 
 from more_itertools import consecutive_groups
 
@@ -50,7 +49,7 @@ def filter_output(tool, output, incoming):
     return False
 
 
-def on_text_for_names(names: Optional[list[str]], prefix: Optional[str] = None) -> str:
+def on_text_for_names(names: list[str] | None, prefix: str | None = None) -> str:
     if names is None or len(names) == 0:
         return ""
 
@@ -71,7 +70,7 @@ def on_text_for_names(names: Optional[list[str]], prefix: Optional[str] = None) 
     return on_text
 
 
-def on_text_for_numeric_ids(ids: Optional[list[int]], prefix: Optional[str] = None) -> str:
+def on_text_for_numeric_ids(ids: list[int] | None, prefix: str | None = None) -> str:
     if ids is None or len(ids) == 0:
         return ""
     # ids may contain duplicates... this is because the first value in
@@ -92,9 +91,9 @@ def on_text_for_numeric_ids(ids: Optional[list[int]], prefix: Optional[str] = No
 
 
 def on_text_for_dataset_and_collections(
-    dataset_hids: Optional[list[int]] = None,
-    collection_hids: Optional[list[int]] = None,
-    element_ids: Optional[list[str]] = None,
+    dataset_hids: list[int] | None = None,
+    collection_hids: list[int] | None = None,
+    element_ids: list[str] | None = None,
 ) -> str:
 
     on_text = []

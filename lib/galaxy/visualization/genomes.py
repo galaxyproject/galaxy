@@ -3,9 +3,6 @@ import os
 import re
 import sys
 from json import loads
-from typing import (
-    Optional,
-)
 
 from bx.seq.twobit import TwoBitFile
 
@@ -261,7 +258,7 @@ class Genomes:
             rval = self.genomes[dbkey]
         return rval
 
-    def get_dbkeys(self, user: Optional[User], chrom_info=False):
+    def get_dbkeys(self, user: User | None, chrom_info=False):
         """Returns all known dbkeys. If chrom_info is True, only dbkeys with
         chromosome lengths are returned."""
         self.check_and_reload()

@@ -10,11 +10,10 @@ import {
     markTrackedCompleted,
     markTrackedError,
     splitTrackedUploadsByType,
-    updateTrackedProgress,
 } from "@/composables/upload/uploadTracking";
 import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
 import { errorMessageAsString } from "@/utils/simple-error";
-import type { UploadDatasetsConfig } from "@/utils/upload";
+import { DEFAULT_CHUNK_SIZE, type UploadDatasetsConfig } from "@/utils/upload";
 import { isFetchApiCompatible, uploadCollectionDatasets, uploadDatasets } from "@/utils/upload";
 
 /**
@@ -68,9 +67,12 @@ export function useUploadSubmission() {
             return;
         }
 
+        const configuredChunkSize = Number(galaxyConfig.value.chunk_upload_size);
+        const chunkSize = configuredChunkSize > 0 ? configuredChunkSize : DEFAULT_CHUNK_SIZE;
+
         return new Promise<void>((resolve, reject) => {
             const config: UploadDatasetsConfig = {
-                chunkSize: galaxyConfig.value.chunk_upload_size as number,
+                chunkSize,
                 preferredObjectStoreId: targetObjectStoreId,
                 success: (response) => {
                     const uploadedDatasets = datasetsFromFetchResponse(response);
@@ -105,7 +107,10 @@ export function useUploadSubmission() {
                 },
                 progress: (percentage) => {
                     onProgress?.(percentage);
-                    updateTrackedProgress(uploadState, apiIds, percentage);
+                },
+                uploadIds: apiIds,
+                perFileProgress: (fileId, percentage) => {
+                    uploadState.updateProgress(fileId, percentage);
                 },
             };
 

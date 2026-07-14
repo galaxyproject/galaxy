@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 from urllib.parse import unquote_plus
 
 from pydantic import BaseModel
@@ -18,22 +17,22 @@ log = logging.getLogger(__name__)
 
 class CreateLinkStep(BaseModel):
     name: str
-    state: Optional[str] = None
-    ready: Optional[bool] = False
+    state: str | None = None
+    ready: bool | None = False
 
 
 class CreateLinkFeedback(BaseModel):
-    messages: Optional[list[tuple[str, str]]] = None
-    refresh: Optional[bool] = False
-    resource: Optional[str] = None
-    preparable_steps: Optional[list[CreateLinkStep]] = None
+    messages: list[tuple[str, str]] | None = None
+    refresh: bool | None = False
+    resource: str | None = None
+    preparable_steps: list[CreateLinkStep] | None = None
 
 
 class CreateLinkIncoming(BaseModel):
     app_name: str
     dataset_id: str
     link_name: str
-    kwd: Optional[dict[str, str]] = None
+    kwd: dict[str, str] | None = None
 
 
 class Link(BaseModel):
@@ -50,8 +49,8 @@ class DisplayApplication(BaseModel):
 
 class ReloadFeedback(BaseModel):
     message: str
-    reloaded: list[Optional[str]]
-    failed: list[Optional[str]]
+    reloaded: list[str | None]
+    failed: list[str | None]
 
 
 class DisplayApplicationsManager:
@@ -118,7 +117,7 @@ class DisplayApplicationsManager:
         app_name: str,
         dataset_id: str,
         link_name: str,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
         **kwds,
     ) -> CreateLinkFeedback:
         """Access to external display applications"""

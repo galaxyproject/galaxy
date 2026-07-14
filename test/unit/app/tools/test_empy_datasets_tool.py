@@ -1,7 +1,6 @@
 import gzip
 import tempfile
 from contextlib import contextmanager
-from typing import Union
 
 from galaxy.model import (
     Dataset,
@@ -15,7 +14,7 @@ from galaxy.tools import FilterEmptyDatasetsTool
 def get_dce(empty, compressed):
     dataset = Dataset()
     with tempfile.NamedTemporaryFile(mode="wb") as out:
-        fh: Union[gzip.GzipFile, tempfile._TemporaryFileWrapper]
+        fh: gzip.GzipFile | tempfile._TemporaryFileWrapper
         if compressed:
             fh = gzip.open(out.name, "wb")
         else:

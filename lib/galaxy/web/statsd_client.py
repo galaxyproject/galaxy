@@ -1,7 +1,4 @@
 import sys
-from typing import (
-    Optional,
-)
 
 try:
     import statsd
@@ -33,6 +30,10 @@ class VanillaGalaxyStatsdClient:
         infix = self._effective_infix(path, tags)
         self.statsd_client.timing(infix + path, time)
 
+    def gauge(self, path, value, tags=None):
+        infix = self._effective_infix(path, tags)
+        self.statsd_client.gauge(infix + path, value)
+
     def incr(self, path, n=1, tags=None):
         infix = self._effective_infix(path, tags)
         self.statsd_client.incr(infix + path, n)
@@ -47,8 +48,8 @@ class VanillaGalaxyStatsdClient:
             return ""
 
 
-CURRENT_TEST: Optional[str] = None
-CURRENT_TEST_METRICS: Optional[dict[str, dict]] = None
+CURRENT_TEST: str | None = None
+CURRENT_TEST_METRICS: dict[str, dict] | None = None
 
 
 class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
@@ -59,6 +60,14 @@ class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
                 timing[path] = []
             timing[path].append({"time": time, "tags": tags})
         super().timing(path, time, tags=tags)
+
+    def gauge(self, path, value, tags=None):
+        if (metrics := CURRENT_TEST_METRICS) is not None:
+            gauge = metrics.setdefault("gauge", {})
+            if path not in gauge:
+                gauge[path] = []
+            gauge[path].append({"value": value, "tags": tags})
+        super().gauge(path, value, tags=tags)
 
     def incr(self, path, n=1, tags=None):
         if (metrics := CURRENT_TEST_METRICS) is not None:
@@ -77,6 +86,9 @@ class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
 
 class MockStatsClient:
     def timing(self, path, time, tags=None):
+        pass
+
+    def gauge(self, path, value, tags=None):
         pass
 
     def incr(self, path, n=1, tags=None):

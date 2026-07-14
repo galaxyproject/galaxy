@@ -12,8 +12,6 @@ from datetime import (
 from typing import (
     Annotated,
     Any,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -99,7 +97,7 @@ UserDetailsQueryParam: bool = Query(
     description="If true, and requester is an admin, will return external job id and user email. This is only available to admins.",
 )
 
-UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+UserIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="User ID",
     description="an encoded user id to restrict query to, must be own id if not admin user",
@@ -127,43 +125,43 @@ ToolIdLikeQueryParam = Query(
     description="Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned",
 )
 
-DateRangeMinQueryParam: Optional[Union[OffsetNaiveDatetime, date]] = Query(
+DateRangeMinQueryParam: OffsetNaiveDatetime | date | None = Query(
     default=None,
     title="Date Range Minimum",
     description="Limit listing of jobs to those that are updated after specified date (e.g. '2014-01-01')",
 )
 
-DateRangeMaxQueryParam: Optional[Union[OffsetNaiveDatetime, date]] = Query(
+DateRangeMaxQueryParam: OffsetNaiveDatetime | date | None = Query(
     default=None,
     title="Date Range Maximum",
     description="Limit listing of jobs to those that are updated before specified date (e.g. '2014-01-01')",
 )
 
-HistoryIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+HistoryIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="History ID",
     description="Limit listing of jobs to those that match the history_id. If none, jobs from any history may be returned.",
 )
 
-WorkflowIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+WorkflowIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Workflow ID",
     description="Limit listing of jobs to those that match the specified workflow ID. If none, jobs from any workflow (or from no workflows) may be returned.",
 )
 
-InvocationIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+InvocationIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Invocation ID",
     description="Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned.",
 )
 
-ImplicitCollectionJobsIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+ImplicitCollectionJobsIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Implicit Collection Jobs ID",
     description="Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned.",
 )
 
-ToolRequestIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+ToolRequestIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Tool Request ID",
     description="Limit listing of jobs to those that were created from the supplied tool request ID. If none, jobs from any tool request (or from no workflows) may be returned.",
@@ -191,14 +189,14 @@ query_tags = [
     IndexQueryTag("handler", "The job handler name used to execute the job.", "h", admin_only=True),
 ]
 
-SearchQueryParam: Optional[str] = search_query_param(
+SearchQueryParam: str | None = search_query_param(
     model_name="Job",
     tags=query_tags,
     free_text_fields=["user", "tool", "handler", "runner"],
 )
 
-FullShowQueryParam: Optional[bool] = Query(title="Full show", description="Show extra information.")
-DeprecatedHdaLddaQueryParam: Optional[DatasetSourceType] = Query(
+FullShowQueryParam: bool | None = Query(title="Full show", description="Show extra information.")
+DeprecatedHdaLddaQueryParam: DatasetSourceType | None = Query(
     deprecated=True,
     title="HDA or LDDA",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
@@ -218,47 +216,47 @@ DeleteJobBody = Body(title="Delete/cancel job", description="The values to delet
 
 
 class ShowFullJobResponse(EncodedJobDetails):
-    tool_stdout: Optional[str] = Field(
+    tool_stdout: str | None = Field(
         default=None,
         title="Tool Standard Output",
         description="The captured standard output of the tool executed by the job.",
     )
-    tool_stderr: Optional[str] = Field(
+    tool_stderr: str | None = Field(
         default=None,
         title="Tool Standard Error",
         description="The captured standard error of the tool executed by the job.",
     )
-    job_stdout: Optional[str] = Field(
+    job_stdout: str | None = Field(
         default=None,
         title="Job Standard Output",
         description="The captured standard output of the job execution.",
     )
-    job_stderr: Optional[str] = Field(
+    job_stderr: str | None = Field(
         default=None,
         title="Job Standard Error",
         description="The captured standard error of the job execution.",
     )
-    stdout: Optional[str] = Field(  # Legacy (tool_stdout + "\n" + job_stdout)
+    stdout: str | None = Field(  # Legacy (tool_stdout + "\n" + job_stdout)
         default=None,
         title="Standard Output",
         description="Combined tool and job standard output streams.",
     )
-    stderr: Optional[str] = Field(  # Legacy (tool_stderr + "\n" + job_stderr)
+    stderr: str | None = Field(  # Legacy (tool_stderr + "\n" + job_stderr)
         default=None,
         title="Standard Error",
         description="Combined tool and job standard error streams.",
     )
-    job_messages: Optional[list[AnyJobMessage]] = Field(
+    job_messages: list[AnyJobMessage] | None = Field(
         default=None,
         title="Job Messages",
         description="List with additional information and possible reasons for a failed job.",
     )
-    dependencies: Optional[list[Any]] = Field(
+    dependencies: list[Any] | None = Field(
         default=None,
         title="Job dependencies",
         description="The dependencies of the job.",
     )
-    job_metrics: Optional[JobMetricCollection] = Field(
+    job_metrics: JobMetricCollection | None = Field(
         default=None,
         title="Job Metrics",
         description=(
@@ -283,24 +281,24 @@ class FastAPIJobs:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        states: Optional[list[str]] = Depends(query_parameter_as_list(StateQueryParam)),
+        states: list[str] | None = Depends(query_parameter_as_list(StateQueryParam)),
         user_details: bool = UserDetailsQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        user_id: DecodedDatabaseIdField | None = UserIdQueryParam,
         view: JobIndexViewEnum = ViewQueryParam,
-        tool_ids: Optional[list[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
-        tool_ids_like: Optional[list[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
-        date_range_min: Optional[Union[datetime, date]] = DateRangeMinQueryParam,
-        date_range_max: Optional[Union[datetime, date]] = DateRangeMaxQueryParam,
-        history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
-        workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
-        invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
-        implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = ImplicitCollectionJobsIdQueryParam,
-        tool_request_id: Optional[DecodedDatabaseIdField] = ToolRequestIdQueryParam,
+        tool_ids: list[str] | None = Depends(query_parameter_as_list(ToolIdQueryParam)),
+        tool_ids_like: list[str] | None = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
+        date_range_min: datetime | date | None = DateRangeMinQueryParam,
+        date_range_max: datetime | date | None = DateRangeMaxQueryParam,
+        history_id: DecodedDatabaseIdField | None = HistoryIdQueryParam,
+        workflow_id: DecodedDatabaseIdField | None = WorkflowIdQueryParam,
+        invocation_id: DecodedDatabaseIdField | None = InvocationIdQueryParam,
+        implicit_collection_jobs_id: DecodedDatabaseIdField | None = ImplicitCollectionJobsIdQueryParam,
+        tool_request_id: DecodedDatabaseIdField | None = ToolRequestIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
-        search: Optional[str] = SearchQueryParam,
+        search: str | None = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-    ) -> list[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]]:
+    ) -> list[ShowFullJobResponse | EncodedJobDetails | JobSummary]:
         payload = JobIndexPayload.model_construct(
             states=states,
             user_details=user_details,
@@ -435,10 +433,10 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> list[Union[JobOutputAssociation, JobOutputCollectionAssociation]]:
+    ) -> list[JobOutputAssociation | JobOutputCollectionAssociation]:
         job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
-        output_associations: list[Union[JobOutputAssociation, JobOutputCollectionAssociation]] = []
+        output_associations: list[JobOutputAssociation | JobOutputCollectionAssociation] = []
         for association in associations:
             output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
 
@@ -484,7 +482,7 @@ class FastAPIJobs:
     def parameters_display_by_job(
         self,
         job_id: JobIdPathParam,
-        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+        hda_ldda: Annotated[DatasetSourceType | None, DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """Resolve parameters as a list for nested display."""
@@ -517,9 +515,9 @@ class FastAPIJobs:
     def metrics_by_job(
         self,
         job_id: JobIdPathParam,
-        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+        hda_ldda: Annotated[DatasetSourceType | None, DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> list[Optional[JobMetric]]:
+    ) -> list[JobMetric | None]:
         hda_ldda_str = hda_ldda or "hda"
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
@@ -535,7 +533,7 @@ class FastAPIJobs:
         dataset_id: DatasetIdPathParam,
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> list[Optional[JobMetric]]:
+    ) -> list[JobMetric | None]:
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
@@ -607,9 +605,9 @@ class FastAPIJobs:
     def show(
         self,
         job_id: JobIdPathParam,
-        full: Annotated[Optional[bool], FullShowQueryParam] = False,
+        full: Annotated[bool | None, FullShowQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> Union[ShowFullJobResponse, EncodedJobDetails]:
+    ) -> ShowFullJobResponse | EncodedJobDetails:
         if full:
             return ShowFullJobResponse(**self.service.show(trans, job_id, bool(full)))
         else:
@@ -654,7 +652,7 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: Annotated[Optional[DeleteJobPayload], DeleteJobBody] = None,
+        payload: Annotated[DeleteJobPayload | None, DeleteJobBody] = None,
     ) -> bool:
         job = self.service.get_job(trans=trans, job_id=job_id)
         if payload:

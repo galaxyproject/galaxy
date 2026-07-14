@@ -5,6 +5,7 @@ from typing import (
 import pytest
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.tools.parameters.meta import _remove_internal_state_keys
 from galaxy.tools.parameters.wrapped import (
     nested_key_to_path,
     process_key,
@@ -25,6 +26,45 @@ def test_nested_key_to_path():
         1,
         "data_table_column_value",
     ]
+
+
+def test_remove_internal_state_keys():
+    state = {
+        "__class__": "RuntimeValue",
+        "selected_tasks": {
+            "selected_task": "train",
+            "__current_case__": 0,
+            "_private": "kept",
+            "input_options": {
+                "selected_input": "tabular",
+                "__current_case__": 1,
+                "repeat_0": {"__index__": 0, "__identifier__": "foo", "col": 1},
+            },
+        },
+    }
+    _remove_internal_state_keys(state)
+    assert state == {
+        "selected_tasks": {
+            "selected_task": "train",
+            "_private": "kept",
+            "input_options": {
+                "selected_input": "tabular",
+                "repeat_0": {"col": 1},
+            },
+        },
+    }
+
+
+def test_remove_internal_state_keys_list():
+    # visit_input_values represents repeat groups as lists of dicts, each with __index__
+    state = {
+        "repeat": [
+            {"__index__": 0, "col": 1},
+            {"__index__": 1, "col": 2},
+        ]
+    }
+    _remove_internal_state_keys(state)
+    assert state == {"repeat": [{"col": 1}, {"col": 2}]}
 
 
 class TestProcessKey:

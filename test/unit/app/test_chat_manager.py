@@ -219,3 +219,116 @@ class TestGetRoutingHistory:
         exchange = self._exchange_with("not valid json{{{")
         _, responding = self._routing_history(mgr, trans, exchange)
         assert responding is False
+
+
+class TestResolvePageFromInterfaceContext:
+    """resolve_page_from_interface_context extracts and validates a page from
+    an interface_context notebook payload, delegating access-check to
+    get_accessible_page."""
+
+    def _trans(self, decoded_id=99):
+        trans = _make_trans()
+        trans.security = mock.Mock()
+        trans.security.decode_id.return_value = decoded_id
+        return trans
+
+    def test_returns_none_none_when_query_context_is_none(self):
+        mgr = ChatManager()
+        assert mgr.resolve_page_from_interface_context(_make_trans(), None) == (None, None)
+
+    def test_returns_none_none_when_interface_context_absent(self):
+        mgr = ChatManager()
+        assert mgr.resolve_page_from_interface_context(_make_trans(), {"other_key": "value"}) == (None, None)
+
+    def test_returns_none_none_when_context_type_is_not_notebook(self):
+        mgr = ChatManager()
+        trans = self._trans()
+        ctx = {"interface_context": {"contextType": "tool", "pageId": "abc"}}
+        assert mgr.resolve_page_from_interface_context(trans, ctx) == (None, None)
+
+    def test_returns_none_none_when_page_id_missing(self):
+        mgr = ChatManager()
+        trans = self._trans()
+        ctx = {"interface_context": {"contextType": "notebook"}}
+        assert mgr.resolve_page_from_interface_context(trans, ctx) == (None, None)
+
+    def test_returns_none_none_when_decode_raises(self):
+        mgr = ChatManager()
+        trans = self._trans()
+        trans.security.decode_id.side_effect = Exception("bad id")
+        ctx = {"interface_context": {"contextType": "notebook", "pageId": "invalid"}}
+        assert mgr.resolve_page_from_interface_context(trans, ctx) == (None, None)
+
+    def test_returns_page_id_and_page_obj_on_success(self):
+        mgr = ChatManager()
+        trans = self._trans(decoded_id=42)
+        fake_page = mock.Mock()
+        with mock.patch.object(mgr, "get_accessible_page", return_value=fake_page) as mock_get:
+            ctx = {"interface_context": {"contextType": "notebook", "pageId": "encodedAbc"}}
+            page_id, page_obj = mgr.resolve_page_from_interface_context(trans, ctx)
+
+        assert page_id == 42
+        assert page_obj is fake_page
+        mock_get.assert_called_once_with(trans, 42)
+
+
+class TestResponderAgentType:
+    """The displayed agent_type should be the agent that actually answered (the nested
+    agent_response), not the request type stored at the top level ("auto")."""
+
+    def test_prefers_nested_response_agent_type(self):
+        data = {"agent_type": "auto", "agent_response": {"agent_type": "error_analysis"}}
+        assert ChatManager.responder_agent_type(data) == "error_analysis"
+
+    def test_falls_back_to_top_level_when_no_response(self):
+        data = {"agent_type": "gtn_training", "agent_response": None}
+        assert ChatManager.responder_agent_type(data) == "gtn_training"
+
+    def test_unknown_when_nothing_present(self):
+        assert ChatManager.responder_agent_type({}) == "unknown"
+
+
+class TestGetExchangeMessagesAttribution:
+    """Reopening a conversation should badge each turn with the real responder, so a
+    router handoff turn (persisted with top-level agent_type "auto") reloads as the
+    specialist that actually answered."""
+
+    @staticmethod
+    def _exchange_for(message):
+        msg = mock.Mock()
+        msg.message = message
+        msg.feedback = None
+        msg.create_time = None
+        exchange = _FakeChatExchange()
+        exchange.messages = [msg]
+        return exchange
+
+    def _assistant_turn(self, message):
+        mgr = ChatManager()
+        exchange = self._exchange_for(message)
+        with mock.patch.object(mgr, "get_exchange_by_id", return_value=exchange):
+            messages = mgr.get_exchange_messages(_make_trans(), exchange_id=1)
+        assistant = [m for m in messages if m["role"] == "assistant"]
+        assert len(assistant) == 1
+        return assistant[0]
+
+    def test_handoff_turn_reloads_as_specialist(self):
+        message = json.dumps(
+            {
+                "query": "why did my job fail?",
+                "response": "Your tool hit an out-of-memory error.",
+                "agent_type": "auto",
+                "agent_response": {"agent_type": "error_analysis"},
+            }
+        )
+        assert self._assistant_turn(message)["agent_type"] == "error_analysis"
+
+    def test_falls_back_to_stored_type_without_response(self):
+        message = json.dumps(
+            {
+                "query": "find me a tutorial",
+                "response": "Here are some tutorials.",
+                "agent_type": "gtn_training",
+            }
+        )
+        assert self._assistant_turn(message)["agent_type"] == "gtn_training"

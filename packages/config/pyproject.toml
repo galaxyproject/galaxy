@@ -43,7 +43,7 @@ keywords = ["Galaxy"]
 [project.optional-dependencies]
 test = [
     "pytest",
-    "gravity>=1.2.0",
+    "gravity>=1.2.3",
 ]
 
 [project.scripts]

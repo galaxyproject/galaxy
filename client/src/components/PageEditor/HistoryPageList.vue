@@ -1,46 +1,77 @@
 <script setup lang="ts">
-import { faChevronRight, faEye, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
+import { computed, toRef } from "vue";
 
 import type { HistoryPageSummary } from "@/api/pages";
 import { PAGE_LABELS } from "@/components/Page/constants";
+import { useHistoryBreadCrumbsTo } from "@/composables/historyBreadcrumbs";
+import { useHistoryStore } from "@/stores/historyStore.js";
+import { useUserStore } from "@/stores/userStore.js";
 
-defineProps<{
+import BreadcrumbHeading from "../Common/BreadcrumbHeading.vue";
+import Heading from "../Common/Heading.vue";
+import PageCard from "./PageCard.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+
+const props = defineProps<{
     pages: HistoryPageSummary[];
+    historyId: string;
+    invocationId?: string;
 }>();
 
-defineEmits<{
-    (e: "select", pageId: string): void;
+const emit = defineEmits<{
+    (e: "edit", pageId: string, username: string): void;
     (e: "view", pageId: string): void;
     (e: "create"): void;
+    (e: "view-runtime-report"): void;
 }>();
 
-const labels = PAGE_LABELS.history;
+const historyStore = useHistoryStore();
+const userStore = useUserStore();
 
-function getPageTitle(page: HistoryPageSummary): string {
-    return page.title || labels.defaultTitle;
-}
+const history = computed(() => historyStore.getHistoryById(props.historyId));
 
-function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-}
+const unownedHistory = computed(() =>
+    history.value && "user_id" in history.value
+        ? !userStore.matchesCurrentUserId(history.value.user_id as string)
+        : undefined,
+);
+
+const labels = computed(() => (props.invocationId ? PAGE_LABELS.invocation : PAGE_LABELS.history));
+
+const { breadcrumbItems } = useHistoryBreadCrumbsTo(toRef(props, "historyId"), labels.value.entityNamePlural);
 </script>
 
 <template>
-    <div class="history-page-list" data-description="history page list">
-        <div class="list-header d-flex justify-content-between align-items-center p-3 border-bottom">
-            <h4 class="mb-0">{{ labels.entityNamePlural }}</h4>
-            <BButton variant="primary" size="sm" data-description="create page button" @click="$emit('create')">
+    <div class="d-flex flex-column" data-description="history page list">
+        <BreadcrumbHeading v-if="!props.invocationId" :items="breadcrumbItems">
+            <GButton
+                class="text-nowrap"
+                color="blue"
+                size="small"
+                data-description="create page button"
+                @click="emit('create')">
                 <FontAwesomeIcon :icon="faPlus" />
                 {{ labels.newButton }}
-            </BButton>
+            </GButton>
+        </BreadcrumbHeading>
+        <div v-else class="d-flex flex-gapx-1 pb-2">
+            <Heading h1 separator inline size="md" class="flex-grow-1 mb-0">
+                Edited {{ labels.entityNamePlural }}
+            </Heading>
+            <GButton size="small" outline color="blue" @click="emit('view-runtime-report')">
+                Back to Runtime Report
+                <FontAwesomeIcon :icon="faArrowLeft" />
+            </GButton>
         </div>
+
+        <BAlert v-if="unownedHistory" show>
+            You do not own this history
+            <span v-if="props.invocationId">(associated with the invocation)</span>
+            so only {{ labels.entityNamePlural }} that you created against this history are shown.
+        </BAlert>
 
         <div v-if="pages.length === 0" class="empty-state text-center p-4" data-description="page empty state">
             <p class="text-muted">{{ labels.emptyStateTitle }}</p>
@@ -49,34 +80,19 @@ function formatDate(dateStr: string): string {
             </p>
         </div>
 
-        <div v-else class="page-items">
-            <div
+        <div v-else class="page-items mt-1">
+            <PageCard
                 v-for="page in pages"
                 :key="page.id"
-                class="page-item p-3 border-bottom cursor-pointer"
                 data-description="page item"
-                @click="$emit('select', page.id)">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="page-title fw-bold" data-description="page title">
-                            {{ getPageTitle(page) }}
-                        </div>
-                        <div class="page-meta text-muted small">Updated {{ formatDate(page.update_time) }}</div>
-                    </div>
-                    <span class="page-actions d-flex align-items-center">
-                        <BButton
-                            variant="link"
-                            size="sm"
-                            class="p-1"
-                            :title="labels.viewButton"
-                            data-description="page view button"
-                            @click.stop="$emit('view', page.id)">
-                            <FontAwesomeIcon :icon="faEye" />
-                        </BButton>
-                        <FontAwesomeIcon :icon="faChevronRight" class="text-muted" />
-                    </span>
-                </div>
-            </div>
+                :page="page"
+                :default-title="labels.defaultTitle"
+                :entity-name="labels.entityName"
+                :edit-title="labels.editButton"
+                :show-invocation-badge="!props.invocationId"
+                :view-title="labels.viewButton"
+                @edit="emit('edit', page.id, page.username)"
+                @view="emit('view', page.id)" />
         </div>
     </div>
 </template>
@@ -84,6 +100,10 @@ function formatDate(dateStr: string): string {
 <style scoped>
 .page-item:hover {
     background: var(--panel-header-bg);
+}
+.page-items {
+    flex: 1 1 0;
+    overflow-y: auto;
 }
 .cursor-pointer {
     cursor: pointer;

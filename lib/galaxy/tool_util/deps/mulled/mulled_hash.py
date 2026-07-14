@@ -8,7 +8,7 @@ Produce a mulled hash with:
     mulled-hash samtools=1.3.1,bedtools=2.22
 """
 
-from typing_extensions import Literal
+from typing import Literal
 
 from ._cli import arg_parser
 from .mulled_build import target_str_to_targets

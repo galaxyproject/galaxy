@@ -3,7 +3,6 @@ from typing import Literal
 
 
 class NoReplacement:
-
     def __str__(self):
         return "NO_REPLACEMENT singleton"
 

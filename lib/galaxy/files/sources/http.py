@@ -1,7 +1,6 @@
 import logging
 import re
 import urllib.request
-from typing import Union
 
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
@@ -27,8 +26,8 @@ log = logging.getLogger(__name__)
 class HTTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     # `url_regex` is not templated because it needs to be set at initialization with no RuntimeContext available.
     url_regex: str = r"^https?://|^ftp://"
-    http_headers: Union[dict[str, str], TemplateExpansion] = {}
-    fetch_url_allowlist: Union[list[IpAllowedListEntryT], TemplateExpansion] = []
+    http_headers: dict[str, str] | TemplateExpansion = {}
+    fetch_url_allowlist: list[IpAllowedListEntryT] | TemplateExpansion = []
 
 
 class HTTPFileSourceConfiguration(BaseFileSourceConfiguration):

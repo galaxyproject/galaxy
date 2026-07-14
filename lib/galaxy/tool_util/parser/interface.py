@@ -5,22 +5,19 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
+from collections.abc import Sequence
 from os.path import join
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
+    Literal,
     Optional,
-    Sequence,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
 
 import packaging.version
 from typing_extensions import (
-    Literal,
     NotRequired,
     TypedDict,
 )
@@ -70,74 +67,74 @@ NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool fea
 INPUT_CLASS_T = Literal["galaxy", "cwl"]
 
 
-XmlInt = Union[str, int]
+XmlInt = str | int
 
 
 class ToolSourceTestOutputAttributes(TypedDict):
-    object: NotRequired[Optional[Any]]
+    object: NotRequired[Any | None]
     compare: OutputCompareType
     lines_diff: int
     delta: int
-    delta_frac: Optional[float]
+    delta_frac: float | None
     sort: bool
     decompress: bool
-    location: NotRequired[Optional[str]]
-    ftype: NotRequired[Optional[str]]
+    location: NotRequired[str | None]
+    ftype: NotRequired[str | None]
     eps: float
     metric: str
-    pin_labels: Optional[Any]
-    count: Optional[int]
-    min: Optional[int]
-    max: Optional[int]
-    metadata: Dict[str, Any]
-    md5: Optional[str]
-    checksum: Optional[str]
-    primary_datasets: Dict[str, Any]
-    elements: Dict[str, Any]
+    pin_labels: Any | None
+    count: int | None
+    min: int | None
+    max: int | None
+    metadata: dict[str, Any]
+    md5: str | None
+    checksum: str | None
+    primary_datasets: dict[str, Any]
+    elements: dict[str, Any]
     assert_list: AssertionList
-    extra_files: List[Dict[str, Any]]
+    extra_files: list[dict[str, Any]]
 
 
 class ToolSourceTestOutput(TypedDict):
     name: str
-    value: Optional[str]
+    value: str | None
     attributes: ToolSourceTestOutputAttributes
 
 
 # The unfortunate 'attrib = dict(param_elem.attrib)' makes this difficult to type.
-ToolSourceTestInputAttributes = Dict[str, Any]
+ToolSourceTestInputAttributes = dict[str, Any]
 
 
 class ToolSourceTestInput(TypedDict):
     name: str
-    value: Optional[Any]
+    value: Any | None
     attributes: ToolSourceTestInputAttributes
 
 
-ToolSourceTestInputs = List[ToolSourceTestInput]
-ToolSourceTestOutputs = List[ToolSourceTestOutput]
+ToolSourceTestInputs = list[ToolSourceTestInput]
+ToolSourceTestOutputs = list[ToolSourceTestOutput]
 TestSourceTestOutputColllection = Any
 
 
 class ToolSourceTest(TypedDict):
     inputs: ToolSourceTestInputs
     outputs: ToolSourceTestOutputs
-    output_collections: List[TestSourceTestOutputColllection]
+    output_collections: list[TestSourceTestOutputColllection]
     stdout: AssertionList
     stderr: AssertionList
-    expect_exit_code: Optional[XmlInt]
+    expect_exit_code: XmlInt | None
     expect_failure: bool
     expect_test_failure: bool
-    maxseconds: Optional[XmlInt]
-    expect_num_outputs: Optional[XmlInt]
+    maxseconds: XmlInt | None
+    expect_num_outputs: XmlInt | None
     command: AssertionList
     command_version: AssertionList
     value_state_representation: Literal["test_case_xml", "test_case_json"]
-    credentials: Optional[List[DirectCredential]]
+    credentials: list[DirectCredential] | None
 
 
 class ToolSourceTests(TypedDict):
-    tests: List[ToolSourceTest]
+    tests: list[ToolSourceTest]
 
 
 class ToolSource(metaclass=ABCMeta):
@@ -148,21 +145,21 @@ class ToolSource(metaclass=ABCMeta):
     language: str
 
     @abstractmethod
-    def parse_id(self) -> Optional[str]:
+    def parse_id(self) -> str | None:
         """Parse an ID describing the abstract tool. This is not the
         GUID tracked by the tool shed but the simple id (there may be
         multiple tools loaded in Galaxy with this same simple id).
         """
 
     @abstractmethod
-    def parse_version(self) -> Optional[str]:
+    def parse_version(self) -> str | None:
         """Parse a version describing the abstract tool."""
 
-    def parse_class(self) -> Optional[str]:
+    def parse_class(self) -> str | None:
         """Parse the class of the tool."""
         return None
 
-    def parse_tool_module(self) -> Optional[Tuple[str, str]]:
+    def parse_tool_module(self) -> tuple[str, str] | None:
         """Load Tool class from a custom module. (Optional).
 
         If not None, return pair containing module and class (as strings).
@@ -176,7 +173,7 @@ class ToolSource(metaclass=ABCMeta):
         """
         return None
 
-    def parse_tool_type(self) -> Optional[str]:
+    def parse_tool_type(self) -> str | None:
         """Load simple tool type string (e.g. 'data_source', 'default')."""
         return None
 
@@ -192,19 +189,19 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_icon(self) -> Optional[str]:
+    def parse_icon(self) -> str | None:
         """Return icon path for tool."""
 
-    def parse_edam_operations(self) -> List[str]:
+    def parse_edam_operations(self) -> list[str]:
         """Parse list of edam operation codes."""
         return []
 
-    def parse_edam_topics(self) -> List[str]:
+    def parse_edam_topics(self) -> list[str]:
         """Parse list of edam topic codes."""
         return []
 
     @abstractmethod
-    def parse_xrefs(self) -> List[XrefDict]:
+    def parse_xrefs(self) -> list[XrefDict]:
         """Parse list of external resource URIs and types."""
 
     def parse_display_interface(self, default):
@@ -230,15 +227,15 @@ class ToolSource(metaclass=ABCMeta):
     def parse_command(self):
         """Return string contianing command to run."""
 
-    def parse_shell_command(self) -> Optional[str]:
+    def parse_shell_command(self) -> str | None:
         """Return string that after input binding can be executed."""
         return None
 
-    def parse_base_command(self) -> Optional[List[str]]:
+    def parse_base_command(self) -> list[str] | None:
         """Return string containing script entrypoint."""
         return None
 
-    def parse_arguments(self) -> Optional[List[str]]:
+    def parse_arguments(self) -> list[str] | None:
         """Return list of strings to append to base_command."""
         return None
 
@@ -329,12 +326,12 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_requirements(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         "ToolRequirements",
-        List["ContainerDescription"],
-        List["ToolResourceRequirement"],
-        List["JavascriptRequirement"],
-        List["CredentialsRequirement"],
+        list["ContainerDescription"],
+        list["ToolResourceRequirement"],
+        list["JavascriptRequirement"],
+        list["CredentialsRequirement"],
     ]:
         """Return triple of ToolRequirement, ContainerDescription, ResourceRequirement, JavascriptRequirement, and CredentialsRequirement objects."""
 
@@ -361,7 +358,7 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_outputs(
         self, app: Optional["ToolOutputActionApp"]
-    ) -> Tuple[Dict[str, "ToolOutputBase"], Dict[str, "ToolOutputCollection"]]:
+    ) -> tuple[dict[str, "ToolOutputBase"], dict[str, "ToolOutputCollection"]]:
         """Return a pair of output and output collections ordered
         dictionaries for use by Tool.
         """
@@ -380,7 +377,7 @@ class ToolSource(metaclass=ABCMeta):
         return [], []
 
     @abstractmethod
-    def parse_help(self) -> Optional[HelpContent]:
+    def parse_help(self) -> HelpContent | None:
         """Return help text for tool or None if the tool doesn't define help text.
 
         The returned object contains the help text and an indication if it is reStructuredText
@@ -392,15 +389,15 @@ class ToolSource(metaclass=ABCMeta):
         """Return tool profile version as Galaxy major e.g. 16.01 or 16.04."""
 
     @abstractmethod
-    def parse_license(self) -> Optional[str]:
+    def parse_license(self) -> str | None:
         """Return license corresponding to tool wrapper."""
 
-    def parse_citations(self) -> List[Citation]:
+    def parse_citations(self) -> list[Citation]:
         """Return a list of citations."""
         return []
 
     @abstractmethod
-    def parse_python_template_version(self) -> Optional[packaging.version.Version]:
+    def parse_python_template_version(self) -> packaging.version.Version | None:
         """
         Return minimum python version that the tool template has been developed against.
         """
@@ -422,7 +419,7 @@ class ToolSource(metaclass=ABCMeta):
         return []
 
     @property
-    def macro_paths(self) -> List[str]:
+    def macro_paths(self) -> list[str]:
         return []
 
     @property
@@ -439,8 +436,7 @@ class ToolSource(metaclass=ABCMeta):
         return {"tests": []}
 
     def __str__(self):
-        source_path = self.source_path
-        if source_path:
+        if source_path := self.source_path:
             as_str = f"{self.__class__.__name__}[{source_path}]"
         else:
             as_str = f"{self.__class__.__name__}[In-memory]"
@@ -475,7 +471,6 @@ class PagesSource:
 
 
 class DynamicOptions(metaclass=ABCMeta):
-
     def elem(self) -> Element:
         # For things in transition that still depend on XML - provide a way
         # to grab it and just throw an error if feature is attempted to be
@@ -483,22 +478,21 @@ class DynamicOptions(metaclass=ABCMeta):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abstractmethod
-    def get_dynamic_options_code(self) -> Optional[str]:
+    def get_dynamic_options_code(self) -> str | None:
         """If dynamic options are a piece of code to eval, return it."""
 
     @abstractmethod
-    def get_data_table_name(self) -> Optional[str]:
+    def get_data_table_name(self) -> str | None:
         """If dynamic options are loaded from a data table, return the name."""
 
     @abstractmethod
-    def get_index_file_name(self) -> Optional[str]:
+    def get_index_file_name(self) -> str | None:
         """If dynamic options are loaded from an index file, return the name."""
 
 
 class DrillDownDynamicOptions(metaclass=ABCMeta):
-
     @abstractmethod
-    def from_code_block(self) -> Optional[str]:
+    def from_code_block(self) -> str | None:
         """Get a code block to do an eval on."""
 
 
@@ -549,7 +543,7 @@ class InputSource(metaclass=ABCMeta):
         """Return the type of this input."""
 
     @abstractmethod
-    def parse_extensions(self) -> List[str]:
+    def parse_extensions(self) -> list[str]:
         """Return list of extensions"""
 
     def parse_help(self):
@@ -562,7 +556,7 @@ class InputSource(metaclass=ABCMeta):
         """
         return None
 
-    def parse_validators(self) -> List[AnyValidatorModel]:
+    def parse_validators(self) -> list[AnyValidatorModel]:
         """Return an XML description of sanitizers. This is a stop gap
         until we can rework galaxy.tools.parameters.validation to not
         explicitly depend on XML.
@@ -575,7 +569,7 @@ class InputSource(metaclass=ABCMeta):
             default = self.default_optional
         return self.get_bool("optional", default)
 
-    def parse_dynamic_options(self) -> Optional[DynamicOptions]:
+    def parse_dynamic_options(self) -> DynamicOptions | None:
         """Return an optional element describing dynamic options.
 
         These options are still very XML based but as they are adapted to the infrastructure, the return
@@ -584,19 +578,17 @@ class InputSource(metaclass=ABCMeta):
         return None
 
     def parse_drill_down_dynamic_options(
-        self, tool_data_path: Optional[str] = None
+        self, tool_data_path: str | None = None
     ) -> Optional["DrillDownDynamicOptions"]:
         return None
 
-    def parse_static_options(self) -> List[Tuple[str, str, bool]]:
+    def parse_static_options(self) -> list[tuple[str, str, bool]]:
         """Return list of static options if this is a select type without
         defining a dynamic options.
         """
         return []
 
-    def parse_drill_down_static_options(
-        self, tool_data_path: Optional[str] = None
-    ) -> Optional[List["DrillDownOptionsDict"]]:
+    def parse_drill_down_static_options(self, tool_data_path: str | None = None) -> list["DrillDownOptionsDict"] | None:
         return None
 
     def parse_conversion_tuples(self):
@@ -614,7 +606,7 @@ class InputSource(metaclass=ABCMeta):
     def parse_when_input_sources(self):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
-    def parse_default(self) -> Optional[Dict[str, Any]]:
+    def parse_default(self) -> dict[str, Any] | None:
         return None
 
 
@@ -623,13 +615,13 @@ class PageSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_input_sources(self) -> List[InputSource]:
+    def parse_input_sources(self) -> list[InputSource]:
         """Return a list of InputSource objects."""
 
 
 AnyTestCollectionDefDict = Union["JsonTestCollectionDefDict", "XmlTestCollectionDefDict"]
 TestCollectionDefElementObject = Union[AnyTestCollectionDefDict, "ToolSourceTestInput"]
-TestCollectionAttributeDict = Dict[str, Any]
+TestCollectionAttributeDict = dict[str, Any]
 CollectionType = str
 
 
@@ -650,9 +642,9 @@ class TestCollectionDefElementInternal(TypedDict):
 class XmlTestCollectionDefDict(TypedDict):
     model_class: Literal["TestCollectionDef"]
     attributes: TestCollectionAttributeDict
-    collection_type: Optional[CollectionType]
-    fields: Optional[List[FieldDict]]
-    elements: List[TestCollectionDefElementDict]
+    collection_type: CollectionType | None
+    fields: list[FieldDict] | None
+    elements: list[TestCollectionDefElementDict]
     name: str
 
 
@@ -670,13 +662,12 @@ def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> Optional["JsonTest
     _copy_if_exists(attributes, as_dict, "dbkey")
     _copy_if_exists(attributes, as_dict, "ftype", "filetype")
     _copy_if_exists(attributes, as_dict, "composite_data", only_if_value=True)
-    tags = attributes.get("tags")
-    if tags:
+    if tags := attributes.get("tags"):
         as_dict["tags"] = [t.strip() for t in tags.split(",")]
     return as_dict
 
 
-def _copy_if_exists(attributes, as_dict, name: str, as_name: Optional[str] = None, only_if_value: bool = False):
+def _copy_if_exists(attributes, as_dict, name: str, as_name: str | None = None, only_if_value: bool = False):
     if name in attributes:
         value = attributes[name]
         if not value and only_if_value:
@@ -688,13 +679,11 @@ def _copy_if_exists(attributes, as_dict, name: str, as_name: Optional[str] = Non
 
 class TestCollectionDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
-    elements: List[TestCollectionDefElementInternal]
-    collection_type: Optional[str]
-    fields: Optional[List[FieldDict]]
+    elements: list[TestCollectionDefElementInternal]
+    collection_type: str | None
+    fields: list[FieldDict] | None
 
-    def __init__(
-        self, attrib, name, collection_type: Optional[str], elements, fields: Optional[List[FieldDict]] = None
-    ):
+    def __init__(self, attrib, name, collection_type: str | None, elements, fields: list[FieldDict] | None = None):
         self.attrib = attrib
         self.collection_type = collection_type
         self.elements = elements
@@ -713,7 +702,7 @@ class TestCollectionDef:
                     identifier=identifier, **element_object._test_format_to_dict()
                 )
             else:
-                input_as_dict: Optional[JsonTestDatasetDefDict] = xml_data_input_to_json(element_object)
+                input_as_dict: JsonTestDatasetDefDict | None = xml_data_input_to_json(element_object)
                 if input_as_dict is not None:
                     as_dict = JsonTestCollectionDefDatasetElementDict(
                         identifier=identifier,
@@ -761,7 +750,7 @@ class TestCollectionDef:
 
     @staticmethod
     def from_dict(
-        as_dict: Union[AnyTestCollectionDefDict, JsonTestCollectionDefCollectionElementDict],
+        as_dict: AnyTestCollectionDefDict | JsonTestCollectionDefCollectionElementDict,
     ) -> "TestCollectionDef":
         if "model_class" in as_dict:
             xml_as_dict = cast(XmlTestCollectionDefDict, as_dict)
@@ -790,7 +779,7 @@ class TestCollectionDef:
             ) -> TestCollectionDefElementInternal:
                 element_class = element_dict.get("class")
                 identifier = element_dict["identifier"]
-                element_def: Union[TestCollectionDef, ToolSourceTestInput]
+                element_def: TestCollectionDef | ToolSourceTestInput
                 if element_class == "Collection":
                     collection_element_dict = cast(JsonTestCollectionDefCollectionElementDict, element_dict)
                     element_def = TestCollectionDef.from_dict(collection_element_dict)
@@ -822,7 +811,7 @@ class TestCollectionDef:
 
 
 class RequiredFiles:
-    def __init__(self, includes: List[Dict], excludes: List[Dict], extend_default_excludes: bool):
+    def __init__(self, includes: list[dict], excludes: list[dict], extend_default_excludes: bool):
         self.includes = includes
         self.excludes = excludes
         self.extend_default_excludes = extend_default_excludes
@@ -830,12 +819,12 @@ class RequiredFiles:
     @staticmethod
     def from_dict(as_dict):
         extend_default_excludes: bool = as_dict.get("extend_default_excludes", True)
-        includes: List = as_dict.get("includes", [])
-        excludes: List = as_dict.get("excludes", [])
+        includes: list = as_dict.get("includes", [])
+        excludes: list = as_dict.get("excludes", [])
         return RequiredFiles(includes, excludes, extend_default_excludes)
 
-    def find_required_files(self, tool_directory: str) -> List[str]:
-        def matches(ie_list: List, rel_path: str):
+    def find_required_files(self, tool_directory: str) -> list[str]:
+        def matches(ie_list: list, rel_path: str):
             for ie_item in ie_list:
                 ie_item_path = ie_item["path"]
                 ie_item_type = ie_item.get("path_type", "literal")
@@ -859,7 +848,7 @@ class RequiredFiles:
             excludes.append({"path": "test-data", "path_type": "prefix"})
             excludes.append({"path": ".hg", "path_type": "prefix"})
 
-        files: List[str] = []
+        files: list[str] = []
         for dirpath, _, filenames in safe_walk(tool_directory):
             for filename in filenames:
                 rel_path = join(dirpath, filename).replace(tool_directory + os.path.sep, "")
@@ -871,7 +860,7 @@ class RequiredFiles:
 class TestCollectionOutputDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, name, attrib, element_tests, element_count: Optional[int] = None):
+    def __init__(self, name, attrib, element_tests, element_count: int | None = None):
         self.name = name
         self.collection_type = attrib.get("type", None)
         if element_count is not None:

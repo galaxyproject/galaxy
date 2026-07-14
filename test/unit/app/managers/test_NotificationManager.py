@@ -5,7 +5,6 @@ from datetime import (
 from typing import (
     Any,
     cast,
-    Optional,
 )
 from unittest.mock import (
     MagicMock,
@@ -78,7 +77,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
             },
         }
 
-    def _send_message_notification_to_users(self, users: list[User], notification: Optional[dict[str, Any]] = None):
+    def _send_message_notification_to_users(self, users: list[User], notification: dict[str, Any] | None = None):
         data = self._default_test_notification_data()
         if notification:
             data.update(notification)
@@ -94,7 +93,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         created_notification, notifications_sent = self.notification_manager.send_notification_to_recipients(request)
         return created_notification, notifications_sent
 
-    def _has_expired(self, expiration_time: Optional[datetime]) -> bool:
+    def _has_expired(self, expiration_time: datetime | None) -> bool:
         return expiration_time < now() if expiration_time else False
 
     def _assert_notification_expected(self, actual_notification: Any, expected_notification: dict[str, Any]):
@@ -459,7 +458,6 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
 
 class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
-
     def test_urgent_notifications_via_email_channel(self):
         user = self._create_test_user()
         # Disable email channel only

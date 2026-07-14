@@ -34,5 +34,5 @@ class TestPrefixUrlSerializationIntegration(integration_util.IntegrationTestCase
             # but it's a real pain to work with the reverse lookup in routes and the callback URLs
             # do need to include the prefix.
             assert href.startswith(f"{self.url_prefix}/display_application")
-            response = self._get(f"{self.url[:-(len(self.url_prefix) + 1)]}{href}")
+            response = self._get(f"{self.url[: -(len(self.url_prefix) + 1)]}{href}")
             response.raise_for_status()

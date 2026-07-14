@@ -64,7 +64,7 @@ async function onRename(newName: string) {
         show
         :ok-text="localize('Rename')"
         :ok-disabled="nameInvalid || renaming"
-        :title="`Rename ${props.itemType}: ${props.name}`"
+        :title="`Rename ${capitalizeFirstLetter(props.itemType)}: ${props.name}`"
         confirm
         :close-on-ok="false"
         @ok="onRename(nameModel)"
@@ -73,6 +73,7 @@ async function onRename(newName: string) {
         <GFormInput
             :id="`${props.itemType}-name-input`"
             v-model="nameModel"
+            :data-description="`${props.itemType} name input`"
             class="w-100"
             :disabled="renaming"
             type="text"

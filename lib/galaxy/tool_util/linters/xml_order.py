@@ -5,7 +5,6 @@ https://github.com/galaxy-iuc/standards.
 """
 
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -70,7 +69,7 @@ class XMLOrder(Linter):
         else:
             tag_ordering = TAG_ORDER
         last_tag = None
-        last_key: Optional[int] = None
+        last_key: int | None = None
         for elem in tool_root:
             tag = elem.tag
             if tag not in tag_ordering:

@@ -2,13 +2,16 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
     faBook,
     faBug,
-    faChartBar,
+    faFileContract,
     faGraduationCap,
+    faHistory,
     faMagic,
     faPlus,
     faQuestionCircle,
     faRobot,
     faRoute,
+    faSitemap,
+    faTools,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { AGENT_LABELS } from "@/components/Page/constants";
@@ -26,7 +29,15 @@ export const agentTypes: AgentType[] = [
     { value: "router", label: "Router", icon: faRoute, description: "Query router" },
     { value: "error_analysis", label: "Error Analysis", icon: faBug, description: "Debug tool errors" },
     { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
-    { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
+    {
+        value: "tool_recommendation",
+        label: "Tool Recommendation",
+        icon: faTools,
+        description: "Recommend tools & workflows",
+    },
+    { value: "orchestrator", label: "Orchestrator", icon: faSitemap, description: "Coordinates multiple steps" },
+    { value: "history", label: "History", icon: faHistory, description: "Summarize your analysis" },
+    { value: "workflow_report", label: "Workflow Report", icon: faFileContract, description: "Workflow run reports" },
     { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
     { value: "clarification", label: "Clarification", icon: faQuestionCircle, description: "Needs more info" },
     {

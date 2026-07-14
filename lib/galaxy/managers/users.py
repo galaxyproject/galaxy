@@ -9,7 +9,6 @@ import string
 import time
 from typing import (
     Any,
-    Optional,
 )
 
 from markupsafe import escape
@@ -158,8 +157,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Update a user's email address, keeping the private role in sync and honoring activation settings.
         Raises RequestParameterInvalidException on validation errors.
         """
-        message = validate_email(trans, new_email, user)
-        if message:
+        if message := validate_email(trans, new_email, user):
             raise exceptions.RequestParameterInvalidException(message)
         if user.email == new_email:
             return
@@ -183,8 +181,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Update a user's public name after validating it. Raises RequestParameterInvalidException on validation errors.
         """
-        message = validate_publicname(trans, new_username, user)
-        if message:
+        if message := validate_publicname(trans, new_username, user):
             raise exceptions.RequestParameterInvalidException(message)
         if user.username == new_username:
             return
@@ -317,7 +314,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email, case_sensitive=False) is not None:
             raise exceptions.Conflict("Email must be unique", email=email)
 
-    def by_id(self, user_id: int) -> Optional[model.User]:
+    def by_id(self, user_id: int) -> model.User | None:
         return self.app.model.session.get(self.model_class, user_id)
 
     # ---- filters
@@ -366,7 +363,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return util.safe_str_cmp(bootstrap_hash, provided_hash)
 
     # ---- admin
-    def is_admin(self, user: Optional[model.User], trans=None) -> bool:
+    def is_admin(self, user: model.User | None, trans=None) -> bool:
         """Return True if this user is an admin (or session is authenticated as admin).
 
         Do not pass trans to simply check if an existing user object is an admin user,
@@ -398,7 +395,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return user
 
     # ---- anonymous
-    def is_anonymous(self, user: Optional[model.User]) -> bool:
+    def is_anonymous(self, user: model.User | None) -> bool:
         """
         Return True if `user` is anonymous.
         """
@@ -461,7 +458,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return self.app.quota_agent.get_quota_nice_size(user, quota_source_label=quota_source_label)
         return self.app.quota_agent.get_percent(user=user, quota_source_label=quota_source_label)
 
-    def quota_bytes(self, user, quota_source_label: Optional[str] = None):
+    def quota_bytes(self, user, quota_source_label: str | None = None):
         return self.app.quota_agent.get_quota(user=user, quota_source_label=quota_source_label)
 
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
@@ -750,7 +747,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             )
         return rval
 
-    def serialize_disk_usage_for(self, user: model.User, label: Optional[str]) -> UserQuotaUsage:
+    def serialize_disk_usage_for(self, user: model.User, label: str | None) -> UserQuotaUsage:
         usage = user.dictify_usage_for(label)
         quota_source_label = usage.quota_source_label
         quota_percent = self.user_manager.quota(user, quota_source_label=quota_source_label)

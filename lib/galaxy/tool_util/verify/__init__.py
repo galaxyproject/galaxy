@@ -11,12 +11,9 @@ import os.path
 import re
 import shutil
 import tempfile
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -61,19 +58,19 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 DEFAULT_TEST_DATA_RESOLVER = TestDataResolver()
-GetFilenameT = Optional[Callable[[str], str]]
-GetLocationT = Optional[Callable[[str], str]]
+GetFilenameT = Callable[[str], str] | None
+GetLocationT = Callable[[str], str] | None
 
 
 def verify(
     item_label: str,
     output_content: bytes,
-    attributes: Optional[Dict[str, Any]],
-    filename: Optional[str] = None,
-    get_filecontent: Optional[Callable[[str], bytes]] = None,
+    attributes: dict[str, Any] | None,
+    filename: str | None = None,
+    get_filecontent: Callable[[str], bytes] | None = None,
     get_filename: GetFilenameT = None,
-    keep_outputs_dir: Optional[str] = None,
-    verify_extra_files: Optional[Callable] = None,
+    keep_outputs_dir: str | None = None,
+    verify_extra_files: Callable | None = None,
     mode="file",
 ):
     """Verify the content of a test output using test definitions described by attributes.
@@ -257,8 +254,7 @@ def _verify_checksum(data, checksum_type, expected_checksum_value):
 
     h = hashlib.new(checksum_type)
     h.update(data)
-    actual_checksum_value = h.hexdigest()
-    if expected_checksum_value != actual_checksum_value:
+    if expected_checksum_value != (actual_checksum_value := h.hexdigest()):
         template = "Output checksum [%s] does not match expected [%s] (using hash algorithm %s)."
         message = template % (actual_checksum_value, expected_checksum_value, checksum_type)
         raise AssertionError(message)
@@ -412,7 +408,6 @@ def files_re_match(file1, file2, attributes=None):
     if attributes.get("sort", False):
         history_data.sort()
         local_file.sort()
-    lines_diff = int(attributes.get("lines_diff", 0))
     line_diff_count = 0
     diffs = []
     for regex_line, data_line in zip(local_file, history_data):
@@ -421,7 +416,7 @@ def files_re_match(file1, file2, attributes=None):
         if not re.match(regex_line, data_line):
             line_diff_count += 1
             diffs.append(f"Regular Expression: {regex_line}, Data file: {data_line}\n")
-    if line_diff_count > lines_diff:
+    if line_diff_count > (lines_diff := int(attributes.get("lines_diff", 0))):
         raise AssertionError(
             "Regular expression did not match data file (allowed variants={}):\n{}".format(lines_diff, "".join(diffs))
         )
@@ -487,10 +482,10 @@ def _singleobject_intersection_over_union(
 def _multiobject_intersection_over_union(
     mask1: "numpy.typing.NDArray",
     mask2: "numpy.typing.NDArray",
-    pin_labels: Optional[List[int]] = None,
+    pin_labels: list[int] | None = None,
     repeat_reverse: bool = True,
-) -> List["numpy.floating"]:
-    iou_list: List[numpy.floating] = []
+) -> list["numpy.floating"]:
+    iou_list: list[numpy.floating] = []
     for label1 in numpy.unique(mask1):
         cc1 = mask1 == label1
 
@@ -501,7 +496,7 @@ def _multiobject_intersection_over_union(
 
         # Otherwise, use the object with the largest IoU value, excluding the pinned labels.
         else:
-            cc1_iou_list: List[numpy.floating] = []
+            cc1_iou_list: list[numpy.floating] = []
             for label2 in numpy.unique(mask2[cc1]):
                 if pin_labels is not None and label2 in pin_labels:
                     continue
@@ -516,7 +511,7 @@ def _multiobject_intersection_over_union(
 
 
 def intersection_over_union(
-    mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", pin_labels: Optional[List[int]] = None
+    mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", pin_labels: list[int] | None = None
 ) -> "numpy.floating":
     """Compute the intersection over union (IoU) for the objects in two masks containing labels.
 
@@ -539,7 +534,7 @@ def intersection_over_union(
     return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))  # type: ignore[type-var, unused-ignore]  # https://github.com/python/typeshed/issues/12562
 
 
-def _parse_label_list(label_list_str: Optional[str]) -> List[int]:
+def _parse_label_list(label_list_str: str | None) -> list[int]:
     if label_list_str is None:
         return []
     else:
@@ -547,7 +542,7 @@ def _parse_label_list(label_list_str: Optional[str]) -> List[int]:
 
 
 def get_image_metric(
-    attributes: Dict[str, Any],
+    attributes: dict[str, Any],
 ) -> Callable[["numpy.typing.NDArray", "numpy.typing.NDArray"], "numpy.floating"]:
     metric_name = attributes.get("metric", DEFAULT_METRIC)
     pin_labels = _parse_label_list(attributes.get("pin_labels", DEFAULT_PIN_LABELS))
@@ -582,7 +577,7 @@ def _load_image(filepath: str) -> "numpy.typing.NDArray":
     return arr
 
 
-def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]] = None) -> None:
+def files_image_diff(file1: str, file2: str, attributes: dict[str, Any] | None = None) -> None:
     """Check the pixel data of 2 image files for differences."""
     attributes = attributes or {}
 
@@ -602,8 +597,7 @@ def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]
         arr2 = arr2.astype(numpy.uint8)
 
     distance = get_image_metric(attributes)(arr1, arr2)
-    distance_eps = attributes.get("eps", DEFAULT_EPS)
-    if distance > distance_eps:
+    if distance > (distance_eps := attributes.get("eps", DEFAULT_EPS)):
         raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")
 
 
@@ -618,7 +612,7 @@ def verify_file_path_against_dict(
     path: str,
     output_content: bytes,
     test_properties,
-    test_data_target_dir: Optional[str] = None,
+    test_data_target_dir: str | None = None,
 ) -> None:
     with open(path, "rb") as f:
         output_content = f.read()
@@ -634,9 +628,9 @@ def verify_file_contents_against_dict(
     item_label: str,
     output_content: bytes,
     test_properties,
-    test_data_target_dir: Optional[str] = None,
+    test_data_target_dir: str | None = None,
 ) -> None:
-    expected_file: Optional[str] = None
+    expected_file: str | None = None
     if isinstance(test_properties, dict):
         # Support Galaxy-like file location (using "file") or CWL-like ("path" or "location").
         expected_file = test_properties.get("file", None)
@@ -671,12 +665,12 @@ def verify_file_contents_against_dict(
 
 
 def verify_job_metadata(
-    job_stdio: Dict[str, Any],
-    expect_exit_code: Optional[int] = None,
-    stdout_assertions: Optional[list] = None,
-    stderr_assertions: Optional[list] = None,
-    command_assertions: Optional[list] = None,
-    command_version_assertions: Optional[list] = None,
+    job_stdio: dict[str, Any],
+    expect_exit_code: int | None = None,
+    stdout_assertions: list | None = None,
+    stderr_assertions: list | None = None,
+    command_assertions: list | None = None,
+    command_version_assertions: list | None = None,
 ) -> None:
     """Verify job exit code, stdout/stderr, and command metadata.
 

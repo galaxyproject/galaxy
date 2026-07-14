@@ -12,25 +12,20 @@ import tarfile
 import tempfile
 import urllib.parse
 from collections import namedtuple
+from collections.abc import Callable
 from typing import (
     Any,
     BinaryIO,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
+    Literal,
 )
 
 import yaml
 from typing_extensions import (
-    Literal,
     Protocol,
     TypedDict,
 )
 
 from galaxy.util import (
-    str_removeprefix,
     unicodify,
 )
 
@@ -49,13 +44,13 @@ OutputPropertiesType = TypedDict(
     "OutputPropertiesType",
     {
         "class": str,
-        "location": Optional[str],
-        "path": Optional[str],
-        "listing": Optional[List[Any]],
-        "basename": Optional[str],
-        "nameroot": Optional[str],
-        "nameext": Optional[str],
-        "secondaryFiles": List[Any],
+        "location": str | None,
+        "path": str | None,
+        "listing": list[Any] | None,
+        "basename": str | None,
+        "nameroot": str | None,
+        "nameext": str | None,
+        "secondaryFiles": list[Any],
         "checksum": str,
         "size": int,
     },
@@ -64,8 +59,8 @@ OutputPropertiesType = TypedDict(
 
 
 def output_properties(
-    path: Optional[str] = None,
-    content: Optional[bytes] = None,
+    path: str | None = None,
+    content: bytes | None = None,
     basename=None,
     pseudo_location=False,
 ) -> OutputPropertiesType:
@@ -101,7 +96,7 @@ def _handle_pseudo_location(properties, pseudo_location):
         properties["location"] = properties["basename"]
 
 
-def abs_path_or_uri(path_or_uri: str, relative_to: str, resolve_data: Optional[Callable[[str], Optional[str]]]) -> str:
+def abs_path_or_uri(path_or_uri: str, relative_to: str, resolve_data: Callable[[str], str | None] | None) -> str:
     """Return the absolute path if this isn't a URI, otherwise keep the URI the same."""
     if "://" in path_or_uri:
         return path_or_uri
@@ -136,25 +131,24 @@ def path_or_uri_to_uri(path_or_uri: str) -> str:
 
 
 class CollectionCreateFunc(Protocol):
-
     def __call__(
         self,
-        element_identifiers: List[Dict[str, Any]],
+        element_identifiers: list[dict[str, Any]],
         collection_type: str,
-        rows: Optional[Dict[str, Any]] = None,
-        name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        rows: dict[str, Any] | None = None,
+        name: str | None = None,
+    ) -> dict[str, Any]:
         """Create a collection from these identifiers."""
 
 
 def galactic_job_json(
-    job: Dict[str, Any],
+    job: dict[str, Any],
     test_data_directory: str,
-    upload_func: Callable[["UploadTarget"], Dict[str, Any]],
+    upload_func: Callable[["UploadTarget"], dict[str, Any]],
     collection_create_func: CollectionCreateFunc,
     tool_or_workflow: Literal["tool", "workflow"] = "workflow",
-    resolve_data: Optional[Callable[[str], Optional[str]]] = None,
-) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    resolve_data: Callable[[str], str | None] | None = None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Adapt a CWL job object to the Galaxy API.
 
     CWL derived tools in Galaxy can consume a job description sort of like
@@ -164,10 +158,10 @@ def galactic_job_json(
     for Galaxy.
     """
 
-    datasets: List[Dict[str, Any]] = []
-    dataset_collections: List[Dict[str, Any]] = []
+    datasets: list[dict[str, Any]] = []
+    dataset_collections: list[dict[str, Any]] = []
 
-    def response_to_hda(target: UploadTarget, upload_response: Dict[str, Any]) -> Dict[str, str]:
+    def response_to_hda(target: UploadTarget, upload_response: dict[str, Any]) -> dict[str, str]:
         assert isinstance(upload_response, dict), upload_response
         assert "outputs" in upload_response, upload_response
         assert len(upload_response["outputs"]) > 0, upload_response
@@ -176,24 +170,24 @@ def galactic_job_json(
         dataset_id = dataset["id"]
         return {"src": "hda", "id": dataset_id}
 
-    def upload_file(file_path: str, secondary_files: Optional[str], **kwargs) -> Dict[str, str]:
+    def upload_file(file_path: str, secondary_files: str | None, **kwargs) -> dict[str, str]:
         file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
         target = FileUploadTarget(file_path, secondary_files, **kwargs)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
-    def upload_file_literal(contents: str, **kwd) -> Dict[str, str]:
+    def upload_file_literal(contents: str, **kwd) -> dict[str, str]:
         target = FileLiteralTarget(contents, **kwd)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
-    def upload_tar(file_path: str, file_type: str = "directory", name: str = "uploaded tar file") -> Dict[str, str]:
+    def upload_tar(file_path: str, file_type: str = "directory", name: str = "uploaded tar file") -> dict[str, str]:
         file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
         target = DirectoryUploadTarget(file_path, file_type=file_type, name=name)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
-    def upload_file_with_composite_data(file_path: Optional[str], composite_data, **kwargs) -> Dict[str, str]:
+    def upload_file_with_composite_data(file_path: str | None, composite_data, **kwargs) -> dict[str, str]:
         if file_path is not None:
             file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
         composite_data_resolved = []
@@ -203,7 +197,7 @@ def galactic_job_json(
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
-    def upload_object(the_object: Any) -> Dict[str, str]:
+    def upload_object(the_object: Any) -> dict[str, str]:
         target = ObjectUploadTarget(the_object)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
@@ -278,12 +272,11 @@ def galactic_job_json(
 
             return value
 
-        secondary_files = value.get("secondaryFiles", [])
         secondary_files_tar_path = None
-        if secondary_files:
+        if secondary_files := value.get("secondaryFiles", []):
             tmp = tempfile.NamedTemporaryFile(delete=False)
             tf = tarfile.open(fileobj=tmp, mode="w:")
-            order: List[str] = []
+            order: list[str] = []
             index_contents = {"order": order}
             for secondary_file in secondary_files:
                 secondary_file_path = secondary_file.get("location", None) or secondary_file.get("path", None)
@@ -301,7 +294,7 @@ def galactic_job_json(
 
         return upload_file(file_path, secondary_files_tar_path, filetype=filetype, **kwd)
 
-    def replacement_directory(value: Dict[str, Any]) -> Dict[str, Any]:
+    def replacement_directory(value: dict[str, Any]) -> dict[str, Any]:
         file_path = value.get("location", None) or value.get("path", None)
         if file_path is None:
             return value
@@ -316,7 +309,7 @@ def galactic_job_json(
 
         return upload_tar(tmp.name, file_type=file_type, name=os.path.basename(file_path))
 
-    def replacement_list(value) -> Dict[str, str]:
+    def replacement_list(value) -> dict[str, str]:
         collection_element_identifiers = []
         for i, item in enumerate(value):
             dataset = replacement_item(item, force_to_file=True)
@@ -330,7 +323,7 @@ def galactic_job_json(
         hdca_id = collection["id"]
         return {"src": "hdca", "id": hdca_id}
 
-    def to_elements(value, rank_collection_type: str) -> List[Dict[str, Any]]:
+    def to_elements(value, rank_collection_type: str) -> list[dict[str, Any]]:
         collection_element_identifiers = []
         assert "elements" in value
         elements = value["elements"]
@@ -356,7 +349,7 @@ def galactic_job_json(
 
         return collection_element_identifiers
 
-    def replacement_collection(value: Dict[str, Any]) -> Dict[str, str]:
+    def replacement_collection(value: dict[str, Any]) -> dict[str, str]:
         if value.get("galaxy_id"):
             return {"src": "hdca", "id": str(value["galaxy_id"])}
         assert "collection_type" in value
@@ -429,9 +422,9 @@ class FileLiteralTarget(UploadTarget):
 class FileUploadTarget(UploadTarget):
     def __init__(
         self,
-        path: Optional[str],
-        secondary_files: Optional[str] = None,
-        composite_data: Optional[List[str]] = None,
+        path: str | None,
+        secondary_files: str | None = None,
+        composite_data: list[str] | None = None,
         **kwargs,
     ) -> None:
         self.path = path
@@ -446,7 +439,7 @@ class FileUploadTarget(UploadTarget):
 class ObjectUploadTarget(UploadTarget):
     def __init__(self, the_object: Any) -> None:
         self.object = the_object
-        self.properties: Dict = {}
+        self.properties: dict = {}
 
     def __str__(self) -> str:
         return f"ObjectUploadTarget[object={self.object}] with {self.properties}"
@@ -614,7 +607,7 @@ def output_to_cwl_json(
                 if not basename:
                     basename = output_metadata.get("name")
 
-                listing: List[OutputPropertiesType] = []
+                listing: list[OutputPropertiesType] = []
                 properties = {
                     "class": "Directory",
                     "basename": basename,
@@ -670,9 +663,9 @@ def guess_artifact_type(path):
         if not object_id:
             object_id = "main"  # default object id
 
-        # Have to use str_removeprefix() instead of rstrip() because only the
+        # Have to use str.removeprefix() instead of rstrip() because only the
         # first '#' should be removed from the object id
-        matching_objects = [o for o in objects if str_removeprefix(o["id"], "#") == object_id]
+        matching_objects = [o for o in objects if o["id"].removeprefix("#") == object_id]
         if len(matching_objects) == 0:
             raise Exception(f"No process object with id [{object_id}]")
         if len(matching_objects) > 1:

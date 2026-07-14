@@ -1,7 +1,18 @@
 """Unit tests for Google Cloud Batch job runner utility methods."""
 
+from types import SimpleNamespace
+from typing import (
+    Any,
+    cast,
+)
+
 import pytest
 
+from galaxy.jobs.runners import RunnerParams
+from galaxy.jobs.runners.gcp_batch import (
+    GoogleCloudBatchJobRunner,
+    RUNNER_PARAM_SPECS,
+)
 from galaxy.jobs.runners.util.gcp_batch import (
     convert_cpu_to_milli,
     convert_duration_to_seconds,
@@ -81,6 +92,19 @@ class TestConvertMemoryToMib:
             ("1.5Gi", 1536),  # decimal GiB
             ("256Mi", 256),  # small MiB value
             ("4Gi", 4096),  # larger GiB value
+            # Decimal units (KB/MB/GB use powers of 1000, converted to MiB)
+            ("1gb", 953),  # 1 GB -> MiB (10^9 / 1024^2)
+            ("4gb", 3814),  # larger GB value
+            ("2g", 1907),  # GB short form
+            ("1000mb", 953),  # 1000 MB == 1 GB == 953 MiB (consistency check)
+            ("1024mb", 976),  # MB -> MiB
+            ("1000m", 953),  # MB short form
+            ("1048576kb", 1000),  # KB -> MiB
+            # Binary KiB
+            ("1024kib", 1),  # KiB -> MiB (value / 1024)
+            ("2048ki", 2),  # KiB short form
+            # Unknown unit falls back to treating the value as MiB
+            ("5xyz", 5),
         ],
     )
     def test_convert_memory_to_mib(self, input_value, expected):
@@ -307,3 +331,99 @@ class TestResolveMaxRunDuration:
             resource_params={"walltime": ""},
         )
         assert result == "7200s"
+
+
+def _sleep_runner(runner_params, job_runner_monitor_sleep=1.0):
+    """A runner instance with __init__ skipped, for exercising monitor_sleep_time."""
+    runner = object.__new__(GoogleCloudBatchJobRunner)
+    runner.runner_params = runner_params
+    config = SimpleNamespace(job_runner_monitor_sleep=job_runner_monitor_sleep)
+    runner.app = cast(Any, SimpleNamespace(config=config))
+    return runner
+
+
+class TestMonitorSleepTime:
+    """The runner throttles its monitor loop to the configured polling_interval so
+    the base loop does not poll the GCP Batch API more often than necessary."""
+
+    def test_uses_polling_interval_over_default_monitor_sleep(self):
+        runner = _sleep_runner({"polling_interval": 30}, job_runner_monitor_sleep=1.0)
+        assert runner.monitor_sleep_time == 30
+
+    def test_respects_larger_monitor_sleep(self):
+        # max(global, polling_interval): a larger global sleep wins.
+        runner = _sleep_runner({"polling_interval": 30}, job_runner_monitor_sleep=60)
+        assert runner.monitor_sleep_time == 60
+
+    def test_interval_default_resolves_via_spec(self):
+        # polling_interval unset -> must fall back to the spec default (30) through
+        # ParamsWithSpecs.__missing__; .get() would yield None and raise in max().
+        runner = _sleep_runner(RunnerParams(specs={"polling_interval": dict(map=int, default=30)}, params={}))
+        assert runner.monitor_sleep_time == 30
+
+
+def _make_runner(runner_params=None):
+    """Build a GoogleCloudBatchJobRunner without running __init__ (no GCP client).
+
+    _get_job_params only depends on self.runner_params, so we set that directly.
+    """
+    runner = object.__new__(GoogleCloudBatchJobRunner)
+    runner.runner_params = RunnerParams(specs=RUNNER_PARAM_SPECS, params=runner_params or {})
+    return runner
+
+
+# Keys that _get_job_params copies from the destination / runner config. Derived
+# dynamically (rather than hard-coded) so the parametrized tests below automatically
+# cover any parameter added to _get_job_params in the future.
+JOB_PARAM_KEYS = sorted(_make_runner()._get_job_params(SimpleNamespace(params={})).keys())
+
+
+class TestGetJobParams:
+    """Tests for GoogleCloudBatchJobRunner._get_job_params default resolution."""
+
+    @pytest.mark.parametrize("key", JOB_PARAM_KEYS)
+    def test_unset_param_falls_back_to_spec_default(self, key):
+        """Every copied parameter resolves to its spec default when nothing overrides it.
+
+        This is the regression guard: .get() on the RunnerParams defaultdict would
+        bypass __missing__ and yield None instead of the configured default.
+        """
+        runner = _make_runner()
+        destination = SimpleNamespace(params={})
+
+        params = runner._get_job_params(destination)
+
+        assert params[key] == RUNNER_PARAM_SPECS[key]["default"]
+
+    @pytest.mark.parametrize("key", JOB_PARAM_KEYS)
+    def test_destination_overrides_every_param(self, key):
+        """A value on the job destination takes precedence over the spec default for every param.
+
+        Destination params are not passed through the RunnerParams spec mapping, so a
+        plain string sentinel is a valid override for every key.
+        """
+        runner = _make_runner()
+        sentinel = "destination-sentinel-value"
+        destination = SimpleNamespace(params={key: sentinel})
+
+        params = runner._get_job_params(destination)
+
+        assert params[key] == sentinel
+
+    def test_runner_config_overrides_default(self):
+        """A value set in the runner (plugin) config is used when the destination is silent."""
+        runner = _make_runner({"job_id_prefix": "from-config"})
+        destination = SimpleNamespace(params={})
+
+        params = runner._get_job_params(destination)
+
+        assert params["job_id_prefix"] == "from-config"
+
+    def test_destination_overrides_runner_config(self):
+        """Destination params win over runner config, which wins over the spec default."""
+        runner = _make_runner({"job_id_prefix": "from-config"})
+        destination = SimpleNamespace(params={"job_id_prefix": "from-destination"})
+
+        params = runner._get_job_params(destination)
+
+        assert params["job_id_prefix"] == "from-destination"

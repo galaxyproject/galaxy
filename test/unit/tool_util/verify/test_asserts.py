@@ -2,7 +2,6 @@ import gzip
 import os
 import shutil
 import tempfile
-from typing import Tuple
 
 try:
     import h5py
@@ -1324,7 +1323,7 @@ if h5py is not None:
         assert len(a) == 1
 
 
-def run_assertions(assertion_xml: str, data, decompress=False) -> Tuple:
+def run_assertions(assertion_xml: str, data, decompress=False) -> tuple:
     assertion = parse_xml_string(assertion_xml)
     assertion_description = __parse_assert_list_from_elem(assertion)
     assert assertion_description

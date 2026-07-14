@@ -3,7 +3,6 @@ from collections.abc import AsyncGenerator
 from json import JSONDecodeError
 from typing import (
     cast,
-    Optional,
     TypeVar,
 )
 
@@ -86,7 +85,7 @@ def get_api_user(
     user_manager: UserManager = depends(UserManager),
     key: str = Security(api_key_query),
     x_api_key: str = Security(api_key_header),
-) -> Optional[User]:
+) -> User | None:
     api_key = key or x_api_key
     if not api_key:
         return None
@@ -103,7 +102,7 @@ def get_session(
     session_manager=cast(GalaxySessionManager, Depends(get_session_manager)),
     security: IdEncodingHelper = depends(IdEncodingHelper),
     galaxysession: str = Security(api_key_cookie),
-) -> Optional[GalaxySession]:
+) -> GalaxySession | None:
     if galaxysession:
         session_key = security.decode_guid(galaxysession)
         if session_key:
@@ -113,9 +112,9 @@ def get_session(
 
 
 def get_user(
-    galaxy_session=cast(Optional[GalaxySession], Depends(get_session)),
-    api_user=cast(Optional[User], Depends(get_api_user)),
-) -> Optional[User]:
+    galaxy_session=cast(GalaxySession | None, Depends(get_session)),
+    api_user=cast(User | None, Depends(get_api_user)),
+) -> User | None:
     if galaxy_session:
         return galaxy_session.user
     return api_user
@@ -125,8 +124,8 @@ def get_trans(
     request: Request,
     response: Response,
     app: ToolShedApp = DependsOnApp,
-    user=cast(Optional[User], Depends(get_user)),
-    galaxy_session=cast(Optional[GalaxySession], Depends(get_session)),
+    user=cast(User | None, Depends(get_user)),
+    galaxy_session=cast(GalaxySession | None, Depends(get_session)),
 ) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
@@ -214,7 +213,7 @@ ChangesetRevisionPathParam: str = Path(
 
 UsernameIdPathParam: str = Path(..., title="Username", description="The target username.")
 
-CommitMessageQueryParam: Optional[str] = Query(
+CommitMessageQueryParam: str | None = Query(
     default=None,
     title="Commit Message",
     description="Set commit message as a query parameter.",
@@ -232,13 +231,13 @@ CommitMessage: str = Query(
     description="A commit message to store with repository update.",
 )
 
-RepositoryIndexQueryParam: Optional[str] = Query(
+RepositoryIndexQueryParam: str | None = Query(
     default=None,
     title="Search Query",
     description="This will perform a full search with whoosh on the backend and will cause the API endpoint to return a RepositorySearchResult. This should not be used with the 'filter' parameter.",
 )
 
-RepositoryIndexFilterParam: Optional[str] = Query(
+RepositoryIndexFilterParam: str | None = Query(
     default=None,
     title="Filter Text",
     description="This will perform a quick search using database operators. This should not be used with the 'q' parameter.",
@@ -268,7 +267,7 @@ ToolSearchPageQueryParam: int = Query(
     description="",
 )
 
-RepositorySearchPageQueryParam: Optional[int] = Query(
+RepositorySearchPageQueryParam: int | None = Query(
     default=None,
     title="Page",
     description="",
@@ -279,24 +278,24 @@ RepositorySearchPageSizeQueryParam: int = Query(
     title="Page Size",
 )
 
-RepositoryIndexDeletedQueryParam: Optional[bool] = Query(False, title="Deleted?")
+RepositoryIndexDeletedQueryParam: bool | None = Query(False, title="Deleted?")
 
-RepositoryIndexOwnerQueryParam: Optional[str] = Query(None, title="Owner")
+RepositoryIndexOwnerQueryParam: str | None = Query(None, title="Owner")
 
-RepositoryIndexNameQueryParam: Optional[str] = Query(None, title="Name")
+RepositoryIndexNameQueryParam: str | None = Query(None, title="Name")
 
-RepositoryIndexCategoryQueryParam: Optional[str] = Query(None, title="Category ID")
+RepositoryIndexCategoryQueryParam: str | None = Query(None, title="Category ID")
 
-RepositoryIndexToolIdsQueryParam: Optional[list[str]] = Query(
+RepositoryIndexToolIdsQueryParam: list[str] | None = Query(
     None, title="Tool IDs", description="List of tool GUIDs to find the repository for"
 )
 
 
-OptionalRepositoryOwnerParam: Optional[str] = Query(None, title="Owner")
-OptionalRepositoryNameParam: Optional[str] = Query(None, title="Name")
+OptionalRepositoryOwnerParam: str | None = Query(None, title="Owner")
+OptionalRepositoryNameParam: str | None = Query(None, title="Name")
 RequiredRepositoryChangesetRevisionParam: str = Query(..., title="Changeset Revision")
-OptionalRepositoryIdParam: Optional[str] = Query(None, title="TSR ID")
-OptionalHexlifyParam: Optional[bool] = Query(True, title="Hexlify response")
+OptionalRepositoryIdParam: str | None = Query(None, title="TSR ID")
+OptionalHexlifyParam: bool | None = Query(True, title="Hexlify response")
 
 DryRunQueryParam: bool = Query(False, title="Dry Run", description="Preview changes without persisting to database")
 VerboseQueryParam: bool = Query(False, title="Verbose", description="Return detailed per-changeset information")
@@ -307,7 +306,7 @@ CategoryIdPathParam: str = Path(
 CategoryRepositoriesInstallableQueryParam: bool = Query(False, title="Installable?")
 CategoryRepositoriesSortKeyQueryParam: str = Query("name", title="Sort Key")
 CategoryRepositoriesSortOrderQueryParam: str = Query("asc", title="Sort Order")
-CategoryRepositoriesPageQueryParam: Optional[int] = Query(None, title="Page")
+CategoryRepositoriesPageQueryParam: int | None = Query(None, title="Page")
 
 FromTipQueryParam: bool = Query(
     default=False,
@@ -335,7 +334,7 @@ def ensure_valid_session(trans: SessionRequestContext) -> None:
     # in the most common case (session exists and is valid).
     galaxy_session_requires_flush = False
     if secure_id := request.get_cookie(AUTH_COOKIE_NAME):
-        session_key: Optional[str] = app.security.decode_guid(secure_id)
+        session_key: str | None = app.security.decode_guid(secure_id)
         if session_key:
             # We do NOT catch exceptions here, if the database is down the request should fail,
             # and we should not generate a new session.
@@ -379,7 +378,7 @@ def set_cookie(trans: SessionRequestContext, value: str, key, path="/", age=90) 
     """Convenience method for setting a session cookie"""
     # In wsgi we were setting both a max_age and and expires, but
     # all browsers support max_age now.
-    domain: Optional[str] = trans.app.config.cookie_domain
+    domain: str | None = trans.app.config.cookie_domain
     trans.response.set_cookie(
         key,
         unicodify(value),

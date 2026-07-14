@@ -7,8 +7,6 @@ from typing import (
     Any,
     cast,
     get_args,
-    Optional,
-    Union,
 )
 from uuid import UUID
 
@@ -74,7 +72,7 @@ JobCreateResponse = dict[str, Any]
 
 
 def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
-    tool: Optional[Tool] = None
+    tool: Tool | None = None
     if tool_ref.tool_uuid and trans.user:
         tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_ref.tool_uuid)
     if not tool:
@@ -121,7 +119,7 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
                         f"Sample sheet metadata (column_definitions, rows) can only be used with collection_type 'sample_sheet' or 'sample_sheet:<type>', not '{collection_type}'"
                     )
 
-    targets: list[Union[DataElementsTarget, HdcaDataItemsTarget]] = []
+    targets: list[DataElementsTarget | HdcaDataItemsTarget] = []
 
     for request_item in data_landing_payload.request_state:
         if isinstance(request_item, (DataRequestUri, FileRequestUri)):
@@ -279,8 +277,8 @@ class ToolsService(ServiceBase):
     def create_fetch(
         self,
         trans: ProvidesHistoryContext,
-        fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
-        files: Optional[list[UploadFile]] = None,
+        fetch_payload: FetchDataFormPayload | FetchDataPayload,
+        files: list[UploadFile] | None = None,
     ) -> JobCreateResponse:
         payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
@@ -454,7 +452,7 @@ class ToolsService(ServiceBase):
         trans.security.encode_all_ids(rval, recursive=True)
         return rval
 
-    def _search(self, q: str, view: Optional[str]) -> list[str]:
+    def _search(self, q: str, view: str | None) -> list[str]:
         """
         Perform the search on the given query.
         Boosts and numer of results are configurable in galaxy.ini file.
@@ -503,7 +501,7 @@ class ToolsService(ServiceBase):
     # -- Helper methods --
     #
     def _get_tool(
-        self, trans: ProvidesUserContext, id, tool_version=None, tool_uuid=None, user: Optional[User] = None
+        self, trans: ProvidesUserContext, id, tool_version=None, tool_uuid=None, user: User | None = None
     ) -> Tool:
         if tool_uuid:
             try:
@@ -539,7 +537,7 @@ class ToolsService(ServiceBase):
                     detected_versions.append(tool.version)
         return detected_versions
 
-    def get_tool_icon_path(self, trans, tool_id, tool_version=None) -> Optional[str]:
+    def get_tool_icon_path(self, trans, tool_id, tool_version=None) -> str | None:
         tool = self._get_tool(trans, tool_id, tool_version)
         if tool and tool.icon:
             icon_file_path = tool.icon

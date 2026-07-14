@@ -1,12 +1,8 @@
+from collections.abc import Iterable
 from typing import (
     Any,
     cast,
-    Dict,
-    Iterable,
-    List,
-    Optional,
     TypeVar,
-    Union,
 )
 
 from typing_extensions import Protocol
@@ -43,7 +39,7 @@ def visit_input_values(
     tool_state: ToolState,
     callback: Callback,
     no_replacement_value=VISITOR_NO_REPLACEMENT,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _visit_input_values(
         simple_input_models(input_models.parameters),
         tool_state.input_state,
@@ -54,22 +50,21 @@ def visit_input_values(
 
 def _visit_input_values(
     input_models: Iterable[ToolParameterT],
-    input_values: Dict[str, Any],
+    input_values: dict[str, Any],
     callback: Callback,
     no_replacement_value=VISITOR_NO_REPLACEMENT,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
 
-    def _callback(name: str, old_values: Dict[str, Any], new_values: Dict[str, Any]):
+    def _callback(name: str, old_values: dict[str, Any], new_values: dict[str, Any]):
         input_value = old_values.get(name, VISITOR_UNDEFINED)
         if input_value is VISITOR_UNDEFINED:
             return
-        replacement = callback(model, input_value)
-        if replacement != no_replacement_value:
+        if (replacement := callback(model, input_value)) != no_replacement_value:
             new_values[name] = replacement
         else:
             new_values[name] = input_value
 
-    new_input_values: Dict[str, Any] = {}
+    new_input_values: dict[str, Any] = {}
     for model in input_models:
         name = model.name
         input_value = input_values.get(name, VISITOR_UNDEFINED)
@@ -125,7 +120,7 @@ def _select_which_when(conditional: ConditionalParameterModel, state: dict) -> C
         raise Exception(f"Invalid conditional test value ({explicit_test_value}) for parameter ({test_parameter_name})")
 
 
-def flat_state_path(has_name: Union[str, ToolParameterT], prefix: Optional[str] = None) -> str:
+def flat_state_path(has_name: str | ToolParameterT, prefix: str | None = None) -> str:
     """Given a parameter name or model and an optional prefix, give 'flat' name for parameter in tree."""
     if hasattr(has_name, "name"):
         name = cast(ToolParameterT, has_name).name
@@ -137,15 +132,15 @@ def flat_state_path(has_name: Union[str, ToolParameterT], prefix: Optional[str] 
 KVT = TypeVar("KVT")
 
 
-def keys_starting_with(flat_tree: Dict[str, KVT], flat_state_path: str) -> Dict[str, KVT]:
-    subset: Dict[str, KVT] = {}
+def keys_starting_with(flat_tree: dict[str, KVT], flat_state_path: str) -> dict[str, KVT]:
+    subset: dict[str, KVT] = {}
     for key, value in flat_tree.items():
         if key.startswith(flat_state_path):
             subset[key] = value
     return subset
 
 
-def repeat_inputs_to_array(flat_state_path: str, inputs: Dict[str, KVT]) -> List[Dict[str, KVT]]:
+def repeat_inputs_to_array(flat_state_path: str, inputs: dict[str, KVT]) -> list[dict[str, KVT]]:
     repeat_inputs = keys_starting_with(inputs, flat_state_path + "_")
     highest_count = -1
     for key in repeat_inputs.keys():
@@ -157,9 +152,9 @@ def repeat_inputs_to_array(flat_state_path: str, inputs: Dict[str, KVT]) -> List
         except ValueError:
             continue
 
-    params: List[Dict[str, KVT]] = []
+    params: list[dict[str, KVT]] = []
     for _ in range(highest_count + 1):
-        instance_params: Dict[str, KVT] = {}
+        instance_params: dict[str, KVT] = {}
         params.append(instance_params)
     for key, value in repeat_inputs.items():
         repeat_num_str = key[len(flat_state_path) + 1 :].split("|")[0]
@@ -171,7 +166,7 @@ def repeat_inputs_to_array(flat_state_path: str, inputs: Dict[str, KVT]) -> List
     return params
 
 
-def validate_explicit_conditional_test_value(test_parameter_name: str, value: Any) -> Optional[Union[str, bool]]:
+def validate_explicit_conditional_test_value(test_parameter_name: str, value: Any) -> str | bool | None:
     if value is not None and not isinstance(value, (str, bool)):
         raise Exception(f"Invalid conditional test value ({value}) for parameter ({test_parameter_name})")
     return value

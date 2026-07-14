@@ -19,6 +19,8 @@ import { getGalaxyInstance } from "@/app";
 import { useActivityStore } from "@/stores/activityStore.js";
 import { useChatStore } from "@/stores/chatStore";
 
+import { useStartNewChat } from "./useStartNewChat";
+
 import GButton from "../BaseComponents/GButton.vue";
 
 const props = defineProps<{
@@ -37,15 +39,12 @@ const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
 const activityStore = useActivityStore("default");
+const startNewChat = useStartNewChat();
 
 const showingActivityPanel = computed(() => activityStore.toggledSideBar === "galaxyai");
 
 function startNew() {
-    if (props.source === "center") {
-        router.push("/galaxyai/new");
-    } else {
-        chatStore.showChat(null);
-    }
+    startNewChat(props.source === "center");
     emit("update:collapsed", false);
 }
 
@@ -117,14 +116,22 @@ function onDockTo(location: "right" | "bottom") {
             @click="maximize">
             <FontAwesomeIcon :icon="faExpand" fixed-width />
         </GButton>
-        <template v-if="props.source === 'center'">
-            <GButton size="small" transparent title="Dock to side panel" @click="onDockTo('right')">
-                <FontAwesomeIcon :icon="faColumns" fixed-width />
-            </GButton>
-            <GButton size="small" transparent title="Dock to bottom panel" @click="onDockTo('bottom')">
-                <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
-            </GButton>
-        </template>
+        <GButton
+            v-if="props.source !== 'docked'"
+            size="small"
+            transparent
+            title="Dock to side panel"
+            @click="onDockTo('right')">
+            <FontAwesomeIcon :icon="faColumns" fixed-width />
+        </GButton>
+        <GButton
+            v-if="props.source !== 'panel'"
+            size="small"
+            transparent
+            title="Dock to bottom panel"
+            @click="onDockTo('bottom')">
+            <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
+        </GButton>
         <GButton size="small" transparent title="Open in floating window" @click="popOut">
             <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
         </GButton>
