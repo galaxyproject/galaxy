@@ -172,7 +172,7 @@ export async function copyDatasets(
     for (const [index, result] of results.entries()) {
         if (result.status === "fulfilled") {
             copiedDatasets.push(result.value);
-        } else if (datasetIds[index]) {
+        } else if (datasetIds[index] !== undefined) {
             failedDatasetIds.push(datasetIds[index]);
         }
     }

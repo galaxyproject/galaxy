@@ -1,11 +1,10 @@
-import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
 import { copyDatasets } from "./datasets";
 
-const { server } = useServerMock();
+const { server, http } = useServerMock();
 
 describe("copyDatasets", () => {
     it("copies all dataset ids to the target history", async () => {
@@ -14,14 +13,14 @@ describe("copyDatasets", () => {
         let receivedHistoryId;
 
         server.use(
-            http.post("/api/histories/:history_id/contents/datasets", async ({ params, request }) => {
+            http.post("/api/histories/{history_id}/contents/{type}s", async ({ params, request, response }) => {
                 const body = (await request.json()) as { content: unknown };
 
                 receivedHistoryId = params.history_id;
 
                 copiedDatasetIds.push(body.content);
 
-                return HttpResponse.json({ id: body.content });
+                return response(200).json({ id: body.content } as any);
             }),
         );
 
@@ -35,24 +34,34 @@ describe("copyDatasets", () => {
         });
     });
 
-    it("reports failed dataset ids when some copies fail", async () => {
-        server.use(
-            http.post("/api/histories/:history_id/contents/datasets", async ({ request }) => {
-                const body = (await request.json()) as { content: unknown };
+    it("preserves result order and limits concurrent requests across batches", async () => {
+        let inFlight = 0;
+        let peakInFlight = 0;
 
-                if (body.content === "dataset-b") {
-                    return HttpResponse.json({ err_msg: "Copy failed" }, { status: 500 });
+        server.use(
+            http.post("/api/histories/{history_id}/contents/{type}s", async ({ request, response }) => {
+                const body = (await request.json()) as { content: unknown };
+                inFlight++;
+                peakInFlight = Math.max(peakInFlight, inFlight);
+
+                await new Promise((resolve) => setTimeout(resolve, 1));
+                inFlight--;
+
+                if (body.content === "dataset-7") {
+                    return response("5XX").json({ err_msg: "Copy failed" }, { status: 500 });
                 }
 
-                return HttpResponse.json({ id: body.content });
+                return response(200).json({ id: body.content } as any);
             }),
         );
 
-        const result = await copyDatasets(["dataset-a", "dataset-b"], "target-history");
+        const datasetIds = Array.from({ length: 7 }, (_, index) => `dataset-${index + 1}`);
+        const result = await copyDatasets(datasetIds, "target-history");
 
         expect(result).toEqual({
-            copiedDatasets: [{ id: "dataset-a" }],
-            failedDatasetIds: ["dataset-b"],
+            copiedDatasets: datasetIds.slice(0, 6).map((id) => ({ id })),
+            failedDatasetIds: ["dataset-7"],
         });
+        expect(peakInFlight).toBe(5);
     });
 });
