@@ -1,0 +1,11 @@
+<tool id="gx_section_underscore_name" name="gx_section_underscore_name" version="1.0.0" profile="24.2">
+    <command detect_errors="exit_code"><![CDATA[echo '$__section_opts__.param' > '$output']]></command>
+    <inputs>
+        <section name="__section_opts__" title="Options" expanded="true">
+            <param name="param" type="text" value="default_val" label="A parameter"/>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+</tool>
