@@ -187,7 +187,10 @@ NotificationContentField = Field(
 )
 
 AnyUserNotificationContent = Annotated[
-    MessageNotificationContent | NewSharedItemNotificationContent | StorageOperationNotificationContent | ToolInstallationRequestNotificationContent,
+    MessageNotificationContent
+    | NewSharedItemNotificationContent
+    | StorageOperationNotificationContent
+    | ToolInstallationRequestNotificationContent,
     NotificationContentField,
 ]
 

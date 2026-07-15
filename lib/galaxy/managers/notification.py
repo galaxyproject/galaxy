@@ -3,6 +3,7 @@ from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 from typing import (
+    Any,
     cast,
     NamedTuple,
 )
@@ -88,8 +89,7 @@ log = logging.getLogger(__name__)
 
 # Sentinel for the cached workflow_name lookup: distinguishes "not yet resolved"
 # from "resolved to None" (a valid result when the workflow cannot be found).
-_UNSET = object()
-_Unset = type(_UNSET)
+_UNSET: Any = object()
 
 
 NOTIFICATION_PREFERENCES_SECTION_NAME = "notifications"
@@ -917,7 +917,7 @@ class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplate
 
 
 class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
-    _workflow_name: str | None | _Unset = _UNSET
+    _workflow_name: Any = _UNSET
     # Tool request fields are raw user input; escape them in the HTML body.
     autoescape_html = True
 
@@ -961,9 +961,9 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
         # Resolved once per builder; send() renders both TXT and HTML bodies,
         # so caching avoids a duplicate StoredWorkflow lookup.
         if self._workflow_name is not _UNSET:
-            return self._workflow_name  # type: ignore[return-value]
+            return self._workflow_name
         self._workflow_name = self._resolve_workflow_name(workflow_id)
-        return self._workflow_name  # type: ignore[return-value]
+        return self._workflow_name
 
     def _resolve_workflow_name(self, workflow_id: str | None) -> str | None:
         if not workflow_id:
