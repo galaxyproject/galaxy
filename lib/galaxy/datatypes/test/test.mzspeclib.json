@@ -1,20 +1,123 @@
 {
-  "attributes": {
-    "type": "array",
-    "description": "A list of controlled vocabulary terms describing the spectral library",
-    "items": {
-      "$ref": "#/definitions/cvparam"
+  "format_version": "1.0",
+  "attributes": [
+    {
+      "accession": "MS:1003188",
+      "name": "library name",
+      "value": "test spectral library"
+    },
+    {
+      "accession": "MS:1000008",
+      "name": "ionization type",
+      "value": "MS:1000073|electrospray ionization"
+    },
+    {
+      "accession": "MS:1000465",
+      "name": "scan polarity",
+      "value": "MS:1000130|positive scan"
     }
+  ],
+  "analyte_attribute_sets": {
+    "all": []
   },
-  "spectra": {
-    "type": "array",
-    "description": "A list of spectra contained in the spectral library",
-    "items": {
-      "$ref": "#/definitions/spectrum"
+  "spectra": [
+    {
+      "id": "spectrum1",
+      "index": 0,
+      "attributes": [
+        {
+          "accession": "MS:1003063",
+          "name": "universal spectrum identifier",
+          "value": "mzspec:test:scan:1"
+        },
+        {
+          "accession": "MS:1003061",
+          "name": "library spectrum name",
+          "value": "peptide_1"
+        },
+        {
+          "accession": "MS:1000894",
+          "name": "retention time",
+          "value": 12.5
+        },
+        {
+          "accession": "MS:1003208",
+          "name": "experimental precursor monoisotopic m/z",
+          "value": 456.2345
+        }
+      ],
+      "precursor": {
+        "charge_state": 2,
+        "selected_ion_mz": 456.2345,
+        "fragmentation": {
+          "accession": "MS:1000133",
+          "name": "collision-induced dissociation"
+        }
+      },
+      "analyte_attributes": [
+        {
+          "accession": "MS:1000866",
+          "name": "molecular formula",
+          "value": "C20H35N5O4"
+        }
+      ],
+      "ion_lists": [
+        {
+          "accession": "MS:1000801",
+          "name": "product ion list",
+          "mz": [100.5, 150.2, 200.8, 250.3, 300.1],
+          "intensity": [1000, 5000, 2500, 3500, 1500]
+        }
+      ]
+    },
+    {
+      "id": "spectrum2",
+      "index": 1,
+      "attributes": [
+        {
+          "accession": "MS:1003063",
+          "name": "universal spectrum identifier",
+          "value": "mzspec:test:scan:2"
+        },
+        {
+          "accession": "MS:1003061",
+          "name": "library spectrum name",
+          "value": "peptide_2"
+        },
+        {
+          "accession": "MS:1000894",
+          "name": "retention time",
+          "value": 15.8
+        },
+        {
+          "accession": "MS:1003208",
+          "name": "experimental precursor monoisotopic m/z",
+          "value": 789.1234
+        }
+      ],
+      "precursor": {
+        "charge_state": 3,
+        "selected_ion_mz": 789.1234,
+        "fragmentation": {
+          "accession": "MS:1000133",
+          "name": "collision-induced dissociation"
+        }
+      },
+      "analyte_attributes": [
+        {
+          "accession": "MS:1000866",
+          "name": "molecular formula",
+          "value": "C35H55N9O8"
+        }
+      ],
+      "ion_lists": [
+        {
+          "accession": "MS:1000801",
+          "name": "product ion list",
+          "mz": [120.3, 180.6, 250.9, 300.1],
+          "intensity": [2000, 3000, 4500, 1500]
+        }
+      ]
     }
-  },
-  "format_version": {
-    "type": "string",
-    "description": "The format specification's version name"
-  }
+  ]
 }
