@@ -638,3 +638,20 @@ def test_guid_sibling_versions_reset_on_in_place_removal():
     assert set(box._index_versions_for(f"{prefix}/0.20.1")) == {"0.20.1", "0.23.2"}
     box._remove_tool_in_memory(f"{prefix}/0.23.2")
     assert box._index_versions_for(f"{prefix}/0.20.1") == ["0.20.1"]
+
+
+def test_get_tool_short_id_missing_version_honors_exact():
+    box = _registry_box()
+    guid = "toolshed.example.com/repos/owner/repo/cat/1.0"
+    box._tool_index.add_entry(_entry(id=guid, version="1.0"))
+    box._shed_short_id_to_guids = {"cat": {guid}}
+    default_tool = _stub(_entry(id=guid, version="1.0"))
+
+    def load(tool_id, tool_version=None):
+        if tool_id == guid and tool_version in (None, "1.0"):
+            return default_tool
+        return None
+
+    box._load_tool_on_demand = load
+    assert box.get_tool("cat", tool_version="9.9", exact=True) is None
+    assert box.get_tool("cat", tool_version="9.9", exact=False) is default_tool

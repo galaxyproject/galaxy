@@ -1106,8 +1106,13 @@ class LazyToolBox(ToolBox):
             candidates: list[tuple[tuple[int, Any], Tool]] = []
             for guid in sorted(self._shed_short_id_to_guids[tool_id]):
                 loaded = self._load_tool_on_demand(guid, tool_version)
-                if loaded is None and tool_version:
-                    # Unknown version on this guid — try its default.
+                if loaded is None and tool_version and not exact:
+                    # Unknown version on this guid — try its default. Honor
+                    # ``exact``: like the guid path above and eager
+                    # ``AbstractToolBox.get_tool`` (``elif exact: continue``),
+                    # a specific-version request must not substitute another
+                    # version, so skip this candidate when exact and the
+                    # requested version isn't available.
                     default_entry = self._tool_index.entries.get(guid)
                     if default_entry is not None:
                         loaded = self._load_tool_on_demand(guid, default_entry.version or None)
