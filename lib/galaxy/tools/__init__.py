@@ -387,7 +387,7 @@ def tool_requires_galaxy_python_environment(
     profile: float,
     preserve_python_environment: str,
     tool_shed: str | None,
-    old_id: str,
+    old_id: str | None,
     version: str | None,
 ) -> bool:
     """Return the runtime-environment policy from metadata available at population time."""
@@ -412,6 +412,8 @@ def tool_requires_galaxy_python_environment(
         return True
     if old_id in GALAXY_LIB_TOOLS_UNVERSIONED:
         return True
+    if old_id is None:
+        return False
     fixed_version = GALAXY_LIB_TOOLS_VERSIONED.get(old_id)
     if fixed_version is None:
         return False
@@ -428,6 +430,7 @@ def tool_produces_real_jobs(tool_type: str, action_module: tuple[str, str] | Non
     else:
         action_class = tool_types.get(tool_type, Tool).default_tool_action
     return action_class.produces_real_jobs
+
 
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],

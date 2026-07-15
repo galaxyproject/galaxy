@@ -84,6 +84,7 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutput,
     ToolOutputCollection,
 )
+from galaxy.tool_util.toolbox.base import ToolLike
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicToolCreatePayload,
     DynamicUnprivilegedToolCreatePayload,
@@ -137,7 +138,6 @@ from galaxy.tools.parameters.workflow_utils import (
     workflow_building_modes,
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
-from galaxy.tool_util.toolbox.base import ToolLike
 from galaxy.util import (
     listify,
     unicodify,

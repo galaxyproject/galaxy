@@ -108,6 +108,7 @@ class ToolIndexEntry(BaseModel):
     def _tool_class(self) -> type[Tool]:
         return tool_types.get(self.tool_type, Tool)
 
+
 class ToolPanelItem(BaseModel):
     """A configuration-order panel placement, separate from deduplicated entries."""
 
@@ -342,6 +343,7 @@ class ToolIndex(BaseModel):
     def get_panel_views(self) -> dict[str, dict]:
         """Return pre-computed panel view dictionaries."""
         return self.panel_views
+
 
 # md5 of the ToolIndex JSON schema (the pattern
 # tool_shed.managers.model_cache.hash_model uses — not imported from there,

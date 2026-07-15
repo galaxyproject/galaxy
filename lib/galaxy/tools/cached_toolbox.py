@@ -28,11 +28,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tool_util.deps.requirements import (
     ContainerDescription,
     ToolRequirements,
 )
+from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.base import (
     MaterializationReasonName,
@@ -304,7 +304,9 @@ class CachedTool:
     @property
     def containers(self) -> list[ContainerDescription]:
         if self._containers is None:
-            self._containers = [ContainerDescription.from_dict(container) for container in self._entry.container_requirements]
+            self._containers = [
+                ContainerDescription.from_dict(container) for container in self._entry.container_requirements
+            ]
         return self._containers
 
     @property
@@ -416,6 +418,7 @@ class CachedTool:
         except Exception as exc:
             raise ToolMaterializationError(self.id, "could not apply cached metadata") from exc
         return real
+
 
 class CachedToolBox(ToolBox):
     """
@@ -898,6 +901,7 @@ class CachedToolBox(ToolBox):
         # Check if we have this tool in our index
         if self._tool_index and tool_id in self._tool_index.entries:
             if get_all_versions:
+
                 def _ver_key(v: str):
                     # ``galaxy.tool_util.version.parse_version`` matches what
                     # the eager ToolLineage uses to order versions and

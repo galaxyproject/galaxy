@@ -97,6 +97,8 @@ class ToolAction:
     been converted and validated).
     """
 
+    produces_real_jobs: bool
+
     @abstractmethod
     def execute(
         self,

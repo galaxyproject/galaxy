@@ -572,9 +572,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 if hits:
                     for hit in hits:
                         try:
-                            tool = self.service._get_tool(
-                                trans, hit, user=trans.user, materialization_reason="detail"
-                            )
+                            tool = self.service._get_tool(trans, hit, user=trans.user, materialization_reason="detail")
                             if tool:
                                 results.append(tool.id)
                         except exceptions.AuthenticationFailed:
@@ -923,9 +921,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
     @expose_api
     def conversion(self, trans: GalaxyWebTransaction, tool_id, payload, **kwd):
-        converter = self.service._get_tool(
-            trans, tool_id, user=trans.user, materialization_reason="execution"
-        )
+        converter = self.service._get_tool(trans, tool_id, user=trans.user, materialization_reason="execution")
         target_type = payload.get("target_type")
         source_type = payload.get("source_type")
         input_src = payload.get("src")

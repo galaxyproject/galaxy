@@ -734,7 +734,7 @@ def test_materialized_tools_are_owned_only_by_bounded_lru():
         raw_source="<tool/>",
         source_path=path,
     )
-    parses = Counter()
+    parses: Counter[str] = Counter()
 
     class RealTool:
         pass

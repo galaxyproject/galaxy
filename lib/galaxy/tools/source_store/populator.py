@@ -69,8 +69,8 @@ from galaxy.tool_util.parser.util import (
     parse_tool_version_with_defaults,
 )
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
-from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
 from galaxy.tools import tool_produces_real_jobs
+from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
 from galaxy.tools.source_store.discover import (
     CONVERTER_TOOL_CONF,
     discover_tools,
