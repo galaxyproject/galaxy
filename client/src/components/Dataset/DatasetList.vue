@@ -4,15 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
-import Multiselect from "vue-multiselect";
 
-import {
-    type AnyHistory,
-    type HDASummary,
-    type HistoryContentsStats,
-    type HistorySummary,
-    userOwnsHistory,
-} from "@/api";
+import { type HDASummary, type HistorySummary } from "@/api";
 import { copyDatasets, deleteDataset, loadDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import type { RowIcon } from "@/components/Common/GTable.types";
@@ -20,25 +13,21 @@ import { STATES } from "@/components/History/Content/model/states";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import { useDatasetTableActions } from "./useDatasetTableActions";
 
-import GAlert from "@/components/BaseComponents/GAlert.vue";
-import GModal from "@/components/BaseComponents/GModal.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import GTable from "@/components/Common/GTable.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
+import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const breadcrumbItems = [{ title: "Datasets", to: "/datasets/list" }];
-
-type TargetHistory = HistorySummary & Partial<Pick<HistoryContentsStats, "contents_active">>;
 
 const allFields = [
     {
@@ -81,9 +70,6 @@ const sortDesc = ref(true);
 const sortBy = ref("update_time");
 const rows = ref<HDASummary[]>([]);
 const selectedItemIds = ref<string[]>([]);
-const selectedTargetHistoryId = ref<string | null>(null);
-const targetHistoriesLoaded = ref(false);
-const targetHistoriesLoading = ref(false);
 const totalDatasets = ref(0);
 const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
 const bulkDeleteOrRestoreLoading = ref(false);
@@ -92,8 +78,7 @@ const showBulkCopyModal = ref(false);
 
 const { datasetTableActions } = useDatasetTableActions(() => load(true));
 const historyStore = useHistoryStore();
-const { currentHistory, currentHistoryId, histories, historiesLoading, totalHistoryCount } = storeToRefs(historyStore);
-const { currentUser } = storeToRefs(useUserStore());
+const { currentHistoryId, histories } = storeToRefs(historyStore);
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const fields = computed(() => allFields.filter((field) => visibleColumns.value.includes(field.key)));
@@ -114,46 +99,6 @@ const selectedIndices = computed(() => {
         .map((row, index) => (selectedItemIds.value.includes(row.id) ? index : -1))
         .filter((i) => i !== -1);
 });
-const targetHistories = computed<TargetHistory[]>(() => {
-    const ownedHistories = (histories.value as AnyHistory[])
-        .filter((history) => userOwnsHistory(currentUser.value, history))
-        .filter((history) => !history.deleted && !history.purged) as TargetHistory[];
-
-    const sortedHistories = [...ownedHistories].sort((a, b) => {
-        if (a.id === currentHistoryId.value) {
-            return -1;
-        }
-        if (b.id === currentHistoryId.value) {
-            return 1;
-        }
-        return new Date(b.update_time).getTime() - new Date(a.update_time).getTime();
-    });
-
-    if (currentHistory.value && !sortedHistories.some((history) => history.id === currentHistory.value?.id)) {
-        return [currentHistory.value as TargetHistory, ...sortedHistories];
-    }
-
-    return sortedHistories;
-});
-const selectedTargetHistory = computed({
-    get() {
-        return targetHistories.value.find((history) => history.id === selectedTargetHistoryId.value) ?? null;
-    },
-    set(history: TargetHistory | null) {
-        selectedTargetHistoryId.value = history?.id ?? null;
-    },
-});
-
-function getHistoryDatasetCount(history: TargetHistory) {
-    return history.contents_active?.active;
-}
-
-function getHistoryOptionKey(history: TargetHistory) {
-    const count = getHistoryDatasetCount(history);
-    const datasetSummary = count !== undefined ? `${count} dataset${count === 1 ? "" : "s"}` : "";
-    return [history.name, history.update_time, datasetSummary].filter(Boolean).join(" ");
-}
-
 async function load(showOverlay = false) {
     if (showOverlay) {
         overlay.value = true;
@@ -288,45 +233,16 @@ async function onBulkDelete() {
     }
 }
 
-async function loadTargetHistories() {
-    if (targetHistoriesLoaded.value) {
-        return;
-    }
-
-    try {
-        const shouldLoadAllHistories =
-            targetHistories.value.length === 0 ||
-            totalHistoryCount.value === 0 ||
-            targetHistories.value.length < totalHistoryCount.value;
-        if (shouldLoadAllHistories && !historiesLoading.value) {
-            targetHistoriesLoading.value = true;
-            await historyStore.loadHistories(false);
-        }
-        targetHistoriesLoaded.value = !shouldLoadAllHistories || !historiesLoading.value;
-    } catch (e: any) {
-        Toast.error(`Failed to load histories: ${e?.message ?? String(e)}`);
-    } finally {
-        targetHistoriesLoading.value = false;
-    }
-}
-
-async function openBulkCopyModal() {
+function openBulkCopyModal() {
     if (!currentHistoryId.value) {
         Toast.error("No current history found.");
         return;
     }
 
-    selectedTargetHistoryId.value = currentHistoryId.value;
     showBulkCopyModal.value = true;
-    await loadTargetHistories();
 }
 
-async function onBulkCopy() {
-    if (!selectedTargetHistoryId.value) {
-        Toast.error("Select a target history.");
-        return;
-    }
-
+async function onBulkCopy(targetHistory: HistorySummary) {
     const datasetIdsToCopy = [...selectedItemIds.value];
     const totalSelected = datasetIdsToCopy.length;
 
@@ -334,25 +250,22 @@ async function onBulkCopy() {
         overlay.value = true;
         bulkCopyLoading.value = true;
 
-        const { copiedDatasets, failedDatasetIds } = await copyDatasets(
-            datasetIdsToCopy,
-            selectedTargetHistoryId.value,
-        );
+        const { copiedDatasets, failedDatasetIds } = await copyDatasets(datasetIdsToCopy, targetHistory.id);
 
         const copiedCount = copiedDatasets.length;
         const failedCount = failedDatasetIds.length;
-        const targetHistoryName = selectedTargetHistory.value?.name ?? "selected history";
 
         if (failedCount === 0) {
-            Toast.success(`Copied ${copiedCount} dataset${copiedCount !== 1 ? "s" : ""} to ${targetHistoryName}.`);
+            Toast.success(`Copied ${copiedCount} dataset${copiedCount !== 1 ? "s" : ""} to ${targetHistory.name}.`);
             selectedItemIds.value = [];
-            showBulkCopyModal.value = false;
         } else if (copiedCount > 0) {
-            Toast.error(`Copied ${copiedCount} of ${totalSelected} datasets. Failed to copy ${failedCount} datasets.`);
+            Toast.error(
+                `Copied ${copiedCount} of ${totalSelected} dataset${totalSelected !== 1 ? "s" : ""}. Failed to copy ${failedCount} dataset${failedCount !== 1 ? "s" : ""}.`,
+            );
             selectedItemIds.value = failedDatasetIds;
         } else {
             // Keep original selection so the user can retry the failed copy.
-            Toast.error(`Failed to copy ${totalSelected} dataset${totalSelected > 1 ? "s" : ""}.`);
+            Toast.error(`Failed to copy ${totalSelected} dataset${totalSelected !== 1 ? "s" : ""}.`);
         }
     } catch (e: any) {
         Toast.error(`Failed to copy datasets: ${e?.message ?? String(e)}`);
@@ -471,17 +384,17 @@ onMounted(() => {
 
         <div class="d-flex mt-1 align-items-center mt-2">
             <div v-if="selectedItemIds.length > 0" class="d-flex gap-1 w-100 position-absolute">
-                <BButton
+                <GButton
                     id="dataset-list-footer-bulk-copy-button"
-                    v-g-tooltip.hover
-                    size="sm"
-                    variant="primary"
-                    :disabled="bulkCopyLoading || bulkDeleteOrRestoreLoading || targetHistoriesLoading"
+                    tooltip
+                    size="small"
+                    color="blue"
+                    :disabled="bulkCopyLoading || bulkDeleteOrRestoreLoading"
                     :title="bulkCopyLoading ? 'Copying datasets' : 'Copy selected datasets'"
                     @click="openBulkCopyModal">
                     <FontAwesomeIcon :icon="faCopy" />
                     {{ localize("Copy Selected") }} ({{ selectedItemIds.length }})
-                </BButton>
+                </GButton>
 
                 <BButton
                     id="dataset-list-footer-bulk-delete-button"
@@ -508,84 +421,13 @@ onMounted(() => {
                 @change="onPageChange" />
         </div>
 
-        <GModal
-            id="dataset-list-bulk-copy-modal"
-            :show.sync="showBulkCopyModal"
-            title="Copy selected datasets"
-            size="medium"
-            confirm
-            :ok-text="bulkCopyLoading ? 'Copying...' : 'Copy datasets'"
-            :close-on-ok="false"
-            :ok-disabled="bulkCopyLoading || targetHistoriesLoading || !selectedTargetHistoryId"
-            :ok-loading="bulkCopyLoading"
-            overflow-visible
-            @ok="onBulkCopy">
-            <GAlert v-if="targetHistoriesLoading" variant="info" show>
-                <LoadingSpan message="Loading histories" />
-            </GAlert>
-            <div v-else>
-                <label for="dataset-list-bulk-copy-history-select">
-                    {{ localize("Select history to copy datasets to:") }}
-                </label>
-
-                <Multiselect
-                    id="dataset-list-bulk-copy-history-select"
-                    v-model="selectedTargetHistory"
-                    :options="targetHistories"
-                    :custom-label="getHistoryOptionKey"
-                    track-by="id"
-                    :searchable="true"
-                    :allow-empty="false"
-                    :loading="targetHistoriesLoading || historiesLoading"
-                    :disabled="bulkCopyLoading || targetHistories.length === 0"
-                    placeholder="Search histories"
-                    select-label=""
-                    selected-label=""
-                    deselect-label="">
-                    <template v-slot:singleLabel="{ option }">
-                        <div class="history-option history-option-selected">
-                            <div class="history-option-name">{{ option.name }}</div>
-
-                            <div class="history-option-meta">
-                                <span v-if="option.update_time">
-                                    Updated <UtcDate :date="option.update_time" mode="elapsed" />
-                                </span>
-
-                                <span v-if="getHistoryDatasetCount(option) !== undefined">
-                                    {{ getHistoryDatasetCount(option) }}
-                                    dataset{{ getHistoryDatasetCount(option) === 1 ? "" : "s" }}
-                                </span>
-                            </div>
-                        </div>
-                    </template>
-
-                    <template v-slot:option="{ option }">
-                        <div class="history-option">
-                            <div class="history-option-name">{{ option.name }}</div>
-
-                            <div class="history-option-meta">
-                                <span v-if="option.update_time">
-                                    Updated <UtcDate :date="option.update_time" mode="elapsed" />
-                                </span>
-
-                                <span v-if="getHistoryDatasetCount(option) !== undefined">
-                                    {{ getHistoryDatasetCount(option) }}
-                                    dataset{{ getHistoryDatasetCount(option) === 1 ? "" : "s" }}
-                                </span>
-                            </div>
-                        </div>
-                    </template>
-
-                    <template v-slot:noResult>
-                        {{ localize("No histories found.") }}
-                    </template>
-                </Multiselect>
-
-                <GAlert v-if="targetHistories.length === 0" class="mt-2 mb-0" variant="warning" show>
-                    {{ localize("No target histories available.") }}
-                </GAlert>
-            </div>
-        </GModal>
+        <SelectorModal
+            :histories="histories"
+            hide-deleted
+            :show-modal.sync="showBulkCopyModal"
+            title="Copy selected datasets to history"
+            selection-instruction="Click a history to copy selected datasets"
+            @selectHistory="onBulkCopy" />
     </div>
 </template>
 
@@ -616,23 +458,4 @@ onMounted(() => {
     gap: 0.25rem;
 }
 
-.history-option {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    justify-content: center;
-    min-height: 2.5rem;
-}
-
-.history-option-name {
-    font-weight: 600;
-}
-
-.history-option-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    color: #6c757d;
-    font-size: 0.875rem;
-}
 </style>
