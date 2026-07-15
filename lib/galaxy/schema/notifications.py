@@ -146,7 +146,7 @@ class ToolInstallationRequestNotificationContent(Model):
     tool_names: list[str] = Field(
         ..., min_length=1, title="Tool names", description="Names or tool-shed IDs of the requested tools."
     )
-    tool_url: Optional[str] = Field(
+    tool_url: str | None = Field(
         None,
         title="Tool URL",
         description="Homepage or repository URL for the requested tool (single-tool installation requests only).",
@@ -154,21 +154,21 @@ class ToolInstallationRequestNotificationContent(Model):
     description: str = Field(
         ..., title="Description", description="Short description of the tool and its scientific use case."
     )
-    scientific_domain: Optional[str] = Field(
+    scientific_domain: str | None = Field(
         None, title="Scientific domain", description="The scientific domain for the requested tool."
     )
-    requested_version: Optional[str] = Field(
+    requested_version: str | None = Field(
         None, title="Requested version", description="The version of the tool being requested."
     )
-    requester_email: Optional[str] = Field(
+    requester_email: str | None = Field(
         None,
         title="Requester email",
         description="The email address of the requester for follow-up. This is derived server-side for user submissions.",
     )
-    workflow_id: Optional[str] = Field(
+    workflow_id: str | None = Field(
         None, title="Workflow ID", description="Encoded ID of the workflow requiring these tools, if applicable."
     )
-    additional_remarks: Optional[str] = Field(
+    additional_remarks: str | None = Field(
         None, title="Additional remarks", description="Any additional information or context for the request."
     )
 
