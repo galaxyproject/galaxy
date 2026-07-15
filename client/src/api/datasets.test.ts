@@ -48,7 +48,7 @@ describe("copyDatasets", () => {
                 inFlight--;
 
                 if (body.content === "dataset-7") {
-                    return response("5XX").json({ err_msg: "Copy failed" }, { status: 500 });
+                    return response("5XX").json({ err_code: 500, err_msg: "Copy failed" }, { status: 500 });
                 }
 
                 return response(200).json({ id: body.content } as any);
