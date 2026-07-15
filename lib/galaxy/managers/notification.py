@@ -86,6 +86,11 @@ from galaxy.util import now
 
 log = logging.getLogger(__name__)
 
+# Sentinel for the cached workflow_name lookup: distinguishes "not yet resolved"
+# from "resolved to None" (a valid result when the workflow cannot be found).
+_UNSET = object()
+_Unset = type(_UNSET)
+
 
 NOTIFICATION_PREFERENCES_SECTION_NAME = "notifications"
 
@@ -840,13 +845,32 @@ class EmailNotificationTemplateBuilder(Protocol):
             galaxy_url=self.notification.galaxy_url,
         )
 
+    def get_template_path(self, template_format: TemplateFormats) -> str:
+        """Returns the path of the template used to render the email body.
+
+        Subclasses can override this to select a different template (e.g. a
+        confirmation template for a specific recipient) without re-implementing
+        the whole render pipeline.
+        """
+        return f"mail/notifications/{self.notification.category}-email.{template_format.value}"
+
+    #: Whether the HTML body should be autoescaped. Defaults to ``False`` to
+    #: preserve the historical behavior of existing notification templates
+    #: (e.g. ``message``/``storage_operation``, whose ``content['message']``
+    #: is pre-rendered to HTML). Builders for templates that render raw
+    #: user-supplied content should opt in.
+    autoescape_html: bool = False
+
     def get_body(self, template_format: TemplateFormats) -> str:
-        template_path = f"mail/notifications/{self.notification.category}-email.{template_format.value}"
+        template_path = self.get_template_path(template_format)
         context = self.build_context(template_format)
+        # Only autoescape when the builder opts in, and never for plain text.
+        autoescape = self.autoescape_html and template_format == TemplateFormats.HTML
         return templates.render(
             template_path,
             context.model_dump(),
             self.config.templates_dir,
+            autoescape=autoescape,
         )
 
 
@@ -893,16 +917,53 @@ class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplate
 
 
 class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    _workflow_name: Union[Optional[str], _Unset] = _UNSET
+    # Tool request fields are raw user input; escape them in the HTML body.
+    autoescape_html = True
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
         content = ToolInstallationRequestNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         return content
 
+    def _is_confirmation_to_requester(self) -> bool:
+        """Whether this email is the request confirmation sent to the requester.
+
+        The requester is identified by matching their email to the
+        ``requester_email`` recorded in the notification content. Both the
+        email comparison and the admin exclusion are case-insensitive so the
+        outcome does not depend on the case of the stored admin email (which
+        ``config.is_admin_user`` compares case-sensitively).
+        """
+        content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
+        requester_email = content.requester_email
+        if not self.user.email or not requester_email:
+            return False
+        if self.user.email.lower().strip() != requester_email.lower().strip():
+            return False
+        # Exclude admins even if they happen to be the requester, using a
+        # case-insensitive check so an admin whose email is stored with a
+        # different case is still recognized as an admin here.
+        admin_emails = [addr.lower().strip() for addr in self.config.admin_users_list if addr]
+        return self.user.email.lower().strip() not in admin_emails and not self.user.bootstrap_admin_user
+
+    def get_template_path(self, template_format: TemplateFormats) -> str:
+        if self._is_confirmation_to_requester():
+            return f"mail/notifications/tool_installation_request_confirmation-email.{template_format.value}"
+        return super().get_template_path(template_format)
+
     def build_context(self, template_format: TemplateFormats) -> NotificationContext:
         context = EmailNotificationTemplateBuilder.build_context(self, template_format)
         content = cast(ToolInstallationRequestNotificationContent, context.content)
-        workflow_name = self._resolve_workflow_name(content.workflow_id)
+        workflow_name = self._get_workflow_name(content.workflow_id)
         return context.model_copy(update={"workflow_name": workflow_name})
+
+    def _get_workflow_name(self, workflow_id: Optional[str]) -> Optional[str]:
+        # Resolved once per builder; send() renders both TXT and HTML bodies,
+        # so caching avoids a duplicate StoredWorkflow lookup.
+        if self._workflow_name is not _UNSET:
+            return self._workflow_name  # type: ignore[return-value]
+        self._workflow_name = self._resolve_workflow_name(workflow_id)
+        return self._workflow_name  # type: ignore[return-value]
 
     def _resolve_workflow_name(self, workflow_id: Optional[str]) -> Optional[str]:
         if not workflow_id:
@@ -921,6 +982,10 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
 
     def get_subject(self) -> str:
         content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
+        if self._is_confirmation_to_requester():
+            if len(content.tool_names) == 1:
+                return f"[Galaxy] Tool installation request submitted: {content.tool_names[0]}"
+            return f"[Galaxy] Tool installation request submitted ({len(content.tool_names)} tools)"
         if len(content.tool_names) == 1:
             return f"[Galaxy] Tool installation request: {content.tool_names[0]}"
         return f"[Galaxy] Tool installation request ({len(content.tool_names)} tools)"
