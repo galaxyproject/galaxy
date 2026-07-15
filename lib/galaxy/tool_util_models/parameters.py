@@ -1,6 +1,7 @@
 # attempt to model requires_value...
 # conditional can descend...
 import builtins
+import re
 from abc import abstractmethod
 from collections.abc import (
     Callable,
@@ -1763,8 +1764,6 @@ class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 
 def _validate_regex_expression(v: str) -> str:
-    import re
-
     try:
         re.compile(v)
     except re.error as e:
