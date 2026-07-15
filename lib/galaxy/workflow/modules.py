@@ -73,9 +73,11 @@ from galaxy.tool_util.parameters import (
     from_workflow_execution_state,
     JobInternalToolState,
     MappedCollectionInput,
+    NATIVE_BOOKKEEPING_KEYS,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestInternalToWorkflowStateError,
+    strip_undeclared_keys,
     ToolParameterBundleModel,
 )
 from galaxy.tool_util.parser import get_input_source
@@ -2477,6 +2479,25 @@ def _log_workflow_tool_request_state(
         statsd_client.incr(f"galaxy.workflow_tool_request_state.{request_state.value}")
 
 
+def _strip_stale_tool_state(step: WorkflowStep, tool) -> None:
+    """Drop undeclared ("stale") keys from a tool step's persisted state.
+
+    After a tool-version upgrade or a workflow import, ``tool_state`` can retain
+    keys the current tool no longer declares. Strip them at this single step
+    persistence seam, preserving framework bookkeeping keys. Best effort: skipped
+    when the tool has no generated parameter model, and never allowed to break a
+    save.
+    """
+    parameters = tool.parameters
+    tool_state = step.tool_inputs
+    if not parameters or not isinstance(tool_state, dict):
+        return
+    try:
+        strip_undeclared_keys(tool_state, parameters, preserve_keys=NATIVE_BOOKKEEPING_KEYS)
+    except Exception:
+        log.warning("Failed to strip stale tool_state keys for tool '%s'", tool.id, exc_info=True)
+
+
 class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
@@ -2620,6 +2641,7 @@ class ToolModule(WorkflowModule):
         step.tool_id = self.tool_id
         if self.tool:
             step.tool_version = self.get_version()
+            _strip_stale_tool_state(step, self.tool)
         else:
             step.tool_version = self.tool_version
         if tool_uuid := getattr(self, "tool_uuid", None):
