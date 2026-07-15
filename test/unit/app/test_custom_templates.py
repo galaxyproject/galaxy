@@ -68,9 +68,7 @@ def test_html_templates_do_not_escape_by_default(tmp_path):
     template_path.parent.mkdir(parents=True, exist_ok=True)
     with open(template_path, "w") as f:
         f.write(">>>>>> body\n{{ value }}")
-    output = templates.render(
-        "mail/inject.html", {"value": "<b>bold</b>"}, custom_templates_dir
-    )
+    output = templates.render("mail/inject.html", {"value": "<b>bold</b>"}, custom_templates_dir)
     assert output == "<b>bold</b>"
 
 
@@ -92,7 +90,5 @@ def test_html_templates_respect_safe_filter(tmp_path):
     template_path.parent.mkdir(parents=True, exist_ok=True)
     with open(template_path, "w") as f:
         f.write(">>>>>> body\n{{ value | safe }}")
-    output = templates.render(
-        "mail/safe.html", {"value": "<p>ok</p>"}, custom_templates_dir, autoescape=True
-    )
+    output = templates.render("mail/safe.html", {"value": "<p>ok</p>"}, custom_templates_dir, autoescape=True)
     assert output == "<p>ok</p>"

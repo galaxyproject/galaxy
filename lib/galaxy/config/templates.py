@@ -18,9 +18,7 @@ from galaxy.util.resources import (
 TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 
 
-def render(
-    template_path: str, context: dict, custom_templates_dir: str, autoescape: bool = False
-) -> str:
+def render(template_path: str, context: dict, custom_templates_dir: str, autoescape: bool = False) -> str:
     """Read and return templated content as string.
 
     ``autoescape`` defaults to ``False`` to preserve the historical behavior of
