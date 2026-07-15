@@ -228,7 +228,7 @@ class TestBuildToolSourceStore:
             tool_source_database_connection=_sqlite_url(tmp_path / "default.sqlite"),
             tool_configs=[],
             tool_source_stores=None,
-            use_lazy_toolbox=False,
+            use_cached_toolbox=False,
         )
         store = build_tool_source_store(config)  # type: ignore[arg-type]
         assert isinstance(store, SqlAlchemyToolSourceStore)
@@ -238,7 +238,7 @@ class TestBuildToolSourceStore:
             tool_source_database_connection="sqlite:///:memory:",
             tool_configs=[],
             tool_source_stores=None,
-            use_lazy_toolbox=False,
+            use_cached_toolbox=False,
         )
         store = build_tool_source_store(config)  # type: ignore[arg-type]
         assert isinstance(store, SqlAlchemyToolSourceStore)
@@ -248,7 +248,7 @@ class TestBuildToolSourceStore:
             tool_source_database_connection=None,
             tool_configs=[],
             tool_source_stores=None,
-            use_lazy_toolbox=False,
+            use_cached_toolbox=False,
         )
         with pytest.raises(ConfigurationError):
             build_tool_source_store(config)  # type: ignore[arg-type]
@@ -267,7 +267,7 @@ class TestBuildToolSourceStore:
             tool_source_database_connection="postgresql://galaxy@example.org/tool_sources",
             tool_configs=[],
             tool_source_stores=None,
-            use_lazy_toolbox=False,
+            use_cached_toolbox=False,
         )
         store = build_tool_source_store(config)  # type: ignore[arg-type]
         assert isinstance(store, CapturingStore)

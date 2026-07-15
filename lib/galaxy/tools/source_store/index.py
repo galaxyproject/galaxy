@@ -195,7 +195,7 @@ class ToolPanelItem(BaseModel):
 
     Placements are what the eager conf walk iterates; recording them
     separately from ``ToolIndex.entries`` (which collapses same-id tools to
-    one winner) lets the lazy fast panel init rebuild the live and
+    one winner) lets the cached toolbox's fast panel init rebuild the live and
     integrated panels without walking the confs.
     """
 
@@ -227,7 +227,7 @@ class ToolIndex(BaseModel):
     # ``add_entry`` in discovery (= conf) order. ``entries`` collapses
     # same-id tools from different conf placements to one winner, so it
     # cannot reproduce the panel: a tool id referenced by two confs (or two
-    # sections) has one entry but two placements. The lazy fast panel init
+    # sections) has one entry but two placements. The cached toolbox's fast panel init
     # replays these instead of walking the confs.
     panel_items: list["ToolPanelItem"] = Field(default_factory=list)
     panel_views: dict[str, dict] = Field(default_factory=dict)

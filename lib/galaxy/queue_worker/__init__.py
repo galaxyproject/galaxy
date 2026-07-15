@@ -36,8 +36,8 @@ from galaxy.managers.sse import (
 )
 from galaxy.model import User
 from galaxy.tools import ToolBox
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.data_manager.manager import DataManagers
-from galaxy.tools.lazy_toolbox import LazyToolBox
 from galaxy.tools.special_tools import load_lib_tools
 
 logging.getLogger("kombu").setLevel(logging.WARNING)
@@ -297,13 +297,13 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
 
     with app._toolbox_lock:
         new_toolbox: ToolBox
-        if getattr(app.config, "use_lazy_toolbox", False) and getattr(app, "tool_source_store", None) is not None:
-            new_toolbox = LazyToolBox(
+        if getattr(app.config, "use_cached_toolbox", False) and getattr(app, "tool_source_store", None) is not None:
+            new_toolbox = CachedToolBox(
                 config_filenames=tool_configs,
                 tool_root_dir=app.config.tool_path,
                 app=app,
                 tool_source_store=app.tool_source_store,
-                cache_size=getattr(app.config, "lazy_toolbox_cache_size", 500),
+                cache_size=getattr(app.config, "cached_toolbox_cache_size", 500),
                 save_integrated_tool_panel=save_integrated_tool_panel,
             )
         else:
@@ -406,9 +406,9 @@ def reload_tool_source_cache(app, **kwargs):
     """
     log.debug("Executing tool source cache reload on '%s'", app.config.server_name)
 
-    # Invalidate the lazy toolbox cache if the active toolbox is a LazyToolBox.
+    # Invalidate the cached toolbox cache if the active toolbox is a CachedToolBox.
     toolbox = app.toolbox
-    if isinstance(toolbox, LazyToolBox):
+    if isinstance(toolbox, CachedToolBox):
         toolbox.invalidate_index_cache()
         log.info("Tool source index cache invalidated")
 

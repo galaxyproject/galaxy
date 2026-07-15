@@ -172,13 +172,13 @@ from galaxy.tool_util.ontologies.ontology_data import configure_tool_tag_mapping
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
 from galaxy.tools.cache import ToolCache
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.evaluation import ToolTemplatingException
-from galaxy.tools.lazy_toolbox import LazyToolBox
 from galaxy.tools.search import (
-    LazyToolboxSearch,
+    CachedToolboxSearch,
     ToolBoxSearch,
 )
 from galaxy.tools.source_store import (
@@ -401,9 +401,9 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.dynamic_tool_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
 
-        # Use LazyToolBox if tool source store is available and populated
-        if self._use_lazy_toolbox():
-            self._toolbox = self._create_lazy_toolbox()
+        # Use CachedToolBox if tool source store is available and populated
+        if self._use_cached_toolbox():
+            self._toolbox = self._create_cached_toolbox()
         else:
             self._toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
 
@@ -411,12 +411,12 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self._init_container_finder()
         self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
-        if self._use_lazy_toolbox():
-            # Populator owns the whoosh index in lazy mode; the toolbox search
+        if self._use_cached_toolbox():
+            # Populator owns the whoosh index in cached-toolbox mode; the toolbox search
             # singleton is a thin reader. The toolbox is threaded in so
             # ``search`` can scope hits to the requested panel view. See
-            # ``LazyToolboxSearch``.
-            search_singleton: ToolBoxSearch = LazyToolboxSearch(self.config, self.toolbox)
+            # ``CachedToolboxSearch``.
+            search_singleton: ToolBoxSearch = CachedToolboxSearch(self.config, self.toolbox)
         else:
             search_singleton = ToolBoxSearch(
                 self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help
@@ -427,13 +427,13 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         """Initialize the tool source store for efficient tool loading.
 
         Default deployments never touch the store: it is only built when the
-        operator opted into ``use_lazy_toolbox``. Misconfiguration (bad
+        operator opted into ``use_cached_toolbox``. Misconfiguration (bad
         backend name, missing required setting) raises ``ConfigurationError``
         from ``build_tool_source_store`` — we let it propagate so the
         operator sees the failure at startup.
         """
         self.tool_source_store: ToolSourceStore | None = None
-        if not self.config.use_lazy_toolbox:
+        if not self.config.use_cached_toolbox:
             return
         self.tool_source_store = self._register_singleton(
             ToolSourceStore,  # type: ignore[type-abstract,unused-ignore]
@@ -442,13 +442,13 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         stats = self.tool_source_store.get_stats()
         tool_count = stats.get("count", 0)
         log.info(f"Initialized tool source store (backend: {stats.get('backend', 'unknown')}, tools: {tool_count})")
-        # Hand the store + (eventual) lazy toolbox to ``Galaxy.shutdown()``
+        # Hand the store + (eventual) cached toolbox to ``Galaxy.shutdown()``
         # so embedded restarts (IntegrationTestCase.restart) drop their
         # in-memory caches before the next boot wires its own. Without this,
         # the prior boot's cached ToolIndex sticks around long enough to
         # race with the new boot's _load_index_from_store.
         self.haltables.insert(1, ("tool source store", self._shutdown_tool_source_store))
-        self.haltables.insert(2, ("lazy toolbox", self._shutdown_lazy_toolbox))
+        self.haltables.insert(2, ("cached toolbox", self._shutdown_cached_toolbox))
 
     def _shutdown_tool_source_store(self) -> None:
         store = getattr(self, "tool_source_store", None)
@@ -458,32 +458,32 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             finally:
                 self.tool_source_store = None
 
-    def _shutdown_lazy_toolbox(self) -> None:
+    def _shutdown_cached_toolbox(self) -> None:
         toolbox = getattr(self, "_toolbox", None)
-        if isinstance(toolbox, LazyToolBox):
+        if isinstance(toolbox, CachedToolBox):
             try:
                 toolbox.close()
             except Exception as e:
-                log.debug(f"_shutdown_lazy_toolbox: {e}")
+                log.debug(f"_shutdown_cached_toolbox: {e}")
 
-    def _use_lazy_toolbox(self) -> bool:
-        """Determine whether to use LazyToolBox instead of regular ToolBox.
+    def _use_cached_toolbox(self) -> bool:
+        """Determine whether to use CachedToolBox instead of regular ToolBox.
 
-        Opt-in is explicit: only ``use_lazy_toolbox: true`` activates the
-        lazy toolbox. A populated store on its own (e.g. brought in by a
+        Opt-in is explicit: only ``use_cached_toolbox: true`` activates the
+        cached toolbox. A populated store on its own (e.g. brought in by a
         per-conf ``store="..."`` attribute) does *not* flip a default
-        deployment to lazy mode — that has to be a deliberate choice.
+        deployment to cached-toolbox mode — that has to be a deliberate choice.
         """
         if self.tool_source_store is None:
             return False
-        return bool(self.config.use_lazy_toolbox)
+        return bool(self.config.use_cached_toolbox)
 
-    def _create_lazy_toolbox(self) -> "tools.ToolBox":
-        """Create a LazyToolBox instance."""
-        cache_size = self.config.lazy_toolbox_cache_size
-        log.info(f"Using LazyToolBox with cache_size={cache_size}")
+    def _create_cached_toolbox(self) -> "tools.ToolBox":
+        """Create a CachedToolBox instance."""
+        cache_size = self.config.cached_toolbox_cache_size
+        log.info(f"Using CachedToolBox with cache_size={cache_size}")
 
-        return LazyToolBox(
+        return CachedToolBox(
             config_filenames=self.config.tool_configs,
             tool_root_dir=self.config.tool_path,
             app=self,  # type: ignore[arg-type]

@@ -211,7 +211,7 @@ def send_reload_notification(config: _ReloadNotificationConfig) -> bool:
 def _broadcast_reload(config: _ReloadNotificationConfig, app=None) -> None:
     """Tell peer Galaxy processes to drop their cached source-store index."""
     if app is not None:
-        # Local import: populator -> queue_worker -> lazy_toolbox -> populator
+        # Local import: populator -> queue_worker -> cached_toolbox -> populator
         # is a real import cycle if this is imported at module load time.
         from galaxy.queue_worker import send_control_task
 

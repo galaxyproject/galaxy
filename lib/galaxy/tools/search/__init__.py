@@ -131,8 +131,8 @@ class ToolBoxSearch:
         return panel_search.search(q, config)
 
 
-class LazyToolboxSearch(ToolBoxSearch):
-    """Drop-in for :class:`ToolBoxSearch` in lazy-toolbox mode.
+class CachedToolboxSearch(ToolBoxSearch):
+    """Drop-in for :class:`ToolBoxSearch` in cached-toolbox mode.
 
     The populator (``galaxy.tools.source_store.populator``) builds and owns
     one whoosh index per store; this class is a thin reader that opens them
@@ -152,7 +152,7 @@ class LazyToolboxSearch(ToolBoxSearch):
 
     def __init__(self, config: GalaxyAppConfiguration, toolbox: Optional["ToolBox"] = None) -> None:
         # Skip ToolBoxSearch.__init__ — it walks ``toolbox.panel_views()`` and
-        # builds a ToolPanelViewSearch per view. Under lazy mode the
+        # builds a ToolPanelViewSearch per view. Under the cached toolbox the
         # populator owns the whoosh indexes; view scoping is a post-filter on
         # the merged hits instead of a per-view index.
         self.config = config
@@ -217,7 +217,7 @@ class ToolPanelViewSearch:
         index_help: bool = True,
     ) -> None:
         """Build the schema and validate against the index."""
-        # Shared with the store's ``ToolWhooshIndex`` so eager and lazy
+        # Shared with the store's ``ToolWhooshIndex`` so eager and cached
         # search rank identically; ``help_boost`` adds the eager-only help
         # field the populator can't index.
         self.schema = build_search_schema(

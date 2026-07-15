@@ -88,7 +88,7 @@ class UsesShed(UsesShedApi):
             tool_conf_file.write(SHED_TOOL_CONF.substitute(shed_tools_path=self._app.config.shed_tools_dir))
         # Drop shed-tool index entries that no longer have a backing conf.
         # The populator is the single writer of the index, so a stale entry
-        # would otherwise survive the ``reload_toolbox`` below: ``LazyToolBox``
+        # would otherwise survive the ``reload_toolbox`` below: ``CachedToolBox``
         # only re-runs the populator when discovery turns up a *new* path.
         try:
             reconcile_index(self._app.config, rebuild_whoosh=True, app=self._app)

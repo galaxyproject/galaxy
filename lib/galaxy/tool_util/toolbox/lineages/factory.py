@@ -72,10 +72,10 @@ class LineageMap:
         return self.lineage_map.get(versionless_tool_id)
 
 
-class LazyLineageMap(LineageMap):
+class CachedLineageMap(LineageMap):
     """Lineage map that derives versions from a callable on first access.
 
-    Used by ``galaxy.tools.lazy_toolbox.LazyToolBox`` so the lineage view
+    Used by ``galaxy.tools.cached_toolbox.CachedToolBox`` so the lineage view
     over ``ToolIndex.entries_by_version`` doesn't need a boot-time pass to
     seed every tool's version set into ``ToolLineage.tool_versions``.
     Lineage data is already serialised inside the index
@@ -136,4 +136,4 @@ class LazyLineageMap(LineageMap):
         return super().get(tool_id)
 
 
-__all__ = ("LazyLineageMap", "LineageMap")
+__all__ = ("CachedLineageMap", "LineageMap")

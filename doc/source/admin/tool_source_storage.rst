@@ -18,8 +18,8 @@ time:
 2. A lightweight index over the stored tools supports fast tool listings and
    search without touching tool files
 
-The ``LazyToolBox`` consumes this store to load full ``Tool`` objects on
-demand with LRU caching. It is opt-in via ``use_lazy_toolbox``; this document
+The ``CachedToolBox`` consumes this store to load full ``Tool`` objects on
+demand with LRU caching. It is opt-in via ``use_cached_toolbox``; this document
 covers the store, the populator, the index, and the toolbox configuration.
 
 Configuration
@@ -58,14 +58,14 @@ Toolbox Selection
 .. code-block:: yaml
 
     galaxy:
-      # Opt in to the LazyToolBox. Off by default; setting this to true is
+      # Opt in to the CachedToolBox. Off by default; setting this to true is
       # required to activate per-conf store="..." routing.
-      use_lazy_toolbox: true
+      use_cached_toolbox: true
 
-The LazyToolBox is opt-in: leave ``use_lazy_toolbox`` unset (or false) and
+The CachedToolBox is opt-in: leave ``use_cached_toolbox`` unset (or false) and
 Galaxy uses the traditional eager ToolBox even when the store is populated
 or when a tool_conf carries a ``store="..."`` attribute. The store is only
-initialized when the LazyToolBox is enabled.
+initialized when the CachedToolBox is enabled.
 
 Cache Configuration
 ^^^^^^^^^^^^^^^^^^^
@@ -73,11 +73,11 @@ Cache Configuration
 .. code-block:: yaml
 
     galaxy:
-      # Maximum Tool objects in the LazyToolBox LRU cache (default: 500)
-      lazy_toolbox_cache_size: 500
+      # Maximum Tool objects in the CachedToolBox LRU cache (default: 500)
+      cached_toolbox_cache_size: 500
 
-The ``lazy_toolbox_cache_size`` determines how many fully-loaded Tool objects
-are kept in memory by the LazyToolBox. If your users frequently work with
+The ``cached_toolbox_cache_size`` determines how many fully-loaded Tool objects
+are kept in memory by the CachedToolBox. If your users frequently work with
 many different tools, increase this value.
 
 Per-conf Store Routing (CVMFS Recipe)
@@ -284,8 +284,8 @@ Tools not appearing in the index
 High memory usage
 ^^^^^^^^^^^^^^^^^
 
-1. Reduce ``lazy_toolbox_cache_size`` to cache fewer Tool objects
-2. Ensure ``use_lazy_toolbox: true`` is set in ``galaxy.yml``
+1. Reduce ``cached_toolbox_cache_size`` to cache fewer Tool objects
+2. Ensure ``use_cached_toolbox: true`` is set in ``galaxy.yml``
 
 Populating an existing installation
 -----------------------------------
@@ -297,7 +297,7 @@ To set up tool source storage on an existing Galaxy installation:
    .. code-block:: yaml
 
        galaxy:
-         use_lazy_toolbox: true
+         use_cached_toolbox: true
          tool_source_database_connection: sqlite:////srv/galaxy/tool_sources.sqlite
 
 2. Run the population script:
@@ -309,5 +309,5 @@ To set up tool source storage on an existing Galaxy installation:
 3. Restart Galaxy
 
 If the store is not populated, or a specific tool is missing from it, the
-LazyToolBox self-heals by populating the missing entries in-process, so the
+CachedToolBox self-heals by populating the missing entries in-process, so the
 traditional toolbox behavior is preserved as a fallback.

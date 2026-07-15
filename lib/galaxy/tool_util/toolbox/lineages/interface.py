@@ -78,7 +78,7 @@ class ToolLineage:
         ``lineages_by_id`` is a class attribute, so a ``ToolLineage`` built
         in a prior process / embedded ``IntegrationTestCase.restart()`` boot
         carries its ``tool_versions`` SortedSet into the next boot. Wired
-        into ``LazyToolBox.close()`` so a restart sees a clean cache.
+        into ``CachedToolBox.close()`` so a restart sees a clean cache.
         """
         with cls.lock:
             cls.lineages_by_id.clear()

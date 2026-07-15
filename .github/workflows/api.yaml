@@ -17,8 +17,8 @@ on:
     - cron: '0 0 * * 2'
   workflow_dispatch:
     inputs:
-      use_lazy_toolbox:
-        description: "Run with use_lazy_toolbox=true (LazyToolBox)"
+      use_cached_toolbox:
+        description: "Run with use_cached_toolbox=true (CachedToolBox)"
         type: boolean
         default: true
 env:
@@ -54,14 +54,14 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-      - if: github.event_name == 'workflow_dispatch' && inputs.use_lazy_toolbox
+      - if: github.event_name == 'workflow_dispatch' && inputs.use_cached_toolbox
         run: |
-          echo "GALAXY_CONFIG_OVERRIDE_USE_LAZY_TOOLBOX=true" >> $GITHUB_ENV
+          echo "GALAXY_CONFIG_OVERRIDE_USE_CACHED_TOOLBOX=true" >> $GITHUB_ENV
           # Raise instead of silently materialising on any off-surface
-          # LazyTool attribute read, so an accidental whole-toolbox
-          # materialisation regression fails the lazy run loudly rather
+          # CachedTool attribute read, so an accidental whole-toolbox
+          # materialisation regression fails the cached-toolbox run loudly rather
           # than degrading to O(N) tool parses with only a WARN log.
-          echo "LAZY_TOOL_STRICT=1" >> $GITHUB_ENV
+          echo "CACHED_TOOL_STRICT=1" >> $GITHUB_ENV
       - uses: actions/checkout@v7.0.0
         with:
           path: 'galaxy root'

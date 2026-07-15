@@ -219,7 +219,7 @@ def _collect_panel_tool_ids(panel_items: "ToolPanelElements", ids: set[str]) -> 
     """Gather tool ids from a rendered panel, recursing into sections.
 
     Reads ids off the ``tool_<id>`` panel keys rather than the tool objects,
-    so a ``LazyToolBox`` stub is never materialised just to answer membership.
+    so a ``CachedToolBox`` stub is never materialised just to answer membership.
     """
     for key, item_type, item in panel_items.panel_items_iter():
         if item_type == panel_item_types.TOOL:
@@ -497,7 +497,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
         The by-id counterpart of :meth:`panel_has_tool`: it reads membership
         straight off the panel keys (``tool_<id>``) without touching the tool
-        objects, so the lazy search filter can scope hits to a view without
+        objects, so the cached-toolbox search filter can scope hits to a view without
         materialising anything. Raises ``KeyError`` for an unknown view,
         matching :meth:`ToolBoxSearch.search`'s contract.
         """
@@ -959,7 +959,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         """Drop any cached tool-index state.
 
         No-op for the eager toolbox — there is no external index to go
-        stale. ``LazyToolBox`` overrides this to re-read the persistent
+        stale. ``CachedToolBox`` overrides this to re-read the persistent
         ``ToolIndex`` after an out-of-band populator write.
         """
 
@@ -1081,7 +1081,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         """Existence gate for a conf-referenced tool file.
 
         A per-tool stat dominates the walk of a large shed conf on a
-        network filesystem (CVMFS); the lazy toolbox overrides this to
+        network filesystem (CVMFS); the cached toolbox overrides this to
         answer from its index instead.
         """
         return os.path.exists(path)
@@ -1090,7 +1090,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         """Severity for a shed tool whose repository has no install-DB row.
 
         Warning by default — for the eager toolbox that usually means lost
-        install records. The lazy toolbox downgrades index-covered tools:
+        install records. The cached toolbox downgrades index-covered tools:
         conf-provided repositories (a CVMFS shed conf) are absent from the
         install database by design, and one warning per tool is thousands
         of lines per boot there.

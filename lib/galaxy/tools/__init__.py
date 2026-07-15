@@ -691,10 +691,10 @@ class ToolBox(AbstractToolBox):
             ToolSource if found in store, None otherwise.
         """
         # Default (eager) deployments parse from disk; only consult the store
-        # when the operator opted into ``use_lazy_toolbox``. The silent-wrong-source
-        # defect that used to live on this path only manifested under the lazy
+        # when the operator opted into ``use_cached_toolbox``. The silent-wrong-source
+        # defect that used to live on this path only manifested under the cached
         # toolbox, so default deployments stay on the eager parse path.
-        if not self.app.config.use_lazy_toolbox:
+        if not self.app.config.use_cached_toolbox:
             return None
 
         store = getattr(self.app, "tool_source_store", None)

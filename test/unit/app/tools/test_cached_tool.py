@@ -9,12 +9,12 @@ from unittest.mock import MagicMock
 import pytest
 
 import galaxy.queue_worker as queue_worker_mod
-import galaxy.tools.lazy_toolbox as mod
-from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
+import galaxy.tools.cached_toolbox as mod
+from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.panel import ToolPanelElements
-from galaxy.tools.lazy_toolbox import (
-    LazyTool,
-    LazyToolBox,
+from galaxy.tools.cached_toolbox import (
+    CachedTool,
+    CachedToolBox,
 )
 from galaxy.tools.source_store import StoredToolSource
 from galaxy.tools.source_store.index import (
@@ -48,7 +48,7 @@ def _stub(entry=None, materialize=None, is_admin=None):
         def materialize(_e):  # noqa: E306
             raise AssertionError(f"unexpected materialise for {_e.id!r}")
 
-    return LazyTool(
+    return CachedTool(
         entry or _entry(),
         materialize_callback=materialize,
         is_admin_user=is_admin or (lambda u: False),
@@ -82,7 +82,7 @@ def test_overrides_shadow_entry_and_survive_materialise():
         materialised.append(_e.id)
         return _Real()
 
-    t = LazyTool(_entry(), materialize_callback=materialise, is_admin_user=lambda u: False)
+    t = CachedTool(_entry(), materialize_callback=materialise, is_admin_user=lambda u: False)
     t.hidden = True
     t.labels = ["a", "b"]
     t.tool_shed = "toolshed.example.com"
@@ -120,7 +120,7 @@ def test_to_panel_entry_does_not_materialise():
     def boom(_e):
         raise AssertionError(f"unexpected materialise for {_e.id!r}")
 
-    t = LazyTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
+    t = CachedTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
     d = t.to_panel_entry(trans=None)
     assert d["id"] == "bowtie2"
     assert d["model_class"] == "Tool"
@@ -131,7 +131,7 @@ def test_tool_tags_answered_without_materialise():
     def boom(_e):
         raise AssertionError(f"unexpected materialise for {_e.id!r}")
 
-    t = LazyTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
+    t = CachedTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
     assert isinstance(t.tool_tags, list)
     t.tool_tags = ["curated"]
     assert t.tool_tags == ["curated"]
@@ -181,7 +181,7 @@ def test_to_dict_materialises():
         calls.append("mat")
         return _Real()
 
-    t = LazyTool(_entry(), materialize_callback=mat, is_admin_user=lambda u: False)
+    t = CachedTool(_entry(), materialize_callback=mat, is_admin_user=lambda u: False)
     assert t.to_dict(trans=None, io_details=True) == {"id": "real"}
     # Second call reuses cached ``_real``.
     assert t.to_dict(trans=None, io_details=True) == {"id": "real"}
@@ -194,7 +194,7 @@ def test_to_dict_falls_back_to_entry_when_materialise_fails():
     def boom(_e):
         raise RuntimeError("materialise failed")
 
-    t = LazyTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
+    t = CachedTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
     d = t.to_dict(trans=None, io_details=True)
     assert d["id"] == "bowtie2"
     assert d["model_class"] == "Tool"
@@ -231,10 +231,10 @@ def test_allow_user_access_allows_admin_for_data_manager():
 
 
 def test_strict_getattr_raises_with_clear_message(monkeypatch):
-    # Strict mode is opt-in via LAZY_TOOL_STRICT=1; permissive (materialise
+    # Strict mode is opt-in via CACHED_TOOL_STRICT=1; permissive (materialise
     # on unknown attr with WARN) is the default. Flip the module-level flag
     # for this test so the strict path fires.
-    monkeypatch.setattr(mod, "_LAZY_TOOL_PERMISSIVE", False)
+    monkeypatch.setattr(mod, "_CACHED_TOOL_PERMISSIVE", False)
     t = _stub()
     with pytest.raises(NotImplementedError) as ei:
         _ = t.totally_not_a_tool_attr
@@ -252,20 +252,20 @@ def test_materialize_ok_set_forwards_to_real_tool(caplog):
     class _Real:
         to_archive = "archive-payload"
 
-    t = LazyTool(_entry(), materialize_callback=lambda _e: _Real(), is_admin_user=lambda u: False)
+    t = CachedTool(_entry(), materialize_callback=lambda _e: _Real(), is_admin_user=lambda u: False)
     assert t.to_archive == "archive-payload"
 
 
 def test_permissive_flag_warns_and_materialises(monkeypatch, caplog):
-    monkeypatch.setattr(mod, "_LAZY_TOOL_PERMISSIVE", True)
+    monkeypatch.setattr(mod, "_CACHED_TOOL_PERMISSIVE", True)
 
     class _Real:
         weird_attr = "warm"
 
     t = _stub(materialize=lambda _e: _Real())
-    caplog.set_level(logging.WARNING, logger="galaxy.tools.lazy_toolbox")
+    caplog.set_level(logging.WARNING, logger="galaxy.tools.cached_toolbox")
     assert t.weird_attr == "warm"
-    assert any("LAZY_TOOL_PERMISSIVE" in rec.getMessage() for rec in caplog.records)
+    assert any("CACHED_TOOL_STRICT" in rec.getMessage() for rec in caplog.records)
 
 
 def test_lineage_slot_settable_and_readable():
@@ -289,11 +289,11 @@ def test_config_file_reflects_entry_source_path():
     assert _stub(_entry()).config_file is None
 
 
-# --- LazyToolBox.create_tool seam ---
+# --- CachedToolBox.create_tool seam ---
 
 
 def _seam_box():
-    box = LazyToolBox.__new__(LazyToolBox)
+    box = CachedToolBox.__new__(CachedToolBox)
     box._tool_index = ToolIndex()
     box._store = MagicMock()
     box._store.get_by_source_path.return_value = None
@@ -303,15 +303,15 @@ def _seam_box():
     return box
 
 
-def test_create_tool_returns_lazytool_on_guid_hit():
+def test_create_tool_returns_cachedtool_on_guid_hit():
     box = _seam_box()
     box._tool_index.entries["bowtie2"] = _entry()
     tool = box.create_tool(config_file=None, guid="bowtie2")
-    assert isinstance(tool, LazyTool)
+    assert isinstance(tool, CachedTool)
     assert tool.id == "bowtie2"
 
 
-def test_create_tool_returns_lazytool_on_source_path_hit():
+def test_create_tool_returns_cachedtool_on_source_path_hit():
     box = _seam_box()
     box._tool_index.entries["bowtie2"] = _entry()
     box._store.get_by_source_path.return_value = StoredToolSource(
@@ -324,7 +324,7 @@ def test_create_tool_returns_lazytool_on_source_path_hit():
         stored_at=datetime.now(timezone.utc),
     )
     tool = box.create_tool(config_file="/tools/bowtie2.xml")
-    assert isinstance(tool, LazyTool)
+    assert isinstance(tool, CachedTool)
     assert tool.id == "bowtie2"
 
 
@@ -406,7 +406,7 @@ def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
 
     monkeypatch.setattr(mod, "populate_for_paths", fake_populate)
     tool = box.create_tool(config_file=str(tool_file), guid=guid)
-    assert isinstance(tool, LazyTool)
+    assert isinstance(tool, CachedTool)
     assert tool.id == guid
     import os as _os
 
@@ -425,7 +425,7 @@ def test_create_tool_stamps_data_manager_conf_id_on_entry():
     twin = _entry(id="dm_tool", tool_type="manage_data")
     box._tool_index.entries_by_version["dm_tool"] = {twin.version or "": twin}
     tool = box.create_tool(config_file=None, guid="dm_tool", data_manager_id="test_data_manager")
-    assert isinstance(tool, LazyTool)
+    assert isinstance(tool, CachedTool)
     assert e.data_manager_id == "test_data_manager"
     assert twin.data_manager_id == "test_data_manager"
     box._store.update_index_entry.assert_called_once_with(e)
@@ -508,7 +508,7 @@ def _registry_box():
     box._tools_by_uuid = {}
     box._tool_panel = ToolPanelElements()
     box._integrated_tool_panel = ToolPanelElements()
-    box._lineage_map = LazyLineageMap(box.app, versions_for=box._index_versions_for)
+    box._lineage_map = CachedLineageMap(box.app, versions_for=box._index_versions_for)
     box._tool_to_dict_cache = {}
     box._tool_to_dict_cache_admin = {}
     box._curated_tool_tags = None
@@ -526,7 +526,7 @@ def test_invalidate_index_cache_reconciles_peer_removed_entries():
     for tool_id in ("keep_tool", "gone_tool"):
         entry = _entry(id=tool_id)
         box._tool_index.add_entry(entry)
-        box._register_lazy_entry(entry)
+        box._register_cached_entry(entry)
     reloaded = ToolIndex()
     reloaded.add_entry(_entry(id="keep_tool"))
     box._store.load_index.return_value = reloaded
@@ -555,7 +555,7 @@ def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):
     box._tool_index = ToolIndex()
     entry = _entry(id="doomed")
     box._tool_index.add_entry(entry)
-    box._register_lazy_entry(entry)
+    box._register_cached_entry(entry)
     calls = []
     monkeypatch.setattr(queue_worker_mod, "send_control_task", lambda app, task, **kwargs: calls.append((task, kwargs)))
     box.remove_tool_by_id("doomed")
@@ -574,7 +574,7 @@ def test_remove_tool_by_id_also_cleans_swapped_in_toolbox(monkeypatch):
     for box in (old_box, new_box):
         box._tool_index = ToolIndex()
         box._tool_index.add_entry(entry)
-        box._register_lazy_entry(entry)
+        box._register_cached_entry(entry)
     old_box.app.toolbox = new_box
     monkeypatch.setattr(queue_worker_mod, "send_control_task", lambda app, task, **kwargs: None)
     old_box.remove_tool_by_id("doomed")
@@ -634,7 +634,7 @@ def test_guid_sibling_versions_reset_on_in_place_removal():
     for version in ("0.20.1", "0.23.2"):
         entry = _entry(id=f"{prefix}/{version}", version=version)
         box._tool_index.add_entry(entry)
-        box._register_lazy_entry(entry)
+        box._register_cached_entry(entry)
     assert set(box._index_versions_for(f"{prefix}/0.20.1")) == {"0.20.1", "0.23.2"}
     box._remove_tool_in_memory(f"{prefix}/0.23.2")
     assert box._index_versions_for(f"{prefix}/0.20.1") == ["0.20.1"]
@@ -701,7 +701,7 @@ def test_invalidate_index_cache_refreshes_materialised_tool_on_content_change():
     assert refreshed._entry.source_hash == "hash_v2"
     assert not any(cached is original for cached in box._tool_object_cache.values())
     assert all(
-        getattr(t, "id", None) != "tool1" or isinstance(t, LazyTool) for b in box._tools_by_old_id.values() for t in b
+        getattr(t, "id", None) != "tool1" or isinstance(t, CachedTool) for b in box._tools_by_old_id.values() for t in b
     )
 
 
@@ -731,7 +731,7 @@ def test_fast_path_places_hidden_entry_in_integrated_panel_only():
     placements = box._index_panel_items()
     assert {p.tool_id for p in placements} == {"visible_tool", "hidden_tool"}
     for placement in placements:
-        stub = box._register_lazy_entry(box._tool_index.entries[placement.tool_id], place_in_panel=False)
+        stub = box._register_cached_entry(box._tool_index.entries[placement.tool_id], place_in_panel=False)
         box._place_stub(stub, placement.section_id, placement.section_name, hidden=placement.hidden)
 
     integrated = box._integrated_tool_panel["sec1"].elems

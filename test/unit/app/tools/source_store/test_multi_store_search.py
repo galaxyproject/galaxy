@@ -4,7 +4,7 @@ from typing import cast
 import pytest
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.tools.search import LazyToolboxSearch
+from galaxy.tools.search import CachedToolboxSearch
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
@@ -63,13 +63,13 @@ def test_search_merges_hits_across_store_indexes(tmp_path, monkeypatch):
             tool_source_stores={"cvmfs_main": {"type": "sqlalchemy"}},
         ),
     )
-    hits = LazyToolboxSearch(config).search("mapper", panel_view="default", config=config)
+    hits = CachedToolboxSearch(config).search("mapper", panel_view="default", config=config)
     assert set(hits) == {"local_mapper", "cvmfs_mapper"}
 
 
 def test_search_without_index_dir_returns_empty():
     config = cast(GalaxyAppConfiguration, SimpleNamespace(tool_search_index_dir=None, tool_source_stores={}))
-    assert LazyToolboxSearch(config).search("mapper", panel_view="default", config=config) == []
+    assert CachedToolboxSearch(config).search("mapper", panel_view="default", config=config) == []
 
 
 class _FakeToolbox:
@@ -94,7 +94,7 @@ def test_search_unknown_panel_view_raises_key_error(tmp_path, monkeypatch):
         index_root, DEFAULT_STORE_NAME, [ToolIndexEntry(id="local_mapper", name="Sequence mapper", version="1.0")]
     )
     config = _single_store_config(index_root)
-    search = LazyToolboxSearch(config, _FakeToolbox({"default": {"local_mapper"}}))  # type: ignore[arg-type]
+    search = CachedToolboxSearch(config, _FakeToolbox({"default": {"local_mapper"}}))  # type: ignore[arg-type]
     with pytest.raises(KeyError):
         search.search("mapper", panel_view="does_not_exist", config=config)
 
@@ -111,7 +111,7 @@ def test_search_scopes_hits_to_requested_panel_view(tmp_path, monkeypatch):
         ],
     )
     config = _single_store_config(index_root)
-    search = LazyToolboxSearch(
+    search = CachedToolboxSearch(
         config,
         _FakeToolbox({"default": {"local_mapper", "other_mapper"}, "restricted": {"local_mapper"}}),  # type: ignore[arg-type]
     )

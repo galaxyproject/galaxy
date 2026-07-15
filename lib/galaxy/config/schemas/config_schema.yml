@@ -322,6 +322,25 @@ mapping:
           Other tool config files must include the tool_path as an attribute in the
           <toolbox> tag.
 
+      use_cached_toolbox:
+        type: bool
+        required: false
+        desc: |
+          When true, use the CachedToolBox which loads tools on demand from the
+          tool source store. Otherwise (the default), the traditional eager
+          ToolBox is used and any per-conf ``store="..."`` attributes on
+          tool_conf files are ignored. Opt-in is explicit: a populated tool
+          source store does not flip a default deployment to cached-toolbox mode.
+
+      cached_toolbox_cache_size:
+        type: int
+        default: 500
+        required: false
+        desc: |
+          Maximum number of fully constructed Tool objects the CachedToolBox keeps
+          in its in-memory LRU cache. Larger values reduce repeat parsing cost
+          for popular tools at the expense of memory.
+
       tool_source_database_connection:
         type: str
         required: false
@@ -356,25 +375,6 @@ mapping:
 
           For details see
           https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
-
-      use_lazy_toolbox:
-        type: bool
-        required: false
-        desc: |
-          When true, use the LazyToolBox which loads tools on demand from the
-          tool source store. Otherwise (the default), the traditional eager
-          ToolBox is used and any per-conf ``store="..."`` attributes on
-          tool_conf files are ignored. Opt-in is explicit: a populated tool
-          source store does not flip a default deployment to lazy mode.
-
-      lazy_toolbox_cache_size:
-        type: int
-        default: 500
-        required: false
-        desc: |
-          Maximum number of fully constructed Tool objects the LazyToolBox keeps
-          in its in-memory LRU cache. Larger values reduce repeat parsing cost
-          for popular tools at the expense of memory.
 
       tool_dependency_dir:
         type: str

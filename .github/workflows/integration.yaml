@@ -17,8 +17,8 @@ on:
     - cron: '0 0 * * 2'
   workflow_dispatch:
     inputs:
-      use_lazy_toolbox:
-        description: "Run with use_lazy_toolbox=true (LazyToolBox)"
+      use_cached_toolbox:
+        description: "Run with use_cached_toolbox=true (CachedToolBox)"
         type: boolean
         default: true
 env:
@@ -94,14 +94,14 @@ jobs:
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
           # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-      - if: github.event_name == 'workflow_dispatch' && inputs.use_lazy_toolbox
+      - if: github.event_name == 'workflow_dispatch' && inputs.use_cached_toolbox
         run: |
-          echo "GALAXY_CONFIG_OVERRIDE_USE_LAZY_TOOLBOX=true" >> $GITHUB_ENV
+          echo "GALAXY_CONFIG_OVERRIDE_USE_CACHED_TOOLBOX=true" >> $GITHUB_ENV
           # Raise instead of silently materialising on any off-surface
-          # LazyTool attribute read, so an accidental whole-toolbox
-          # materialisation regression fails the lazy run loudly rather
+          # CachedTool attribute read, so an accidental whole-toolbox
+          # materialisation regression fails the cached-toolbox run loudly rather
           # than degrading to O(N) tool parses with only a WARN log.
-          echo "LAZY_TOOL_STRICT=1" >> $GITHUB_ENV
+          echo "CACHED_TOOL_STRICT=1" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
       - name: Clean dotnet folder for space

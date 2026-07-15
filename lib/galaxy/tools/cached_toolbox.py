@@ -1,7 +1,7 @@
 """
-Lazy ToolBox - On-demand tool loading with LRU caching.
+CachedToolBox - on-demand tool loading with LRU caching.
 
-This module provides a LazyToolBox that extends ToolBox but keeps only a
+This module provides a CachedToolBox that extends ToolBox but keeps only a
 lightweight index in memory and loads full Tool objects on-demand with
 LRU eviction.
 """
@@ -32,7 +32,7 @@ from galaxy.tool_util.toolbox.base import (
     SHED_TOOL_CONF_XML,
     ToolConfRepository,
 )
-from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
+from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
 from galaxy.tool_util.toolbox.panel import ToolSection
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
@@ -71,18 +71,18 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-# Whether to be strict about unknown attribute reads on a ``LazyTool``. Default
+# Whether to be strict about unknown attribute reads on a ``CachedTool``. Default
 # is permissive: anything not on the stub surface and not in ``_MATERIALIZE_OK``
-# materialises with a WARN log, instead of raising. Set ``LAZY_TOOL_STRICT=1``
+# materialises with a WARN log, instead of raising. Set ``CACHED_TOOL_STRICT=1``
 # to flip to raise — useful when adding to the stub surface, since unaccounted
 # reads then show up loudly. The eager pipeline + the integration suite hit a
 # very wide tool surface; permissive is the pragmatic default once the
 # explicit ``_MATERIALIZE_OK`` set has stabilised.
-_LAZY_TOOL_PERMISSIVE = os.environ.get("LAZY_TOOL_STRICT") != "1"
+_CACHED_TOOL_PERMISSIVE = os.environ.get("CACHED_TOOL_STRICT") != "1"
 
 
 def _entry_attr(name: str, entry_attr: str | None = None, mutable: bool = False):
-    """Build a ``LazyTool`` property forwarding ``name`` to ``ToolIndexEntry``.
+    """Build a ``CachedTool`` property forwarding ``name`` to ``ToolIndexEntry``.
 
     ``_overrides`` shadows the entry so writes from the eager pipeline
     (``tool.hidden = True``, ``tool.tool_shed = ...``) round-trip through
@@ -105,26 +105,26 @@ def _entry_attr(name: str, entry_attr: str | None = None, mutable: bool = False)
     return property(getter)
 
 
-class LazyTool:
+class CachedTool:
     """Lightweight stand-in for ``galaxy.tools.Tool`` backed by a ``ToolIndexEntry``.
 
-    Returned by :meth:`LazyToolBox.create_tool` whenever the tool's source is
+    Returned by :meth:`CachedToolBox.create_tool` whenever the tool's source is
     already persisted in the tool source store. The eager
     ``AbstractToolBox._init_tools_from_configs`` pipeline reads and mutates
-    only a narrow attribute surface; ``LazyTool`` forwards every read off
+    only a narrow attribute surface; ``CachedTool`` forwards every read off
     ``ToolIndexEntry`` and stores writes in ``_overrides`` so they are
     re-applied if the stub is later materialised.
 
     **Permissive by default:** an attribute outside the stub surface and not
     in ``_MATERIALIZE_OK`` materialises a real Tool with a WARN log. Set
-    ``LAZY_TOOL_STRICT=1`` to raise :class:`NotImplementedError` instead, so
+    ``CACHED_TOOL_STRICT=1`` to raise :class:`NotImplementedError` instead, so
     unaccounted reads show up as clear failures rather than silent
     multi-second parse stalls.
     """
 
     __slots__ = ("_entry", "_materialize_cb", "_is_admin_user", "_overrides", "_real", "_lineage")
 
-    # ``watch_tool`` iterates ``tool._macro_paths`` for file-watching; lazy
+    # ``watch_tool`` iterates ``tool._macro_paths`` for file-watching; cached
     # entries are content-addressed in the store, file-watching is a no-op.
     # Class-level so it isn't writable on the instance.
     _macro_paths: tuple = ()
@@ -310,9 +310,9 @@ class LazyTool:
     def tool_shed_repository(self):
         # The eager pipeline sets this on the real ``Tool`` for shed-installed
         # tools (passing ``tool_shed_repository=<repo>`` to ``create_tool``);
-        # the LazyTool stub doesn't carry the repo object. Default to None —
+        # the CachedTool stub doesn't carry the repo object. Default to None —
         # callers that need a real ``ToolShedRepository`` go through
-        # materialisation via ``_materialize_for_lazy_tool``, which routes the
+        # materialisation via ``_materialize_for_cached_tool``, which routes the
         # repo lookup via ``_lookup_tool_shed_repository``.
         return self._overrides.get("tool_shed_repository")
 
@@ -417,7 +417,7 @@ class LazyTool:
         try:
             return self._materialize().to_dict(trans, link_details=link_details, tool_help=tool_help, **kw)
         except Exception as e:
-            log.warning("LazyTool.to_dict: materialise failed for %s, falling back to entry: %s", self.id, e)
+            log.warning("CachedTool.to_dict: materialise failed for %s, falling back to entry: %s", self.id, e)
             return self.to_panel_entry(trans)
 
     # --- materialisation ---
@@ -430,7 +430,7 @@ class LazyTool:
                 try:
                     setattr(real, name, value)
                 except Exception:
-                    log.debug("LazyTool._materialize could not re-apply override %r on %s", name, self.id)
+                    log.debug("CachedTool._materialize could not re-apply override %r on %s", name, self.id)
             if self._lineage is not None:
                 real._lineage = self._lineage
             self._real = real
@@ -445,24 +445,24 @@ class LazyTool:
         # stays cheap.
         if name.startswith("_"):
             raise AttributeError(name)
-        if _LAZY_TOOL_PERMISSIVE:
+        if _CACHED_TOOL_PERMISSIVE:
             log.warning(
-                "LazyTool.%r forced materialise of tool %r (LAZY_TOOL_PERMISSIVE=1); "
+                "CachedTool.%r forced materialise of tool %r (CACHED_TOOL_STRICT unset); "
                 "add to the stub surface or _MATERIALIZE_OK to make this explicit.",
                 name,
                 self.id,
             )
             return getattr(self._materialize(), name)
         raise NotImplementedError(
-            f"LazyTool.{name!r} is not on the stub surface for tool {self.id!r}. "
+            f"CachedTool.{name!r} is not on the stub surface for tool {self.id!r}. "
             f"If this attribute can be read off ToolIndexEntry, add a forwarded "
             f"property; if it genuinely needs a parsed Tool, add it to "
-            f"LazyTool._MATERIALIZE_OK. Set LAZY_TOOL_PERMISSIVE=1 to bypass "
+            f"CachedTool._MATERIALIZE_OK. Unset CACHED_TOOL_STRICT to bypass "
             f"this check while debugging."
         )
 
 
-class LazyToolBox(ToolBox):
+class CachedToolBox(ToolBox):
     """
     ToolBox that loads tools on-demand from the tool source store.
 
@@ -480,7 +480,7 @@ class LazyToolBox(ToolBox):
         cache_size: int = 500,
         save_integrated_tool_panel: bool = True,
     ) -> None:
-        # Lazy-only state set BEFORE ``super().__init__`` because the
+        # CachedToolBox-only state set BEFORE ``super().__init__`` because the
         # eager ``_init_tools_from_configs`` (which super invokes mid-init)
         # is overridden below to consult ``self._store`` and populate
         # ``self._tool_index``.
@@ -491,9 +491,9 @@ class LazyToolBox(ToolBox):
         # runtime materialise funnels through ``_create_tool_from_stored_source``.
         # Batch/read endpoints must never move this counter; the integration
         # suite asserts a zero delta across them to catch an accidental
-        # whole-toolbox sweep that ``LAZY_TOOL_STRICT`` alone can't (a legit
+        # whole-toolbox sweep that ``CACHED_TOOL_STRICT`` alone can't (a legit
         # ``_MATERIALIZE_OK`` attr read in a loop, or a tool-filter that parses).
-        self._lazy_materialize_count = 0
+        self._cached_materialize_count = 0
         # ``_tool_index`` is filled by our ``_init_tools_from_configs`` override
         # before the eager walk runs.
         self._tool_index: ToolIndex | None = None
@@ -513,7 +513,7 @@ class LazyToolBox(ToolBox):
         self._guid_sibling_versions_cache: tuple[ToolIndex, int, dict[str, list[tuple[str, str]]]] | None = None
 
         # Eager init — its ``_init_tools_from_configs`` is overridden so the
-        # walk goes through our ``create_tool`` seam and hands back LazyTool
+        # walk goes through our ``create_tool`` seam and hands back CachedTool
         # stubs for indexed sources.
         super().__init__(
             config_filenames=config_filenames,
@@ -529,7 +529,7 @@ class LazyToolBox(ToolBox):
         self._rebuild_shed_short_id_map()
 
         log.info(
-            "LazyToolBox initialized with %d tools (cache_size=%d, parsed=%d, from_store=%d)",
+            "CachedToolBox initialized with %d tools (cache_size=%d, parsed=%d, from_store=%d)",
             len(self._tools_by_id),
             cache_size,
             self._tools_parsed_from_file,
@@ -547,16 +547,16 @@ class LazyToolBox(ToolBox):
 
         After this returns, the eager pipeline calls into ``create_tool`` for
         every ``<tool>`` it walks. The seam short-circuits indexed sources to
-        a :class:`LazyTool` stub; misses raise — by contract the cold-start
+        a :class:`CachedTool` stub; misses raise — by contract the cold-start
         populator below guarantees coverage.
         """
         # Replace the plain ``LineageMap`` the base ``__init__`` just
-        # assigned: ``LazyLineageMap`` sources each lineage's version set
+        # assigned: ``CachedLineageMap`` sources each lineage's version set
         # from ``entries_by_version`` at lookup time, so post-boot lookups
         # (peer installs surfaced by ``invalidate_index_cache``, reloads)
         # see every indexed version instead of a memoised single-version
         # lineage built from one Tool object.
-        self._lineage_map = LazyLineageMap(self.app, versions_for=self._index_versions_for)
+        self._lineage_map = CachedLineageMap(self.app, versions_for=self._index_versions_for)
         self._tool_panel_loaded_from_index = False
         if self._store is not None:
             self._tool_index = self._store.load_index() or ToolIndex()
@@ -575,10 +575,10 @@ class LazyToolBox(ToolBox):
         super()._init_tools_from_configs(config_filenames)
 
     def _init_tools_from_index(self, config_filenames: list[str]) -> bool:
-        """Register lazy stubs directly from a fresh index.
+        """Register stubs directly from a fresh index.
 
         The generic toolbox walk still parses every tool-conf item and routes
-        each tool through ``load_item``. In lazy mode, a populated source-store
+        each tool through ``load_item``. In cached-toolbox mode, a populated source-store
         index already carries the panel placements (``ToolIndex.panel_items``)
         the walk would produce, so replay those instead. If the index predates
         placement recording, return ``False`` and let the parent
@@ -593,7 +593,7 @@ class LazyToolBox(ToolBox):
         missing = {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
         if missing:
             log.info(
-                "LazyToolBox fast panel init found %d panel ids missing from index; running populator",
+                "CachedToolBox fast panel init found %d panel ids missing from index; running populator",
                 len(missing),
             )
             self._run_inline_populator()
@@ -603,13 +603,13 @@ class LazyToolBox(ToolBox):
             placements = self._index_panel_items()
             missing = {p.tool_id for p in placements if p.tool_id not in self._tool_index.entries}
             if missing or not placements:
-                log.debug("LazyToolBox fast panel init disabled; %d panel ids still missing from index", len(missing))
+                log.debug("CachedToolBox fast panel init disabled; %d panel ids still missing from index", len(missing))
                 return False
         assert self._tool_index is not None
         self._init_dynamic_tool_confs_without_loading(config_filenames)
-        stubs_by_id: dict[str, LazyTool] = {}
+        stubs_by_id: dict[str, CachedTool] = {}
         for entry in self._tool_index.entries.values():
-            stubs_by_id[entry.id] = self._register_lazy_entry(entry, place_in_panel=False)
+            stubs_by_id[entry.id] = self._register_cached_entry(entry, place_in_panel=False)
         placed = 0
         for placement in placements:
             stub = stubs_by_id.get(placement.tool_id)
@@ -618,7 +618,7 @@ class LazyToolBox(ToolBox):
             self._place_stub(stub, placement.section_id, placement.section_name, hidden=placement.hidden)
             placed += 1
         log.debug(
-            "LazyToolBox registered %d indexed tools (%d panel placements) without walking tool conf items",
+            "CachedToolBox registered %d indexed tools (%d panel placements) without walking tool conf items",
             len(stubs_by_id),
             placed,
         )
@@ -841,7 +841,7 @@ class LazyToolBox(ToolBox):
         on miss — a broken populator surfaces immediately on first tool
         load instead of degrading silently.
         """
-        log.info("LazyToolBox: running populator inline to backfill the index")
+        log.info("CachedToolBox: running populator inline to backfill the index")
         populate_store_inline(
             self.app.config,
             rebuild_whoosh=True,
@@ -850,7 +850,7 @@ class LazyToolBox(ToolBox):
     def _index_versions_for(self, tool_id: str) -> list[str]:
         """Return every version present in the index for ``tool_id``.
 
-        Hooked into ``LazyLineageMap.versions_for`` so a lineage lookup
+        Hooked into ``CachedLineageMap.versions_for`` so a lineage lookup
         sources its data straight from ``_tool_index.entries_by_version``.
         Empty list (no versions) tells the lineage map to fall through to
         the standard ``LineageMap.get`` toolbox path.
@@ -863,7 +863,7 @@ class LazyToolBox(ToolBox):
         a panel view (e.g. ``test_only_latest_version_in_panel_fastp``
         expects two installed fastp revisions to render as one
         latest-version entry). Eager achieves this via
-        ``_tools_by_old_id``; the lazy index needs to walk sibling
+        ``_tools_by_old_id``; the store index needs to walk sibling
         entries that share the versionless prefix.
         """
         if self._tool_index is None:
@@ -988,7 +988,7 @@ class LazyToolBox(ToolBox):
         # Check if we have this tool in our index
         if self._tool_index and tool_id in self._tool_index.entries:
             if get_all_versions:
-                # Lazy-load every indexed version. Callers (e.g. workflow
+                # Load every indexed version on demand. Callers (e.g. workflow
                 # refactor's ``upgrade_all_steps``) need every version to
                 # determine the latest; returning only the requested version
                 # makes upgrades silently no-op.
@@ -1052,7 +1052,7 @@ class LazyToolBox(ToolBox):
 
         # Short-id fallback for shed installs. The eager toolbox resolves
         # ``get_tool("collection_column_join")`` via ``_tools_by_old_id``,
-        # which is populated at tool-registration time. The lazy install
+        # which is populated at tool-registration time. The cached-toolbox install
         # path doesn't materialise the Tool, so we maintain
         # ``_shed_short_id_to_guids`` separately and consult it here. Each
         # shed install lives under a distinct guid in the index, so we
@@ -1107,10 +1107,10 @@ class LazyToolBox(ToolBox):
             user=user,
         )
 
-    # === create_tool seam: return LazyTool stub when the index already has the source ===
+    # === create_tool seam: return CachedTool stub when the index already has the source ===
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds) -> "Tool":
-        """Return a :class:`LazyTool` for every indexed tool source.
+        """Return a :class:`CachedTool` for every indexed tool source.
 
         The populator (cold-start in :meth:`_init_tools_from_configs`, shed
         installs via ``tool_panel_manager.add_to_tool_panel``) is the single
@@ -1136,12 +1136,12 @@ class LazyToolBox(ToolBox):
         if entry is None:
             if config_file is not None and os.path.exists(str(config_file)):
                 log.warning(
-                    "LazyToolBox.create_tool: no index entry for %s after ad-hoc populate; parsing eagerly",
+                    "CachedToolBox.create_tool: no index entry for %s after ad-hoc populate; parsing eagerly",
                     config_file,
                 )
                 return super().create_tool(config_file, tool_shed_repository=tool_shed_repository, guid=guid, **kwds)
             raise RuntimeError(
-                "LazyToolBox.create_tool: no index entry for "
+                "CachedToolBox.create_tool: no index entry for "
                 f"(config_file={config_file!r}, guid={guid!r}). The populator "
                 "owns the index — run scripts/tool_source/populate_store.py "
                 "or, for a new Galaxy-internal lib tool, add it to "
@@ -1169,12 +1169,12 @@ class LazyToolBox(ToolBox):
                     self._store.update_index_entry(entry)
                 except Exception as e:
                     log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
-        # LazyTool is duck-typed against Tool — the eager pipeline only
+        # CachedTool is duck-typed against Tool — the eager pipeline only
         # consults attributes the stub forwards from ToolIndexEntry, with
         # mutations stored on ``_overrides``.
-        return LazyTool(  # type: ignore[return-value]
+        return CachedTool(  # type: ignore[return-value]
             entry,
-            materialize_callback=self._materialize_for_lazy_tool,
+            materialize_callback=self._materialize_for_cached_tool,
             is_admin_user=self.app.config.is_admin_user,
         )
 
@@ -1200,7 +1200,7 @@ class LazyToolBox(ToolBox):
         when the populator couldn't index the file either.
         """
         path = os.path.abspath(config_file)
-        log.info("LazyToolBox: index miss for existing file %s — populating ad hoc (guid=%s)", path, guid)
+        log.info("CachedToolBox: index miss for existing file %s — populating ad hoc (guid=%s)", path, guid)
         try:
             populate_for_paths(
                 self.app.config,
@@ -1291,19 +1291,19 @@ class LazyToolBox(ToolBox):
                 # (same ``<tool id=foo>`` across two files at different
                 # ``<tool version=...>``) have one StoredToolSource per file,
                 # so ``entries.get(tool_id)`` would always hand back the
-                # latest and both files would collapse to one LazyTool.
+                # latest and both files would collapse to one CachedTool.
                 entry = self._tool_index.get(stored.tool_id, stored.tool_version)
                 if entry is not None:
                     return entry
         # No entry: do NOT fall back to parsing the id out of the file —
         # ``entries[id]`` holds only the latest version, which would collapse
-        # multi-version conf entries onto one LazyTool. The store's
+        # multi-version conf entries onto one CachedTool. The store's
         # ``source_path`` index is the authoritative key; a miss means the
         # source genuinely isn't persisted yet, so let ``create_tool``'s
         # fallthrough parse and ``_persist_tool_source`` write it.
         return None
 
-    def _materialize_for_lazy_tool(self, entry: ToolIndexEntry) -> "Tool":
+    def _materialize_for_cached_tool(self, entry: ToolIndexEntry) -> "Tool":
         """Promote a stub to a real ``Tool`` via the existing store-backed loader.
 
         Routed through :meth:`_register_loaded_tool` so ``_tools_by_id`` /
@@ -1311,11 +1311,11 @@ class LazyToolBox(ToolBox):
         with the eager toolbox bookkeeping.
         """
         if self._store is None:
-            raise RuntimeError(f"LazyTool materialise needs a tool source store (id={entry.id!r})")
+            raise RuntimeError(f"CachedTool materialise needs a tool source store (id={entry.id!r})")
         stored = self._stored_source_for_entry(entry)
         if stored is None:
             raise RuntimeError(
-                "LazyTool materialise: indexed source missing from store "
+                "CachedTool materialise: indexed source missing from store "
                 f"(id={entry.id!r}, path={entry.source_path!r}, hash={entry.source_hash!r})"
             )
         tool = self._create_tool_from_stored_source(stored, entry=entry)
@@ -1379,7 +1379,7 @@ class LazyToolBox(ToolBox):
         # Create Tool object
         try:
             tool = self._create_tool_from_stored_source(stored, entry=entry)
-            log.debug(f"Lazy-loaded tool: {tool_id}")
+            log.debug(f"Loaded tool on demand: {tool_id}")
         except Exception as e:
             log.error(f"Error creating tool {tool_id}: {e}")
             return None
@@ -1397,16 +1397,16 @@ class LazyToolBox(ToolBox):
         """Create a Tool object from stored source.
 
         The single chokepoint for promoting a stub to a real ``Tool`` at
-        runtime — bump ``_lazy_materialize_count`` here so the budget test
+        runtime — bump ``_cached_materialize_count`` here so the budget test
         can assert batch endpoints don't materialise.
         """
-        self._lazy_materialize_count += 1
+        self._cached_materialize_count += 1
         tool_source = get_tool_source(
             raw_tool_source=stored.raw_source,
             tool_source_class=stored.tool_source_class,
         )
         # When the stored source's ``tool_id`` is a toolshed guid (set by
-        # the lazy shed install path), pass it as ``guid`` to the Tool
+        # the cached-toolbox shed install path), pass it as ``guid`` to the Tool
         # constructor so ``Tool.id`` becomes the guid — matching what the
         # eager toolbox does and what callers consult via ``has_tool``
         # / ``get_tool`` and the ``_tools_by_id`` registry.
@@ -1487,7 +1487,7 @@ class LazyToolBox(ToolBox):
             self._rebuild_shed_short_id_map()
             # Wire newly-indexed entries (e.g. shed-install partial updates
             # from a peer process) into this process's in-memory registries
-            # as ``LazyTool`` stubs. Without this, ``/api/tools`` would
+            # as ``CachedTool`` stubs. Without this, ``/api/tools`` would
             # return the new ids only after the next full toolbox boot.
             self._register_new_index_entries_as_stubs()
             # Reconcile content edits: an id present in both indexes but with
@@ -1506,7 +1506,7 @@ class LazyToolBox(ToolBox):
                 if not any(v in old_hashes and old_hashes[v] != entry.source_hash for v, entry in versions.items()):
                     continue
                 existing: Any = self._tools_by_id.get(tool_id)
-                if isinstance(existing, LazyTool) and existing._real is None:
+                if isinstance(existing, CachedTool) and existing._real is None:
                     # Never materialised: ``_register_new_index_entries_as_stubs``
                     # already repointed the stub's ``_entry`` (the panel holds
                     # the same object) and nothing heavyweight is cached.
@@ -1534,7 +1534,7 @@ class LazyToolBox(ToolBox):
 
     def _register_new_index_entries_as_stubs(self) -> None:
         """For every index entry not yet in ``_tools_by_id``, build a
-        ``LazyTool`` stub, slot it into the toolbox registries, and place it
+        ``CachedTool`` stub, slot it into the toolbox registries, and place it
         under its declared panel section.
 
         Mirrors what the eager walk does at boot for each ``<tool>`` element,
@@ -1544,10 +1544,10 @@ class LazyToolBox(ToolBox):
             return
         for tool_id, entry in self._tool_index.entries.items():
             # ``Any``: the registry is typed for real Tools but holds
-            # LazyTool stubs on this toolbox (same duck-typing as create_tool).
+            # CachedTool stubs on this toolbox (same duck-typing as create_tool).
             existing: Any = self._tools_by_id.get(tool_id)
             if existing is not None:
-                if isinstance(existing, LazyTool) and existing._entry is not entry:
+                if isinstance(existing, CachedTool) and existing._entry is not entry:
                     # Refresh the stub in place — the panel and registries
                     # hold this object, and the reloaded index may carry an
                     # enriched entry (e.g. the conf-driven populate after a
@@ -1556,7 +1556,7 @@ class LazyToolBox(ToolBox):
                     existing._entry = entry
                 continue
             try:
-                self._register_lazy_entry(entry)
+                self._register_cached_entry(entry)
             except Exception as e:
                 log.warning("Failed to register new index entry %s: %s", tool_id, e)
 
@@ -1588,7 +1588,7 @@ class LazyToolBox(ToolBox):
         """
         self._purge_tool_object_cache(tool_id)
         # Scrub the materialised Tool (or superseded stub) for this id from
-        # the old-id buckets so the identity-dedup in ``_register_lazy_entry``
+        # the old-id buckets so the identity-dedup in ``_register_cached_entry``
         # doesn't leave a stale sibling behind (mirrors the bucket scrub in
         # ``_remove_tool_in_memory``). Sibling installs (other ids) stay.
         for old_id, bucket in list(self._tools_by_old_id.items()):
@@ -1598,26 +1598,26 @@ class LazyToolBox(ToolBox):
                     self._tools_by_old_id[old_id] = survivors
                 else:
                     del self._tools_by_old_id[old_id]
-        # Drop stale per-version materialised Tools; ``_register_lazy_entry``
+        # Drop stale per-version materialised Tools; ``_register_cached_entry``
         # re-adds the default version's fresh stub below. Specific-version
         # lookups go back through the index (``_load_tool_on_demand`` skips
         # ``_tools_by_id`` when a version is requested), so no version is lost.
         self._tool_versions_by_id.pop(tool_id, None)
-        fresh = self._register_lazy_entry(entry, place_in_panel=False)
+        fresh = self._register_cached_entry(entry, place_in_panel=False)
         self._tool_panel.replace_tool_for_id(tool_id, fresh)  # type: ignore[arg-type]
         self._integrated_tool_panel.replace_tool_for_id(tool_id, fresh)
 
-    def _register_lazy_entry(self, entry: ToolIndexEntry, place_in_panel: bool = True) -> "LazyTool":
-        """Construct + slot a ``LazyTool`` stub for ``entry``.
+    def _register_cached_entry(self, entry: ToolIndexEntry, place_in_panel: bool = True) -> "CachedTool":
+        """Construct + slot a ``CachedTool`` stub for ``entry``.
 
         Inverse of :meth:`_register_loaded_tool`: same bookkeeping, but for
         the stub side. Used by :meth:`invalidate_index_cache` when a
         peer-process populator run added new entries that this process should
         surface immediately.
         """
-        stub = LazyTool(
+        stub = CachedTool(
             entry,
-            materialize_callback=self._materialize_for_lazy_tool,
+            materialize_callback=self._materialize_for_cached_tool,
             is_admin_user=self.app.config.is_admin_user,
         )
         tool_id = entry.id
@@ -1635,7 +1635,7 @@ class LazyToolBox(ToolBox):
                 bucket.append(stub)  # type: ignore[arg-type]
         if entry.uuid:
             self._tools_by_uuid[UUID(entry.uuid)] = stub  # type: ignore[assignment]
-        # Lineage: LazyLineageMap builds it from entries_by_version, which the
+        # Lineage: CachedLineageMap builds it from entries_by_version, which the
         # populator wrote on the previous step, so .get() returns the right
         # ToolLineage; register() is the fallback for an as-yet-unseen id.
         stub._lineage = self._lineage_map.get(tool_id) or self._lineage_map.register(stub)  # type: ignore[arg-type]
@@ -1650,7 +1650,7 @@ class LazyToolBox(ToolBox):
 
     def _place_stub(
         self,
-        stub: "LazyTool",
+        stub: "CachedTool",
         section_id: str | None,
         section_name: str | None,
         hidden: bool,
@@ -1700,12 +1700,12 @@ class LazyToolBox(ToolBox):
         # The eager ``__add_tool`` also tracks tools by their pre-shed
         # ``old_id`` so callers like ``remove_tool_by_id``
         # (``self._tools_by_old_id[tool.old_id].remove(tool)``) can find
-        # them. Without this, removing a lazy-loaded shed tool raises
+        # them. Without this, removing an on-demand-loaded shed tool raises
         # ``KeyError`` on ``_tools_by_old_id``.
         old_id = getattr(tool, "old_id", None)
         if old_id:
             bucket = self._tools_by_old_id.setdefault(old_id, [])
-            # The eager pipeline registers a LazyTool stub at boot via
+            # The eager pipeline registers a CachedTool stub at boot via
             # ``register_tool``; on materialise we drop the stub so the
             # bucket doesn't end up with two entries for the same tool id
             # (``get_tool`` lineage walk would otherwise return both).
@@ -1716,7 +1716,7 @@ class LazyToolBox(ToolBox):
         if hasattr(tool, "uuid") and tool.uuid:
             self._tools_by_uuid[tool.uuid] = tool
 
-        # Update lineage. ``LazyLineageMap.get`` builds the lineage from
+        # Update lineage. ``CachedLineageMap.get`` builds the lineage from
         # ``entries_by_version`` (cached after first call); for a shed tool
         # that arrived after boot and isn't in the index yet,
         # ``LineageMap.register`` is the right fallback. Either way the
@@ -1729,7 +1729,7 @@ class LazyToolBox(ToolBox):
 
         # Conf-level ``hidden="true"`` (from the ``<tool>`` directive in the
         # tool conf) is applied here. The eager toolbox does this in
-        # ``_load_tool_tag_set``; the lazy path's ``_create_tool_from_stored_source``
+        # ``_load_tool_tag_set``; the cached-toolbox path's ``_create_tool_from_stored_source``
         # only sees the parsed XML body, so we lift the flag from the index
         # entry. Note: never *clear* an XML-body hidden flag — only set it.
         if self._tool_index is not None:
@@ -1754,7 +1754,7 @@ class LazyToolBox(ToolBox):
         # ``ToolLineage`` from a prior process / embedded restart would
         # otherwise carry its ``tool_versions`` SortedSet across boots and
         # shadow the new boot's index versions. Reset on shutdown so the
-        # next ``LazyLineageMap.get`` rebuilds from the freshly-loaded
+        # next ``CachedLineageMap.get`` rebuilds from the freshly-loaded
         # index.
         ToolLineage.reset()
         # ``_tools_by_id`` and friends still get GC'd when the surrounding
@@ -1762,10 +1762,10 @@ class LazyToolBox(ToolBox):
         # parent's shutdown sequence may still iterate them.
 
     def remove_tool_by_id(self, tool_id: str, remove_from_panel: bool = True):
-        """Also drop the tool from the lazy index + LRU cache.
+        """Also drop the tool from the store index + LRU cache.
 
         ``AbstractToolBox.remove_tool_by_id`` only deletes from
-        ``_tools_by_id``. In the lazy path that's not enough — ``get_tool``
+        ``_tools_by_id``. In the cached-toolbox path that's not enough — ``get_tool``
         re-loads the tool from ``_tool_index`` on the next request, so the
         tool effectively comes back. The eager toolbox doesn't have this
         problem because the tool object isn't created from a serialised
@@ -1802,7 +1802,7 @@ class LazyToolBox(ToolBox):
                 # peer web workers keep serving the uninstalled tool until an
                 # unrelated populate happens to run.
                 # Local import: genuine circularity — galaxy.queue_worker
-                # imports LazyToolBox at module level.
+                # imports CachedToolBox at module level.
                 from galaxy.queue_worker import send_control_task
 
                 try:
@@ -1817,7 +1817,7 @@ class LazyToolBox(ToolBox):
             # leaves ``app.toolbox`` serving the uninstalled tool. The swap
             # holds the same lock, so the current object is stable here.
             current = getattr(self.app, "toolbox", None)
-            if current is not self and isinstance(current, LazyToolBox):
+            if current is not self and isinstance(current, CachedToolBox):
                 current._remove_tool_in_memory(tool_id, remove_from_panel=remove_from_panel)
         return result
 
@@ -2009,7 +2009,7 @@ class LazyToolBox(ToolBox):
         via the shed short-id map), or ``None`` for a hit that isn't part of
         this toolbox. That matches eager search, whose ``_tools_by_id``
         lookup returns ``None`` for un-loaded ids so they're skipped — the
-        lazy path must not surface (or parse) tools the eager path wouldn't.
+        cached-toolbox path must not surface (or parse) tools the eager path wouldn't.
         """
         tool = self._tools_by_id.get(tool_id)
         if tool is not None:
@@ -2058,5 +2058,5 @@ class LazyToolBox(ToolBox):
 
     # ``to_dict`` is NOT overridden: ``AbstractToolBox.to_dict`` runs the
     # ``FilterFactory`` pass for both the panel and the flat listing, and
-    # its ``get_tool_to_dict`` serves ``LazyTool`` stubs via
+    # its ``get_tool_to_dict`` serves ``CachedTool`` stubs via
     # ``to_panel_entry`` — filtered AND non-materialising.

@@ -24,7 +24,7 @@ def _stored(tool_id=None, source_path=None, raw="<tool/>", stored_at=None):
 
 def _box(store):
     box = ToolBox.__new__(ToolBox)
-    box.app = SimpleNamespace(config=SimpleNamespace(use_lazy_toolbox=True), tool_source_store=store)  # type: ignore[assignment]
+    box.app = SimpleNamespace(config=SimpleNamespace(use_cached_toolbox=True), tool_source_store=store)  # type: ignore[assignment]
     return box
 
 
@@ -82,10 +82,10 @@ def test_tool_id_fallback_prefers_dated_row_over_undated(monkeypatch):
     assert box._get_tool_source_from_store("/tools/t1.xml", tool_id="t1") == "dated"
 
 
-def test_returns_none_when_lazy_toolbox_disabled():
+def test_returns_none_when_cached_toolbox_disabled():
     store = MagicMock()
     box = ToolBox.__new__(ToolBox)
-    box.app = SimpleNamespace(config=SimpleNamespace(use_lazy_toolbox=False), tool_source_store=store)  # type: ignore[assignment]
+    box.app = SimpleNamespace(config=SimpleNamespace(use_cached_toolbox=False), tool_source_store=store)  # type: ignore[assignment]
 
     assert box._get_tool_source_from_store("/tools/t1.xml", tool_id="t1") is None
     store.get_by_source_path.assert_not_called()

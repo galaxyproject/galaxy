@@ -61,7 +61,7 @@ from galaxy.tool_util_models.parameters import (
 )
 from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
-from galaxy.tools.lazy_toolbox import LazyToolBox
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
@@ -556,32 +556,32 @@ class ToolsService(ServiceBase):
                     return file_path
         return None
 
-    # === Batch Endpoint Methods (use lazy toolbox index when available) ===
+    # === Batch Endpoint Methods (use cached toolbox index when available) ===
 
-    def _get_lazy_toolbox(self, trans: ProvidesUserContext) -> Optional["LazyToolBox"]:
-        """Return the active toolbox if it's a LazyToolBox, else None."""
+    def _get_cached_toolbox(self, trans: ProvidesUserContext) -> Optional["CachedToolBox"]:
+        """Return the active toolbox if it's a CachedToolBox, else None."""
         toolbox = trans.app.toolbox
-        return toolbox if isinstance(toolbox, LazyToolBox) else None
+        return toolbox if isinstance(toolbox, CachedToolBox) else None
 
     def get_tests_summary(self, trans: ProvidesUserContext) -> dict[str, dict[str, dict[str, Any]]]:
         """
         Get tests summary for all tools.
 
-        Uses the lazy toolbox index when available for O(1) access,
+        Uses the cached toolbox index when available for O(1) access,
         otherwise falls back to iterating over the traditional toolbox.
 
         Returns:
             Dictionary of {tool_id: {version: {tool_name, count}}}.
         """
-        lazy_toolbox = self._get_lazy_toolbox(trans)
-        if lazy_toolbox and lazy_toolbox.tool_index:
+        cached_toolbox = self._get_cached_toolbox(trans)
+        if cached_toolbox and cached_toolbox.tool_index:
             # The index is store-wide and ``get_tests_summary`` already drops
             # datatype converters; scope the result to tools this toolbox
             # actually holds so ids present in the store but never loaded here
             # don't leak into the summary (the eager loop below only ever sees
             # loaded tools).
-            summary = lazy_toolbox.tool_index.get_tests_summary()
-            return {tool_id: versions for tool_id, versions in summary.items() if lazy_toolbox.has_tool(tool_id)}
+            summary = cached_toolbox.tool_index.get_tests_summary()
+            return {tool_id: versions for tool_id, versions in summary.items() if cached_toolbox.has_tool(tool_id)}
 
         # Fallback to traditional toolbox iteration
         test_counts_by_tool: dict[str, dict] = {}
@@ -602,14 +602,14 @@ class ToolsService(ServiceBase):
         """
         Get all unique requirements from all tools.
 
-        Uses the lazy toolbox index when available for O(1) access.
+        Uses the cached toolbox index when available for O(1) access.
 
         Returns:
             List of unique requirement dictionaries.
         """
-        lazy_toolbox = self._get_lazy_toolbox(trans)
-        if lazy_toolbox and lazy_toolbox.tool_index:
-            return lazy_toolbox.tool_index.get_all_requirements()
+        cached_toolbox = self._get_cached_toolbox(trans)
+        if cached_toolbox and cached_toolbox.tool_index:
+            return cached_toolbox.tool_index.get_all_requirements()
 
         # Fallback to traditional toolbox
         return trans.app.toolbox.all_requirements
@@ -618,21 +618,21 @@ class ToolsService(ServiceBase):
         """
         Get panel views information.
 
-        Uses the lazy toolbox index when available.
+        Uses the cached toolbox index when available.
 
         Returns:
             Dictionary with default_panel_view and views.
         """
         toolbox = trans.app.toolbox
-        lazy_toolbox = self._get_lazy_toolbox(trans)
+        cached_toolbox = self._get_cached_toolbox(trans)
         # Prefer the index's pre-computed view dicts when present, but fall
         # back to the live ``toolbox.panel_view_dicts()`` when empty —
-        # ``LazyToolBox`` doesn't currently populate
+        # ``CachedToolBox`` doesn't currently populate
         # ``tool_index.panel_views`` (the views are registered live in
         # ``_setup_panel_views``), so the index lookup yields ``{}`` and
         # callers like ``test_edam_toolbox`` see no views at all.
-        if lazy_toolbox and lazy_toolbox.tool_index:
-            indexed_views = lazy_toolbox.tool_index.get_panel_views()
+        if cached_toolbox and cached_toolbox.tool_index:
+            indexed_views = cached_toolbox.tool_index.get_panel_views()
             if indexed_views:
                 return {
                     "default_panel_view": toolbox.default_panel_view(trans),
@@ -655,8 +655,8 @@ class ToolsService(ServiceBase):
         # Both modes go through ``AbstractToolBox.to_dict``: the flat listing
         # runs the ``FilterFactory`` pass (admin/user tool filters and
         # ``allow_user_access``) over every tool, and ``get_tool_to_dict``
-        # serves ``LazyTool`` stubs from the index without materialising —
-        # so lazy mode stays O(1) parses while honoring the same filters as
+        # serves ``CachedTool`` stubs from the index without materialising —
+        # so cached-toolbox mode stays O(1) parses while honoring the same filters as
         # the eager toolbox.
         return trans.app.toolbox.to_dict(trans, in_panel=in_panel, tool_help=tool_help, view=view)
 
@@ -669,7 +669,7 @@ class ToolsService(ServiceBase):
     ) -> list[str]:
         """Search tools via the ``app.toolbox_search`` singleton.
 
-        In lazy mode that singleton is :class:`LazyToolboxSearch`, which reads
+        In cached-toolbox mode that singleton is :class:`CachedToolboxSearch`, which reads
         the populator-owned whoosh index; in eager mode it's
         :class:`ToolBoxSearch` walking ``tool_cache``. Both expose the same
         ``search(q, panel_view, config)`` interface, so this method doesn't
@@ -679,21 +679,21 @@ class ToolsService(ServiceBase):
         (``allow_user_access``, e.g. ``require_login`` tools for anonymous
         users) so denied tools are filtered out.
 
-        In lazy mode ``get_tool`` would *materialise* every hit (it loads the
+        In cached-toolbox mode ``get_tool`` would *materialise* every hit (it loads the
         tool from the store on demand) and the populator-owned whoosh index
         can carry ids that aren't loaded in this toolbox, so hits are instead
         resolved against the registered stubs via
-        :meth:`LazyToolBox.resolve_search_hit` — no parse, and hits foreign to
+        :meth:`CachedToolBox.resolve_search_hit` — no parse, and hits foreign to
         this toolbox are skipped just as eager search skips them.
         """
-        lazy_toolbox = self._get_lazy_toolbox(trans)
+        cached_toolbox = self._get_cached_toolbox(trans)
         results: list[str] = []
         hits = self._search(query, view) or []
-        if lazy_toolbox is not None:
-            hits = lazy_toolbox.latest_search_hits(hits)
+        if cached_toolbox is not None:
+            hits = cached_toolbox.latest_search_hits(hits)
         for hit in hits:
-            if lazy_toolbox is not None:
-                tool = lazy_toolbox.resolve_search_hit(hit)
+            if cached_toolbox is not None:
+                tool = cached_toolbox.resolve_search_hit(hit)
                 if tool is not None and tool.id and tool.allow_user_access(trans.user):
                     results.append(tool.id)
                 continue

@@ -13,7 +13,7 @@ import tempfile
 import pytest
 
 from galaxy.queue_worker import reload_toolbox
-from galaxy.tools.lazy_toolbox import LazyToolBox
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.source_store import ToolIndex
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
@@ -28,13 +28,13 @@ class BaseToolSourceStorageIntegrationTestCase(integration_util.IntegrationTestC
 
     def _test_api_tools_list(self):
         # ``in_panel=False`` is what the Galaxy client uses
-        # (``client/src/stores/toolStore.ts``) and what ``LazyToolBox.to_dict``
+        # (``client/src/stores/toolStore.ts``) and what ``CachedToolBox.to_dict``
         # serves straight from the index. The default ``in_panel=True``
-        # path walks the rendered panel which, under ``use_lazy_toolbox=true``,
+        # path walks the rendered panel which, under ``use_cached_toolbox=true``,
         # is the un-materialised ``_tool_panel`` and returns empty until
         # individual tools are requested — failing this bare
         # ``len(tools) > 0`` assertion when the workflow_dispatch CI run
-        # globally enables ``use_lazy_toolbox``.
+        # globally enables ``use_cached_toolbox``.
         response = self._get("tools", data={"in_panel": "False"})
         self._assert_status_code_is(response, 200)
         tools = response.json()
@@ -51,10 +51,10 @@ class TestEagerBootSkipsStore(BaseToolSourceStorageIntegrationTestCase):
     """Default deployments never initialize a tool source store."""
 
     def test_no_store_initialized(self):
-        if self._app.config.use_lazy_toolbox:
-            # GALAXY_CONFIG_OVERRIDE_USE_LAZY_TOOLBOX (the lazy CI dispatch)
+        if self._app.config.use_cached_toolbox:
+            # GALAXY_CONFIG_OVERRIDE_USE_CACHED_TOOLBOX (the cached-toolbox CI dispatch)
             # trumps per-class config kwds, so an eager boot is impossible here.
-            pytest.skip("use_lazy_toolbox forced on by environment override")
+            pytest.skip("use_cached_toolbox forced on by environment override")
         assert self._app.tool_source_store is None
         self._test_api_tools_list()
         self._test_api_tools_show()
@@ -66,7 +66,7 @@ class TestSqliteToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["use_lazy_toolbox"] = True
+        config["use_cached_toolbox"] = True
 
     def test_api_tools_list(self):
         self._test_api_tools_list()
@@ -82,7 +82,7 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
     """Galaxy boots with a default DB store + a per-conf read-only sqlite store.
 
     Verifies the composite wiring: a tool_conf carrying ``store="cvmfs_main"``
-    plus ``use_lazy_toolbox: true`` causes ``build_tool_source_store`` to wrap
+    plus ``use_cached_toolbox: true`` causes ``build_tool_source_store`` to wrap
     the default backend in a composite store.
     """
 
@@ -102,7 +102,7 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         with open(cls._conf_path, "w") as f:
             f.write('<?xml version="1.0"?>\n<toolbox store="cvmfs_main"/>\n')
 
-        config["use_lazy_toolbox"] = True
+        config["use_cached_toolbox"] = True
         existing_confs = config.get("tool_config_file") or "config/tool_conf.xml.sample"
         if isinstance(existing_confs, str):
             config["tool_config_file"] = f"{existing_confs},{cls._conf_path}"
@@ -117,14 +117,14 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
 
     def test_composite_store_is_wired(self):
         # The boot path must produce a CompositeToolSourceStore when a
-        # tool_conf opts into a named per-conf store and use_lazy_toolbox
+        # tool_conf opts into a named per-conf store and use_cached_toolbox
         # is enabled. Verifying the live app's store directly is more
         # robust than relying on /api/tools, which depends on whether the
         # store was populated in advance.
         assert isinstance(self._app.tool_source_store, CompositeToolSourceStore)
 
     def test_api_tools_list_populated_via_bootstrap(self):
-        # With use_lazy_toolbox=true and an empty store, LazyToolBox
+        # With use_cached_toolbox=true and an empty store, CachedToolBox
         # auto-bootstraps from the configured tool confs on first boot;
         # /api/tools must therefore return a non-empty tool list AND must
         # contain every tool referenced by the active tool confs. The bare
@@ -133,7 +133,7 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         #
         # ``in_panel=False`` is what the UI uses (``client/src/stores/toolStore.ts``)
         # and what serves directly from the index; the default ``in_panel=True``
-        # path walks the un-materialised lazy panel and would only see tools
+        # path walks the un-materialised stub panel and would only see tools
         # that had been individually requested.
         response = self._get("tools", data={"in_panel": "False"})
         self._assert_status_code_is(response, 200)
@@ -155,13 +155,13 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
             )
 
 
-class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
-    """Toolbox reload under lazy mode — own class, reload mutates global state."""
+class TestCachedToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
+    """Toolbox reload under cached-toolbox mode — own class, reload mutates global state."""
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["use_lazy_toolbox"] = True
+        config["use_cached_toolbox"] = True
 
     def test_base_tools_survive_toolbox_reload(self):
         self._test_api_tools_show("cat1")
@@ -209,10 +209,10 @@ class TestLazyToolBoxReload(BaseToolSourceStorageIntegrationTestCase):
         self._test_api_tools_list()
 
 
-class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
-    """End-to-end coverage of LazyToolBox-served API behaviours.
+class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
+    """End-to-end coverage of CachedToolBox-served API behaviours.
 
-    Regular CI does not run with ``use_lazy_toolbox=true``, so the bug
+    Regular CI does not run with ``use_cached_toolbox=true``, so the bug
     surfaces fixed in commits 215638d..912544 are not covered by any
     push/PR run unless this class boots Galaxy with the flag itself.
     Every behaviour the round-2 fixes were meant to deliver is asserted
@@ -224,7 +224,7 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
     - Tokenised tool search across name + description.
     - ``remove_tool_by_id`` lifecycle on the live toolbox.
     - Container-resolver admin endpoint (sensitive to placeholder
-      ``None`` Tool entries in ``_LazyToolsByIdView``).
+      ``None`` Tool entries in ``_CachedToolsByIdView``).
 
     All methods share one boot via the class-scoped ``setUpClass`` —
     don't add tests that mutate global state in ways that would leak
@@ -237,7 +237,7 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["use_lazy_toolbox"] = True
+        config["use_cached_toolbox"] = True
 
     def setUp(self):
         super().setUp()
@@ -333,7 +333,7 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
         assert sections_seen > 0, "expected at least one section in default panel view"
 
     def test_panel_views_endpoint_returns_views(self):
-        # ``GET /api/tool_panels`` used to return ``views={}`` when the lazy
+        # ``GET /api/tool_panels`` used to return ``views={}`` when the cached-toolbox
         # index hadn't pre-computed panel_views. The fallback to
         # ``toolbox.panel_view_dicts()`` keeps callers working.
         response = self._get("tool_panels")
@@ -371,38 +371,38 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
     # --- Materialisation budget ---------------------------------------------
 
     def test_batch_endpoints_do_not_materialise_tools(self):
-        # The whole point of LazyToolBox is that batch/read endpoints answer
+        # The whole point of CachedToolBox is that batch/read endpoints answer
         # from the pre-computed index without parsing tools. A regression that
         # sneaks a full-toolbox sweep touching an off-surface (or
         # _MATERIALIZE_OK) attribute would silently degrade these to O(N)
         # parses; under the permissive default it only logs a WARN, so CI
         # wouldn't catch it. Assert a zero materialise-count delta across the
-        # batch surface instead. LAZY_TOOL_STRICT covers off-surface reads;
+        # batch surface instead. CACHED_TOOL_STRICT covers off-surface reads;
         # this also covers the ones strict can't (a filter that parses, an
         # _MATERIALIZE_OK attr read in a loop).
         toolbox = self._app.toolbox
-        # This class self-enables lazy mode; assert it (and narrow the type so
-        # mypy accepts the lazy-only _lazy_materialize_count counter).
-        assert isinstance(toolbox, LazyToolBox)
+        # This class self-enables cached-toolbox mode; assert it (and narrow the type so
+        # mypy accepts the cached-toolbox-only _cached_materialize_count counter).
+        assert isinstance(toolbox, CachedToolBox)
 
         # in_panel=False flat listing (runs the FilterFactory pass), the panel
         # walk, the panel-views endpoint, tests-summary, all_requirements, and
         # tokenised search — every batch reader the client hits. Track a
         # per-endpoint delta so a failure names the culprit.
         deltas = {}
-        before = toolbox._lazy_materialize_count
+        before = toolbox._cached_materialize_count
 
         def _probe(label, resp):
             self._assert_status_code_is(resp, 200)
             nonlocal before
-            deltas[label] = toolbox._lazy_materialize_count - before
-            before = toolbox._lazy_materialize_count
+            deltas[label] = toolbox._cached_materialize_count - before
+            before = toolbox._cached_materialize_count
 
         _probe("list_in_panel_false", self._get("tools", data={"in_panel": "False"}))
         _probe("list_in_panel_true", self._get("tools", data={"in_panel": "True"}))
         _probe("panel_default", self._get("tool_panels/default"))
         _probe("tests_summary", self._get("tools/tests_summary"))
-        # all_requirements is admin-only; it aggregates from the index in lazy mode.
+        # all_requirements is admin-only; it aggregates from the index in cached-toolbox mode.
         _probe("all_requirements", self._get("tools/all_requirements", admin=True))
         # Search resolves whoosh hits against the registered stubs, not through
         # the materialising get_tool — the populator-owned index carries ~150
@@ -419,7 +419,7 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
         # ``self._app.toolbox.tools_by_id[tool_id]`` and then reads
         # ``.tool_requirements`` off that — used to fail with
         # ``'NoneType' object has no attribute 'tool_requirements'`` when
-        # ``_LazyToolsByIdView`` returned a ``None`` placeholder for an
+        # ``_CachedToolsByIdView`` returned a ``None`` placeholder for an
         # un-materialised tool. Fixed in c763b03 by populating
         # ``_tools_by_old_id`` and routing the view's ``__getitem__`` /
         # ``copy`` through ``get_tool``.
@@ -428,7 +428,7 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
         # ``GET /api/container_resolvers/resolve`` runs the resolver
         # chain (including a remote mulled registry lookup over the
         # network), which periodically returns non-JSON and turns this
-        # test into a flake unrelated to the lazy regression we want to
+        # test into a flake unrelated to the regression we want to
         # pin.
         tools_by_id = self._app.toolbox.tools_by_id
         tool = tools_by_id["cat1"]

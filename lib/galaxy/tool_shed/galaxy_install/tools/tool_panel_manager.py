@@ -148,8 +148,8 @@ class ToolPanelManager:
         )
         if new_install:
             tool_path = shed_tool_conf_dict["tool_path"]
-            use_lazy_toolbox = self.app.config.use_lazy_toolbox
-            if use_lazy_toolbox:
+            use_cached_toolbox = self.app.config.use_cached_toolbox
+            if use_cached_toolbox:
                 # The populator writes ``StoredToolSource`` + ``ToolIndexEntry``
                 # + whoosh for every new tool file, then broadcasts
                 # ``reload_tool_source_cache`` so peer Galaxy processes
@@ -188,7 +188,7 @@ class ToolPanelManager:
                     # immediately.
                     self.app.toolbox.invalidate_index_cache()
                 # Wire the new tools into the in-memory panel; ``create_tool``
-                # finds them in the index and hands back ``LazyTool`` stubs.
+                # finds them in the index and hands back ``CachedTool`` stubs.
                 for config_elem in load_elem_list:
                     self.app.toolbox.load_item(
                         config_elem,

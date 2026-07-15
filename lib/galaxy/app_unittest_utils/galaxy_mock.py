@@ -293,7 +293,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.tool_configs = []
         self.tool_source_database_connection = f"sqlite:///{os.path.join(self.data_dir, 'tool_sources.sqlite')}"
         self.tool_source_stores = None
-        self.use_lazy_toolbox = False
+        self.use_cached_toolbox = False
         self.manage_dependency_relationships = False
         self.enable_tool_shed_check = False
         self.monitor_thread_join_timeout = 1

@@ -10,7 +10,7 @@ The watcher itself is deliberately dumb: it detects token transitions and
 hands the changed store names to ``on_change``. Reload mechanics —
 disposing engines so new connections see the new CVMFS snapshot, index
 reload, panel refresh, whoosh rebuild — belong to the callback owner
-(``LazyToolBox``).
+(``CachedToolBox``).
 """
 
 import logging

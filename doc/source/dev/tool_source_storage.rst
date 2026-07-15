@@ -5,7 +5,7 @@ This document describes the architecture of the tool source storage subsystem:
 the store backends, the populator, and the index they build. For operator-facing
 setup and configuration, see :doc:`/admin/tool_source_storage`.
 
-The ``LazyToolBox`` consumes this store to load tools on demand; it is
+The ``CachedToolBox`` consumes this store to load tools on demand; it is
 documented below alongside the storage layer it builds on.
 
 Goals
@@ -22,7 +22,7 @@ path:
   the canonical, macro-expanded source plus a lightweight metadata index.
 - The store and index are laid out so a consumer can load only the index at
   startup and materialize ``Tool`` objects on demand, instead of parsing the
-  full tree in-process. That consumer is the ``LazyToolBox``.
+  full tree in-process. That consumer is the ``CachedToolBox``.
 - Batch endpoints (``/api/tools``, ``/api/tools/tests_summary``,
   ``/api/tool_panels`` …) answer from the index instead of iterating the
   full toolbox.
@@ -46,8 +46,8 @@ Module Layout
       watcher.py         Filesystem watch support
       benchmarks.py      Store/index micro-benchmarks
 
-    lib/galaxy/tools/lazy_toolbox.py     LazyToolBox (subclass of ToolBox), LazyTool
-    lib/galaxy/tools/search/__init__.py  LazyToolboxSearch (queries every store's index)
+    lib/galaxy/tools/cached_toolbox.py     CachedToolBox (subclass of ToolBox), CachedTool
+    lib/galaxy/tools/search/__init__.py  CachedToolboxSearch (queries every store's index)
 
     scripts/tool_source/populate_store.py    Thin CLI wrapper over populator.main
 
@@ -91,7 +91,7 @@ Backend Abstraction
 by Galaxy. It builds the default store from
 ``config.tool_source_database_connection`` and uses the same SQLAlchemy-backed
 store implementation for all configured URIs. The store is only built when
-``use_lazy_toolbox`` is enabled — default deployments never initialize it.
+``use_cached_toolbox`` is enabled — default deployments never initialize it.
 ``ConfigurationError`` is raised for missing required settings and is allowed
 to propagate up so misconfiguration fails fast at startup.
 
@@ -150,10 +150,10 @@ run; ``--target NAME`` restricts to a single store and raises
 read-only in default mode are silently skipped (the bundle is treated as
 authoritative for those entries).
 
-LazyToolBox
+CachedToolBox
 -----------
 
-``LazyToolBox`` extends ``ToolBox`` rather than reimplementing it, so the rest
+``CachedToolBox`` extends ``ToolBox`` rather than reimplementing it, so the rest
 of Galaxy can keep using the same ``trans.app.toolbox`` interface. The key
 override is ``_init_tools_from_configs``:
 
@@ -164,17 +164,17 @@ override is ``_init_tools_from_configs``:
    touch new rows.
 2. It then delegates to the eager conf walk. Every ``<tool>`` the walk
    loads lands in ``create_tool``, where indexed sources short-circuit to a
-   ``LazyTool`` stub instead of parsing; the panel, ``_tools_by_id``, and
+   ``CachedTool`` stub instead of parsing; the panel, ``_tools_by_id``, and
    lineage bookkeeping are all built by the unmodified upstream pipeline
    operating on stubs.
 
 Full ``Tool`` objects are built on demand and kept in an ``LRUCache`` of
-``lazy_toolbox_cache_size`` entries (default 500). Cache hits and misses are
+``cached_toolbox_cache_size`` entries (default 500). Cache hits and misses are
 guarded by an ``RLock`` for thread safety.
 
-Opting in is explicit: only ``use_lazy_toolbox: true`` activates the lazy
+Opting in is explicit: only ``use_cached_toolbox: true`` activates the cached
 toolbox. A populated store on its own (e.g. brought in by a per-conf
-``store="..."`` attribute) does not flip a default deployment to lazy mode.
+``store="..."`` attribute) does not flip a default deployment to cached-toolbox mode.
 
 Discovery
 ---------
@@ -223,7 +223,7 @@ view. The control task handler lives in
 ``control_message_to_task`` map. Each Galaxy process that receives the
 message:
 
-1. Calls ``LazyToolBox.invalidate_index_cache()`` (drops the in-memory
+1. Calls ``CachedToolBox.invalidate_index_cache()`` (drops the in-memory
    index reference so the next access reloads from the store).
 2. Calls ``ToolSourceStore.invalidate_index_cache()`` on the store itself.
 
@@ -240,19 +240,19 @@ materialising tools:
 
 - ``list_tools`` (flat and panel) goes through ``AbstractToolBox.to_dict``
   in both modes — the per-user ``FilterFactory`` pass runs as in eager mode,
-  and ``get_tool_to_dict`` serves ``LazyTool`` stubs from their index
+  and ``get_tool_to_dict`` serves ``CachedTool`` stubs from their index
   entries.
 - ``search_tools`` queries the ``app.toolbox_search`` singleton
-  (``LazyToolboxSearch`` in lazy mode); hits are resolved against registered
-  stubs via ``LazyToolBox.resolve_search_hit`` with a per-hit access check.
+  (``CachedToolboxSearch`` in cached-toolbox mode); hits are resolved against registered
+  stubs via ``CachedToolBox.resolve_search_hit`` with a per-hit access check.
 - ``get_tests_summary`` and ``get_all_requirements`` answer from
-  ``ToolIndex`` entries when the toolbox is lazy, and iterate the toolbox
+  ``ToolIndex`` entries when the cached toolbox is active, and iterate the toolbox
   otherwise.
 
-The integration suite pins this: ``_lazy_materialize_count`` (bumped in the
+The integration suite pins this: ``_cached_materialize_count`` (bumped in the
 single materialise chokepoint) must not move across any of these endpoints.
 
-``LazyToolboxSearch`` (``tools/search/__init__.py``) queries the whoosh index
+``CachedToolboxSearch`` (``tools/search/__init__.py``) queries the whoosh index
 of *every* configured store — the default plus each named per-conf store —
 via ``ToolWhooshIndex.search_scored``, then merges the per-store hit lists by
 BM25 score and post-filters them to the requested panel view. A tool served
@@ -265,7 +265,7 @@ App Wiring
 ``galaxy.app.UniverseApplication.__init__`` calls
 ``_init_tool_source_store`` early and registers the result as a singleton
 under ``ToolSourceStore``. The toolbox is then chosen based on
-``use_lazy_toolbox``. The store is exposed as ``app.tool_source_store`` and is
+``use_cached_toolbox``. The store is exposed as ``app.tool_source_store`` and is
 ``Optional`` only to satisfy type checkers — in practice the build either
 succeeds or raises ``ConfigurationError``.
 

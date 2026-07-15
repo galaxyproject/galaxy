@@ -420,6 +420,33 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``use_cached_toolbox``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When true, use the CachedToolBox which loads tools on demand from
+    the tool source store. Otherwise (the default), the traditional
+    eager ToolBox is used and any per-conf ``store="..."`` attributes
+    on tool_conf files are ignored. Opt-in is explicit: a populated
+    tool source store does not flip a default deployment to
+    cached-toolbox mode.
+:Default: ``None``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``cached_toolbox_cache_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum number of fully constructed Tool objects the CachedToolBox
+    keeps in its in-memory LRU cache. Larger values reduce repeat
+    parsing cost for popular tools at the expense of memory.
+:Default: ``500``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_source_database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -457,32 +484,6 @@
     https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 :Default: ``None``
 :Type: map
-
-
-~~~~~~~~~~~~~~~~~~~~
-``use_lazy_toolbox``
-~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    When true, use the LazyToolBox which loads tools on demand from
-    the tool source store. Otherwise (the default), the traditional
-    eager ToolBox is used and any per-conf ``store="..."`` attributes
-    on tool_conf files are ignored. Opt-in is explicit: a populated
-    tool source store does not flip a default deployment to lazy mode.
-:Default: ``None``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``lazy_toolbox_cache_size``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Maximum number of fully constructed Tool objects the LazyToolBox
-    keeps in its in-memory LRU cache. Larger values reduce repeat
-    parsing cost for popular tools at the expense of memory.
-:Default: ``500``
-:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
