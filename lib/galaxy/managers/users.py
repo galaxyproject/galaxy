@@ -122,14 +122,29 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             message = self.send_subscription_email(email)
             if message:
                 return None, message
-        user = self.create(email=email, username=username, password=password)
-        if self.app.config.user_activation_on:
-            self.send_activation_email(trans, email, username)
+        user = self.create(email=email, username=username, password=password, trans=trans, send_activation_email=True)
         return user, None
 
-    def create(self, email=None, username=None, password=None, **kwargs):
+    def create(
+        self,
+        email=None,
+        username=None,
+        password=None,
+        *,
+        trans=None,
+        trusted_email=False,
+        send_activation_email=False,
+        **kwargs,
+    ):
         """
         Create a new user.
+
+        The account is active unless email activation is enabled
+        (``user_activation_on``). ``trusted_email`` activates the account
+        regardless, for emails already verified by a trusted source such as an
+        OIDC identity provider. When the account is created inactive and
+        ``send_activation_email`` is set, an activation email is sent (requires
+        ``trans``).
         """
         self._error_on_duplicate_email(email)
         user = self.model_class(email=email, username=username)
@@ -137,11 +152,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             user.set_password_cleartext(password)
         else:
             user.set_random_password()
-        if self.app.config.user_activation_on:
-            user.active = False
-        else:
-            # Activation is off, every new user is active by default.
-            user.active = True
+        user.active = trusted_email or not self.app.config.user_activation_on
         session = self.session()
         session.add(user)
         try:
@@ -149,6 +160,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             self.app.security_agent.create_user_role(user, self.app)
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
+        if send_activation_email and not user.active:
+            self.send_activation_email(trans, email, username)
         return user
 
     def update_email(
