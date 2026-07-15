@@ -3,7 +3,6 @@
  * Popup modal component. Offers a main slot, a heading slot, and a footer slot.
  */
 
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
 import { faXmark } from "font-awesome-6";
@@ -46,8 +45,6 @@ const props = withDefaults(
         okColor?: ComponentColor;
         /** Disables the Ok button */
         okDisabled?: boolean;
-        /** Shows a spinner in the Ok button and disables it */
-        okLoading?: boolean;
         /** Title to show when the Ok button is disabled */
         okDisabledTitle?: string;
         /** When false, keeps the modal open on "ok" */
@@ -68,7 +65,6 @@ const props = withDefaults(
         fixedHeight: false,
         okColor: "blue",
         okDisabled: false,
-        okLoading: false,
         okDisabledTitle: undefined,
         closeOnOk: true,
         overflowVisible: false,
@@ -223,11 +219,10 @@ defineExpose({ showModal, hideModal });
                 <div v-if="props.confirm" class="g-modal-confirm-buttons">
                     <GButton @click="hideModal(false)"> {{ props.cancelText ?? "Cancel" }} </GButton>
                     <GButton
-                        :disabled="okDisabled || okLoading"
+                        :disabled="okDisabled"
                         :disabled-title="okDisabledTitle"
                         :color="props.okColor"
                         @click="hideModal(true)">
-                        <FontAwesomeIcon v-if="okLoading" :icon="faSpinner" spin fixed-width />
                         {{ props.okText ?? "Ok" }}
                     </GButton>
                 </div>
