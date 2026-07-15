@@ -2110,6 +2110,15 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
+    def _raise_matched_input_errors(self, exc: InputMatchedException) -> None:
+        """Convert matched-input expansion errors to validation errors.
+
+        When multi-input parameters have mismatched lengths, this surfaces
+        the error as a request validation error (400) instead of a generic
+        server error.
+        """
+        raise exceptions.RequestParameterInvalidException(str(exc)) from exc
+
     def expand_incoming_async(
         self,
         request_context: WorkRequestContext,
@@ -2141,7 +2150,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 request_context.app, self, tool_request_internal_state
             )
         except InputMatchedException as exc:
-            raise exceptions.RequestParameterInvalidException(str(exc)) from exc
+            self._raise_matched_input_errors(exc)
 
         self._ensure_expansion_is_valid(job_tool_states, rerun_remap_job_id)
 
@@ -2193,7 +2202,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 request_context, self, incoming, input_format=input_format
             )
         except InputMatchedException as exc:
-            raise exceptions.RequestParameterInvalidException(str(exc)) from exc
+            self._raise_matched_input_errors(exc)
 
         self._ensure_expansion_is_valid(expanded_incomings, rerun_remap_job_id)
 
