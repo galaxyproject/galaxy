@@ -14,6 +14,7 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
+from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -700,20 +701,22 @@ class ToolBox(AbstractToolBox):
         if store is None:
             return None
 
-        stored = None
+        # Resolve by the on-disk file path first. ``source_path`` is recorded
+        # at populate time and the populator updates that per-path row in place,
+        # so a hit here is content-current and exact (no regex shortcut, no
+        # ``sources[0]`` fallback that could silently return a different tool's
+        # source).
+        stored = store.get_by_source_path(os.path.abspath(str(config_file)))
 
-        # Shed installs hand us the full guid; look up directly.
-        if tool_id:
+        # Shed installs hand us the full guid; fall back to it only when the
+        # path lookup misses. ``get_by_tool_id`` has no ORDER BY and the
+        # append-only store accumulates superseded content rows for the same
+        # tool_id, so pick the most recently stored one rather than an
+        # arbitrary row.
+        if stored is None and tool_id:
             sources = store.get_by_tool_id(tool_id)
             if sources:
-                stored = sources[0]
-
-        # Local tools have no tool_id at this point — resolve by the on-disk
-        # file path. ``source_path`` is recorded at populate time, so a hit
-        # here is exact (no regex shortcut, no ``sources[0]`` fallback that
-        # could silently return a different tool's source).
-        if stored is None:
-            stored = store.get_by_source_path(os.path.abspath(str(config_file)))
+                stored = max(sources, key=lambda s: (s.stored_at is not None, s.stored_at or datetime.min))
 
         if stored is None:
             return None
