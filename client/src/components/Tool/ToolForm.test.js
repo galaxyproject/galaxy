@@ -5,7 +5,7 @@ import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "@te
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
@@ -19,6 +19,13 @@ const { server, http } = useServerMock();
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 const pinia = createPinia();
+
+vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
+    const { ref } = await import("vue");
+    return {
+        useUserLocalStorageFromHashId: (_key, initialValue) => ref(initialValue),
+    };
+});
 
 describe("ToolForm", () => {
     let wrapper;
@@ -95,6 +102,8 @@ describe("ToolForm", () => {
         expect(button.attributes("data-title")).toBe("Run tool: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");
         expect(dropdown.length).toBe(2);
+        const noToolParametersAlert = wrapper.find("[data-description='no tool parameters']");
+        expect(noToolParametersAlert.text()).toContain("This tool requires no input parameters and can be run as is.");
         const help = wrapper.find(".form-help");
         expect(help.text()).toBe("help_text");
         const creator = wrapper.find(".creative-work-creator");
