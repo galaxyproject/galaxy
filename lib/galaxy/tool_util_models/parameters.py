@@ -2028,6 +2028,9 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
             return dynamic_model_information_from_py_type(
                 self, self.py_type, validators={}, requires_value=requires_value
             )
+        elif state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(self.py_type)
+            return dynamic_model_information_from_py_type(self, py_type, requires_value=False)
         else:
             requires_value = self.request_requires_value
             if state_representation in ("job_internal", "job_runtime"):
