@@ -655,3 +655,63 @@ def test_get_tool_short_id_missing_version_honors_exact():
     box._load_tool_on_demand = load
     assert box.get_tool("cat", tool_version="9.9", exact=True) is None
     assert box.get_tool("cat", tool_version="9.9", exact=False) is default_tool
+
+
+def _materialising_box(source_hash):
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    box._tool_index.add_entry(_entry(id="tool1", version="1.0", source_hash=source_hash, source_path="/t/tool1.xml"))
+    holder = {"hash": source_hash}
+    box._store.get_by_source_path.side_effect = lambda path: StoredToolSource(
+        hash=holder["hash"],
+        tool_source_class="XmlToolSource",
+        raw_source="<tool/>",
+        tool_id="tool1",
+        tool_dir=None,
+        source_path="/t/tool1.xml",
+    )
+
+    def fake_create(stored, entry=None):
+        tool = MagicMock()
+        tool.id = entry.id
+        tool.version = entry.version
+        tool.old_id = entry.id
+        tool.guid = None
+        tool.uuid = None
+        tool.hidden = False
+        return tool
+
+    box._create_tool_from_stored_source = fake_create
+    return box, holder
+
+
+def test_invalidate_index_cache_refreshes_materialised_tool_on_content_change():
+    box, holder = _materialising_box("hash_v1")
+    original = box.get_tool("tool1")
+    assert box._tools_by_id["tool1"] is original
+
+    holder["hash"] = "hash_v2"
+    reloaded = ToolIndex()
+    reloaded.add_entry(_entry(id="tool1", version="1.0", source_hash="hash_v2", source_path="/t/tool1.xml"))
+    box._store.load_index.return_value = reloaded
+    box.invalidate_index_cache()
+
+    refreshed = box.get_tool("tool1")
+    assert refreshed is not original
+    assert refreshed._entry.source_hash == "hash_v2"
+    assert not any(cached is original for cached in box._tool_object_cache.values())
+    assert all(
+        getattr(t, "id", None) != "tool1" or isinstance(t, LazyTool) for b in box._tools_by_old_id.values() for t in b
+    )
+
+
+def test_invalidate_index_cache_keeps_materialised_tool_when_content_unchanged():
+    box, _holder = _materialising_box("hash_v1")
+    original = box.get_tool("tool1")
+
+    reloaded = ToolIndex()
+    reloaded.add_entry(_entry(id="tool1", version="1.0", source_hash="hash_v1", source_path="/t/tool1.xml"))
+    box._store.load_index.return_value = reloaded
+    box.invalidate_index_cache()
+
+    assert box.get_tool("tool1") is original

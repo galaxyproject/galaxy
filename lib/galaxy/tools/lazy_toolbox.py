@@ -1520,6 +1520,7 @@ class LazyToolBox(ToolBox):
             except Exception as e:
                 log.debug(f"Store invalidate_index_cache raised: {e}")
             previous_ids = set(self._tool_index.entries) if self._tool_index is not None else set()
+            previous_hashes = self._index_entry_hashes()
             loaded = self._store.load_index()
             self._tool_index = loaded if loaded is not None else ToolIndex()
             # Index just changed under us — refresh the short-id map so
@@ -1531,6 +1532,33 @@ class LazyToolBox(ToolBox):
             # as ``LazyTool`` stubs. Without this, ``/api/tools`` would
             # return the new ids only after the next full toolbox boot.
             self._register_new_index_entries_as_stubs()
+            # Reconcile content edits: an id present in both indexes but with
+            # a different ``source_hash`` under the same version was edited in
+            # place and re-indexed by the ``populate_store.py --watch``
+            # populator. Content-addressed sources can't stale a *hash*, but
+            # the per-process LRU and ``_tools_by_id`` are keyed by
+            # id/version, so a warm cache would keep serving the pre-edit
+            # ``Tool``. Evict the cached/materialised objects for those ids so
+            # the next access re-materialises from the new source. Internal
+            # and dynamic tools never enter the index, so they are untouched.
+            for tool_id, versions in self._tool_index.entries_by_version.items():
+                old_hashes = previous_hashes.get(tool_id)
+                if not old_hashes:
+                    continue
+                if not any(v in old_hashes and old_hashes[v] != entry.source_hash for v, entry in versions.items()):
+                    continue
+                existing: Any = self._tools_by_id.get(tool_id)
+                if isinstance(existing, LazyTool) and existing._real is None:
+                    # Never materialised: ``_register_new_index_entries_as_stubs``
+                    # already repointed the stub's ``_entry`` (the panel holds
+                    # the same object) and nothing heavyweight is cached.
+                    continue
+                default_entry = self._tool_index.entries.get(tool_id)
+                if default_entry is not None:
+                    try:
+                        self._refresh_changed_entry(tool_id, default_entry)
+                    except Exception as e:
+                        log.warning("Refreshing content-changed index entry %s raised: %s", tool_id, e)
             # Reconcile removals: an id the previous index carried but the
             # reloaded one doesn't was removed by a peer process (uninstall).
             # Registration above is add/update-only, so without this pop the
@@ -1573,6 +1601,53 @@ class LazyToolBox(ToolBox):
                 self._register_lazy_entry(entry)
             except Exception as e:
                 log.warning("Failed to register new index entry %s: %s", tool_id, e)
+
+    def _index_entry_hashes(self) -> dict[str, dict[str, str]]:
+        """Snapshot ``{tool_id: {version: source_hash}}`` of the current index.
+
+        Captured before an :meth:`invalidate_index_cache` reload so the reload
+        can spot ids whose source changed under a stable id+version — the
+        signal a content-addressed source can't carry on its own once it is
+        cached under an id/version key.
+        """
+        result: dict[str, dict[str, str]] = {}
+        if self._tool_index is None:
+            return result
+        for tool_id, versions in self._tool_index.entries_by_version.items():
+            result[tool_id] = {version: entry.source_hash for version, entry in versions.items()}
+        return result
+
+    def _refresh_changed_entry(self, tool_id: str, entry: ToolIndexEntry) -> None:
+        """Replace all cached/materialised state for ``tool_id`` with a fresh stub.
+
+        Drops the LRU entries (:meth:`_purge_tool_object_cache`), the stale
+        per-version registrations and old-id bucket members, then re-stubs
+        from ``entry`` so the next access re-materialises from the edited
+        source. Panel slots are repointed to the fresh stub in place, which
+        preserves both the section position and the hidden projection (a
+        hidden tool lives only in the integrated panel, so the live panel's
+        ``replace_tool_for_id`` is a no-op for it).
+        """
+        self._purge_tool_object_cache(tool_id)
+        # Scrub the materialised Tool (or superseded stub) for this id from
+        # the old-id buckets so the identity-dedup in ``_register_lazy_entry``
+        # doesn't leave a stale sibling behind (mirrors the bucket scrub in
+        # ``_remove_tool_in_memory``). Sibling installs (other ids) stay.
+        for old_id, bucket in list(self._tools_by_old_id.items()):
+            survivors = [t for t in bucket if getattr(t, "id", None) != tool_id]
+            if len(survivors) != len(bucket):
+                if survivors:
+                    self._tools_by_old_id[old_id] = survivors
+                else:
+                    del self._tools_by_old_id[old_id]
+        # Drop stale per-version materialised Tools; ``_register_lazy_entry``
+        # re-adds the default version's fresh stub below. Specific-version
+        # lookups go back through the index (``_load_tool_on_demand`` skips
+        # ``_tools_by_id`` when a version is requested), so no version is lost.
+        self._tool_versions_by_id.pop(tool_id, None)
+        fresh = self._register_lazy_entry(entry, place_in_panel=False)
+        self._tool_panel.replace_tool_for_id(tool_id, fresh)  # type: ignore[arg-type]
+        self._integrated_tool_panel.replace_tool_for_id(tool_id, fresh)
 
     def _register_lazy_entry(self, entry: ToolIndexEntry, place_in_panel: bool = True) -> "LazyTool":
         """Construct + slot a ``LazyTool`` stub for ``entry``.
@@ -1868,13 +1943,22 @@ class LazyToolBox(ToolBox):
             _guids.discard(tool_id)
             if not _guids:
                 del self._shed_short_id_to_guids[_short]
+        self._purge_tool_object_cache(tool_id)
+        return result
+
+    def _purge_tool_object_cache(self, tool_id: str) -> None:
+        """Drop every LRU entry that resolves to ``tool_id``.
+
+        Purge by cached identity, not by key prefix alone: the LRU is keyed
+        by whatever id the caller resolved with, so the same tool can sit
+        under both its guid and its short id
+        ("collection_column_join:latest"). A guid-prefix-only purge leaves
+        the short-id entry behind and ``get_tool`` serves the stale tool
+        straight from cache. Shared by :meth:`_remove_tool_in_memory`
+        (uninstall) and :meth:`_refresh_changed_entry` (in-place content
+        edit re-indexed by the ``--watch`` populator).
+        """
         with self._cache_lock:
-            # Purge by cached identity, not by key prefix: the LRU is
-            # keyed by whatever id the caller resolved with, so the same
-            # tool can sit under both its guid and its short id
-            # ("collection_column_join:latest"). A guid-prefix purge
-            # leaves the short-id entry behind and get_tool serves the
-            # uninstalled tool straight from cache.
             for key, cached in list(self._tool_object_cache.items()):
                 if (
                     key.startswith(f"{tool_id}:")
@@ -1882,7 +1966,6 @@ class LazyToolBox(ToolBox):
                     or getattr(cached, "guid", None) == tool_id
                 ):
                     self._tool_object_cache.pop(key, None)
-        return result
 
     # === Override has_tool to check index ===
 
