@@ -5,7 +5,7 @@ import { BButton, BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { type HDASummary, type HistorySummary } from "@/api";
+import type { HDASummary, HistorySummary } from "@/api";
 import { copyDatasets, deleteDataset, loadDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import type { RowIcon } from "@/components/Common/GTable.types";
@@ -457,5 +457,4 @@ onMounted(() => {
 .gap-1 {
     gap: 0.25rem;
 }
-
 </style>
