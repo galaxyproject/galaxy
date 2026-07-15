@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { submitToolInstallationRequest } from "@/api/notifications";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -28,6 +28,7 @@ const submitting = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
 const urlError = ref("");
+const cancelButtonText = computed(() => (submitting.value ? "Cancel" : "Close"));
 
 const formValid = () => !!(toolName.value.trim() && description.value.trim());
 
@@ -103,7 +104,9 @@ async function submit() {
         size="medium"
         confirm
         ok-text="Submit Request"
+        :cancel-text="cancelButtonText"
         :ok-disabled="submitting || !formValid()"
+        :cancel-disabled="submitting"
         :close-on-ok="false"
         @ok="submit"
         @cancel="close"
