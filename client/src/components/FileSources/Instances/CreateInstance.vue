@@ -18,8 +18,6 @@ interface Props {
     uuid?: string;
 }
 
-const OAUTH2_TYPES = ["dropbox", "googledrive", "onedrive", "github"];
-
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
 fileSourceTemplatesStore.fetchTemplates();
 
@@ -44,7 +42,7 @@ const redirectMessage = computed(
 );
 const requiresOAuth2AuthorizeRedirect = computed(() => {
     const templateValue = template.value;
-    return props.uuid == undefined && templateValue && OAUTH2_TYPES.indexOf(templateValue.type) >= 0;
+    return props.uuid == undefined && templateValue?.requires_oauth2_authorization;
 });
 
 function onCreated(objectStore: UserFileSourceModel) {

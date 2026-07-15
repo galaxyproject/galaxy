@@ -12,12 +12,26 @@ export function useTemplateFormData(
     formData: Ref<Record<string, unknown>>,
 ) {
     const dynamicOptions = ref<DynamicOptions>({});
-    const alertConditions = ref<string[]>([]);
+    const messages = ref<
+        Array<{
+            content: string;
+            variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+        }>
+    >([]);
     const error = ref<string | null>(null);
+    let requestSequence = 0;
 
     const variables = computed(() => {
         const values: Record<string, string | number | boolean> = {};
+        const dependencies = new Set(
+            (template.value.variables ?? []).flatMap((variable) =>
+                variable.type === "select" ? (variable.options_provider?.depends_on ?? []) : [],
+            ),
+        );
         for (const variable of template.value.variables ?? []) {
+            if (!dependencies.has(variable.name)) {
+                continue;
+            }
             const value = formData.value[variable.name];
             if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
                 values[variable.name] = value;
@@ -30,6 +44,7 @@ export function useTemplateFormData(
         if (!uuid.value) {
             return;
         }
+        const sequence = ++requestSequence;
         error.value = null;
         const { data, error: requestError } = await GalaxyApi().POST(
             "/api/file_source_templates/{template_id}/{template_version}/form-data",
@@ -41,16 +56,21 @@ export function useTemplateFormData(
             },
         );
         if (requestError) {
-            error.value = errorMessageAsString(requestError);
+            if (sequence === requestSequence) {
+                error.value = errorMessageAsString(requestError);
+            }
+            return;
+        }
+        if (sequence !== requestSequence) {
             return;
         }
         // openapi-fetch widens the server's [label, value] tuples to string[][]; they are
         // pairs by construction, so narrow them back to SelectFormOption tuples here.
         dynamicOptions.value = (data.dynamic_options ?? {}) as DynamicOptions;
-        alertConditions.value = data.alert_conditions ?? [];
+        messages.value = data.messages ?? [];
     }
 
     watch([uuid, variables], () => void fetchFormData(), { immediate: true });
 
-    return { alertConditions, dynamicOptions, error };
+    return { dynamicOptions, error, messages };
 }

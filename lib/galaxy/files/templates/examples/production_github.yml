@@ -9,25 +9,12 @@
       You authorize Galaxy to access GitHub on your behalf through GitHub's OAuth flow - no
       personal access token is required. Each repository is a separate file source: create one
       instance of this template per repository you want to access.
-  form_alerts:
-      - condition: repository_picker_empty
-        variant: warning
-        content: |
-            The GitHub App isn't installed on any repository you can access, so there are no owners or
-            repositories to choose. Install it on at least one repository from your
-            <a href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer">installed GitHub Apps</a>,
-            then reload this page.
-      - condition: repository_picker_available
-        variant: info
-        content: |
-            Need access to another repository? Update the GitHub App's repository access from your
-            <a href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer">installed GitHub Apps</a>
-            in a new tab, then reload this page.
   variables:
       org:
           label: Repository Owner
           type: select
-          dynamic_options: github_repository_owners
+          options_provider:
+              kind: github_authorized_repository_owners
           help: |
               The owner of the repository - a GitHub username or organization name. Choose from
               the owners of the repositories you granted the GitHub App access to.
@@ -35,7 +22,9 @@
       repo:
           label: Repository Name
           type: select
-          dynamic_options: github_repository_names
+          options_provider:
+              kind: github_authorized_repository_names
+              depends_on: [org]
           help: |
               The name of the repository, restricted to repositories the selected owner has
               granted the GitHub App access to.
