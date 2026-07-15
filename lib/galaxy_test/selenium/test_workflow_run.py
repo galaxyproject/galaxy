@@ -809,10 +809,10 @@ steps: {}
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_paired_list(self):
         history_id = self.current_history_id()
-        uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
-        uploader.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
-        uploader.to_paired_list("my awesome paired list").start()
+        upload = self.upload_context("paste-content")
+        upload.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        upload.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        upload.to_paired_list("my awesome paired list").start()
         self.history_panel_wait_for_hid_ok(1)
         self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
         self.workflow_run_submit()
@@ -825,10 +825,10 @@ steps: {}
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_flat_list(self):
         history_id = self.current_history_id()
-        uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
-        uploader.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
-        uploader.to_list("my awesome flat list").start()
+        upload = self.upload_context("paste-content")
+        upload.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        upload.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        upload.to_list("my awesome flat list").start()
         self.history_panel_wait_for_hid_ok(1)
         self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
         self.workflow_run_submit()
@@ -842,11 +842,11 @@ steps: {}
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_mixed_list(self):
         history_id = self.current_history_id()
-        uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
-        uploader.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
-        uploader.stage_paste_content("unpaired content\n", {"name": "other.fasta"})
-        uploader.start()
+        upload = self.upload_context("paste-content")
+        upload.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        upload.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        upload.stage_paste_content("unpaired content\n", {"name": "other.fasta"})
+        upload.start()
         self.history_panel_wait_for_and_select([1, 2, 3])
         self.history_panel_build_list_of_paired_or_unpaireds()
         self.collection_builder_set_name("my awesome flat list")
@@ -866,12 +866,8 @@ steps: {}
         self._create_and_run_workflow_with_unique_name(WORKFLOW_SIMPLE_CAT_TWICE)
         workflow_run = self.components.workflow_run
         input = workflow_run.input._(label="input1")
-        input.upload_modal.wait_for_and_click()
-
-        # Upload via modal - fluent API using paste-links for URLs
-        url = self.dataset_populator.base64_url_for_string("hello world\n")
-        self.upload_via_modal("paste-links").stage_paste_link(url, {"name": "hello world.1.fastq"}).start()
-
+        input.upload.wait_for_and_click()
+        self._upload_hello_world_for_input(label="input1")
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(2)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=2)
@@ -888,8 +884,9 @@ steps: {}
         workflow_run = self.components.workflow_run
         input = workflow_run.input._(label="input1")
         input.upload.wait_for_and_click()
+        input.collection_tab_upload.wait_for_and_click()
 
-        self.upload_context("paste-content").stage_paste_content("hello world").start()
+        self.upload_inline("paste-content", label="input1").stage_paste_content("hello world").start()
 
         self.history_panel_wait_for_hid_ok(2)
 
@@ -914,20 +911,13 @@ steps: {}
     @selenium_test
     @managed_history
     def test_upload_list_from_workflow_simple(self):
-        uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("hello world", {"name": "hello world.1.fastq"})
-        uploader.stage_paste_content("hello world", {"name": "hello world.2.fastq"})
-        uploader.start()
-        self.history_panel_wait_for_hid_ok(2)
-
         self._create_and_run_workflow_with_unique_name(WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION)
         workflow_run = self.components.workflow_run
         input = workflow_run.input._(label="input1")
         input.upload.wait_for_and_click()
+        input.collection_tab_upload.wait_for_and_click()
         builder = workflow_run.input.collection_builder._(label="input1")
-        builder.element_by_hid(hid=2).wait_for_present()
-        builder.select_all.wait_for_and_click()
-        input.collection_tab_build_link.wait_for_and_click()
+        self._upload_hello_world_for_input(label="input1", count=2)
         builder.create.wait_for_and_click()
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
@@ -937,20 +927,13 @@ steps: {}
     @managed_history
     def test_upload_list_paired_from_workflow(self):
         history_id = self.current_history_id()
-        uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("hello world\n", {"name": "hello world.1.fastq"})
-        uploader.stage_paste_content("hello world\n", {"name": "hello world.2.fastq"})
-        uploader.start()
-        self.history_panel_wait_for_hid_ok(2)
-
         self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED)
         workflow_run = self.components.workflow_run
         input = workflow_run.input._(label="input_list")
         input.upload.wait_for_and_click()
+        input.collection_tab_upload.wait_for_and_click()
         builder = workflow_run.input.collection_builder._(label="input_list")
-        builder.element_by_hid(hid=2).wait_for_present()
-        builder.select_all.wait_for_and_click()
-        input.collection_tab_build_link.wait_for_and_click()
+        self._upload_hello_world_for_input(label="input_list", count=2)
         builder.create.wait_for_and_click()
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
@@ -962,11 +945,13 @@ steps: {}
     @managed_history
     def test_upload_list_paired_or_unpaired_from_workflow(self):
         history_id = self.current_history_id()
-        uploader = self.upload_context("paste-content")
-        uploader.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
-        uploader.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
-        uploader.stage_paste_content("unpaired content\n", {"name": "other.fasta"})
-        uploader.start()
+
+        upload = self.upload_context("paste-content")
+        upload.stage_paste_content("forward content\n", {"name": "foo_1.fasta"})
+        upload.stage_paste_content("reverse content\n", {"name": "foo_2.fasta"})
+        upload.stage_paste_content("unpaired content\n", {"name": "other.fasta"})
+        upload.start()
+
         self.history_panel_wait_for_hid_ok(3)
         self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
         workflow_run = self.components.workflow_run
@@ -974,7 +959,6 @@ steps: {}
         input.upload.wait_for_and_click()
         builder = workflow_run.input.collection_builder._(label="input_list")
         builder.element_by_hid(hid=3).wait_for_present()
-        # self.sleep_for(self.wait_types.UX_TRANSITION)
         builder.select_all.wait_for_and_click()
         input.collection_tab_build_link.wait_for_and_click()
         builder.create.wait_for_and_click()
@@ -983,6 +967,12 @@ steps: {}
         self.history_panel_wait_for_hid_ok(8)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=8)
         assert content.strip() == "unpaired content\nreverse content\nforward content"
+
+    def _upload_hello_world_for_input(self, label: str, count=1):
+        upload_inline = self.upload_inline("paste-content", label=label)
+        for i in range(count):
+            upload_inline.stage_paste_content("hello world\n", {"name": f"hello world.{i + 1}.fastq"})
+        upload_inline.start()
 
     def _create_and_run_workflow_with_unique_name(
         self, workflow_contents: str, format: Literal["ga", "gxformat2"] = "gxformat2"
