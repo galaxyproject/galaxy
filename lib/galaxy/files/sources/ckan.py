@@ -1,8 +1,6 @@
 from datetime import datetime
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 from urllib.parse import urlparse
 
@@ -21,7 +19,7 @@ from galaxy.util.config_templates import TemplateExpansion
 
 
 class CKANFileSystem(AbstractFileSystem):
-    def __init__(self, base_url: str, token: Optional[str] = None, **kwargs: Any):
+    def __init__(self, base_url: str, token: str | None = None, **kwargs: Any):
         super().__init__(**kwargs)
         self.base_url = base_url.rstrip("/")  # prevents double slashes in URLs
         self.token = token
@@ -44,7 +42,7 @@ class CKANFileSystem(AbstractFileSystem):
     def _get_response(
         self,
         action: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
         url = f"{self.base_url}/api/3/action/{action}"
         headers = self._get_request_headers()
@@ -121,11 +119,11 @@ class CKANFileSystem(AbstractFileSystem):
         return path in ("", "/")
 
     # in case resource name is missing, use id
-    def _resource_name(self, resource: dict[str, Any]) -> Optional[str]:
+    def _resource_name(self, resource: dict[str, Any]) -> str | None:
         return resource.get("name") or resource.get("id")
 
     # returns last modified as a date object, or None if missing/invalid
-    def _parse_modified(self, value: Optional[str]) -> Optional[datetime]:
+    def _parse_modified(self, value: str | None) -> datetime | None:
         if not value:
             return None
         try:
@@ -148,7 +146,7 @@ class CKANFileSystem(AbstractFileSystem):
         return entry
 
     # returns dataset entry with optional metadata
-    def _dataset_entry(self, name: str, dataset: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def _dataset_entry(self, name: str, dataset: dict[str, Any] | None = None) -> dict[str, Any]:
         entry: dict[str, Any] = {"name": f"/{name}", "type": "directory", "size": None}
         if dataset:
             # adds these parameter in case detail=True
@@ -157,7 +155,7 @@ class CKANFileSystem(AbstractFileSystem):
         return entry
 
     # splits path into dataset_id and optional resource_name
-    def _split_path(self, path: str) -> tuple[str, Optional[str]]:
+    def _split_path(self, path: str) -> tuple[str, str | None]:
         parts = path.strip("/").split("/", 1)
         dataset_id = parts[0]
         resource_name = None  # path is /dataset
@@ -225,13 +223,13 @@ class CKANFileSystem(AbstractFileSystem):
 
 
 class CKANFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    endpoint: Union[str, TemplateExpansion]
-    token: Union[str, TemplateExpansion, None] = None
+    endpoint: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
 
 
 class CKANFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     endpoint: str
-    token: Optional[str] = None
+    token: str | None = None
 
 
 class CKANFilesSource(FsspecFilesSource[CKANFileSourceTemplateConfiguration, CKANFileSourceConfiguration]):
