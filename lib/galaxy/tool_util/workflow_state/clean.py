@@ -12,7 +12,6 @@ import os
 import sys
 from typing import (
     Any,
-    cast,
 )
 
 from gxformat2.normalized import (
@@ -24,6 +23,7 @@ from pydantic import ValidationError
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
     RepeatParameterModel,
+    strip_undeclared_keys,
     ToolParameterT,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
@@ -54,7 +54,6 @@ from ._util import (
 )
 from ._walker import (
     _NATIVE_BOOKKEEPING_KEYS,
-    _select_which_when_native,
     select_which_when_format2,
 )
 from .precheck import precheck_native_workflow
@@ -222,89 +221,6 @@ def strip_structural_step(step_dict: NativeStepDict, skip_uuid: bool = False) ->
     return removed
 
 
-def _strip_recursive(
-    state: dict[str, Any],
-    tool_inputs: list[ToolParameterT],
-    removed_keys: list[str],
-    prefix: str = "",
-    strip_bookkeeping: bool = False,
-):
-    """Remove stale keys from state dict in place.
-
-    Works on the raw JSON-decoded dict (values are still JSON strings for leaves,
-    JSON-encoded dicts/lists for containers). Only decodes container values when
-    recursing into them. Mutates state in place to preserve key ordering.
-    """
-    known = {inp.name for inp in tool_inputs}
-
-    if strip_bookkeeping:
-        stale = [key for key in state if key not in known]
-    else:
-        stale = [key for key in state if key not in known and key not in _NATIVE_BOOKKEEPING_KEYS]
-    for key in stale:
-        path = f"{prefix}{key}" if prefix else key
-        removed_keys.append(path)
-        del state[key]
-
-    for tool_input in tool_inputs:
-        name = tool_input.name
-        if name not in state:
-            continue
-
-        value = state[name]
-        parameter_type = tool_input.parameter_type
-        child_prefix = f"{prefix}{name}|" if prefix else f"{name}|"
-
-        if parameter_type == "gx_conditional":
-            conditional = cast(ConditionalParameterModel, tool_input)
-            if not isinstance(value, dict):
-                continue
-            cond_state = value
-
-            test_param = conditional.test_parameter
-            target_when = _select_which_when_native(conditional, cond_state)
-            if target_when is None:
-                branch_inputs: list[ToolParameterT] = [test_param]
-            else:
-                branch_inputs = [test_param] + list(target_when.parameters)
-            _strip_recursive(
-                cond_state, branch_inputs, removed_keys, prefix=child_prefix, strip_bookkeeping=strip_bookkeeping
-            )
-            state[name] = cond_state
-
-        elif parameter_type == "gx_repeat":
-            repeat = cast(RepeatParameterModel, tool_input)
-            if not isinstance(value, list):
-                continue
-            repeat_state = value
-
-            for i, instance in enumerate(repeat_state):
-                if isinstance(instance, dict):
-                    instance_prefix = f"{prefix}{name}_{i}|"
-                    _strip_recursive(
-                        instance,
-                        list(repeat.parameters),
-                        removed_keys,
-                        prefix=instance_prefix,
-                        strip_bookkeeping=strip_bookkeeping,
-                    )
-            state[name] = repeat_state
-
-        elif parameter_type == "gx_section":
-            section = cast(SectionParameterModel, tool_input)
-            if not isinstance(value, dict):
-                continue
-            section_state = value
-            _strip_recursive(
-                section_state,
-                list(section.parameters),
-                removed_keys,
-                prefix=child_prefix,
-                strip_bookkeeping=strip_bookkeeping,
-            )
-            state[name] = section_state
-
-
 def _raw_step_def(raw_steps: dict, step_id) -> dict:
     """Look up a raw step dict by id, tolerating str- or int-keyed step maps.
 
@@ -322,7 +238,7 @@ def _raw_step_def(raw_steps: dict, step_id) -> dict:
 
 
 def _policy_to_strip_bookkeeping(policy: StaleKeyPolicy | None) -> bool:
-    """Extract strip_bookkeeping boolean from policy for _strip_recursive."""
+    """Extract strip_bookkeeping boolean from policy for strip_undeclared_keys."""
     if policy is None:
         return False
     return policy.is_denied(StaleKeyCategory.BOOKKEEPING)
@@ -359,11 +275,12 @@ def strip_stale_keys(
         )
 
     removed_state_keys: list[str] = []
-    _strip_recursive(
+    preserve_keys = () if _policy_to_strip_bookkeeping(policy) else _NATIVE_BOOKKEEPING_KEYS
+    strip_undeclared_keys(
         tool_state,
         list(parsed_tool.inputs),
         removed_state_keys,
-        strip_bookkeeping=_policy_to_strip_bookkeeping(policy),
+        preserve_keys=preserve_keys,
     )
     step["tool_state"] = tool_state
 
