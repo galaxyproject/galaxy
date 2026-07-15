@@ -169,7 +169,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             <BButton
                 v-g-tooltip.bottom.hover
                 class="d-flex flex-gapx-1 align-items-center"
-                data-description="upload-modal"
+                data-description="upload"
                 title="Upload data"
                 @click="onUpload">
                 <FontAwesomeIcon :icon="faUpload" />

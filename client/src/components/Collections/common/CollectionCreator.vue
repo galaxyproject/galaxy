@@ -63,6 +63,7 @@ const localHideSourceItems = ref(props.hideSourceItems);
 const name = ref(props.collectionName);
 
 const uploadConfig = computed<UploadModalConfig>(() => ({
+    allowCollections: false,
     formats: props.extensions,
     hideTips: true,
     targetHistoryId: props.historyId,

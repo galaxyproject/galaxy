@@ -199,7 +199,14 @@ async function handleStartClick() {
         </div>
 
         <div class="upload-method-inline-footer d-flex justify-content-end gap-2 mt-2">
-            <GButton outline color="grey" :disabled="uploading" @click="handleCancelClick">Cancel</GButton>
+            <GButton
+                outline
+                color="grey"
+                :disabled="uploading"
+                data-test-id="upload-method-inline-cancel"
+                @click="handleCancelClick"
+                >Cancel</GButton
+            >
             <GButton
                 color="blue"
                 :disabled="!canStartUpload"
