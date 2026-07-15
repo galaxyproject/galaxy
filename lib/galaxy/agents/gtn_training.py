@@ -330,7 +330,10 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return prompt_path.read_text()
 
     def _vector_search_dependencies(self) -> tuple[OpenAIEmbeddings, Path]:
-        persist_dir = Path(getattr(self.deps.config, "vector_database_path", None))
+        vector_database_path = getattr(self.deps.config, "vector_database_path", None)
+        if not vector_database_path:
+            raise ValueError("Vector database path is not configured")
+        persist_dir = Path(vector_database_path)
         embedding_base_url = getattr(self.deps.config, "embedding_api_base_url", None)
         embedding_model = getattr(self.deps.config, "embedding_model", None)
         embedding_api_key = getattr(self.deps.config, "embedding_api_key", None) or ""
