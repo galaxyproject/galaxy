@@ -498,6 +498,7 @@ def build_index_entry_from_source(
             version=version,
             name=tool_source.parse_name() or "",
             description=tool_source.parse_description() or "",
+            is_datatype_converter=discovered.tool_conf == CONVERTER_TOOL_CONF,
             icon=icon,
             xrefs=xrefs,
             is_workflow_compatible=is_workflow_compatible,

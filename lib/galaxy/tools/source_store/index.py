@@ -80,6 +80,12 @@ class ToolIndexEntry(BaseModel):
     # ``interactive_tool``, ``data_source``, ...). Filter authors and
     # ``DataManagerTool.allow_user_access`` (admin-only) both branch on this.
     tool_type: str = "default"
+    # True for datatype-converter discoveries (``CONVERTER_TOOL_CONF``). The
+    # ``tool_type`` alone can't identify them — converters keep whatever type
+    # their XML declares — so the populator stamps this flag from the
+    # discovery source. ``tests_summary`` excludes them to mirror the eager
+    # ``if not tool.is_datatype_converter`` filter.
+    is_datatype_converter: bool = False
     # User-facing tags from ``<tool>`` config (distinct from ``labels``).
     # Surfaced for custom tool filters that bucket tools by tag.
     tags: list[str] = Field(default_factory=list)
@@ -396,8 +402,9 @@ class ToolIndex(BaseModel):
         summary: dict[str, dict[str, dict]] = {}
         for entry in self.entries.values():
             # Match the eager fallback in services.tools.ToolsService.get_tests_summary:
-            # tools without tests are excluded entirely.
-            if not entry.test_count:
+            # tools without tests, and datatype converters, are excluded entirely
+            # (the eager loop skips ``tool.is_datatype_converter``).
+            if not entry.test_count or entry.is_datatype_converter:
                 continue
             if entry.id not in summary:
                 summary[entry.id] = {}

@@ -575,7 +575,13 @@ class ToolsService(ServiceBase):
         """
         lazy_toolbox = self._get_lazy_toolbox(trans)
         if lazy_toolbox and lazy_toolbox.tool_index:
-            return lazy_toolbox.tool_index.get_tests_summary()
+            # The index is store-wide and ``get_tests_summary`` already drops
+            # datatype converters; scope the result to tools this toolbox
+            # actually holds so ids present in the store but never loaded here
+            # don't leak into the summary (the eager loop below only ever sees
+            # loaded tools).
+            summary = lazy_toolbox.tool_index.get_tests_summary()
+            return {tool_id: versions for tool_id, versions in summary.items() if lazy_toolbox.has_tool(tool_id)}
 
         # Fallback to traditional toolbox iteration
         test_counts_by_tool: dict[str, dict] = {}
