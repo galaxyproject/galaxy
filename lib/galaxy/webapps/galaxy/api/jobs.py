@@ -397,8 +397,6 @@ class FastAPIJobs:
         if not dataset.creating_job or dataset.creating_job.id != job.id:
             raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
-        if tool is not None:
-            tool = trans.app.toolbox.materialize_tool(tool, reason="detail")
         email = payload.email
         if not email and not trans.anonymous:
             email = trans.user.email

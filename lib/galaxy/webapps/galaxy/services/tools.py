@@ -515,9 +515,7 @@ class ToolsService(ServiceBase):
         tool_version=None,
         tool_uuid=None,
         user: User | None = None,
-        *,
-        materialization_reason: MaterializationReasonName,
-    ) -> Tool:
+    ) -> ToolLike:
         if tool_uuid:
             try:
                 UUID(tool_uuid)
@@ -531,6 +529,19 @@ class ToolsService(ServiceBase):
                 raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
         if not tool.allow_user_access(user):
             raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
+        return tool
+
+    def _get_materialized_tool(
+        self,
+        trans: ProvidesUserContext,
+        id,
+        tool_version=None,
+        tool_uuid=None,
+        user: User | None = None,
+        *,
+        materialization_reason: MaterializationReasonName,
+    ) -> Tool:
+        tool = self._get_tool(trans, id, tool_version, tool_uuid, user)
         return trans.app.toolbox.materialize_tool(tool, reason=materialization_reason)
 
     def _detect(self, trans: ProvidesUserContext, tool_id):
@@ -552,16 +563,17 @@ class ToolsService(ServiceBase):
         return detected_versions
 
     def get_tool_icon_path(self, trans: ProvidesUserContext, tool_id, tool_version=None) -> str | None:
-        tool = self._get_tool(trans, tool_id, tool_version, materialization_reason="detail")
-        if tool and tool.icon:
+        tool = self._get_tool(trans, tool_id, tool_version)
+        if tool.icon:
+            materialized_tool = trans.app.toolbox.materialize_tool(tool, reason="detail")
             icon_file_path = tool.icon
-            if icon_file_path and tool.tool_dir:
+            if icon_file_path and materialized_tool.tool_dir:
                 # Prevent any path traversal attacks. The icon_src must be in the tool's directory.
-                if not safe_contains(tool.tool_dir, icon_file_path):
+                if not safe_contains(materialized_tool.tool_dir, icon_file_path):
                     raise Exception(
                         f"Invalid icon path for tool '{tool_id}'. Path must be within the tool's directory."
                     )
-                file_path = os.path.join(tool.tool_dir, icon_file_path)
+                file_path = os.path.join(materialized_tool.tool_dir, icon_file_path)
                 if os.path.exists(file_path):
                     return file_path
         return None
@@ -703,14 +715,14 @@ class ToolsService(ServiceBase):
             hits = cached_toolbox.latest_search_hits(hits)
         for hit in hits:
             if cached_toolbox is not None:
-                tool = cached_toolbox.resolve_search_hit(hit)
-                if tool is not None and tool.id and tool.allow_user_access(trans.user):
-                    results.append(tool.id)
+                cached_tool = cached_toolbox.resolve_search_hit(hit)
+                if cached_tool is not None and cached_tool.id and cached_tool.allow_user_access(trans.user):
+                    results.append(cached_tool.id)
                 continue
             try:
-                tool = self._get_tool(trans, hit, user=trans.user, materialization_reason="detail")
-                if tool and tool.id:
-                    results.append(tool.id)
+                tool_like = self._get_tool(trans, hit, user=trans.user)
+                if tool_like.id:
+                    results.append(tool_like.id)
             except exceptions.AuthenticationFailed:
                 pass
             except exceptions.ObjectNotFound:
