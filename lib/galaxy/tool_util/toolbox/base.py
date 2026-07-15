@@ -215,6 +215,19 @@ def resolve_tool_path(tool_path: str | None, config_filename: str, default_tool_
     return string.Template(tool_path).safe_substitute(tool_path_vars)
 
 
+def _collect_panel_tool_ids(panel_items: "ToolPanelElements", ids: set[str]) -> None:
+    """Gather tool ids from a rendered panel, recursing into sections.
+
+    Reads ids off the ``tool_<id>`` panel keys rather than the tool objects,
+    so a ``LazyToolBox`` stub is never materialised just to answer membership.
+    """
+    for key, item_type, item in panel_items.panel_items_iter():
+        if item_type == panel_item_types.TOOL:
+            ids.add(key[len("tool_") :])
+        elif item_type == panel_item_types.SECTION:
+            _collect_panel_tool_ids(item.panel_items(), ids)
+
+
 class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
@@ -478,6 +491,20 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     def panel_has_tool(self, tool: "Tool", panel_view_id: str) -> bool:
         panel_view_rendered = self._tool_panel_view_rendered[panel_view_id]
         return panel_view_rendered.has_item_recursive(tool)
+
+    def panel_view_tool_ids(self, panel_view_id: str) -> set[str]:
+        """Ids of the tools placed in the rendered panel view ``panel_view_id``.
+
+        The by-id counterpart of :meth:`panel_has_tool`: it reads membership
+        straight off the panel keys (``tool_<id>``) without touching the tool
+        objects, so the lazy search filter can scope hits to a view without
+        materialising anything. Raises ``KeyError`` for an unknown view,
+        matching :meth:`ToolBoxSearch.search`'s contract.
+        """
+        panel_view_rendered = self._tool_panel_view_rendered[panel_view_id]
+        ids: set[str] = set()
+        _collect_panel_tool_ids(panel_view_rendered, ids)
+        return ids
 
     def load_dynamic_tool(self, dynamic_tool: "DynamicTool") -> Union["Tool", None]:
         if not dynamic_tool.active or not dynamic_tool.public:

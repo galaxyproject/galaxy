@@ -413,8 +413,10 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         index_help = getattr(self.config, "index_tool_help", True)
         if self._use_lazy_toolbox():
             # Populator owns the whoosh index in lazy mode; the toolbox search
-            # singleton is a thin reader. See ``LazyToolboxSearch``.
-            search_singleton: ToolBoxSearch = LazyToolboxSearch(self.config)
+            # singleton is a thin reader. The toolbox is threaded in so
+            # ``search`` can scope hits to the requested panel view. See
+            # ``LazyToolboxSearch``.
+            search_singleton: ToolBoxSearch = LazyToolboxSearch(self.config, self.toolbox)
         else:
             search_singleton = ToolBoxSearch(
                 self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help

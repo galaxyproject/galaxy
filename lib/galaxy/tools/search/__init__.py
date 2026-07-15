@@ -31,6 +31,7 @@ import re
 import shutil
 from typing import (
     Any,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -135,8 +136,13 @@ class LazyToolboxSearch(ToolBoxSearch):
 
     The populator (``galaxy.tools.source_store.populator``) builds and owns
     one whoosh index per store; this class is a thin reader that opens them
-    on each query and merges hits by score. Per-panel-view fan-out is
-    collapsed: ``search`` ignores ``panel_view``.
+    on each query and merges hits by score.
+
+    Per-view scoping mirrors the eager :class:`ToolBoxSearch`: the merged hits
+    are filtered down to the tools the requested panel view holds, and an
+    unknown ``panel_view`` raises ``KeyError``. Membership is read off the
+    toolbox's rendered panel by id (:meth:`AbstractToolBox.panel_view_tool_ids`),
+    so no tool is materialised just to filter.
 
     ``build_index`` is a no-op (the populator's job). ``index_count`` is
     still incremented so :func:`galaxy.queue_worker.rebuild_toolbox_search_index`
@@ -144,12 +150,13 @@ class LazyToolboxSearch(ToolBoxSearch):
     toolbox reload count" without re-building anything.
     """
 
-    def __init__(self, config: GalaxyAppConfiguration) -> None:
+    def __init__(self, config: GalaxyAppConfiguration, toolbox: Optional["ToolBox"] = None) -> None:
         # Skip ToolBoxSearch.__init__ — it walks ``toolbox.panel_views()`` and
         # builds a ToolPanelViewSearch per view. Under lazy mode the
-        # populator owns the whoosh indexes; per-view filtering is a
-        # follow-up if needed.
+        # populator owns the whoosh indexes; view scoping is a post-filter on
+        # the merged hits instead of a per-view index.
         self.config = config
+        self._toolbox = toolbox
         self.panel_searches: dict[str, ToolPanelViewSearch] = {}
         self.index_count = -1
 
@@ -159,6 +166,13 @@ class LazyToolboxSearch(ToolBoxSearch):
         self.index_count += 1
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
+        # Resolve view membership first so an unknown view raises ``KeyError``
+        # even when whoosh search is disabled — parity with eager
+        # ``ToolBoxSearch.search``. ``None`` (no toolbox wired, e.g. in unit
+        # tests) skips scoping and returns the raw merged hits.
+        member_ids: set[str] | None = None
+        if self._toolbox is not None:
+            member_ids = self._toolbox.panel_view_tool_ids(panel_view)
         if not config.tool_search_index_dir:
             # No index dir means whoosh search is off entirely.
             return []
@@ -166,7 +180,8 @@ class LazyToolboxSearch(ToolBoxSearch):
         # the default's would make every named-store tool invisible to
         # ``/api/tools?q=``. Search each configured store's index and merge
         # by score. Over-searching a catalog store no conf references is
-        # harmless: ``resolve_search_hit`` drops ids not in this toolbox.
+        # harmless: the panel-view filter (and ``resolve_search_hit``
+        # downstream) drops ids not placed in this toolbox.
         store_names = [DEFAULT_STORE_NAME, *sorted(config.tool_source_stores or {})]
         tuning = ToolSearchTuning.from_config(config)
         scored: dict[str, float] = {}
@@ -182,7 +197,10 @@ class LazyToolboxSearch(ToolBoxSearch):
         # BM25 scores from different indexes aren't strictly comparable
         # (per-corpus statistics), but interleaving by score beats
         # concatenation; ties keep first-seen order (default store first).
-        return [tool_id for tool_id, _score in sorted(scored.items(), key=lambda kv: -kv[1])]
+        ordered = [tool_id for tool_id, _score in sorted(scored.items(), key=lambda kv: -kv[1])]
+        if member_ids is None:
+            return ordered
+        return [tool_id for tool_id in ordered if tool_id in member_ids]
 
 
 class ToolPanelViewSearch:
