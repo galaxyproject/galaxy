@@ -8,6 +8,7 @@ from typing import (
     Any,
 )
 
+from langchain_openai import OpenAIEmbeddings
 from pydantic import (
     BaseModel,
     Field,
@@ -31,7 +32,6 @@ from .base import (
     normalize_llm_text,
 )
 from .gtn import GTNSearchDB
-from langchain_openai import OpenAIEmbeddings
 
 log = logging.getLogger(__name__)
 
@@ -502,7 +502,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         if response_data.faqs:
             parts.append("\n**Relevant FAQs:**")
             for i, faq in enumerate(response_data.faqs, 1):
-                title = faq.get("title", f"Untitled FAQ")
+                title = faq.get("title", "Untitled FAQ")
                 area = faq.get("area", "")
                 snippet = faq.get("snippet", "")
                 question = faq.get("question", "")

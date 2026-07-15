@@ -679,7 +679,7 @@ class GTNSearchDB:
 
             vector_results = []
 
-            for i, (doc, score) in enumerate(results_with_scores, start=1):
+            for (doc, score) in results_with_scores:
                 source_id = doc.metadata.get("source")
                 parent_docs = vectorstore.get(where={"source": source_id})
                 # use longer context by taking multiple documents with the same source, if available
@@ -733,7 +733,7 @@ class GTNSearchDB:
 
             vector_results = []
 
-            for i, (doc, score) in enumerate(results_with_scores, start=1):
+            for (doc, score) in results_with_scores:
                 source_id = doc.metadata.get("source")
                 parent_docs = vectorstore.get(where={"source": source_id})
                 # use longer context by taking multiple documents with the same source, if available
@@ -790,7 +790,7 @@ class GTNSearchDB:
 
             vector_results = []
 
-            for i, (doc, score) in enumerate(results_with_scores, start=1):
+            for (doc, score) in results_with_scores:
                 source_id = doc.metadata.get("source")
                 parent_docs = vectorstore.get(where={"source": source_id})
                 # use longer context by taking multiple documents with the same source, if available
