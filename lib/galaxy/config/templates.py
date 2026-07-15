@@ -18,11 +18,24 @@ from galaxy.util.resources import (
 TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 
 
-def render(template_path: str, context: dict, custom_templates_dir: str) -> str:
-    """Read and return templated content as string."""
+def render(
+    template_path: str, context: dict, custom_templates_dir: str, autoescape: bool = False
+) -> str:
+    """Read and return templated content as string.
+
+    ``autoescape`` defaults to ``False`` to preserve the historical behavior of
+    the templates rendered through this helper (e.g. the activation email,
+    which pre-escapes some values itself). Callers rendering user-supplied
+    content in HTML templates (e.g. notification emails) should opt in by
+    passing ``autoescape=True`` for the ``.html`` format. Plain-text (``.txt``)
+    templates must never be autoescaped. When autoescape is enabled, template
+    authors who intentionally inject trusted HTML must mark the value with the
+    ``| safe`` filter.
+    """
     with _get_template_path(template_path, custom_templates_dir).open() as f:
         template_str = _get_template_body(f.read())
-    tmpl = Environment().from_string(template_str)
+    env = Environment(autoescape=autoescape)
+    tmpl = env.from_string(template_str)
     return tmpl.render(**context)
 
 
