@@ -297,7 +297,7 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
 
     with app._toolbox_lock:
         new_toolbox: ToolBox
-        if getattr(app.config, "use_cached_toolbox", False) and getattr(app, "tool_source_store", None) is not None:
+        if app.config.use_cached_toolbox and app.tool_source_store is not None:
             new_toolbox = CachedToolBox(
                 config_filenames=tool_configs,
                 tool_root_dir=app.config.tool_path,

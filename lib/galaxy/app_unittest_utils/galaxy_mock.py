@@ -70,6 +70,7 @@ from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
+from galaxy.tools.source_store import ToolSourceStore
 from galaxy.util import (
     galaxy_directory,
     StructuredExecutionTimer,
@@ -126,6 +127,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     execution_timer_factory: Any
     stop: bool
     is_webapp: bool = True
+    tool_source_store: ToolSourceStore | None = None
 
     def __init__(self, config=None, **kwargs) -> None:
         super().__init__()

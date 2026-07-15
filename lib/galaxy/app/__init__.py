@@ -451,10 +451,9 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.haltables.insert(2, ("cached toolbox", self._shutdown_cached_toolbox))
 
     def _shutdown_tool_source_store(self) -> None:
-        store = getattr(self, "tool_source_store", None)
-        if store is not None:
+        if self.tool_source_store is not None:
             try:
-                store.close()
+                self.tool_source_store.close()
             finally:
                 self.tool_source_store = None
 

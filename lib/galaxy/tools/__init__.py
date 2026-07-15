@@ -566,7 +566,7 @@ class ToolBox(AbstractToolBox):
         file_count = self._tools_parsed_from_file
 
         if store_count > 0 or file_count > 0:
-            store = getattr(self.app, "tool_source_store", None)
+            store = self.app.tool_source_store
             backend = "unknown"
             if store:
                 try:
@@ -697,7 +697,7 @@ class ToolBox(AbstractToolBox):
         if not self.app.config.use_cached_toolbox:
             return None
 
-        store = getattr(self.app, "tool_source_store", None)
+        store = self.app.tool_source_store
         if store is None:
             return None
 
