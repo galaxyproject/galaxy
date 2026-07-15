@@ -708,16 +708,29 @@ class LazyToolBox(ToolBox):
         return [placement for placement in placements if placement.tool_id in keep]
 
     def _latest_panel_tool_ids(self, tool_ids: list[str]) -> list[str]:
+        """Collapse each lineage's placements to its newest version's id.
+
+        Hidden and visible entries collapse independently (the lineage key
+        carries ``entry.hidden``): :meth:`_place_stub` mirrors every
+        placement into the integrated panel — hidden included — but only
+        visible ones into the live panel. Dropping hidden entries here (as an
+        earlier revision did) kept their placements from ever reaching
+        ``_place_stub``, so a fast-path boot persisted
+        ``integrated_tool_panel.xml`` without hidden tools, losing their
+        positions. Keeping the latest hidden lineage member routes its
+        placement to the integrated projection while a visible sibling in the
+        same lineage still reaches the live panel.
+        """
         if self._tool_index is None:
             return tool_ids
-        ordered_lineages: list[tuple[str | None, str]] = []
-        latest_by_lineage: dict[tuple[str | None, str], ToolIndexEntry] = {}
+        ordered_lineages: list[tuple[str | None, str, bool]] = []
+        latest_by_lineage: dict[tuple[str | None, str, bool], ToolIndexEntry] = {}
         for tool_id in tool_ids:
             entry = self._tool_index.entries.get(tool_id)
-            if entry is None or entry.hidden:
+            if entry is None:
                 continue
             lineage_id = remove_version_from_guid(entry.id) or entry.id
-            lineage_key = (entry.panel_section_id, lineage_id)
+            lineage_key = (entry.panel_section_id, lineage_id, entry.hidden)
             current = latest_by_lineage.get(lineage_key)
             if current is None:
                 ordered_lineages.append(lineage_key)

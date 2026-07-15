@@ -715,3 +715,28 @@ def test_invalidate_index_cache_keeps_materialised_tool_when_content_unchanged()
     box.invalidate_index_cache()
 
     assert box.get_tool("tool1") is original
+
+
+def test_fast_path_places_hidden_entry_in_integrated_panel_only():
+    box = _registry_box()
+    visible = _entry(
+        id="visible_tool", version="1.0", hidden=False, panel_section_id="sec1", panel_section_name="Section 1"
+    )
+    hidden = _entry(
+        id="hidden_tool", version="1.0", hidden=True, panel_section_id="sec1", panel_section_name="Section 1"
+    )
+    box._tool_index.add_entry(visible)
+    box._tool_index.add_entry(hidden)
+
+    placements = box._index_panel_items()
+    assert {p.tool_id for p in placements} == {"visible_tool", "hidden_tool"}
+    for placement in placements:
+        stub = box._register_lazy_entry(box._tool_index.entries[placement.tool_id], place_in_panel=False)
+        box._place_stub(stub, placement.section_id, placement.section_name, hidden=placement.hidden)
+
+    integrated = box._integrated_tool_panel["sec1"].elems
+    assert integrated.has_tool_with_id("hidden_tool")
+    assert integrated.has_tool_with_id("visible_tool")
+    live = box._tool_panel["sec1"].elems
+    assert live.has_tool_with_id("visible_tool")
+    assert not live.has_tool_with_id("hidden_tool")
