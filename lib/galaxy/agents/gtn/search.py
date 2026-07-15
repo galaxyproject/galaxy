@@ -247,7 +247,6 @@ class FAQVectorSearchResults:
     source: str
     content_type: str
     tutorial: str
-    area: str
     question: str
     tier: str
     topic: str
@@ -316,8 +315,12 @@ class GTNSearchDB:
             self.db_path = current_dir / "data" / "gtn_search.db"
             self.vector_db_path = current_dir / "data" / "gtn_chroma_db_composite"
         else:
-            self.db_path = Path(db_path)
-            self.vector_db_path = Path(vector_db_path)
+            self.db_path = Path(db_path) if db_path is not None else Path(__file__).parent / "data" / "gtn_search.db"
+            self.vector_db_path = (
+                Path(vector_db_path)
+                if vector_db_path is not None
+                else Path(__file__).parent / "data" / "gtn_chroma_db_composite"
+            )
 
         self.download_url = download_url or GTN_DATABASE_URL
         self.vector_db_url = vector_db_url or GTN_VECTOR_DATABASE_URL
@@ -362,7 +365,7 @@ class GTNSearchDB:
             return
 
         try:
-            self.vector_db_path = GTNSearchDB._download_vector_database_to_path(self.vector_db_path, self.vector_db_url)
+            GTNSearchDB._download_vector_database_to_path(self.vector_db_path, self.vector_db_url)
             log.info(f"GTN vector database downloaded to {self.vector_db_path}")
         except Exception as e:
             log.warning(f"Failed to download GTN vector database: {e}")
@@ -403,6 +406,7 @@ class GTNSearchDB:
             tmp_path.unlink(missing_ok=True)
             raise FileNotFoundError(f"GTN vector database download failed for {vector_db_path}: {e}") from e
 
+    @classmethod
     def refresh_database_if_stale(cls, db_path: str | Path, download_url: str | None = None) -> dict[str, Any] | None:
         """HEAD the URL and re-download only if its Last-Modified is newer than the local file's mtime.
 
@@ -676,7 +680,7 @@ class GTNSearchDB:
                 return []
 
             vectorstore = Chroma(
-                persist_directory=persist_dir, collection_name=collection_name, embedding_function=embeddings
+                persist_directory=str(persist_dir), collection_name=collection_name, embedding_function=embeddings
             )
 
             # Use similarity_search_with_score to get relevance scores
@@ -685,7 +689,7 @@ class GTNSearchDB:
             vector_results = []
 
             for doc, score in results_with_scores:
-                source_id = doc.metadata.get("source")
+                source_id = str(doc.metadata.get("source") or "")
                 parent_docs = vectorstore.get(where={"source": source_id})
                 # use longer context by taking multiple documents with the same source, if available
                 parent_context_docs = ""
@@ -693,16 +697,16 @@ class GTNSearchDB:
                     parent_context_docs += d + " "
 
                 result = GTNVectorSearchResults(
-                    id=doc.metadata.get("title"),
-                    title=doc.metadata.get("title"),
+                    id=str(doc.metadata.get("title") or ""),
+                    title=str(doc.metadata.get("title") or ""),
                     description=f" {doc.metadata.get('topic')} {doc.metadata.get('title')} ",
-                    topic=doc.metadata.get("topic"),
-                    tutorial=doc.metadata.get("tutorial"),
-                    url=doc.metadata.get("url"),
+                    topic=str(doc.metadata.get("topic") or ""),
+                    tutorial=str(doc.metadata.get("tutorial") or ""),
+                    url=str(doc.metadata.get("url") or ""),
                     score=score,
-                    source=doc.metadata.get("source"),
-                    difficulty=doc.metadata.get("difficulty"),
-                    time_estimation=doc.metadata.get("time_estimation"),
+                    source=str(doc.metadata.get("source") or ""),
+                    difficulty=str(doc.metadata.get("difficulty") or ""),
+                    time_estimation=str(doc.metadata.get("time_estimation") or ""),
                     snippet=str(doc.page_content),
                     content=parent_context_docs,
                 )
@@ -728,7 +732,7 @@ class GTNSearchDB:
                 return []
 
             vectorstore = Chroma(
-                persist_directory=persist_dir, collection_name=collection_name, embedding_function=embeddings
+                persist_directory=str(persist_dir), collection_name=collection_name, embedding_function=embeddings
             )
 
             # Use similarity_search_with_score to get relevance scores
@@ -737,7 +741,7 @@ class GTNSearchDB:
             vector_results = []
 
             for doc, score in results_with_scores:
-                source_id = doc.metadata.get("source")
+                source_id = str(doc.metadata.get("source") or "")
                 parent_docs = vectorstore.get(where={"source": source_id})
                 # use longer context by taking multiple documents with the same source, if available
                 parent_context_docs = ""
@@ -783,7 +787,7 @@ class GTNSearchDB:
                 return []
 
             vectorstore = Chroma(
-                persist_directory=persist_dir, collection_name=collection_name, embedding_function=embeddings
+                persist_directory=str(persist_dir), collection_name=collection_name, embedding_function=embeddings
             )
 
             # Use similarity_search_with_score to get relevance scores
@@ -792,7 +796,7 @@ class GTNSearchDB:
             vector_results = []
 
             for doc, score in results_with_scores:
-                source_id = doc.metadata.get("source")
+                source_id = str(doc.metadata.get("source") or "")
                 parent_docs = vectorstore.get(where={"source": source_id})
                 # use longer context by taking multiple documents with the same source, if available
                 parent_context_docs = ""
