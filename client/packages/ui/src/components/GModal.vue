@@ -43,6 +43,8 @@ const props = withDefaults(
         okDisabled?: boolean;
         /** Title to show when the Ok button is disabled */
         okDisabledTitle?: string;
+        /** Disables all cancel/dismiss actions (Cancel button, backdrop click, Escape) */
+        cancelDisabled?: boolean;
         /** When false, keeps the modal open on "ok" */
         closeOnOk?: boolean;
         /** Allows content to overflow the modal body (e.g. for dropdowns/selectors inside the modal) */
@@ -62,6 +64,7 @@ const props = withDefaults(
         okColor: "blue",
         okDisabled: false,
         okDisabledTitle: undefined,
+        cancelDisabled: false,
         closeOnOk: true,
         overflowVisible: false,
     },
@@ -90,6 +93,7 @@ const dialog = ref<HTMLDialogElement | null>(null);
 onMounted(() => {
     if (dialog.value) {
         dialog.value.addEventListener("close", onClose);
+        dialog.value.addEventListener("cancel", onCancel);
     }
     if (props.show) {
         showModal();
@@ -99,6 +103,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     if (dialog.value) {
         dialog.value.removeEventListener("close", onClose);
+        dialog.value.removeEventListener("cancel", onCancel);
     }
 });
 
@@ -139,6 +144,9 @@ watchImmediate(
 );
 
 function onClickDialog(event: MouseEvent) {
+    if (props.cancelDisabled) {
+        return;
+    }
     if ((event.target as HTMLElement | null)?.tagName === "DIALOG") {
         const rect = dialog.value?.getBoundingClientRect();
         const insideDialogX = rect && event.clientX >= rect.left && event.clientX <= rect.right;
@@ -148,6 +156,14 @@ function onClickDialog(event: MouseEvent) {
         if (!insideDialog) {
             hideModal(false);
         }
+    }
+}
+
+function onCancel(event: Event) {
+    // The native <dialog> fires "cancel" on Escape; prevent dismissal while
+    // cancel actions are disabled (e.g. during an in-flight submit).
+    if (props.cancelDisabled) {
+        event.preventDefault();
     }
 }
 
@@ -200,7 +216,13 @@ defineExpose({ showModal, hideModal });
 
                 <slot name="header"></slot>
 
-                <GButton icon-only class="g-modal-close-button" transparent size="large" @click="hideModal(false)">
+                <GButton
+                    icon-only
+                    class="g-modal-close-button"
+                    transparent
+                    size="large"
+                    :disabled="cancelDisabled"
+                    @click="hideModal(false)">
                     <FontAwesomeIcon fixed-width :icon="faXmark" />
                 </GButton>
             </header>
@@ -215,7 +237,9 @@ defineExpose({ showModal, hideModal });
                 </div>
 
                 <div v-if="props.confirm" class="g-modal-confirm-buttons">
-                    <GButton @click="hideModal(false)"> {{ props.cancelText ?? "Cancel" }} </GButton>
+                    <GButton :disabled="cancelDisabled" @click="hideModal(false)">
+                        {{ props.cancelText ?? "Cancel" }}
+                    </GButton>
                     <GButton
                         :disabled="okDisabled"
                         :disabled-title="okDisabledTitle"
