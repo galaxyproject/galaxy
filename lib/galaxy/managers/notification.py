@@ -788,9 +788,9 @@ class NotificationContext(BaseModel):
     user_email: str
     date: str
     hostname: str
-    contact_email: Optional[str] = None
+    contact_email: str | None = None
     variant: str
-    notification_settings_url: Optional[str] = None
+    notification_settings_url: str | None = None
     content: AnyNotificationContent
     workflow_name: str | None = None
     galaxy_url: str | None = None
@@ -917,7 +917,7 @@ class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplate
 
 
 class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
-    _workflow_name: Union[Optional[str], _Unset] = _UNSET
+    _workflow_name: str | None | _Unset = _UNSET
     # Tool request fields are raw user input; escape them in the HTML body.
     autoescape_html = True
 
@@ -957,7 +957,7 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
         workflow_name = self._get_workflow_name(content.workflow_id)
         return context.model_copy(update={"workflow_name": workflow_name})
 
-    def _get_workflow_name(self, workflow_id: Optional[str]) -> Optional[str]:
+    def _get_workflow_name(self, workflow_id: str | None) -> str | None:
         # Resolved once per builder; send() renders both TXT and HTML bodies,
         # so caching avoids a duplicate StoredWorkflow lookup.
         if self._workflow_name is not _UNSET:
@@ -965,7 +965,7 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
         self._workflow_name = self._resolve_workflow_name(workflow_id)
         return self._workflow_name  # type: ignore[return-value]
 
-    def _resolve_workflow_name(self, workflow_id: Optional[str]) -> Optional[str]:
+    def _resolve_workflow_name(self, workflow_id: str | None) -> str | None:
         if not workflow_id:
             return None
         try:

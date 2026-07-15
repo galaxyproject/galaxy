@@ -58,8 +58,8 @@ class NotificationService(ServiceBase):
         self,
         notification_manager: NotificationManager,
         sse_manager: SSEConnectionManager,
-        user_manager: Optional[UserManager] = None,
-        config: Optional[GalaxyAppConfiguration] = None,
+        user_manager: UserManager | None = None,
+        config: GalaxyAppConfiguration | None = None,
     ):
         self.notification_manager = notification_manager
         self.sse_manager = sse_manager
@@ -103,7 +103,7 @@ class NotificationService(ServiceBase):
         self,
         sender_context: ProvidesUserContext,
         payload: NotificationCreateRequestBody,
-        galaxy_url: Optional[str],
+        galaxy_url: str | None,
     ) -> NotificationCreateRequest:
         """Validate and rewrite a user notification submission.
 
