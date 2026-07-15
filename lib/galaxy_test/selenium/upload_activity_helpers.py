@@ -160,7 +160,7 @@ class _UploadStaging:
     """Shared base for upload staging state and row/item helpers.
 
     Common state and helpers used by both UploadContext (panel) and
-    UploadMethodModalContext (modal).  Subclasses provide the button
+    UploadMethodInlineContext (inline).  Subclasses provide the button
     group via _button_group and may override _pre_start for
     start-specific hooks.
     """
@@ -595,16 +595,68 @@ class UploadContext(_UploadStaging):
         return self.components.upload_activity.paste_links_row_deferred_label(row=row)
 
 
-class UploadMethodModalContext(_UploadStaging):
-    """Modal upload context for workflow form inputs."""
+class UploadMethodInlineContext(_UploadStaging):
+    """Inline upload context for workflow form inputs."""
 
-    def __init__(self, method_id: UploadMethodId, driver_wrapper: NavigatesGalaxyMixin):
+    def __init__(self, method_id: UploadMethodId, driver_wrapper: NavigatesGalaxyMixin, label: str | None = None):
+        self._label = label
         super().__init__(driver_wrapper)
         self._select_method(method_id)
 
     @property
     def _button_group(self):
-        return self.components.upload_method_modal
+        return self.components.upload_method_inline
+
+    def _scoped_selector(self, child_selector: str) -> str:
+        """Build a CSS selector scoped to the workflow input's data-label."""
+        if self._label:
+            return f'[data-label="{self._label}"] .upload-method-inline-content {child_selector}'
+        return f".upload-method-inline-content {child_selector}"
+
+    def _click_visible_element_with_selector(self, child_selector: str) -> None:
+        """Find and click an element matching child_selector within the visible inline content.
+
+        For collection inputs there may be multiple .upload-method-inline-content elements
+        (one in .form-data and one in .tab-pane.active). This finds the one that is
+        displayed and clicks the matching child within it.
+
+        Falls back to selector-based lookup when no label is set.
+        """
+        if self._label is None:
+            selector = self._scoped_selector(child_selector)
+            self.driver_wrapper.wait_for_selector_clickable(selector)
+            self.driver_wrapper.click_selector(selector)
+            return
+
+        container = self.driver_wrapper.find_element_by_selector(f'[data-label="{self._label}"]')
+        contents = container.find_elements("css selector", ".upload-method-inline-content")
+        if not contents:
+            raise AssertionError(f"No inline upload content found for label '{self._label}'")
+
+        # Pick the displayed one; fall back to first if none are displayed.
+        target = next((el for el in contents if el.is_displayed()), contents[0])
+
+        try:
+            element = target.find_element("css selector", child_selector)
+        except Exception:
+            raise AssertionError(
+                f"Could not find '{child_selector}' in visible inline content for label '{self._label}'"
+            )
+
+        element.click()
+
+    def _select_method(self, method_id: UploadMethodId) -> None:
+        if self._current_method_id == method_id:
+            return
+        self._click_visible_element_with_selector(f'[data-method-id="{method_id}"]')
+        self._current_method_id = method_id
+
+    def start(self) -> None:
+        self._pre_start()
+        self._click_visible_element_with_selector('[data-test-id="upload-method-inline-start"]')
+
+    def cancel(self) -> None:
+        self._click_visible_element_with_selector('[data-test-id="upload-method-inline-cancel"]')
 
 
 # Mode-specific context classes that provide restricted APIs
@@ -915,5 +967,12 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
             self._active_rule_import_context = context
         return context
 
-    def upload_via_modal(self, method_id: UploadMethodId) -> UploadMethodModalContext:
-        return UploadMethodModalContext(method_id, self)
+    def upload_inline(self, method_id: UploadMethodId, label: str | None = None) -> UploadMethodInlineContext:
+        """Upload context for inline upload methods (used in workflow form inputs).
+
+        Args:
+            method_id: The upload method to use (e.g., "paste-content").
+            label: Optional workflow input label to scope the inline upload to.
+                Required when multiple inputs have visible inline upload views.
+        """
+        return UploadMethodInlineContext(method_id, self, label=label)
