@@ -100,7 +100,9 @@ from .state import (
 from .visitor import (
     flat_state_path,
     keys_starting_with,
+    NATIVE_BOOKKEEPING_KEYS,
     repeat_inputs_to_array,
+    strip_undeclared_keys,
     validate_explicit_conditional_test_value,
     visit_input_values,
     VISITOR_NO_REPLACEMENT,
@@ -183,6 +185,8 @@ __all__ = (
     "keys_starting_with",
     "visit_input_values",
     "repeat_inputs_to_array",
+    "strip_undeclared_keys",
+    "NATIVE_BOOKKEEPING_KEYS",
     "VISITOR_NO_REPLACEMENT",
     "decode",
     "encode",
