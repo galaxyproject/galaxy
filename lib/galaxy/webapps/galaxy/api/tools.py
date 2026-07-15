@@ -809,12 +809,13 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             force_rebuild:           If true and cache dir exists, attempts to delete cache dir
         """
         tool = self.service._get_tool(trans, id, user=trans.user)
-        tool._view.install_dependencies(tool.requirements, **kwds)
+        materialized = trans.app.toolbox.materialize_tool(tool, reason="dependency")
+        materialized._view.install_dependencies(materialized.requirements, **kwds)
         if kwds.get("build_dependency_cache"):
-            tool.build_dependency_cache(**kwds)
+            materialized.build_dependency_cache(**kwds)
         # TODO: rework resolver install system to log and report what has been done.
         # _view.install_dependencies should return a dict with stdout, stderr and success status
-        return tool.tool_requirements_status
+        return materialized.tool_requirements_status
 
     @web.require_admin
     @expose_api
@@ -834,9 +835,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             resolver_type: Use the dependency resolver of this resolver_type to install dependency
         """
         tool = self.service._get_tool(trans, id, user=trans.user)
-        tool._view.uninstall_dependencies(requirements=tool.requirements, **kwds)
+        materialized = trans.app.toolbox.materialize_tool(tool, reason="dependency")
+        materialized._view.uninstall_dependencies(requirements=materialized.requirements, **kwds)
         # TODO: rework resolver install system to log and report what has been done.
-        return tool.tool_requirements_status
+        return materialized.tool_requirements_status
 
     @web.require_admin
     @expose_api

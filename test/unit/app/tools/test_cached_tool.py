@@ -1,4 +1,7 @@
 import logging
+import threading
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from datetime import (
     datetime,
     timezone,
@@ -7,6 +10,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from cachetools import LRUCache
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
@@ -15,6 +19,8 @@ from galaxy.tool_util.toolbox.panel import ToolPanelElements
 from galaxy.tools.cached_toolbox import (
     CachedTool,
     CachedToolBox,
+    MaterializationReason,
+    ToolMaterializationError,
 )
 from galaxy.tools.source_store import StoredToolSource
 from galaxy.tools.source_store.index import (
@@ -45,7 +51,7 @@ def _entry(**overrides):
 def _stub(entry=None, materialize=None, is_admin=None):
     if materialize is None:
 
-        def materialize(_e):  # noqa: E306
+        def materialize(_e, _reason):  # noqa: E306
             raise AssertionError(f"unexpected materialise for {_e.id!r}")
 
     return CachedTool(
@@ -78,7 +84,7 @@ def test_overrides_shadow_entry_and_survive_materialise():
         labels = ()
         tool_shed = None
 
-    def materialise(_e):
+    def materialise(_e, _reason):
         materialised.append(_e.id)
         return _Real()
 
@@ -117,7 +123,7 @@ def test_old_id_short_circuits_for_shed_ids():
 
 
 def test_to_panel_entry_does_not_materialise():
-    def boom(_e):
+    def boom(_e, _reason):
         raise AssertionError(f"unexpected materialise for {_e.id!r}")
 
     t = CachedTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
@@ -128,13 +134,32 @@ def test_to_panel_entry_does_not_materialise():
 
 
 def test_tool_tags_answered_without_materialise():
-    def boom(_e):
+    def boom(_e, _reason):
         raise AssertionError(f"unexpected materialise for {_e.id!r}")
 
     t = CachedTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
     assert isinstance(t.tool_tags, list)
     t.tool_tags = ["curated"]
     assert t.tool_tags == ["curated"]
+
+
+def test_dependency_metadata_does_not_materialise():
+    entry = _entry(
+        requirements=[
+            {"name": "samtools", "version": "1.20", "type": "package"},
+            {"name": "REF_PATH", "type": "set_environment"},
+        ],
+        container_requirements=[{"identifier": "quay.io/biocontainers/samtools:1.20", "type": "docker"}],
+        profile=21.09,
+        produces_real_jobs=False,
+    )
+    tool = _stub(entry)
+
+    assert [requirement.name for requirement in tool.tool_requirements] == ["samtools"]
+    assert [requirement.name for requirement in tool.requirements] == ["samtools", "REF_PATH"]
+    assert tool.containers[0].identifier == "quay.io/biocontainers/samtools:1.20"
+    assert tool.requires_galaxy_python_environment is False
+    assert tool.produces_real_jobs is False
 
 
 def test_to_panel_entry_carries_client_contract_fields():
@@ -177,22 +202,24 @@ def test_to_dict_materialises():
             calls.append(("real-to_dict", kw.get("io_details")))
             return {"id": "real"}
 
-    def mat(_e):
+    real = _Real()
+
+    def mat(_e, reason):
+        assert reason is MaterializationReason.DETAIL
         calls.append("mat")
-        return _Real()
+        return real
 
     t = CachedTool(_entry(), materialize_callback=mat, is_admin_user=lambda u: False)
     assert t.to_dict(trans=None, io_details=True) == {"id": "real"}
-    # Second call reuses cached ``_real``.
     assert t.to_dict(trans=None, io_details=True) == {"id": "real"}
-    assert calls == ["mat", ("real-to_dict", True), ("real-to_dict", True)]
+    assert calls == ["mat", ("real-to_dict", True), "mat", ("real-to_dict", True)]
 
 
 def test_to_dict_falls_back_to_entry_when_materialise_fails():
     # If a tool can't materialise (e.g. ``upload_dataset`` parameter factory
     # failure) the show endpoint still gets the entry-shape dict.
-    def boom(_e):
-        raise RuntimeError("materialise failed")
+    def boom(_e, _reason):
+        raise ToolMaterializationError(_e.id, "materialise failed")
 
     t = CachedTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
     d = t.to_dict(trans=None, io_details=True)
@@ -230,11 +257,7 @@ def test_allow_user_access_allows_admin_for_data_manager():
     assert t.allow_user_access(user=_U()) is True
 
 
-def test_strict_getattr_raises_with_clear_message(monkeypatch):
-    # Strict mode is opt-in via CACHED_TOOL_STRICT=1; permissive (materialise
-    # on unknown attr with WARN) is the default. Flip the module-level flag
-    # for this test so the strict path fires.
-    monkeypatch.setattr(mod, "_CACHED_TOOL_PERMISSIVE", False)
+def test_strict_getattr_raises_with_clear_message():
     t = _stub()
     with pytest.raises(NotImplementedError) as ei:
         _ = t.totally_not_a_tool_attr
@@ -248,24 +271,33 @@ def test_underscore_attrs_surface_as_attribute_error():
         _ = t.__some_dunder_thing__
 
 
-def test_materialize_ok_set_forwards_to_real_tool(caplog):
+def test_classified_attribute_forwards_to_real_tool():
     class _Real:
         to_archive = "archive-payload"
 
-    t = CachedTool(_entry(), materialize_callback=lambda _e: _Real(), is_admin_user=lambda u: False)
+    reasons = []
+    t = CachedTool(
+        _entry(),
+        materialize_callback=lambda _e, reason: reasons.append(reason) or _Real(),
+        is_admin_user=lambda u: False,
+    )
     assert t.to_archive == "archive-payload"
+    assert reasons == [MaterializationReason.PACKAGING]
 
 
-def test_permissive_flag_warns_and_materialises(monkeypatch, caplog):
-    monkeypatch.setattr(mod, "_CACHED_TOOL_PERMISSIVE", True)
-
+def test_permissive_flag_warns_and_materialises(caplog):
     class _Real:
         weird_attr = "warm"
 
-    t = _stub(materialize=lambda _e: _Real())
+    t = CachedTool(
+        _entry(),
+        materialize_callback=lambda _e, _reason: _Real(),
+        is_admin_user=lambda u: False,
+        permissive=True,
+    )
     caplog.set_level(logging.WARNING, logger="galaxy.tools.cached_toolbox")
     assert t.weird_attr == "warm"
-    assert any("CACHED_TOOL_STRICT" in rec.getMessage() for rec in caplog.records)
+    assert any("compatibility materialization" in rec.getMessage() for rec in caplog.records)
 
 
 def test_lineage_slot_settable_and_readable():
@@ -294,12 +326,15 @@ def test_config_file_reflects_entry_source_path():
 
 def _seam_box():
     box = CachedToolBox.__new__(CachedToolBox)
+    box._cached_tools = {}
+    box._permissive_materialization = False
     box._tool_index = ToolIndex()
     box._store = MagicMock()
     box._store.get_by_source_path.return_value = None
     box._shed_short_id_to_guids = {}
     box.app = MagicMock()
     box.app.config.is_admin_user = lambda u: False
+    box.app.config.preserve_python_environment = "legacy_only"
     return box
 
 
@@ -499,8 +534,6 @@ def test_add_tool_to_cache_is_noop():
 def _registry_box():
     """A ``_seam_box`` with real registries + panel so the registration and
     removal bookkeeping paths run against genuine data structures."""
-    import threading
-
     box = _seam_box()
     box._tools_by_id = {}
     box._tool_versions_by_id = {}
@@ -516,7 +549,8 @@ def _registry_box():
     box._tool_edam_topics = None
     box.data_manager_tools = {}
     box._cache_lock = threading.RLock()
-    box._tool_object_cache = {}
+    box._materialization_locks = tuple(threading.Lock() for _ in range(4))
+    box._tool_object_cache = LRUCache(maxsize=10)
     return box
 
 
@@ -645,22 +679,18 @@ def test_get_tool_short_id_missing_version_honors_exact():
     guid = "toolshed.example.com/repos/owner/repo/cat/1.0"
     box._tool_index.add_entry(_entry(id=guid, version="1.0"))
     box._shed_short_id_to_guids = {"cat": {guid}}
-    default_tool = _stub(_entry(id=guid, version="1.0"))
-
-    def load(tool_id, tool_version=None):
-        if tool_id == guid and tool_version in (None, "1.0"):
-            return default_tool
-        return None
-
-    box._load_tool_on_demand = load
     assert box.get_tool("cat", tool_version="9.9", exact=True) is None
-    assert box.get_tool("cat", tool_version="9.9", exact=False) is default_tool
+    default_tool = box.get_tool("cat", tool_version="9.9", exact=False)
+    assert isinstance(default_tool, CachedTool)
+    assert default_tool.id == guid
 
 
 def _materialising_box(source_hash):
     box = _registry_box()
     box._guid_sibling_versions_cache = None
-    box._tool_index.add_entry(_entry(id="tool1", version="1.0", source_hash=source_hash, source_path="/t/tool1.xml"))
+    entry = _entry(id="tool1", version="1.0", source_hash=source_hash, source_path="/t/tool1.xml")
+    box._tool_index.add_entry(entry)
+    box._register_cached_entry(entry)
     holder = {"hash": source_hash}
     box._store.get_by_source_path.side_effect = lambda path: StoredToolSource(
         hash=holder["hash"],
@@ -687,8 +717,9 @@ def _materialising_box(source_hash):
 
 def test_invalidate_index_cache_refreshes_materialised_tool_on_content_change():
     box, holder = _materialising_box("hash_v1")
-    original = box.get_tool("tool1")
-    assert box._tools_by_id["tool1"] is original
+    proxy = box.get_tool("tool1")
+    assert box._tools_by_id["tool1"] is proxy
+    original = box.materialize_tool(proxy)
 
     holder["hash"] = "hash_v2"
     reloaded = ToolIndex()
@@ -697,24 +728,91 @@ def test_invalidate_index_cache_refreshes_materialised_tool_on_content_change():
     box.invalidate_index_cache()
 
     refreshed = box.get_tool("tool1")
-    assert refreshed is not original
+    assert refreshed is proxy
     assert refreshed._entry.source_hash == "hash_v2"
     assert not any(cached is original for cached in box._tool_object_cache.values())
-    assert all(
-        getattr(t, "id", None) != "tool1" or isinstance(t, CachedTool) for b in box._tools_by_old_id.values() for t in b
-    )
+    assert box.materialize_tool(refreshed) is not original
 
 
 def test_invalidate_index_cache_keeps_materialised_tool_when_content_unchanged():
     box, _holder = _materialising_box("hash_v1")
-    original = box.get_tool("tool1")
+    proxy = box.get_tool("tool1")
+    original = box.materialize_tool(proxy)
 
     reloaded = ToolIndex()
     reloaded.add_entry(_entry(id="tool1", version="1.0", source_hash="hash_v1", source_path="/t/tool1.xml"))
     box._store.load_index.return_value = reloaded
     box.invalidate_index_cache()
 
-    assert box.get_tool("tool1") is original
+    assert box.get_tool("tool1") is proxy
+    assert box.materialize_tool(proxy) is original
+
+
+def test_materialized_tools_are_owned_only_by_bounded_lru():
+    box = _registry_box()
+    box._tool_object_cache = LRUCache(maxsize=1)
+    entries = {
+        tool_id: _entry(id=tool_id, version="1.0", source_hash=f"hash_{tool_id}", source_path=f"/t/{tool_id}.xml")
+        for tool_id in ("one", "two")
+    }
+    for entry in entries.values():
+        box._tool_index.add_entry(entry)
+        box._register_cached_entry(entry)
+
+    box._store.get_by_source_path.side_effect = lambda path: StoredToolSource(
+        hash=f"hash_{path.removeprefix('/t/').removesuffix('.xml')}",
+        tool_source_class="XmlToolSource",
+        raw_source="<tool/>",
+        source_path=path,
+    )
+    parses = Counter()
+
+    class RealTool:
+        pass
+
+    def create(_stored, entry=None):
+        parses[entry.id] += 1
+        return RealTool()
+
+    box._create_tool_from_stored_source = create
+    proxies = {tool_id: box.get_tool(tool_id) for tool_id in entries}
+    box.materialize_tool(proxies["one"])
+    box.materialize_tool(proxies["two"])
+
+    assert len(box._tool_object_cache) == 1
+    assert box.get_tool("one") is proxies["one"]
+    box.materialize_tool(proxies["one"])
+    assert parses == Counter(one=2, two=1)
+
+
+def test_materialization_is_single_flight_per_tool():
+    box, _holder = _materialising_box("hash_v1")
+    proxy = box.get_tool("tool1")
+    workers = 8
+    ready = threading.Barrier(workers + 1)
+    parses = 0
+
+    class RealTool:
+        pass
+
+    def create(_stored, entry=None):
+        nonlocal parses
+        parses += 1
+        return RealTool()
+
+    box._create_tool_from_stored_source = create
+
+    def materialize():
+        ready.wait()
+        return box.materialize_tool(proxy, reason="execution")
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(materialize) for _ in range(workers)]
+        ready.wait()
+        results = [future.result() for future in futures]
+
+    assert parses == 1
+    assert all(result is results[0] for result in results)
 
 
 def test_fast_path_places_hidden_entry_in_integrated_panel_only():

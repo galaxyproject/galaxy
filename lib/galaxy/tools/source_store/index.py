@@ -64,6 +64,7 @@ class ToolIndexEntry(BaseModel):
     # === Filter metadata ===
     # Tool subclass key used by filters and access checks.
     tool_type: str = "default"
+    profile: float = 16.01
     # Stamped during converter discovery; type alone does not identify converters.
     is_datatype_converter: bool = False
     # User-facing ``<tool>`` config tags, distinct from labels.
@@ -79,6 +80,7 @@ class ToolIndexEntry(BaseModel):
 
     # === Container Info (for container resolution endpoints) ===
     container_requirements: list[dict[str, Any]] = Field(default_factory=list)
+    produces_real_jobs: bool = True
 
     # === Tool Shed Info (for sanitize_allow, shed endpoints) ===
     tool_shed: str | None = None  # e.g., "toolshed.g2.bx.psu.edu"

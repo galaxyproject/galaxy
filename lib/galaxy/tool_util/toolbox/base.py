@@ -1628,6 +1628,10 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 rval.append(self.get_tool_to_dict(trans, tool, tool_help=tool_help))
         return rval
 
+    def materialize_tool(self, tool: "Tool", reason: str = "explicit") -> "Tool":
+        """Return a fully parsed tool; eager toolboxes already hold one."""
+        return tool
+
     def to_panel_view(self, trans: "PanelViewTrans", view="default_panel_view", **kwds):
         """
         Create a panel view representation of the toolbox.

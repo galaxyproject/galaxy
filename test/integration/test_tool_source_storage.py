@@ -371,15 +371,8 @@ class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
     # --- Materialisation budget ---------------------------------------------
 
     def test_batch_endpoints_do_not_materialise_tools(self):
-        # The whole point of CachedToolBox is that batch/read endpoints answer
-        # from the pre-computed index without parsing tools. A regression that
-        # sneaks a full-toolbox sweep touching an off-surface (or
-        # _MATERIALIZE_OK) attribute would silently degrade these to O(N)
-        # parses; under the permissive default it only logs a WARN, so CI
-        # wouldn't catch it. Assert a zero materialise-count delta across the
-        # batch surface instead. CACHED_TOOL_STRICT covers off-surface reads;
-        # this also covers the ones strict can't (a filter that parses, an
-        # _MATERIALIZE_OK attr read in a loop).
+        # Batch readers must stay on indexed metadata rather than parse the
+        # entire toolbox.
         toolbox = self._app.toolbox
         # This class self-enables cached-toolbox mode; assert it (and narrow the type so
         # mypy accepts the cached-toolbox-only _cached_materialize_count counter).

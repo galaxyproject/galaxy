@@ -10,11 +10,14 @@ import errno
 import logging
 import os
 import threading
+from collections.abc import Callable
+from enum import Enum
 from typing import (
     Any,
     Literal,
     Optional,
     overload,
+    Protocol,
     TYPE_CHECKING,
 )
 from uuid import UUID
@@ -26,6 +29,10 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
+from galaxy.tool_util.deps.requirements import (
+    ContainerDescription,
+    ToolRequirements,
+)
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.base import (
     resolve_tool_path,
@@ -61,6 +68,9 @@ from galaxy.util.tool_version import (
 )
 from . import (
     create_tool_from_source,
+    DataManagerTool,
+    parse_tool_version_for_comparison,
+    tool_requires_galaxy_python_environment,
     ToolBox,
 )
 
@@ -72,7 +82,37 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-_CACHED_TOOL_PERMISSIVE = os.environ.get("CACHED_TOOL_STRICT") != "1"
+class MaterializationReason(str, Enum):
+    EXPLICIT = "explicit"
+    COMPATIBILITY = "compatibility"
+    DETAIL = "detail"
+    DEPENDENCY = "dependency"
+    EXECUTION = "execution"
+    JOB_SETUP = "job_setup"
+    PACKAGING = "packaging"
+    SERIALIZATION = "serialization"
+    TESTS = "tests"
+    VALIDATION = "validation"
+
+
+class ToolMaterializationError(RuntimeError):
+    """A stored tool could not be promoted to a real ``Tool``."""
+
+    def __init__(self, tool_id: str, message: str) -> None:
+        super().__init__(f"Failed to materialize tool {tool_id!r}: {message}")
+        self.tool_id = tool_id
+
+
+class ToolLike(Protocol):
+    """Metadata surface shared by real and cached tools."""
+
+    id: str
+    version: str | None
+
+    def allow_user_access(self, user, attempting_access: bool = True) -> bool: ...
+
+
+MaterializeCallback = Callable[["ToolIndexEntry", MaterializationReason], "Tool"]
 
 
 def _entry_attr(name: str, entry_attr: str | None = None, mutable: bool = False):
@@ -103,59 +143,60 @@ class CachedTool:
     """Lightweight stand-in for ``galaxy.tools.Tool`` backed by a ``ToolIndexEntry``.
 
     It forwards indexed attributes and reapplies pipeline mutations after
-    materialisation. Unknown attributes materialise by default; setting
-    ``CACHED_TOOL_STRICT=1`` raises :class:`NotImplementedError` instead.
+    materialisation. Unknown attributes raise unless compatibility mode was
+    explicitly enabled for the toolbox.
     """
 
-    __slots__ = ("_entry", "_materialize_cb", "_is_admin_user", "_overrides", "_real", "_lineage")
+    __slots__ = (
+        "_containers",
+        "_entry",
+        "_is_admin_user",
+        "_lineage",
+        "_materialize_cb",
+        "_overrides",
+        "_permissive",
+        "_preserve_python_environment",
+        "_requirements",
+    )
 
     # Cached sources are content-addressed, so file watching is a no-op.
     _macro_paths: tuple = ()
 
-    # Reads that require a parsed ``Tool``; keep this surface minimal.
-    _MATERIALIZE_OK = frozenset(
-        {
-            "to_archive",  # tool packaging endpoint
-            "build_dependency_cache",  # explicit cache-warming
-            "tool_requirements",  # container_resolvers/toolbox admin endpoint
-            "containers",  # container resolution
-            "requirements",  # alias used by some callers
-            # Execution and parameter handling.
-            "handle_input",
-            "inputs",
-            "parameters",
-            "new_state",
-            "input_translator",
-            "check_and_update_param_values",  # validation called from handle_input
-            "wants_params_cleaned",  # parameter scrub before execution
-            "tool_source",  # raw ToolSource; some callers walk it directly
-            "dynamic_tool",  # dynamic-tool linkage on execution
-            "produces_entry_points",  # interactive tool entry points
-            "execute",  # actual tool execute method
-            "expand_incoming",  # parameter expansion for multi-run/map
-            "params_to_strings",  # parameter serialisation
-            "tool_action",  # execution action dispatch
-            "tool_dir",  # on-disk tool directory accessor
-            "completed_jobs",  # job-search via tool
-            "get_default_history_by_trans",  # default-history lookup on execute
-            "regenerate_imported_metadata_if_needed",  # import/export path
-            "outputs",  # output spec read by execute / display
-            "tests",  # tool test definitions read by /api/tools tests endpoints
-            "to_json",  # tool JSON serialisation
-            "tool_requirements_status",  # /api/tools requirements_status
-            "provided_metadata_file",  # job-runner metadata path
-            "test_data_path",  # tool test data lookup
-            "get_configured_job_handler",  # job-runner handler routing
-            # Job runner setup.
-            "requires_galaxy_python_environment",
-            "build_dependency_shell_commands",
-            # Data-manager and index-file validation.
-            "params_with_missing_data_table_entry",
-            "params_with_missing_index_file",
-            # Dependency-management view.
-            "_view",
-        }
-    )
+    # Compatibility attributes that still require a parsed ``Tool``. New code
+    # should call ``toolbox.materialize_tool`` with an explicit reason.
+    _MATERIALIZE_REASONS = {
+        "to_archive": MaterializationReason.PACKAGING,
+        "build_dependency_cache": MaterializationReason.DEPENDENCY,
+        "handle_input": MaterializationReason.EXECUTION,
+        "inputs": MaterializationReason.EXECUTION,
+        "parameters": MaterializationReason.EXECUTION,
+        "new_state": MaterializationReason.EXECUTION,
+        "input_translator": MaterializationReason.EXECUTION,
+        "check_and_update_param_values": MaterializationReason.VALIDATION,
+        "wants_params_cleaned": MaterializationReason.EXECUTION,
+        "tool_source": MaterializationReason.SERIALIZATION,
+        "dynamic_tool": MaterializationReason.EXECUTION,
+        "produces_entry_points": MaterializationReason.EXECUTION,
+        "execute": MaterializationReason.EXECUTION,
+        "expand_incoming": MaterializationReason.EXECUTION,
+        "params_to_strings": MaterializationReason.EXECUTION,
+        "tool_action": MaterializationReason.EXECUTION,
+        "tool_dir": MaterializationReason.JOB_SETUP,
+        "completed_jobs": MaterializationReason.EXECUTION,
+        "get_default_history_by_trans": MaterializationReason.EXECUTION,
+        "regenerate_imported_metadata_if_needed": MaterializationReason.EXECUTION,
+        "outputs": MaterializationReason.EXECUTION,
+        "output_collections": MaterializationReason.EXECUTION,
+        "tests": MaterializationReason.TESTS,
+        "to_json": MaterializationReason.SERIALIZATION,
+        "tool_requirements_status": MaterializationReason.DEPENDENCY,
+        "provided_metadata_file": MaterializationReason.JOB_SETUP,
+        "test_data_path": MaterializationReason.TESTS,
+        "get_configured_job_handler": MaterializationReason.JOB_SETUP,
+        "build_dependency_shell_commands": MaterializationReason.JOB_SETUP,
+        "params_with_missing_data_table_entry": MaterializationReason.VALIDATION,
+        "params_with_missing_index_file": MaterializationReason.VALIDATION,
+    }
 
     # --- forwarded read-only entry surface ---
     id = _entry_attr("id")
@@ -186,14 +227,30 @@ class CachedTool:
         mutable=True,
     )
 
-    def __init__(self, entry: "ToolIndexEntry", materialize_callback, is_admin_user) -> None:
+    def __init__(
+        self,
+        entry: "ToolIndexEntry",
+        materialize_callback: MaterializeCallback,
+        is_admin_user,
+        *,
+        permissive: bool = False,
+        preserve_python_environment: str = "legacy_only",
+    ) -> None:
         self._entry = entry
         self._materialize_cb = materialize_callback
         self._is_admin_user = is_admin_user
+        self._permissive = permissive
+        self._preserve_python_environment = preserve_python_environment
         self._overrides: dict[str, Any] = {}
-        self._real: Tool | None = None
+        self._requirements: ToolRequirements | None = None
+        self._containers: list[ContainerDescription] | None = None
         # Assigned by AbstractToolBox.__add_tool via _lineage_map.register(tool).
         self._lineage: Any | None = None
+
+    def replace_entry(self, entry: "ToolIndexEntry") -> None:
+        self._entry = entry
+        self._requirements = None
+        self._containers = None
 
     # --- derived properties ---
     @property
@@ -260,19 +317,7 @@ class CachedTool:
 
     @property
     def version_object(self):
-        # Mirror ``Tool.version_object`` (lib/galaxy/tools/__init__.py:1213).
-        # ``to_panel_view`` walks ``_lineage_in_panel`` → ``_newer_tool`` which
-        # compares ``tool.version_object``; computing it off the entry's
-        # ``version`` string keeps the stub self-sufficient.
-        GALAXY_VERSION_SUFFIX = "+galaxy"
-        version = self._entry.version or ""
-        if GALAXY_VERSION_SUFFIX not in version:
-            return parse_version(version)
-        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
-        if suffix:
-            # PEP-440 numeric sort hint — keep the eager Tool's behaviour.
-            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
-        return parse_version(version)
+        return parse_tool_version_for_comparison(self._entry.version or "")
 
     @property
     def tool_shed_repository(self):
@@ -296,6 +341,41 @@ class CachedTool:
     def tool_errors(self, value):
         self._overrides["tool_errors"] = value
 
+    @property
+    def requirements(self) -> ToolRequirements:
+        if self._requirements is None:
+            self._requirements = ToolRequirements.from_list(self._entry.requirements)
+        return self._requirements
+
+    @property
+    def tool_requirements(self) -> ToolRequirements:
+        return self.requirements.packages
+
+    @property
+    def containers(self) -> list[ContainerDescription]:
+        if self._containers is None:
+            self._containers = [ContainerDescription.from_dict(container) for container in self._entry.container_requirements]
+        return self._containers
+
+    @property
+    def installed_tool_dependencies(self):
+        # Standalone population has no install-database session. This matches
+        # the ToolConfRepository used when a cached shed tool materializes.
+        return None
+
+    produces_real_jobs = _entry_attr("produces_real_jobs")
+
+    @property
+    def requires_galaxy_python_environment(self) -> bool:
+        return tool_requires_galaxy_python_environment(
+            tool_type=self.tool_type,
+            profile=self._entry.profile,
+            preserve_python_environment=self._preserve_python_environment,
+            tool_shed=self.tool_shed,
+            old_id=self.old_id,
+            version=self.version,
+        )
+
     # --- entry-only methods (no materialise) ---
     def allow_user_access(self, user, attempting_access: bool = True) -> bool:
         """Mirror of :meth:`Tool.allow_user_access` derived from index metadata.
@@ -309,7 +389,7 @@ class CachedTool:
         """
         if self.require_login and user is None:
             return False
-        if self.tool_type == "manage_data":
+        if self.tool_type == DataManagerTool.tool_type:
             if user is None or not bool(self._is_admin_user(user)):
                 if attempting_access:
                     log.debug(
@@ -367,66 +447,52 @@ class CachedTool:
         return payload
 
     def to_dict(self, trans=None, link_details: bool = False, tool_help: bool = False, **kw) -> dict[str, Any]:
-        """Materialise and delegate — ``/api/tools/{id}`` contract.
-
-        The show endpoint ships ``xrefs`` / ``versions`` /
-        ``is_workflow_compatible`` / ``tool_shed_repository`` / ``inputs``
-        / ``outputs`` even with ``io_details=False``, so the parsed Tool
-        has to do the serialisation. The cheap panel-view path lives in
-        :meth:`to_panel_entry`; only ``to_dict`` materialises.
-
-        On materialise failure (tool XML the parameter factory can't
-        handle — ``upload_dataset``, ``column="value"`` against an
-        unresolvable column-name spec, …) fall back to the entry shape
-        so the caller still gets a renderable response; eager mode
-        catches the same in ``_load_tool_tag_set`` and drops the tool
-        from ``_tools_by_id``.
-        """
+        """Delegate detail serialization, falling back if the stored source cannot load."""
         try:
-            return self._materialize().to_dict(trans, link_details=link_details, tool_help=tool_help, **kw)
-        except Exception as e:
-            log.warning("CachedTool.to_dict: materialise failed for %s, falling back to entry: %s", self.id, e)
+            materialized = self.materialize(MaterializationReason.DETAIL)
+        except ToolMaterializationError:
+            log.exception("CachedTool.to_dict could not materialize %s; falling back to indexed metadata", self.id)
             return self.to_panel_entry(trans)
+        return materialized.to_dict(trans, link_details=link_details, tool_help=tool_help, **kw)
 
     # --- materialisation ---
-    def _materialize(self) -> "Tool":
-        if self._real is None:
-            real = self._materialize_cb(self._entry)
-            # Re-apply mutations the eager pipeline recorded against the stub
-            # before materialise (``hidden``, ``labels``, shed metadata, etc.).
+    def materialize(self, reason: MaterializationReason = MaterializationReason.EXPLICIT) -> "Tool":
+        real = self._materialize_cb(self._entry, reason)
+        try:
             for name, value in self._overrides.items():
-                try:
-                    setattr(real, name, value)
-                except Exception:
-                    log.debug("CachedTool._materialize could not re-apply override %r on %s", name, self.id)
+                setattr(real, name, value)
+            if self.hidden:
+                real.hidden = True
             if self._lineage is not None:
                 real._lineage = self._lineage
-            self._real = real
-        return self._real
+        except Exception as exc:
+            raise ToolMaterializationError(self.id, "could not apply cached metadata") from exc
+        return real
+
+    def _materialize(self) -> "Tool":
+        """Compatibility alias for callers being migrated to explicit reasons."""
+        return self.materialize()
 
     # --- strict fallthrough ---
     def __getattr__(self, name: str):
-        if name in self._MATERIALIZE_OK:
-            return getattr(self._materialize(), name)
+        if reason := self._MATERIALIZE_REASONS.get(name):
+            return getattr(self.materialize(reason), name)
         # Other private/dunder attrs are never materialise triggers — surface
         # as ``AttributeError`` so e.g. ``hasattr(tool, "__something__")``
         # stays cheap.
         if name.startswith("_"):
             raise AttributeError(name)
-        if _CACHED_TOOL_PERMISSIVE:
+        if self._permissive:
             log.warning(
-                "CachedTool.%r forced materialise of tool %r (CACHED_TOOL_STRICT unset); "
-                "add to the stub surface or _MATERIALIZE_OK to make this explicit.",
+                "CachedTool.%r forced compatibility materialization of tool %r; "
+                "add indexed metadata or an explicit materialization reason.",
                 name,
                 self.id,
             )
-            return getattr(self._materialize(), name)
+            return getattr(self.materialize(MaterializationReason.COMPATIBILITY), name)
         raise NotImplementedError(
             f"CachedTool.{name!r} is not on the stub surface for tool {self.id!r}. "
-            f"If this attribute can be read off ToolIndexEntry, add a forwarded "
-            f"property; if it genuinely needs a parsed Tool, add it to "
-            f"CachedTool._MATERIALIZE_OK. Unset CACHED_TOOL_STRICT to bypass "
-            f"this check while debugging."
+            "Add indexed metadata or materialize the tool explicitly."
         )
 
 
@@ -446,12 +512,16 @@ class CachedToolBox(ToolBox):
         app: "UniverseApplication",
         tool_source_store: ToolSourceStore | None,
         cache_size: int = 500,
+        permissive: bool = False,
         save_integrated_tool_panel: bool = True,
     ) -> None:
         # Needed by the overridden initialization invoked from ``super()``.
         self._store = tool_source_store
         self._tool_object_cache: LRUCache = LRUCache(maxsize=cache_size)
         self._cache_lock = threading.RLock()
+        self._materialization_locks = tuple(threading.Lock() for _ in range(64))
+        self._cached_tools: dict[tuple[str, str], CachedTool] = {}
+        self._permissive_materialization = permissive
         # Batch endpoints must not increment this test-visible counter.
         self._cached_materialize_count = 0
         self._tool_index: ToolIndex | None = None
@@ -854,7 +924,7 @@ class CachedToolBox(ToolBox):
         get_all_versions: Literal[False] = False,
         exact: bool | None = False,
         user: Optional["User"] = None,
-    ) -> Optional["Tool"]: ...
+    ) -> ToolLike | None: ...
 
     @overload
     def get_tool(
@@ -865,7 +935,7 @@ class CachedToolBox(ToolBox):
         get_all_versions: Literal[True] = True,
         exact: bool | None = False,
         user: Optional["User"] = None,
-    ) -> list["Tool"]: ...
+    ) -> list[ToolLike]: ...
 
     def get_tool(
         self,
@@ -875,7 +945,7 @@ class CachedToolBox(ToolBox):
         get_all_versions: bool | None = False,
         exact: bool | None = False,
         user: Optional["User"] = None,
-    ) -> Optional["Tool"] | list["Tool"]:
+    ) -> ToolLike | None | list[ToolLike]:
         """
         Get a tool, loading from store on-demand if needed.
 
@@ -909,10 +979,6 @@ class CachedToolBox(ToolBox):
         # Check if we have this tool in our index
         if self._tool_index and tool_id in self._tool_index.entries:
             if get_all_versions:
-                # Load every indexed version on demand. Callers (e.g. workflow
-                # refactor's ``upgrade_all_steps``) need every version to
-                # determine the latest; returning only the requested version
-                # makes upgrades silently no-op.
                 def _ver_key(v: str):
                     # ``galaxy.tool_util.version.parse_version`` matches what
                     # the eager ToolLineage uses to order versions and
@@ -927,45 +993,41 @@ class CachedToolBox(ToolBox):
                     self._tool_index.entries_by_version.get(tool_id, {}).keys(),
                     key=_ver_key,
                 )
-                tools: list[Tool] = []
+                tools: list[ToolLike] = []
                 for ver in versions:
-                    loaded = self._load_tool_on_demand(tool_id, ver or None)
-                    if loaded is not None:
-                        tools.append(loaded)
+                    entry = self._tool_index.get(tool_id, ver)
+                    if entry is not None:
+                        tools.append(self._cached_tool_for_entry(entry))
                 if tools:
                     return tools
             else:
-                tool = self._load_tool_on_demand(tool_id, tool_version)
-                if tool:
-                    return tool
+                entry = self._tool_index.get(tool_id, tool_version)
+                if entry is not None:
+                    return self._cached_tool_for_entry(entry)
                 # Match eager behavior: inexact version misses use the default
                 # tool so workflow safe-version migration can run; exact
                 # requests must still report the requested version missing.
                 if tool_version and not exact:
                     default_entry = self._tool_index.entries.get(tool_id)
                     if default_entry is not None:
-                        default_version = default_entry.version or None
-                        tool = self._load_tool_on_demand(tool_id, default_version)
-                        if tool:
-                            return tool
+                        return self._cached_tool_for_entry(default_entry)
 
         # Cached shed installs need their own short-id lookup and version sort.
         if self._tool_index and self._shed_short_id_to_guids and tool_id in self._shed_short_id_to_guids:
-            candidates: list[tuple[tuple[int, Any], Tool]] = []
+            candidates: list[tuple[tuple[int, Any], ToolLike]] = []
             for guid in sorted(self._shed_short_id_to_guids[tool_id]):
-                loaded = self._load_tool_on_demand(guid, tool_version)
-                if loaded is None and tool_version and not exact:
+                entry = self._tool_index.get(guid, tool_version)
+                if entry is None and tool_version and not exact:
                     # Inexact requests may use this guid's default version.
-                    default_entry = self._tool_index.entries.get(guid)
-                    if default_entry is not None:
-                        loaded = self._load_tool_on_demand(guid, default_entry.version or None)
-                if loaded is not None:
+                    entry = self._tool_index.entries.get(guid)
+                if entry is not None:
+                    cached = self._cached_tool_for_entry(entry)
                     ver_key: tuple[int, Any]
                     try:
-                        ver_key = (0, parse_version(loaded.version or "0"))
+                        ver_key = (0, parse_version(cached.version or "0"))
                     except Exception:
-                        ver_key = (1, loaded.version or "")
-                    candidates.append((ver_key, loaded))
+                        ver_key = (1, cached.version or "")
+                    candidates.append((ver_key, cached))
             if candidates:
                 candidates.sort(key=lambda pair: pair[0])
                 if get_all_versions:
@@ -994,7 +1056,7 @@ class CachedToolBox(ToolBox):
 
     # === create_tool seam: return CachedTool stub when the index already has the source ===
 
-    def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds) -> "Tool":
+    def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds) -> ToolLike:
         """Return a :class:`CachedTool` for every indexed tool source.
 
         The populator (cold-start in :meth:`_init_tools_from_configs`, shed
@@ -1054,14 +1116,26 @@ class CachedToolBox(ToolBox):
                     self._store.update_index_entry(entry)
                 except Exception as e:
                     log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
-        # CachedTool is duck-typed against Tool — the eager pipeline only
-        # consults attributes the stub forwards from ToolIndexEntry, with
-        # mutations stored on ``_overrides``.
-        return CachedTool(  # type: ignore[return-value]
+        return self._cached_tool_for_entry(entry)
+
+    def _cached_tool_for_entry(self, entry: ToolIndexEntry) -> CachedTool:
+        key = (entry.id, entry.version or "")
+        cached = self._cached_tools.get(key)
+        if cached is not None:
+            if cached._entry is not entry:
+                cached.replace_entry(entry)
+            return cached
+        cached = CachedTool(
             entry,
             materialize_callback=self._materialize_for_cached_tool,
             is_admin_user=self.app.config.is_admin_user,
+            permissive=self._permissive_materialization,
+            preserve_python_environment=self.app.config.preserve_python_environment,
         )
+        if hasattr(self, "_lineage_map"):
+            cached._lineage = self._lineage_map.get(entry.id) or self._lineage_map.register(cached)  # type: ignore[arg-type]
+        self._cached_tools[key] = cached
+        return cached
 
     def load_tool_from_cache(self, config_file, recover_tool: bool = False):
         """Skip Galaxy's disk-backed ``ToolCache``.
@@ -1188,24 +1262,17 @@ class CachedToolBox(ToolBox):
         # fallthrough parse and ``_persist_tool_source`` write it.
         return None
 
-    def _materialize_for_cached_tool(self, entry: ToolIndexEntry) -> "Tool":
-        """Promote a stub to a real ``Tool`` via the existing store-backed loader.
+    def _materialize_for_cached_tool(self, entry: ToolIndexEntry, reason: MaterializationReason) -> "Tool":
+        if self._tool_index is not None:
+            versions = self._tool_versions_by_id.setdefault(entry.id, {})
+            for version, sibling_entry in self._tool_index.entries_by_version.get(entry.id, {}).items():
+                versions[version] = self._cached_tool_for_entry(sibling_entry)  # type: ignore[assignment]
+        return self._load_tool_on_demand(entry, reason)
 
-        Routed through :meth:`_register_loaded_tool` so ``_tools_by_id`` /
-        ``_tool_versions_by_id`` / ``_tools_by_old_id`` / lineage all agree
-        with the eager toolbox bookkeeping.
-        """
-        if self._store is None:
-            raise RuntimeError(f"CachedTool materialise needs a tool source store (id={entry.id!r})")
-        stored = self._stored_source_for_entry(entry)
-        if stored is None:
-            raise RuntimeError(
-                "CachedTool materialise: indexed source missing from store "
-                f"(id={entry.id!r}, path={entry.source_path!r}, hash={entry.source_hash!r})"
-            )
-        tool = self._create_tool_from_stored_source(stored, entry=entry)
-        self._register_loaded_tool(tool)
-        return tool
+    def materialize_tool(self, tool: ToolLike, reason: str = "explicit") -> "Tool":
+        if isinstance(tool, CachedTool):
+            return tool.materialize(MaterializationReason(reason))
+        return tool  # type: ignore[return-value]
 
     def _stored_source_for_entry(self, entry: ToolIndexEntry) -> StoredToolSource | None:
         """Resolve path-specific source metadata without ambiguous hash lookup."""
@@ -1218,72 +1285,46 @@ class CachedToolBox(ToolBox):
             return None
         return stored
 
-    def _load_tool_on_demand(self, tool_id: str, tool_version: str | None = None) -> Optional["Tool"]:
-        """
-        Load a tool from the store on-demand.
-
-        Uses LRU cache to avoid reloading frequently used tools.
-        """
-        cache_key = f"{tool_id}:{tool_version or 'latest'}"
-
-        # Check cache first
+    def _load_tool_on_demand(self, entry: ToolIndexEntry, reason: MaterializationReason) -> "Tool":
+        """Return one materialized tool through the bounded, single-flight LRU."""
+        cache_key = (entry.id, entry.version or "", entry.source_hash)
         with self._cache_lock:
-            if cache_key in self._tool_object_cache:
-                return self._tool_object_cache[cache_key]
+            cached = self._tool_object_cache.get(cache_key)
+            if cached is not None:
+                return cached
 
-        # Check if already loaded in _tools_by_id — only safe when no specific
-        # version was requested. ``_tools_by_id`` keys by id and stores the
-        # latest-loaded version, so honoring ``tool_version`` requires going
-        # through the index to pick the right ``source_hash``.
-        if tool_version is None:
-            existing = self._tools_by_id.get(tool_id)
-            if existing is not None:
-                with self._cache_lock:
-                    self._tool_object_cache[cache_key] = existing
-                return existing
-
-        # Get entry from index
-        if self._tool_index is None or self._store is None:
-            return None
-
-        entry = self._tool_index.get(tool_id, tool_version)
-        if not entry:
-            return None
-
-        # Load source from store
-        stored = self._stored_source_for_entry(entry)
-        if not stored:
-            log.warning(
-                "Indexed tool source not found for %s (path: %s, hash: %s)",
-                tool_id,
-                entry.source_path,
-                entry.source_hash,
-            )
-            return None
-
-        # Create Tool object
-        try:
-            tool = self._create_tool_from_stored_source(stored, entry=entry)
-            log.debug(f"Loaded tool on demand: {tool_id}")
-        except Exception as e:
-            log.error(f"Error creating tool {tool_id}: {e}")
-            return None
-
-        # Register the tool
-        self._register_loaded_tool(tool)
-
-        # Add to cache
-        with self._cache_lock:
-            self._tool_object_cache[cache_key] = tool
-
-        return tool
+        materialization_lock = self._materialization_locks[hash(cache_key) % len(self._materialization_locks)]
+        with materialization_lock:
+            with self._cache_lock:
+                cached = self._tool_object_cache.get(cache_key)
+                if cached is not None:
+                    return cached
+            if self._store is None:
+                raise ToolMaterializationError(entry.id, "tool source store is unavailable")
+            try:
+                stored = self._stored_source_for_entry(entry)
+            except Exception as exc:
+                raise ToolMaterializationError(entry.id, "stored source lookup failed") from exc
+            if stored is None:
+                raise ToolMaterializationError(
+                    entry.id,
+                    f"indexed source is missing (path={entry.source_path!r}, hash={entry.source_hash!r})",
+                )
+            try:
+                tool = self._create_tool_from_stored_source(stored, entry=entry)
+            except Exception as exc:
+                raise ToolMaterializationError(entry.id, "stored source could not be parsed") from exc
+            log.debug("Materialized tool %s for %s", entry.id, reason.value)
+            with self._cache_lock:
+                current = self._tool_index and self._tool_index.get(entry.id, entry.version)
+                if current is not None and current.source_hash == entry.source_hash:
+                    self._tool_object_cache[cache_key] = tool
+            return tool
 
     def _create_tool_from_stored_source(self, stored: StoredToolSource, entry: ToolIndexEntry | None = None) -> "Tool":
         """Create a Tool object from stored source.
 
-        The single chokepoint for promoting a stub to a real ``Tool`` at
-        runtime — bump ``_cached_materialize_count`` here so the budget test
-        can assert batch endpoints don't materialise.
+        The single chokepoint for promoting a stub to a real ``Tool`` at runtime.
         """
         self._cached_materialize_count += 1
         tool_source = get_tool_source(
@@ -1390,12 +1431,6 @@ class CachedToolBox(ToolBox):
                     continue
                 if not any(v in old_hashes and old_hashes[v] != entry.source_hash for v, entry in versions.items()):
                     continue
-                existing: Any = self._tools_by_id.get(tool_id)
-                if isinstance(existing, CachedTool) and existing._real is None:
-                    # Never materialised: ``_register_new_index_entries_as_stubs``
-                    # already repointed the stub's ``_entry`` (the panel holds
-                    # the same object) and nothing heavyweight is cached.
-                    continue
                 default_entry = self._tool_index.entries.get(tool_id)
                 if default_entry is not None:
                     try:
@@ -1438,7 +1473,7 @@ class CachedToolBox(ToolBox):
                     # enriched entry (e.g. the conf-driven populate after a
                     # shed install adds repository metadata the install-time
                     # ad-hoc entry lacked). ``_overrides`` survive.
-                    existing._entry = entry
+                    existing.replace_entry(entry)
                 continue
             try:
                 self._register_cached_entry(entry)
@@ -1461,50 +1496,16 @@ class CachedToolBox(ToolBox):
         return result
 
     def _refresh_changed_entry(self, tool_id: str, entry: ToolIndexEntry) -> None:
-        """Replace all cached/materialised state for ``tool_id`` with a fresh stub.
-
-        Drops the LRU entries (:meth:`_purge_tool_object_cache`), the stale
-        per-version registrations and old-id bucket members, then re-stubs
-        from ``entry`` so the next access re-materialises from the edited
-        source. Panel slots are repointed to the fresh stub in place, which
-        preserves both the section position and the hidden projection (a
-        hidden tool lives only in the integrated panel, so the live panel's
-        ``replace_tool_for_id`` is a no-op for it).
-        """
+        """Evict parsed state and update the stable proxy for ``tool_id``."""
         self._purge_tool_object_cache(tool_id)
-        # Scrub the materialised Tool (or superseded stub) for this id from
-        # the old-id buckets so the identity-dedup in ``_register_cached_entry``
-        # doesn't leave a stale sibling behind (mirrors the bucket scrub in
-        # ``_remove_tool_in_memory``). Sibling installs (other ids) stay.
-        for old_id, bucket in list(self._tools_by_old_id.items()):
-            survivors = [t for t in bucket if getattr(t, "id", None) != tool_id]
-            if len(survivors) != len(bucket):
-                if survivors:
-                    self._tools_by_old_id[old_id] = survivors
-                else:
-                    del self._tools_by_old_id[old_id]
-        # Drop stale per-version materialised Tools; ``_register_cached_entry``
-        # re-adds the default version's fresh stub below. Specific-version
-        # lookups go back through the index (``_load_tool_on_demand`` skips
-        # ``_tools_by_id`` when a version is requested), so no version is lost.
-        self._tool_versions_by_id.pop(tool_id, None)
-        fresh = self._register_cached_entry(entry, place_in_panel=False)
-        self._tool_panel.replace_tool_for_id(tool_id, fresh)  # type: ignore[arg-type]
-        self._integrated_tool_panel.replace_tool_for_id(tool_id, fresh)
+        proxy = self._cached_tool_for_entry(entry)
+        proxy.replace_entry(entry)
+        self._tools_by_id[tool_id] = proxy  # type: ignore[assignment]
+        self._tool_versions_by_id.setdefault(tool_id, {})[entry.version or ""] = proxy  # type: ignore[assignment]
 
     def _register_cached_entry(self, entry: ToolIndexEntry, place_in_panel: bool = True) -> "CachedTool":
-        """Construct + slot a ``CachedTool`` stub for ``entry``.
-
-        Inverse of :meth:`_register_loaded_tool`: same bookkeeping, but for
-        the stub side. Used by :meth:`invalidate_index_cache` when a
-        peer-process populator run added new entries that this process should
-        surface immediately.
-        """
-        stub = CachedTool(
-            entry,
-            materialize_callback=self._materialize_for_cached_tool,
-            is_admin_user=self.app.config.is_admin_user,
-        )
+        """Slot the stable metadata proxy for ``entry`` into toolbox registries."""
+        stub = self._cached_tool_for_entry(entry)
         tool_id = entry.id
         self._tools_by_id[tool_id] = stub  # type: ignore[assignment]
         version = entry.version
@@ -1569,59 +1570,6 @@ class CachedToolBox(ToolBox):
         else:
             self._tool_panel[f"tool_{tool_id}"] = stub
 
-    def _register_loaded_tool(self, tool: "Tool") -> None:
-        """Register a lazily-loaded tool in the toolbox registries."""
-        tool_id = tool.id
-        if not tool_id:
-            return
-
-        self._tools_by_id[tool_id] = tool
-
-        version = tool.version
-        if tool_id not in self._tool_versions_by_id:
-            self._tool_versions_by_id[tool_id] = {}
-        self._tool_versions_by_id[tool_id][version] = tool
-
-        # The eager ``__add_tool`` also tracks tools by their pre-shed
-        # ``old_id`` so callers like ``remove_tool_by_id``
-        # (``self._tools_by_old_id[tool.old_id].remove(tool)``) can find
-        # them. Without this, removing an on-demand-loaded shed tool raises
-        # ``KeyError`` on ``_tools_by_old_id``.
-        old_id = getattr(tool, "old_id", None)
-        if old_id:
-            bucket = self._tools_by_old_id.setdefault(old_id, [])
-            # The eager pipeline registers a CachedTool stub at boot via
-            # ``register_tool``; on materialise we drop the stub so the
-            # bucket doesn't end up with two entries for the same tool id
-            # (``get_tool`` lineage walk would otherwise return both).
-            bucket[:] = [t for t in bucket if t is not tool and getattr(t, "id", None) != tool.id]
-            bucket.append(tool)
-
-        # Tool uses 'guid' not 'uuid'
-        if hasattr(tool, "uuid") and tool.uuid:
-            self._tools_by_uuid[tool.uuid] = tool
-
-        # Update lineage. ``CachedLineageMap.get`` builds the lineage from
-        # ``entries_by_version`` (cached after first call); for a shed tool
-        # that arrived after boot and isn't in the index yet,
-        # ``LineageMap.register`` is the right fallback. Either way the
-        # eager ToolBox assigns it to ``tool._lineage`` (see
-        # AbstractToolBox.__add_tool) — without that assignment,
-        # ``tool.lineage`` is ``None`` and ``tool.tool_versions`` returns
-        # ``[]``, breaking /api/tools/{id}'s ``versions`` /
-        # ``hidden_versions`` fields.
-        tool._lineage = self._lineage_map.get(tool_id) or self._lineage_map.register(tool)
-
-        # Conf-level ``hidden="true"`` (from the ``<tool>`` directive in the
-        # tool conf) is applied here. The eager toolbox does this in
-        # ``_load_tool_tag_set``; the cached-toolbox path's ``_create_tool_from_stored_source``
-        # only sees the parsed XML body, so we lift the flag from the index
-        # entry. Note: never *clear* an XML-body hidden flag — only set it.
-        if self._tool_index is not None:
-            entry = self._tool_index.get(tool_id, version)
-            if entry and entry.hidden:
-                tool.hidden = True
-
     def close(self) -> None:
         """Drop in-memory state at app shutdown.
 
@@ -1633,6 +1581,7 @@ class CachedToolBox(ToolBox):
         """
         with self._cache_lock:
             self._tool_object_cache.clear()
+        self._cached_tools.clear()
         self._tool_index = None
         self._store = None
         # ``ToolLineage.lineages_by_id`` is a *class*-level dict, so a
@@ -1656,20 +1605,10 @@ class CachedToolBox(ToolBox):
         problem because the tool object isn't created from a serialised
         store. Mirror the deletion across the two backing stores.
 
-        Wrapped in ``app._toolbox_lock`` so the cleanup is atomic
-        against concurrent ``_load_tool_on_demand`` calls — without
-        the lock, an in-flight HTTP request thread that's mid-way
-        through ``_register_loaded_tool`` can re-populate
-        ``_tool_versions_by_id`` / ``_lineage_map.lineage_map`` /
-        ``_tools_by_id`` after this method has already cleared them,
-        leaving the tool resurrectable via the eager super().get_tool
-        fall-through path that walks lineage versions via
-        ``_tool_from_lineage_version``.
+        Wrapped in ``app._toolbox_lock`` so registry and persisted-index
+        removal remain atomic with toolbox reloads.
         """
         with self.app._toolbox_lock:
-            # Force-materialise so the eager parent's bookkeeping (``_tools_by_old_id``,
-            # panel removal, lineage, tool cache expiry) gets a real Tool to work
-            # against.
             if self._tools_by_id.get(tool_id) is None:
                 self.get_tool(tool_id=tool_id)
             result = self._remove_tool_in_memory(tool_id, remove_from_panel=remove_from_panel)
@@ -1733,14 +1672,7 @@ class CachedToolBox(ToolBox):
             versionless = remove_version_from_guid(tool_id)
             if versionless:
                 self._lineage_map.lineage_map.pop(versionless, None)
-        # ``super().remove_tool_by_id`` removes a single Tool object
-        # from ``_tools_by_old_id[old_id]``, but if a concurrent
-        # ``_register_loaded_tool`` (e.g. an in-flight HTTP request
-        # that beat us to the lock) appended a sibling Tool to the
-        # same bucket, the sibling survives and the eager
-        # super().get_tool fall-through returns it via
-        # ``rval.extend(self._tools_by_old_id[tool_id])``. Drop the
-        # whole bucket for this tool_id to match the index removal.
+        # Drop the complete old-id bucket for this removed index entry.
         self._tools_by_old_id.pop(tool_id, None)
         # The short-id bucket is keyed by ``old_id`` — for a shed guid
         # that's the short tool id, not ``tool_id``. ``super()`` removes
@@ -1774,24 +1706,16 @@ class CachedToolBox(ToolBox):
             if not _guids:
                 del self._shed_short_id_to_guids[_short]
         self._purge_tool_object_cache(tool_id)
+        for key in [key for key in self._cached_tools if key[0] == tool_id]:
+            del self._cached_tools[key]
         return result
 
     def _purge_tool_object_cache(self, tool_id: str) -> None:
-        """Drop every LRU entry that resolves to ``tool_id``.
-
-        Purge by cached identity, not by key prefix alone: the LRU is keyed
-        by whatever id the caller resolved with, so the same tool can sit
-        under both its guid and its short id
-        ("collection_column_join:latest"). A guid-prefix-only purge leaves
-        the short-id entry behind and ``get_tool`` serves the stale tool
-        straight from cache. Shared by :meth:`_remove_tool_in_memory`
-        (uninstall) and :meth:`_refresh_changed_entry` (in-place content
-        edit re-indexed by the ``--watch`` populator).
-        """
+        """Drop every parsed-tool LRU entry for ``tool_id``."""
         with self._cache_lock:
             for key, cached in list(self._tool_object_cache.items()):
                 if (
-                    key.startswith(f"{tool_id}:")
+                    key[0] == tool_id
                     or getattr(cached, "id", None) == tool_id
                     or getattr(cached, "guid", None) == tool_id
                 ):

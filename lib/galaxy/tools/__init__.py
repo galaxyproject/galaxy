@@ -370,6 +370,65 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "Interval2Maf1": parse_version("1.0.1+galaxy0"),
 }
 
+
+def parse_tool_version_for_comparison(version: str):
+    """Parse Galaxy's numeric ``+galaxyN`` suffix as a PEP 440 version."""
+    suffix_marker = "+galaxy"
+    if suffix_marker in version:
+        base, suffix = version.split(suffix_marker, 1)
+        if suffix:
+            version = f"{base}{suffix_marker}.{suffix.lstrip('.')}"
+    return parse_version(version)
+
+
+def tool_requires_galaxy_python_environment(
+    *,
+    tool_type: str,
+    profile: float,
+    preserve_python_environment: str,
+    tool_shed: str | None,
+    old_id: str,
+    version: str | None,
+) -> bool:
+    """Return the runtime-environment policy from metadata available at population time."""
+    if tool_type not in {
+        "default",
+        "manage_data",
+        "interactive",
+        "data_source",
+        "data_source_async",
+        "user_defined",
+    }:
+        return True
+    if tool_type == "manage_data" and Version(str(profile)) < Version("18.09"):
+        return True
+    if tool_type == "data_source" and Version(str(profile)) < Version("21.09"):
+        return True
+    if tool_type == "data_source_async" and profile < 24.0:
+        return True
+    if preserve_python_environment == "always":
+        return True
+    if preserve_python_environment == "legacy_and_local" and tool_shed is None:
+        return True
+    if old_id in GALAXY_LIB_TOOLS_UNVERSIONED:
+        return True
+    fixed_version = GALAXY_LIB_TOOLS_VERSIONED.get(old_id)
+    if fixed_version is None:
+        return False
+    parsed_version = parse_tool_version_for_comparison(version or "")
+    return parsed_version < fixed_version
+
+
+def tool_produces_real_jobs(tool_type: str, action_module: tuple[str, str] | None) -> bool:
+    """Return the action policy without constructing a complete tool."""
+    if action_module is not None:
+        module_name, class_name = action_module
+        module = __import__(module_name, globals(), locals(), [class_name])
+        action_class = getattr(module, class_name)
+    else:
+        action_class = tool_types.get(tool_type, Tool).default_tool_action
+    return action_class.produces_real_jobs
+
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
 }
@@ -1226,22 +1285,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def version_object(self):
         """Parse version string, handling special Galaxy version format."""
-        GALAXY_VERSION_SUFFIX = "+galaxy"
-        version = self.version
-
-        # Check if version has Galaxy suffix that we need to modify (e.g., "1.0+galaxy123")
-        if GALAXY_VERSION_SUFFIX not in version:
-            return parse_version(version)
-
-        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
-
-        # Handle Galaxy versions that need numeric sorting
-        if suffix:
-            # Per PEP-440 a version like <base_version>+galaxy<suffix> would be sorted lexicographically if not separated by a '.'.
-            # Injecting a '.' here will force a numeric sort if the suffix is an integer, otherwise the outcome will be the same.
-            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
-
-        return parse_version(version)
+        return parse_tool_version_for_comparison(self.version)
 
     @property
     def sa_session(self):
@@ -1318,42 +1362,18 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def requires_galaxy_python_environment(self):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
-        # All special tool types (data source, history import/export, etc...)
-        # seem to require Galaxy's Python.
-        # FIXME: the (instantiated) tool class should emit this behavior, and not
-        #        use inspection by string check
-        if self.tool_type not in [
-            "default",
-            "manage_data",
-            "interactive",
-            "data_source",
-            "data_source_async",
-            "user_defined",
-        ]:
-            return True
+        return tool_requires_galaxy_python_environment(
+            tool_type=self.tool_type,
+            profile=self.profile,
+            preserve_python_environment=self.app.config.preserve_python_environment,
+            tool_shed=self.tool_shed,
+            old_id=self.old_id,
+            version=self.version,
+        )
 
-        if self.tool_type == "manage_data" and Version(str(self.profile)) < Version("18.09"):
-            return True
-
-        if self.tool_type == "data_source" and Version(str(self.profile)) < Version("21.09"):
-            return True
-
-        if self.tool_type == "data_source_async" and self.profile < 24.0:
-            return True
-
-        config = self.app.config
-        preserve_python_environment = config.preserve_python_environment
-        if preserve_python_environment == "always":
-            return True
-        elif preserve_python_environment == "legacy_and_local" and self.tool_shed is None:
-            return True
-        else:
-            unversioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_UNVERSIONED
-            versioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_VERSIONED
-            legacy_tool = unversioned_legacy_tool or (
-                versioned_legacy_tool and self.old_id and self.version_object < GALAXY_LIB_TOOLS_VERSIONED[self.old_id]
-            )
-            return legacy_tool
+    @property
+    def produces_real_jobs(self) -> bool:
+        return self.tool_action.produces_real_jobs
 
     def __get_job_tool_configuration(self, job_params: dict | None = None) -> "JobToolConfiguration":
         """Generalized method for getting this tool's job configuration.

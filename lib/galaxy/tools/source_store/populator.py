@@ -64,9 +64,13 @@ from galaxy.queues import (
 from galaxy.tool_util.ontologies.ontology_data import expand_ontology_data
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.parser.interface import ToolSource
-from galaxy.tool_util.parser.util import parse_tool_version_with_defaults
+from galaxy.tool_util.parser.util import (
+    parse_profile_version,
+    parse_tool_version_with_defaults,
+)
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
+from galaxy.tools import tool_produces_real_jobs
 from galaxy.tools.source_store.discover import (
     CONVERTER_TOOL_CONF,
     discover_tools,
@@ -500,6 +504,8 @@ def build_index_entry_from_source(
         # ``version`` on a pre-16.04-profile tool becomes "1.0.0"; on newer
         # profiles it raises (the outer except drops the entry).
         version = parse_tool_version_with_defaults(tool_id, tool_source)
+        profile = parse_profile_version(tool_source)
+        action_module = tool_source.parse_action_module()
         requirements, containers, _, _, _ = tool_source.parse_requirements()
         tests = tool_source.parse_tests_to_dict().get("tests", [])
 
@@ -538,9 +544,11 @@ def build_index_entry_from_source(
             hidden=hidden,
             require_login=require_login,
             tool_type=tool_type,
+            profile=profile,
             test_count=len(tests),
             requirements=requirements.to_dict(),
             container_requirements=[container.to_dict() for container in containers],
+            produces_real_jobs=tool_produces_real_jobs(tool_type, action_module),
             tags=[],
             data_manager_id=discovered.data_manager_id,
             tool_shed=discovered.tool_shed,

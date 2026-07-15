@@ -2813,11 +2813,14 @@ class JobWrapper(MinimalJobWrapper):
         self.queue = queue
         app = self.queue.app
         self.job_runner_mapper = JobRunnerMapper(self, self.queue.dispatcher.url_to_destination, app.job_config)
+        tool = app.toolbox.tool_for_job(job, exact=True, check_access=False)
+        if tool is not None:
+            tool = app.toolbox.materialize_tool(tool, reason="job_setup")
         super().__init__(
             job,
             app=app,
             use_persisted_destination=use_persisted_destination,
-            tool=app.toolbox.tool_for_job(job, exact=True, check_access=False),
+            tool=tool,
         )
 
     @property

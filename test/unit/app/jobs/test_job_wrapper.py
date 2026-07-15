@@ -174,6 +174,10 @@ class MockToolbox:
         tool = self.get(job.tool_id)
         return tool
 
+    def materialize_tool(self, tool, reason="explicit"):
+        assert reason == "job_setup"
+        return tool
+
 
 class MockObjectStore:
     def __init__(self, working_directory):
