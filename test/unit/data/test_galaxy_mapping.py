@@ -512,6 +512,42 @@ class TestMappings(BaseModelTestCase):
         assert counts.root["new"] == 2
         assert counts.root["scheduled"] == 1
 
+    def test_workflow_copy_preserves_metadata(self):
+        user = model.User(email=random_email(), password="password")
+        workflow = _workflow_from_steps(user, [])
+        workflow.name = "test_workflow_copy"
+        workflow.has_cycles = False
+        workflow.has_errors = False
+        workflow.license = "MIT"
+        workflow.creator_metadata = [{"class": "Person", "name": "Jane Doe"}]
+        workflow.reports_config = {"markdown": "## Report"}
+        workflow.readme = "A readme"
+        workflow.help = "Some help text"
+        workflow.logo_url = "https://galaxyproject.org/images/galaxy-logo.png"
+        workflow.doi = ["10.1000/xyz123"]
+        workflow.source_metadata = {"url": "https://example.org/workflow.ga"}
+        self.persist(workflow)
+
+        copied_workflow = workflow.copy(user=user)
+        # Driven off the real columns so that a column added by a later migration has to be
+        # classified here rather than being silently dropped by copy(), which is how
+        # readme/help/logo_url/doi were lost between 25.0 and now.
+        not_copied = {
+            "id",  # assigned per row
+            "create_time",
+            "update_time",
+            "stored_workflow_id",  # the caller attaches the copy
+            "parent_workflow_id",
+            "uuid",  # identifies a single revision
+            "source_metadata",  # provenance of this exact content
+        }
+        for column in set(model.Workflow.__table__.columns.keys()) - not_copied:
+            assert getattr(workflow, column) is not None, f"{column} is not covered by this test"
+            assert getattr(copied_workflow, column) == getattr(workflow, column), column
+
+        assert copied_workflow.uuid != workflow.uuid
+        assert copied_workflow.source_metadata is None
+
     def test_role_creation(self):
         security_agent = GalaxyRBACAgent(self.model.session)
 
