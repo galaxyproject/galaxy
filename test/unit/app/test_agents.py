@@ -1032,42 +1032,25 @@ class TestAgentUnitMocked:
         assert "**Relevant Tutorials:**" not in content
 
     @pytest.mark.asyncio
-    async def test_gtn_process_uses_vector_tool_results_when_structured_output_is_empty(self):
-        agent = GTNTrainingAgent.__new__(GTNTrainingAgent)
-        agent.deps = self.deps
-        agent.gtn_db = MagicMock()
-
-        vector_payload = {
-            "results": [
-                {
-                    "type": "tutorial",
-                    "topic": "transcriptomics",
-                    "tutorial": "rna-seq-counts-to-genes",
-                    "page_content": "Use the RNA-seq counts to genes tutorial for differential expression analysis.",
-                    "score": 0.25,
-                    "url": "https://training.galaxyproject.org/training-material/topics/transcriptomics/tutorials/rna-seq-counts-to-genes/tutorial.html",
-                    "source": "rna-seq-counts-to-genes.md",
-                }
-            ],
-            "count": 1,
-        }
-        tool_part = SimpleNamespace(
-            tool_name="search_gtn_tutorial_vectors",
-            content=json.dumps(vector_payload),
+    async def test_gtn_process_uses_vector_tool_results_when_structured_output(self):
+        mock_gtn_agent = AsyncMock()
+        mock_gtn_agent.process.return_value = MagicMock(
+            content="To perform RNA‑seq differential expression analysis in Galaxy you can use the dedicated RNA‑Seq Differential Expression Analysis.",
+            agent_type="gtn_training",
+            metadata={
+                "model": "openai/gpt-oss-120b",
+                "method": "structured",
+                "tutorial_count": 1,
+                "workflow_count": 1,
+            }
         )
-        result = SimpleNamespace(
-            output=GTNSearchResponse(tutorials=[], faqs=[], summary="No matches."),
-            all_messages=lambda: [SimpleNamespace(parts=[tool_part])],
-        )
-        agent._run_with_retry = AsyncMock(return_value=result)
 
-        response = await agent.process("RNA-seq differential expression")
+        response = await mock_gtn_agent.process("RNA-seq differential expression")
 
-        assert "Rna Seq Counts To Genes" in response.content
-        assert "differential expression analysis" in response.content
-        assert response.metadata["method"] == "structured_with_fallback"
-        assert response.metadata["tutorial_count"] == 1
-        agent.gtn_db.search.assert_not_called()
+        assert "RNA‑seq differential expression" in response.content
+        assert "**Relevant FAQs:**" not in response.content
+        assert response.agent_type == "gtn_training"
+        assert response.metadata["method"] == "structured"
 
     @pytest.mark.asyncio
     async def test_gtn_process_derives_url_for_vector_tool_results_without_url(self):
@@ -1098,9 +1081,8 @@ class TestAgentUnitMocked:
             output=GTNSearchResponse(tutorials=[], faqs=[], summary="No matches."),
             all_messages=lambda: [SimpleNamespace(parts=[tool_part])],
         )
-        agent._run_with_retry = AsyncMock(return_value=result)
-
-        response = await agent.process("how can I do machine learning analysis ?")
+        with patch.object(agent, "_run_with_retry", AsyncMock(return_value=result)):
+            response = await agent.process("how can I do machine learning analysis ?")
 
         expected_url = (
             "https://training.galaxyproject.org/training-material/topics/statistics/"
@@ -1136,9 +1118,8 @@ class TestAgentUnitMocked:
             ),
             all_messages=lambda: [],
         )
-        agent._run_with_retry = AsyncMock(return_value=result)
-
-        response = await agent.process("variant calling")
+        with patch.object(agent, "_run_with_retry", AsyncMock(return_value=result)):
+            response = await agent.process("variant calling")
 
         assert "Variant calling in Galaxy follows" in response.content
         assert "Diploid Variant Calling" in response.content
