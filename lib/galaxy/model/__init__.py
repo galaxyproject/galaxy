@@ -9126,6 +9126,14 @@ class Workflow(Base, Dictifiable, RepresentById):
         copied_workflow.reports_config = self.reports_config
         copied_workflow.license = self.license
         copied_workflow.creator_metadata = self.creator_metadata
+        copied_workflow.readme = self.readme
+        copied_workflow.help = self.help
+        copied_workflow.logo_url = self.logo_url
+        copied_workflow.doi = self.doi
+        # uuid identifies a single revision and __init__ mints a fresh one, and
+        # source_metadata records where this exact content was fetched from and is
+        # dropped whenever a workflow is modified (see test_trs_import) - so neither
+        # is copied here. test_workflow_copy_preserves_metadata pins that down.
 
         # Map old step ids to new steps
         step_mapping = {}
