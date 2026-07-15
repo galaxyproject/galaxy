@@ -114,6 +114,7 @@ from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util_models.sample_sheet import SampleSheetColumnDefinitions
 from galaxy.util import (
+    asbool,
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
     UNKNOWN,
@@ -2636,6 +2637,13 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_id = self.upload_yaml_workflow(
                 round_trip_converted_content, client_convert=False, round_trip_conversion=False
             )
+
+        if asbool(os.environ.get("GALAXY_TEST_STRIP_BOOKKEEPING_FROM_WORKFLOWS", "0")):
+            from galaxy.tool_util.workflow_state.clean import strip_bookkeeping_from_workflow
+
+            native = self.download_workflow(workflow_id)
+            strip_bookkeeping_from_workflow(native)
+            workflow_id = self.create_workflow(native)
 
         return workflow_id
 

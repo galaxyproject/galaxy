@@ -15,6 +15,7 @@ authors = [
 dependencies = [
     "galaxy-tool-util-models",
     "galaxy-util[template,image-util]>=22.1",
+    "gxformat2",
     "conda-package-streaming",
     "jsonschema",
     "lxml!=4.2.2",
@@ -72,6 +73,11 @@ test = [
 galaxy-tool-format = "galaxy.tool_util.format:main"
 galaxy-tool-test = "galaxy.tool_util.verify.script:main"
 galaxy-tool-test-case-validation = "galaxy.tool_util.parameters.scripts.validate_test_cases:main"
+galaxy-tool-cache = "galaxy.tool_util.workflow_state.scripts.tool_cache:main"
+galaxy-workflow-validate = "galaxy.tool_util.workflow_state.scripts.workflow_validate:main"
+galaxy-workflow-clean-stale-state = "galaxy.tool_util.workflow_state.scripts.workflow_clean_stale_state:main"
+galaxy-workflow-export-format2 = "galaxy.tool_util.workflow_state.scripts.workflow_export_format2:main"
+galaxy-workflow-roundtrip-validate = "galaxy.tool_util.workflow_state.scripts.workflow_roundtrip_validate:main"
 galaxy-tool-upgrade-advisor = "galaxy.tool_util.upgrade.script:main"
 validate-test-format = "galaxy.tool_util.validate_test_format:main"
 mulled-build = "galaxy.tool_util.deps.mulled.mulled_build:main"
