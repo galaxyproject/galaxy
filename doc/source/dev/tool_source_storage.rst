@@ -1,9 +1,12 @@
 Tool Source Storage Architecture
 ================================
 
-This document describes the architecture of the tool source storage subsystem
-and the LazyToolBox. For operator-facing setup and configuration, see
-:doc:`/admin/tool_source_storage`.
+This document describes the architecture of the tool source storage subsystem:
+the store backends, the populator, and the index they build. For operator-facing
+setup and configuration, see :doc:`/admin/tool_source_storage`.
+
+The ``LazyToolBox`` consumes this store to load tools on demand; it is
+documented below alongside the storage layer it builds on.
 
 Goals
 -----
@@ -12,12 +15,14 @@ The traditional ``ToolBox`` parses every tool XML at startup, builds full
 ``Tool`` objects, and keeps them all in memory. With thousands of tools that
 scales poorly: slow boot, large per-process RSS, and expensive worker reloads.
 
-The tool source storage subsystem moves that work out of the request path:
+The tool source storage subsystem moves that parsing work out of the request
+path:
 
 - A separate process (``populate_store.py``) parses tools once and persists
   the canonical, macro-expanded source plus a lightweight metadata index.
-- Galaxy processes load only the index at startup and materialize ``Tool``
-  objects on demand, with LRU eviction.
+- The store and index are laid out so a consumer can load only the index at
+  startup and materialize ``Tool`` objects on demand, instead of parsing the
+  full tree in-process. That consumer is the ``LazyToolBox``.
 - Batch endpoints (``/api/tools``, ``/api/tools/tests_summary``,
   ``/api/tool_panels`` …) answer from the index instead of iterating the
   full toolbox.
@@ -28,24 +33,23 @@ Module Layout
 ::
 
     lib/galaxy/tools/source_store/
-      __init__.py        Facade re-exporting the interface + factory
-      interface.py       ToolSourceStore ABC, StoredToolSource, exceptions
-      factory.py         build_tool_source_store() / build_named_store()
+      __init__.py        Public re-exports
+      interface.py       ToolSourceStore ABC and StoredToolSource
+      factory.py         Store construction from Galaxy configuration
       sqlalchemy.py      SqlAlchemyToolSourceStore (any SQLAlchemy URL)
       composite.py       CompositeToolSourceStore (per-conf routing, merged index)
       index.py           ToolIndex, ToolIndexEntry (the lightweight metadata)
-      search.py          ToolWhooshIndex (Whoosh index built from a ToolIndex)
+      search.py          ToolWhooshIndex (Whoosh search index built from a ToolIndex)
       discover.py        discover_tools() — conf walk without booting a ToolBox
       populator.py       Population + watch logic (parse, store, index, broadcast)
+      freshness.py       Optional external freshness probes
+      watcher.py         Filesystem watch support
       benchmarks.py      Store/index micro-benchmarks
 
     lib/galaxy/tools/lazy_toolbox.py     LazyToolBox (subclass of ToolBox), LazyTool
     lib/galaxy/tools/search/__init__.py  LazyToolboxSearch (queries every store's index)
-    lib/galaxy/tool_util/id_util.py      Cheap tool-ID extraction (regex, no XML parser)
 
-    lib/galaxy/webapps/galaxy/services/tools.py   Batch endpoints (lazy-aware)
-
-    scripts/tool_source/populate_store.py         CLI entry point for the populator
+    scripts/tool_source/populate_store.py    Thin CLI wrapper over populator.main
 
 The same ``populator.main`` is registered as the
 ``galaxy-populate-tool-source-store`` console script in the ``galaxy-app``
@@ -66,10 +70,9 @@ lifecycle.
 
 **ToolIndex** — a Pydantic model containing one default ``ToolIndexEntry`` per tool
 plus its versioned and panel-placement projections,
-holding everything the batch APIs and the lazy panel render need (id, name,
-description, panel section, labels, EDAM, xrefs, icon, requirements, container
-info, test counts, hidden/disabled, shed metadata, ``data_manager_id``). The
-index is serialized and gzip-compressed as a blob.
+holding everything a store consumer needs (id, name, description, panel section,
+labels, EDAM, requirements, container info, test counts, hidden/disabled,
+shed metadata). The index is serialized and gzip-compressed as a blob.
 
 The schema is auto-created on first open; ``tool_index`` holds a single
 row per index version.
@@ -105,9 +108,8 @@ or ``store: ...`` key (YAML), ``build_tool_source_store`` instantiates
 the referenced named stores from ``config.tool_source_stores`` and wraps
 them with the writable default in a :class:`CompositeToolSourceStore`.
 
-The composite implements the same ``ToolSourceStore`` interface, so the
-LazyToolBox, services, and queue worker stay completely unaware of the
-multi-store layout:
+The composite implements the same ``ToolSourceStore`` interface, so store
+consumers stay completely unaware of the multi-store layout:
 
 - **Reads** iterate ``[per-conf members..., default]`` in order; first
   hit wins. ``count`` and ``list_all`` dedupe across members.
@@ -174,15 +176,6 @@ Opting in is explicit: only ``use_lazy_toolbox: true`` activates the lazy
 toolbox. A populated store on its own (e.g. brought in by a per-conf
 ``store="..."`` attribute) does not flip a default deployment to lazy mode.
 
-Tool ID extraction
-^^^^^^^^^^^^^^^^^^
-
-``galaxy.tool_util.id_util`` provides ``extract_tool_id_from_xml`` and
-``extract_tool_id_from_file``: regex-based ID lookup that reads only the
-first ~2 KB of the XML. This avoids paying for full XML parsing during
-panel-structure discovery, where we just need the ID to map a file entry
-back to an index entry.
-
 Discovery
 ---------
 
@@ -193,7 +186,6 @@ used by:
 - the populator to find tools to parse and store.
 - watch mode to know which directories to monitor.
 - callers that compare on-disk confs against the indexed tool set.
-- (indirectly) the LazyToolBox panel-structure code path.
 
 It also walks ``data_manager_conf``/``shed_data_manager_conf`` and the
 datatype converters so data-manager and converter tools — loaded post-boot
@@ -208,9 +200,9 @@ Population Script
 
 ``scripts/tool_source/populate_store.py`` is a thin CLI wrapper over
 ``galaxy.tools.source_store.populator.main``. It loads only the Galaxy
-config and calls ``build_tool_source_store(config)`` — the standalone store
-builds the datatypes registry for converter discovery but does not initialize
-the Galaxy model. Tools are parsed in a
+config and calls ``build_tool_source_store(config)``. Converter discovery builds
+the datatypes registry, but the standalone process does not initialize the Galaxy
+model. Tools are parsed in a
 ``ThreadPoolExecutor`` (``--parallel``, default 4 workers); each tool is
 matched to its source path and carried forward when its raw file hash is unchanged
 (``--incremental``, the default). Once the JSON index is committed the
@@ -224,17 +216,21 @@ files are re-parsed, the store is updated, and a single
 exchange. ``--watch-polling`` switches to ``PollingObserver`` for
 NFS/CVMFS/network filesystems where inotify is unreliable.
 
-The control task handler lives in ``galaxy.queue_worker.reload_tool_source_cache``
-and is wired into the ``control_message_to_task`` map. Each Galaxy process
-that receives the message:
+The broadcast is the populator's half of the contract: it publishes
+``reload_tool_source_cache`` so peer processes can drop their stale index
+view. The control task handler lives in
+``galaxy.queue_worker.reload_tool_source_cache`` and is wired into the
+``control_message_to_task`` map. Each Galaxy process that receives the
+message:
 
 1. Calls ``LazyToolBox.invalidate_index_cache()`` (drops the in-memory
    index reference so the next access reloads from the store).
 2. Calls ``ToolSourceStore.invalidate_index_cache()`` on the store itself.
 
-Note that the LRU cache of fully constructed ``Tool`` objects is not
-flushed by reload — only the index is invalidated. Stale ``Tool`` instances
-are evicted naturally as new ones are loaded.
+Reload also refreshes already-materialised tools: entries whose source hash
+changed have their LRU entries, stubs, and registered ``Tool`` objects
+purged, so the next access re-materialises from the new source. Unchanged
+entries keep their cached ``Tool`` objects.
 
 Batch Endpoint Integration
 --------------------------
@@ -259,8 +255,9 @@ single materialise chokepoint) must not move across any of these endpoints.
 ``LazyToolboxSearch`` (``tools/search/__init__.py``) queries the whoosh index
 of *every* configured store — the default plus each named per-conf store —
 via ``ToolWhooshIndex.search_scored``, then merges the per-store hit lists by
-BM25 score. A tool served from a named store is therefore reachable through
-``/api/tools?q=`` even though its source lives outside the default store.
+BM25 score and post-filters them to the requested panel view. A tool served
+from a named store is therefore reachable through ``/api/tools?q=`` even
+though its source lives outside the default store.
 
 App Wiring
 ----------

@@ -1,25 +1,26 @@
 Tool Source Storage
 ===================
 
-Galaxy can pre-parse and store tool sources, plus a lightweight index, in a
-configurable backend, and load full ``Tool`` objects on demand through the
-``LazyToolBox``. This is especially useful for large Galaxy installations
-with thousands of tools.
-
 Overview
 --------
 
-By default, Galaxy loads all tools into memory at startup. For installations with many tools,
-this can:
+By default, Galaxy parses every tool at startup and keeps all of them in
+memory. For installations with many tools this:
 
-- Slow down Galaxy startup significantly
-- Consume large amounts of memory
+- Slows down Galaxy startup significantly
+- Consumes large amounts of memory in every Galaxy process
 
-The tool source storage system addresses these issues by:
+Tool source storage addresses this by doing the parsing work once, ahead of
+time:
 
-1. Pre-parsing and storing tool sources in a configurable backend
-2. Maintaining a lightweight index in memory for fast API responses
-3. Loading full ``Tool`` objects on demand with LRU caching
+1. Tool sources are pre-parsed (with macros expanded) and stored in a
+   configurable database backend
+2. A lightweight index over the stored tools supports fast tool listings and
+   search without touching tool files
+
+The ``LazyToolBox`` consumes this store to load full ``Tool`` objects on
+demand with LRU caching. It is opt-in via ``use_lazy_toolbox``; this document
+covers the store, the populator, the index, and the toolbox configuration.
 
 Configuration
 -------------
@@ -37,19 +38,19 @@ Default Store
 
 The store lives in a standalone database - a SQLite file under
 ``<data_dir>/tool_sources.sqlite`` by default - separate from Galaxy's main
-database. It is a rebuildable cache: deleting it costs one populator run.
-This URI is used by tool source storage code paths, including the population
-script and lazy toolbox consumers. Runtime use also requires a populated store
-and a toolbox consumer configured to read from tool source storage.
+database. It is a rebuildable cache: it can be deleted at any time and
+recreated by re-running the population script.
+
+Multi-host deployments must point every Galaxy process (web workers *and*
+job handlers) at the same store — typically a SQLite file on a shared
+filesystem:
 
 .. code-block:: yaml
 
     galaxy:
-      tool_source_database_connection: postgresql://galaxy@db.example.org/tool_sources
+      tool_source_database_connection: sqlite:////shared/galaxy/tool_sources.sqlite
 
-Multi-host deployments must point every Galaxy process (web workers *and*
-job handlers) at the same store, such as a SQLite file on a shared filesystem
-or a shared database URI.
+Any other SQLAlchemy-supported database (e.g. PostgreSQL) works as well.
 
 Toolbox Selection
 ^^^^^^^^^^^^^^^^^
@@ -63,9 +64,21 @@ Toolbox Selection
 
 The LazyToolBox is opt-in: leave ``use_lazy_toolbox`` unset (or false) and
 Galaxy uses the traditional eager ToolBox even when the store is populated
-or when a tool_conf carries a ``store="..."`` attribute. Set
-``use_lazy_toolbox: true`` to activate lazy loading and per-conf store
-routing. The store is only initialized when the LazyToolBox is enabled.
+or when a tool_conf carries a ``store="..."`` attribute. The store is only
+initialized when the LazyToolBox is enabled.
+
+Cache Configuration
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: yaml
+
+    galaxy:
+      # Maximum Tool objects in the LazyToolBox LRU cache (default: 500)
+      lazy_toolbox_cache_size: 500
+
+The ``lazy_toolbox_cache_size`` determines how many fully-loaded Tool objects
+are kept in memory by the LazyToolBox. If your users frequently work with
+many different tools, increase this value.
 
 Per-conf Store Routing (CVMFS Recipe)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -90,7 +103,7 @@ self-contained file), but any SQLAlchemy-supported database works:
           url: sqlite:///file:/cvmfs/example.org/tools/sources.sqlite?mode=ro&uri=true
           read_only: true
         site_shared:
-          url: postgresql://galaxy_ro@db.example.org/tool_sources
+          url: sqlite:///file:/shared/galaxy/tool_sources.sqlite?mode=ro&uri=true
           read_only: true
 
 Then point the tool_conf at it via the root element's ``store`` attribute
@@ -128,19 +141,6 @@ Once the bundle is in place on CVMFS (or any read-only mount), restart
 Galaxy. The ``read_only: true`` flag prevents Galaxy from writing through that
 store. For SQLite connection-level read-only, use ``mode=ro&uri=true`` in the
 SQLite URI as shown above.
-
-Cache Configuration
-^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: yaml
-
-    galaxy:
-      # Maximum Tool objects in the LazyToolBox LRU cache (default: 500)
-      lazy_toolbox_cache_size: 500
-
-The ``lazy_toolbox_cache_size`` determines how many fully-loaded Tool objects
-are kept in memory by the LazyToolBox. A typical Galaxy installation has
-500-2000 tools. If you frequently use many different tools, increase this value.
 
 Populating the Tool Source Store
 --------------------------------
@@ -228,10 +228,10 @@ script on a schedule:
 Watch Mode (Live Updates)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For development environments or installations where tools change frequently, you can run
-the population script in watch mode. This uses ``watchdog`` to monitor tool directories
-for changes and automatically updates the store, then sends a notification via Kombu
-to trigger cache reloads in all Galaxy processes.
+As an alternative to cron, you can run the population script in watch mode to
+keep the store continuously up to date. This uses ``watchdog`` to monitor tool
+directories for changes and automatically updates the store, then sends a
+notification via Kombu to trigger cache reloads in all Galaxy processes.
 
 .. code-block:: console
 
@@ -263,9 +263,9 @@ When a tool XML file changes, watch mode will:
 
 This is useful for:
 
-- Development environments where tools are being actively edited
-- CI/CD pipelines that deploy tool updates
 - Installations using shared storage where tools may be updated externally
+- CI/CD pipelines that deploy tool updates
+- Development environments where tools are being actively edited
 
 Troubleshooting
 ---------------
@@ -298,6 +298,7 @@ To set up tool source storage on an existing Galaxy installation:
 
        galaxy:
          use_lazy_toolbox: true
+         tool_source_database_connection: sqlite:////srv/galaxy/tool_sources.sqlite
 
 2. Run the population script:
 
@@ -307,6 +308,6 @@ To set up tool source storage on an existing Galaxy installation:
 
 3. Restart Galaxy
 
-If the store is not populated, or a specific tool is not found in it, the
+If the store is not populated, or a specific tool is missing from it, the
 LazyToolBox self-heals by populating the missing entries in-process, so the
 traditional toolbox behavior is preserved as a fallback.
