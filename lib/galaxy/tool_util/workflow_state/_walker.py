@@ -21,6 +21,7 @@ from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
     ConditionalWhen,
     flat_state_path,
+    NATIVE_BOOKKEEPING_KEYS,
     repeat_inputs_to_array,
     RepeatParameterModel,
     ToolParameterT,
@@ -63,17 +64,7 @@ SKIP_VALUE = _SkipValue()
 
 LeafCallback = Callable[[ToolParameterT, Any, str], Any | _SkipValue]
 
-_NATIVE_BOOKKEEPING_KEYS = frozenset(
-    {
-        "__current_case__",
-        "__index__",
-        "__input_ext",
-        "__page__",
-        "__rerun_remap_job_id__",
-        "__job_resource",
-        "chromInfo",
-    }
-)
+_NATIVE_BOOKKEEPING_KEYS = NATIVE_BOOKKEEPING_KEYS
 
 
 def walk_native_state(
