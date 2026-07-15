@@ -14,10 +14,10 @@ from collections.abc import Callable
 from enum import Enum
 from typing import (
     Any,
+    cast,
     Literal,
     Optional,
     overload,
-    Protocol,
     TYPE_CHECKING,
 )
 from uuid import UUID
@@ -35,9 +35,11 @@ from galaxy.tool_util.deps.requirements import (
 )
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.base import (
+    MaterializationReasonName,
     resolve_tool_path,
     SHED_TOOL_CONF_XML,
     ToolConfRepository,
+    ToolLike,
 )
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
@@ -83,7 +85,6 @@ log = logging.getLogger(__name__)
 
 
 class MaterializationReason(str, Enum):
-    EXPLICIT = "explicit"
     DETAIL = "detail"
     DEPENDENCY = "dependency"
     EXECUTION = "execution"
@@ -100,15 +101,6 @@ class ToolMaterializationError(RuntimeError):
     def __init__(self, tool_id: str, message: str) -> None:
         super().__init__(f"Failed to materialize tool {tool_id!r}: {message}")
         self.tool_id = tool_id
-
-
-class ToolLike(Protocol):
-    """Metadata surface shared by real and cached tools."""
-
-    id: str
-    version: str | None
-
-    def allow_user_access(self, user, attempting_access: bool = True) -> bool: ...
 
 
 MaterializeCallback = Callable[["ToolIndexEntry", MaterializationReason], "Tool"]
@@ -160,42 +152,6 @@ class CachedTool:
     # Cached sources are content-addressed, so file watching is a no-op.
     _macro_paths: tuple = ()
 
-    # Compatibility attributes that still require a parsed ``Tool``. New code
-    # should call ``toolbox.materialize_tool`` with an explicit reason.
-    _MATERIALIZE_REASONS = {
-        "to_archive": MaterializationReason.PACKAGING,
-        "build_dependency_cache": MaterializationReason.DEPENDENCY,
-        "handle_input": MaterializationReason.EXECUTION,
-        "inputs": MaterializationReason.EXECUTION,
-        "parameters": MaterializationReason.EXECUTION,
-        "new_state": MaterializationReason.EXECUTION,
-        "input_translator": MaterializationReason.EXECUTION,
-        "check_and_update_param_values": MaterializationReason.VALIDATION,
-        "wants_params_cleaned": MaterializationReason.EXECUTION,
-        "tool_source": MaterializationReason.SERIALIZATION,
-        "dynamic_tool": MaterializationReason.EXECUTION,
-        "produces_entry_points": MaterializationReason.EXECUTION,
-        "execute": MaterializationReason.EXECUTION,
-        "expand_incoming": MaterializationReason.EXECUTION,
-        "params_to_strings": MaterializationReason.EXECUTION,
-        "tool_action": MaterializationReason.EXECUTION,
-        "tool_dir": MaterializationReason.JOB_SETUP,
-        "completed_jobs": MaterializationReason.EXECUTION,
-        "get_default_history_by_trans": MaterializationReason.EXECUTION,
-        "regenerate_imported_metadata_if_needed": MaterializationReason.EXECUTION,
-        "outputs": MaterializationReason.EXECUTION,
-        "output_collections": MaterializationReason.EXECUTION,
-        "tests": MaterializationReason.TESTS,
-        "to_json": MaterializationReason.SERIALIZATION,
-        "tool_requirements_status": MaterializationReason.DEPENDENCY,
-        "provided_metadata_file": MaterializationReason.JOB_SETUP,
-        "test_data_path": MaterializationReason.TESTS,
-        "get_configured_job_handler": MaterializationReason.JOB_SETUP,
-        "build_dependency_shell_commands": MaterializationReason.JOB_SETUP,
-        "params_with_missing_data_table_entry": MaterializationReason.VALIDATION,
-        "params_with_missing_index_file": MaterializationReason.VALIDATION,
-    }
-
     # --- forwarded read-only entry surface ---
     id = _entry_attr("id")
     uuid = _entry_attr("uuid")
@@ -209,6 +165,7 @@ class CachedTool:
     icon = _entry_attr("icon")
     xrefs = _entry_attr("xrefs")
     is_workflow_compatible = _entry_attr("is_workflow_compatible")
+    is_datatype_converter = _entry_attr("is_datatype_converter")
 
     # --- forwarded mutable entry surface ---
     # Eager ``_load_tool_tag_set`` (base.py:964-987) mutates these post-create.
@@ -286,9 +243,6 @@ class CachedTool:
 
     @property
     def config_file(self) -> str | None:
-        # ``source_path`` is stamped by the populator; entries serialized
-        # before the field existed deserialize as ``None`` and callers that
-        # need a real path fall through to ``__getattr__`` and materialise.
         return self._entry.source_path
 
     @property
@@ -340,7 +294,7 @@ class CachedTool:
     @property
     def requirements(self) -> ToolRequirements:
         if self._requirements is None:
-            self._requirements = ToolRequirements.from_list(self._entry.requirements)
+            self._requirements = ToolRequirements.from_list(cast(Any, self._entry.requirements))
         return self._requirements
 
     @property
@@ -379,9 +333,7 @@ class CachedTool:
         ``DataManagerTool`` overrides ``allow_user_access`` to require admin
         (lib/galaxy/tools/__init__.py:3893). On the stub we can't dispatch
         polymorphically on subclass, so branch on ``tool_type`` instead.
-        ``dynamic_tool`` (unprivileged-tool gating) is not in the index — fall
-        through to materialise via ``__getattr__`` for that one case if a
-        caller passes a dynamic tool. Stock filters never do.
+        Dynamic tools are materialized before unprivileged access checks.
         """
         if self.require_login and user is None:
             return False
@@ -452,7 +404,7 @@ class CachedTool:
         return materialized.to_dict(trans, link_details=link_details, tool_help=tool_help, **kw)
 
     # --- materialisation ---
-    def materialize(self, reason: MaterializationReason = MaterializationReason.EXPLICIT) -> "Tool":
+    def materialize(self, reason: MaterializationReason) -> "Tool":
         real = self._materialize_cb(self._entry, reason)
         try:
             for name, value in self._overrides.items():
@@ -464,25 +416,6 @@ class CachedTool:
         except Exception as exc:
             raise ToolMaterializationError(self.id, "could not apply cached metadata") from exc
         return real
-
-    def _materialize(self) -> "Tool":
-        """Compatibility alias for callers being migrated to explicit reasons."""
-        return self.materialize()
-
-    # --- strict fallthrough ---
-    def __getattr__(self, name: str):
-        if reason := self._MATERIALIZE_REASONS.get(name):
-            return getattr(self.materialize(reason), name)
-        # Other private/dunder attrs are never materialise triggers — surface
-        # as ``AttributeError`` so e.g. ``hasattr(tool, "__something__")``
-        # stays cheap.
-        if name.startswith("_"):
-            raise AttributeError(name)
-        raise NotImplementedError(
-            f"CachedTool.{name!r} is not on the stub surface for tool {self.id!r}. "
-            "Add indexed metadata or materialize the tool explicitly."
-        )
-
 
 class CachedToolBox(ToolBox):
     """
@@ -1042,7 +975,7 @@ class CachedToolBox(ToolBox):
 
     # === create_tool seam: return CachedTool stub when the index already has the source ===
 
-    def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds) -> ToolLike:
+    def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds) -> "Tool":
         """Return a :class:`CachedTool` for every indexed tool source.
 
         The populator (cold-start in :meth:`_init_tools_from_configs`, shed
@@ -1102,7 +1035,9 @@ class CachedToolBox(ToolBox):
                     self._store.update_index_entry(entry)
                 except Exception as e:
                     log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
-        return self._cached_tool_for_entry(entry)
+        # The eager initialization pipeline is typed around Tool, but only
+        # consumes the indexed ToolLike surface before registering the entry.
+        return cast("Tool", self._cached_tool_for_entry(entry))
 
     def _cached_tool_for_entry(self, entry: ToolIndexEntry) -> CachedTool:
         key = (entry.id, entry.version or "")
@@ -1254,10 +1189,10 @@ class CachedToolBox(ToolBox):
                 versions[version] = self._cached_tool_for_entry(sibling_entry)  # type: ignore[assignment]
         return self._load_tool_on_demand(entry, reason)
 
-    def materialize_tool(self, tool: ToolLike, reason: str = "explicit") -> "Tool":
+    def materialize_tool(self, tool: ToolLike, *, reason: MaterializationReasonName) -> "Tool":
         if isinstance(tool, CachedTool):
             return tool.materialize(MaterializationReason(reason))
-        return tool  # type: ignore[return-value]
+        return cast("Tool", tool)
 
     def _stored_source_for_entry(self, entry: ToolIndexEntry) -> StoredToolSource | None:
         """Resolve path-specific source metadata without ambiguous hash lookup."""
@@ -1301,7 +1236,7 @@ class CachedToolBox(ToolBox):
                 raise ToolMaterializationError(entry.id, "stored source could not be parsed") from exc
             log.debug("Materialized tool %s for %s", entry.id, reason.value)
             with self._cache_lock:
-                current = self._tool_index and self._tool_index.get(entry.id, entry.version)
+                current = self._tool_index.get(entry.id, entry.version) if self._tool_index is not None else None
                 if current is not None and current.source_hash == entry.source_hash:
                     self._tool_object_cache[cache_key] = tool
             return tool

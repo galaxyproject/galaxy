@@ -288,7 +288,8 @@ class ToolPanelViewSearch:
         tools_to_index: list[Tool] = []
 
         for tool_id in tool_cache._new_tool_ids - self.indexed_tool_ids:
-            tool = toolbox.get_tool(tool_id)
+            tool_like = toolbox.get_tool(tool_id)
+            tool = toolbox.materialize_tool(tool_like, reason="detail") if tool_like else None
             if tool and tool.is_latest_version and toolbox.panel_has_tool(tool, self.panel_view_id):
                 if tool.hidden:
                     # Check if there is an older tool we can return

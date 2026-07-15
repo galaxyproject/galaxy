@@ -2075,6 +2075,8 @@ def summarize_job_parameters(trans: ProvidesHistoryContext, job: Job) -> dict[st
     if dynamic_tool := job.dynamic_tool:
         tool_uuid = dynamic_tool.uuid
     tool = toolbox.get_tool(job.tool_id, job.tool_version, tool_uuid=tool_uuid, user=trans.user)
+    if tool is not None:
+        tool = toolbox.materialize_tool(tool, reason="serialization")
 
     params_objects = None
     parameters = []

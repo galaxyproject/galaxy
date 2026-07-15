@@ -52,6 +52,10 @@ from galaxy.schema.fetch_data import (
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.parameters import ToolParameterT
+from galaxy.tool_util.toolbox.base import (
+    MaterializationReasonName,
+    ToolLike,
+)
 from galaxy.tool_util_models.parameters import (
     CollectionElementCollectionRequestUri,
     CollectionElementDataRequestUri,
@@ -74,7 +78,7 @@ JobCreateResponse = dict[str, Any]
 
 
 def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
-    tool: Tool | None = None
+    tool: ToolLike | None = None
     if tool_ref.tool_uuid and trans.user:
         tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_ref.tool_uuid)
     if not tool:
@@ -89,7 +93,7 @@ def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
     if not tool:
         log.debug(f"Not found tool with kwds [{tool_ref}]")
         raise exceptions.ToolMissingException("Tool not found.")
-    return tool
+    return trans.app.toolbox.materialize_tool(tool, reason="execution")
 
 
 def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
@@ -505,7 +509,14 @@ class ToolsService(ServiceBase):
     # -- Helper methods --
     #
     def _get_tool(
-        self, trans: ProvidesUserContext, id, tool_version=None, tool_uuid=None, user: User | None = None
+        self,
+        trans: ProvidesUserContext,
+        id,
+        tool_version=None,
+        tool_uuid=None,
+        user: User | None = None,
+        *,
+        materialization_reason: MaterializationReasonName,
     ) -> Tool:
         if tool_uuid:
             try:
@@ -516,12 +527,11 @@ class ToolsService(ServiceBase):
         if not tool:
             if user and (id or tool_uuid):
                 tool = trans.app.toolbox.get_tool(user=user, tool_id=id, tool_uuid=tool_uuid)
-                if tool:
-                    return tool
-            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
+            if not tool:
+                raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
         if not tool.allow_user_access(user):
             raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
-        return tool
+        return trans.app.toolbox.materialize_tool(tool, reason=materialization_reason)
 
     def _detect(self, trans: ProvidesUserContext, tool_id):
         """
@@ -542,7 +552,7 @@ class ToolsService(ServiceBase):
         return detected_versions
 
     def get_tool_icon_path(self, trans: ProvidesUserContext, tool_id, tool_version=None) -> str | None:
-        tool = self._get_tool(trans, tool_id, tool_version)
+        tool = self._get_tool(trans, tool_id, tool_version, materialization_reason="detail")
         if tool and tool.icon:
             icon_file_path = tool.icon
             if icon_file_path and tool.tool_dir:
@@ -698,7 +708,7 @@ class ToolsService(ServiceBase):
                     results.append(tool.id)
                 continue
             try:
-                tool = self._get_tool(trans, hit, user=trans.user)
+                tool = self._get_tool(trans, hit, user=trans.user, materialization_reason="detail")
                 if tool and tool.id:
                     results.append(tool.id)
             except exceptions.AuthenticationFailed:

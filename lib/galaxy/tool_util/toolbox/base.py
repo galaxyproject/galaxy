@@ -9,8 +9,10 @@ from collections.abc import Iterator
 from errno import ENOENT
 from typing import (
     Any,
+    cast,
     Literal,
     Optional,
+    Protocol,
     TYPE_CHECKING,
     TypeAlias,
     Union,
@@ -147,6 +149,37 @@ class ToolBoxRegistryImpl(ToolBoxRegistry):
 
 
 DynamicToolConfDict = dict[str, Any]
+MaterializationReasonName = Literal[
+    "detail",
+    "dependency",
+    "execution",
+    "job_setup",
+    "packaging",
+    "serialization",
+    "tests",
+    "validation",
+]
+
+
+class ToolLike(Protocol):
+    """Lookup metadata available without parsing a tool definition."""
+
+    @property
+    def id(self) -> str | None: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def version(self) -> str | None: ...
+
+    @property
+    def hidden(self) -> bool: ...
+
+    @property
+    def old_id(self) -> str | None: ...
+
+    def allow_user_access(self, user, attempting_access: bool = True) -> bool: ...
 
 
 class AbstractToolTagManager(metaclass=abc.ABCMeta):
@@ -799,7 +832,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         get_all_versions: Literal[False] = False,
         exact: bool | None = False,
         user: Optional["User"] = None,
-    ) -> Optional["Tool"]: ...
+    ) -> ToolLike | None: ...
 
     @overload
     def get_tool(
@@ -810,7 +843,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         get_all_versions: Literal[True] = True,
         exact: bool | None = False,
         user: Optional["User"] = None,
-    ) -> list["Tool"]: ...
+    ) -> list[ToolLike]: ...
 
     def get_tool(
         self,
@@ -820,7 +853,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         get_all_versions: bool | None = False,
         exact: bool | None = False,
         user: Optional["User"] = None,
-    ) -> Optional["Tool"] | list["Tool"]:
+    ) -> ToolLike | None | list[ToolLike]:
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
         if tool_id is None and tool_uuid is None:
             raise RequestParameterInvalidException("get_tool cannot be called with both tool_id and tool_uuid as None")
@@ -1451,7 +1484,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             raise ObjectNotFound(f"No tool found with id '{escape(tool_id)}'.")
         else:
             tool = self._tools_by_id[tool_id]
-            return tool.to_archive()
+            return self.materialize_tool(tool, reason="packaging").to_archive()
 
     def reload_tool_by_id(self, tool_id: str) -> tuple[str | dict[str, str], str]:
         """
@@ -1628,9 +1661,9 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 rval.append(self.get_tool_to_dict(trans, tool, tool_help=tool_help))
         return rval
 
-    def materialize_tool(self, tool: "Tool", reason: str = "explicit") -> "Tool":
+    def materialize_tool(self, tool: ToolLike, *, reason: MaterializationReasonName) -> "Tool":
         """Return a fully parsed tool; eager toolboxes already hold one."""
-        return tool
+        return cast("Tool", tool)
 
     def to_panel_view(self, trans: "PanelViewTrans", view="default_panel_view", **kwds):
         """

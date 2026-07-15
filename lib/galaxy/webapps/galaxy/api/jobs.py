@@ -397,6 +397,8 @@ class FastAPIJobs:
         if not dataset.creating_job or dataset.creating_job.id != job.id:
             raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        if tool is not None:
+            tool = trans.app.toolbox.materialize_tool(tool, reason="detail")
         email = payload.email
         if not email and not trans.anonymous:
             email = trans.user.email
@@ -575,6 +577,7 @@ class FastAPIJobs:
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
+        tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         inputs = payload.inputs
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.__annotations__.items():

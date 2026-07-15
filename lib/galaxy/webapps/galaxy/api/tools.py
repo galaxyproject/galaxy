@@ -572,7 +572,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 if hits:
                     for hit in hits:
                         try:
-                            tool = self.service._get_tool(trans, hit, user=trans.user)
+                            tool = self.service._get_tool(
+                                trans, hit, user=trans.user, materialization_reason="detail"
+                            )
                             if tool:
                                 results.append(tool.id)
                         except exceptions.AuthenticationFailed:
@@ -642,7 +644,14 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         link_details = util.string_as_bool(kwd.get("link_details", False))
         tool_version = kwd.get("tool_version")
         tool_uuid = kwd.get("tool_uuid")
-        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=tool_version, tool_uuid=tool_uuid)
+        tool = self.service._get_tool(
+            trans,
+            id,
+            user=trans.user,
+            tool_version=tool_version,
+            tool_uuid=tool_uuid,
+            materialization_reason="detail",
+        )
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
     @expose_api_anonymous
@@ -660,7 +669,14 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
         options_pagination = _parse_options_pagination(kwd.pop("options_pagination", None))
-        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user, tool_uuid=tool_uuid)
+        tool = self.service._get_tool(
+            trans,
+            id,
+            tool_version=tool_version,
+            user=trans.user,
+            tool_uuid=tool_uuid,
+            materialization_reason="serialization",
+        )
         return tool.to_json(trans, kwd.get("inputs", kwd), history=history, options_pagination=options_pagination)
 
     @web.require_admin
@@ -671,7 +687,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version", None)
-        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
+        tool = self.service._get_tool(
+            trans, id, tool_version=tool_version, user=trans.user, materialization_reason="tests"
+        )
         try:
             path = tool.test_data_path(kwd.get("filename"))
         except ValueError as e:
@@ -687,7 +705,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         GET /api/tools/{tool_id}/test_data_download?tool_version={tool_version}&filename={filename}
         """
         tool_version = kwd.get("tool_version", None)
-        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
+        tool = self.service._get_tool(
+            trans, id, tool_version=tool_version, user=trans.user, materialization_reason="tests"
+        )
         filename = kwd.get("filename")
         if filename is None:
             raise exceptions.ObjectNotFound("Test data filename not specified.")
@@ -740,12 +760,17 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version", None)
         if tool_version == "*":
-            tools = self.app.toolbox.get_tool(id, get_all_versions=True)
-            for tool in tools:
+            tool_likes = self.app.toolbox.get_tool(id, get_all_versions=True)
+            for tool in tool_likes:
                 if not tool.allow_user_access(trans.user):
                     raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
+            tools = [self.app.toolbox.materialize_tool(tool, reason="tests") for tool in tool_likes]
         else:
-            tools = [self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)]
+            tools = [
+                self.service._get_tool(
+                    trans, id, tool_version=tool_version, user=trans.user, materialization_reason="tests"
+                )
+            ]
 
         test_defs = []
         for tool in tools:
@@ -785,7 +810,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Return the resolver status for a specific tool id.
         [{"status": "installed", "name": "hisat2", "versionless": false, "resolver_type": "conda", "version": "2.0.3", "type": "package"}]
         """
-        tool = self.service._get_tool(trans, id, user=trans.user)
+        tool = self.service._get_tool(trans, id, user=trans.user, materialization_reason="dependency")
         return tool.tool_requirements_status
 
     @web.require_admin
@@ -808,14 +833,13 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             build_dependency_cache:  If true, attempts to cache dependencies for this tool
             force_rebuild:           If true and cache dir exists, attempts to delete cache dir
         """
-        tool = self.service._get_tool(trans, id, user=trans.user)
-        materialized = trans.app.toolbox.materialize_tool(tool, reason="dependency")
-        materialized._view.install_dependencies(materialized.requirements, **kwds)
+        tool = self.service._get_tool(trans, id, user=trans.user, materialization_reason="dependency")
+        tool._view.install_dependencies(tool.requirements, **kwds)
         if kwds.get("build_dependency_cache"):
-            materialized.build_dependency_cache(**kwds)
+            tool.build_dependency_cache(**kwds)
         # TODO: rework resolver install system to log and report what has been done.
         # _view.install_dependencies should return a dict with stdout, stderr and success status
-        return materialized.tool_requirements_status
+        return tool.tool_requirements_status
 
     @web.require_admin
     @expose_api
@@ -834,11 +858,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
             resolver_type: Use the dependency resolver of this resolver_type to install dependency
         """
-        tool = self.service._get_tool(trans, id, user=trans.user)
-        materialized = trans.app.toolbox.materialize_tool(tool, reason="dependency")
-        materialized._view.uninstall_dependencies(requirements=materialized.requirements, **kwds)
+        tool = self.service._get_tool(trans, id, user=trans.user, materialization_reason="dependency")
+        tool._view.uninstall_dependencies(requirements=tool.requirements, **kwds)
         # TODO: rework resolver install system to log and report what has been done.
-        return materialized.tool_requirements_status
+        return tool.tool_requirements_status
 
     @web.require_admin
     @expose_api
@@ -850,7 +873,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         parameters:
             force_rebuild:           If true and chache dir exists, attempts to delete cache dir
         """
-        tool = self.service._get_tool(trans, id)
+        tool = self.service._get_tool(trans, id, materialization_reason="dependency")
         tool.build_dependency_cache(**kwds)
         # TODO: Should also have a more meaningful return.
         return tool.tool_requirements_status
@@ -868,7 +891,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         def to_dict(x):
             return x.to_dict()
 
-        tool = self.service._get_tool(trans, id, user=trans.user)
+        tool = self.service._get_tool(trans, id, user=trans.user, materialization_reason="job_setup")
         if hasattr(tool, "lineage"):
             lineage_dict = tool.lineage.to_dict()
         else:
@@ -900,7 +923,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
     @expose_api
     def conversion(self, trans: GalaxyWebTransaction, tool_id, payload, **kwd):
-        converter = self.service._get_tool(trans, tool_id, user=trans.user)
+        converter = self.service._get_tool(
+            trans, tool_id, user=trans.user, materialization_reason="execution"
+        )
         target_type = payload.get("target_type")
         source_type = payload.get("source_type")
         input_src = payload.get("src")
@@ -950,7 +975,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
     @expose_api_anonymous_and_sessionless
     def xrefs(self, trans: GalaxyWebTransaction, id, **kwds):
-        tool = self.service._get_tool(trans, id, user=trans.user)
+        tool = self.service._get_tool(trans, id, user=trans.user, materialization_reason="detail")
         return tool.xrefs
 
     @web.require_admin
@@ -971,7 +996,12 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             )
         tool_uuid = kwds.get("tool_uuid")
         tool = self.service._get_tool(
-            trans, id, user=trans.user, tool_version=kwds.get("tool_version"), tool_uuid=tool_uuid
+            trans,
+            id,
+            user=trans.user,
+            tool_version=kwds.get("tool_version"),
+            tool_uuid=tool_uuid,
+            materialization_reason="serialization",
         )
         trans.response.headers["language"] = tool.tool_source.language
         if dynamic_tool := getattr(tool, "dynamic_tool", None):

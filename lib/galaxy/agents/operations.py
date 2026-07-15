@@ -84,7 +84,8 @@ class AgentOperationsManager:
         return self.app.toolbox_search.search(q=query, panel_view=panel_view, config=self.app.config)  # type: ignore[attr-defined]
 
     def _get_toolbox_tool(self, tool_id: str):
-        return self.app.toolbox.get_tool(tool_id)
+        tool = self.app.toolbox.get_tool(tool_id)
+        return self.app.toolbox.materialize_tool(tool, reason="detail") if tool else None
 
     def _encode_ids_in_response(self, data: Any) -> Any:
         if isinstance(data, dict):
@@ -646,7 +647,7 @@ class AgentOperationsManager:
         if tool and tool_version:
             versioned = self.app.toolbox.get_tool(tool_id, tool_version=tool_version)
             if versioned:
-                tool = versioned
+                tool = self.app.toolbox.materialize_tool(versioned, reason="detail")
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")

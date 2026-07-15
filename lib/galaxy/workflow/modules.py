@@ -137,6 +137,7 @@ from galaxy.tools.parameters.workflow_utils import (
     workflow_building_modes,
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
+from galaxy.tool_util.toolbox.base import ToolLike
 from galaxy.util import (
     listify,
     unicodify,
@@ -2520,20 +2521,25 @@ class ToolModule(WorkflowModule):
         self.tool_uuid = tool_uuid
         self.tool: Tool | None = None
         if getattr(trans.app, "toolbox", None):
+            tool_like: ToolLike | None = None
             if trans.user and tool_uuid:
-                self.tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
-            if not self.tool:
-                self.tool = trans.app.toolbox.get_tool(
+                tool_like = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
+            if not tool_like:
+                tool_like = trans.app.toolbox.get_tool(
                     tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
                 )
+            if tool_like:
+                self.tool = trans.app.toolbox.materialize_tool(tool_like, reason="validation")
         if self.tool:
             current_tool_version = str(self.tool.version)
             if exact_tools and self.tool_version and self.tool_version != current_tool_version:
                 safe_version = get_safe_version(self.tool, self.tool_version)
                 if safe_version:
-                    self.tool = trans.app.toolbox.get_tool(
+                    tool_like = trans.app.toolbox.get_tool(
                         tool_id, tool_version=safe_version, exact=True, tool_uuid=tool_uuid
                     )
+                    assert tool_like is not None
+                    self.tool = trans.app.toolbox.materialize_tool(tool_like, reason="validation")
                 else:
                     log.info(
                         f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}]."
@@ -2654,8 +2660,10 @@ class ToolModule(WorkflowModule):
             step.tool_version = self.tool_version
         if tool_uuid := getattr(self, "tool_uuid", None):
             tool = self.trans.app.toolbox.get_tool(tool_uuid=tool_uuid, user=self.trans.user)
-            if tool and tool.dynamic_tool:
-                step.dynamic_tool_id = tool.dynamic_tool.id
+            if tool:
+                tool = self.trans.app.toolbox.materialize_tool(tool, reason="serialization")
+                if tool.dynamic_tool:
+                    step.dynamic_tool_id = tool.dynamic_tool.id
         if not detached:
             for k, v in self.post_job_actions.items():
                 pja = self.__to_pja(k, v, step)
@@ -2985,6 +2993,7 @@ class ToolModule(WorkflowModule):
             raise ToolMissingException(
                 f"Tool {step.tool_id} missing. Cannot execute workflow step.", tool_id=step.tool_id
             )
+        tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         if not tool.is_workflow_compatible:
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."

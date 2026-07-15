@@ -174,7 +174,7 @@ class MockToolbox:
         tool = self.get(job.tool_id)
         return tool
 
-    def materialize_tool(self, tool, reason="explicit"):
+    def materialize_tool(self, tool, *, reason):
         assert reason == "job_setup"
         return tool
 

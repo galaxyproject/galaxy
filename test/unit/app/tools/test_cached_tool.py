@@ -95,7 +95,7 @@ def test_overrides_shadow_entry_and_survive_materialise():
     assert t.hidden is True
     assert t.labels == ["a", "b"]
 
-    real = t._materialize()
+    real = t.materialize(MaterializationReason.DETAIL)
     assert materialised == [_entry().id]
     assert real.hidden is True
     assert real.labels == ["a", "b"]
@@ -257,32 +257,17 @@ def test_allow_user_access_allows_admin_for_data_manager():
     assert t.allow_user_access(user=_U()) is True
 
 
-def test_strict_getattr_raises_with_clear_message():
+def test_parsed_attributes_are_not_on_cached_tool():
     t = _stub()
-    with pytest.raises(NotImplementedError) as ei:
-        _ = t.totally_not_a_tool_attr
-    assert "totally_not_a_tool_attr" in str(ei.value)
-    assert "bowtie2" in str(ei.value)
+    parsed_attribute = "inputs"
+    with pytest.raises(AttributeError):
+        getattr(t, parsed_attribute)
 
 
 def test_underscore_attrs_surface_as_attribute_error():
     t = _stub()
     with pytest.raises(AttributeError):
         _ = t.__some_dunder_thing__
-
-
-def test_classified_attribute_forwards_to_real_tool():
-    class _Real:
-        to_archive = "archive-payload"
-
-    reasons = []
-    t = CachedTool(
-        _entry(),
-        materialize_callback=lambda _e, reason: reasons.append(reason) or _Real(),
-        is_admin_user=lambda u: False,
-    )
-    assert t.to_archive == "archive-payload"
-    assert reasons == [MaterializationReason.PACKAGING]
 
 
 def test_lineage_slot_settable_and_readable():
@@ -703,7 +688,7 @@ def test_invalidate_index_cache_refreshes_materialised_tool_on_content_change():
     box, holder = _materialising_box("hash_v1")
     proxy = box.get_tool("tool1")
     assert box._tools_by_id["tool1"] is proxy
-    original = box.materialize_tool(proxy)
+    original = box.materialize_tool(proxy, reason="execution")
 
     holder["hash"] = "hash_v2"
     reloaded = ToolIndex()
@@ -715,13 +700,13 @@ def test_invalidate_index_cache_refreshes_materialised_tool_on_content_change():
     assert refreshed is proxy
     assert refreshed._entry.source_hash == "hash_v2"
     assert not any(cached is original for cached in box._tool_object_cache.values())
-    assert box.materialize_tool(refreshed) is not original
+    assert box.materialize_tool(refreshed, reason="execution") is not original
 
 
 def test_invalidate_index_cache_keeps_materialised_tool_when_content_unchanged():
     box, _holder = _materialising_box("hash_v1")
     proxy = box.get_tool("tool1")
-    original = box.materialize_tool(proxy)
+    original = box.materialize_tool(proxy, reason="execution")
 
     reloaded = ToolIndex()
     reloaded.add_entry(_entry(id="tool1", version="1.0", source_hash="hash_v1", source_path="/t/tool1.xml"))
@@ -729,7 +714,7 @@ def test_invalidate_index_cache_keeps_materialised_tool_when_content_unchanged()
     box.invalidate_index_cache()
 
     assert box.get_tool("tool1") is proxy
-    assert box.materialize_tool(proxy) is original
+    assert box.materialize_tool(proxy, reason="execution") is original
 
 
 def test_materialized_tools_are_owned_only_by_bounded_lru():
@@ -760,12 +745,12 @@ def test_materialized_tools_are_owned_only_by_bounded_lru():
 
     box._create_tool_from_stored_source = create
     proxies = {tool_id: box.get_tool(tool_id) for tool_id in entries}
-    box.materialize_tool(proxies["one"])
-    box.materialize_tool(proxies["two"])
+    box.materialize_tool(proxies["one"], reason="execution")
+    box.materialize_tool(proxies["two"], reason="execution")
 
     assert len(box._tool_object_cache) == 1
     assert box.get_tool("one") is proxies["one"]
-    box.materialize_tool(proxies["one"])
+    box.materialize_tool(proxies["one"], reason="execution")
     assert parses == Counter(one=2, two=1)
 
 

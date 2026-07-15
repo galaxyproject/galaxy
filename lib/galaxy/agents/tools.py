@@ -253,6 +253,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             for tool_id in tool_ids[:20]:
                 tool = self.deps.toolbox.get_tool(tool_id)
                 if tool and not tool.hidden:
+                    tool = self.deps.toolbox.materialize_tool(tool, reason="detail")
                     tools.append(
                         {
                             "id": tool.id,
@@ -276,6 +277,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             tool = self.deps.toolbox.get_tool(tool_id)
             if not tool:
                 return {"id": tool_id, "error": "Tool not found"}
+            tool = self.deps.toolbox.materialize_tool(tool, reason="detail")
 
             details: dict[str, Any] = {
                 "id": tool.id,

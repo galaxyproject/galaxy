@@ -848,7 +848,8 @@ class ToolBox(AbstractToolBox):
                     raise exceptions.ItemAccessibilityException("Tool not accessible.")
                 return tool
             return self.dynamic_tool_to_tool(dynamic_tool)
-        return self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
+        tool_like = self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
+        return self.materialize_tool(tool_like, reason="execution") if tool_like else None
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
         tool = self.dynamic_tool_to_tool(dynamic_tool)
@@ -3415,6 +3416,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 raise exceptions.MessageException(
                     f"This dataset was created by an obsolete tool ({tool_id}). Can't re-run."
                 )
+            tool = self.app.toolbox.materialize_tool(tool, reason="detail")
             assert tool_id
             if (self.id != tool_id and self.old_id != tool_id) or self.version != tool_version:
                 if self.id == tool_id:

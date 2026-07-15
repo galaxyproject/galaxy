@@ -53,6 +53,7 @@ class ASync(BaseUIController):
         tool = toolbox.get_tool(tool_id)
         if not tool:
             return f"Tool with id {tool_id} not found"
+        tool = toolbox.materialize_tool(tool, reason="execution")
 
         if data_id:
             #
