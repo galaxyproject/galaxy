@@ -296,6 +296,7 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
     tool_configs = app.config.tool_configs
 
     with app._toolbox_lock:
+        old_toolbox = app._toolbox
         new_toolbox: ToolBox
         if getattr(app.config, "use_lazy_toolbox", False) and getattr(app, "tool_source_store", None) is not None:
             new_toolbox = LazyToolBox(
@@ -320,6 +321,15 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
         for tool in new_toolbox.data_manager_tools.values():
             new_toolbox.register_tool(tool)
         app._toolbox = new_toolbox
+        # Retire the superseded box's background store watcher. In lazy mode
+        # each toolbox spawns a ToolSourceStoreWatcher daemon bound to itself;
+        # without this every reload leaks a polling thread that keeps grabbing
+        # app._toolbox_lock and disposing the shared store's engines on each
+        # republish. Only the watcher is stopped — in-flight reads on other
+        # threads still work, and the shared app.tool_source_store stays open.
+        # Eager ToolBoxes have no watcher, so guard on the lazy type.
+        if isinstance(old_toolbox, LazyToolBox) and old_toolbox is not new_toolbox:
+            old_toolbox.stop_watcher()
 
 
 def reload_data_managers(app, **kwargs):

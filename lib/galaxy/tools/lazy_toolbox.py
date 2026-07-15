@@ -1699,6 +1699,18 @@ class LazyToolBox(ToolBox):
             if entry and entry.hidden:
                 tool.hidden = True
 
+    def stop_watcher(self) -> None:
+        """Stop the background store-freshness watcher, if one is running.
+
+        The reload path uses this to retire a superseded toolbox's watcher
+        thread without the class-level ``ToolLineage.reset()`` and index/store
+        teardown of ``close()`` — the replacement box is already live and the
+        shared ``tool_source_store`` must stay open. Idempotent.
+        """
+        if self._store_watcher is not None:
+            self._store_watcher.shutdown()
+            self._store_watcher = None
+
     def close(self) -> None:
         """Drop in-memory state at app shutdown.
 
@@ -1708,9 +1720,7 @@ class LazyToolBox(ToolBox):
         ``tool_source_store`` before the next boot wires up a fresh
         toolbox. Idempotent; safe to call more than once.
         """
-        if self._store_watcher is not None:
-            self._store_watcher.shutdown()
-            self._store_watcher = None
+        self.stop_watcher()
         with self._cache_lock:
             self._tool_object_cache.clear()
         self._tool_index = None
