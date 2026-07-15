@@ -899,8 +899,8 @@ workflow_run:
     selectors:
       _: '[data-label="${label}"]'
       upload: '${_} [data-description="upload"]'
-      upload_modal: '${_} [data-description="upload-modal"]'
       collection_tab_build_link: '${_} [data-description="collection create tab build"]'
+      collection_tab_upload: '${_} [data-description="collection create tab upload"]'
 
     collection_builder:
       selectors:
@@ -1520,12 +1520,10 @@ upload_activity:
       selector: '//span[contains(@data-test-id, "data-library-browser-item-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
     data_library_add_selected: '[data-test-id="data-library-add-selected"]'
 
-upload_method_modal:
+upload_method_inline:
   selectors:
-    start_button: '[data-test-id="upload-method-modal-start"]'
-    cancel_button:
-      type: xpath
-      selector: '//button[normalize-space() = "Cancel"]'
+    start_button: '[data-test-id="upload-method-inline-start"]'
+    cancel_button: '[data-test-id="upload-method-inline-cancel"]'
 
 new_user_welcome:
   selectors:
