@@ -25,7 +25,6 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.tool_util.id_util import extract_short_id_from_guid
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.base import (
@@ -55,7 +54,10 @@ from galaxy.tools.source_store.populator import (
     populate_store_inline,
 )
 from galaxy.util import listify
-from galaxy.util.tool_version import remove_version_from_guid
+from galaxy.util.tool_version import (
+    remove_version_from_guid,
+    short_tool_id,
+)
 from . import (
     create_tool_from_source,
     ToolBox,
@@ -238,8 +240,7 @@ class LazyTool:
     def old_id(self) -> str:
         if "old_id" in self._overrides:
             return self._overrides["old_id"]
-        short = extract_short_id_from_guid(self._entry.id)
-        return short or self._entry.id
+        return short_tool_id(self._entry.id)
 
     @property
     def tool_tags(self) -> list[str]:
@@ -917,8 +918,8 @@ class LazyToolBox(ToolBox):
         if self._tool_index is None:
             return
         for entry_id in self._tool_index.entries.keys():
-            short_id = extract_short_id_from_guid(entry_id)
-            if short_id and short_id != entry_id:
+            short_id = short_tool_id(entry_id)
+            if short_id != entry_id:
                 self._shed_short_id_to_guids.setdefault(short_id, set()).add(entry_id)
 
     # === Override get_tool for lazy loading ===
@@ -1864,8 +1865,8 @@ class LazyToolBox(ToolBox):
         # resurrects the uninstalled tool via the eager get_tool
         # fall-through. Scrub every object belonging to this guid, but
         # leave sibling installs (other guids, other versions) alone.
-        short_id = extract_short_id_from_guid(tool_id)
-        if short_id and short_id != tool_id:
+        short_id = short_tool_id(tool_id)
+        if short_id != tool_id:
             bucket = self._tools_by_old_id.get(short_id)
             if bucket:
                 survivors = [

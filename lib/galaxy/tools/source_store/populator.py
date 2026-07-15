@@ -94,6 +94,10 @@ from galaxy.tools.source_store.search import (
 from galaxy.util import listify
 from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.properties import load_app_properties
+from galaxy.util.tool_version import (
+    remove_version_from_guid,
+    short_tool_id,
+)
 from galaxy.util.watcher import (
     EventHandler,
     get_observer_class,
@@ -473,7 +477,7 @@ def build_index_entry_from_source(
         lowered = tool_id.lower()
         all_ids = [lowered]
         if "/repos/" in lowered:
-            all_ids = [lowered, lowered.rsplit("/", 1)[0], lowered.rsplit("/", 2)[-2]]
+            all_ids = [lowered, remove_version_from_guid(lowered) or lowered, short_tool_id(lowered)]
         # Same ontology expansion as ``Tool.__init__``: curated EDAM mapping
         # overrides and legacy bio.tools xrefs included.
         ontology_data = expand_ontology_data(tool_source, all_ids, biotools_metadata_source)
