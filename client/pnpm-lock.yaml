@@ -512,9 +512,33 @@ importers:
 
   packages/ui:
     dependencies:
+      '@floating-ui/dom':
+        specifier: ^1.6.0
+        version: 1.7.6
+      '@fortawesome/fontawesome-svg-core':
+        specifier: ^6.2.0
+        version: 6.2.1
+      '@fortawesome/free-solid-svg-icons':
+        specifier: ^5.15.0 || ^6.0.0
+        version: 5.15.4
+      '@fortawesome/vue-fontawesome':
+        specifier: ^2.0.9 || ^3.0.0
+        version: 2.0.9(@fortawesome/fontawesome-svg-core@6.2.1)(vue@2.7.16)
+      '@vueuse/core':
+        specifier: '>=10.0.0 <13.0.0'
+        version: 10.5.0(vue@2.7.16)
+      font-awesome-6:
+        specifier: npm:@fortawesome/free-solid-svg-icons@6
+        version: '@fortawesome/free-solid-svg-icons@6.7.2'
+      markdown-it:
+        specifier: ^14.1.0
+        version: 14.2.0
       vue:
         specifier: 2.7.16
         version: 2.7.16
+      vue-router:
+        specifier: ^3.6.0 || ^4.0.0
+        version: 3.6.5(vue@2.7.16)
 
 packages:
 
