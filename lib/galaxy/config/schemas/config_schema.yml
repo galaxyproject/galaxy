@@ -341,15 +341,6 @@ mapping:
           in its in-memory LRU cache. Larger values reduce repeat parsing cost
           for popular tools at the expense of memory.
 
-      cached_toolbox_permissive:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Allow unclassified CachedTool attribute reads to materialize the
-          complete tool. Intended only as a temporary compatibility aid while
-          migrating callers; strict mode is the default.
-
       tool_source_database_connection:
         type: str
         required: false

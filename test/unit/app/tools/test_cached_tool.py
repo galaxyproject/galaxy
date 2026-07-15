@@ -285,21 +285,6 @@ def test_classified_attribute_forwards_to_real_tool():
     assert reasons == [MaterializationReason.PACKAGING]
 
 
-def test_permissive_flag_warns_and_materialises(caplog):
-    class _Real:
-        weird_attr = "warm"
-
-    t = CachedTool(
-        _entry(),
-        materialize_callback=lambda _e, _reason: _Real(),
-        is_admin_user=lambda u: False,
-        permissive=True,
-    )
-    caplog.set_level(logging.WARNING, logger="galaxy.tools.cached_toolbox")
-    assert t.weird_attr == "warm"
-    assert any("compatibility materialization" in rec.getMessage() for rec in caplog.records)
-
-
 def test_lineage_slot_settable_and_readable():
     t = _stub()
     assert t.lineage is None
@@ -327,7 +312,6 @@ def test_config_file_reflects_entry_source_path():
 def _seam_box():
     box = CachedToolBox.__new__(CachedToolBox)
     box._cached_tools = {}
-    box._permissive_materialization = False
     box._tool_index = ToolIndex()
     box._store = MagicMock()
     box._store.get_by_source_path.return_value = None

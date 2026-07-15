@@ -84,7 +84,6 @@ log = logging.getLogger(__name__)
 
 class MaterializationReason(str, Enum):
     EXPLICIT = "explicit"
-    COMPATIBILITY = "compatibility"
     DETAIL = "detail"
     DEPENDENCY = "dependency"
     EXECUTION = "execution"
@@ -143,8 +142,8 @@ class CachedTool:
     """Lightweight stand-in for ``galaxy.tools.Tool`` backed by a ``ToolIndexEntry``.
 
     It forwards indexed attributes and reapplies pipeline mutations after
-    materialisation. Unknown attributes raise unless compatibility mode was
-    explicitly enabled for the toolbox.
+    materialisation. Unknown attributes raise so accidental eager paths are
+    found and classified explicitly.
     """
 
     __slots__ = (
@@ -154,7 +153,6 @@ class CachedTool:
         "_lineage",
         "_materialize_cb",
         "_overrides",
-        "_permissive",
         "_preserve_python_environment",
         "_requirements",
     )
@@ -233,13 +231,11 @@ class CachedTool:
         materialize_callback: MaterializeCallback,
         is_admin_user,
         *,
-        permissive: bool = False,
         preserve_python_environment: str = "legacy_only",
     ) -> None:
         self._entry = entry
         self._materialize_cb = materialize_callback
         self._is_admin_user = is_admin_user
-        self._permissive = permissive
         self._preserve_python_environment = preserve_python_environment
         self._overrides: dict[str, Any] = {}
         self._requirements: ToolRequirements | None = None
@@ -482,14 +478,6 @@ class CachedTool:
         # stays cheap.
         if name.startswith("_"):
             raise AttributeError(name)
-        if self._permissive:
-            log.warning(
-                "CachedTool.%r forced compatibility materialization of tool %r; "
-                "add indexed metadata or an explicit materialization reason.",
-                name,
-                self.id,
-            )
-            return getattr(self.materialize(MaterializationReason.COMPATIBILITY), name)
         raise NotImplementedError(
             f"CachedTool.{name!r} is not on the stub surface for tool {self.id!r}. "
             "Add indexed metadata or materialize the tool explicitly."
@@ -512,7 +500,6 @@ class CachedToolBox(ToolBox):
         app: "UniverseApplication",
         tool_source_store: ToolSourceStore | None,
         cache_size: int = 500,
-        permissive: bool = False,
         save_integrated_tool_panel: bool = True,
     ) -> None:
         # Needed by the overridden initialization invoked from ``super()``.
@@ -521,7 +508,6 @@ class CachedToolBox(ToolBox):
         self._cache_lock = threading.RLock()
         self._materialization_locks = tuple(threading.Lock() for _ in range(64))
         self._cached_tools: dict[tuple[str, str], CachedTool] = {}
-        self._permissive_materialization = permissive
         # Batch endpoints must not increment this test-visible counter.
         self._cached_materialize_count = 0
         self._tool_index: ToolIndex | None = None
@@ -1129,7 +1115,6 @@ class CachedToolBox(ToolBox):
             entry,
             materialize_callback=self._materialize_for_cached_tool,
             is_admin_user=self.app.config.is_admin_user,
-            permissive=self._permissive_materialization,
             preserve_python_environment=self.app.config.preserve_python_environment,
         )
         if hasattr(self, "_lineage_map"):

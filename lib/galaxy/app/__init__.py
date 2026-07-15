@@ -488,7 +488,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             app=self,  # type: ignore[arg-type]
             tool_source_store=self.tool_source_store,
             cache_size=cache_size,
-            permissive=self.config.cached_toolbox_permissive,
         )
 
     def _init_container_finder(self):

@@ -303,8 +303,7 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
                 tool_root_dir=app.config.tool_path,
                 app=app,
                 tool_source_store=app.tool_source_store,
-                cache_size=getattr(app.config, "cached_toolbox_cache_size", 500),
-                permissive=getattr(app.config, "cached_toolbox_permissive", False),
+                cache_size=app.config.cached_toolbox_cache_size,
                 save_integrated_tool_panel=save_integrated_tool_panel,
             )
         else:
