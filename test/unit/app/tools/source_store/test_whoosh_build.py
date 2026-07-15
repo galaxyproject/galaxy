@@ -1,5 +1,6 @@
 """Pin ``ToolWhooshIndex.build`` rebuild/skip semantics."""
 
+from galaxy.tools import DataManagerTool
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
@@ -51,6 +52,17 @@ def test_changed_corpus_rebuilds_and_drops_stale_docs(tmp_path):
     assert searcher.search("trimmer") == ["trimmer"]
     # "caller" left the corpus; the CLEAR rebuild must not serve it anymore.
     assert searcher.search("caller") == []
+
+
+def test_data_managers_are_excluded_from_search(tmp_path):
+    tool_index = ToolIndex()
+    tool_index.add_entry(
+        ToolIndexEntry(id="data_manager", name="Data manager", version="1.0", tool_type=DataManagerTool.tool_type)
+    )
+
+    searcher = ToolWhooshIndex(index_dir=str(tmp_path / "ix"), tuning=_TUNING)
+    assert searcher.build(tool_index) == 0
+    assert searcher.search("manager") == []
 
 
 def test_tuning_change_rebuilds_despite_same_docs(tmp_path):

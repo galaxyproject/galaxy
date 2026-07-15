@@ -72,13 +72,6 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-# Whether to be strict about unknown attribute reads on a ``CachedTool``. Default
-# is permissive: anything not on the stub surface and not in ``_MATERIALIZE_OK``
-# materialises with a WARN log, instead of raising. Set ``CACHED_TOOL_STRICT=1``
-# to flip to raise — useful when adding to the stub surface, since unaccounted
-# reads then show up loudly. The eager pipeline + the integration suite hit a
-# very wide tool surface; permissive is the pragmatic default once the
-# explicit ``_MATERIALIZE_OK`` set has stabilised.
 _CACHED_TOOL_PERMISSIVE = os.environ.get("CACHED_TOOL_STRICT") != "1"
 
 
@@ -109,32 +102,17 @@ def _entry_attr(name: str, entry_attr: str | None = None, mutable: bool = False)
 class CachedTool:
     """Lightweight stand-in for ``galaxy.tools.Tool`` backed by a ``ToolIndexEntry``.
 
-    Returned by :meth:`CachedToolBox.create_tool` whenever the tool's source is
-    already persisted in the tool source store. The eager
-    ``AbstractToolBox._init_tools_from_configs`` pipeline reads and mutates
-    only a narrow attribute surface; ``CachedTool`` forwards every read off
-    ``ToolIndexEntry`` and stores writes in ``_overrides`` so they are
-    re-applied if the stub is later materialised.
-
-    **Permissive by default:** an attribute outside the stub surface and not
-    in ``_MATERIALIZE_OK`` materialises a real Tool with a WARN log. Set
-    ``CACHED_TOOL_STRICT=1`` to raise :class:`NotImplementedError` instead, so
-    unaccounted reads show up as clear failures rather than silent
-    multi-second parse stalls.
+    It forwards indexed attributes and reapplies pipeline mutations after
+    materialisation. Unknown attributes materialise by default; setting
+    ``CACHED_TOOL_STRICT=1`` raises :class:`NotImplementedError` instead.
     """
 
     __slots__ = ("_entry", "_materialize_cb", "_is_admin_user", "_overrides", "_real", "_lineage")
 
-    # ``watch_tool`` iterates ``tool._macro_paths`` for file-watching; cached
-    # entries are content-addressed in the store, file-watching is a no-op.
-    # Class-level so it isn't writable on the instance.
+    # Cached sources are content-addressed, so file watching is a no-op.
     _macro_paths: tuple = ()
 
-    # Methods / properties we accept will materialise a real Tool. Add to
-    # this set only when the parse cost is genuinely warranted at the call
-    # site — generally the tool-execution path (``handle_input``, the
-    # parameter machinery) and admin/container endpoints that need the
-    # fully-parsed Tool.
+    # Reads that require a parsed ``Tool``; keep this surface minimal.
     _MATERIALIZE_OK = frozenset(
         {
             "to_archive",  # tool packaging endpoint
@@ -142,10 +120,7 @@ class CachedTool:
             "tool_requirements",  # container_resolvers/toolbox admin endpoint
             "containers",  # container resolution
             "requirements",  # alias used by some callers
-            # Tool-execution path. ``/api/tools/{id}`` POST → ``handle_input``
-            # → ``inputs`` / ``parameters`` / ``new_state`` / ``input_translator``.
-            # Materialising here is right: the caller is about to execute the
-            # tool, which fundamentally needs the parsed parameter tree.
+            # Execution and parameter handling.
             "handle_input",
             "inputs",
             "parameters",
@@ -171,21 +146,13 @@ class CachedTool:
             "provided_metadata_file",  # job-runner metadata path
             "test_data_path",  # tool test data lookup
             "get_configured_job_handler",  # job-runner handler routing
-            # Job runner reads this on the tool to decide environment setup.
+            # Job runner setup.
             "requires_galaxy_python_environment",
-            # Job-setup dependency/env path: the runner builds the dependency
-            # shell commands for the tool it's about to run (including the
-            # internal ``__SET_METADATA__`` tool that follows most jobs), which
-            # needs the parsed requirements. Materialising here is correct — the
-            # tool is executing.
             "build_dependency_shell_commands",
-            # Parameter-validation path (data-manager / index-file tools): both
-            # walk the parsed parameter tree to check tool params against loaded
-            # data tables / index files at job time.
+            # Data-manager and index-file validation.
             "params_with_missing_data_table_entry",
             "params_with_missing_index_file",
-            # Admin dependency-management endpoints (install_dependencies /
-            # uninstall_dependencies) drive the resolver view on the tool.
+            # Dependency-management view.
             "_view",
         }
     )
@@ -481,41 +448,18 @@ class CachedToolBox(ToolBox):
         cache_size: int = 500,
         save_integrated_tool_panel: bool = True,
     ) -> None:
-        # CachedToolBox-only state set BEFORE ``super().__init__`` because the
-        # eager ``_init_tools_from_configs`` (which super invokes mid-init)
-        # is overridden below to consult ``self._store`` and populate
-        # ``self._tool_index``.
+        # Needed by the overridden initialization invoked from ``super()``.
         self._store = tool_source_store
         self._tool_object_cache: LRUCache = LRUCache(maxsize=cache_size)
         self._cache_lock = threading.RLock()
-        # Count of stubs promoted to real ``Tool`` objects since boot — every
-        # runtime materialise funnels through ``_create_tool_from_stored_source``.
-        # Batch/read endpoints must never move this counter; the integration
-        # suite asserts a zero delta across them to catch an accidental
-        # whole-toolbox sweep that ``CACHED_TOOL_STRICT`` alone can't (a legit
-        # ``_MATERIALIZE_OK`` attr read in a loop, or a tool-filter that parses).
+        # Batch endpoints must not increment this test-visible counter.
         self._cached_materialize_count = 0
-        # ``_tool_index`` is filled by our ``_init_tools_from_configs`` override
-        # before the eager walk runs.
         self._tool_index: ToolIndex | None = None
-        # Mirror the eager toolbox's short-id → Tool mapping so
-        # ``GET /api/tools/<short_id>`` resolves shed installs even when
-        # only the guid landed in the panel. Filled after the eager walk
-        # via ``_rebuild_shed_short_id_map``.
+        # Rebuilt after the eager walk for shed short-id lookups.
         self._shed_short_id_to_guids: dict[str, set[str]] = {}
-        # Identity-keyed cache of every indexed ``source_path`` — see
-        # ``_index_source_paths``. Set before ``super().__init__`` because
-        # the eager walk consults it through ``_tool_file_on_disk``.
         self._index_source_paths_cache: tuple[ToolIndex, set[str]] | None = None
-        # Versionless-guid → sibling versions map, keyed on index identity
-        # plus entry count — see ``_guid_sibling_versions``. Also consulted
-        # during ``super().__init__`` (panel views resolve lineages
-        # mid-walk).
         self._guid_sibling_versions_cache: tuple[ToolIndex, int, dict[str, list[tuple[str, str]]]] | None = None
 
-        # Eager init — its ``_init_tools_from_configs`` is overridden so the
-        # walk goes through our ``create_tool`` seam and hands back CachedTool
-        # stubs for indexed sources.
         super().__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
@@ -523,10 +467,6 @@ class CachedToolBox(ToolBox):
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
-        # Post-eager-walk: build the short-id lookup from whatever guids
-        # the panel pass registered. Section metadata, conf-level hidden,
-        # and labels are already on the index entries (the populator stamps
-        # them at discovery time), so no post-walk sync is needed.
         self._rebuild_shed_short_id_map()
 
         log.info(
@@ -538,35 +478,15 @@ class CachedToolBox(ToolBox):
         )
 
     def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
-        """Load the persistent ``ToolIndex`` before delegating to the eager walk.
-
-        Cold-start safety net: if the index doesn't yet cover every tool the
-        configs reference (fresh checkout, a new conf entry, a wiped store),
-        invoke the populator in-process to fill the gap. The populator is
-        content-addressed and idempotent, so re-runs on a warm store only
-        touch the new rows.
-
-        After this returns, the eager pipeline calls into ``create_tool`` for
-        every ``<tool>`` it walks. The seam short-circuits indexed sources to
-        a :class:`CachedTool` stub; misses raise — by contract the cold-start
-        populator below guarantees coverage.
-        """
-        # Replace the plain ``LineageMap`` the base ``__init__`` just
-        # assigned: ``CachedLineageMap`` sources each lineage's version set
-        # from ``entries_by_version`` at lookup time, so post-boot lookups
-        # (peer installs surfaced by ``invalidate_index_cache``, reloads)
-        # see every indexed version instead of a memoised single-version
-        # lineage built from one Tool object.
+        """Load or populate the index, then let the eager walk register stubs."""
+        # Index-backed lineages reflect reloads and all known versions.
         self._lineage_map = CachedLineageMap(self.app, versions_for=self._index_versions_for)
         self._tool_panel_loaded_from_index = False
         if self._store is not None:
             self._tool_index = self._store.load_index() or ToolIndex()
             if self._index_needs_population():
                 self._run_inline_populator()
-                # The populator writes through its own store instances; drop
-                # this store's cached index so the re-load below reads the
-                # index the populator just persisted rather than the (possibly
-                # foreign, shared-database) index cached two lines up.
+                # The inline populator uses a separate store instance.
                 self._store.invalidate_index_cache()
                 self._tool_index = self._store.load_index() or ToolIndex()
         else:
@@ -1018,31 +938,9 @@ class CachedToolBox(ToolBox):
                 tool = self._load_tool_on_demand(tool_id, tool_version)
                 if tool:
                     return tool
-                # Version not in the index. Fall back to the default (latest)
-                # entry's Tool — not the requested version, but a Tool for the
-                # same id. The eager toolbox does this after a
-                # ``_tool_versions_by_id`` miss when ``tool_id`` is in
-                # ``_tools_by_id`` and ``exact`` is False: the for-loop in
-                # ``AbstractToolBox.get_tool`` ``continue``s for ``exact``
-                # when the version doesn't match. Without this fallback,
-                # ``ToolModule.__init__`` invoked at workflow-upload time
-                # gets ``None`` for any workflow pinned to a tool_version we
-                # no longer ship — eager would have returned the
-                # lineage-newest Tool, then ``get_safe_version`` would have
-                # downgraded it to the safe-upgrade version
-                # (e.g. ``__BUILD_LIST__`` 1.0.0 → 1.1.0 via
-                # ``WORKFLOW_SAFE_TOOL_VERSION_UPDATES``). Returning ``None``
-                # here breaks that path and the workflow ends up bound to
-                # the latest version with state shaped for the old version,
-                # producing spurious upgrade-message 400s on invoke.
-                #
-                # Honor ``exact`` though: callers like the workflow
-                # missing-tool check pass ``exact=True`` specifically to
-                # ask "is THIS exact version installed", and silently
-                # substituting the latest makes the missing-tools list
-                # under-report (``test_run_workflow_with_missing_tool``
-                # asserts both ``nonexistent_tool`` and a known-absent
-                # ``compose_text_param 0.0.1`` show up as missing).
+                # Match eager behavior: inexact version misses use the default
+                # tool so workflow safe-version migration can run; exact
+                # requests must still report the requested version missing.
                 if tool_version and not exact:
                     default_entry = self._tool_index.entries.get(tool_id)
                     if default_entry is not None:
@@ -1051,27 +949,13 @@ class CachedToolBox(ToolBox):
                         if tool:
                             return tool
 
-        # Short-id fallback for shed installs. The eager toolbox resolves
-        # ``get_tool("collection_column_join")`` via ``_tools_by_old_id``,
-        # which is populated at tool-registration time. The cached-toolbox install
-        # path doesn't materialise the Tool, so we maintain
-        # ``_shed_short_id_to_guids`` separately and consult it here. Each
-        # shed install lives under a distinct guid in the index, so we
-        # walk every guid mapped to the short id and sort the
-        # successfully-loaded Tools by version — matching the eager path's
-        # ``rval.sort(key=lambda t: t.version_object)`` over
-        # ``_tools_by_old_id[tool_id]``.
+        # Cached shed installs need their own short-id lookup and version sort.
         if self._tool_index and self._shed_short_id_to_guids and tool_id in self._shed_short_id_to_guids:
             candidates: list[tuple[tuple[int, Any], Tool]] = []
             for guid in sorted(self._shed_short_id_to_guids[tool_id]):
                 loaded = self._load_tool_on_demand(guid, tool_version)
                 if loaded is None and tool_version and not exact:
-                    # Unknown version on this guid — try its default. Honor
-                    # ``exact``: like the guid path above and eager
-                    # ``AbstractToolBox.get_tool`` (``elif exact: continue``),
-                    # a specific-version request must not substitute another
-                    # version, so skip this candidate when exact and the
-                    # requested version isn't available.
+                    # Inexact requests may use this guid's default version.
                     default_entry = self._tool_index.entries.get(guid)
                     if default_entry is not None:
                         loaded = self._load_tool_on_demand(guid, default_entry.version or None)
@@ -1984,22 +1868,7 @@ class CachedToolBox(ToolBox):
         return self._tool_index
 
     def resolve_search_hit(self, tool_id: str) -> Optional["Tool"]:
-        """Resolve a search hit to a registered stub, never materialising.
-
-        ``ToolsService.search_tools`` only needs the tool id plus an
-        ``allow_user_access`` check to filter results — parsing the tool
-        would be pure waste. Going through :meth:`get_tool` instead
-        materialises every hit, and the populator-owned whoosh index can
-        carry ids that were never loaded into this toolbox
-        (``tool_conf.xml.sample`` alone lists ~150 legacy tools whose files
-        aren't present in most deployments).
-
-        Return the already-registered stub / Tool from ``_tools_by_id`` (or
-        via the shed short-id map), or ``None`` for a hit that isn't part of
-        this toolbox. That matches eager search, whose ``_tools_by_id``
-        lookup returns ``None`` for un-loaded ids so they're skipped — the
-        cached-toolbox path must not surface (or parse) tools the eager path wouldn't.
-        """
+        """Return a registered search hit without materialising it."""
         tool = self._tools_by_id.get(tool_id)
         if tool is not None:
             return tool
@@ -2028,7 +1897,4 @@ class CachedToolBox(ToolBox):
                 latest_by_lineage[lineage_id] = entry
         return [latest_by_lineage[lineage_id].id for lineage_id in ordered_lineages]
 
-    # ``to_dict`` is NOT overridden: ``AbstractToolBox.to_dict`` runs the
-    # ``FilterFactory`` pass for both the panel and the flat listing, and
-    # its ``get_tool_to_dict`` serves ``CachedTool`` stubs via
-    # ``to_panel_entry`` — filtered AND non-materialising.
+    # The inherited ``to_dict`` keeps filtering while serving index-backed stubs.

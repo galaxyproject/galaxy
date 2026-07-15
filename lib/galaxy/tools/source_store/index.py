@@ -1,10 +1,4 @@
-"""
-Tool Index - Lightweight in-memory index for fast API responses.
-
-This module provides the ToolIndex and ToolIndexEntry classes that store
-lightweight metadata about tools for efficient API responses without
-loading full tool sources.
-"""
+"""Index metadata used by cached tool APIs and search."""
 
 import json
 from datetime import datetime
@@ -29,13 +23,7 @@ from galaxy.util.hash_util import md5_hash_str
 
 
 class ToolIndexEntry(BaseModel):
-    """
-    Lightweight tool metadata for API responses and search.
-
-    This class contains all fields needed for batch API endpoints without
-    requiring the full tool source to be loaded. Serialization is plain
-    Pydantic (``model_dump(mode="json")`` / ``model_validate``).
-    """
+    """Metadata needed for batch APIs and search without parsing a tool."""
 
     # === Identity ===
     id: str
@@ -46,10 +34,7 @@ class ToolIndexEntry(BaseModel):
     # === Display ===
     name: str = ""
     description: str = ""
-    # Plain help text captured at populate time so the store's whoosh corpus
-    # can index help the way the eager toolbox does (see
-    # ``ToolWhooshIndex``). Capped in the populator; empty when the tool has
-    # no help or ``parse_help`` failed.
+    # Capped help text for Whoosh; empty when unavailable.
     help_text: str = ""
 
     # === Classification ===
@@ -58,10 +43,7 @@ class ToolIndexEntry(BaseModel):
     is_workflow_compatible: bool = True
     panel_section_id: str | None = None
     panel_section_name: str | None = None
-    # True when the tool was a ``<tool>`` item of a tool-panel conf — top-level
-    # or inside a section — i.e. the set the eager conf walk places in the
-    # panel and records in the integrated tool panel. Converter and
-    # data-manager discoveries are indexed for lookups but never placed.
+    # True when declared in a tool-panel configuration.
     in_panel: bool = True
     labels: list[str] = Field(default_factory=list)
     edam_operations: list[str] = Field(default_factory=list)
@@ -71,8 +53,7 @@ class ToolIndexEntry(BaseModel):
     source_hash: str = ""
     source_class: str = "XmlToolSource"
     source_path: str | None = None
-    # Raw md5 of the source file (incremental fast path: an unchanged file
-    # carries this entry forward instead of re-parsing).
+    # Source md5 for incremental population.
     file_hash: str | None = None
 
     # === Status ===
@@ -81,23 +62,13 @@ class ToolIndexEntry(BaseModel):
     require_login: bool = False
 
     # === Filter metadata ===
-    # ``tool_type`` is the Tool subclass key (``default``, ``data_manager``,
-    # ``interactive_tool``, ``data_source``, ...). Filter authors and
-    # ``DataManagerTool.allow_user_access`` (admin-only) both branch on this.
+    # Tool subclass key used by filters and access checks.
     tool_type: str = "default"
-    # True for datatype-converter discoveries (``CONVERTER_TOOL_CONF``). The
-    # ``tool_type`` alone can't identify them — converters keep whatever type
-    # their XML declares — so the populator stamps this flag from the
-    # discovery source. ``tests_summary`` excludes them to mirror the eager
-    # ``if not tool.is_datatype_converter`` filter.
+    # Stamped during converter discovery; type alone does not identify converters.
     is_datatype_converter: bool = False
-    # User-facing tags from ``<tool>`` config (distinct from ``labels``).
-    # Surfaced for custom tool filters that bucket tools by tag.
+    # User-facing ``<tool>`` config tags, distinct from labels.
     tags: list[str] = Field(default_factory=list)
-    # ``<data_manager id="...">`` from the data manager conf that references
-    # this tool. The conf id and the tool XML id may differ;
-    # ``DataManagerTool.exec_after_process`` resolves the registry by conf
-    # id, so materialise must restore it.
+    # Data-manager config id, which may differ from the XML tool id.
     data_manager_id: str | None = None
 
     # === Tests (for /api/tools/tests_summary) ===
@@ -105,11 +76,9 @@ class ToolIndexEntry(BaseModel):
 
     # === Requirements (for /api/tools/all_requirements, dependency endpoints) ===
     requirements: list[dict[str, Any]] = Field(default_factory=list)
-    # Example: [{"name": "samtools", "version": "1.9", "type": "package"}]
 
     # === Container Info (for container resolution endpoints) ===
     container_requirements: list[dict[str, Any]] = Field(default_factory=list)
-    # Example: [{"type": "docker", "identifier": "biocontainers/samtools:1.9"}]
 
     # === Tool Shed Info (for sanitize_allow, shed endpoints) ===
     tool_shed: str | None = None  # e.g., "toolshed.g2.bx.psu.edu"
@@ -121,10 +90,7 @@ class ToolIndexEntry(BaseModel):
     # === Timestamps ===
     indexed_at: datetime | None = None
 
-    # ``model_class`` and ``form_style`` are pure functions of ``tool_type``,
-    # so they are derived at read time rather than persisted — a stored copy
-    # would go silently stale if the ``Tool.to_dict`` classification changed
-    # (the index schema hash only catches field-shape drift, not value drift).
+    # Derived from ``tool_type`` to avoid stale serialized values.
 
     @property
     def model_class(self) -> str:
@@ -141,13 +107,7 @@ class ToolIndexEntry(BaseModel):
         return tool_types.get(self.tool_type, Tool)
 
 class ToolPanelItem(BaseModel):
-    """One panel placement — a conf ``<tool>`` item, top-level or sectioned.
-
-    Placements are what the eager conf walk iterates; recording them
-    separately from ``ToolIndex.entries`` (which collapses same-id tools to
-    one winner) lets the cached toolbox's fast panel init rebuild the live and
-    integrated panels without walking the confs.
-    """
+    """A configuration-order panel placement, separate from deduplicated entries."""
 
     tool_id: str
     section_id: str | None = None
@@ -156,35 +116,17 @@ class ToolPanelItem(BaseModel):
 
 
 class ToolIndex(BaseModel):
-    """
-    In-memory index of all tools for fast API access.
-
-    This class maintains a lightweight index of all tools that can be
-    used to serve API responses without loading full tool sources.
-    """
+    """In-memory metadata index for batch tool APIs."""
 
     entries: dict[str, ToolIndexEntry] = Field(default_factory=dict)
-    # Multi-version map. Several tool confs ship the same ``id`` at different
-    # versions (e.g. multiple_versions_hidden_v01 and _v02 both have id
-    # ``multiple_versions_hidden``). ``entries`` keeps the default per id (the
-    # last-written one or the highest version), ``entries_by_version`` keeps
-    # every version so ``get(tool_id, tool_version=...)`` resolves correctly
-    # to the matching ``source_hash``. Empty-string version key represents
-    # tools whose XML lacks a ``version`` attribute.
+    # Every indexed version; ``entries`` stores the default per id.
     entries_by_version: dict[str, dict[str, ToolIndexEntry]] = Field(default_factory=dict)
     by_section: dict[str, list[str]] = Field(default_factory=dict)
-    # Ordered panel placements, one per conf ``<tool>`` item, appended by
-    # ``add_entry`` in discovery (= conf) order. ``entries`` collapses
-    # same-id tools from different conf placements to one winner, so it
-    # cannot reproduce the panel: a tool id referenced by two confs (or two
-    # sections) has one entry but two placements. The cached toolbox's fast panel init
-    # replays these instead of walking the confs.
+    # Configuration-order placements, including repeated tool ids.
     panel_items: list["ToolPanelItem"] = Field(default_factory=list)
     panel_views: dict[str, dict] = Field(default_factory=dict)
     built_at: datetime | None = None
-    # Freshness-probe value captured by the populator run that wrote this
-    # index; boot re-probes and a match certifies coverage without a
-    # per-path scan (see :mod:`galaxy.tools.source_store.freshness`).
+    # Matching a fresh probe avoids a per-path coverage scan.
     freshness_token: str | None = None
 
     # Cached computations (not serialized)

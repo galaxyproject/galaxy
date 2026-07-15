@@ -1,13 +1,4 @@
-"""Whoosh-backed tool search index built from a ``ToolIndex``.
-
-Single source of truth for populator-built tool search ranking. The schema and field boosts mirror
-:class:`galaxy.tools.search.ToolPanelViewSearch`, so a query that ranks a
-tool first under the eager toolbox ranks it first here too.
-
-The populator calls :meth:`ToolWhooshIndex.build`
-once the JSON index is committed. Store consumers open the on-disk Whoosh
-index via :meth:`ToolWhooshIndex.search_scored` (``BM25F`` scoring).
-"""
+"""Whoosh-backed search index built from ``ToolIndex`` entries."""
 
 import json
 import logging
@@ -36,6 +27,7 @@ from whoosh.scoring import BM25F
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
+from galaxy.tools import DataManagerTool
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
@@ -50,20 +42,13 @@ from galaxy.util.tool_version import (
 
 log = logging.getLogger(__name__)
 
-# Sidecar file in the whoosh dir recording the corpus signature of the last
-# successful build; a matching signature lets ``build`` skip the rebuild.
+# Matching sidecar signatures let ``build`` skip an unchanged corpus.
 _CORPUS_SIGNATURE_FILE = "corpus.md5"
 
 
 @dataclass(frozen=True)
 class ToolSearchTuning:
-    """Whoosh schema/boost knobs for tool search.
-
-    Mirrors the ``tool_*`` keys on ``GalaxyAppConfiguration`` so this module
-    can build a search index without importing the full Galaxy config type
-    or carrying a god-object reference. Wire one in at the call site —
-    typically via :meth:`from_config`.
-    """
+    """Configuration-derived Whoosh schema and boost settings."""
 
     id_boost: float
     name_boost: float
@@ -76,12 +61,7 @@ class ToolSearchTuning:
     ngram_maxsize: int
     enable_ngram_search: bool
     ngram_factor: float
-    # Help-field knobs, mirrored from the eager ``ToolPanelViewSearch`` so the
-    # store corpus indexes help text with the same relative boost.
-    # ``index_tool_help`` gates whether help text is projected into the corpus
-    # at all (``config.index_tool_help``); ``help_boost`` is the field boost
-    # (``config.tool_help_boost``). Defaulted so existing tuning literals keep
-    # working — ``from_config`` supplies the real values.
+    # Defaults preserve existing explicit tuning literals.
     help_boost: float = 1.0
     index_tool_help: bool = True
 
@@ -105,11 +85,7 @@ class ToolSearchTuning:
 
 
 def build_search_schema(tuning: ToolSearchTuning, *, help_boost: float | None = None) -> Schema:
-    """Whoosh schema shared by eager toolbox search and store search.
-
-    ``help_boost`` adds the eager-only help field; the populator cannot index
-    rendered help text, so store search leaves it out.
-    """
+    """Build the shared eager/store schema, optionally including help."""
     schema_conf: dict = {
         "id": ID(stored=True, unique=True),
         "id_exact": NGRAMWORDS(
@@ -171,9 +147,7 @@ def _entry_to_doc(entry: ToolIndexEntry, *, include_help: bool = False) -> dict 
     off by default so callers that build a help-less schema never emit a field
     the schema lacks.
     """
-    # Data manager tools are admin-only; mirror ``ToolPanelViewSearch._create_doc``
-    # by leaving them out of the public search corpus.
-    if entry.tool_type == "data_manager":
+    if entry.tool_type == DataManagerTool.tool_type:
         return None
     name_clean = _clean(entry.name)
     doc: dict = {
@@ -213,20 +187,12 @@ def _entry_to_doc(entry: ToolIndexEntry, *, include_help: bool = False) -> dict 
 
 
 class ToolWhooshIndex:
-    """Build + query a Whoosh index over ``ToolIndexEntry`` rows.
-
-    Built at populate time and queried by store consumers. The on-disk format is plain Whoosh —
-    no Galaxy-specific encoding, so an operator can reopen it offline.
-    """
+    """Build and query a Whoosh index over ``ToolIndexEntry`` rows."""
 
     def __init__(self, index_dir: str, tuning: ToolSearchTuning) -> None:
         self.index_dir = index_dir
         self.tuning = tuning
-        # Project help into the corpus only when the deployment indexes help
-        # (``config.index_tool_help``). The schema then carries a ``help``
-        # field, and ``build`` fills it from each entry's ``help_text``. Both
-        # feed the corpus signature, so flipping ``index_tool_help`` rebuilds
-        # the existing on-disk index once — no per-config corpora.
+        # Changing help indexing changes the schema and corpus signature.
         self.index_help = tuning.index_tool_help
         self.schema = build_search_schema(
             tuning,
@@ -248,12 +214,7 @@ class ToolWhooshIndex:
         return index.create_in(self.index_dir, schema=self.schema)
 
     def _corpus_signature(self, docs: list[dict]) -> str:
-        """Fingerprint of what a build over ``docs`` would produce.
-
-        Covers the document content, the field set, and the boosts (tuning) —
-        if none of those changed, the on-disk index is already equivalent and
-        a rebuild can be skipped.
-        """
+        """Fingerprint document content, schema, and tuning."""
         return md5_hash_str(
             repr(self.tuning)
             + json.dumps(sorted(self.schema.names()))
@@ -261,11 +222,7 @@ class ToolWhooshIndex:
         )
 
     def build(self, tool_index: ToolIndex) -> int:
-        """Rebuild the on-disk index from ``tool_index.entries``.
-
-        Returns the number of documents written — 0 when the corpus is
-        unchanged and the rebuild was skipped.
-        """
+        """Rebuild from entries, returning zero when the corpus is unchanged."""
         docs = []
         for entry in tool_index.entries.values():
             if entry.hidden:
@@ -275,9 +232,7 @@ class ToolWhooshIndex:
                 continue
             docs.append(doc)
 
-        # Tokenising ~10k documents takes a minute-plus; skip it when the
-        # corpus signature matches what's already on disk (the common
-        # populate re-run where nothing changed).
+        # Avoid re-tokenising an unchanged corpus.
         signature = self._corpus_signature(docs)
         signature_path = os.path.join(self.index_dir, _CORPUS_SIGNATURE_FILE)
         if os.path.isdir(self.index_dir) and index.exists_in(self.index_dir):
@@ -289,10 +244,7 @@ class ToolWhooshIndex:
             except OSError:
                 pass
 
-        # The corpus is complete, so bulk-load fresh documents and commit
-        # with CLEAR — the new segment atomically replaces all previous
-        # content. No per-document delete lookups (update_document) and no
-        # upfront scan of existing ids, which dominated the old build.
+        # Replace the complete corpus atomically.
         ix = self._open()
         writer = ix.writer(limitmb=256)
         for doc in docs:

@@ -27,33 +27,6 @@ path:
   ``/api/tool_panels`` …) answer from the index instead of iterating the
   full toolbox.
 
-Module Layout
--------------
-
-::
-
-    lib/galaxy/tools/source_store/
-      __init__.py        Public re-exports
-      interface.py       ToolSourceStore ABC and StoredToolSource
-      factory.py         Store construction from Galaxy configuration
-      sqlalchemy.py      SqlAlchemyToolSourceStore (any SQLAlchemy URL)
-      composite.py       CompositeToolSourceStore (per-conf routing, merged index)
-      index.py           ToolIndex, ToolIndexEntry (the lightweight metadata)
-      search.py          ToolWhooshIndex (Whoosh search index built from a ToolIndex)
-      discover.py        discover_tools() — conf walk without booting a ToolBox
-      populator.py       Population + watch logic (parse, store, index, broadcast)
-      freshness.py       Optional external freshness probes
-      watcher.py         Filesystem watch support
-
-    lib/galaxy/tools/cached_toolbox.py     CachedToolBox (subclass of ToolBox), CachedTool
-    lib/galaxy/tools/search/__init__.py  CachedToolboxSearch (queries every store's index)
-
-    scripts/tool_source/populate_store.py    Thin CLI wrapper over populator.main
-
-The same ``populator.main`` is registered as the
-``galaxy-populate-tool-source-store`` console script in the ``galaxy-app``
-package metadata (``packages/app/pyproject.toml``).
-
 Data Model
 ----------
 
@@ -215,21 +188,9 @@ files are re-parsed, the store is updated, and a single
 exchange. ``--watch-polling`` switches to ``PollingObserver`` for
 NFS/CVMFS/network filesystems where inotify is unreliable.
 
-The broadcast is the populator's half of the contract: it publishes
-``reload_tool_source_cache`` so peer processes can drop their stale index
-view. The control task handler lives in
-``galaxy.queue_worker.reload_tool_source_cache`` and is wired into the
-``control_message_to_task`` map. Each Galaxy process that receives the
-message:
-
-1. Calls ``CachedToolBox.invalidate_index_cache()`` (drops the in-memory
-   index reference so the next access reloads from the store).
-2. Calls ``ToolSourceStore.invalidate_index_cache()`` on the store itself.
-
-Reload also refreshes already-materialised tools: entries whose source hash
-changed have their LRU entries, stubs, and registered ``Tool`` objects
-purged, so the next access re-materialises from the new source. Unchanged
-entries keep their cached ``Tool`` objects.
+The populator broadcasts ``reload_tool_source_cache`` so peers invalidate
+their toolbox and store indexes. Reload evicts materialised tools whose source
+hash changed; unchanged tools stay cached.
 
 Batch Endpoint Integration
 --------------------------
@@ -247,9 +208,6 @@ materialising tools:
 - ``get_tests_summary`` and ``get_all_requirements`` answer from
   ``ToolIndex`` entries when the cached toolbox is active, and iterate the toolbox
   otherwise.
-
-The integration suite pins this: ``_cached_materialize_count`` (bumped in the
-single materialise chokepoint) must not move across any of these endpoints.
 
 ``CachedToolboxSearch`` (``tools/search/__init__.py``) queries the whoosh index
 of *every* configured store — the default plus each named per-conf store —
