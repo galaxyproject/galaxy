@@ -8,7 +8,7 @@ import { computed, ref, watch } from "vue";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useUserStore } from "@/stores/userStore";
 import STATES from "@/utils/datasetStates";
-import { withPrefix } from "@/utils/redirect";
+import { absPath, withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
@@ -31,6 +31,8 @@ const props = defineProps<Props>();
 const contentTruncated = ref<number | null>(null);
 const contentChunked = ref<boolean>(false);
 const errorMessage = ref<string>("");
+const previewLoaded = ref<boolean>(false);
+const previewBlobUrl = ref<string | null>(null);
 const sanitizedJobImported = ref<boolean>(false);
 const sanitizedToolId = ref<string | null>(null);
 
@@ -56,19 +58,52 @@ const sanitizedMessage = computed(() => {
 
 watch(
     () => props.datasetId,
-    async () => {
+    async (_, __, onCleanup) => {
+        previewLoaded.value = false;
+        contentChunked.value = false;
+        contentTruncated.value = null;
+        sanitizedJobImported.value = false;
+        sanitizedToolId.value = null;
+        errorMessage.value = "";
+
+        const controller = new AbortController();
+        const existingBlobUrl = previewBlobUrl.value;
+        previewBlobUrl.value = null;
+        if (existingBlobUrl) {
+            URL.revokeObjectURL(existingBlobUrl);
+        }
+        onCleanup(() => {
+            controller.abort();
+            if (previewBlobUrl.value) {
+                URL.revokeObjectURL(previewBlobUrl.value);
+                previewBlobUrl.value = null;
+            }
+        });
+
         try {
-            const { headers } = await fetch(withPrefix(previewUrl.value), { method: "HEAD" });
+            const response = await fetch(absPath(previewUrl.value), { method: "GET", signal: controller.signal });
+            const { headers } = response;
             contentChunked.value = !!headers.get("x-content-chunked");
             contentTruncated.value = headers.get("x-content-truncated")
                 ? Number(headers.get("x-content-truncated"))
                 : null;
             sanitizedJobImported.value = !!headers.get("x-sanitized-job-imported");
             sanitizedToolId.value = headers.get("x-sanitized-tool-id");
-            errorMessage.value = "";
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText}`);
+            }
+            if (!contentChunked.value) {
+                const blob = await response.blob();
+                previewBlobUrl.value = URL.createObjectURL(blob);
+            }
         } catch (e) {
-            errorMessage.value = errorMessageAsString(e);
-            console.error(e);
+            if (!controller.signal.aborted) {
+                errorMessage.value = errorMessageAsString(e);
+                console.error(e);
+            }
+        }
+        if (!controller.signal.aborted) {
+            previewLoaded.value = true;
         }
     },
     { immediate: true },
@@ -88,6 +123,7 @@ watch(
         <FontAwesomeIcon :icon="faExclamationTriangle" />
         <span>Dataset is unavailable. Please check the history panel for details.</span>
     </BAlert>
+    <LoadingSpan v-else-if="!previewLoaded" message="Loading dataset content" />
     <div v-else class="dataset-display h-100">
         <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
             {{ sanitizedMessage }}
@@ -112,7 +148,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <CenterFrame :src="previewUrl" @load="emit('load')" />
+            <CenterFrame v-if="previewBlobUrl" :src="previewBlobUrl" @load="emit('load')" />
         </div>
     </div>
 </template>
