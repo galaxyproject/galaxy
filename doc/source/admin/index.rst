@@ -22,6 +22,7 @@ Galaxy Deployment & Administration
    ai_agents
    enable_headers_in_fetch_requests
    tool_panel
+   tool_source_storage
    data_tables
    mq
    dependency_resolvers

@@ -420,6 +420,45 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_source_database_connection``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    SQLAlchemy connection string for the tool source store, a
+    rebuildable cache of pre-parsed tool sources kept outside Galaxy's
+    main database. Multi-host deployments should point every Galaxy
+    process at the same URI, such as a SQLite file on a shared
+    filesystem.
+    Sample default ``sqlite:///<data_dir>/tool_sources.sqlite``.
+    Populate the store with: python
+    scripts/tool_source/populate_store.py
+    For details see
+    https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``tool_source_stores``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional named tool source stores referenced from individual
+    tool_conf files via a top-level ``store="<name>"`` attribute (XML)
+    or ``store: <name>`` key (YAML). When any tool_conf opts in, the
+    process composes its named store with the default
+    (``tool_source_database_connection``) store at runtime, with reads
+    tried in declared order and writes always landing on the default.
+    Each entry takes a SQLAlchemy ``url`` and an optional ``read_only:
+    true`` flag. For SQLite connection-level read-only, use a SQLite
+    URI with ``mode=ro&uri=true``.
+    For details see
+    https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
+:Default: ``None``
+:Type: map
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_dependency_dir``
 ~~~~~~~~~~~~~~~~~~~~~~~

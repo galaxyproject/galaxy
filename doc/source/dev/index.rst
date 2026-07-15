@@ -20,6 +20,7 @@ A multi-hour long video playlist covering these slides can be found at
   data_managers
   data_source
   data_types
+  tool_source_storage
   faq
   writing_tests
   debugging_tests

@@ -376,16 +376,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             log.warning("Waiting for toolbox reload timed out after 60 seconds")
 
     def _configure_tool_config_files(self):
-        if self.config.shed_tool_config_file not in self.config.tool_configs:
-            self.config.tool_configs.append(self.config.shed_tool_config_file)
-        # The value of migrated_tools_config is the file reserved for containing only those tools that have been
-        # eliminated from the distribution and moved to the tool shed. If migration checking is disabled, only add it if
-        # it exists (since this may be an existing deployment where migrations were previously run).
-        if (
-            os.path.exists(self.config.migrated_tools_config)
-            and self.config.migrated_tools_config not in self.config.tool_configs
-        ):
-            self.config.tool_configs.append(self.config.migrated_tools_config)
+        self.config.tool_configs = self.config.all_tool_config_files()
 
     def _configure_toolbox(self):
         self.citations_manager = self._register_singleton(CitationsManager, CitationsManager(self))

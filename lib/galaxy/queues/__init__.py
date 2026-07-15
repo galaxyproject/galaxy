@@ -7,9 +7,6 @@ All message queues used by Galaxy
 import datetime
 import logging
 import socket
-from typing import (
-    TYPE_CHECKING,
-)
 
 from kombu import (
     Connection,
@@ -20,12 +17,11 @@ from sqlalchemy import (
     or_,
     select,
 )
+from sqlalchemy.orm import Session
 
 from galaxy.model import WorkerProcess
 from galaxy.util import now
-
-if TYPE_CHECKING:
-    from galaxy.web_stack import ApplicationStack
+from galaxy.web_stack import ApplicationStack
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +37,26 @@ WEBAPP_APP_TYPE = "webapp"
 SSE_MONITOR_APP_TYPE = "sse_monitor"
 
 
-def all_control_queues_for_declare(application_stack: "ApplicationStack", webapp_only: bool = False) -> list[Queue]:
+def control_queues_for_session(session: Session, webapp_only: bool = False) -> list[Queue]:
+    """Build the per-process control-queue declare list from a model session.
+
+    Split out of :func:`all_control_queues_for_declare` so callers that have a
+    bare session but no ``ApplicationStack`` — notably the standalone
+    tool-source populator CLI — can build the same routing table.
+    """
+    stmt = select(WorkerProcess).where(
+        WorkerProcess.update_time > now() - datetime.timedelta(seconds=DEFAULT_ACTIVE_PROCESS_WINDOW_SECONDS)
+    )
+    if webapp_only:
+        stmt = stmt.where(WorkerProcess.app_type == WEBAPP_APP_TYPE)
+    else:
+        # ``!=`` alone would drop NULL app_type rows (job handlers); keep them.
+        stmt = stmt.where(or_(WorkerProcess.app_type != SSE_MONITOR_APP_TYPE, WorkerProcess.app_type.is_(None)))
+    processes = session.scalars(stmt).all()
+    return [Queue(f"control.{p.server_name}@{p.hostname}", galaxy_exchange, routing_key="control.*") for p in processes]
+
+
+def all_control_queues_for_declare(application_stack: ApplicationStack, webapp_only: bool = False) -> list[Queue]:
     """
     For in-memory routing (used by sqlalchemy-based transports), we need to be able to
     build the entire routing table in producers.
@@ -65,20 +80,11 @@ def all_control_queues_for_declare(application_stack: "ApplicationStack", webapp
     """
     app = application_stack.app
     try:
-        stmt = select(WorkerProcess).where(
-            WorkerProcess.update_time > now() - datetime.timedelta(seconds=DEFAULT_ACTIVE_PROCESS_WINDOW_SECONDS)
-        )
-        if webapp_only:
-            stmt = stmt.where(WorkerProcess.app_type == WEBAPP_APP_TYPE)
-        else:
-            # ``!=`` alone would drop NULL app_type rows (job handlers); keep them.
-            stmt = stmt.where(or_(WorkerProcess.app_type != SSE_MONITOR_APP_TYPE, WorkerProcess.app_type.is_(None)))
         with app.model.new_session() as session:
-            processes = session.scalars(stmt).all()
+            return control_queues_for_session(session, webapp_only=webapp_only)
     except Exception:
         log.debug("Failed to look up active processes for control-queue declare", exc_info=True)
         return []
-    return [Queue(f"control.{p.server_name}@{p.hostname}", galaxy_exchange, routing_key="control.*") for p in processes]
 
 
 def control_queues_from_config(config):
