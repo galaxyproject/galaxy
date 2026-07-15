@@ -82,7 +82,6 @@ class SanitizeAllowController(BaseAPIController):
         sanitize_dict: dict[str, Any] = dict(
             blocked_toolshed=[], allowed_toolshed=[], blocked_local=[], allowed_local=[]
         )
-        ids = None
         for tool_id in trans.app.config.sanitize_allowlist:
             installed_name = ""
             installed_ids = {"full": "", "allowed": tool_id, "owner": "", "repository": "", "tool": ""}

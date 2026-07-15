@@ -140,56 +140,6 @@ class ToolIndexEntry(BaseModel):
     def _tool_class(self) -> type[Tool]:
         return tool_types.get(self.tool_type, Tool)
 
-    def to_api_dict(self, detail: bool = False) -> dict[str, Any]:
-        """Convert to /api/tools response format."""
-        result: dict[str, Any] = {
-            "id": self.id,
-            "name": self.name,
-            "version": self.version,
-            "description": self.description,
-            "model_class": self.model_class,
-            "icon": self.icon,
-            "labels": self.labels,
-            "panel_section_id": self.panel_section_id,
-            "panel_section_name": self.panel_section_name,
-            "is_workflow_compatible": self.is_workflow_compatible,
-            "xrefs": self.xrefs,
-            "form_style": self.form_style,
-            "hidden": self.hidden,
-        }
-        if detail:
-            result.update(
-                {
-                    "uuid": self.uuid,
-                    "edam_operations": self.edam_operations,
-                    "edam_topics": self.edam_topics,
-                    "tool_shed_repository_id": self.tool_shed_repository_id,
-                }
-            )
-        return result
-
-    def to_tests_summary(self) -> dict[str, Any]:
-        """Convert to /api/tools/tests_summary format."""
-        return {"tool_name": self.name, "count": self.test_count}
-
-    def to_requirements_list(self) -> list[dict[str, Any]]:
-        """Get requirements for /api/tools/all_requirements."""
-        return self.requirements
-
-    def to_sanitize_entry(self) -> dict[str, Any]:
-        """Convert to /api/sanitize_allow format."""
-        entry: dict[str, Any] = {"tool_id": self.id, "name": self.name}
-        if not self.is_local:
-            entry.update(
-                {
-                    "tool_shed": self.tool_shed,
-                    "repository_name": self.repository_name,
-                    "repository_owner": self.repository_owner,
-                }
-            )
-        return entry
-
-
 class ToolPanelItem(BaseModel):
     """One panel placement — a conf ``<tool>`` item, top-level or sectioned.
 
@@ -448,40 +398,6 @@ class ToolIndex(BaseModel):
     def get_panel_views(self) -> dict[str, dict]:
         """Return pre-computed panel view dictionaries."""
         return self.panel_views
-
-    def get_panel_view(self, view: str) -> dict | None:
-        """Return pre-computed panel view."""
-        return self.panel_views.get(view)
-
-    def get_requirements_summary(self, index_by: str = "requirements") -> list[dict[str, Any]]:
-        """
-        Summarize requirements across toolbox.
-
-        Args:
-            index_by: Either "requirements" to group tools by requirement,
-                     or "tools" to group requirements by tool.
-
-        Returns:
-            List of summary dictionaries.
-        """
-        if index_by == "requirements":
-            # Group tools by requirement
-            by_req: dict[tuple, dict[str, Any]] = {}
-            for entry in self.entries.values():
-                for req in entry.requirements:
-                    key = (req.get("name", ""), req.get("version", ""))
-                    if key not in by_req:
-                        by_req[key] = {"requirement": req, "tools": []}
-                    by_req[key]["tools"].append(entry.id)
-            return list(by_req.values())
-        else:
-            # Group requirements by tool
-            return [{"tool_id": e.id, "requirements": e.requirements} for e in self.entries.values()]
-
-    def get_tools_needing_containers(self) -> list[ToolIndexEntry]:
-        """Return tools with container requirements."""
-        return [e for e in self.entries.values() if e.container_requirements]
-
 
 # md5 of the ToolIndex JSON schema (the pattern
 # tool_shed.managers.model_cache.hash_model uses — not imported from there,

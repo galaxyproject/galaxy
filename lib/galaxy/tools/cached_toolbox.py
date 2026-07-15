@@ -1983,18 +1983,6 @@ class CachedToolBox(ToolBox):
         """Get the tool index."""
         return self._tool_index
 
-    def get_tool_ids(self) -> list[str]:
-        """Get all tool IDs from index."""
-        if self._tool_index:
-            return list(self._tool_index.entries.keys())
-        return []
-
-    def get_index_entry(self, tool_id: str) -> ToolIndexEntry | None:
-        """Get index entry for a tool without loading it."""
-        if self._tool_index:
-            return self._tool_index.get(tool_id)
-        return None
-
     def resolve_search_hit(self, tool_id: str) -> Optional["Tool"]:
         """Resolve a search hit to a registered stub, never materialising.
 
@@ -2039,23 +2027,6 @@ class CachedToolBox(ToolBox):
             elif self._index_entry_newer(entry, current):
                 latest_by_lineage[lineage_id] = entry
         return [latest_by_lineage[lineage_id].id for lineage_id in ordered_lineages]
-
-    # === Required property overrides ===
-
-    @property
-    def all_requirements(self):
-        """Get all tool requirements from index (no tool loading needed)."""
-        if self._tool_index:
-            requirements = set()
-            for entry in self._tool_index.entries.values():
-                for req in entry.requirements:
-                    # Convert dict to hashable tuple
-                    req_tuple = (req.get("name"), req.get("version"), req.get("type"))
-                    requirements.add(req_tuple)
-            return [
-                {"name": r[0], "version": r[1], "type": r[2]} for r in requirements if r[0]  # Filter out empty names
-            ]
-        return []
 
     # ``to_dict`` is NOT overridden: ``AbstractToolBox.to_dict`` runs the
     # ``FilterFactory`` pass for both the panel and the flat listing, and

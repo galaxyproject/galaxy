@@ -44,7 +44,6 @@ Module Layout
       populator.py       Population + watch logic (parse, store, index, broadcast)
       freshness.py       Optional external freshness probes
       watcher.py         Filesystem watch support
-      benchmarks.py      Store/index micro-benchmarks
 
     lib/galaxy/tools/cached_toolbox.py     CachedToolBox (subclass of ToolBox), CachedTool
     lib/galaxy/tools/search/__init__.py  CachedToolboxSearch (queries every store's index)
@@ -306,4 +305,3 @@ Testing
   interface.
 - Integration tests: ``test/integration/test_tool_source_storage.py`` spins
   up Galaxy against the store and verifies end-to-end behavior.
-- Benchmarks: ``python -m galaxy.tools.source_store.benchmarks --iterations 100``.
