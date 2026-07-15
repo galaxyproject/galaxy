@@ -40,6 +40,7 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.path import StrPath
+from galaxy.util.tool_version import is_shed_guid
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -843,7 +844,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 "get_tool cannot be called with both get_all_versions and exact as True"
             )
 
-        if "/repos/" in tool_id:  # test if tool came from a toolshed
+        if is_shed_guid(tool_id):  # test if tool came from a toolshed
             tool_id_without_tool_shed = tool_id.split("/repos/")[1]
             available_tool_sheds_parsed = [urlparse(_) for _ in self.app.tool_shed_registry.tool_sheds.values()]
             available_tool_sheds = [

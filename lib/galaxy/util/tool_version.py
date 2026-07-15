@@ -8,6 +8,14 @@ def remove_version_from_guid(guid: str) -> str | None:
     return guid[:last_slash]
 
 
+def is_shed_guid(tool_id: str) -> bool:
+    """
+    True when ``tool_id`` is a toolshed-derived guid
+    (``toolshed/repos/owner/name/tool_id/version``).
+    """
+    return "/repos/" in tool_id
+
+
 def short_tool_id(guid: str) -> str:
     """
     Tool-id segment of a toolshed-derived tool_id(=guid),

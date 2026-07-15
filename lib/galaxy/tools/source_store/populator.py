@@ -95,6 +95,7 @@ from galaxy.util import listify
 from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.properties import load_app_properties
 from galaxy.util.tool_version import (
+    is_shed_guid,
     remove_version_from_guid,
     short_tool_id,
 )
@@ -476,7 +477,7 @@ def build_index_entry_from_source(
 
         lowered = tool_id.lower()
         all_ids = [lowered]
-        if "/repos/" in lowered:
+        if is_shed_guid(lowered):
             all_ids = [lowered, remove_version_from_guid(lowered) or lowered, short_tool_id(lowered)]
         # Same ontology expansion as ``Tool.__init__``: curated EDAM mapping
         # overrides and legacy bio.tools xrefs included.

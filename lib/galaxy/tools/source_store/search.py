@@ -43,6 +43,7 @@ from galaxy.tools.source_store.index import (
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.tool_version import (
+    is_shed_guid,
     remove_version_from_guid,
     short_tool_id,
 )
@@ -202,7 +203,7 @@ def _entry_to_doc(entry: ToolIndexEntry, *, include_help: bool = False) -> dict 
         doc["labels"] = unicodify(" ".join(entry.labels))
     tool_id = (entry.id or "").lower()
     all_ids = [tool_id]
-    if "/repos/" in tool_id:
+    if is_shed_guid(tool_id):
         all_ids = [tool_id, remove_version_from_guid(tool_id) or tool_id, short_tool_id(tool_id)]
     if tags := curated_tool_tags(all_ids):
         doc["tool_tags"] = unicodify(",".join(tags))

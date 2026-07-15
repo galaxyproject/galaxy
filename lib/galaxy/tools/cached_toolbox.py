@@ -55,6 +55,7 @@ from galaxy.tools.source_store.populator import (
 )
 from galaxy.util import listify
 from galaxy.util.tool_version import (
+    is_shed_guid,
     remove_version_from_guid,
     short_tool_id,
 )
@@ -230,7 +231,7 @@ class CachedTool:
     # --- derived properties ---
     @property
     def guid(self):
-        return self._overrides.get("guid") or (self._entry.id if "/repos/" in self._entry.id else None)
+        return self._overrides.get("guid") or (self._entry.id if is_shed_guid(self._entry.id) else None)
 
     @guid.setter
     def guid(self, value):
@@ -870,7 +871,7 @@ class CachedToolBox(ToolBox):
             return []
         versions = list(self._tool_index.entries_by_version.get(tool_id, {}).keys())
         result = [v for v in versions if v]
-        if "/repos/" in tool_id:
+        if is_shed_guid(tool_id):
             versionless = remove_version_from_guid(tool_id)
             if versionless:
                 for entry_id, version in self._guid_sibling_versions().get(versionless, ()):
@@ -1418,7 +1419,7 @@ class CachedToolBox(ToolBox):
             # the kwd is missing and ``exec_after_process`` then can't find
             # the manager — eager threads this through ``load_hidden_tool``.
             kwds["data_manager_id"] = entry.data_manager_id
-        if stored.tool_id and "/repos/" in stored.tool_id:
+        if stored.tool_id and is_shed_guid(stored.tool_id):
             kwds["guid"] = stored.tool_id
             # ``ToolConfRepository`` (lib/galaxy/tool_util/toolbox/base.py:87)
             # is the same namedtuple stub the eager pipeline hands the Tool
