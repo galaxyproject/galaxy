@@ -71,6 +71,14 @@ class ToolSearchTuning:
     ngram_maxsize: int
     enable_ngram_search: bool
     ngram_factor: float
+    # Help-field knobs, mirrored from the eager ``ToolPanelViewSearch`` so the
+    # store corpus indexes help text with the same relative boost.
+    # ``index_tool_help`` gates whether help text is projected into the corpus
+    # at all (``config.index_tool_help``); ``help_boost`` is the field boost
+    # (``config.tool_help_boost``). Defaulted so existing tuning literals keep
+    # working — ``from_config`` supplies the real values.
+    help_boost: float = 1.0
+    index_tool_help: bool = True
 
     @classmethod
     def from_config(cls, config: GalaxyAppConfiguration) -> "ToolSearchTuning":
@@ -86,6 +94,8 @@ class ToolSearchTuning:
             ngram_maxsize=int(config.tool_ngram_maxsize),
             enable_ngram_search=bool(config.tool_enable_ngram_search),
             ngram_factor=float(config.tool_ngram_factor),
+            help_boost=float(config.tool_help_boost),
+            index_tool_help=bool(config.index_tool_help),
         )
 
 
@@ -148,8 +158,14 @@ def _clean(s: str | None) -> str:
     return text
 
 
-def _entry_to_doc(entry: ToolIndexEntry) -> dict | None:
-    """Turn a ``ToolIndexEntry`` into the document shape ``Schema`` expects."""
+def _entry_to_doc(entry: ToolIndexEntry, *, include_help: bool = False) -> dict | None:
+    """Turn a ``ToolIndexEntry`` into the document shape ``Schema`` expects.
+
+    ``include_help`` projects the entry's captured help text into a ``help``
+    field, mirroring the eager toolbox's ``index_tool_help`` behaviour. It's
+    off by default so callers that build a help-less schema never emit a field
+    the schema lacks.
+    """
     # Data manager tools are admin-only; mirror ``ToolPanelViewSearch._create_doc``
     # by leaving them out of the public search corpus.
     if entry.tool_type == "data_manager":
@@ -186,6 +202,8 @@ def _entry_to_doc(entry: ToolIndexEntry) -> dict | None:
         all_ids = [tool_id, tool_id.rsplit("/", 1)[0], tool_id.rsplit("/", 2)[-2]]
     if tags := curated_tool_tags(all_ids):
         doc["tool_tags"] = unicodify(",".join(tags))
+    if include_help and entry.help_text:
+        doc["help"] = unicodify(entry.help_text)
     return doc
 
 
@@ -199,7 +217,16 @@ class ToolWhooshIndex:
     def __init__(self, index_dir: str, tuning: ToolSearchTuning) -> None:
         self.index_dir = index_dir
         self.tuning = tuning
-        self.schema = build_search_schema(tuning)
+        # Project help into the corpus only when the deployment indexes help
+        # (``config.index_tool_help``). The schema then carries a ``help``
+        # field, and ``build`` fills it from each entry's ``help_text``. Both
+        # feed the corpus signature, so flipping ``index_tool_help`` rebuilds
+        # the existing on-disk index once — no per-config corpora.
+        self.index_help = tuning.index_tool_help
+        self.schema = build_search_schema(
+            tuning,
+            help_boost=tuning.help_boost if tuning.index_tool_help else None,
+        )
 
     def _open(self) -> index.FileIndex:
         os.makedirs(self.index_dir, exist_ok=True)
@@ -238,7 +265,7 @@ class ToolWhooshIndex:
         for entry in tool_index.entries.values():
             if entry.hidden:
                 continue
-            doc = _entry_to_doc(entry)
+            doc = _entry_to_doc(entry, include_help=self.index_help)
             if doc is None:
                 continue
             docs.append(doc)
@@ -305,6 +332,10 @@ class ToolWhooshIndex:
             "labels",
             "tool_tags",
         ]
+        # ``help`` is only present when the corpus was built with help indexing
+        # on; querying a field the on-disk schema lacks raises in the parser.
+        if "help" in ix.schema.names():
+            search_fields.append("help")
         parser = MultifieldParser(search_fields, schema=ix.schema, group=OrGroup)
         parsed = parser.parse(query)
         with ix.searcher(weighting=BM25F()) as searcher:

@@ -102,6 +102,12 @@ from galaxy.util.watcher import (
 
 log = logging.getLogger(__name__)
 
+# Upper bound on the help text carried onto each ``ToolIndexEntry``. Tool help
+# is occasionally enormous (embedded tables, long tutorials); cap it so the
+# persisted index and whoosh corpus stay bounded while still covering the help
+# body for search.
+MAX_HELP_TEXT_CHARS = 20000
+
 
 class _ReloadNotificationConfig(Protocol):
     amqp_internal_connection: str | None
@@ -492,12 +498,24 @@ def build_index_entry_from_source(
         requirements, containers, _, _, _ = tool_source.parse_requirements()
         tests = tool_source.parse_tests_to_dict().get("tests", [])
 
+        # Capture help text for the whoosh corpus. Parse failures drop help
+        # for this entry rather than failing the populate — a malformed help
+        # block must not lose the whole tool.
+        help_text = ""
+        try:
+            parsed_help = tool_source.parse_help()
+            if parsed_help and parsed_help.content:
+                help_text = parsed_help.content[:MAX_HELP_TEXT_CHARS]
+        except Exception:
+            help_text = ""
+
         return ToolIndexEntry(
             id=tool_id,
             uuid=uuid_val,
             version=version,
             name=tool_source.parse_name() or "",
             description=tool_source.parse_description() or "",
+            help_text=help_text,
             is_datatype_converter=discovered.tool_conf == CONVERTER_TOOL_CONF,
             icon=icon,
             xrefs=xrefs,

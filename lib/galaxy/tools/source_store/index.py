@@ -46,6 +46,11 @@ class ToolIndexEntry(BaseModel):
     # === Display ===
     name: str = ""
     description: str = ""
+    # Plain help text captured at populate time so the store's whoosh corpus
+    # can index help the way the eager toolbox does (see
+    # ``ToolWhooshIndex``). Capped in the populator; empty when the tool has
+    # no help or ``parse_help`` failed.
+    help_text: str = ""
 
     # === Classification ===
     icon: str | None = None

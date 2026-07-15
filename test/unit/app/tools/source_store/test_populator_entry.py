@@ -59,3 +59,23 @@ def test_entry_marks_datatype_converter(tmp_path):
     converter = _build(tmp_path, _TOOL_XML, tool_conf=CONVERTER_TOOL_CONF)
     assert plain is not None and plain.is_datatype_converter is False
     assert converter is not None and converter.is_datatype_converter is True
+
+
+def test_entry_captures_help_text(tmp_path):
+    entry = _build(tmp_path, _TOOL_XML)
+    assert entry is not None
+    assert "quaxifier" in entry.help_text
+
+
+def test_entry_help_text_empty_without_help_block(tmp_path):
+    entry = _build(tmp_path, _TOOL_XML_NO_HELP)
+    assert entry is not None
+    assert entry.help_text == ""
+
+
+def test_entry_help_text_capped(tmp_path):
+    huge = "quaxifier " * (MAX_HELP_TEXT_CHARS // 2)
+    xml = _TOOL_XML.replace("This wraps the quaxifier subroutine.", huge)
+    entry = _build(tmp_path, xml)
+    assert entry is not None
+    assert len(entry.help_text) <= MAX_HELP_TEXT_CHARS
