@@ -89,8 +89,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         self.gtn_db: GTNSearchDB | None = None
         try:
-            self.gtn_db = GTNSearchDB(db_path=db_path, vector_db_path=vector_db_path, \
-                                      download_url=download_url, vector_db_url=vector_db_url)
+            self.gtn_db = GTNSearchDB(
+                db_path=db_path, vector_db_path=vector_db_path, download_url=download_url, vector_db_url=vector_db_url
+            )
             log.info("GTN database initialized successfully")
         except (OSError, RuntimeError) as e:
             log.warning(f"GTN database not available: {e}")
@@ -144,12 +145,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     collection_name="gtn_tutorials",
                     limit=limit,
                 )
-                return json.dumps(
-                    {
-                        "results": [r.to_dict() for r in results],
-                        "count": len(results)
-                    }
-                )
+                return json.dumps({"results": [r.to_dict() for r in results], "count": len(results)})
             except (AttributeError, KeyError, TypeError) as e:
                 log.warning(f"GTN vector search failed: {e}")
                 return json.dumps({"error": str(e)})
@@ -179,7 +175,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             except (AttributeError, KeyError, TypeError, ValueError) as e:
                 log.warning(f"GTN workflow vector search failed: {e}")
                 return json.dumps({"error": str(e)})
-            
+
         @agent.tool
         async def search_gtn_faq_vectors(
             ctx: RunContext[GalaxyAgentDependencies],
@@ -367,7 +363,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         try:
             message_history = self._extract_message_history(context)
-            
+
             result = await self._run_with_retry(query, message_history=message_history)
             usage = extract_usage_info(result)
             if usage:
@@ -436,7 +432,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             log.error(f"GTN training agent error: {e}")
             return self._get_error_response(str(e))
 
-
     def _format_gtn_response(self, response_data: GTNSearchResponse) -> str:
         parts: list[str] = []
         if response_data.summary:
@@ -449,13 +444,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 topic = tutorial.get("topic", "Unknown")
                 difficulty = tutorial.get("difficulty", "Unknown")
                 time_estimation = tutorial.get("time_estimation", "Unknown")
-                url = (
-                    tutorial.get("url") or tutorial.get("link") or None
-                )
+                url = tutorial.get("url") or tutorial.get("link") or None
                 snippet = tutorial.get("snippet", "")
-                summary = (
-                    tutorial.get("summary") or tutorial.get("description") or None
-                )
+                summary = tutorial.get("summary") or tutorial.get("description") or None
 
                 parts.append(f"\n{i}. **{title}**")
                 if snippet:
@@ -483,11 +474,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 topic = workflow.get("topic", "Unknown")
                 url = workflow.get("url", "Unknown")
                 content = workflow.get("content", "")
-                summary = (
-                    workflow.get("summary") 
-                    or workflow.get("description")
-                    or None
-                )
+                summary = workflow.get("summary") or workflow.get("description") or None
 
                 parts.append(f"\n{i}. **{title}**")
                 if content:
@@ -520,7 +507,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     parts.append(f"   - Area: {area}")
                 if url:
                     parts.append(f"   - Link: {url}")
-                
 
         if response_data.learning_path:
             parts.append(f"\n**Suggested Learning Path:**\n{response_data.learning_path}")

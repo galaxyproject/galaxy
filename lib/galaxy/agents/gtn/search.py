@@ -234,10 +234,12 @@ class WorkflowVectorSearchResults:
             "content": self.content,
             "score": round(self.score, 2),
         }
-    
+
+
 @dataclass
 class FAQVectorSearchResults:
     """Represents a search result from vector store db."""
+
     area: str
     content: str
     snippet: str
@@ -302,8 +304,13 @@ class FAQResult:
 class GTNSearchDB:
     """Interface to the GTN search database."""
 
-    def __init__(self, db_path: str | None = None, vector_db_path:str | None = None, \
-                 download_url: str | None = None, vector_db_url: str | None = None):
+    def __init__(
+        self,
+        db_path: str | None = None,
+        vector_db_path: str | None = None,
+        download_url: str | None = None,
+        vector_db_url: str | None = None,
+    ):
         if db_path is None and vector_db_path is None:
             current_dir = Path(__file__).parent
             self.db_path = current_dir / "data" / "gtn_search.db"
@@ -347,7 +354,7 @@ class GTNSearchDB:
             f"GTN database downloaded to {self.db_path} "
             f"(version={metadata['version']}, tutorials={metadata['tutorial_count']}, faqs={metadata['faq_count']})"
         )
-    
+
     def _download_vector_database(self):
         """Download the GTN vector database from the configured URL."""
         if not self.vector_db_url:
@@ -652,7 +659,7 @@ class GTNSearchDB:
         except sqlite3.Error as e:
             log.warning(f"FAQ search failed for query '{query}': {e}")
             return []
-        
+
     def search_gtn_vector_db(
         self,
         query: str,
@@ -669,9 +676,7 @@ class GTNSearchDB:
                 return []
 
             vectorstore = Chroma(
-                persist_directory=persist_dir,
-                collection_name=collection_name,
-                embedding_function=embeddings
+                persist_directory=persist_dir, collection_name=collection_name, embedding_function=embeddings
             )
 
             # Use similarity_search_with_score to get relevance scores
@@ -679,7 +684,7 @@ class GTNSearchDB:
 
             vector_results = []
 
-            for (doc, score) in results_with_scores:
+            for doc, score in results_with_scores:
                 source_id = doc.metadata.get("source")
                 parent_docs = vectorstore.get(where={"source": source_id})
                 # use longer context by taking multiple documents with the same source, if available
@@ -723,9 +728,7 @@ class GTNSearchDB:
                 return []
 
             vectorstore = Chroma(
-                persist_directory=persist_dir,
-                collection_name=collection_name,
-                embedding_function=embeddings
+                persist_directory=persist_dir, collection_name=collection_name, embedding_function=embeddings
             )
 
             # Use similarity_search_with_score to get relevance scores
@@ -733,7 +736,7 @@ class GTNSearchDB:
 
             vector_results = []
 
-            for (doc, score) in results_with_scores:
+            for doc, score in results_with_scores:
                 source_id = doc.metadata.get("source")
                 parent_docs = vectorstore.get(where={"source": source_id})
                 # use longer context by taking multiple documents with the same source, if available
@@ -764,7 +767,7 @@ class GTNSearchDB:
         except Exception as e:
             log.warning(f"Vector DB workflow search failed for query '{query}': {e}")
             return []
-        
+
     def search_faq_vector_db(
         self,
         query: str,
@@ -780,9 +783,7 @@ class GTNSearchDB:
                 return []
 
             vectorstore = Chroma(
-                persist_directory=persist_dir,
-                collection_name=collection_name,
-                embedding_function=embeddings
+                persist_directory=persist_dir, collection_name=collection_name, embedding_function=embeddings
             )
 
             # Use similarity_search_with_score to get relevance scores
@@ -790,7 +791,7 @@ class GTNSearchDB:
 
             vector_results = []
 
-            for (doc, score) in results_with_scores:
+            for doc, score in results_with_scores:
                 source_id = doc.metadata.get("source")
                 parent_docs = vectorstore.get(where={"source": source_id})
                 # use longer context by taking multiple documents with the same source, if available
