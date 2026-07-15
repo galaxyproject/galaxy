@@ -50,12 +50,10 @@ from galaxy.tools.source_store.index import (
     ToolPanelItem,
 )
 from galaxy.tools.source_store.populator import (
-    build_whoosh_for_store,
     conf_to_store_map,
     populate_for_paths,
     populate_store_inline,
 )
-from galaxy.tools.source_store.watcher import ToolSourceStoreWatcher
 from galaxy.util import listify
 from galaxy.util.tool_version import remove_version_from_guid
 from . import (
@@ -503,7 +501,6 @@ class LazyToolBox(ToolBox):
         # only the guid landed in the panel. Filled after the eager walk
         # via ``_rebuild_shed_short_id_map``.
         self._shed_short_id_to_guids: dict[str, set[str]] = {}
-        self._store_watcher: ToolSourceStoreWatcher | None = None
         # Identity-keyed cache of every indexed ``source_path`` — see
         # ``_index_source_paths``. Set before ``super().__init__`` because
         # the eager walk consults it through ``_tool_file_on_disk``.
@@ -537,59 +534,6 @@ class LazyToolBox(ToolBox):
             self._tools_parsed_from_file,
             self._tools_loaded_from_store,
         )
-
-        self._start_store_watcher()
-
-    def _start_store_watcher(self) -> None:
-        """Poll externally-published stores for freshness-token changes.
-
-        Only read-only members with a probe are watched: writable stores
-        change through this process's own populate paths, which broadcast
-        their own reloads, and CVMFS (the read-only publishing model)
-        delivers no filesystem events to react to — polling one
-        extended-attribute read per store per tick is the whole cost.
-        """
-        if not self.app.config.watch_tool_source_stores:
-            return
-        if not isinstance(self._store, CompositeToolSourceStore):
-            log.info("watch_tool_source_stores is enabled but no named tool source stores are configured")
-            return
-        members = [(n, m) for n, m in self._store.members if m.read_only and m.has_freshness_probe]
-        if not members:
-            log.info("watch_tool_source_stores is enabled but no read-only store declares a freshness probe")
-            return
-        self._store_watcher = ToolSourceStoreWatcher(
-            members=members,
-            interval=self.app.config.tool_source_store_watch_interval,
-            on_change=self._on_store_freshness_change,
-        )
-        self._store_watcher.start()
-        log.info(
-            "Watching tool source store(s) %s for freshness changes every %gs",
-            sorted(n for n, _ in members),
-            self.app.config.tool_source_store_watch_interval,
-        )
-
-    def _on_store_freshness_change(self, changed_names: list[str]) -> None:
-        """A watched store was republished: reload index state and search.
-
-        ``invalidate_index_cache`` handles the reload dance (it also
-        disposes read-only members' engines — see there). The whoosh
-        rebuild runs here rather than in the reload path because only a
-        republished store can grow the corpus without a local populate;
-        its corpus-signature check makes re-runs no-ops, and concurrent
-        rebuilds from peer processes degrade to one winner (whoosh lock,
-        errors swallowed and logged by ``build_whoosh_for_store``).
-        """
-        self.invalidate_index_cache()
-        if not isinstance(self._store, CompositeToolSourceStore):
-            return
-        for name, member in self._store.members:
-            if name not in changed_names:
-                continue
-            index = member.load_index()
-            if index is not None:
-                build_whoosh_for_store(self.app.config, name, index)
 
     def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
         """Load the persistent ``ToolIndex`` before delegating to the eager walk.
@@ -1792,18 +1736,6 @@ class LazyToolBox(ToolBox):
             if entry and entry.hidden:
                 tool.hidden = True
 
-    def stop_watcher(self) -> None:
-        """Stop the background store-freshness watcher, if one is running.
-
-        The reload path uses this to retire a superseded toolbox's watcher
-        thread without the class-level ``ToolLineage.reset()`` and index/store
-        teardown of ``close()`` — the replacement box is already live and the
-        shared ``tool_source_store`` must stay open. Idempotent.
-        """
-        if self._store_watcher is not None:
-            self._store_watcher.shutdown()
-            self._store_watcher = None
-
     def close(self) -> None:
         """Drop in-memory state at app shutdown.
 
@@ -1813,7 +1745,6 @@ class LazyToolBox(ToolBox):
         ``tool_source_store`` before the next boot wires up a fresh
         toolbox. Idempotent; safe to call more than once.
         """
-        self.stop_watcher()
         with self._cache_lock:
             self._tool_object_cache.clear()
         self._tool_index = None

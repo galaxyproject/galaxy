@@ -7,21 +7,18 @@ compares. A match certifies the store still covers the current tree, so
 boot skips the per-path coverage scan (and the populate it would trigger).
 A mismatch is always safe — it only falls back to scanning/populating.
 
-Two probe kinds exist:
+The built-in probe is ``tool_confs``: md5 over the tool and data-manager
+conf file contents, plus the (recursive) directory mtimes of any
+``tool_dir`` entries they declare. This captures tool
+additions/removals/renames — the same class of drift the coverage scan
+detects — without touching individual tool files. In-place edits to a
+tool's XML are invisible to both, by design: content changes are the
+incremental populate's job (raw-file md5), not the coverage check's.
+Wired to the default (writable) store automatically.
 
-- ``tool_confs``: md5 over the tool and data-manager conf file contents,
-  plus the (recursive) directory mtimes of any ``tool_dir`` entries they
-  declare. This captures tool additions/removals/renames — the same class
-  of drift the coverage scan detects — without touching individual tool
-  files. In-place edits to a tool's XML are invisible to both, by design:
-  content changes are the incremental populate's job (raw-file md5), not
-  the coverage check's. Wired to the default (writable) store
-  automatically.
-- ``cvmfs``: the CernVM-FS repository revision, read from the
-  ``user.revision`` extended attribute the CVMFS client exposes on the
-  mount point. One syscall covers every file in the repository. For a
-  store whose sqlite bundle is published in the same CVMFS transaction as
-  the tools it indexes, a matching revision is a hard consistency proof.
+Read-only stores need no probe for boot freshness — they are trusted as
+published (see ``SqlAlchemyToolSourceStore.index_is_fresh``); a probe on
+such a store only feeds the watcher's change detection.
 """
 
 import hashlib
@@ -99,38 +96,3 @@ def tool_confs_token(config: "GalaxyAppConfiguration") -> str:
 
 def tool_confs_probe(config: "GalaxyAppConfiguration") -> FreshnessProbe:
     return lambda: tool_confs_token(config)
-
-
-def _os_getxattr(path: str, attribute: str) -> bytes:
-    # ``os.getxattr`` only exists on Linux; CVMFS deployments are Linux.
-    getxattr = getattr(os, "getxattr", None)
-    if getxattr is None:
-        raise FreshnessProbeError("extended attributes are not supported on this platform")
-    return getxattr(path, attribute)
-
-
-def cvmfs_revision_token(path: str, _getxattr: Callable[[str, str], bytes] = _os_getxattr) -> str:
-    """CVMFS repository revision token for the repository containing ``path``.
-
-    The CVMFS client exposes repository metadata as extended attributes on
-    the mount point, so ascend from ``path`` until ``user.revision``
-    answers. Raises :class:`FreshnessProbeError` when no ancestor exposes
-    it — ``path`` isn't on CVMFS, or the repository isn't mounted (in
-    which case its tools are unreadable anyway, and "not fresh" is the
-    right verdict).
-    """
-    probe_path = os.path.abspath(path)
-    while True:
-        try:
-            revision = _getxattr(probe_path, "user.revision")
-        except OSError:
-            parent = os.path.dirname(probe_path)
-            if parent == probe_path:
-                raise FreshnessProbeError(f"no CVMFS revision xattr found on any ancestor of {path}")
-            probe_path = parent
-            continue
-        return f"cvmfs:{os.path.basename(probe_path)}:{revision.decode()}"
-
-
-def cvmfs_probe(path: str) -> FreshnessProbe:
-    return lambda: cvmfs_revision_token(path)

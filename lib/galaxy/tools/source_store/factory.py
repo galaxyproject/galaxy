@@ -3,12 +3,9 @@
 import logging
 from typing import TYPE_CHECKING
 
-from sqlalchemy.engine import make_url
-
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from .composite import CompositeToolSourceStore
 from .freshness import (
-    cvmfs_probe,
     FreshnessProbe,
     tool_confs_probe,
 )
@@ -39,19 +36,6 @@ def _build_default_store(
     return SqlAlchemyToolSourceStore(url=url, read_only=False, freshness_probe=tool_confs_probe(config))
 
 
-def _sqlite_database_path(url: str) -> str | None:
-    """On-disk file behind a sqlite URL, or None for other backends."""
-    parsed = make_url(url)
-    if parsed.drivername.split("+")[0] != "sqlite":
-        return None
-    database = parsed.database
-    if not database or database == ":memory:":
-        return None
-    if database.startswith("file:"):
-        database = database[len("file:") :].split("?", 1)[0]
-    return database or None
-
-
 def _build_freshness_probe(
     name: str,
     spec: dict,
@@ -62,15 +46,8 @@ def _build_freshness_probe(
         return None
     if freshness == "tool_confs":
         return tool_confs_probe(config)
-    if freshness == "cvmfs":
-        probe_path = spec.get("freshness_path") or _sqlite_database_path(spec["url"])
-        if not probe_path:
-            raise ConfigurationError(
-                f"tool_source_stores[{name!r}] uses freshness: cvmfs with a non-file url; set freshness_path"
-            )
-        return cvmfs_probe(probe_path)
     raise ConfigurationError(
-        f"tool_source_stores[{name!r}] freshness must be 'cvmfs', 'tool_confs', or 'none' (got {freshness!r})"
+        f"tool_source_stores[{name!r}] freshness must be 'tool_confs' or 'none' (got {freshness!r})"
     )
 
 
@@ -82,7 +59,7 @@ def build_named_store(
     """Build a single named store from a ``tool_source_stores`` entry.
 
     ``spec`` is the dict from galaxy.yml - a SQLAlchemy ``url`` plus
-    optional ``read_only``, ``freshness``, and ``freshness_path`` keys.
+    optional ``read_only`` and ``freshness`` keys.
     Named stores get no probe unless one is declared: a store populated on
     a different host (the CVMFS publishing model) would never match a
     locally-computed conf hash, so ``tool_confs`` cannot be the default
