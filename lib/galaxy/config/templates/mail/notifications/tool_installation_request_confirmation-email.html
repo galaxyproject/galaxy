@@ -1,0 +1,70 @@
+Use this template to customize the HTML email a user will receive
+when they submit a tool installation request.
+
+Template begins here >>>>>>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>[Galaxy] Tool installation request submitted</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  </head>
+  <body style="font-family: 'Roboto', sans-serif;">
+
+    <p style="font-size: 12pt;">
+      Hello {{ name }},<br><br>
+
+      Your request to install the following tool(s) on <b>{{ hostname }}</b> has been submitted to the administrators:
+    </p>
+
+    <table style="font-size: 12pt; border-collapse: collapse; width: 100%;">
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">
+          Tool{{ " names" if content['tool_names'] | length > 1 else " name" }}
+        </td>
+        <td style="padding: 4px 8px;">
+          {% if content['tool_names'] | length == 1 %}
+          {{ content['tool_names'][0] }}
+          {% else %}
+          <ul style="margin: 0; padding-left: 1.2em;">
+            {% for name in content['tool_names'] %}<li>{{ name }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+        </td>
+      </tr>
+      {% if content['tool_url'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">URL</td>
+        <td style="padding: 4px 8px;">{{ content['tool_url'] }}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Description</td>
+        <td style="padding: 4px 8px;">{{ content['description'] }}</td>
+      </tr>
+      {% if content['scientific_domain'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Scientific domain</td>
+        <td style="padding: 4px 8px;">{{ content['scientific_domain'] }}</td>
+      </tr>
+      {% endif %}
+      {% if content['requested_version'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Requested version</td>
+        <td style="padding: 4px 8px;">{{ content['requested_version'] }}</td>
+      </tr>
+      {% endif %}
+      {% if content['additional_remarks'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Additional remarks</td>
+        <td style="padding: 4px 8px;">{{ content['additional_remarks'] }}</td>
+      </tr>
+      {% endif %}
+    </table>
+
+    <p style="font-size: 10pt; color: #666; margin-top: 20px;">
+      You received this email because you submitted a tool installation request on this Galaxy instance.
+    </p>
+
+  </body>
+</html>
