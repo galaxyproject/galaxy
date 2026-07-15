@@ -3775,8 +3775,12 @@ class SetMetadataTool(Tool):
     tool_action: "SetMetadataToolAction"
 
     def regenerate_imported_metadata_if_needed(
-        self, hda: HistoryDatasetAssociation, history: History, user: model.User, session_id: int
-    ):
+        self,
+        hda: HistoryDatasetAssociation,
+        history: History,
+        user: model.User | None,
+        session_id: int | None,
+    ) -> None:
         if hda.has_metadata_files:
             job, *_ = self.tool_action.execute_via_app(
                 self,
