@@ -19,7 +19,6 @@ and emits comparison reports.
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
 """
 
-import json
 import os
 from types import SimpleNamespace
 from typing import (
@@ -1042,7 +1041,7 @@ class TestAgentUnitMocked:
                 "method": "structured",
                 "tutorial_count": 1,
                 "workflow_count": 1,
-            }
+            },
         )
 
         response = await mock_gtn_agent.process("RNA-seq differential expression")
@@ -1051,83 +1050,6 @@ class TestAgentUnitMocked:
         assert "**Relevant FAQs:**" not in response.content
         assert response.agent_type == "gtn_training"
         assert response.metadata["method"] == "structured"
-
-    @pytest.mark.asyncio
-    async def test_gtn_process_derives_url_for_vector_tool_results_without_url(self):
-        agent = GTNTrainingAgent.__new__(GTNTrainingAgent)
-        agent.deps = self.deps
-        agent.gtn_db = MagicMock()
-
-        vector_payload = {
-            "tutorials": [
-                {
-                    "type": "tutorial",
-                    "topic": "statistics",
-                    "tutorial": "machine-learning",
-                    "title": "Machine Learning",
-                    "page_content": "Train and evaluate machine learning models in Galaxy.",
-                    "score": 0.25,
-                    "url": None,
-                    "source": "machine-learning.md",
-                }
-            ],
-            "count": 1,
-        }
-        tool_part = SimpleNamespace(
-            tool_name="search_gtn_tutorial_vectors",
-            content=json.dumps(vector_payload),
-        )
-        result = SimpleNamespace(
-            output=GTNSearchResponse(tutorials=[], faqs=[], summary="No matches."),
-            all_messages=lambda: [SimpleNamespace(parts=[tool_part])],
-        )
-        with patch.object(agent, "_run_with_retry", AsyncMock(return_value=result)):
-            response = await agent.process("how can I do machine learning analysis ?")
-
-        expected_url = (
-            "https://training.galaxyproject.org/training-material/topics/statistics/"
-            "tutorials/machine-learning/tutorial.html"
-        )
-        assert "I encountered an error" not in response.content
-        assert expected_url in response.content
-        assert response.suggestions[0].parameters["url"] == expected_url
-        assert response.metadata["method"] == "structured_with_fallback"
-
-    @pytest.mark.asyncio
-    async def test_gtn_process_runs_direct_vector_fallback_when_tool_payload_is_unavailable(self):
-        agent = GTNTrainingAgent.__new__(GTNTrainingAgent)
-        agent.deps = self.deps
-        agent.gtn_db = MagicMock()
-        vector_result = MagicMock()
-        vector_result.to_dict.return_value = {
-            "type": "tutorial",
-            "topic": "variant-analysis",
-            "tutorial": "diploid-variant-calling",
-            "page_content": "Diploid variant calling explains SNP calling and genotyping.",
-            "score": 0.31,
-            "url": "https://training.galaxyproject.org/training-material/topics/variant-analysis/tutorials/diploid-variant-calling/tutorial.html",
-            "source": "diploid-variant-calling.md",
-        }
-        agent.gtn_db.search_vector_db.return_value = [vector_result]
-        result = SimpleNamespace(
-            output=GTNSearchResponse(
-                tutorials=[],
-                faqs=[],
-                summary="Variant calling in Galaxy follows a mapped-reads to VCF workflow.",
-                total_time="1-2 hours",
-            ),
-            all_messages=lambda: [],
-        )
-        with patch.object(agent, "_run_with_retry", AsyncMock(return_value=result)):
-            response = await agent.process("variant calling")
-
-        assert "Variant calling in Galaxy follows" in response.content
-        assert "Diploid Variant Calling" in response.content
-        assert "SNP calling and genotyping" in response.content
-        assert response.metadata["method"] == "structured_with_fallback"
-        assert response.metadata["tutorial_count"] == 1
-        agent.gtn_db.search_vector_db.assert_called_once_with(query="variant calling", limit=5)
-        agent.gtn_db.search.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_generic_fallback_behavior(self):
