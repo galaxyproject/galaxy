@@ -980,6 +980,49 @@ class CachedToolBox(ToolBox):
 
     # === create_tool seam: return CachedTool stub when the index already has the source ===
 
+    def load_hidden_tool(self, config_file, **kwds):
+        """Stamp the ``<data_manager id>`` conf id before the load resolves.
+
+        ``DataManager._load_tool`` is the only caller passing
+        ``data_manager_id``, and it loads with ``use_cached=True`` — a
+        ``ToolCache`` hit (e.g. the install-time materialization in
+        ``get_repository_tools_tups`` caches the parsed tool) would skip
+        ``create_tool`` and with it the stamping the job-time materialise
+        depends on. Stamping off the index entry here covers both paths.
+        """
+        data_manager_id = kwds.get("data_manager_id")
+        if data_manager_id:
+            entry = self._resolve_index_entry(config_file, kwds.get("guid"))
+            if entry is not None:
+                self._stamp_data_manager_id(entry, data_manager_id)
+        return super().load_hidden_tool(config_file, **kwds)
+
+    def _stamp_data_manager_id(self, entry: ToolIndexEntry, data_manager_id: str) -> None:
+        """Record the conf id on the entry (and its per-version twin) and persist.
+
+        Without it a materialised ``DataManagerTool`` falls back to the tool
+        id and ``exec_after_process`` misses the data-manager registry.
+        """
+        if entry.data_manager_id:
+            return
+        entry.data_manager_id = data_manager_id
+        if self._tool_index is not None:
+            # After a reload the default and per-version maps hold distinct
+            # objects; the job-time materialise resolves through the
+            # per-version map, so stamp its twin too.
+            twin = self._tool_index.entries_by_version.get(entry.id, {}).get(entry.version or "")
+            if twin is not None and twin is not entry:
+                twin.data_manager_id = data_manager_id
+        if self._store is not None:
+            try:
+                self._store.update_index_entry(entry)
+            except Exception as e:
+                log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
+        # A Tool materialised before the conf id was known (the install-time
+        # parse in ``get_repository_tools_tups``) carries the fallback id;
+        # drop it so the next materialise rebuilds from the stamped entry.
+        self._purge_tool_object_cache(entry.id)
+
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds) -> "Tool":
         """Return a :class:`CachedTool` for every indexed tool source.
 
@@ -1019,7 +1062,7 @@ class CachedToolBox(ToolBox):
                 "galaxy.tools.special_tools.hidden_lib_tool_paths()."
             )
         data_manager_id = kwds.get("data_manager_id")
-        if data_manager_id and not entry.data_manager_id:
+        if data_manager_id:
             # ``DataManager._load_tool`` hands the ``<data_manager id>`` conf
             # id through ``load_hidden_tool``. Entries minted before any data
             # manager conf covered this tool (install-time self-heal) don't
@@ -1027,19 +1070,7 @@ class CachedToolBox(ToolBox):
             # ``DataManagerTool.exec_after_process`` falls back to the tool
             # id and misses the registry. Persist so job-handler processes
             # materialising from the shared index see it too.
-            entry.data_manager_id = data_manager_id
-            if self._tool_index is not None:
-                # After a from_dict reload the default and per-version maps
-                # hold distinct objects; the job-time materialise resolves
-                # through the per-version map, so stamp its twin too.
-                twin = self._tool_index.entries_by_version.get(entry.id, {}).get(entry.version or "")
-                if twin is not None and twin is not entry:
-                    twin.data_manager_id = data_manager_id
-            if self._store is not None:
-                try:
-                    self._store.update_index_entry(entry)
-                except Exception as e:
-                    log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
+            self._stamp_data_manager_id(entry, data_manager_id)
         # The eager initialization pipeline is typed around Tool, but only
         # consumes the indexed ToolLike surface before registering the entry.
         return cast("Tool", self._cached_tool_for_entry(entry))

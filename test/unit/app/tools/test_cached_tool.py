@@ -297,6 +297,8 @@ def test_config_file_reflects_entry_source_path():
 def _seam_box():
     box = CachedToolBox.__new__(CachedToolBox)
     box._cached_tools = {}
+    box._tool_object_cache = LRUCache(maxsize=8)
+    box._cache_lock = threading.RLock()
     box._tool_index = ToolIndex()
     box._store = MagicMock()
     box._store.get_by_source_path.return_value = None
