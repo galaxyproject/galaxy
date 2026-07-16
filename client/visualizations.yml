@@ -18,6 +18,9 @@ alignmentviewer:
 annotateimage:
     package: "@galaxyproject/annotateimage"
     version: 0.0.0
+atlas:
+    package: "@galaxyproject/atlas"
+    version: 0.0.0
 chiraviz:
     package: "@galaxyproject/chiraviz"
     version: 0.0.2

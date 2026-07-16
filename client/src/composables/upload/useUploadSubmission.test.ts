@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { http, HttpResponse } from "msw";
 import { createPinia, setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -11,6 +11,7 @@ import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { makeCollectionConfig, makeLibraryItem, makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
 import { buildPreparedUpload } from "@/utils/upload";
+import * as uploadUtils from "@/utils/upload";
 
 import { useUploadSubmission } from "./useUploadSubmission";
 
@@ -338,5 +339,23 @@ describe("useUploadSubmission", () => {
         const batch = useUploadState().activeBatches.value[0];
         expect(batch?.status).toBe("error");
         expect(batch?.collectionId).toBeUndefined();
+    });
+
+    it("falls back to the default chunk size when the server config reports 0", async () => {
+        server.use(http.get("/api/configuration", () => HttpResponse.json({ chunk_upload_size: 0 })));
+
+        const uploadDatasetsSpy = vi.spyOn(uploadUtils, "uploadDatasets").mockResolvedValue(undefined);
+        const apiItem = makeUrlItem({ name: "remote.txt", url: "https://example.org/remote.txt" });
+        const wrapper = mountHarness({ apiItems: buildPreparedUpload([apiItem]).apiItems, uploadItems: [apiItem] });
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(uploadDatasetsSpy).toHaveBeenCalled();
+        expect(uploadDatasetsSpy.mock.calls[0]?.[1]).toMatchObject({
+            chunkSize: 10485760,
+        });
+        uploadDatasetsSpy.mockRestore();
     });
 });

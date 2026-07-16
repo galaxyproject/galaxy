@@ -983,6 +983,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{history_content_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Downloads the dataset, redirecting to the object store when possible.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        get: operations["download_api_datasets__history_content_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Returns download metadata (size, filename) for the dataset.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        head: operations["download_api_datasets__history_content_id__download_head"];
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{history_content_id}/metadata_file": {
         parameters: {
             query?: never;
@@ -1524,6 +1548,23 @@ export interface paths {
         get: operations["file_sources__templates_index"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/file_source_templates/{template_id}/{template_version}/form-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get dynamic data for a file source template form. */
+        post: operations["file_sources__template_form_data"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2526,6 +2567,30 @@ export interface paths {
          * @description Streams the dataset for download or the contents preview to be displayed in a browser.
          */
         head: operations["history_contents_display_api_histories__history_id__contents__history_content_id__display_head"];
+        patch?: never;
+        trace?: never;
+    };
+    "/api/histories/{history_id}/contents/{history_content_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Downloads the dataset, redirecting to the object store when possible.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        get: operations["history_contents_download_api_histories__history_id__contents__history_content_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Returns download metadata (size, filename) for the dataset.
+         * @description Downloads the whole dataset file. Clients must follow the 302 redirect this route may return.
+         */
+        head: operations["history_contents_download_api_histories__history_id__contents__history_content_id__download_head"];
         patch?: never;
         trace?: never;
     };
@@ -9126,6 +9191,8 @@ export interface components {
             description?: string | null;
             /** Device */
             device?: string | null;
+            /** Enable Direct Download */
+            enable_direct_download?: boolean | null;
             /** Name */
             name?: string | null;
             /** Object Expires After Days */
@@ -13084,6 +13151,11 @@ export interface components {
             id: string;
             /** Name */
             name: string | null;
+            /**
+             * Requires Oauth2 Authorization
+             * @default false
+             */
+            requires_oauth2_authorization: boolean;
             /** Secrets */
             secrets?: components["schemas"]["TemplateSecret"][] | null;
             /**
@@ -13109,6 +13181,7 @@ export interface components {
                 | "dataverse"
                 | "cbioportal"
                 | "huggingface"
+                | "github"
                 | "iiif"
                 | "mavedb"
                 | "omero"
@@ -13120,6 +13193,7 @@ export interface components {
                       | components["schemas"]["TemplateVariableInteger"]
                       | components["schemas"]["TemplateVariablePathComponent"]
                       | components["schemas"]["TemplateVariableBoolean"]
+                      | components["schemas"]["TemplateVariableSelect"]
                   )[]
                 | null;
             /**
@@ -19867,6 +19941,7 @@ export interface components {
                       | components["schemas"]["TemplateVariableInteger"]
                       | components["schemas"]["TemplateVariablePathComponent"]
                       | components["schemas"]["TemplateVariableBoolean"]
+                      | components["schemas"]["TemplateVariableSelect"]
                   )[]
                 | null;
             /**
@@ -23579,6 +23654,38 @@ export interface components {
          * @enum {string}
          */
         TaskState: "PENDING" | "STARTED" | "RETRY" | "FAILURE" | "SUCCESS";
+        /**
+         * TemplateFormDataRequest
+         * @description Values available while rendering a post-authorization template form.
+         */
+        TemplateFormDataRequest: {
+            /** Uuid */
+            uuid: string;
+            /** Variables */
+            variables?: {
+                [key: string]: string | boolean | number;
+            };
+        };
+        /** TemplateFormDataResponse */
+        TemplateFormDataResponse: {
+            /** Dynamic Options */
+            dynamic_options?: {
+                [key: string]: [string, string][];
+            };
+            /** Messages */
+            messages?: components["schemas"]["TemplateFormMessage"][];
+        };
+        /** TemplateFormMessage */
+        TemplateFormMessage: {
+            /** Content */
+            content: string;
+            /**
+             * Variant
+             * @default info
+             * @enum {string}
+             */
+            variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+        };
         /** TemplateSecret */
         TemplateSecret: {
             /** Help */
@@ -23648,6 +23755,19 @@ export interface components {
                   )[]
                 | null;
         };
+        /**
+         * TemplateVariableOptionsProvider
+         * @description A server-side source for select options and its form dependencies.
+         */
+        TemplateVariableOptionsProvider: {
+            /**
+             * Depends On
+             * @default []
+             */
+            depends_on: string[];
+            /** Kind */
+            kind: string;
+        };
         /** TemplateVariablePathComponent */
         TemplateVariablePathComponent: {
             /** Default */
@@ -23675,6 +23795,44 @@ export interface components {
                       | components["schemas"]["LengthParameterValidatorModel"]
                   )[]
                 | null;
+        };
+        /** TemplateVariableSelect */
+        TemplateVariableSelect: {
+            /** Default */
+            default?: string | null;
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional?: boolean | null;
+            /** Options */
+            options?: components["schemas"]["TemplateVariableSelectOption"][] | null;
+            options_provider?: components["schemas"]["TemplateVariableOptionsProvider"] | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "select";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
+        };
+        /** TemplateVariableSelectOption */
+        TemplateVariableSelectOption: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
         };
         /** TemplateVariableString */
         TemplateVariableString: {
@@ -25301,6 +25459,8 @@ export interface components {
             description?: string | null;
             /** Device */
             device?: string | null;
+            /** Enable Direct Download */
+            enable_direct_download?: boolean | null;
             /** Hidden */
             hidden: boolean;
             /** Name */
@@ -25418,6 +25578,7 @@ export interface components {
                 | "dataverse"
                 | "cbioportal"
                 | "huggingface"
+                | "github"
                 | "iiif"
                 | "mavedb"
                 | "omero"
@@ -33827,6 +33988,105 @@ export interface operations {
             };
         };
     };
+    download_api_datasets__history_content_id__download_get: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redirect to a URL serving the dataset directly from the backing object store. Only returned for whole-file downloads when the dataset's object store has `enable_direct_download` set. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    download_api_datasets__history_content_id__download_head: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     datasets__get_metadata_file: {
         parameters: {
             query: {
@@ -35297,6 +35557,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__template_form_data: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The template ID of the target file source template. */
+                template_id: string;
+                /** @description The template version of the target file source template. */
+                template_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateFormDataRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateFormDataResponse"];
                 };
             };
             /** @description Request Error */
@@ -38930,6 +39240,107 @@ export interface operations {
                 offset?: number | null;
                 /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+                history_id: string | null;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents_download_api_histories__history_id__contents__history_content_id__download_get: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the History Dataset. */
+                history_content_id: string;
+                history_id: string | null;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redirect to a URL serving the dataset directly from the backing object store. Only returned for whole-file downloads when the dataset's object store has `enable_direct_download` set. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents_download_api_histories__history_id__contents__history_content_id__download_head: {
+        parameters: {
+            query?: {
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
+                to_ext?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

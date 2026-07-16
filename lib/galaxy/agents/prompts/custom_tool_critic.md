@@ -20,21 +20,53 @@ You receive the original user request, the produced tool YAML, and you return a 
 - Optional parameters have no `default`, forcing the user to supply values that should be sensible
 - Common analysis options aren't exposed (e.g., a BWA tool with no `-t` threads input)
 - File outputs declared without `from_work_dir` or matching command output (the validator should have caught these, but flag any borderline cases)
-- Container is a generic image like `ubuntu:latest` when a biocontainer for the wrapped tool exists
+
+## Containers are not your concern
+
+Do NOT flag, judge, or second-guess the `container` image. A separate dedicated step infers the
+tool's dependencies and resolves a verified image against quay.io, so any container critique here
+is redundant and may conflict with it. Leave container choice out of `clarity_issues` and
+`idiomaticity_issues` entirely.
 
 ## What NOT to flag
 
 - Anything the deterministic validator already catches (undeclared `inputs.X` references, container shape, citations, tool id format) -- assume it passed
 - Style preferences that don't affect correctness or clarity ("I'd name this differently")
-- Suggestions that would require new inputs or a fundamentally different tool design -- you are reviewing what's there, not redesigning
+
+## Supply the fix, not just the diagnosis
+
+For every issue, also provide the correction. Most quality issues are a single field's
+text, so emit an `edits` entry that we apply directly -- this avoids regenerating the whole
+tool. Each edit is:
+
+- `target`: `tool`, `input`, or `output`
+- `name`: the input's or output's declared `name` (omit for `target: tool`)
+- `attribute`: one of `label`, `help`, `description`, `name`, `shell_command`
+- `value`: the new text
+- `reason`: short note on what it fixes
+
+Allowed `(target, attribute)` combinations -- emit edits ONLY for these:
+
+- `(tool, description)`, `(tool, name)`, `(tool, shell_command)`
+- `(input, label)`, `(input, help)`
+- `(output, label)`
+
+If a fix needs anything else -- adding or removing an input/output, exposing a new
+parameter, setting a parameter default, or any structural change -- do NOT invent an edit.
+Instead set `needs_full_refine: true` and describe the change in the issue lists; the tool
+will be fully regenerated to address it.
 
 ## Output
 
 Return a `CritiqueReport` with:
 
-- `clarity_issues`: list of concrete fixable issues, one per item. Empty list if none.
-- `idiomaticity_issues`: list of concrete fixable issues. Empty list if none.
-- `should_refine`: true only if at least one issue is significant enough that re-rolling the tool is worth a model call. Cosmetic-only critiques should set this to false.
+- `clarity_issues`: concrete fixable issues, one per item. Empty list if none.
+- `idiomaticity_issues`: concrete fixable issues. Empty list if none.
+- `edits`: field-level corrections for the issues you can express as one of the allowed
+  `(target, attribute)` edits above. Empty if there are none.
+- `needs_full_refine`: true only when an issue requires a structural change that can't be
+  expressed as an edit. Leave false when `edits` cover everything (or the tool is already good).
 - `summary`: one sentence describing the overall verdict.
 
-Be parsimonious. The producer will be re-called with your critique if `should_refine` is true, which costs another LLM call. Don't trigger refinement for trivial issues.
+Be parsimonious. Editing costs nothing extra, but `needs_full_refine` triggers another full
+generation -- reserve it for genuine structural problems, not cosmetic text fixes.

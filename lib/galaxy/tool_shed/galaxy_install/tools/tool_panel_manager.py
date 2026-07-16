@@ -315,10 +315,20 @@ class ToolPanelManager:
                     if tool_section is None:
                         tool_section = self.generate_tool_section_element_from_dict(tool_section_dict)
                 # Find the tuple containing the current guid from the list of repository_tools_tups.
+                matched_tup = None
                 for repository_tool_tup in repository_tools_tups:
-                    tool_file_path, tup_guid, tool = repository_tool_tup
-                    if tup_guid == guid:
+                    if repository_tool_tup[1] == guid:
+                        matched_tup = repository_tool_tup
                         break
+                if matched_tup is None:
+                    log.warning(
+                        "Skipping tool panel entry for guid '%s': no matching tool in repository '%s' (revision %s)",
+                        guid,
+                        repository_name,
+                        changeset_revision,
+                    )
+                    continue
+                tool_file_path, _, tool = matched_tup
                 tool_elem = self.generate_tool_elem(
                     tool_shed,
                     repository_name,

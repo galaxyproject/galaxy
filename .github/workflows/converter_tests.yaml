@@ -41,11 +41,10 @@ jobs:
           repository: galaxyproject/galaxy-test-data
           path: galaxy-test-data
           persist-credentials: false
-      - uses: actions/setup-python@v6.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Move test data
         run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
       - name: Install planemo

@@ -17,6 +17,18 @@ import pytest
 from galaxy.managers.sse_dispatch import SSEEventDispatcher
 
 
+def _fake_queue(name: str = "queue") -> MagicMock:
+    """A queue double whose ``.name`` is a real string.
+
+    ``MagicMock(name=...)`` sets the mock's repr label, not a ``.name``
+    attribute, so it must be assigned explicitly — the dispatcher's debug log
+    does ``", ".join(q.name for q in queues)``.
+    """
+    q = MagicMock()
+    q.name = name
+    return q
+
+
 @pytest.fixture
 def fake_declare():
     """Call-counting provider passed to ``SSEEventDispatcher`` via DI.
@@ -24,7 +36,7 @@ def fake_declare():
     Returns a non-empty list by default so the cache stores a value — empty
     results are intentionally not cached (see ``test_empty_result_not_cached``).
     """
-    calls: dict[str, Any] = {"count": 0, "returns": [MagicMock(name="queue")]}
+    calls: dict[str, Any] = {"count": 0, "returns": [_fake_queue()]}
 
     def _provider():
         calls["count"] += 1
@@ -117,7 +129,7 @@ def test_empty_result_not_cached(dispatcher, fake_declare):
     assert fake_declare["count"] == 2
 
     # Once the upstream starts returning a non-empty result, caching resumes.
-    fake_declare["returns"] = [MagicMock(name="queue")]
+    fake_declare["returns"] = [_fake_queue()]
     dispatcher.notify_broadcast("payload")
     dispatcher.notify_broadcast("payload")
     assert fake_declare["count"] == 3

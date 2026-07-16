@@ -8,9 +8,11 @@ from typing import (
     IO,
 )
 
+from galaxy import util
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
+from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
@@ -29,6 +31,7 @@ from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
 
 log = logging.getLogger(__name__)
+MAX_LINE_LEN = 100
 
 
 class Wiff(Binary):
@@ -998,20 +1001,89 @@ class Msp(Text):
 
     file_ext = "msp"
 
+    identity_keys = frozenset(
+        {
+            "spectrum_id",
+            "accession",
+            "db#",
+            "spectrumid",
+            "title",
+            "record title",
+            "compound_name",
+            "ch$name",
+            "name",
+        }
+    )
+    num_peaks_keys = frozenset({"num_peaks", "pk$num_peak", "num peaks"})
+
+    MetadataElement(
+        name="spectra_count",
+        default=0,
+        desc="Number of spectra",
+        readonly=True,
+        visible=True,
+        no_value=0,
+    )
+
     @staticmethod
     def next_line_starts_with(contents: IO, prefix: str) -> bool:
+        """Helper function to check if the next line starts with a given prefix."""
         next_line = contents.readline()
         return next_line is not None and next_line.startswith(prefix)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a NIST MSP output file."""
-        begin_contents = file_prefix.contents_header
-        if "\n" not in begin_contents:
-            return False
-        lines = begin_contents.splitlines()
-        if len(lines) < 2:
-            return False
-        return lines[0].startswith("Name:") and lines[1].startswith("MW:")
+        contents = file_prefix.string_io()
+        in_block = False
+        has_identity = False
+        has_num_peaks = False
+
+        for line in contents:
+            stripped = line.strip()
+            if not stripped:
+                if in_block and has_identity and has_num_peaks:
+                    return True
+                in_block = False
+                has_identity = False
+                has_num_peaks = False
+                continue
+            key = stripped.split(":", 1)[0].strip().lower()
+            if key in self.identity_keys:
+                in_block = True
+                has_identity = True
+                continue
+            if in_block and key in self.num_peaks_keys:
+                has_num_peaks = True
+
+        return in_block and has_identity and has_num_peaks
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        """Set the metadata elements."""
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        if not dataset.has_data():
+            return
+        dataset.metadata.spectra_count = self._count_spectra(dataset.get_file_name())
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            count = dataset.metadata.spectra_count
+            label = "spectrum" if count == 1 else "spectra"
+            dataset.blurb = f"{util.commaify(str(count))} {label}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def _count_spectra(self, path: str) -> int:
+        count = 0
+        with open(path, encoding="utf-8") as handle:
+            for line in util.iter_start_of_line(handle, MAX_LINE_LEN):
+                stripped = line.strip()
+                lower_line = stripped.split(":", 1)[0].strip().lower()
+                if lower_line in self.num_peaks_keys:
+                    count += 1
+        return count
 
 
 class SPLibNoIndex(Text):

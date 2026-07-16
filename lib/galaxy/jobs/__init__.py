@@ -2725,7 +2725,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 # is a bit of hack - our object store abstractions would be stronger
                 # and more consistent if tools weren't writing there directly.
                 try:
-                    dataset.full_delete()
+                    dataset.full_delete(user=hda.user)
                 except ObjectNotFound:
                     pass
 

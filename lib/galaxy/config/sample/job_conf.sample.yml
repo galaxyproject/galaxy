@@ -605,14 +605,7 @@ execution:
       singularity_enabled: true
 
       # See the above documentation for docker_volumes, singularity_volumes works
-      # almost the same way. The only difference is that $default will expand with
-      # rw directories that in Docker would expand as ro if any of subdirectories are rw.
-
-      # As an example consider that Docker mounts the parent of the working directory
-      # (this is known as the job directory) as ro and the working directory itself as rw.
-      # This doesn't work in Singularity because if any parent directory is mounted as ro
-      # none of its children will be rw. So the job directory will be mounted rw for
-      # Singularity.
+      # the same way. 
       #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
 
       # You can configure singularity to run using sudo - this probably should not

@@ -1,4 +1,4 @@
-import { faAws, faDropbox, faGoogleDrive, faHubspot } from "@fortawesome/free-brands-svg-icons";
+import { faAws, faDropbox, faGithub, faGoogleDrive, faHubspot } from "@fortawesome/free-brands-svg-icons";
 import { faCloud, faFolderTree, faNetworkWired, type IconDefinition } from "font-awesome-6";
 
 import type { components } from "@/api/schema";
@@ -85,6 +85,10 @@ export const templateTypes: FileSourceTypesDetail = {
     huggingface: {
         icon: faHubspot,
         message: "This is a file repository plugin that connects with the Hugging Face Hub.",
+    },
+    github: {
+        icon: faGithub,
+        message: "This is a file repository plugin that connects with a GitHub repository.",
     },
     iiif: {
         icon: faNetworkWired,

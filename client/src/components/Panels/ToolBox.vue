@@ -17,6 +17,8 @@ import {
     buildToolEntries,
     buildToolLabel,
     buildToolSection,
+    countUniqueToolsInList,
+    countUniqueToolsInPanel,
     FAVORITES_KEYS,
     filterPanelByToolIds,
     filterTools,
@@ -179,6 +181,8 @@ const defaultSectionsById = computed<Record<string, ToolPanelItem> | null>(() =>
     return Object.keys(validSections).length > 0 ? validSections : null;
 });
 
+const myToolsDefaultSectionsById = computed(() => defaultSectionsById.value || localSectionsById.value);
+
 // Use composable for favorites and recent tools — we only need the bits that
 // drive the search-results split (favorites get their own section in mixed
 // results). The full My-Tools landing state lives inside `MyToolsLanding.vue`.
@@ -187,7 +191,12 @@ const { favoritesCollapsed, favoriteToolIdSet, recentToolIdsToShowSet } = useToo
 // Use composable for search results filtering
 const { favoriteResults, nonFavoriteResults, hasMixedResults } = useFavoriteSearchResults(results, favoriteToolIdSet);
 
-const toolsCount = computed(() => toolsList.value.length);
+const toolsCount = computed(() =>
+    countUniqueToolsInPanel(
+        defaultSectionsById.value || localSectionsById.value,
+        countUniqueToolsInList(toolsList.value),
+    ),
+);
 
 const resultsSet = computed(() => new Set(results.value));
 const nonFavoriteResultsSet = computed(() => new Set(nonFavoriteResults.value));
@@ -433,7 +442,7 @@ function onLabelToggle(labelId: string) {
                 <MyToolsLanding
                     v-if="showMyToolsLanding"
                     :local-tools-by-id="localToolsById"
-                    :default-sections-by-id="defaultSectionsById"
+                    :default-sections-by-id="myToolsDefaultSectionsById"
                     :local-sections-by-id="localSectionsById"
                     :tools-count="toolsCount"
                     @onClick="onToolClick"

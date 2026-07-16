@@ -667,7 +667,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         test_defs = []
         for tool in tools:
-            test_defs.extend([t.to_dict() for t in tool.tests])
+            test_defs.extend([t.to_dict() for t in tool.tests or []])
         return test_defs
 
     @web.require_admin

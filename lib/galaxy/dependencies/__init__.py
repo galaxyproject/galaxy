@@ -254,6 +254,9 @@ class ConditionalDependencies:
     def check_boto3(self):
         return "boto3" in self.object_stores
 
+    def check_cloudbridge(self):
+        return "cloud" in self.object_stores
+
     def check_kamaki(self):
         return "pithos" in self.object_stores
 
@@ -317,9 +320,6 @@ class ConditionalDependencies:
         return (
             self.config.get("ai_api_key", None) is not None or self.config.get("inference_services", None) is not None
         )
-
-    def check_fastmcp(self):
-        return asbool(self.config.get("enable_mcp_server", False))
 
     def check_weasyprint(self):
         # See notes in ./conditional-requirements.txt for more information.

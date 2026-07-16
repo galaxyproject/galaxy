@@ -519,6 +519,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             dataset_collection_instance=dataset_collection_instance,
             upstream_mod_zip=trans.app.config.upstream_mod_zip,
             upstream_gzip=trans.app.config.upstream_gzip,
+            user=trans.user,
         )
         return archive
 

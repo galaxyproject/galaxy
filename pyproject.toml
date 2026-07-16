@@ -26,7 +26,6 @@ dependencies = [
     "bx-python",
     "celery>=5.4.0",  # prefer not downgrading this to upgrading typing-extensions
     "cloudauthz==0.6.0",
-    "cloudbridge",
     "circus",
     "conda-package-streaming",
     "CT3>=3.3.3",  # Python 3.13 support
@@ -37,7 +36,8 @@ dependencies = [
     "docutils!=0.17,!=0.17.1",
     "dparse",
     "edam-ontology",
-    "fastapi>=0.133.0",  # First version compatible with starlette>=1.0.0
+    "fastapi>=0.137.2",  # https://github.com/fastapi/fastapi/pull/15785
+    "fastmcp>=2.13.0",
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
@@ -72,7 +72,7 @@ dependencies = [
     "pebble",
     "pillow",
     "psutil",
-    "pulsar-galaxy-lib>=0.15.10",
+    "pulsar-galaxy-lib>=0.15.15",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
     "pydantic-ai>=1.56.0",  # https://github.com/pydantic/pydantic-ai/security/advisories/GHSA-2jrp-274c-jhv3
@@ -127,6 +127,7 @@ test = [
     "ase>=3.18.1",
     "axe-selenium-python",
     "boto3",
+    "cloudbridge",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
     "fluent-logger",
     "gcsfs",
@@ -148,7 +149,7 @@ test = [
     "pytest-shard",
     "responses",
     "roc-validator!=0.7.2",  # https://github.com/crs4/rocrate-validator/pull/97
-    "rucio-clients>=37.2.0",  # https://github.com/rucio/rucio/pull/7665
+    "rucio-clients>=40.2.0",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
     "statsd",
@@ -173,7 +174,7 @@ dev = [
 typecheck = [
     "boto3-stubs[s3]",
     "lxml-stubs",
-    "mypy",
+    "mypy>=2.2.0",  # support for closed TypedDicts
     "pydantic>=2.7.4",  # for pydantic.mypy plugin
     "types-bleach",
     "types-boto",

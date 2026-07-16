@@ -16,7 +16,6 @@ galaxycloudrunner
 pkce
 total-perspective-vortex>=3.2.1,<4
 openai
-fastmcp>=2.13.0
 # upper version constraint because of https://github.com/galaxyproject/galaxy/issues/20600
 redis>=5.3.0,<6
 
@@ -46,6 +45,9 @@ chronos-python==1.2.1
 
 # Kubernetes job runner
 pykube-ng==23.6.0
+
+# Cloud object store
+cloudbridge
 
 # Synnefo / Pithos+ object store client
 kamaki
@@ -79,4 +81,4 @@ htcondor
 boto3
 
 # For Rucio storage plugin
-rucio-clients>=33.6.0
+rucio-clients>=40.2.0

@@ -18,12 +18,16 @@ log = logging.getLogger(__name__)
 
 WEBAPP = "webapp"  # WorkerProcess.app_type for web apps.
 SSE_MONITOR = "sse_monitor"  # WorkerProcess.app_type for the standalone SSE monitor process.
-SSE_MONITOR_SERVER_PREFIX = "sse_monitor."  # server_name prefix used by the standalone SSE monitor process.
 
 
 class DatabaseHeartbeat:
-    def __init__(self, application_stack, heartbeat_interval=60):
+    def __init__(self, application_stack, app_type=None, heartbeat_interval=60):
         self.application_stack = application_stack
+        # Concrete role for this process's WorkerProcess row, set by the
+        # caller (WEBAPP / SSE_MONITOR / None for job handlers). Drives the
+        # config-watcher / audit-monitor election and lets control-task
+        # routing skip processes that run no consumer (the SSE monitor).
+        self.app_type = app_type
         self.new_session = self.application_stack.app.model.new_session
         self.heartbeat_interval = heartbeat_interval
         self.hostname = socket.gethostname()
@@ -105,13 +109,6 @@ class DatabaseHeartbeat:
         for callback in self._audit_monitor_observers:
             callback(self._is_history_audit_monitor)
 
-    def _app_type(self):
-        if self.application_stack.app.is_webapp:
-            return WEBAPP
-        if self.server_name.startswith(SSE_MONITOR_SERVER_PREFIX):
-            return SSE_MONITOR
-        return None
-
     def update_watcher_designation(self):
         expression = self._worker_process_identifying_clause()
         stmt = select(WorkerProcess).with_for_update(of=WorkerProcess).where(expression)
@@ -119,9 +116,8 @@ class DatabaseHeartbeat:
             worker_process = session.scalars(stmt).first()
             if not worker_process:
                 worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
-            app_type = self._app_type()
-            if app_type is not None:
-                worker_process.app_type = app_type
+            if self.app_type is not None:
+                worker_process.app_type = self.app_type
             worker_process.update_time = now()
             worker_process.pid = self.pid
             session.add(worker_process)

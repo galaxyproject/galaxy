@@ -120,6 +120,10 @@ from galaxy.tool_util.toolbox import (
     ToolLoadError,
     ToolSection,
 )
+from galaxy.tool_util.toolbox.entry import (
+    ToolPanelEntry,
+    ToolShedRepositoryInfo,
+)
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
@@ -1020,7 +1024,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.inputs_by_page: list[dict] = []
         self.display_by_page: list = []
         self.action: str | tuple[str, str] = "/tool_runner/index"
-        self.target = "galaxy_main"
         self.method = "post"
         self.labels: list = []
         self.check_values = True
@@ -1076,6 +1079,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.credentials: list[CredentialsRequirement] | None = None
         self._is_workflow_compatible = None
         self.__tests: str | None = None
+        self.__tests_parsed: bool = False
         self.parameters: list[ToolParameterT] | None = None
         self.template_macro_params: dict = {}
         self._macro_paths: list = []
@@ -1449,7 +1453,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
         if self.app.is_webapp:
             self.raw_help = self.__get_help_with_images(tool_source.parse_help())
-            self.parse_tests()
         self.__parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
@@ -1543,7 +1546,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     def __parse_legacy_features(self, tool_source: ToolSource):
         self.code_namespace: dict[str, Any] = {}
         self.hook_map: dict[str, str] = {}
-        self.uihints: dict[str, str] = {}
 
         if not hasattr(tool_source, "root"):
             return
@@ -1582,11 +1584,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                     else:
                         raise
 
-        # User interface hints
-        if (uihints_elem := root.find("uihints")) is not None:
-            for key, value in uihints_elem.attrib.items():
-                self.uihints[key] = value
-
     def __parse_config_files(self, tool_source: ToolSource):
         self.config_files: Sequence[TemplateConfigFile | InputConfigFile | FileSourceConfigFile] = []
 
@@ -1595,16 +1592,38 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.config_files.extend(tool_source.parse_file_sources())
 
     def parse_tests(self):
-        if self.tool_source:
-            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id, self.parameters)
+        self.__tests_parsed = True
+        source = self.tool_source
+        if source is None:
+            return
+        # ``Tool.__init__`` calls ``tool_source.mem_optimize()`` after parsing,
+        # which frees an ``XmlToolSource``'s element tree (``root`` becomes
+        # ``None``). A deferred test parse therefore rebuilds the source from
+        # its retained string — the same round-trip a stored tool source uses.
+        # Non-XML sources have no ``root`` and keep their data, so they parse
+        # directly.
+        if getattr(source, "root", False) is None:
             try:
-                self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
+                source = get_tool_source(raw_tool_source=source.to_string(), tool_source_class=type(source).__name__)
             except Exception:
                 self.__tests = None
-                log.exception("Failed to parse tool tests for tool '%s'", self.id)
+                log.exception("Failed to rebuild tool source for deferred test parsing of '%s'", self.id)
+                return
+        test_descriptions = parse_tool_test_descriptions(source, self.id, self.parameters)
+        try:
+            self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
+        except Exception:
+            self.__tests = None
+            log.exception("Failed to parse tool tests for tool '%s'", self.id)
 
     @property
-    def tests(self):
+    def tests(self) -> list[ToolTestDescription] | None:
+        # Deferred parse: the ``<tests>`` block is only needed by the
+        # test-data and tarball endpoints, so pay the (potentially
+        # seconds-long) validation cost on first access rather than at
+        # construction.
+        if not self.__tests_parsed and self.app.is_webapp:
+            self.parse_tests()
         if self.__tests:
             return [ToolTestDescription(d) for d in json.loads(self.__tests)]
         return None
@@ -1612,7 +1631,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def _repository_dir(self):
         """If tool shed installed tool, the base directory of the repository installed."""
-        if getattr(self, "tool_shed", None):
+        if self.tool_shed:
             assert self.tool_dir is not None
             tool_dir = Path(self.tool_dir)
             for repo_dir in itertools.chain([tool_dir], tool_dir.parents):
@@ -1724,7 +1743,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                         f"{self.app.config.nginx_upload_path}?nginx_redir=",
                         unquote_plus(self.action),
                     )
-                self.target = input_elem.get("target", self.target)
                 self.method = input_elem.get("method", self.method)
                 # Parse the actual parameters
                 # Handle multiple page case
@@ -2966,62 +2984,59 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             os.remove(temp_file)
         return tarball_archive
 
-    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
-        """Returns dict of tool."""
-
-        # Basic information
-        tool_dict = self._dictify_view_keys()
-
-        tool_dict["icon"] = self.icon
-        tool_dict["edam_operations"] = self.edam_operations
-        tool_dict["edam_topics"] = self.edam_topics
-        tool_dict["hidden"] = self.hidden
-        tool_dict["is_workflow_compatible"] = self.is_workflow_compatible
-        tool_dict["xrefs"] = self.xrefs
-        tool_dict["versions"] = self.tool_versions
-        tool_dict["hidden_versions"] = self.hidden_tool_versions
-
+    def to_panel_entry(self, trans) -> dict[str, Any]:
+        """The complete per-tool panel/listing payload — see
+        :class:`galaxy.tool_util.toolbox.entry.ToolPanelEntry` for the
+        contract. ``to_dict`` layers io/help extras on top of this.
+        """
+        panel_section_id, panel_section_name = self.get_panel_section()
+        # FIXME: the Tool class should declare directly, instead of ad hoc inspection
+        regular_form = self.__class__ == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
+        if isinstance(self, DataSourceTool):
+            link = self.app.url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
+        else:
+            link = self.app.url_for(controller="tool_runner", tool_id=self.id)
+        kwargs: dict[str, Any] = self._dictify_view_keys()
+        kwargs.update(
+            icon=self.icon,
+            edam_operations=self.edam_operations,
+            edam_topics=self.edam_topics,
+            hidden=self.hidden,
+            is_workflow_compatible=self.is_workflow_compatible,
+            xrefs=self.xrefs,
+            versions=self.tool_versions,
+            hidden_versions=self.hidden_tool_versions,
+            link=link,
+            has_parameters=self.parameters is not None,
+            panel_section_id=panel_section_id,
+            panel_section_name=panel_section_name,
+            form_style="regular" if regular_form else "special",
+        )
         if self.dynamic_tool:
-            tool_dict["uuid"] = str(self.dynamic_tool.uuid)
-
-        # Fill in ToolShedRepository info
-        if hasattr(self, "tool_shed") and self.tool_shed:
-            tool_dict["tool_shed_repository"] = {
-                "name": self.repository_name,
-                "owner": self.repository_owner,
-                "changeset_revision": self.changeset_revision,
-                "tool_shed": self.tool_shed,
-            }
-
-        # If an admin user, expose the path to the actual tool config XML file.
+            kwargs["uuid"] = str(self.dynamic_tool.uuid)
+        if getattr(self, "tool_shed", None):
+            kwargs["tool_shed_repository"] = ToolShedRepositoryInfo(
+                name=self.repository_name,
+                owner=self.repository_owner,
+                changeset_revision=self.changeset_revision,
+                tool_shed=self.tool_shed,
+            )
         if trans.user_is_admin:
-            config_file = None if not self.config_file else os.path.abspath(self.config_file)
-            tool_dict["config_file"] = config_file
+            kwargs["config_file"] = None if not self.config_file else os.path.abspath(self.config_file)
+        return ToolPanelEntry(**kwargs).model_dump(exclude_unset=True)
 
-        # Add link details.
-        if link_details:
-            # Add details for creating a hyperlink to the tool.
-            if not isinstance(self, DataSourceTool):
-                link = self.app.url_for(controller="tool_runner", tool_id=self.id)
-            else:
-                link = self.app.url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
+    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
+        """Returns dict of tool.
 
-            # Basic information
-            tool_dict.update({"link": link, "min_width": self.uihints.get("minwidth", -1), "target": self.target})
+        ``link_details`` is accepted for backwards compatibility and no
+        longer gates any field.
+        """
+        tool_dict = self.to_panel_entry(trans)
 
         # Add input and output details.
         if io_details:
             tool_dict["inputs"] = [input.to_dict(trans) for input in self.inputs.values()]
             tool_dict["outputs"] = [output.to_dict(app=self.app) for output in self.outputs.values()]
-
-        tool_dict["has_parameters"] = self.parameters is not None
-
-        tool_dict["panel_section_id"], tool_dict["panel_section_name"] = self.get_panel_section()
-
-        tool_class = self.__class__
-        # FIXME: the Tool class should declare directly, instead of ad hoc inspection
-        regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
-        tool_dict["form_style"] = "regular" if regular_form else "special"
         if tool_help:
             # create tool help
             help_txt = ""
@@ -3530,8 +3545,6 @@ class DataSourceTool(OutputParameterJSONTool):
 
     def parse_inputs(self, tool_source):
         super().parse_inputs(tool_source)
-        # Open all data_source tools in _top.
-        self.target = "_top"
         # data_source tools cannot check param values
         self.check_values = False
         if "GALAXY_URL" not in self.inputs:

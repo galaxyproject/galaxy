@@ -494,7 +494,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
 
             purge_datasets.delay(request=request, task_user_id=getattr(user, "id", None))
         else:
-            self.dataset_manager.purge_datasets(request)
+            self.dataset_manager.purge_datasets(request, user=user)
 
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
@@ -628,7 +628,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             ),
             # TODO: backwards compat: need to go away
             "download_url": lambda item, key, **context: self.url_for(
-                "history_contents_display",
+                "history_contents_download",
                 history_id=self.app.security.encode_id(item.history.id),
                 history_content_id=self.app.security.encode_id(item.id),
                 context=context,

@@ -18,8 +18,8 @@ try:
     )
     from cloudbridge.interfaces.exceptions import InvalidNameException
 except ImportError:
-    CloudProviderFactory = None
-    ProviderList = None
+    CloudProviderFactory = None  # type: ignore[assignment,misc,unused-ignore]
+    ProviderList = None  # type: ignore[assignment,misc,unused-ignore]
 
 log = logging.getLogger(__name__)
 
@@ -323,7 +323,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             log.exception("Could not delete key '%s' from cloud", rel_path)
             return False
 
-    def _get_object_url(self, obj, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:

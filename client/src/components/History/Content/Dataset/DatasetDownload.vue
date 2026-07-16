@@ -26,7 +26,7 @@ const metaDownloadUrl = computed(() => {
     return prependPath(`api/datasets/${props.item.id}/metadata_file?metadata_file=`);
 });
 const downloadUrl = computed(() => {
-    return prependPath(`api/datasets/${props.item.id}/display?to_ext=${props.item.extension}`);
+    return prependPath(`api/datasets/${props.item.id}/download?to_ext=${props.item.extension}`);
 });
 const downloadTitle = computed(() => {
     const size = props.item.file_size;

@@ -216,6 +216,10 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
+    custom_vm_image=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
 )
 
 
@@ -1187,6 +1191,19 @@ class PulsarGcpBatchJobRunner(PulsarCoexecutionJobRunner):
 
     client_manager_kwargs = GCP_BATCH_CLIENT_MANAGER_KWARGS
     destination_defaults = GCP_DESTINATION_DEFAULTS
+
+    # Runner-level params that should be passed through to the Pulsar client
+    # as destination params (destination overrides runner).
+    PASSTHROUGH_PARAMS = ["custom_vm_image"]
+
+    def _populate_parameter_defaults(self, job_destination):
+        updated = super()._populate_parameter_defaults(job_destination)
+        params = job_destination.params
+        for key in self.PASSTHROUGH_PARAMS:
+            if key not in params and self.runner_params.get(key):
+                params[key] = self.runner_params[key]
+                updated = True
+        return updated
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):

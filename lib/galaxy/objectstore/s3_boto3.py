@@ -22,11 +22,14 @@ try:
     import boto3
     from boto3.s3.transfer import TransferConfig
     from botocore.client import ClientError
+    from botocore.config import Config
 except ImportError:
     boto3 = None  # type: ignore[assignment,unused-ignore]
     TransferConfig = None  # type: ignore[assignment,unused-ignore,misc]
+    Config = None  # type: ignore[assignment,unused-ignore,misc]
 
 from galaxy.util import asbool
+from galaxy.util.s3_checksum import s3_checksum_config_kwargs
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     enable_cache_monitor,
@@ -123,6 +126,9 @@ def parse_config_xml(config_xml):
             "cache": cache_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
+            "enable_direct_download": CachingConcreteObjectStore.parse_enable_direct_download_from_config_xml(
+                config_xml
+            ),
         }
         name = config_xml.attrib.get("name", None)
         if name is not None:
@@ -142,6 +148,7 @@ class S3ClientConstructorKwds(TypedDict):
     region_name: NotRequired[str]
     aws_access_key_id: NotRequired[str]
     aws_secret_access_key: NotRequired[str]
+    config: NotRequired["Config"]
 
 
 class S3ObjectStore(CachingConcreteObjectStore):
@@ -231,9 +238,9 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 self.region = region
             self._init_client()
 
-    def _init_client(self):
-        # set _client based on current args.
-        # If access_key is empty use default credential chain
+    def _client_kwds(self) -> "S3ClientConstructorKwds":
+        # Build the keyword arguments for boto3.client based on current args.
+        # If access_key is empty use default credential chain.
         kwds: S3ClientConstructorKwds = {
             "service_name": "s3",
         }
@@ -244,7 +251,13 @@ class S3ObjectStore(CachingConcreteObjectStore):
         if self.access_key:
             kwds["aws_access_key_id"] = self.access_key
             kwds["aws_secret_access_key"] = self.secret_key
-        self._client = boto3.client(**kwds)
+        config_kwargs = s3_checksum_config_kwargs(self.endpoint_url)
+        if config_kwargs:
+            kwds["config"] = Config(**config_kwargs)
+        return kwds
+
+    def _init_client(self):
+        self._client = boto3.client(**self._client_kwds())
 
     @property
     def _bucket_exists(self) -> bool:
@@ -376,16 +389,21 @@ class S3ObjectStore(CachingConcreteObjectStore):
             with self._atomic_download(local_file_path) as tmp:
                 self._client.download_file(self.bucket, key, tmp)
 
-    def _get_object_url(self, obj, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
         try:
             if self._exists(obj, **kwargs):
                 rel_path = self._construct_path(obj, **kwargs)
+                params = {
+                    "Bucket": self.bucket,
+                    "Key": rel_path,
+                }
+                if content_disposition is not None:
+                    params["ResponseContentDisposition"] = content_disposition
+                if content_type is not None:
+                    params["ResponseContentType"] = content_type
                 url = self._client.generate_presigned_url(
                     ClientMethod="get_object",
-                    Params={
-                        "Bucket": self.bucket,
-                        "Key": rel_path,
-                    },
+                    Params=params,
                     ExpiresIn=3600,
                     HttpMethod="GET",
                 )

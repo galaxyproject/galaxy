@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from pydantic import (
     BaseModel,
+    Field,
     UUID4,
     ValidationError,
 )
@@ -46,6 +47,10 @@ from galaxy.files.templates import (
     get_oauth2_config_or_none,
     template_to_configuration,
 )
+from galaxy.files.templates.capabilities import (
+    capability_for,
+    TemplateFormMessage,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     User,
@@ -72,6 +77,7 @@ from galaxy.util.config_templates import (
 from galaxy.util.plugin_config import plugin_source_from_dict
 from galaxy.work.context import SessionRequestContext
 from ._config_templates import (
+    access_token_for_uuid,
     CanTestPluginStatus,
     CreateInstancePayload,
     CreateTestTarget,
@@ -121,6 +127,18 @@ class UserFileSourceModel(BaseModel):
     template_version: int
     variables: dict[str, TemplateVariableValueType] | None
     secrets: list[str]
+
+
+class TemplateFormDataRequest(BaseModel):
+    """Values available while rendering a post-authorization template form."""
+
+    uuid: str
+    variables: dict[str, TemplateVariableValueType] = Field(default_factory=dict)
+
+
+class TemplateFormDataResponse(BaseModel):
+    dynamic_options: dict[str, list[tuple[str, str]]] = Field(default_factory=dict)
+    messages: list[TemplateFormMessage] = Field(default_factory=list)
 
 
 class UserDefinedFileSourcesConfig(BaseModel):
@@ -227,6 +245,49 @@ class FileSourceInstancesManager:
         redirect_uri = f"{galaxy_root}/oauth2_callback"
         return redirect_uri
 
+    def _access_token_for_template(self, trans: ProvidesUserContext, template: FileSourceTemplate, uuid: str) -> str:
+        """Mint an OAuth token for a capability without exposing provider behavior here."""
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template.id, template.version
+        )
+        if not template_server_configuration.uses_oauth2:
+            raise RequestParameterInvalidException(
+                f"The file source template {template.id} is not configured for OAuth2 authorization."
+            )
+        return access_token_for_uuid(trans, template_server_configuration, uuid, UserFileSource, self._app_config)
+
+    def template_form_data(
+        self,
+        trans: ProvidesUserContext,
+        template_id: str,
+        template_version: int,
+        payload: TemplateFormDataRequest,
+    ) -> TemplateFormDataResponse:
+        """Return form data supplied by the template's provider capability."""
+        template = self._catalog.find_template_by(template_id, template_version)
+        capability = capability_for(template)
+        if capability is None:
+            return TemplateFormDataResponse()
+        form_data = capability.form_data(
+            template,
+            payload.variables,
+            lambda: self._access_token_for_template(trans, template, payload.uuid),
+        )
+        return TemplateFormDataResponse(dynamic_options=form_data.dynamic_options, messages=form_data.messages)
+
+    def _validate_provider_creation(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> None:
+        """Run provider-specific authorization checks for a create/test payload."""
+        template = self._catalog.find_template(payload)
+        if not template or not payload.uuid:
+            return
+        capability = capability_for(template)
+        if capability is not None:
+            capability.validate_creation(
+                template,
+                payload.variables,
+                lambda: self._access_token_for_template(trans, template, str(payload.uuid)),
+            )
+
     def index(self, trans: ProvidesUserContext) -> list[UserFileSourceModel]:
         stores = self._sa_session.query(UserFileSource).filter(UserFileSource.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
@@ -296,6 +357,7 @@ class FileSourceInstancesManager:
         catalog.validate(payload)
         template = catalog.find_template(payload)
         assert template
+        self._validate_provider_creation(trans, payload)
         user_vault = trans.user_vault
         persisted_file_source = UserFileSource()
         persisted_file_source.user_id = trans.user.id
@@ -359,6 +421,7 @@ class FileSourceInstancesManager:
 
     def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
         target = CreateTestTarget(payload, UserFileSource)
+        self._validate_provider_creation(trans, payload)
         return self._plugin_status(trans, target, payload)
 
     def _plugin_status(
@@ -443,10 +506,10 @@ class FileSourceInstancesManager:
     ) -> tuple[BaseFilesSource | None, PluginAspectStatus]:
         file_source = None
         exception = None
-        if isinstance(target, (UpgradeTestTarget, UpdateTestTarget)):
+        if isinstance(target, UpgradeTestTarget | UpdateTestTarget):
             label = target.instance.name
             doc = target.instance.description
-        elif isinstance(target, (CreateTestTarget)):
+        elif isinstance(target, CreateTestTarget):
             label = target.payload.name
             doc = target.payload.description
         else:

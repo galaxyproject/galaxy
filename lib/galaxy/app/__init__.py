@@ -101,7 +101,10 @@ from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
 )
-from galaxy.model.database_heartbeat import DatabaseHeartbeat
+from galaxy.model.database_heartbeat import (
+    DatabaseHeartbeat,
+    WEBAPP,
+)
 from galaxy.model.database_utils import (
     database_exists,
     is_one_database,
@@ -373,16 +376,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             log.warning("Waiting for toolbox reload timed out after 60 seconds")
 
     def _configure_tool_config_files(self):
-        if self.config.shed_tool_config_file not in self.config.tool_configs:
-            self.config.tool_configs.append(self.config.shed_tool_config_file)
-        # The value of migrated_tools_config is the file reserved for containing only those tools that have been
-        # eliminated from the distribution and moved to the tool shed. If migration checking is disabled, only add it if
-        # it exists (since this may be an existing deployment where migrations were previously run).
-        if (
-            os.path.exists(self.config.migrated_tools_config)
-            and self.config.migrated_tools_config not in self.config.tool_configs
-        ):
-            self.config.tool_configs.append(self.config.migrated_tools_config)
+        self.config.tool_configs = self.config.all_tool_config_files()
 
     def _configure_toolbox(self):
         self.citations_manager = self._register_singleton(CitationsManager, CitationsManager(self))
@@ -1017,7 +1011,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
 
-        self.database_heartbeat = DatabaseHeartbeat(application_stack=self.application_stack)
+        self.database_heartbeat = DatabaseHeartbeat(
+            application_stack=self.application_stack,
+            app_type=WEBAPP if self.is_webapp else None,
+        )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 

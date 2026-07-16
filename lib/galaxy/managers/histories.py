@@ -59,6 +59,7 @@ from galaxy.model.index_filter_util import (
     tag_filter,
     text_column_filter,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.schema.fields import Security
 from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
@@ -398,7 +399,7 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
             trans.response.set_content_type("application/x-tar")
         disposition = f'attachment; filename="{jeha.export_name}"'
         trans.response.headers["Content-Disposition"] = disposition
-        archive = trans.app.object_store.get_filename(jeha.dataset)
+        archive = trans.app.object_store.get_filename(jeha.dataset, auth=ObjectStoreAuth(user=trans.user))
         return open(archive, mode="rb")
 
     def get_ready_history_export_file_path(self, trans, jeha) -> str:
@@ -407,7 +408,7 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         doesn't need to be loaded into memory.
         """
         assert jeha.ready
-        return trans.app.object_store.get_filename(jeha.dataset)
+        return trans.app.object_store.get_filename(jeha.dataset, auth=ObjectStoreAuth(user=trans.user))
 
     def queue_history_export(
         self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None

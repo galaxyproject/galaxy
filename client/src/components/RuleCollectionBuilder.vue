@@ -643,6 +643,17 @@ Vue.use(BootstrapVue);
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
+// UI-only keys the rule builder / tool form stamp onto live rule & mapping entries.
+// The server never reads them; they must not be persisted into tool_state or saved sessions.
+export const UI_ONLY_RULE_KEYS = ["collapsible_value", "connectable", "is_workflow", "editing", "error", "warn"];
+const stripUiKeys = function (entry) {
+    const clean = { ...entry };
+    for (const key of UI_ONLY_RULE_KEYS) {
+        delete clean[key];
+    }
+    return clean;
+};
+
 export default {
     components: {
         TooltipOnHover,
@@ -1373,15 +1384,11 @@ export default {
             this.ruleView = "source";
         },
         resetSource() {
-            const replacer = function (key, value) {
-                if (key == "error" || key == "warn") {
-                    return undefined;
-                }
-                return value;
-            };
             const asJson = {
-                rules: this.rules,
-                mapping: this.mapping,
+                // Serialize DSL-only copies; leave this.rules/this.mapping live so the
+                // builder UI keeps rendering validation/edit state (error/warn/editing).
+                rules: this.rules.map(stripUiKeys),
+                mapping: this.mapping.map(stripUiKeys),
             };
             if (!this.exisistingDatasets) {
                 if (this.extension !== UploadUtils.DEFAULT_EXTENSION) {
@@ -1392,7 +1399,7 @@ export default {
                 }
             }
             this.ruleSourceJson = asJson;
-            this.ruleSource = JSON.stringify(asJson, replacer, "  ");
+            this.ruleSource = JSON.stringify(asJson, null, "  ");
             this.ruleSourceError = null;
         },
         attemptRulePreview() {
@@ -1499,8 +1506,10 @@ export default {
         },
         async createCollection() {
             const asJson = {
-                rules: this.rules,
-                mapping: this.mapping,
+                // DSL-only copies — this is stringified into a localStorage saved session
+                // below; strip UI-only keys so they are not persisted.
+                rules: this.rules.map(stripUiKeys),
+                mapping: this.mapping.map(stripUiKeys),
             };
             var arrayOfColumns = this.mapping.flatMap((m) => m.columns);
             if (arrayOfColumns.some((m) => m >= this.colHeaders.length)) {
