@@ -98,16 +98,9 @@ def _handle_resubmit_definitions(
         # precedence on conflicts so the chain re-walk picks up the right rule.
         prior_destination_params = (job_state.job_wrapper.get_job().destination_params or {}).copy()
         new_destination.params = {**prior_destination_params, **new_destination.params}
-        # Reset job state
-        job_state.job_wrapper.clear_working_directory()
-        job = job_state.job_wrapper.get_job()
-        if handler := resubmit.get("handler"):
-            log.debug("%s Job reassigned to handler %s", job_log_prefix, handler)
-            job.set_handler(handler)
-            job_runner.sa_session.add(job)
-            # Is this safe to do here?
-            job_runner.sa_session.commit()
-        # Handle delaying before resubmission if needed.
+        # Handle delaying before resubmission if needed — must happen BEFORE
+        # set_job_destination so the delay param is persisted along with the
+        # destination.
         raw_delay = resubmit.get("delay")
         if raw_delay:
             delay = str(expression_context.safe_eval(str(raw_delay)))
@@ -117,7 +110,27 @@ def _handle_resubmit_definitions(
                 new_destination.params["__resubmit_delay_seconds"] = str(delay)
             except ValueError:
                 log.warning(f"Cannot delay job with delay [{delay}], does not appear to be a number.")
+        # Persist the new destination before clearing the working directory.
+        # set_job_destination() assigns job.destination_params = new_destination.params
+        # and flushes, so when clear_working_directory() → _setup_working_directory()
+        # → _set_working_directory() calls get_destination_configuration(), the model's
+        # get_destination_configuration (model/__init__.py) reads job.destination_params
+        # first — which now holds the *new* params, not the stale values from the prior
+        # attempt. This is what makes a resubmitted job resolve its new JWD correctly.
         job_state.job_wrapper.set_job_destination(new_destination)
+        # Reset job state. _set_working_directory (called inside
+        # clear_working_directory → _setup_working_directory) flushes the
+        # session itself, so the working_directory column survives the
+        # sa_session.refresh() that mark_as_resubmitted() performs at the end
+        # of this flow even when no handler commit runs below.
+        job_state.job_wrapper.clear_working_directory()
+        job = job_state.job_wrapper.get_job()
+        if handler := resubmit.get("handler"):
+            log.debug("%s Job reassigned to handler %s", job_log_prefix, handler)
+            job.set_handler(handler)
+            job_runner.sa_session.add(job)
+            # Is this safe to do here?
+            job_runner.sa_session.commit()
         # Clear external ID (state change below flushes the change)
         job.job_runner_external_id = None
         # Allow the UI to query for resubmitted state
