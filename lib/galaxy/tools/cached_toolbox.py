@@ -1229,6 +1229,17 @@ class CachedToolBox(ToolBox):
                 stored = self._stored_source_for_entry(entry)
             except Exception as exc:
                 raise ToolMaterializationError(entry.id, "stored source lookup failed") from exc
+            if stored is None and entry.source_path and os.path.exists(entry.source_path):
+                # The index references this tool but the store row is gone (a
+                # wiped or externally rebuilt store). The file is still on
+                # disk, so self-heal through the single-writer populator and
+                # retry — the same recovery ``create_tool`` performs for an
+                # index miss.
+                healed = self._populate_adhoc_path(entry.source_path, entry.id if is_shed_guid(entry.id) else None)
+                if healed is not None:
+                    entry = healed
+                    cache_key = (entry.id, entry.version or "", entry.source_hash)
+                    stored = self._stored_source_for_entry(entry)
             if stored is None:
                 raise ToolMaterializationError(
                     entry.id,

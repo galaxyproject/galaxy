@@ -787,6 +787,7 @@ def populate_store_inline(
     # forces a from-scratch re-parse. The hash lives on the index entry (rebuilt
     # every run), so it persists whether a tool was stored or content-deduped.
     old_entry_by_path: dict[str, dict[str, ToolIndexEntry]] = {name: {} for name in writable_names}
+    stored_hashes: dict[str, set[str]] = {name: set() for name in writable_names}
     if incremental and not prune:
         for name in writable_names:
             old_index = stores[name].load_index()
@@ -795,6 +796,11 @@ def populate_store_inline(
                     for entry in versions.values():
                         if entry.source_path:
                             old_entry_by_path[name][entry.source_path] = entry
+            # The carry-forward below must not trust the index alone: a wiped
+            # or externally pruned store can keep a complete index whose rows
+            # are gone, and carrying those entries would make every populate a
+            # no-op forever. One SELECT per store keeps the fast path honest.
+            stored_hashes[name] = set(stores[name].list_all())
 
     def process_tool(
         d: DiscoveredTool, store_name: str
@@ -813,7 +819,12 @@ def populate_store_inline(
             file_hash = md5_hash_file(path)
             if incremental and not prune:
                 old_entry = old_entry_by_path[store_name].get(path)
-                if old_entry is not None and file_hash and old_entry.file_hash == file_hash:
+                if (
+                    old_entry is not None
+                    and file_hash
+                    and old_entry.file_hash == file_hash
+                    and old_entry.source_hash in stored_hashes[store_name]
+                ):
                     return ("unchanged", d, store_name, None, None, None)
 
             # Galaxy's tool source parser handles macro expansion (XML) and
