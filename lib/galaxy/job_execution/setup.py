@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import threading
 from typing import (
     Any,
@@ -27,6 +28,7 @@ from galaxy.model import (
     JobExportHistoryArchive,
     MetadataFile,
 )
+from galaxy.objectstore import ObjectStore
 from galaxy.util import safe_makedirs
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.path import StrPath
@@ -328,7 +330,172 @@ def ensure_configs_directory(work_dir: str) -> str:
     return configs_dir
 
 
-def create_working_directory_for_job(object_store, job) -> str:
-    object_store.create(job, base_dir="job_work", dir_only=True, obj_dir=True)
-    working_directory = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
-    return working_directory
+# Sentinel object-store keys for the job working directory. Centralized so that
+# every JWD operation goes through the same code path instead of open-coding
+# ``if job.working_directory:`` forks at each call site.
+_JOB_WORK_BASE_DIR = "job_work"
+_CLEARED_CONTENTS_EXTRA_DIR = "_cleared_contents"
+
+
+class JobWorkingDirectory:
+    """Unified handle for a job's working directory.
+
+    Encapsulates the two backing strategies — a custom path persisted on
+    ``job.working_directory`` (set from the ``job_working_directory``
+    destination param) and the legacy object-store-derived path — behind a
+    single object so callers never branch on ``job.working_directory``.
+
+    All create / resolve / exists / delete / cleared-contents logic lives here.
+
+    Construction order: ``job.working_directory`` must be populated (or
+    definitively None) before a ``JobWorkingDirectory`` is constructed. In
+    practice this is guaranteed because ``_set_working_directory`` runs
+    inside ``_setup_working_directory`` before any ``JobWorkingDirectory``
+    is instantiated, and for already-persisted jobs the column is loaded
+    from the database.
+    """
+
+    __slots__ = ("_job", "_object_store")
+
+    def __init__(self, job: Job, object_store: ObjectStore) -> None:
+        self._job = job
+        self._object_store = object_store
+
+    @property
+    def _custom_path(self) -> str | None:
+        """Read ``job.working_directory`` fresh on each access.
+
+        Not cached: the column may be mutated by ``_set_working_directory``
+        after this object is constructed (though current call sites construct
+        after the mutation). Reading fresh eliminates construction-order
+        sensitivity entirely.
+        """
+        return self._job.working_directory
+
+    @property
+    def uses_custom_path(self) -> bool:
+        """True when the JWD is a filesystem path set via destination params."""
+        return self._custom_path is not None
+
+    def resolve(self) -> str:
+        """Return the working directory path, creating nothing on disk."""
+        if self._custom_path:
+            return self._custom_path
+        return self._object_store.get_filename(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def exists(self) -> bool:
+        """Check whether the working directory exists on disk."""
+        if self._custom_path:
+            return os.path.exists(self._custom_path)
+        return self._object_store.exists(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def create(self) -> str:
+        """Create the working directory and return its path.
+
+        Idempotent: a pre-existing custom path is not an error.
+        """
+        if self._custom_path:
+            _validate_custom_path(self._custom_path)
+            os.makedirs(self._custom_path, exist_ok=True)
+            return self._custom_path
+        self._object_store.create(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+        return self._object_store.get_filename(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def delete(self) -> None:
+        """Recursively delete the working directory.
+
+        For custom paths, validates the target is a non-empty absolute path
+        before removing it, since ``job.working_directory`` is an
+        admin-supplied string and ``shutil.rmtree`` will obey it literally.
+        """
+        if self._custom_path:
+            _validate_custom_path(self._custom_path)
+            shutil.rmtree(self._custom_path)
+            return
+        self._object_store.delete(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            entire_dir=True,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def cleared_contents_base(self) -> str:
+        """Return the directory under which cleared JWDs are archived.
+
+        Creates the archive directory if it does not exist.
+
+        For the object-store case, mirrors the ``extra_dir="_cleared_contents",
+        extra_dir_at_root=True`` layout: the archive lives at
+        ``<base>/_cleared_contents/<hash>/<obj_id>/``, which is **outside**
+        the JWD's own ``<base>/<hash>/<obj_id>/``.
+
+        For the custom-path case, the archive is a **sibling** of the JWD
+        (``<parent>/_cleared_contents/<basename>``), not a subdirectory of
+        it. This is critical: ``clear_working_directory`` does
+        ``shutil.move(jwd, arc_dir)`` — if ``arc_dir`` were inside ``jwd``,
+        the move would attempt to relocate a directory into its own subtree
+        and fail.
+
+        Note: if the custom path's parent directory is on a different filesystem
+        than the JWD, ``shutil.move`` will fall back to copy-then-delete rather
+        than a rename. This is slower but correct.
+        """
+        if self._custom_path:
+            _validate_custom_path(self._custom_path)
+            parent = os.path.dirname(self._custom_path)
+            name = os.path.basename(self._custom_path)
+            path = os.path.join(parent, _CLEARED_CONTENTS_EXTRA_DIR, name)
+            os.makedirs(path, exist_ok=True)
+            return path
+        self._object_store.create(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+            extra_dir=_CLEARED_CONTENTS_EXTRA_DIR,
+            extra_dir_at_root=True,
+        )
+        return self._object_store.get_filename(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+            extra_dir=_CLEARED_CONTENTS_EXTRA_DIR,
+            extra_dir_at_root=True,
+        )
+
+
+def _validate_custom_path(path: str) -> None:
+    """Validate a custom ``job.working_directory`` path before disk operations.
+
+    ``job.working_directory`` is a ``String(1024)`` populated from destination
+    params (admin/TPV-controlled). Refuse to operate on anything that is not an
+    absolute, non-root, non-empty path.
+    """
+    if not path:
+        raise ValueError("Refusing to operate on empty job working_directory")
+    if not os.path.isabs(path):
+        raise ValueError(f"Refusing to operate on relative job working_directory: {path!r}")
+    if os.path.normpath(path) == os.path.normpath(os.sep):
+        raise ValueError("Refusing to operate on filesystem root as job working_directory")
