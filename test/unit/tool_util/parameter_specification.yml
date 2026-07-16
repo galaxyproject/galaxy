@@ -2363,6 +2363,11 @@ gx_data_column:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: 3 }
   test_case_json_invalid:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "3" }
+  workflow_step_linked_valid:
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: 0 }
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: {__class__: ConnectedValue} }
+  workflow_step_linked_invalid:
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: "0" }
 
 gx_data_column_optional:
   request_valid:
@@ -2409,6 +2414,11 @@ gx_data_column_multiple:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: [1, 2, 3] }
   test_case_json_invalid:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "1,2,3" }
+  workflow_step_linked_valid:
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: [0, 1] }
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: {__class__: ConnectedValue} }
+  workflow_step_linked_invalid:
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: "0,1" }
 
 gx_data_column_multiple_accept_default:
   request_valid:
