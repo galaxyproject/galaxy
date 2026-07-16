@@ -185,10 +185,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if trans.app.config.user_activation_on:
             user.active = False
             if send_activation_email:
-                # Flush so the new email is visible to the DB query in
-                # __get_activation_token (the session has autoflush=False).
-                session.flush()
                 if not self.send_activation_email(trans, user.email, user.username):
+                    session.rollback()
                     error_message = "Unable to send activation email, please contact your local Galaxy administrator."
                     if trans.app.config.error_email_to is not None:
                         error_message += f" Contact: {trans.app.config.error_email_to}"
@@ -580,6 +578,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         subject = "Galaxy Account Activation"
         try:
             util.send_mail(self.app.config.email_from, to, subject, body, self.app.config, html=html)
+            self.session().commit()
             return True
         except Exception:
             log.debug(body)
@@ -589,14 +588,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def __get_activation_token(self, trans, email):
         """
         Check for the activation token. Create new activation token and store it in the database if no token found.
+        Flushes but does not commit—the caller is responsible for committing the transaction.
         """
-        user = get_user_by_email(trans.sa_session, email, self.app.model.User)
+        session = trans.sa_session
+        # Flush pending changes so the user is visible to the DB query below.
+        session.flush()
+        user = get_user_by_email(session, email, self.app.model.User)
         activation_token = user.activation_token
         if activation_token is None:
             activation_token = util.hash_util.new_secure_hash_v2(str(random.getrandbits(256)))
             user.activation_token = activation_token
-            trans.sa_session.add(user)
-            trans.sa_session.commit()
+            session.add(user)
+            session.flush()
         return activation_token
 
     def send_reset_email(self, trans, payload, **kwd):

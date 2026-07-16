@@ -262,9 +262,6 @@ class TestUserManager(BaseTestCase):
         mock_send.assert_not_called()
 
     def test_update_email_sends_activation_email(self):
-        """update_email should flush the session before looking up the user by
-        the new email, so __get_activation_token can find the user (see #22678
-        regression where the autoflush=False session caused an AttributeError)."""
         self.app.config.user_activation_on = True
         user = self.user_manager.create(email="original@example.com", username="updater")
 
