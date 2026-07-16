@@ -69,13 +69,9 @@ def _make_job(state: str, age_days: int) -> model.Job:
 
 
 class TestCleanupJwds:
-    """Tests for _cleanup_jwds using a real in-memory database with actual Job model instances.
+    """Tests for _cleanup_jwds using a real in-memory database with actual Job model instances."""
 
-    The query must return Job objects (not Row tuples), must call .all() (so `if not failed_jobs`
-    works — a bare Query is always truthy), and must filter on state, age, and object_store_id.
-    """
-
-    def test_no_failed_jobs_returns_early(self, sa_session):
+    def test_no_failed_jobs_returns_zero(self, sa_session):
         object_store = MagicMock()
         result = _cleanup_jwds(sa_session, object_store, days=7)
         assert result == 0
@@ -97,7 +93,6 @@ class TestCleanupJwds:
 
         assert result == 1
         object_store.get_filename.assert_called_once()
-        # Must pass a Job object, not a Row tuple (query(model.Job) vs query(model.Job.id))
         assert isinstance(object_store.get_filename.call_args[0][0], model.Job)
         assert not jwd_path.exists()
 
@@ -216,4 +211,4 @@ class TestCleanupJwds:
         object_store.get_filename.side_effect = ObjectNotFound("JWD not found")
 
         result = _cleanup_jwds(sa_session, object_store, days=7)
-        assert result == 1
+        assert result == 0

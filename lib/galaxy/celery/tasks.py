@@ -625,39 +625,29 @@ def _cleanup_jwds(
     Returns the number of job working directories deleted.
     """
 
-    def get_failed_jobs():
-        return (
-            sa_session.query(model.Job)
-            .filter(
-                model.Job.state == "error",
-                model.Job.update_time < datetime.datetime.now() - datetime.timedelta(days=days),
-            )
-            .all()
-        )
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=days)
 
-    def delete_jwd(job: model.Job):
+    def _delete_jwd(job: model.Job) -> bool:
         try:
-            # Get job working directory from object store
             path = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
             shutil.rmtree(path)
+            return True
         except ObjectNotFound:
-            # job working directory already deleted
-            pass
+            return False
         except OSError as e:
             log.error(f"Error deleting job working directory: {path} : {e.strerror}")
-
-    failed_jobs = get_failed_jobs()
-
-    if not failed_jobs:
-        log.info("No failed jobs found within the last %s days", days)
-        return 0
+            return False
 
     deleted_count = 0
-    for job in failed_jobs:
-        delete_jwd(job)
-        log.info("Deleted job working directory for job %s", job.id)
-        deleted_count += 1
+    stmt = select(model.Job).where(
+        model.Job.state == "error",
+        model.Job.update_time < cutoff,
+    )
+    for job in sa_session.scalars(stmt).yield_per(100):
+        if _delete_jwd(job):
+            deleted_count += 1
 
+    log.info("Deleted %d job working directories older than %d days", deleted_count, days)
     return deleted_count
 
 
