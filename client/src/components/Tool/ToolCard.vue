@@ -5,6 +5,7 @@ import { BAlert, BPopover } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
+import { useToolRouting } from "@/composables/route";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
@@ -88,6 +89,7 @@ const props = defineProps({
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
 
 const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+const { routeToTool } = useToolRouting();
 
 function onChangeVersion(v) {
     emit("onChangeVersion", v);
@@ -127,6 +129,12 @@ const visibleVersions = computed(() => {
     return filtered;
 });
 const showVersions = computed(() => visibleVersions.value.length > 1);
+const latestVersion = computed(() => versions.value[versions.value.length - 1]);
+const isNotLatestVersion = computed(() => Boolean(latestVersion.value && props.version !== latestVersion.value));
+
+function onNewerVersionClick() {
+    routeToTool(props.id);
+}
 
 const storageLocationModalTitle = computed(() => {
     if (isOnlyPreference.value) {
@@ -166,7 +174,9 @@ onBeforeMount(() => {
         :error-message="errorText || ''"
         :description="props.description"
         :name="props.title"
-        :version="props.version">
+        :version="props.version"
+        :is-not-latest-version="isNotLatestVersion"
+        @newer-version-click="onNewerVersionClick">
         <template v-slot:buttons>
             <GButtonGroup class="tool-card-buttons">
                 <ToolFavoriteButton v-if="hasUser" :id="props.id" />

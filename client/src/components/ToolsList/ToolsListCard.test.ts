@@ -27,6 +27,7 @@ const localVue = getLocalVue();
 function mountCard(options?: {
     currentUser?: any;
     favorites?: { tools: string[]; tags: string[]; edam_operations: string[]; edam_topics: string[] };
+    propsData?: Record<string, unknown>;
 }) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
@@ -74,12 +75,28 @@ function mountCard(options?: {
                 workflowCompatible: true,
                 local: true,
                 fetching: false,
+                ...options?.propsData,
             },
         }),
     };
 }
 
 describe("ToolsListCard", () => {
+    it("renders Markdown tool help", async () => {
+        const { wrapper } = mountCard({
+            propsData: {
+                help: "**Important** tool help",
+                helpFormat: "markdown",
+            },
+        });
+
+        await wrapper.find('[data-description="tools list toggle tool help"]').trigger("click");
+
+        const help = wrapper.find('[data-description="tools list tool help"]');
+        expect(help.find("strong").text()).toBe("Important");
+        expect(help.text()).not.toContain("**Important**");
+    });
+
     it("renders tool tags and emits an exact tag filter when a tag is clicked", async () => {
         const { wrapper } = mountCard();
 

@@ -51,7 +51,7 @@ dependencies = [
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",
     "pebble",
-    "pulsar-galaxy-lib>=0.15.0.dev0",
+    "pulsar-galaxy-lib>=0.15.15",
     "pydantic>=2.7.4",
     "pydantic-ai>=1.99.0",
     "pysam>=0.21",
@@ -102,6 +102,7 @@ test = [
 [project.scripts]
 galaxy-main = "galaxy.main:main"
 galaxy-dependencies = "galaxy.dependencies.script:main"
+galaxy-populate-tool-source-store = "galaxy.tools.source_store.populator:main"
 galaxy-sse-monitor = "galaxy.sse_monitor.__main__:main"
 
 [project.urls]

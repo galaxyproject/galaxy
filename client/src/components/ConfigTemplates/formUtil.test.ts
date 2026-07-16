@@ -52,7 +52,7 @@ describe("formUtils", () => {
                     {
                         name: "org",
                         type: "select",
-                        dynamic_options: "github_repository_owners",
+                        options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
                     },
                 ],
                 secrets: [],
@@ -180,7 +180,7 @@ describe("formUtils", () => {
             const selectVariable: TemplateVariable = {
                 name: "org",
                 type: "select",
-                dynamic_options: "github_repository_owners",
+                options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
             };
             const formEntry = templateVariableFormEntry(selectVariable, undefined, {
                 org: [
@@ -199,7 +199,7 @@ describe("formUtils", () => {
                 name: "org",
                 type: "select",
                 options: [{ label: "Static", value: "static" }],
-                dynamic_options: "github_repository_owners",
+                options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
             };
             const formEntry = templateVariableFormEntry(selectVariable, undefined, {
                 org: [["dynamic", "dynamic"]],
@@ -210,7 +210,7 @@ describe("formUtils", () => {
             const selectVariable: TemplateVariable = {
                 name: "org",
                 type: "select",
-                dynamic_options: "github_repository_owners",
+                options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
             };
             const formEntry = templateVariableFormEntry(selectVariable, "galaxyproject");
             expect(formEntry.value).toBe("galaxyproject");
@@ -295,7 +295,7 @@ describe("formUtils", () => {
         const selectVar: TemplateVariable = {
             name: "org",
             type: "select",
-            dynamic_options: "github_repository_owners",
+            options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
         };
 
         it("should return undefined for an optional integer when the raw value is empty string", () => {

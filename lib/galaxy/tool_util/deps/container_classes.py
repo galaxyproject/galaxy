@@ -15,10 +15,7 @@ from uuid import uuid4
 from packaging.version import Version
 from typing_extensions import Protocol
 
-from galaxy.util import (
-    asbool,
-    in_directory,
-)
+from galaxy.util import asbool
 from . import (
     docker_util,
     singularity_util,
@@ -230,6 +227,9 @@ class Volume:
         source = source.strip()
         target = target.strip()
         mode = mode.strip()
+        if mode == "default_ro":
+            log.warning("container volumes use default_ro mode which is treated as ro")
+            mode = "ro"
 
         return source, target, mode
 
@@ -266,10 +266,6 @@ class Volume:
 def preprocess_volumes(volumes_raw_str: str, container_type: str) -> list[str]:
     """Process Galaxy volume specification string to either Docker or Singularity specification.
 
-    Galaxy allows the mount try "default_ro" which translates to ro for Docker and
-    ro for Singularity iff no subdirectories are rw (Singularity does not allow ro
-    parent directories with rw subdirectories).
-
     Removes volumes that have the same target directory which is not allowed
     (for docker and singularity). Volumes that are specified later in the volumes_raw_str
     are favoured which allows admins to overwrite defaults.
@@ -282,16 +278,16 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> list[str]:
     ['/a/b:ro', '/a/b/c:rw']
     >>> preprocess_volumes("/a/b:/a:ro,/a/b/c:/a/b:rw", DOCKER_CONTAINER_TYPE)
     ['/a/b:/a:ro', '/a/b/c:/a/b:rw']
-    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
+    >>> preprocess_volumes("/a/b:ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
     ['/a/b:ro', '/a/b/c:rw']
-    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
+    >>> preprocess_volumes("/a/b:ro,/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
     ['/a/b:ro', '/a/b/c:ro']
-    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
-    ['/a/b', '/a/b/c']
-    >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
+    >>> preprocess_volumes("/a/b:ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
+    ['/a/b:ro', '/a/b/c']
+    >>> preprocess_volumes("/x:/a/b:ro,/y:/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
     ['/x:/a/b:ro', '/y:/a/b/c:ro']
-    >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
-    ['/x:/a/b', '/y:/a/b/c']
+    >>> preprocess_volumes("/x:/a/b:ro,/y:/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
+    ['/x:/a/b:ro', '/y:/a/b/c']
     >>> preprocess_volumes("/x:/x,/y:/x", SINGULARITY_CONTAINER_TYPE)
     ['/y:/x']
     """
@@ -301,16 +297,6 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> list[str]:
 
     # filter out empty strings, this happens for tools without tool directories.
     volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",") if v]
-    rw_paths = [v.target for v in volumes if v.mode == "rw"]
-    for volume in volumes:
-        mode = volume.mode
-        if volume.mode == "default_ro":
-            mode = "ro"
-            if container_type == SINGULARITY_CONTAINER_TYPE:
-                for rw_path in rw_paths:
-                    if in_directory(rw_path, volume.target):
-                        mode = "rw"
-        volume.mode = mode
 
     # remove duplicate targets
     target_to_volume = {v.target: str(v) for v in volumes}
@@ -352,9 +338,9 @@ class HasDockerLikeVolumes:
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
             # files) should be available in job_directory...
-            defaults = "$job_directory:default_ro"
+            defaults = "$job_directory:ro"
             if self.job_info.tool_directory:
-                defaults += ",$tool_directory:default_ro"
+                defaults += ",$tool_directory:ro"
             defaults += ",$job_directory/outputs:rw,$working_directory:rw"
         else:
             if self.job_info.tmp_directory is not None:
@@ -365,11 +351,11 @@ class HasDockerLikeVolumes:
                 defaults += ",$tmp_directory:/tmp:rw"
             else:
                 defaults = "$_GALAXY_JOB_TMP_DIR:rw,$TMPDIR:rw,$TMP:rw,$TEMP:rw"
-            defaults += ",$galaxy_root:default_ro"
+            defaults += ",$galaxy_root:ro"
             if self.job_info.tool_directory:
-                defaults += ",$tool_directory:default_ro"
+                defaults += ",$tool_directory:ro"
             if self.job_info.job_directory:
-                defaults += ",$job_directory:default_ro,$job_directory/outputs:rw"
+                defaults += ",$job_directory:ro,$job_directory/outputs:rw"
                 if Version(str(self.tool_info.profile)) <= Version("19.09"):
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.home_directory is not None:
@@ -377,18 +363,18 @@ class HasDockerLikeVolumes:
             if self.app_info.outputs_to_working_directory:
                 # Should need default_file_path (which is of course an estimate given
                 # object stores anyway).
-                defaults += ",$working_directory:rw,$default_file_path:default_ro"
+                defaults += ",$working_directory:rw,$default_file_path:ro"
             else:
                 defaults += ",$working_directory:rw,$default_file_path:rw"
 
         if self.app_info.library_import_dir:
-            defaults += ",$library_import_dir:default_ro"
+            defaults += ",$library_import_dir:ro"
         if self.app_info.tool_data_path:
-            defaults += ",$tool_data_path:default_ro"
+            defaults += ",$tool_data_path:ro"
         if self.app_info.galaxy_data_manager_data_path:
-            defaults += ",$galaxy_data_manager_data_path:default_ro"
+            defaults += ",$galaxy_data_manager_data_path:ro"
         if self.app_info.shed_tool_data_path:
-            defaults += ",$shed_tool_data_path:default_ro"
+            defaults += ",$shed_tool_data_path:ro"
 
         # Define $defaults that can easily be extended with external library and
         # index data without deployer worrying about above details.

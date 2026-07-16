@@ -141,7 +141,7 @@ function stsUrl(config: any) {
             <LoadingSpan v-else-if="page && !isConfigLoaded" message="Loading Galaxy configuration" />
         </div>
     </div>
-    <PublishedItem v-else :item="page">
+    <PublishedItem v-else :item="page" override-path="pages">
         <template v-slot>
             <div v-if="isConfigLoaded && page">
                 <Markdown
