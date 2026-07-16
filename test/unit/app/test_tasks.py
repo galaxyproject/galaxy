@@ -1,3 +1,4 @@
+import os
 from datetime import (
     datetime,
     timedelta,
@@ -75,101 +76,71 @@ class TestCleanupJwds:
         object_store = MagicMock()
         result = _cleanup_jwds(sa_session, object_store, days=7)
         assert result == 0
-        object_store.get_filename.assert_not_called()
+        object_store.delete.assert_not_called()
 
-    def test_deletes_jwd_for_old_failed_jobs(self, sa_session, tmp_path):
+    def test_deletes_jwd_for_old_failed_jobs(self, sa_session):
+        """Legacy job (working_directory=None): object_store.delete is called."""
         job = _make_job(state="error", age_days=10)
         sa_session.add(job)
         sa_session.commit()
 
-        jwd_path = tmp_path / "job_work" / str(job.id)
-        jwd_path.mkdir(parents=True)
-        (jwd_path / "some_file.txt").write_text("job output")
-
         object_store = MagicMock()
-        object_store.get_filename.return_value = str(jwd_path)
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 1
-        object_store.get_filename.assert_called_once()
-        assert isinstance(object_store.get_filename.call_args[0][0], model.Job)
-        assert not jwd_path.exists()
+        object_store.delete.assert_called_once()
+        call_args = object_store.delete.call_args
+        assert isinstance(call_args[0][0], model.Job)
+        assert call_args[1]["base_dir"] == "job_work"
+        assert call_args[1]["entire_dir"] is True
 
-    def test_deletes_multiple_old_failed_jobs(self, sa_session, tmp_path):
+    def test_deletes_multiple_old_failed_jobs(self, sa_session):
         jobs = [_make_job(state="error", age_days=10) for _ in range(3)]
         sa_session.add_all(jobs)
         sa_session.commit()
 
-        jwd_paths = []
-        for job in jobs:
-            jwd_path = tmp_path / "job_work" / str(job.id)
-            jwd_path.mkdir(parents=True)
-            jwd_paths.append(jwd_path)
-
         object_store = MagicMock()
-        object_store.get_filename.side_effect = [str(p) for p in jwd_paths]
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 3
-        assert object_store.get_filename.call_count == 3
-        assert all(not p.exists() for p in jwd_paths)
+        assert object_store.delete.call_count == 3
 
-    def test_skips_jobs_not_old_enough(self, sa_session, tmp_path):
+    def test_skips_jobs_not_old_enough(self, sa_session):
         job = _make_job(state="error", age_days=1)
         sa_session.add(job)
         sa_session.commit()
 
-        jwd_path = tmp_path / "job_work" / str(job.id)
-        jwd_path.mkdir(parents=True)
-
         object_store = MagicMock()
-        object_store.get_filename.return_value = str(jwd_path)
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 0
-        object_store.get_filename.assert_not_called()
-        assert jwd_path.exists()
+        object_store.delete.assert_not_called()
 
-    def test_skips_non_failed_jobs(self, sa_session, tmp_path):
+    def test_skips_non_failed_jobs(self, sa_session):
         job = _make_job(state="ok", age_days=30)
         sa_session.add(job)
         sa_session.commit()
 
-        jwd_path = tmp_path / "job_work" / str(job.id)
-        jwd_path.mkdir(parents=True)
-
         object_store = MagicMock()
-        object_store.get_filename.return_value = str(jwd_path)
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 0
-        object_store.get_filename.assert_not_called()
-        assert jwd_path.exists()
+        object_store.delete.assert_not_called()
 
-    def test_deletes_jwd_for_jobs_without_object_store_id(self, sa_session, tmp_path):
+    def test_deletes_jwd_for_jobs_without_object_store_id(self, sa_session):
         """Jobs using the default object store have object_store_id=None but should still be cleaned up."""
         job = _make_job(state="error", age_days=10)
         job.object_store_id = None
         sa_session.add(job)
         sa_session.commit()
 
-        jwd_path = tmp_path / "job_work" / str(job.id)
-        jwd_path.mkdir(parents=True)
-
         object_store = MagicMock()
-        object_store.get_filename.return_value = str(jwd_path)
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 1
-        object_store.get_filename.assert_called_once()
-        assert not jwd_path.exists()
+        object_store.delete.assert_called_once()
 
-    def test_only_deletes_matching_jobs_when_mixed(self, sa_session, tmp_path):
+    def test_only_deletes_matching_jobs_when_mixed(self, sa_session):
         """With both matching and non-matching jobs in the DB, only matching ones are deleted.
 
         This catches the 'Query is always truthy' bug: without .all(), the `if not failed_jobs`
@@ -187,28 +158,57 @@ class TestCleanupJwds:
         sa_session.add_all([old_failed, no_store, old_ok, recent_failed])
         sa_session.commit()
 
-        jwd_matching = tmp_path / "job_work" / str(old_failed.id)
-        jwd_matching.mkdir(parents=True)
-        jwd_no_store = tmp_path / "job_work" / str(no_store.id)
-        jwd_no_store.mkdir(parents=True)
-
         object_store = MagicMock()
-        object_store.get_filename.side_effect = [str(jwd_matching), str(jwd_no_store)]
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 2
-        assert object_store.get_filename.call_count == 2
-        assert not jwd_matching.exists()
-        assert not jwd_no_store.exists()
+        assert object_store.delete.call_count == 2
 
     def test_handles_already_deleted_jwd(self, sa_session):
+        """When object_store.delete raises ObjectNotFound, the job is skipped."""
         job = _make_job(state="error", age_days=10)
         sa_session.add(job)
         sa_session.commit()
 
         object_store = MagicMock()
-        object_store.get_filename.side_effect = ObjectNotFound("JWD not found")
+        object_store.delete.side_effect = ObjectNotFound("JWD not found")
 
         result = _cleanup_jwds(sa_session, object_store, days=7)
         assert result == 0
+
+    def test_deletes_custom_path_jwd(self, sa_session, tmp_path):
+        """Custom-path job (working_directory set): shutil.rmtree is used on the custom path."""
+        job = _make_job(state="error", age_days=10)
+        jwd_path = tmp_path / "custom_jwd" / str(job.id)
+        jwd_path.mkdir(parents=True)
+        (jwd_path / "some_file.txt").write_text("job output")
+        job.working_directory = str(jwd_path)
+        sa_session.add(job)
+        sa_session.commit()
+
+        object_store = MagicMock()
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 1
+        object_store.delete.assert_not_called()
+        assert not jwd_path.exists()
+
+    def test_handles_os_error_on_delete(self, sa_session, tmp_path):
+        """OSError during delete is logged and the job is skipped."""
+        job = _make_job(state="error", age_days=10)
+        jwd_path = tmp_path / "custom_jwd" / str(job.id)
+        jwd_path.mkdir(parents=True)
+        job.working_directory = str(jwd_path)
+        sa_session.add(job)
+        sa_session.commit()
+
+        object_store = MagicMock()
+        # Make shutil.rmtree fail by making the directory read-only
+        os.chmod(jwd_path, 0o000)
+
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 0
+        object_store.delete.assert_not_called()
+        # Restore permissions for cleanup
+        os.chmod(jwd_path, 0o755)
