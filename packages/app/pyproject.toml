@@ -39,6 +39,8 @@ dependencies = [
     "gxformat2>=0.27.0",
     "kombu>=5.3",
     "lagom",
+    "langchain-chroma==1.1.0",
+    "langchain-openai==1.2.1",
     "lxml!=4.2.2",
     "Mako",
     "Markdown",
