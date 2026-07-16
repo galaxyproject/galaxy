@@ -3066,8 +3066,6 @@ steps: []
         version: int | None = None,
         preserve_external_subworkflow_links: bool | None = None,
         clean: bool | None = None,
-        clean_strip: str | None = None,
-        clean_preserve: str | None = None,
         clean_validate: bool | None = None,
         tool_state_as_dict: bool | None = None,
     ) -> Response:
@@ -3084,10 +3082,6 @@ steps: []
             params["preserve_external_subworkflow_links"] = preserve_external_subworkflow_links
         if clean is not None:
             params["clean"] = clean
-        if clean_strip is not None:
-            params["clean_strip"] = clean_strip
-        if clean_preserve is not None:
-            params["clean_preserve"] = clean_preserve
         if clean_validate is not None:
             params["clean_validate"] = clean_validate
         if tool_state_as_dict is not None:
@@ -3103,8 +3097,6 @@ steps: []
         version: int | None = None,
         preserve_external_subworkflow_links: bool | None = None,
         clean: bool | None = None,
-        clean_strip: str | None = None,
-        clean_preserve: str | None = None,
         clean_validate: bool | None = None,
         tool_state_as_dict: bool | None = None,
     ) -> dict:
@@ -3116,8 +3108,6 @@ steps: []
             version=version,
             preserve_external_subworkflow_links=preserve_external_subworkflow_links,
             clean=clean,
-            clean_strip=clean_strip,
-            clean_preserve=clean_preserve,
             clean_validate=clean_validate,
             tool_state_as_dict=tool_state_as_dict,
         )
