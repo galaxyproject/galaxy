@@ -345,9 +345,10 @@ class ToolIndex(BaseModel):
         return self.panel_views
 
 
-# md5 of the ToolIndex JSON schema (the pattern
+# md5 of the ToolIndex JSON schema and semantic revision (the pattern
 # tool_shed.managers.model_cache.hash_model uses — not imported from there,
 # galaxy cannot depend on tool_shed). Persisted index blobs are stamped with
-# this and discarded on mismatch, so a model change triggers a clean rebuild
-# instead of silently loading defaults for fields the old blob never had.
-INDEX_SCHEMA_HASH = md5_hash_str(json.dumps(ToolIndex.model_json_schema()))
+# this and discarded on mismatch, so a model or projection-ownership change
+# triggers a clean rebuild instead of retaining stale panel placements.
+INDEX_SCHEMA_REVISION = 1
+INDEX_SCHEMA_HASH = md5_hash_str(f"{INDEX_SCHEMA_REVISION}:{json.dumps(ToolIndex.model_json_schema())}")

@@ -544,6 +544,7 @@ class CachedToolBox(ToolBox):
             self._place_stub_in_integrated_panel(stub, placement.section_id, placement.section_name)
             placed += 1
         self._load_indexed_panel_structure(config_filenames)
+        self._remove_unresolved_integrated_tools(self._integrated_tool_panel)
         super()._load_tool_panel()
         log.debug(
             "CachedToolBox registered %d indexed tools (%d panel placements) without walking tool conf items",
@@ -614,6 +615,14 @@ class CachedToolBox(ToolBox):
             for sub_index, sub_item in enumerate(item.items):
                 self._load_indexed_panel_item(sub_item, section.elems, sub_index)
             panel.update_or_append(index, key, section)
+
+    def _remove_unresolved_integrated_tools(self, panel: ToolPanelElements) -> None:
+        """Remove stale tool placeholders that have no indexed placement."""
+        for key, item in list(panel.items()):
+            if isinstance(item, ToolSection):
+                self._remove_unresolved_integrated_tools(item.elems)
+            elif key.startswith("tool_") and item is None:
+                del panel[key]
 
     def _load_tool_panel(self) -> None:
         if getattr(self, "_tool_panel_loaded_from_index", False):
@@ -1568,7 +1577,7 @@ class CachedToolBox(ToolBox):
         # populator wrote on the previous step, so .get() returns the right
         # ToolLineage; register() is the fallback for an as-yet-unseen id.
         stub._lineage = self._lineage_map.get(tool_id) or self._lineage_map.register(stub)  # type: ignore[arg-type]
-        if not place_in_panel:
+        if not place_in_panel or not entry.in_panel:
             return stub
         # Place into the panel. The populator stamped panel_section_id /
         # panel_section_name onto the entry; create the ToolSection if it

@@ -72,9 +72,11 @@ from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from galaxy.tools import tool_produces_real_jobs
 from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
 from galaxy.tools.source_store.discover import (
+    ADHOC_TOOL_CONF,
     CONVERTER_TOOL_CONF,
     discover_tools,
     DiscoveredTool,
+    NON_PANEL_TOOL_CONFS,
 )
 from galaxy.tools.source_store.factory import (
     _build_default_store,
@@ -533,7 +535,7 @@ def build_index_entry_from_source(
             is_workflow_compatible=is_workflow_compatible,
             panel_section_id=discovered.section_id,
             panel_section_name=discovered.section_name,
-            in_panel=discovered.data_manager_id is None and discovered.tool_conf != CONVERTER_TOOL_CONF,
+            in_panel=discovered.data_manager_id is None and discovered.tool_conf not in NON_PANEL_TOOL_CONFS,
             labels=list(discovered.labels or ()),
             edam_operations=edam_operations,
             edam_topics=edam_topics,
@@ -733,7 +735,7 @@ def populate_store_inline(
         )
     )
 
-    # Bundled tools have tool_conf="bundled"; those go to the default store.
+    # Bundled tools use the bundled sentinel; those go to the default store.
     tool_specs: list[tuple[DiscoveredTool, str]] = []
     for d in discovered_tools:
         store_name = conf_to_store.get(d.tool_conf, DEFAULT_STORE_NAME)
@@ -764,7 +766,7 @@ def populate_store_inline(
                     (
                         DiscoveredTool(
                             path=p,
-                            tool_conf="adhoc",
+                            tool_conf=ADHOC_TOOL_CONF,
                             tool_path=None,
                             guid=guid,
                             is_shed_tool=guid is not None,

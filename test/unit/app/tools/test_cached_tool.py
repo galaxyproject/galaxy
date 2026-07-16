@@ -831,8 +831,10 @@ def test_fast_path_replays_labels_in_panel_order(tmp_path):
         box._tool_index.add_entry(entry)
         stub = box._register_cached_entry(entry, place_in_panel=False)
         box._place_stub_in_integrated_panel(stub, entry.panel_section_id, entry.panel_section_name)
+    box._integrated_tool_panel.stub_tool("section_tool")
 
     box._load_indexed_panel_structure([str(tool_conf)])
+    box._remove_unresolved_integrated_tools(box._integrated_tool_panel)
     super(CachedToolBox, box)._load_tool_panel()
 
     assert list(box._integrated_tool_panel) == ["label_top_label", "tool_top_tool", "sec1", "label_last_label"]
@@ -840,3 +842,14 @@ def test_fast_path_replays_labels_in_panel_order(tmp_path):
     assert list(box._tool_panel) == ["label_top_label", "tool_top_tool", "sec1", "label_last_label"]
     assert box._tool_panel["label_top_label"].text == "Top label"
     assert box._tool_panel["sec1"].elems["label_section_label"].text == "Section label"
+
+
+def test_storage_only_entry_is_not_placed_in_panel():
+    box = _registry_box()
+    entry = _entry(id="storage_only", in_panel=False)
+
+    box._register_cached_entry(entry)
+
+    assert "storage_only" in box._tools_by_id
+    assert "tool_storage_only" not in box._tool_panel
+    assert "tool_storage_only" not in box._integrated_tool_panel
