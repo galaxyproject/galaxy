@@ -422,7 +422,16 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         if use_multipart:
             self._upload_file_multipart(record_id, filename, file_path, file_size, context)
         else:
-            self._upload_file_single(record_id, filename, file_path, context)
+            try:
+                self._upload_file_single(record_id, filename, file_path, context)
+            except Exception as e:
+                if "413" in str(e):
+                    raise Exception(
+                        f"Failed to upload file '{filename}' ({file_size} bytes): HTTP 413 Payload Too Large. "
+                        f"The server rejected the upload because the file is too large for a single request. "
+                        f"Please configure 'multipart_threshold' in the file source configuration to enable multipart upload for files of this size."
+                    ) from e
+                raise
 
     def _upload_file_single(
         self,
@@ -448,14 +457,6 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         commit_file_upload_url = file_entry["links"]["commit"]
         with open(file_path, "rb") as file:
             response = requests.put(upload_file_content_url, data=file, headers=headers)
-            # Handle 413 (Payload Too Large) - suggest using multipart upload
-            if response.status_code == 413:
-                file_size = os.path.getsize(file_path)
-                raise Exception(
-                    f"Failed to upload file '{filename}' ({file_size} bytes): HTTP 413 Payload Too Large. "
-                    f"The server rejected the upload because the file is too large for a single request. "
-                    f"Please configure 'multipart_threshold' in the file source configuration to enable multipart upload for files of this size."
-                )
             self._ensure_response_has_expected_status_code(response, 200)
 
         # Commit file upload

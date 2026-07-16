@@ -207,7 +207,7 @@ class TestUploadFileSingle:
             ]
             mock_requests.put.return_value = _mock_response(200)
 
-            interactor._upload_file_single("abc", "test.txt", str(file_path), context, file_size=11)
+            interactor._upload_file_single("abc", "test.txt", str(file_path), context)
 
             assert mock_requests.post.call_count == 2
             assert mock_requests.put.call_count == 1
@@ -228,8 +228,8 @@ class TestUploadFileSingle:
             mock_requests.post.return_value = _mock_response(201, {"entries": [_make_single_upload_entry()]})
             mock_requests.put.return_value = _mock_response(413)
 
-            with pytest.raises(Exception, match="multipart_threshold"):
-                interactor._upload_file_single("abc", "test.txt", str(file_path), context, file_size=11)
+            with pytest.raises(Exception, match="413"):
+                interactor._upload_file_single("abc", "test.txt", str(file_path), context)
 
 
 class TestUploadFileMultipart:
@@ -459,3 +459,30 @@ class TestUploadFileToDraftContainerRouting:
         with patch.object(interactor, "_upload_file_single") as mock_single:
             interactor.upload_file_to_draft_container("abc", "test.txt", str(file_path), context)
             mock_single.assert_called_once()
+
+    def test_upload_file_single_413_router_raises_helpful_error(self, tmp_path):
+        """Router should wrap 413 with actionable multipart_threshold message."""
+        file_path = tmp_path / "test.txt"
+        file_path.write_bytes(b"hello world")
+
+        interactor = _make_interactor()
+        context = _make_context(
+            config=MagicMock(
+                multipart_threshold=None,  # No threshold configured
+                multipart_chunk_size=None,
+                default_resource_type=None,
+                token="test-token",
+                public_name="Doe, Jane",
+            )
+        )
+
+        with (
+            patch.object(interactor, "_get_draft_record", return_value=_make_draft_record()),
+            patch.object(interactor, "_get_request_headers", return_value={"Authorization": "Bearer x"}),
+            patch("galaxy.files.sources.invenio.requests") as mock_requests,
+        ):
+            mock_requests.post.return_value = _mock_response(201, {"entries": [_make_single_upload_entry()]})
+            mock_requests.put.return_value = _mock_response(413)
+
+            with pytest.raises(Exception, match="multipart_threshold"):
+                interactor.upload_file_to_draft_container("abc", "test.txt", str(file_path), context)
