@@ -46,19 +46,21 @@ def _stored(path, tool_source):
     )
 
 
-def _build(tmp_path, xml, tool_conf="tool_conf.xml"):
+def _build(tmp_path, xml, tool_conf="tool_conf.xml", in_panel=True):
     path = tmp_path / "tool.xml"
     path.write_text(xml)
     tool_source = get_tool_source(config_file=str(path))
-    discovered = DiscoveredTool(path=str(path), tool_conf=tool_conf, tool_path=str(tmp_path))
+    discovered = DiscoveredTool(path=str(path), tool_conf=tool_conf, tool_path=str(tmp_path), in_panel=in_panel)
     return build_index_entry_from_source(discovered, _stored(path, tool_source), tool_source)
 
 
 def test_entry_marks_datatype_converter(tmp_path):
     plain = _build(tmp_path, _TOOL_XML)
-    converter = _build(tmp_path, _TOOL_XML, tool_conf=CONVERTER_TOOL_CONF)
+    converter = _build(tmp_path, _TOOL_XML, tool_conf=CONVERTER_TOOL_CONF, in_panel=False)
     assert plain is not None and plain.is_datatype_converter is False
     assert converter is not None and converter.is_datatype_converter is True
+    assert plain.in_panel is True
+    assert converter.in_panel is False
 
 
 def test_entry_captures_help_text(tmp_path):

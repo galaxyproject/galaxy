@@ -76,7 +76,6 @@ from galaxy.tools.source_store.discover import (
     CONVERTER_TOOL_CONF,
     discover_tools,
     DiscoveredTool,
-    NON_PANEL_TOOL_CONFS,
 )
 from galaxy.tools.source_store.factory import (
     _build_default_store,
@@ -535,7 +534,7 @@ def build_index_entry_from_source(
             is_workflow_compatible=is_workflow_compatible,
             panel_section_id=discovered.section_id,
             panel_section_name=discovered.section_name,
-            in_panel=discovered.data_manager_id is None and discovered.tool_conf not in NON_PANEL_TOOL_CONFS,
+            in_panel=discovered.in_panel,
             labels=list(discovered.labels or ()),
             edam_operations=edam_operations,
             edam_topics=edam_topics,
@@ -768,6 +767,7 @@ def populate_store_inline(
                             path=p,
                             tool_conf=ADHOC_TOOL_CONF,
                             tool_path=None,
+                            in_panel=False,
                             guid=guid,
                             is_shed_tool=guid is not None,
                         ),
