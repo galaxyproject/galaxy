@@ -573,7 +573,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         end_byte = min(start_byte + part_size, file_size)
         part_content_length = end_byte - start_byte
 
-        log.debug(f"Uploading part {part_index}: bytes {start_byte}-{end_byte-1} ({part_content_length} bytes)")
+        log.debug(f"Uploading part {part_index}: bytes {start_byte}-{end_byte - 1} ({part_content_length} bytes)")
 
         # Presigned S3 URLs are authenticated via query parameters; adding
         # Authorization or other headers would invalidate the signature.
