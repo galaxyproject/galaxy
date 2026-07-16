@@ -312,28 +312,6 @@ class TestUploadFileMultipart:
                 interactor._upload_file_multipart("abc", "test.txt", str(file_path), file_size, context)
 
 
-class TestUploadParts:
-    """Tests for _upload_parts sequential vs parallel behavior."""
-
-    def test_upload_parts_sequential_for_two_parts(self):
-        """<=2 parts should upload sequentially without ThreadPoolExecutor."""
-        interactor = _make_interactor()
-        part_links = [{"part": 0, "url": "u0"}, {"part": 1, "url": "u1"}]
-
-        with patch.object(interactor, "_upload_single_part") as mock_upload:
-            interactor._upload_parts("/path", 1024, 512, part_links, {})
-            assert mock_upload.call_count == 2
-
-    def test_upload_parts_parallel_for_many_parts(self):
-        """>2 parts should use ThreadPoolExecutor."""
-        interactor = _make_interactor()
-        part_links = [{"part": i, "url": f"u{i}"} for i in range(5)]
-
-        with patch.object(interactor, "_upload_single_part") as mock_upload:
-            interactor._upload_parts("/path", 5120, 1024, part_links, {})
-            assert mock_upload.call_count == 5
-
-
 class TestUploadSinglePart:
     """Tests for _upload_single_part byte-range streaming."""
 

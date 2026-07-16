@@ -529,35 +529,31 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         part_links: list[dict],
         headers: dict,
     ):
-        """Upload all parts, sequentially for <=2 parts, parallel otherwise."""
+        """Upload all parts in parallel using a thread pool."""
         num_parts = len(part_links)
+        max_workers = min(4, num_parts)
 
-        if num_parts <= 2:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {}
             for part_index, part_info in enumerate(part_links):
-                self._upload_single_part(file_path, file_size, part_size, part_index, part_info, headers)
-        else:
-            max_workers = min(4, num_parts)
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = {}
-                for part_index, part_info in enumerate(part_links):
-                    future = executor.submit(
-                        self._upload_single_part,
-                        file_path,
-                        file_size,
-                        part_size,
-                        part_index,
-                        part_info,
-                        headers,
-                    )
-                    futures[future] = part_index
+                future = executor.submit(
+                    self._upload_single_part,
+                    file_path,
+                    file_size,
+                    part_size,
+                    part_index,
+                    part_info,
+                    headers,
+                )
+                futures[future] = part_index
 
-                for future in as_completed(futures):
-                    part_index = futures[future]
-                    try:
-                        future.result()
-                    except Exception as e:
-                        log.error(f"Failed to upload part {part_index}: {e}")
-                        raise
+            for future in as_completed(futures):
+                part_index = futures[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    log.error(f"Failed to upload part {part_index}: {e}")
+                    raise
 
     def _upload_single_part(
         self,
