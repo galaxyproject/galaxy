@@ -5,9 +5,9 @@ from galaxy.datatypes.proteomics import (
     MzSpecLibTxt,
 )
 from .util import (
+    get_input_files,
     MockDataset,
     MockDatasetDataset,
-    get_input_files,
 )
 
 
