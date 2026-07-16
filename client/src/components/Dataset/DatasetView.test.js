@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { http as mswHttp,HttpResponse } from "msw";
+import { http as mswHttp, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";

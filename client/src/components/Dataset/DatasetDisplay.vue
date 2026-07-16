@@ -6,6 +6,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
+import { useDatatypeStore } from "@/stores/datatypeStore";
 import { useUserStore } from "@/stores/userStore";
 import STATES from "@/utils/datasetStates";
 import { absPath, withPrefix } from "@/utils/redirect";
@@ -23,6 +24,7 @@ interface Props {
 }
 
 const { getDataset, isLoadingDataset } = useDatasetStore();
+const datatypeStore = useDatatypeStore();
 
 const emit = defineEmits(["load"]);
 
@@ -32,7 +34,7 @@ const contentTruncated = ref<number | null>(null);
 const contentChunked = ref<boolean>(false);
 const errorMessage = ref<string>("");
 const previewLoaded = ref<boolean>(false);
-const previewBlobUrl = ref<string | null>(null);
+const previewFrameUrl = ref<string | null>(null);
 const sanitizedJobImported = ref<boolean>(false);
 const sanitizedToolId = ref<string | null>(null);
 
@@ -65,22 +67,26 @@ watch(
         sanitizedJobImported.value = false;
         sanitizedToolId.value = null;
         errorMessage.value = "";
+        const existingFrameUrl = previewFrameUrl.value;
+        previewFrameUrl.value = null;
 
         const controller = new AbortController();
-        const existingBlobUrl = previewBlobUrl.value;
-        previewBlobUrl.value = null;
-        if (existingBlobUrl) {
-            URL.revokeObjectURL(existingBlobUrl);
+        if (existingFrameUrl?.startsWith("blob:")) {
+            URL.revokeObjectURL(existingFrameUrl);
         }
         onCleanup(() => {
             controller.abort();
-            if (previewBlobUrl.value) {
-                URL.revokeObjectURL(previewBlobUrl.value);
-                previewBlobUrl.value = null;
+            if (previewFrameUrl.value?.startsWith("blob:")) {
+                URL.revokeObjectURL(previewFrameUrl.value);
             }
+            previewFrameUrl.value = null;
         });
 
         try {
+            const extension = dataset.value?.file_ext;
+            const datatypeDetails = extension ? await datatypeStore.fetchDatatypeDetails(extension) : null;
+            // HTML-like and composite previews need a real /display/ URL so relative assets keep working.
+            const useDirectPreview = Boolean(extension?.endsWith("html") || datatypeDetails?.composite_files?.length);
             const response = await fetch(absPath(previewUrl.value), { method: "GET", signal: controller.signal });
             const { headers } = response;
             contentChunked.value = !!headers.get("x-content-chunked");
@@ -92,9 +98,13 @@ watch(
             if (!response.ok) {
                 throw new Error(`${response.status} ${response.statusText}`);
             }
-            if (!contentChunked.value) {
+            if (useDirectPreview) {
+                // Iframe request delayed until after this fetch completes so the duplicate download is sequential
+                // (which helps to make use of the objectstore cache for the second request).
+                previewFrameUrl.value = previewUrl.value;
+            } else if (!contentChunked.value) {
                 const blob = await response.blob();
-                previewBlobUrl.value = URL.createObjectURL(blob);
+                previewFrameUrl.value = URL.createObjectURL(blob);
             }
         } catch (e) {
             if (!controller.signal.aborted) {
@@ -148,7 +158,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <CenterFrame v-if="previewBlobUrl" :src="previewBlobUrl" @load="emit('load')" />
+            <CenterFrame v-if="previewFrameUrl" :src="previewFrameUrl" @load="emit('load')" />
         </div>
     </div>
 </template>
