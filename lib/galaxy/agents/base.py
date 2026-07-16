@@ -296,6 +296,7 @@ def normalize_llm_text(text: str) -> str:
 
 def is_url_reachable(url: str) -> bool:
     import requests
+
     try:
         response = requests.head(url, allow_redirects=True, timeout=5)
         return 200 <= response.status_code < 400

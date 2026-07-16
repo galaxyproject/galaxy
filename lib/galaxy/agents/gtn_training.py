@@ -406,10 +406,10 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                         action_type=ActionType.VIEW_EXTERNAL,
                         description=f"Open tutorial: {title}",
                         parameters={"url": url},
-                    confidence=ConfidenceLevel.HIGH,
-                    priority=1,
+                        confidence=ConfidenceLevel.HIGH,
+                        priority=1,
+                    )
                 )
-            )
 
         for faq in response_data.faqs[:3]:
             title = faq.get("title", "Untitled FAQ")
@@ -421,9 +421,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                         description=f"Open FAQ: {title}",
                         parameters={"url": url},
                         confidence=ConfidenceLevel.HIGH,
-                    priority=1 if not response_data.tutorials else 2,
+                        priority=1 if not response_data.tutorials else 2,
+                    )
                 )
-            )
 
         topics: set[str] = set()
         for t in response_data.tutorials:
