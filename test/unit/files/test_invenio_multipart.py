@@ -21,10 +21,10 @@ class TestCalculateMultipartParams:
     """Tests for calculate_multipart_params function."""
 
     def test_calculate_multipart_params_zero_byte(self):
-        """Zero-byte files should return (1, 0)."""
+        """Zero-byte files return minimum part size."""
         parts, part_size = calculate_multipart_params(0)
         assert parts == 1
-        assert part_size == 0
+        assert part_size == MIN_UPLOAD_PART_SIZE
 
     def test_calculate_multipart_params_small_file(self):
         """Files under 5 MiB should use minimum part size."""

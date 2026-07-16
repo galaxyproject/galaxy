@@ -132,7 +132,7 @@ def calculate_multipart_params(file_size: int, preferred_part_size: int | None =
         Files larger than this will still return valid params but would fail server-side.
     """
     if file_size == 0:
-        return 1, 0
+        return 1, MIN_UPLOAD_PART_SIZE
 
     # Start with preferred or minimum part size
     part_size = preferred_part_size or MIN_UPLOAD_PART_SIZE
