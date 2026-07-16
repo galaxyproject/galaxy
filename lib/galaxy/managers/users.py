@@ -184,11 +184,15 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session.add_all([user, private_role])
         if trans.app.config.user_activation_on:
             user.active = False
-            if send_activation_email and not self.send_activation_email(trans, user.email, user.username):
-                error_message = "Unable to send activation email, please contact your local Galaxy administrator."
-                if trans.app.config.error_email_to is not None:
-                    error_message += f" Contact: {trans.app.config.error_email_to}"
-                raise exceptions.InternalServerError(error_message)
+            if send_activation_email:
+                # Flush so the new email is visible to the DB query in
+                # __get_activation_token (the session has autoflush=False).
+                session.flush()
+                if not self.send_activation_email(trans, user.email, user.username):
+                    error_message = "Unable to send activation email, please contact your local Galaxy administrator."
+                    if trans.app.config.error_email_to is not None:
+                        error_message += f" Contact: {trans.app.config.error_email_to}"
+                    raise exceptions.InternalServerError(error_message)
         if commit:
             session.commit()
 
