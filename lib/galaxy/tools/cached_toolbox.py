@@ -88,6 +88,7 @@ class MaterializationReason(str, Enum):
     DETAIL = "detail"
     DEPENDENCY = "dependency"
     EXECUTION = "execution"
+    INSTALLATION = "installation"
     JOB_SETUP = "job_setup"
     PACKAGING = "packaging"
     SERIALIZATION = "serialization"
