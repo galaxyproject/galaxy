@@ -14,6 +14,7 @@ from cachetools import LRUCache
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
+from galaxy.tool_util.toolbox.base import NullToolTagManager
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.panel import (
     ToolPanelElements,
@@ -521,6 +522,8 @@ def _registry_box():
     box._curated_tool_tags = None
     box._tool_edam_operations = None
     box._tool_edam_topics = None
+    box._tool_tag_manager = NullToolTagManager()
+    box._tool_root_dir = ""
     box.data_manager_tools = {}
     box._cache_lock = threading.RLock()
     box._materialization_locks = tuple(threading.Lock() for _ in range(4))
@@ -828,6 +831,7 @@ def test_fast_path_replays_labels_in_panel_order(tmp_path):
     box = _registry_box()
     box._index = 0
     box.can_load_config_file = lambda _path: True
+    positioned_panel_keys = set(box._integrated_tool_panel)
     top = _entry(id="top_tool")
     section = _entry(id="section_tool", panel_section_id="sec1", panel_section_name="Section 1")
     for entry in (top, section):
@@ -836,8 +840,7 @@ def test_fast_path_replays_labels_in_panel_order(tmp_path):
         box._place_stub_in_integrated_panel(stub, entry.panel_section_id, entry.panel_section_name)
     box._integrated_tool_panel.stub_tool("section_tool")
 
-    box._load_indexed_panel_structure([str(tool_conf)])
-    box._remove_unresolved_integrated_tools(box._integrated_tool_panel)
+    box._load_indexed_panel_structure([str(tool_conf)], positioned_panel_keys)
     super(CachedToolBox, box)._load_tool_panel()
 
     assert list(box._integrated_tool_panel) == ["label_top_label", "tool_top_tool", "sec1", "label_last_label"]
@@ -878,3 +881,22 @@ def test_fast_path_positions_new_section_at_config_index(tmp_path):
 
     assert list(box._integrated_tool_panel) == ["local", "existing"]
     assert box._integrated_tool_panel["existing"].name == "Existing"
+
+
+def test_fast_path_watches_tool_dir_without_loading_existing_tools(tmp_path):
+    tool_dir = tmp_path / "tools"
+    tool_dir.mkdir()
+    (tool_dir / "existing.xml").write_text("<tool />")
+    tool_conf = tmp_path / "tool_conf.xml"
+    tool_conf.write_text('<toolbox tool_path="${tool_conf_dir}"><tool_dir dir="tools" /></toolbox>')
+    box = _registry_box()
+    box._index = 0
+    box.can_load_config_file = lambda _path: True
+    box._tool_watcher = MagicMock()
+    box._looks_like_a_tool = lambda _path: True
+    box.load_tool = MagicMock(side_effect=AssertionError("indexed replay loaded a tool"))
+
+    box._load_indexed_panel_structure([str(tool_conf)], set())
+
+    box.load_tool.assert_not_called()
+    box._tool_watcher.watch_directory.assert_called_once()

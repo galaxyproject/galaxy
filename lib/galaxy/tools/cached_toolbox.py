@@ -6,7 +6,6 @@ lightweight index in memory and loads full Tool objects on-demand with
 LRU eviction.
 """
 
-import errno
 import logging
 import os
 import threading
@@ -36,22 +35,11 @@ from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.base import (
     MaterializationReasonName,
-    resolve_tool_path,
-    SHED_TOOL_CONF_XML,
     ToolConfRepository,
     ToolLike,
 )
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
-from galaxy.tool_util.toolbox.panel import (
-    ToolPanelElements,
-    ToolSection,
-)
-from galaxy.tool_util.toolbox.parser import (
-    get_toolbox_parser,
-    ToolConfItem,
-    ToolConfSection,
-)
 from galaxy.tool_util.version import parse_version
 from galaxy.tools.source_store import (
     StoredToolSource,
@@ -69,7 +57,6 @@ from galaxy.tools.source_store.populator import (
     populate_for_paths,
     populate_store_inline,
 )
-from galaxy.util import listify
 from galaxy.util.tool_version import (
     is_shed_guid,
     remove_version_from_guid,
@@ -464,6 +451,7 @@ class CachedToolBox(ToolBox):
         self._shed_short_id_to_guids: dict[str, set[str]] = {}
         self._index_source_paths_cache: tuple[ToolIndex, set[str]] | None = None
         self._guid_sibling_versions_cache: tuple[ToolIndex, int, dict[str, list[tuple[str, str]]]] | None = None
+        self._indexed_panel_positioned_keys: set[str] | None = None
 
         super().__init__(
             config_filenames=config_filenames,
@@ -532,7 +520,6 @@ class CachedToolBox(ToolBox):
                 log.debug("CachedToolBox fast panel init disabled; %d panel ids still missing from index", len(missing))
                 return False
         assert self._tool_index is not None
-        self._init_dynamic_tool_confs_without_loading(config_filenames)
         positioned_panel_keys = set(self._integrated_tool_panel)
         stubs_by_id: dict[str, CachedTool] = {}
         for entry in self._tool_index.entries.values():
@@ -545,10 +532,9 @@ class CachedToolBox(ToolBox):
             self._place_stub_in_integrated_panel(stub, placement.section_id, placement.section_name)
             placed += 1
         self._load_indexed_panel_structure(config_filenames, positioned_panel_keys)
-        self._remove_unresolved_integrated_tools(self._integrated_tool_panel)
         super()._load_tool_panel()
         log.debug(
-            "CachedToolBox registered %d indexed tools (%d panel placements) without walking tool conf items",
+            "CachedToolBox registered %d indexed tools (%d panel placements) without loading tool definitions",
             len(stubs_by_id),
             placed,
         )
@@ -558,91 +544,33 @@ class CachedToolBox(ToolBox):
     def _load_indexed_panel_structure(
         self,
         config_filenames: list[str],
-        positioned_panel_keys: set[str] | None = None,
-    ) -> None:
-        """Replay labels, workflows, and section metadata without loading tools."""
-        if positioned_panel_keys is None:
-            positioned_panel_keys = set(self._integrated_tool_panel)
-        config_filenames = listify(config_filenames)
-        config_directories = [config_filename for config_filename in config_filenames if os.path.isdir(config_filename)]
-        config_filenames = [
-            config_filename for config_filename in config_filenames if config_filename not in config_directories
-        ]
-        for config_directory in config_directories:
-            config_filenames.extend(
-                os.path.join(config_directory, config_file)
-                for config_file in sorted(os.listdir(config_directory))
-                if config_file.endswith(".xml")
-            )
-        for config_filename in config_filenames:
-            if not self.can_load_config_file(config_filename):
-                continue
-            try:
-                tool_conf_source = get_toolbox_parser(config_filename)
-            except OSError as exc:
-                dynamic_confs = (self.app.config.shed_tool_config_file, self.app.config.migrated_tools_config)
-                if config_filename in dynamic_confs and exc.errno == errno.ENOENT:
-                    continue
-                raise
-            for item in tool_conf_source.parse_items():
-                index = self._index
-                self._index += 1
-                self._load_indexed_panel_item(item, self._integrated_tool_panel, index, positioned_panel_keys)
-
-    def _load_indexed_panel_item(
-        self,
-        item: ToolConfItem,
-        panel: ToolPanelElements,
-        index: int,
         positioned_panel_keys: set[str],
     ) -> None:
-        item_type = item.type
-        if item_type == "label":
-            self._load_label_tag_set(
-                item,
-                panel_dict=self._tool_panel,
-                integrated_panel_dict=panel,
-                load_panel_dict=False,
-                index=index,
-            )
-        elif item_type == "workflow":
-            self._load_workflow_tag_set(
-                item,
-                panel_dict=self._tool_panel,
-                integrated_panel_dict=panel,
-                load_panel_dict=False,
-                index=index,
-            )
-        elif isinstance(item, ToolConfSection):
-            key = item.get("id")
-            assert key is not None
-            section = panel.get(key)
-            if not isinstance(section, ToolSection):
-                section = ToolSection(item)
-            elif key not in positioned_panel_keys:
-                configured_section = ToolSection(item)
-                section.name = configured_section.name
-                section.version = configured_section.version
-                section.description = configured_section.description
-                section.links = configured_section.links
-            positioned_section_keys = set(section.elems)
-            for sub_index, sub_item in enumerate(item.items):
-                self._load_indexed_panel_item(sub_item, section.elems, sub_index, positioned_section_keys)
-            if key in positioned_panel_keys:
-                panel[key] = section
-            else:
-                if key in panel:
-                    del panel[key]
-                panel.insert(index, key, section)
-                positioned_panel_keys.add(key)
+        """Replay panel configuration through the eager traversal without loading tools."""
+        self._indexed_panel_positioned_keys = positioned_panel_keys
+        try:
+            super()._init_tools_from_configs(config_filenames)
+        finally:
+            self._indexed_panel_positioned_keys = None
 
-    def _remove_unresolved_integrated_tools(self, panel: ToolPanelElements) -> None:
-        """Remove stale tool placeholders that have no indexed placement."""
-        for key, item in list(panel.items()):
-            if isinstance(item, ToolSection):
-                self._remove_unresolved_integrated_tools(item.elems)
-            elif key.startswith("tool_") and item is None:
-                del panel[key]
+    def _load_tools_from_tool_config(self) -> bool:
+        return self._indexed_panel_positioned_keys is None
+
+    def _load_tool_config_into_live_panel(self) -> bool:
+        if self._indexed_panel_positioned_keys is not None:
+            return False
+        return super()._load_tool_config_into_live_panel()
+
+    def _integrated_panel_section_is_positioned(self, key: str) -> bool:
+        if self._indexed_panel_positioned_keys is not None:
+            return key in self._indexed_panel_positioned_keys
+        return super()._integrated_panel_section_is_positioned(key)
+
+    def _mark_integrated_panel_section_positioned(self, key: str) -> None:
+        if self._indexed_panel_positioned_keys is not None:
+            self._indexed_panel_positioned_keys.add(key)
+        else:
+            super()._mark_integrated_panel_section_positioned(key)
 
     def _load_tool_panel(self) -> None:
         if getattr(self, "_tool_panel_loaded_from_index", False):
@@ -708,48 +636,6 @@ class CachedToolBox(ToolBox):
             return parse_version(entry.version or "0") > parse_version(other.version or "0")
         except Exception:
             return (entry.version or "") > (other.version or "")
-
-    def _init_dynamic_tool_confs_without_loading(self, config_filenames: list[str]) -> None:
-        config_filenames = listify(config_filenames)
-        config_directories = [config_filename for config_filename in config_filenames if os.path.isdir(config_filename)]
-        config_filenames = [
-            config_filename for config_filename in config_filenames if config_filename not in config_directories
-        ]
-        for config_directory in config_directories:
-            directory_contents = sorted(os.listdir(config_directory))
-            directory_config_files = [config_file for config_file in directory_contents if config_file.endswith(".xml")]
-            config_filenames.extend(directory_config_files)
-        for config_filename in config_filenames:
-            if not self.can_load_config_file(config_filename):
-                continue
-            self._init_dynamic_tool_conf_without_loading(config_filename)
-
-    def _init_dynamic_tool_conf_without_loading(self, config_filename: str) -> None:
-        try:
-            tool_conf_source = get_toolbox_parser(config_filename)
-        except OSError as exc:
-            dynamic_confs = (self.app.config.shed_tool_config_file, self.app.config.migrated_tools_config)
-            if config_filename in dynamic_confs and exc.errno == errno.ENOENT:
-                stcd = dict(
-                    config_filename=config_filename,
-                    tool_path=self.app.config.shed_tools_dir,
-                    config_elems=[],
-                    create=SHED_TOOL_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir),
-                )
-                self._dynamic_tool_confs.append(stcd)
-                return
-            raise
-        if not tool_conf_source.is_shed_tool_conf() or not os.access(config_filename, os.W_OK):
-            return
-        tool_path = resolve_tool_path(tool_conf_source.parse_tool_path(), config_filename, self._tool_root_dir)
-        config_elems = [item.elem for item in tool_conf_source.parse_items() if item.has_elem]
-        self._dynamic_tool_confs.append(
-            dict(
-                config_filename=config_filename,
-                tool_path=tool_path,
-                config_elems=config_elems,
-            )
-        )
 
     def _index_needs_population(self) -> bool:
         """Return True when at least one config-discovered tool path is absent
@@ -1626,10 +1512,7 @@ class CachedToolBox(ToolBox):
             return
         tool_id = stub.id
         if section_id:
-            section = self._tool_panel.get(section_id)
-            if not isinstance(section, ToolSection):
-                section = ToolSection({"id": section_id, "name": section_name or section_id})
-                self._tool_panel[section_id] = section
+            section = self._tool_panel.get_or_create_section(section_id, section_name or section_id)
             section.elems.append_tool(stub)
             self._tool_panel.record_section_for_tool_id(tool_id, section_id, section.name)
         else:
@@ -1643,10 +1526,9 @@ class CachedToolBox(ToolBox):
     ) -> None:
         tool_id = stub.id
         if section_id:
-            integrated_section = self._integrated_tool_panel.get(section_id)
-            if not isinstance(integrated_section, ToolSection):
-                integrated_section = ToolSection({"id": section_id, "name": section_name or section_id})
-                self._integrated_tool_panel[section_id] = integrated_section
+            integrated_section = self._integrated_tool_panel.get_or_create_section(
+                section_id, section_name or section_id
+            )
             integrated_section.elems[f"tool_{tool_id}"] = stub
         else:
             self._integrated_tool_panel[f"tool_{tool_id}"] = stub

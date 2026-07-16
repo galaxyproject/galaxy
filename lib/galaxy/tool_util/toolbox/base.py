@@ -273,6 +273,20 @@ def resolve_tool_path(tool_path: str | None, config_filename: str, default_tool_
     return string.Template(tool_path).safe_substitute(tool_path_vars)
 
 
+def _expand_tool_config_filenames(config_filenames: list[str]) -> list[str]:
+    """Expand configured directories into ordered XML configuration paths."""
+    filenames = listify(config_filenames)
+    config_directories = [filename for filename in filenames if os.path.isdir(filename)]
+    expanded = [filename for filename in filenames if filename not in config_directories]
+    for config_directory in config_directories:
+        expanded.extend(
+            os.path.join(config_directory, filename)
+            for filename in sorted(os.listdir(config_directory))
+            if filename.endswith(".xml")
+        )
+    return expanded
+
+
 def _collect_panel_tool_ids(panel_items: "ToolPanelElements", ids: set[str]) -> None:
     """Gather tool ids from a rendered panel, recursing into sections.
 
@@ -427,22 +441,26 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         """Build a tool tag manager according to app's configuration and return it."""
         raise NotImplementedError()
 
+    def _load_tools_from_tool_config(self) -> bool:
+        """Whether a configuration walk should load its tool entries."""
+        return True
+
+    def _load_tool_config_into_live_panel(self) -> bool:
+        return not self._integrated_tool_panel_config_has_contents
+
+    def _integrated_panel_section_is_positioned(self, key: str) -> bool:
+        return key in self._integrated_tool_panel
+
+    def _mark_integrated_panel_section_positioned(self, key: str) -> None:
+        pass
+
     def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
         """Read through all tool config files and initialize tools in each
         with init_tools_from_config below.
         """
         execution_timer = ExecutionTimer()
         self._tool_tag_manager.reset_tags()
-        config_filenames = listify(config_filenames)
-        config_directories = [config_filename for config_filename in config_filenames if os.path.isdir(config_filename)]
-        config_filenames = [
-            config_filename for config_filename in config_filenames if config_filename not in config_directories
-        ]
-        for config_directory in config_directories:
-            directory_contents = sorted(os.listdir(config_directory))
-            directory_config_files = [config_file for config_file in directory_contents if config_file.endswith(".xml")]
-            config_filenames.extend(directory_config_files)
-        for config_filename in config_filenames:
+        for config_filename in _expand_tool_config_filenames(config_filenames):
             if not self.can_load_config_file(config_filename):
                 continue
             try:
@@ -507,7 +525,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         log.debug("Tool path for %s configuration %s is %s", tool_conf_type, config_filename, tool_path)
         tool_path = resolve_tool_path(tool_path, config_filename, self._tool_root_dir)
         # Only load the panel_dict under certain conditions.
-        load_panel_dict = not self._integrated_tool_panel_config_has_contents
+        load_panel_dict = self._load_tool_config_into_live_panel()
         for item in tool_conf_source.parse_items():
             index = self._index
             self._index += 1
@@ -594,7 +612,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 panel_dict = self._tool_panel
             if integrated_panel_dict is None:
                 integrated_panel_dict = self._integrated_tool_panel
-            if item_type == "tool":
+            if item_type == "tool" and self._load_tools_from_tool_config():
                 self._load_tool_tag_set(
                     item,
                     panel_dict=panel_dict,
@@ -774,10 +792,11 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
     def _load_tool_panel(self):
         execution_timer = ExecutionTimer()
+        self._integrated_tool_panel.remove_unresolved_tools()
         for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
             if item_type == panel_item_types.TOOL:
                 tool_id = key.replace("tool_", "", 1)
-                if tool_id in self._tools_by_id:
+                if val is not None and tool_id in self._tools_by_id:
                     self.__add_tool_to_tool_panel(val, self._tool_panel, section=False)
                     self._tool_panel.record_section_for_tool_id(tool_id, "", "")
             elif item_type == panel_item_types.WORKFLOW:
@@ -799,7 +818,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 for section_key, section_item_type, section_val in val.panel_items_iter():
                     if section_item_type == panel_item_types.TOOL:
                         tool_id = section_key.replace("tool_", "", 1)
-                        if tool_id in self._tools_by_id:
+                        if section_val is not None and tool_id in self._tools_by_id:
                             self.__add_tool_to_tool_panel(section_val, section, section=True)
                             self._tool_panel.record_section_for_tool_id(tool_id, key, val.name)
                     elif section_item_type == panel_item_types.WORKFLOW:
@@ -1266,18 +1285,22 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
     def _load_section_tag_set(self, item, tool_path, load_panel_dict: bool, index: int | None = None) -> None:
         key = item.get("id")
+        assert key is not None
         if key in self._tool_panel:
             section = self._tool_panel[key]
             elems = section.elems
         else:
             section = ToolSection(item)
             elems = section.elems
-        if key in self._integrated_tool_panel:
-            integrated_section = self._integrated_tool_panel[key]
-            integrated_elems = integrated_section.elems
+        positioned = self._integrated_panel_section_is_positioned(key)
+        existing_integrated_section = self._integrated_tool_panel.get(key)
+        if positioned and isinstance(existing_integrated_section, ToolSection):
+            integrated_section = existing_integrated_section
         else:
             integrated_section = ToolSection(item)
-            integrated_elems = integrated_section.elems
+            if isinstance(existing_integrated_section, ToolSection):
+                integrated_section.elems.update(existing_integrated_section.elems)
+        integrated_elems = integrated_section.elems
         for sub_index, sub_item in enumerate(item.items):
             self.load_item(
                 sub_item,
@@ -1299,21 +1322,25 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         if load_panel_dict:
             self._tool_panel[key] = section
         # Always load sections into the integrated_tool_panel.
+        if key in self._integrated_tool_panel and not positioned:
+            del self._integrated_tool_panel[key]
         self._integrated_tool_panel.update_or_append(index, key, integrated_section)
+        self._mark_integrated_panel_section_positioned(key)
 
     def _load_tooldir_tag_set(self, item, elems, tool_path, integrated_elems, load_panel_dict: bool) -> None:
         directory = os.path.join(tool_path, item.get("dir"))
         recursive = string_as_bool(item.get("recursive", True))
-        self.__watch_directory(
+        self._watch_directory(
             directory,
             elems,
             integrated_elems,
             load_panel_dict,
             recursive,
             force_watch=True,
+            load_existing=self._load_tools_from_tool_config(),
         )
 
-    def __watch_directory(
+    def _watch_directory(
         self,
         directory: StrPath,
         elems: ToolPanelElements,
@@ -1321,6 +1348,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         load_panel_dict: bool,
         recursive: bool,
         force_watch: bool = False,
+        load_existing: bool = True,
     ) -> None:
         def quick_load(tool_file: StrPath, async_load: bool = True) -> str | None:
             if not self._looks_like_a_tool(str(tool_file)):
@@ -1354,7 +1382,10 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             tool_loaded = False
             for child_path in files:
                 if self._looks_like_a_tool(child_path):
-                    tool_loaded = bool(quick_load(child_path, async_load=False)) or tool_loaded
+                    if load_existing:
+                        tool_loaded = bool(quick_load(child_path, async_load=False)) or tool_loaded
+                    else:
+                        tool_loaded = True
             if (tool_loaded or (force_watch and dirpath == str(directory))) and self._tool_watcher:
                 self._tool_watcher.watch_directory(dirpath, quick_load)
 
