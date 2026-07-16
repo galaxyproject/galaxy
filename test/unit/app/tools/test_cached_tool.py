@@ -809,3 +809,34 @@ def test_fast_path_places_hidden_entry_in_integrated_panel_only():
     live = box._tool_panel["sec1"].elems
     assert live.has_tool_with_id("visible_tool")
     assert not live.has_tool_with_id("hidden_tool")
+
+
+def test_fast_path_replays_labels_in_panel_order(tmp_path):
+    tool_conf = tmp_path / "tool_conf.xml"
+    tool_conf.write_text("""<toolbox>
+        <label id="top_label" text="Top label" />
+        <tool file="top.xml" />
+        <section id="sec1" name="Section 1">
+            <label id="section_label" text="Section label" />
+            <tool file="section.xml" />
+        </section>
+        <label id="last_label" text="Last label" />
+        </toolbox>""")
+    box = _registry_box()
+    box._index = 0
+    box.can_load_config_file = lambda _path: True
+    top = _entry(id="top_tool")
+    section = _entry(id="section_tool", panel_section_id="sec1", panel_section_name="Section 1")
+    for entry in (top, section):
+        box._tool_index.add_entry(entry)
+        stub = box._register_cached_entry(entry, place_in_panel=False)
+        box._place_stub_in_integrated_panel(stub, entry.panel_section_id, entry.panel_section_name)
+
+    box._load_indexed_panel_structure([str(tool_conf)])
+    super(CachedToolBox, box)._load_tool_panel()
+
+    assert list(box._integrated_tool_panel) == ["label_top_label", "tool_top_tool", "sec1", "label_last_label"]
+    assert list(box._integrated_tool_panel["sec1"].elems) == ["label_section_label", "tool_section_tool"]
+    assert list(box._tool_panel) == ["label_top_label", "tool_top_tool", "sec1", "label_last_label"]
+    assert box._tool_panel["label_top_label"].text == "Top label"
+    assert box._tool_panel["sec1"].elems["label_section_label"].text == "Section label"

@@ -43,8 +43,15 @@ from galaxy.tool_util.toolbox.base import (
 )
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
-from galaxy.tool_util.toolbox.panel import ToolSection
-from galaxy.tool_util.toolbox.parser import get_toolbox_parser
+from galaxy.tool_util.toolbox.panel import (
+    ToolPanelElements,
+    ToolSection,
+)
+from galaxy.tool_util.toolbox.parser import (
+    get_toolbox_parser,
+    ToolConfItem,
+    ToolConfSection,
+)
 from galaxy.tool_util.version import parse_version
 from galaxy.tools.source_store import (
     StoredToolSource,
@@ -534,8 +541,10 @@ class CachedToolBox(ToolBox):
             stub = stubs_by_id.get(placement.tool_id)
             if stub is None:
                 continue
-            self._place_stub(stub, placement.section_id, placement.section_name, hidden=placement.hidden)
+            self._place_stub_in_integrated_panel(stub, placement.section_id, placement.section_name)
             placed += 1
+        self._load_indexed_panel_structure(config_filenames)
+        super()._load_tool_panel()
         log.debug(
             "CachedToolBox registered %d indexed tools (%d panel placements) without walking tool conf items",
             len(stubs_by_id),
@@ -543,6 +552,68 @@ class CachedToolBox(ToolBox):
         )
         self._tool_panel_loaded_from_index = True
         return True
+
+    def _load_indexed_panel_structure(self, config_filenames: list[str]) -> None:
+        """Replay labels, workflows, and section metadata without loading tools."""
+        config_filenames = listify(config_filenames)
+        config_directories = [config_filename for config_filename in config_filenames if os.path.isdir(config_filename)]
+        config_filenames = [
+            config_filename for config_filename in config_filenames if config_filename not in config_directories
+        ]
+        for config_directory in config_directories:
+            config_filenames.extend(
+                os.path.join(config_directory, config_file)
+                for config_file in sorted(os.listdir(config_directory))
+                if config_file.endswith(".xml")
+            )
+        for config_filename in config_filenames:
+            if not self.can_load_config_file(config_filename):
+                continue
+            try:
+                tool_conf_source = get_toolbox_parser(config_filename)
+            except OSError as exc:
+                dynamic_confs = (self.app.config.shed_tool_config_file, self.app.config.migrated_tools_config)
+                if config_filename in dynamic_confs and exc.errno == errno.ENOENT:
+                    continue
+                raise
+            for item in tool_conf_source.parse_items():
+                index = self._index
+                self._index += 1
+                self._load_indexed_panel_item(item, self._integrated_tool_panel, index)
+
+    def _load_indexed_panel_item(self, item: ToolConfItem, panel: ToolPanelElements, index: int) -> None:
+        item_type = item.type
+        if item_type == "label":
+            self._load_label_tag_set(
+                item,
+                panel_dict=self._tool_panel,
+                integrated_panel_dict=panel,
+                load_panel_dict=False,
+                index=index,
+            )
+        elif item_type == "workflow":
+            self._load_workflow_tag_set(
+                item,
+                panel_dict=self._tool_panel,
+                integrated_panel_dict=panel,
+                load_panel_dict=False,
+                index=index,
+            )
+        elif isinstance(item, ToolConfSection):
+            key = item.get("id")
+            assert key is not None
+            section = panel.get(key)
+            if not isinstance(section, ToolSection):
+                section = ToolSection(item)
+            else:
+                configured_section = ToolSection(item)
+                section.name = configured_section.name
+                section.version = configured_section.version
+                section.description = configured_section.description
+                section.links = configured_section.links
+            for sub_index, sub_item in enumerate(item.items):
+                self._load_indexed_panel_item(sub_item, section.elems, sub_index)
+            panel.update_or_append(index, key, section)
 
     def _load_tool_panel(self) -> None:
         if getattr(self, "_tool_panel_loaded_from_index", False):
@@ -1521,17 +1592,10 @@ class CachedToolBox(ToolBox):
         and ``_save_integrated_tool_panel`` persists, so a boot that skips
         the conf walk must fill it or every panel view renders empty.
         """
-        tool_id = stub.id
-        if section_id:
-            integrated_section = self._integrated_tool_panel.get(section_id)
-            if not isinstance(integrated_section, ToolSection):
-                integrated_section = ToolSection({"id": section_id, "name": section_name or section_id})
-                self._integrated_tool_panel[section_id] = integrated_section
-            integrated_section.elems[f"tool_{tool_id}"] = stub
-        else:
-            self._integrated_tool_panel[f"tool_{tool_id}"] = stub
+        self._place_stub_in_integrated_panel(stub, section_id, section_name)
         if hidden:
             return
+        tool_id = stub.id
         if section_id:
             section = self._tool_panel.get(section_id)
             if not isinstance(section, ToolSection):
@@ -1541,6 +1605,22 @@ class CachedToolBox(ToolBox):
             self._tool_panel.record_section_for_tool_id(tool_id, section_id, section.name)
         else:
             self._tool_panel[f"tool_{tool_id}"] = stub
+
+    def _place_stub_in_integrated_panel(
+        self,
+        stub: "CachedTool",
+        section_id: str | None,
+        section_name: str | None,
+    ) -> None:
+        tool_id = stub.id
+        if section_id:
+            integrated_section = self._integrated_tool_panel.get(section_id)
+            if not isinstance(integrated_section, ToolSection):
+                integrated_section = ToolSection({"id": section_id, "name": section_name or section_id})
+                self._integrated_tool_panel[section_id] = integrated_section
+            integrated_section.elems[f"tool_{tool_id}"] = stub
+        else:
+            self._integrated_tool_panel[f"tool_{tool_id}"] = stub
 
     def close(self) -> None:
         """Drop in-memory state at app shutdown.
