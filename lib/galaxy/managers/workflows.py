@@ -14,6 +14,7 @@ from typing import (
 import yaml
 from gxformat2.abstract import from_dict
 from gxformat2.cytoscape import to_cytoscape
+from gxformat2.normalized import ensure_native
 from gxformat2.yaml import ordered_dump
 from pydantic import (
     BaseModel,
@@ -77,6 +78,9 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util.workflow_state.clean import clean_stale_state
+from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
+from galaxy.tool_util.workflow_state.stale_keys import StaleKeyPolicy
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values,
@@ -973,8 +977,6 @@ class WorkflowContentsManager(UsesAnnotations):
         instance_id: int | None = None,
         preserve_external_subworkflow_links: bool = False,
         clean: bool = False,
-        clean_preserve: list[str] | None = None,
-        clean_strip: list[str] | None = None,
         clean_validate: bool = False,
         tool_state_as_dict: bool = False,
     ) -> dict[str, Any]:
@@ -990,8 +992,7 @@ class WorkflowContentsManager(UsesAnnotations):
         source_metadata (indicating it was fetched from a URL or TRS) will preserve the external
         reference instead of embedding the full subworkflow content.
 
-        If clean is True, stale keys are stripped from tool_state using tool definitions.
-        clean_preserve/clean_strip control which stale key categories are preserved/stripped.
+        If clean is True, all stale keys are stripped from tool_state using tool definitions.
         If clean_validate is True, each step's cleaned native tool_state is validated against
         its tool definition and reverted if it fails (per step).
 
@@ -1029,11 +1030,9 @@ class WorkflowContentsManager(UsesAnnotations):
                 preserve_external_subworkflow_links=preserve_external_subworkflow_links,
             )
             if clean:
-                self._clean_native_dict(
-                    trans, wf_dict, clean_preserve or [], clean_strip or [], validate=clean_validate
-                )
+                self._clean_native_dict(trans, wf_dict, validate=clean_validate)
             if style == "format2":
-                wf_dict = self._export_as_format2(trans, wf_dict, to_format_2)
+                wf_dict = self._export_as_format2(trans, wf_dict)
             elif style == "format2_wrapped_yaml":
                 wf_dict = to_format_2(wf_dict, json_wrapper=True)
             else:  # native "ga" style
@@ -1049,49 +1048,31 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict["version"] = len(stored.workflows) - 1
         return wf_dict
 
-    def _export_as_format2(self, trans, native_dict, to_format_2_fallback):
+    def _export_as_format2(self, trans, native_dict):
         """Export native workflow dict as format2 with schema-aware state blocks.
 
         Uses the toolbox to resolve tool definitions for clean state conversion.
-        Falls back to naive from_galaxy_native() if the toolbox is unavailable.
         """
-        from gxformat2.normalized import ensure_native
-
-        from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
-
-        toolbox = getattr(trans.app, "toolbox", None)
-        if toolbox is None:
-            return to_format_2_fallback(native_dict, json_wrapper=False)
-        get_tool_info = ToolboxGetToolInfo(toolbox)
-        workflow = ensure_native(native_dict)
-        result = export_workflow_to_format2(workflow, get_tool_info)
+        get_tool_info = ToolboxGetToolInfo(trans.app.toolbox)
+        result = export_workflow_to_format2(ensure_native(native_dict), get_tool_info)
         return result.format2_dict
 
-    def _clean_native_dict(self, trans, wf_dict, preserve, strip, validate=False):
+    def _clean_native_dict(self, trans, wf_dict, validate=False):
         """Strip stale keys from a native workflow dict in place.
 
-        Leaves each step's tool_state as a decoded JSON object; the caller
-        decides whether to re-encode via ``_normalize_native_tool_state``.
+        Strips every stale key category, including bookkeeping keys such as
+        __current_case__. Leaves each step's tool_state as a decoded JSON
+        object; the caller decides whether to re-encode via
+        ``_normalize_native_tool_state``.
         """
-        from gxformat2.normalized import ensure_native
-
-        from galaxy.tool_util.workflow_state.clean import clean_stale_state
-        from galaxy.tool_util.workflow_state.stale_keys import (
-            ConflictingCategoryError,
-            InvalidCategoryError,
-            StaleKeyPolicy,
+        get_tool_info = ToolboxGetToolInfo(trans.app.toolbox)
+        clean_stale_state(
+            ensure_native(wf_dict),
+            wf_dict,
+            get_tool_info,
+            policy=StaleKeyPolicy.for_clean([], []),
+            validate=validate,
         )
-
-        toolbox = getattr(trans.app, "toolbox", None)
-        if toolbox is None:
-            raise exceptions.ConfigDoesNotAllowException("Workflow cleaning requires a toolbox but none is available")
-        try:
-            policy = StaleKeyPolicy.for_clean(preserve, strip)
-        except (InvalidCategoryError, ConflictingCategoryError) as e:
-            raise exceptions.RequestParameterInvalidException(str(e))
-        get_tool_info = ToolboxGetToolInfo(toolbox)
-        normalized = ensure_native(wf_dict)
-        clean_stale_state(normalized, wf_dict, get_tool_info, policy=policy, validate=validate)
 
     def _normalize_native_tool_state(self, wf_dict, as_dict):
         """Normalize the encoding of native tool_state across all steps in place.

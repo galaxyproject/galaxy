@@ -336,18 +336,11 @@ class WorkflowsAPIController(
         :type   instance:                 boolean
 
         :param  clean:                    if true, strip stale keys from tool_state using tool
-                                          definitions. Applies to 'ga', 'format2', and
-                                          'format2_wrapped_yaml' styles. Default: false.
+                                          definitions. Every stale key category is stripped,
+                                          including bookkeeping keys such as __current_case__.
+                                          Applies to 'ga', 'format2', and 'format2_wrapped_yaml'
+                                          styles. Default: false.
         :type   clean:                    boolean
-
-        :param  clean_preserve:           comma-separated stale key categories to preserve
-                                          (not strip) when clean=true. Categories: bookkeeping,
-                                          stale-root-keys, stale-branch-data, unknown, runtime-leak.
-        :type   clean_preserve:           str
-
-        :param  clean_strip:              comma-separated stale key categories to strip when
-                                          clean=true. By default all categories are stripped.
-        :type   clean_strip:              str
 
         :param  clean_validate:           if true, validate each step's cleaned native tool_state
                                           against its tool definition and revert steps that fail.
@@ -382,8 +375,6 @@ class WorkflowsAPIController(
             kwd.get("preserve_external_subworkflow_links", "false")
         )
         clean = util.string_as_bool(kwd.get("clean", "false"))
-        clean_preserve = [c.strip() for c in kwd.get("clean_preserve", "").split(",") if c.strip()]
-        clean_strip = [c.strip() for c in kwd.get("clean_strip", "").split(",") if c.strip()]
         clean_validate = util.string_as_bool(kwd.get("clean_validate", "false"))
         tool_state_as_dict = util.string_as_bool(kwd.get("tool_state_as_dict", "false"))
         ret_dict = self.workflow_contents_manager.workflow_to_dict(
@@ -395,8 +386,6 @@ class WorkflowsAPIController(
             instance_id=instance_id,
             preserve_external_subworkflow_links=preserve_external_subworkflow_links,
             clean=clean,
-            clean_preserve=clean_preserve,
-            clean_strip=clean_strip,
             clean_validate=clean_validate,
             tool_state_as_dict=tool_state_as_dict,
         )
