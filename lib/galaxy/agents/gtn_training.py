@@ -130,14 +130,13 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         async def search_gtn_tutorial_vectors(
             ctx: RunContext[GalaxyAgentDependencies],
             query: str,
-            topic: str | None = None,
-            difficulty: str | None = None,
-            hands_on_only: bool = False,
             limit: int = 5,
         ) -> str:
             """Search GTN tutorials using vector search over titles, descriptions, and content."""
             try:
                 embeddings, persist_dir = self._vector_search_dependencies()
+                if not self.gtn_db:
+                    return json.dumps({"error": "GTN database not available"})
                 results = self.gtn_db.search_gtn_vector_db(
                     query=query,
                     embeddings=embeddings,
@@ -159,6 +158,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             """Search workflow vectors for end-to-end analysis workflows relevant to the query."""
             try:
                 embeddings, persist_dir = self._vector_search_dependencies()
+                if not self.gtn_db:
+                    return json.dumps({"error": "GTN database not available"})
                 results = self.gtn_db.search_workflow_vector_db(
                     query=query,
                     embeddings=embeddings,
@@ -185,6 +186,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             """Search FAQ vectors for relevant questions and answers."""
             try:
                 embeddings, persist_dir = self._vector_search_dependencies()
+                if not self.gtn_db:
+                    return json.dumps({"error": "GTN database not available"})
                 results = self.gtn_db.search_faq_vector_db(
                     query=query,
                     embeddings=embeddings,
@@ -338,9 +341,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         embedding_model = getattr(self.deps.config, "embedding_model", None)
         embedding_api_key = getattr(self.deps.config, "embedding_api_key", None) or ""
         embeddings = OpenAIEmbeddings(
-            base_url=embedding_base_url,
+            openai_api_base=embedding_base_url,
             model=embedding_model,
-            api_key=embedding_api_key,
+            openai_api_key=embedding_api_key,
             tiktoken_enabled=False,
             check_embedding_ctx_length=False,
         )

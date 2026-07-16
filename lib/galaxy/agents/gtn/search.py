@@ -671,7 +671,6 @@ class GTNSearchDB:
         persist_dir: Path,
         collection_name: str = "gtn_tutorials",
         limit: int = 5,
-        doc_type: str | None = None,
     ) -> list[GTNVectorSearchResults]:
         try:
             # Check if the persist directory exists
