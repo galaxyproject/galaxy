@@ -61,9 +61,9 @@ from galaxy.job_execution.output_collect import (
     collect_shrinked_content_from_path,
 )
 from galaxy.job_execution.setup import (
-    create_working_directory_for_job,
     ensure_configs_directory,
     JobIO,
+    JobWorkingDirectory,
     TOOL_PROVIDED_JOB_METADATA_FILE,
     TOOL_PROVIDED_JOB_METADATA_KEYS,
 )
@@ -1321,6 +1321,15 @@ class MinimalJobWrapper(HasResourceParameters):
     def _setup_working_directory(self, job=None):
         if job is None:
             job = self.get_job()
+        # Resolve and set job.working_directory from destination params before
+        # creating anything on disk. The mutation is persisted by the caller's
+        # sa_session.commit() (e.g. prepare() at the end of job setup, or
+        # set_job_destination's flush in the resubmit path). Callers must
+        # ensure that commit happens before the job row is reused by another
+        # thread/handler, otherwise the in-memory working_directory value can
+        # be lost on session expiry.
+        self._set_working_directory(job)
+        self._check_jwd_deprecated_config(job)
         try:
             working_directory = self._create_working_directory(job)
             self.__working_directory = working_directory
@@ -1347,29 +1356,24 @@ class MinimalJobWrapper(HasResourceParameters):
     def working_directory(self):
         if self.__working_directory is None:
             job = self.get_job()
-
-            # object_store_id needs to be set before get_filename can be called, this
-            # will also create the directory on the worker.
-            # It is possible these next two lines are not needed - if a job a cannot be recovered
-            # before enqueue is called (seems likely) - this shouldn't be needed.
-            if job.object_store_id:
-                self._set_object_store_ids(job)
-
-            self.__working_directory = self.app.object_store.get_filename(
-                job, base_dir="job_work", dir_only=True, obj_dir=True
-            )
+            # For legacy jobs with working_directory=None and no object_store_id,
+            # JobWorkingDirectory.resolve() falls back to object_store.get_filename()
+            # which uses the config.jobs_directory default. This is equivalent to
+            # the old behavior where _set_object_store_ids was called here as a
+            # no-op guard when object_store_id was already set.
+            self.__working_directory = JobWorkingDirectory(job, self.app.object_store).resolve()
         return self.__working_directory
 
     def working_directory_exists(self) -> bool:
         job = self.get_job()
-        return self.app.object_store.exists(job, base_dir="job_work", dir_only=True, obj_dir=True)
+        return JobWorkingDirectory(job, self.app.object_store).exists()
 
     @property
     def tool_working_directory(self):
         return os.path.join(self.working_directory, "working")
 
     def _create_working_directory(self, job):
-        return create_working_directory_for_job(self.object_store, job)
+        return JobWorkingDirectory(job, self.object_store).create()
 
     def clear_working_directory(self):
         job = self.get_job()
@@ -1379,12 +1383,8 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             return
 
-        self.object_store.create(
-            job, base_dir="job_work", dir_only=True, obj_dir=True, extra_dir="_cleared_contents", extra_dir_at_root=True
-        )
-        base = self.object_store.get_filename(
-            job, base_dir="job_work", dir_only=True, obj_dir=True, extra_dir="_cleared_contents", extra_dir_at_root=True
-        )
+        jwd = JobWorkingDirectory(job, self.object_store)
+        base = jwd.cleared_contents_base()
         date_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         arc_dir = os.path.join(base, date_str)
         shutil.move(self.working_directory, arc_dir)
@@ -1851,6 +1851,60 @@ class MinimalJobWrapper(HasResourceParameters):
 
         job.object_store_id = object_store_populator.object_store_id
         self._setup_working_directory(job=job)
+
+    def _set_working_directory(self, job: Job):
+        """Resolve and persist ``job_working_directory`` from destination params.
+
+        Mutates ``job.working_directory`` and flushes the session so the value
+        is durable in the current transaction. This is invoked via
+        ``_setup_working_directory``, whose callers (``prepare``,
+        ``_set_object_store_ids_*``, and the resubmit flow via
+        ``set_job_destination``) commit the session as part of their own
+        lifecycle. The explicit flush ensures the column survives a
+        ``sa_session.refresh()`` (e.g. ``mark_as_resubmitted``) even when the
+        caller does not commit before the refresh.
+        """
+        working_directory = self.get_destination_configuration("job_working_directory", None)
+        if isinstance(working_directory, str):
+            job.working_directory = working_directory
+        else:
+            # Reset to None so a resubmitted job whose new destination no longer
+            # specifies a custom path falls back to the object-store strategy
+            # instead of retaining the stale value from the prior attempt.
+            job.working_directory = None
+            if working_directory is not None:
+                log.warning(
+                    "(%s) job_working_directory destination param is not a string (%r), "
+                    "falling back to object-store path.",
+                    self.job_id,
+                    working_directory,
+                )
+        self.sa_session.flush()
+
+    def _check_jwd_deprecated_config(self, job: Job) -> None:
+        """Emit a deprecation warning if legacy per-backend JWD config is detected.
+
+        The legacy ``extra_dirs['job_work']`` path in ``object_store_conf`` is
+        deprecated in favor of the ``job_working_directory`` destination param.
+        When both are configured, the destination param takes precedence and
+        the legacy path is ignored. We warn once per job to avoid log spam.
+        """
+        # Check if the object store has a custom 'job_work' extra_dir configured
+        # (i.e., not the default config.jobs_directory value).
+        object_store = self.app.object_store
+        job_work_extra = object_store.extra_dirs.get("job_work")
+        default_jobs_dir = getattr(self.app.config, "jobs_directory", None)
+        if job_work_extra and job_work_extra != default_jobs_dir:
+            # Legacy per-backend JWD config is in use.
+            working_directory = self.get_destination_configuration("job_working_directory", None)
+            if isinstance(working_directory, str):
+                log.warning(
+                    "(%s) Legacy per-backend 'job_work' extra_dirs configuration is deprecated. "
+                    "The 'job_working_directory' destination param (%s) takes precedence. "
+                    "Migrate to destination-param-based JWD configuration.",
+                    self.job_id,
+                    working_directory,
+                )
 
     def _set_object_store_ids_full(self, job: Job):
         user = job.user
@@ -2388,9 +2442,8 @@ class MinimalJobWrapper(HasResourceParameters):
                         if e.errno != errno.ENOENT:
                             raise
             if delete_files:
-                self.object_store.delete(
-                    self.get_job(), base_dir="job_work", entire_dir=True, dir_only=True, obj_dir=True
-                )
+                job = self.get_job()
+                JobWorkingDirectory(job, self.object_store).delete()
         except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
 
