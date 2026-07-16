@@ -533,6 +533,7 @@ class CachedToolBox(ToolBox):
                 return False
         assert self._tool_index is not None
         self._init_dynamic_tool_confs_without_loading(config_filenames)
+        positioned_panel_keys = set(self._integrated_tool_panel)
         stubs_by_id: dict[str, CachedTool] = {}
         for entry in self._tool_index.entries.values():
             stubs_by_id[entry.id] = self._register_cached_entry(entry, place_in_panel=False)
@@ -543,7 +544,7 @@ class CachedToolBox(ToolBox):
                 continue
             self._place_stub_in_integrated_panel(stub, placement.section_id, placement.section_name)
             placed += 1
-        self._load_indexed_panel_structure(config_filenames)
+        self._load_indexed_panel_structure(config_filenames, positioned_panel_keys)
         self._remove_unresolved_integrated_tools(self._integrated_tool_panel)
         super()._load_tool_panel()
         log.debug(
@@ -554,8 +555,14 @@ class CachedToolBox(ToolBox):
         self._tool_panel_loaded_from_index = True
         return True
 
-    def _load_indexed_panel_structure(self, config_filenames: list[str]) -> None:
+    def _load_indexed_panel_structure(
+        self,
+        config_filenames: list[str],
+        positioned_panel_keys: set[str] | None = None,
+    ) -> None:
         """Replay labels, workflows, and section metadata without loading tools."""
+        if positioned_panel_keys is None:
+            positioned_panel_keys = set(self._integrated_tool_panel)
         config_filenames = listify(config_filenames)
         config_directories = [config_filename for config_filename in config_filenames if os.path.isdir(config_filename)]
         config_filenames = [
@@ -580,9 +587,15 @@ class CachedToolBox(ToolBox):
             for item in tool_conf_source.parse_items():
                 index = self._index
                 self._index += 1
-                self._load_indexed_panel_item(item, self._integrated_tool_panel, index)
+                self._load_indexed_panel_item(item, self._integrated_tool_panel, index, positioned_panel_keys)
 
-    def _load_indexed_panel_item(self, item: ToolConfItem, panel: ToolPanelElements, index: int) -> None:
+    def _load_indexed_panel_item(
+        self,
+        item: ToolConfItem,
+        panel: ToolPanelElements,
+        index: int,
+        positioned_panel_keys: set[str],
+    ) -> None:
         item_type = item.type
         if item_type == "label":
             self._load_label_tag_set(
@@ -606,15 +619,22 @@ class CachedToolBox(ToolBox):
             section = panel.get(key)
             if not isinstance(section, ToolSection):
                 section = ToolSection(item)
-            else:
+            elif key not in positioned_panel_keys:
                 configured_section = ToolSection(item)
                 section.name = configured_section.name
                 section.version = configured_section.version
                 section.description = configured_section.description
                 section.links = configured_section.links
+            positioned_section_keys = set(section.elems)
             for sub_index, sub_item in enumerate(item.items):
-                self._load_indexed_panel_item(sub_item, section.elems, sub_index)
-            panel.update_or_append(index, key, section)
+                self._load_indexed_panel_item(sub_item, section.elems, sub_index, positioned_section_keys)
+            if key in positioned_panel_keys:
+                panel[key] = section
+            else:
+                if key in panel:
+                    del panel[key]
+                panel.insert(index, key, section)
+                positioned_panel_keys.add(key)
 
     def _remove_unresolved_integrated_tools(self, panel: ToolPanelElements) -> None:
         """Remove stale tool placeholders that have no indexed placement."""

@@ -15,7 +15,10 @@ from cachetools import LRUCache
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
-from galaxy.tool_util.toolbox.panel import ToolPanelElements
+from galaxy.tool_util.toolbox.panel import (
+    ToolPanelElements,
+    ToolSection,
+)
 from galaxy.tools.cached_toolbox import (
     CachedTool,
     CachedToolBox,
@@ -853,3 +856,25 @@ def test_storage_only_entry_is_not_placed_in_panel():
     assert "storage_only" in box._tools_by_id
     assert "tool_storage_only" not in box._tool_panel
     assert "tool_storage_only" not in box._integrated_tool_panel
+
+
+def test_fast_path_positions_new_section_at_config_index(tmp_path):
+    tool_conf = tmp_path / "tool_conf.xml"
+    tool_conf.write_text(
+        '<toolbox><section id="local" name="Local"><tool file="local.xml" /></section>'
+        '<section id="existing" name="Configured Existing" /></toolbox>'
+    )
+    box = _registry_box()
+    box._index = 0
+    box.can_load_config_file = lambda _path: True
+    box._integrated_tool_panel["existing"] = ToolSection({"id": "existing", "name": "Existing"})
+    entry = _entry(id="local_tool", panel_section_id="local", panel_section_name="Local")
+    box._tool_index.add_entry(entry)
+    stub = box._register_cached_entry(entry, place_in_panel=False)
+    positioned_panel_keys = set(box._integrated_tool_panel)
+    box._place_stub_in_integrated_panel(stub, entry.panel_section_id, entry.panel_section_name)
+
+    box._load_indexed_panel_structure([str(tool_conf)], positioned_panel_keys)
+
+    assert list(box._integrated_tool_panel) == ["local", "existing"]
+    assert box._integrated_tool_panel["existing"].name == "Existing"
