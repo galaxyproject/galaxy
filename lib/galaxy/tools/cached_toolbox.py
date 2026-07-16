@@ -148,6 +148,7 @@ class CachedTool:
         "_overrides",
         "_preserve_python_environment",
         "_requirements",
+        "dependencies",
     )
 
     # Cached sources are content-addressed, so file watching is a no-op.
@@ -200,6 +201,10 @@ class CachedTool:
         self._containers: list[ContainerDescription] | None = None
         # Assigned by AbstractToolBox.__add_tool via _lineage_map.register(tool).
         self._lineage: Any | None = None
+        # ``DependencyManager.requirements_to_dependencies`` caches resolved
+        # dependencies on the tool instance it was handed (the admin
+        # dependency summary passes stubs); mirror ``Tool.__init__``'s default.
+        self.dependencies: list = []
 
     def replace_entry(self, entry: "ToolIndexEntry") -> None:
         self._entry = entry
