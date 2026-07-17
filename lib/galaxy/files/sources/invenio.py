@@ -118,7 +118,7 @@ MAX_UPLOAD_PARTS = 10_000
 
 
 def calculate_multipart_params(file_size: int, preferred_part_size: int | None = None) -> tuple[int, int]:
-    """Calculate optimal parts count and part size for multipart upload.
+    """Calculate parts count and part size for multipart upload.
 
     Args:
         file_size: Total file size in bytes
@@ -127,34 +127,34 @@ def calculate_multipart_params(file_size: int, preferred_part_size: int | None =
     Returns:
         Tuple of (parts_count, part_size)
 
+    Raises:
+        ValueError: If the file is larger than MAX_UPLOAD_PARTS * MAX_UPLOAD_PART_SIZE
+            (~48.8 TiB), which exceeds the maximum uploadable size.
+
     Note:
         Maximum uploadable file size is MAX_UPLOAD_PARTS * MAX_UPLOAD_PART_SIZE (~48.8 TiB).
-        Files larger than this will still return valid params but would fail server-side.
+        Files larger than this cannot be uploaded via multipart and raise ValueError.
     """
     if file_size == 0:
         return 1, MIN_UPLOAD_PART_SIZE
 
-    # Start with preferred or minimum part size
+    # Start with preferred or minimum part size, clamped to [min, max]
     part_size = preferred_part_size or MIN_UPLOAD_PART_SIZE
-
-    # Ensure part_size is within bounds
     part_size = max(part_size, MIN_UPLOAD_PART_SIZE)
     part_size = min(part_size, MAX_UPLOAD_PART_SIZE)
 
-    # Calculate parts needed
+    # Grow part_size to the minimum that keeps the part count within MAX_UPLOAD_PARTS.
+    part_size = max(part_size, math.ceil(file_size / MAX_UPLOAD_PARTS))
+    part_size = min(part_size, MAX_UPLOAD_PART_SIZE)
+
+    max_upload_size = MAX_UPLOAD_PARTS * MAX_UPLOAD_PART_SIZE
+    if file_size > max_upload_size:
+        raise ValueError(
+            f"File size {file_size} bytes exceeds the maximum multipart upload size "
+            f"of {max_upload_size} bytes ({MAX_UPLOAD_PARTS} parts x {MAX_UPLOAD_PART_SIZE} bytes)."
+        )
+
     parts = math.ceil(file_size / part_size)
-
-    # If too many parts, increase part size (up to max)
-    while parts > MAX_UPLOAD_PARTS and part_size < MAX_UPLOAD_PART_SIZE:
-        part_size = min(part_size * 2, MAX_UPLOAD_PART_SIZE)
-        parts = math.ceil(file_size / part_size)
-
-    # For extremely large files, cap parts at MAX_UPLOAD_PARTS
-    # This means part_size may effectively be larger than calculated
-    # but such files would likely fail server-side anyway
-    if parts > MAX_UPLOAD_PARTS:
-        parts = MAX_UPLOAD_PARTS
-
     return parts, part_size
 
 

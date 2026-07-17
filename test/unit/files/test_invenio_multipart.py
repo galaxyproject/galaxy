@@ -60,19 +60,22 @@ class TestCalculateMultipartParams:
         assert part_size >= MIN_UPLOAD_PART_SIZE
 
     def test_calculate_multipart_params_extremely_large_file(self):
-        """Extremely large files should hit both MAX limits.
+        """Files larger than the maximum uploadable size raise ValueError instead of truncating."""
+        # 100 TiB file - exceeds theoretical s3 maximum (~48.8 TiB)
+        file_size = 100 * 1024**4
+        with pytest.raises(ValueError, match="exceeds the maximum multipart upload size"):
+            calculate_multipart_params(file_size)
 
-        Note: Files larger than MAX_UPLOAD_PARTS * MAX_UPLOAD_PART_SIZE (~48.8 TiB)
-        cannot be uploaded via multipart, but we cap params rather than fail here.
-        The upload would fail server-side anyway.
-        """
-        # 100 TiB file - exceeds theoretical maximum (~48.8 TiB)
-        file_size = 100 * 1024**4  # 100 TiB
-        parts, part_size = calculate_multipart_params(file_size)
-        # Parts should be capped at MAX_UPLOAD_PARTS
+    def test_calculate_multipart_params_raises_at_max_boundary(self):
+        """One byte over the maximum uploadable size raises; exactly at the max does not."""
+        max_upload_size = MAX_UPLOAD_PARTS * MAX_UPLOAD_PART_SIZE
+        # Exactly at the boundary is allowed (parts == MAX_UPLOAD_PARTS at MAX part size).
+        parts, part_size = calculate_multipart_params(max_upload_size)
         assert parts == MAX_UPLOAD_PARTS
-        # Part size should hit max
         assert part_size == MAX_UPLOAD_PART_SIZE
+        # One byte over raises.
+        with pytest.raises(ValueError):
+            calculate_multipart_params(max_upload_size + 1)
 
     def test_calculate_multipart_params_respects_preferred_part_size(self):
         """Should use preferred part size when provided and valid."""
