@@ -1018,6 +1018,11 @@ class MinimalJobWrapper(HasResourceParameters):
         # Tool versioning variables
         self.version_string = ""
         self.__galaxy_lib_dir = None
+        # params is unused but is referenced by the job_destination property
+        # (via job_runner_mapper.get_job_destination(self.params)), which
+        # _setup_working_directory -> _set_working_directory -> get_destination_configuration
+        # now triggers during __init__. Initialize it before that call.
+        self.params = None  # unused
         # If the job has an object_store_id ensure working directory is setup, otherwise
         # wait for that to be assigned before configuring it. Either way the working
         # directory does not to be configured on this object before prepare() is called.
@@ -1027,7 +1032,6 @@ class MinimalJobWrapper(HasResourceParameters):
         # resolved
         self._job_io: JobIO | None = None
         self.tool_provided_job_metadata = None
-        self.params = None  # unused
         self.runner_command_line = None
 
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
