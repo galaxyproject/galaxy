@@ -261,6 +261,21 @@ class TestUserManager(BaseTestCase):
         assert user.active is True
         mock_send.assert_not_called()
 
+    def test_update_email_sends_activation_email(self):
+        self.app.config.user_activation_on = True
+        user = self.user_manager.create(email="original@example.com", username="updater")
+
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            self.user_manager.update_email(self.trans, user, "updated@example.com", send_activation_email=True)
+        # The activation email was sent to the new address ...
+        mock_send_mail.assert_called_once()
+        assert mock_send_mail.call_args.args[1] == "updated@example.com"
+        # ... and the user can be found by the new email with an activation token.
+        refreshed = self.user_manager.by_email("updated@example.com")
+        assert refreshed is not None
+        assert refreshed.activation_token is not None
+        assert refreshed.active is False
+
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
