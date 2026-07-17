@@ -11,7 +11,6 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import (
     Job,
@@ -245,7 +244,12 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         return False
 
     def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp):
-        # Use extra_dir=str(job.id) to match the legacy path that this site historically used;
-        # this produces a different JWD than the obj_dir=True path used by regular jobs.
-        working_directory = JobWorkingDirectory(job, app.object_store).resolve(legacy_extra_dir=str(job.id))
+        # This site uses extra_dir=str(job.id), a different path scheme than the
+        # obj_dir=True sites that JobWorkingDirectory manages. Pulsar stages files
+        # to this path, so the security check must match it exactly. Do not route
+        # through JobWorkingDirectory — it would either assert (custom path) or
+        # resolve to the wrong location (obj_dir=True).
+        working_directory = app.object_store.get_filename(
+            job, base_dir="job_work", dir_only=True, extra_dir=str(job.id)
+        )
         return util.in_directory(path, working_directory)

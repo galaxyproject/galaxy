@@ -5,7 +5,6 @@ from typing import (
 )
 
 from galaxy.job_execution.datasets import DatasetPath
-from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Dataset,
@@ -162,13 +161,13 @@ class SetMetadataToolAction(ToolAction):
         # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)?
         incoming["__ORIGINAL_DATASET_STATE__"] = dataset.state
         input_paths = [DatasetPath(dataset.id, real_path=dataset.get_file_name(), mutable=False)]
-        # Out-of-band metadata job: no destination params, so working_directory is None.
-        # JobWorkingDirectory falls back to the object-store path (config.jobs_directory),
-        # which is the correct location for metadata jobs that run in the web thread.
-        # Use extra_dir=str(job.id) to match the legacy path that this site historically used;
-        # this produces a different JWD than the obj_dir=True path used by regular jobs,
-        # but changing it would break existing metadata job file lookups.
-        job_working_dir = JobWorkingDirectory(job, app.object_store).create(legacy_extra_dir=str(job.id))
+        # Out-of-band metadata job: runs in the web thread before any destination
+        # is resolved, so job.working_directory is None. This site uses
+        # extra_dir=str(job.id), a different path scheme than the obj_dir=True sites
+        # that JobWorkingDirectory manages. Keep the direct object-store call so the
+        # path matches what later metadata file lookups expect.
+        app.object_store.create(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
+        job_working_dir = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, "registry.xml")
         app.datatypes_registry.to_xml_file(path=datatypes_config)
         external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id, tool_id=tool.id)
