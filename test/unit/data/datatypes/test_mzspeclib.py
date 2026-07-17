@@ -4,6 +4,7 @@ from galaxy.datatypes.proteomics import (
     MzSpecLibJson,
     MzSpecLibTxt,
 )
+from galaxy.datatypes.sniff import FilePrefix
 from .util import (
     get_input_files,
     MockDataset,
@@ -25,14 +26,14 @@ def test_mzspeclibjson_sniff():
     """Test that MzSpecLibJson correctly identifies valid mzSpeclib JSON files."""
     mzspeclibjson = MzSpecLibJson()
     with get_input_files("test.mzspeclib.json") as input_files:
-        assert mzspeclibjson.sniff(input_files[0]) is True
+        assert mzspeclibjson.sniff_prefix(FilePrefix(input_files[0])) is True
 
 
 def test_mzspeclibjson_sniff_false():
     """Test that MzSpecLibJson returns False for non-JSON files."""
     mzspeclibjson = MzSpecLibJson()
     with get_input_files("test.mzspeclib.txt") as input_files:
-        assert mzspeclibjson.sniff(input_files[0]) is False
+        assert mzspeclibjson.sniff_prefix(FilePrefix(input_files[0])) is False
 
 
 def test_mzspeclibjson_set_meta():
@@ -58,14 +59,14 @@ def test_mzspeclibtxt_sniff():
     """Test that MzSpecLibTxt correctly identifies valid mzSpeclib TXT files."""
     mzspeclibtxt = MzSpecLibTxt()
     with get_input_files("test.mzspeclib.txt") as input_files:
-        assert mzspeclibtxt.sniff(input_files[0]) is True
+        assert mzspeclibtxt.sniff_prefix(FilePrefix(input_files[0])) is True
 
 
 def test_mzspeclibtxt_sniff_false():
     """Test that MzSpecLibTxt returns False for non-TXT files."""
     mzspeclibtxt = MzSpecLibTxt()
     with get_input_files("test.mzspeclib.json") as input_files:
-        assert mzspeclibtxt.sniff(input_files[0]) is False
+        assert mzspeclibtxt.sniff_prefix(FilePrefix(input_files[0])) is False
 
 
 def test_mzspeclibtxt_set_meta():
