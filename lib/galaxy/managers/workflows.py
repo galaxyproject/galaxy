@@ -101,7 +101,6 @@ from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util.workflow_state.clean import clean_stale_state
 from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
-from galaxy.tool_util.workflow_state.stale_keys import StaleKeyPolicy
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values,
@@ -1289,7 +1288,6 @@ class WorkflowContentsManager(UsesAnnotations):
             ensure_native(wf_dict),
             wf_dict,
             get_tool_info,
-            policy=StaleKeyPolicy.for_clean([], []),
             validate=validate,
         )
 

@@ -240,6 +240,9 @@ gxwf clean \
 # Preserve step uuids (stripped by default)
 gxwf clean --skip-uuid my-workflow.ga
 
+# Keep framework bookkeeping keys (__current_case__, etc.; stripped by default)
+gxwf clean --preserve-bookkeeping my-workflow.ga
+
 # Sweep a directory in-place
 gxwf clean-tree \
   --populate-cache --output-template "{path}" \
@@ -250,7 +253,7 @@ gxwf clean --report-json report.json my-workflow.ga
 gxwf clean --report-markdown report.md my-workflow.ga
 ```
 
-Stale keys are classified into categories that can be individually controlled:
+Validation and export classify stale keys into categories that can be controlled per category:
 
 | Category            | Meaning                               | Example                                  |
 | ------------------- | ------------------------------------- | ---------------------------------------- |
@@ -260,7 +263,10 @@ Stale keys are classified into categories that can be individually controlled:
 | `runtime-leak`      | Execution artifacts                   | `__workflow_invocation_uuid__`           |
 | `unknown`           | Catch-all                             | Tool upgrade residue                     |
 
-Use `--preserve`/`--strip` (cleaning) or `--allow`/`--deny` (validation/export) to control policy per category.
+Use `--allow`/`--deny` to control validation/export policy per category. Cleaning
+always strips every category; its one toggle is `--preserve-bookkeeping` /
+`--strip-bookkeeping` (default: strip), which decides whether framework
+bookkeeping keys survive.
 
 **Tool version updates** — Planemo handles this:
 
@@ -458,7 +464,8 @@ All `galaxy-tool-util` workflow CLIs share infrastructure in `_cli_common.py`:
 - **`build_base_parser(prog, description)`** — creates a top-level `argparse.ArgumentParser` with common args (`--tool-source-cache-dir`, `-v`, `--populate-cache`, `--tool-source`, `--galaxy-url`, `workflow_path` positional)
 - **`build_base_subparser_args(parser, stale_key_mode)`** — same as above but mutates an existing subparser (no `prog`/`description`); used by `register()` functions
 - **`add_populate_args(parser)`** — adds `--populate-cache`, `--tool-source`, `--galaxy-url`
-- **`add_stale_key_args(parser, mode)`** — adds category policy flags (`--allow`/`--deny` for validate mode, `--preserve`/`--strip` for clean mode)
+- **`add_stale_key_args(parser)`** — adds per-category policy flags (`--allow`/`--deny`) for validate/export
+- **`add_bookkeeping_args(parser, dest, default)`** — adds the mutually-exclusive `--preserve-bookkeeping`/`--strip-bookkeeping` toggle (clean defaults to strip, roundtrip to keep)
 - **`cli_main(parser, options_cls, run_fn)`** — top-level entry-point: parse → `options_cls.from_namespace(args)` → `run_fn(options)` → `sys.exit`
 - **`cli_main_from_args(options_cls, run_fn, args)`** — subcommand variant: takes pre-parsed `Namespace`, returns int exit code
 - **`setup_tool_info(options)`** — configures logging, builds `GetToolInfo` from options, optionally populates cache

@@ -132,8 +132,7 @@ def validate_workflow_cli(
         if clean:
             workflow_dict = copy.deepcopy(workflow_dict)
             normalized = ensure_native(workflow_dict)
-            clean_policy = StaleKeyPolicy.for_clean([], [])
-            clean_stale_state(normalized, workflow_dict, resolver, policy=clean_policy)
+            clean_stale_state(normalized, workflow_dict, resolver)
 
         precheck = precheck_native_workflow(workflow_dict, resolver)
         if not precheck.can_process:
@@ -835,8 +834,7 @@ def _json_schema_validate_single(
         if clean:
             workflow_dict = _copy.deepcopy(workflow_dict)
             normalized = _ensure_native(workflow_dict)
-            clean_policy = StaleKeyPolicy.for_clean([], [])
-            _clean_stale_state(normalized, workflow_dict, tool_info, policy=clean_policy)
+            _clean_stale_state(normalized, workflow_dict, tool_info)
         js_result = validate_native_workflow_json_schema(
             workflow_dict,
             tool_info,
