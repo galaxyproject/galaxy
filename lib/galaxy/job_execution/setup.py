@@ -442,7 +442,8 @@ class JobWorkingDirectory:
         """
         if self._custom_path:
             validate_working_directory_path(self._custom_path)
-            shutil.rmtree(self._custom_path)
+            if os.path.exists(self._custom_path):
+                shutil.rmtree(self._custom_path)
             return
         self._object_store.delete(
             self._job,
