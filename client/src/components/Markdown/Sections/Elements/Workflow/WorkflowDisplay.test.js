@@ -77,8 +77,8 @@ describe("WorkflowDisplay", () => {
     it("renders numbered step titles from preview steps", async () => {
         const wrapper = mountDefault({
             name: "workflow_name",
+            // deliberately out of array order to prove numbering comes from order_index
             steps: [
-                { order_index: 0, type: "data_input", label: "Input dataset", inputs: [] },
                 {
                     order_index: 1,
                     type: "tool",
@@ -88,6 +88,7 @@ describe("WorkflowDisplay", () => {
                     inputs: [],
                 },
                 { order_index: 2, type: "subworkflow", label: "My subworkflow", inputs: [] },
+                { order_index: 0, type: "data_input", label: "Input dataset", inputs: [] },
             ],
         });
         await flushPromises();
