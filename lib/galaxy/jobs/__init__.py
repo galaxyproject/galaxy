@@ -66,6 +66,7 @@ from galaxy.job_execution.setup import (
     JobWorkingDirectory,
     TOOL_PROVIDED_JOB_METADATA_FILE,
     TOOL_PROVIDED_JOB_METADATA_KEYS,
+    validate_working_directory_path,
 )
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.mapper import (
@@ -987,22 +988,6 @@ class HasResourceParameters:
         return resource_params
 
 
-def _validate_working_directory_path(path: str) -> None:
-    """Validate a custom ``job.working_directory`` path before persisting it.
-
-    ``job.working_directory`` is a ``String(1024)`` populated from destination
-    params (admin/TPV-controlled). Refuse to persist anything that is not an
-    absolute, non-root, non-empty path. Validation at set-time means downstream
-    callers can trust the column value without re-validating.
-    """
-    if not path:
-        raise ValueError("Refusing to set empty job working_directory")
-    if not os.path.isabs(path):
-        raise ValueError(f"Refusing to set relative job working_directory: {path!r}")
-    if os.path.normpath(path) == os.path.normpath(os.sep):
-        raise ValueError("Refusing to set filesystem root as job working_directory")
-
-
 class MinimalJobWrapper(HasResourceParameters):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
@@ -1338,13 +1323,13 @@ class MinimalJobWrapper(HasResourceParameters):
         if job is None:
             job = self.get_job()
         # Resolve and set job.working_directory from destination params before
-        # creating anything on disk. The mutation is flushed so the value is
-        # durable in the current transaction. This is critical for the resubmit
-        # path: set_job_destination() flushes destination_params, then
+        # creating anything on disk. The mutation is not flushed here; callers
+        # that need it durable before a refresh (the resubmit path via
+        # clear_working_directory) flush themselves, and enqueue()'s commit()
+        # covers the enqueue path. This is critical for the resubmit path:
+        # set_job_destination() flushes destination_params, then
         # clear_working_directory() → _setup_working_directory() →
         # _set_working_directory() reads those params via get_destination_configuration().
-        # The flush ensures the column survives mark_as_resubmitted()'s
-        # sa_session.refresh() even when no handler commit runs between them.
         self._set_working_directory(job)
         try:
             working_directory = self._create_working_directory(job)
@@ -1405,6 +1390,12 @@ class MinimalJobWrapper(HasResourceParameters):
         arc_dir = os.path.join(base, date_str)
         shutil.move(self.working_directory, arc_dir)
         self._setup_working_directory(job=job)
+        # Flush so the working_directory column (mutated by _set_working_directory
+        # above) survives the sa_session.refresh() that mark_as_resubmitted()
+        # performs at the end of the resubmit flow. This is the only caller that
+        # needs the flush: enqueue()'s commit() covers the enqueue path, and the
+        # JobWrapper.__init__ path is followed by a prepare() commit.
+        self.sa_session.flush()
         log.debug("(%s) Previous working directory moved to %s", self.job_id, arc_dir)
 
     def default_compute_environment(self, job=None):
@@ -1871,18 +1862,18 @@ class MinimalJobWrapper(HasResourceParameters):
     def _set_working_directory(self, job: Job):
         """Resolve and persist ``job_working_directory`` from destination params.
 
-        Validates the resolved path before persisting it. An invalid custom
-        path (relative, empty, or filesystem root) is rejected at set-time
-        rather than at every disk operation, so downstream callers can trust
-        the column value.
+        Validates the resolved path before persisting it via the canonical
+        ``validate_working_directory_path`` (also enforced at disk-operation
+        time by ``JobWorkingDirectory``).
 
-        Flushes the session so the value is durable in the current transaction.
-        This is load-bearing for the resubmit path: mark_as_resubmitted() calls
-        sa_session.refresh() which would discard an unflushed mutation.
+        Does not flush the session. Callers that need the column to survive a
+        subsequent ``sa_session.refresh()`` (notably the resubmit path via
+        ``clear_working_directory``) must flush/commit themselves. The enqueue
+        path is covered by the ``commit()`` in ``enqueue()``.
         """
         working_directory = self.get_destination_configuration("job_working_directory", None)
         if isinstance(working_directory, str):
-            _validate_working_directory_path(working_directory)
+            validate_working_directory_path(working_directory)
             job.working_directory = working_directory
         else:
             # Reset to None so a resubmitted job whose new destination no longer
@@ -1896,7 +1887,6 @@ class MinimalJobWrapper(HasResourceParameters):
                     self.job_id,
                     working_directory,
                 )
-        self.sa_session.flush()
 
     def _set_object_store_ids_full(self, job: Job):
         user = job.user
