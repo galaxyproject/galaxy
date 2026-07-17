@@ -69,6 +69,24 @@ def test_gxwf_clean():
     _run(["clean", CLEAN_WF], expected_exit=0)
 
 
+def test_gxwf_clean_preserve_bookkeeping():
+    _run(["clean", "--preserve-bookkeeping", CLEAN_WF], expected_exit=0)
+
+
+def test_gxwf_clean_bookkeeping_flags_mutually_exclusive():
+    """--preserve-bookkeeping and --strip-bookkeeping cannot be combined."""
+    with pytest.raises(SystemExit) as exc_info:
+        main(["clean", "--preserve-bookkeeping", "--strip-bookkeeping", CLEAN_WF])
+    assert exc_info.value.code != 0
+
+
+def test_gxwf_clean_rejects_removed_category_flags():
+    """The old per-category --preserve/--strip flags are gone."""
+    with pytest.raises(SystemExit) as exc_info:
+        main(["clean", "--preserve", "bookkeeping", CLEAN_WF])
+    assert exc_info.value.code != 0
+
+
 def test_gxwf_lint():
     # exit 1 = warnings only (best-practice); exit 0 = fully clean. Both are acceptable.
     code = _run(["lint", CLEAN_WF])

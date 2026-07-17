@@ -56,43 +56,66 @@ def add_populate_args(parser):
     add_tool_source_arg(parser)
 
 
-def add_stale_key_args(parser, mode="validate"):
-    """Add stale key category flags. Mode determines flag names.
+def add_stale_key_args(parser):
+    """Add --allow/--deny stale key category flags (validate/export).
 
-    validate/export: --allow/--deny
-    clean: --preserve/--strip
+    Cleaning uses :func:`add_bookkeeping_args` instead: it strips every category
+    and only offers a bookkeeping keep/strip toggle.
     """
     categories = "bookkeeping, stale-root-keys, stale-branch-data, unknown, runtime-leak, all, none"
-    if mode == "clean":
-        parser.add_argument(
-            "--preserve",
-            action="append",
-            metavar="CATEGORY",
-            default=[],
-            help=f"Preserve these stale key categories (don't strip). Repeatable. Categories: {categories}",
+    parser.add_argument(
+        "--allow",
+        action="append",
+        metavar="CATEGORY",
+        default=[],
+        help=f"Allow these stale key categories (don't flag as failure). Repeatable. Categories: {categories}",
+    )
+    parser.add_argument(
+        "--deny",
+        action="append",
+        metavar="CATEGORY",
+        default=[],
+        help=f"Deny these stale key categories (flag as failure). Repeatable. Categories: {categories}",
+    )
+
+
+def add_bookkeeping_args(parser, dest: str, default: bool):
+    """Add mutually-exclusive --strip-bookkeeping / --preserve-bookkeeping flags.
+
+    Bookkeeping keys (``__current_case__``, ``__page__``, etc.) are a native
+    tool_state concern. Both flags are always accepted; passing both errors.
+    *dest* is the namespace attribute set (``preserve_bookkeeping`` for clean,
+    ``strip_bookkeeping`` for roundtrip); *default* applies when neither flag is
+    given — clean strips by default, roundtrip keeps by default.
+    """
+    group = parser.add_mutually_exclusive_group()
+    if dest == "preserve_bookkeeping":
+        group.add_argument(
+            "--preserve-bookkeeping",
+            dest=dest,
+            action="store_true",
+            help="Keep bookkeeping keys (__current_case__, etc.)",
         )
-        parser.add_argument(
-            "--strip",
-            action="append",
-            metavar="CATEGORY",
-            default=[],
-            help=f"Strip these stale key categories. Repeatable. Categories: {categories}",
+        group.add_argument(
+            "--strip-bookkeeping",
+            dest=dest,
+            action="store_false",
+            help="Strip bookkeeping keys (__current_case__, etc.)",
         )
     else:
-        parser.add_argument(
-            "--allow",
-            action="append",
-            metavar="CATEGORY",
-            default=[],
-            help=f"Allow these stale key categories (don't flag as failure). Repeatable. Categories: {categories}",
+        group.add_argument(
+            "--strip-bookkeeping",
+            dest=dest,
+            action="store_true",
+            help="Strip bookkeeping keys (__current_case__, etc.)",
         )
-        parser.add_argument(
-            "--deny",
-            action="append",
-            metavar="CATEGORY",
-            default=[],
-            help=f"Deny these stale key categories (flag as failure). Repeatable. Categories: {categories}",
+        group.add_argument(
+            "--preserve-bookkeeping",
+            dest=dest,
+            action="store_false",
+            help="Keep bookkeeping keys (__current_case__, etc.)",
         )
+    parser.set_defaults(**{dest: default})
 
 
 def add_strict_args(parser):
@@ -224,7 +247,7 @@ def build_base_parser(
     add_populate_args(parser)
     add_offline_arg(parser)
     if stale_key_mode:
-        add_stale_key_args(parser, mode=stale_key_mode)
+        add_stale_key_args(parser)
     parser.add_argument("workflow_path", help=workflow_path_help)
     return parser
 
@@ -239,7 +262,7 @@ def build_base_subparser_args(
     add_populate_args(parser)
     add_offline_arg(parser)
     if stale_key_mode:
-        add_stale_key_args(parser, mode=stale_key_mode)
+        add_stale_key_args(parser)
     parser.add_argument("workflow_path", help=workflow_path_help)
 
 

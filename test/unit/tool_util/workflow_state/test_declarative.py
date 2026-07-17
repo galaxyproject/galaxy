@@ -23,7 +23,6 @@ from galaxy.tool_util.workflow_state.clean import (
     clean_stale_state,
 )
 from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
-from galaxy.tool_util.workflow_state.stale_keys import StaleKeyPolicy
 from galaxy.tool_util.workflow_state.validate import validate_workflow_cli
 from galaxy.tool_util.workflow_state.workflow_tools import load_workflow
 from .functional_tool_info import FunctionalGetToolInfo
@@ -92,12 +91,11 @@ def _load_fixture(name: str) -> dict:
 def _run_clean(wf_dict: dict, skip_uuid: bool = False) -> dict:
     """Dispatch clean to the appropriate format-aware function."""
     workflow = copy.deepcopy(wf_dict)
-    policy = StaleKeyPolicy.for_clean([], [])
     if _is_format2(workflow):
-        clean_format2_state(workflow, _tool_info, policy=policy, skip_uuid=skip_uuid)
+        clean_format2_state(workflow, _tool_info, skip_uuid=skip_uuid)
     else:
         normalized = ensure_native(workflow)
-        clean_stale_state(normalized, workflow, _tool_info, policy=policy, skip_uuid=skip_uuid)
+        clean_stale_state(normalized, workflow, _tool_info, skip_uuid=skip_uuid)
     return workflow
 
 
@@ -152,8 +150,7 @@ def _clean_then_validate_op(wf_dict: dict) -> dict:
     """
     workflow = copy.deepcopy(wf_dict)
     normalized = ensure_native(workflow)
-    policy = StaleKeyPolicy.for_clean([], [])
-    clean_stale_state(normalized, workflow, _tool_info, policy=policy)
+    clean_stale_state(normalized, workflow, _tool_info)
     results, precheck, _conn = validate_workflow_cli(workflow, _tool_info)
     if precheck is not None and not precheck.can_process:
         raise RuntimeError(f"Validation skipped after clean: {precheck.detail}")
