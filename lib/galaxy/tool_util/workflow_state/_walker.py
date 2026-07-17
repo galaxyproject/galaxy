@@ -230,11 +230,7 @@ def _walk_format2_value(tool_input: ToolParameterT, value: Any, state_path: str,
         if not isinstance(value, dict):
             return leaf_callback(tool_input, value, state_path)
         conditional = cast(ConditionalParameterModel, tool_input)
-        target_when = select_which_when_format2(conditional, value)
-        if target_when is None:
-            all_params: list[ToolParameterT] = [conditional.test_parameter]
-        else:
-            all_params = [conditional.test_parameter] + list(target_when.parameters)
+        all_params = active_branch_params(conditional, value, select=select_which_when_format2)
         nested = walk_format2_state(all_params, value, leaf_callback, prefix=state_path)
         return nested if nested else SKIP_VALUE
 
