@@ -347,12 +347,10 @@ class JobWorkingDirectory:
 
     All create / resolve / exists / delete / cleared-contents logic lives here.
 
-    Construction order: ``job.working_directory`` must be populated (or
-    definitively None) before a ``JobWorkingDirectory`` is constructed. In
-    practice this is guaranteed because ``_set_working_directory`` runs
-    inside ``_setup_working_directory`` before any ``JobWorkingDirectory``
-    is instantiated, and for already-persisted jobs the column is loaded
-    from the database.
+    ``_custom_path`` is read fresh on each access, so a ``JobWorkingDirectory``
+    may be constructed before ``job.working_directory`` is mutated and will
+    observe the up-to-date value on the next method call. This eliminates
+    construction-order sensitivity.
     """
 
     __slots__ = ("_job", "_object_store")
@@ -365,37 +363,32 @@ class JobWorkingDirectory:
     def _custom_path(self) -> str | None:
         """Read ``job.working_directory`` fresh on each access.
 
-        Not cached: the column may be mutated by ``_set_working_directory``
-        after this object is constructed (though current call sites construct
-        after the mutation). Reading fresh eliminates construction-order
-        sensitivity entirely.
+        Not cached: the column may be mutated after this object is constructed.
+        Reading fresh eliminates construction-order sensitivity entirely.
         """
         return self._job.working_directory
 
-    @property
-    def uses_custom_path(self) -> bool:
-        """True when the JWD is a filesystem path set via destination params."""
-        return self._custom_path is not None
-
-    def resolve(self, extra_dir: str | None = None) -> str:
+    def resolve(self, legacy_extra_dir: str | None = None) -> str:
         """Return the working directory path, creating nothing on disk.
 
         Args:
-            extra_dir: Optional subdirectory for legacy object-store paths.
-                For legacy (object-store) paths, this is passed through to
-                ``object_store.get_filename`` as ``extra_dir``. For custom
-                paths, this is ignored because the custom path is already
-                the full JWD (the ``extra_dir=str(job.id)`` legacy quirk
-                was an object-store artifact, not a conceptual JWD model).
+            legacy_extra_dir: Optional subdirectory for legacy object-store
+                paths only. Passed through to ``object_store.get_filename`` as
+                ``extra_dir``. Ignored for custom paths (the custom path is
+                already the full JWD; the ``extra_dir=str(job.id)`` legacy
+                quirk was an object-store artifact, not a conceptual JWD
+                model). Passing this for a custom-path job is a caller bug and
+                raises ``AssertionError``.
         """
         if self._custom_path:
+            assert legacy_extra_dir is None, "legacy_extra_dir is ignored for custom-path JWDs; caller bug"
             return self._custom_path
         return self._object_store.get_filename(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
             dir_only=True,
             obj_dir=True,
-            extra_dir=extra_dir,
+            extra_dir=legacy_extra_dir,
         )
 
     def exists(self) -> bool:
@@ -409,19 +402,20 @@ class JobWorkingDirectory:
             obj_dir=True,
         )
 
-    def create(self, extra_dir: str | None = None) -> str:
+    def create(self, legacy_extra_dir: str | None = None) -> str:
         """Create the working directory and return its path.
 
         Idempotent: a pre-existing custom path is not an error.
 
         Args:
-            extra_dir: Optional subdirectory for legacy object-store paths.
-                For legacy paths, passes ``extra_dir`` through to the object
-                store. For custom paths, this is ignored because the custom
-                path is already the full JWD.
+            legacy_extra_dir: Optional subdirectory for legacy object-store
+                paths only. Passed through to the object store as ``extra_dir``.
+                Ignored for custom paths. Passing this for a custom-path job is
+                a caller bug and raises ``AssertionError``.
         """
         if self._custom_path:
-            _validate_custom_path(self._custom_path)
+            assert legacy_extra_dir is None, "legacy_extra_dir is ignored for custom-path JWDs; caller bug"
+            validate_working_directory_path(self._custom_path)
             os.makedirs(self._custom_path, exist_ok=True)
             return self._custom_path
         self._object_store.create(
@@ -429,14 +423,14 @@ class JobWorkingDirectory:
             base_dir=_JOB_WORK_BASE_DIR,
             dir_only=True,
             obj_dir=True,
-            extra_dir=extra_dir,
+            extra_dir=legacy_extra_dir,
         )
         return self._object_store.get_filename(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
             dir_only=True,
             obj_dir=True,
-            extra_dir=extra_dir,
+            extra_dir=legacy_extra_dir,
         )
 
     def delete(self) -> None:
@@ -447,7 +441,7 @@ class JobWorkingDirectory:
         admin-supplied string and ``shutil.rmtree`` will obey it literally.
         """
         if self._custom_path:
-            _validate_custom_path(self._custom_path)
+            validate_working_directory_path(self._custom_path)
             shutil.rmtree(self._custom_path)
             return
         self._object_store.delete(
@@ -483,7 +477,7 @@ class JobWorkingDirectory:
         than a rename. This is slower but correct.
         """
         if self._custom_path:
-            _validate_custom_path(self._custom_path)
+            validate_working_directory_path(self._custom_path)
             parent = os.path.dirname(self._custom_path)
             job_id = str(self._job.id)
             path = os.path.join(parent, _CLEARED_CONTENTS_EXTRA_DIR, job_id)
@@ -507,8 +501,14 @@ class JobWorkingDirectory:
         )
 
 
-def _validate_custom_path(path: str) -> None:
+def validate_working_directory_path(path: str) -> None:
     """Validate a custom ``job.working_directory`` path before disk operations.
+
+    This is the single canonical validator for ``job.working_directory``. It is
+    called both at set-time (before persisting the column) and at use-time
+    (before each disk operation on a custom path), so callers can rely on the
+    column value being validated without assuming set-time validation is the
+    only guard.
 
     ``job.working_directory`` is a ``String(1024)`` populated from destination
     params (admin/TPV-controlled). Refuse to operate on anything that is not an
