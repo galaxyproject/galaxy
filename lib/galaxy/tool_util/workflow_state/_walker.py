@@ -24,8 +24,8 @@ from galaxy.tool_util.parameters import (
     NATIVE_BOOKKEEPING_KEYS,
     repeat_inputs_to_array,
     RepeatParameterModel,
+    select_which_when_native,
     ToolParameterT,
-    validate_explicit_conditional_test_value,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
 
@@ -120,7 +120,7 @@ def walk_native_state(
                     raise Exception(f"Invalid conditional state found {value!r} for conditional {parameter_name}")
                 continue
             conditional_state = value
-            target_when = _select_which_when_native(conditional, conditional_state)
+            target_when = select_which_when_native(conditional, conditional_state)
             if target_when is None:
                 all_params: list[ToolParameterT] = [conditional.test_parameter]
             else:
@@ -187,49 +187,6 @@ def walk_native_state(
                 output[parameter_name] = result
 
     return output
-
-
-def _test_value_matches_discriminator(test_value, discriminator) -> bool:
-    """Compare test value against when discriminator, handling bool/string coercion.
-
-    Native tool_state double-encoding means json.loads("true") produces Python True (bool),
-    but gx_select conditional discriminators are always strings ("true"/"false").
-    gx_boolean discriminators are actual bools. Handle both cases.
-    """
-    if test_value == discriminator:
-        return True
-    if isinstance(test_value, bool) and isinstance(discriminator, str):
-        return str(test_value).lower() == discriminator
-    if isinstance(test_value, str) and isinstance(discriminator, bool):
-        return test_value.lower() == str(discriminator).lower()
-    return False
-
-
-def _select_which_when_native(
-    conditional: ConditionalParameterModel, conditional_state: dict
-) -> ConditionalWhen | None:
-    """Select which conditional branch matches the test parameter value.
-
-    Returns None when no branch matches (e.g., boolean conditional set to
-    false with only a <when value="true"> branch — the conditional is inactive).
-    """
-    test_parameter = conditional.test_parameter
-    test_parameter_name = test_parameter.name
-    explicit_test_value = conditional_state.get(test_parameter_name)
-    test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
-
-    for when in conditional.whens:
-        if test_value is None and when.is_default_when:
-            return when
-        elif test_value is not None and _test_value_matches_discriminator(test_value, when.discriminator):
-            return when
-
-    # No branch matched — try default when as fallback
-    for when in conditional.whens:
-        if when.is_default_when:
-            return when
-
-    return None
 
 
 # -- Format2 state walker --
@@ -311,10 +268,10 @@ def _walk_format2_value(tool_input: ToolParameterT, value: Any, state_path: str,
 def select_which_when_format2(conditional: ConditionalParameterModel, state: dict) -> ConditionalWhen | None:
     """Select the matching ConditionalWhen for a format2 conditional state dict.
 
-    Delegates to _select_which_when_native (same matching logic + default-when
+    Delegates to select_which_when_native (same matching logic + default-when
     fallback), but suppresses validation errors for graceful degradation.
     """
     try:
-        return _select_which_when_native(conditional, state)
+        return select_which_when_native(conditional, state)
     except Exception:
         return None
