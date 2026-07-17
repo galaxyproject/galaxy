@@ -11,6 +11,7 @@ from galaxy.files.sources.invenio import (
     _LimitedFileReader,
     calculate_multipart_params,
     InvenioRepositoryInteractor,
+    InvenioRequestError,
     MAX_UPLOAD_PART_SIZE,
     MAX_UPLOAD_PARTS,
     MIN_UPLOAD_PART_SIZE,
@@ -212,8 +213,8 @@ class TestUploadFileSingle:
             assert mock_requests.post.call_count == 2
             assert mock_requests.put.call_count == 1
 
-    def test_upload_file_single_413_raises_helpful_error(self, tmp_path):
-        """HTTP 413 should raise an error mentioning multipart_threshold."""
+    def test_upload_file_single_propagates_413_as_typed_error(self, tmp_path):
+        """A 413 from the content PUT surfaces as an InvenioRequestError carrying the status code."""
         file_path = tmp_path / "test.txt"
         file_path.write_bytes(b"hello world")
 
@@ -228,8 +229,10 @@ class TestUploadFileSingle:
             mock_requests.post.return_value = _mock_response(201, {"entries": [_make_single_upload_entry()]})
             mock_requests.put.return_value = _mock_response(413)
 
-            with pytest.raises(Exception, match="413"):
+            with pytest.raises(InvenioRequestError) as exc_info:
                 interactor._upload_file_single("abc", "test.txt", str(file_path), context)
+
+            assert exc_info.value.status_code == 413
 
 
 class TestUploadFileMultipart:

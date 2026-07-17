@@ -183,6 +183,14 @@ class _LimitedFileReader:
         return self._length
 
 
+class InvenioRequestError(Exception):
+    """Raised when an Invenio API request returns an unexpected status code."""
+
+    def __init__(self, message: str, status_code: int):
+        super().__init__(message)
+        self.status_code = status_code
+
+
 class InvenioRecord(TypedDict):
     id: str
     title: str
@@ -424,8 +432,8 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         else:
             try:
                 self._upload_file_single(record_id, filename, file_path, context)
-            except Exception as e:
-                if "413" in str(e):
+            except InvenioRequestError as e:
+                if e.status_code == 413:
                     raise Exception(
                         f"Failed to upload file '{filename}' ({file_size} bytes): HTTP 413 Payload Too Large. "
                         f"The server rejected the upload because the file is too large for a single request. "
@@ -789,8 +797,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             if response.status_code == 403:
                 self._raise_auth_required()
             error_message = self._get_response_error_message(response)
-            raise Exception(
-                f"Request to {response.url} failed with status code {response.status_code}: {error_message}"
+            raise InvenioRequestError(
+                f"Request to {response.url} failed with status code {response.status_code}: {error_message}",
+                status_code=response.status_code,
             )
 
     def _raise_auth_required(self):
