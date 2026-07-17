@@ -87,7 +87,8 @@ watch(
             const datatypeDetails = extension ? await datatypeStore.fetchDatatypeDetails(extension) : null;
             // HTML-like and composite previews need a real /display/ URL so relative assets keep working.
             const useDirectPreview = Boolean(extension?.endsWith("html") || datatypeDetails?.composite_files?.length);
-            const response = await fetch(absPath(previewUrl.value), { method: "GET", signal: controller.signal });
+            const method = useDirectPreview ? "HEAD" : "GET";
+            const response = await fetch(absPath(previewUrl.value), { method, signal: controller.signal });
             const { headers } = response;
             contentChunked.value = !!headers.get("x-content-chunked");
             contentTruncated.value = headers.get("x-content-truncated")
