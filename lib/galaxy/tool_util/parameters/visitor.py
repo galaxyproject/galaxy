@@ -208,9 +208,7 @@ def _test_value_matches_discriminator(test_value, discriminator) -> bool:
     return False
 
 
-def _select_which_when_native(
-    conditional: ConditionalParameterModel, conditional_state: dict
-) -> ConditionalWhen | None:
+def select_which_when_native(conditional: ConditionalParameterModel, conditional_state: dict) -> ConditionalWhen | None:
     """Select which conditional branch matches the test parameter value.
 
     Returns None when no branch matches (e.g., boolean conditional set to
@@ -275,7 +273,7 @@ def strip_undeclared_keys(
             cond_state = value
 
             test_param = conditional.test_parameter
-            target_when = _select_which_when_native(conditional, cond_state)
+            target_when = select_which_when_native(conditional, cond_state)
             if target_when is None:
                 branch_inputs: list[ToolParameterT] = [test_param]
             else:
