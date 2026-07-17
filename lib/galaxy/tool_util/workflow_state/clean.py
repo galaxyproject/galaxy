@@ -21,6 +21,7 @@ from gxformat2.normalized import (
 from pydantic import ValidationError
 
 from galaxy.tool_util.parameters import (
+    active_branch_params,
     ConditionalParameterModel,
     RepeatParameterModel,
     strip_undeclared_keys,
@@ -447,10 +448,7 @@ def _strip_format2_recursive(
 
         if isinstance(tool_input, ConditionalParameterModel):
             if isinstance(value, dict):
-                when = select_which_when_format2(tool_input, value)
-                branch_inputs: list[ToolParameterT] = [tool_input.test_parameter]
-                if when is not None:
-                    branch_inputs = branch_inputs + list(when.parameters)
+                branch_inputs = active_branch_params(tool_input, value, select=select_which_when_format2)
                 _strip_format2_recursive(value, branch_inputs, removed_keys, prefix=child_prefix)
 
         elif isinstance(tool_input, RepeatParameterModel):

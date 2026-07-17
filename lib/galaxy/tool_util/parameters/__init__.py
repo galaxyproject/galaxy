@@ -98,6 +98,7 @@ from .state import (
     WorkflowStepToolState,
 )
 from .visitor import (
+    active_branch_params,
     flat_state_path,
     keys_starting_with,
     NATIVE_BOOKKEEPING_KEYS,
@@ -189,6 +190,7 @@ __all__ = (
     "repeat_inputs_to_array",
     "strip_undeclared_keys",
     "select_which_when_native",
+    "active_branch_params",
     "NATIVE_BOOKKEEPING_KEYS",
     "VISITOR_NO_REPLACEMENT",
     "decode",
