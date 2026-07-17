@@ -12,7 +12,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
-import { ActionType, type ActionSuggestion, type AgentResponse } from "@/composables/agentActions";
+import { type ActionSuggestion, ActionType, type AgentResponse } from "@/composables/agentActions";
 import { type EntityType, MENTION_PATTERN_SOURCE } from "@/composables/useEntityMentions";
 
 import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
