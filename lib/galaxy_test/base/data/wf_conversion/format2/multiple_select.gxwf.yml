@@ -1,0 +1,14 @@
+class: GalaxyWorkflow
+label: Test multiple select roundtrip artifact
+steps:
+  select_single:
+    tool_id: gx_select_multiple
+    state:
+      parameter:
+        - --ex1
+  select_multi:
+    tool_id: gx_select_multiple
+    state:
+      parameter:
+        - --ex1
+        - ex2
