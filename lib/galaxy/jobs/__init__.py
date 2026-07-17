@@ -987,6 +987,22 @@ class HasResourceParameters:
         return resource_params
 
 
+def _validate_working_directory_path(path: str) -> None:
+    """Validate a custom ``job.working_directory`` path before persisting it.
+
+    ``job.working_directory`` is a ``String(1024)`` populated from destination
+    params (admin/TPV-controlled). Refuse to persist anything that is not an
+    absolute, non-root, non-empty path. Validation at set-time means downstream
+    callers can trust the column value without re-validating.
+    """
+    if not path:
+        raise ValueError("Refusing to set empty job working_directory")
+    if not os.path.isabs(path):
+        raise ValueError(f"Refusing to set relative job working_directory: {path!r}")
+    if os.path.normpath(path) == os.path.normpath(os.sep):
+        raise ValueError("Refusing to set filesystem root as job working_directory")
+
+
 class MinimalJobWrapper(HasResourceParameters):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
@@ -1322,14 +1338,14 @@ class MinimalJobWrapper(HasResourceParameters):
         if job is None:
             job = self.get_job()
         # Resolve and set job.working_directory from destination params before
-        # creating anything on disk. The mutation is persisted by the caller's
-        # sa_session.commit() (e.g. prepare() at the end of job setup, or
-        # set_job_destination's flush in the resubmit path). Callers must
-        # ensure that commit happens before the job row is reused by another
-        # thread/handler, otherwise the in-memory working_directory value can
-        # be lost on session expiry.
+        # creating anything on disk. The mutation is flushed so the value is
+        # durable in the current transaction. This is critical for the resubmit
+        # path: set_job_destination() flushes destination_params, then
+        # clear_working_directory() → _setup_working_directory() →
+        # _set_working_directory() reads those params via get_destination_configuration().
+        # The flush ensures the column survives mark_as_resubmitted()'s
+        # sa_session.refresh() even when no handler commit runs between them.
         self._set_working_directory(job)
-        self._check_jwd_deprecated_config(job)
         try:
             working_directory = self._create_working_directory(job)
             self.__working_directory = working_directory
@@ -1855,17 +1871,18 @@ class MinimalJobWrapper(HasResourceParameters):
     def _set_working_directory(self, job: Job):
         """Resolve and persist ``job_working_directory`` from destination params.
 
-        Mutates ``job.working_directory`` and flushes the session so the value
-        is durable in the current transaction. This is invoked via
-        ``_setup_working_directory``, whose callers (``prepare``,
-        ``_set_object_store_ids_*``, and the resubmit flow via
-        ``set_job_destination``) commit the session as part of their own
-        lifecycle. The explicit flush ensures the column survives a
-        ``sa_session.refresh()`` (e.g. ``mark_as_resubmitted``) even when the
-        caller does not commit before the refresh.
+        Validates the resolved path before persisting it. An invalid custom
+        path (relative, empty, or filesystem root) is rejected at set-time
+        rather than at every disk operation, so downstream callers can trust
+        the column value.
+
+        Flushes the session so the value is durable in the current transaction.
+        This is load-bearing for the resubmit path: mark_as_resubmitted() calls
+        sa_session.refresh() which would discard an unflushed mutation.
         """
         working_directory = self.get_destination_configuration("job_working_directory", None)
         if isinstance(working_directory, str):
+            _validate_working_directory_path(working_directory)
             job.working_directory = working_directory
         else:
             # Reset to None so a resubmitted job whose new destination no longer
@@ -1880,31 +1897,6 @@ class MinimalJobWrapper(HasResourceParameters):
                     working_directory,
                 )
         self.sa_session.flush()
-
-    def _check_jwd_deprecated_config(self, job: Job) -> None:
-        """Emit a deprecation warning if legacy per-backend JWD config is detected.
-
-        The legacy ``extra_dirs['job_work']`` path in ``object_store_conf`` is
-        deprecated in favor of the ``job_working_directory`` destination param.
-        When both are configured, the destination param takes precedence and
-        the legacy path is ignored. We warn once per job to avoid log spam.
-        """
-        # Check if the object store has a custom 'job_work' extra_dir configured
-        # (i.e., not the default config.jobs_directory value).
-        object_store = self.app.object_store
-        job_work_extra = object_store.extra_dirs.get("job_work")
-        default_jobs_dir = getattr(self.app.config, "jobs_directory", None)
-        if job_work_extra and job_work_extra != default_jobs_dir:
-            # Legacy per-backend JWD config is in use.
-            working_directory = self.get_destination_configuration("job_working_directory", None)
-            if isinstance(working_directory, str):
-                log.warning(
-                    "(%s) Legacy per-backend 'job_work' extra_dirs configuration is deprecated. "
-                    "The 'job_working_directory' destination param (%s) takes precedence. "
-                    "Migrate to destination-param-based JWD configuration.",
-                    self.job_id,
-                    working_directory,
-                )
 
     def _set_object_store_ids_full(self, job: Job):
         user = job.user
