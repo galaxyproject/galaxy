@@ -1,6 +1,7 @@
 """Thin CLI entry point for gxwf-roundtrip-validate-tree."""
 
 from .._cli_common import (
+    add_bookkeeping_args,
     add_report_args,
     add_strict_args,
     build_base_parser,
@@ -18,11 +19,7 @@ SUBCOMMAND = "roundtrip-tree"
 
 
 def _add_args(parser):
-    parser.add_argument(
-        "--strip-bookkeeping",
-        action="store_true",
-        help="Strip bookkeeping keys (__current_case__, etc.) before comparison",
-    )
+    add_bookkeeping_args(parser, dest="strip_bookkeeping", default=False)
     add_strict_args(parser)
     add_report_args(parser)
 

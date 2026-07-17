@@ -57,12 +57,6 @@ from ._walker import (
     select_which_when_format2,
 )
 from .precheck import precheck_native_workflow
-from .stale_keys import (
-    ConflictingCategoryError,
-    InvalidCategoryError,
-    StaleKeyCategory,
-    StaleKeyPolicy,
-)
 from .validation_native import (
     get_parsed_tool_for_native_step,
     ReplacementParamsSkip,
@@ -139,8 +133,7 @@ class CleanOptions(ToolCacheOptions):
     diff: bool = False
     report_json: str | None = None
     report_markdown: str | None = None
-    preserve: list[str] = []
-    strip: list[str] = []
+    preserve_bookkeeping: bool = False
     skip_uuid: bool = False
     validate_state: bool = False
 
@@ -149,8 +142,7 @@ class CleanTreeOptions(ToolCacheOptions):
     output_template: str | None = None
     report_json: str | None = None
     report_markdown: str | None = None
-    preserve: list[str] = []
-    strip: list[str] = []
+    preserve_bookkeeping: bool = False
     skip_uuid: bool = False
     validate_state: bool = False
 
@@ -237,15 +229,8 @@ def _raw_step_def(raw_steps: dict, step_id) -> dict:
     return raw_steps.get(int_id, {})
 
 
-def _policy_to_strip_bookkeeping(policy: StaleKeyPolicy | None) -> bool:
-    """Extract strip_bookkeeping boolean from policy for strip_undeclared_keys."""
-    if policy is None:
-        return False
-    return policy.is_denied(StaleKeyCategory.BOOKKEEPING)
-
-
 def strip_stale_keys(
-    step: NativeStepDict, parsed_tool: ToolInputs, policy: StaleKeyPolicy | None = None
+    step: NativeStepDict, parsed_tool: ToolInputs, preserve_bookkeeping: bool = False
 ) -> CleanStepResult:
     """Strip stale keys from a single step's tool_state."""
     tool_id = step.get("tool_id", "?")
@@ -275,7 +260,7 @@ def strip_stale_keys(
         )
 
     removed_state_keys: list[str] = []
-    preserve_keys = () if _policy_to_strip_bookkeeping(policy) else _NATIVE_BOOKKEEPING_KEYS
+    preserve_keys = _NATIVE_BOOKKEEPING_KEYS if preserve_bookkeeping else ()
     strip_undeclared_keys(
         tool_state,
         list(parsed_tool.inputs),
@@ -346,7 +331,7 @@ def clean_stale_state(
     workflow_dict: NativeWorkflowDict,
     get_tool_info: GetToolInfo,
     prefix: str = "",
-    policy: StaleKeyPolicy | None = None,
+    preserve_bookkeeping: bool = False,
     skip_uuid: bool = False,
     validate: bool = False,
 ) -> CleanResult:
@@ -357,15 +342,13 @@ def clean_stale_state(
     touched to mutate tool_state.  The normalized model's tool_state is
     kept in sync with the raw dict after cleaning.
 
-    When *policy* is None, defaults to ``StaleKeyPolicy.for_clean([], [])``
-    which strips all stale categories including bookkeeping.
+    Strips all stale keys including bookkeeping (``__current_case__``, etc.)
+    unless *preserve_bookkeeping* is True.
 
     When *validate* is True, each step's cleaned native tool_state is validated
     against its tool definition; steps that fail validation have their tool_state
     reverted to the pre-clean value (see :func:`_revert_if_invalid`).
     """
-    if policy is None:
-        policy = StaleKeyPolicy.for_clean([], [])
     result = CleanResult()
     raw_steps = workflow_dict.get("steps", {})
     _strip_position_extras(raw_steps)
@@ -381,7 +364,7 @@ def clean_stale_state(
                 sub_dict,
                 get_tool_info,
                 prefix=f"{step_label}.",
-                policy=policy,
+                preserve_bookkeeping=preserve_bookkeeping,
                 skip_uuid=skip_uuid,
                 validate=validate,
             )
@@ -423,7 +406,7 @@ def clean_stale_state(
         step_def = _raw_step_def(raw_steps, step_id)
         original_state = copy.deepcopy(step_def.get("tool_state")) if validate else None
         removed_step_keys = strip_structural_step(step_def, skip_uuid=skip_uuid)
-        step_result = strip_stale_keys(step_def, parsed_tool, policy=policy)
+        step_result = strip_stale_keys(step_def, parsed_tool, preserve_bookkeeping=preserve_bookkeeping)
         # Keep normalized model in sync with the mutated raw dict
         cleaned_state = step_def.get("tool_state")
         if isinstance(cleaned_state, dict):
@@ -487,7 +470,6 @@ def _strip_format2_recursive(
 def clean_format2_state(
     workflow_dict: dict,
     get_tool_info: GetToolInfo,
-    policy: StaleKeyPolicy | None = None,
     skip_uuid: bool = False,
     prefix: str = "",
 ) -> CleanResult:
@@ -496,9 +478,10 @@ def clean_format2_state(
     Iterates raw workflow dict steps (both list and dict formats). Strips
     structural step keys (uuid/errors) and stale state keys for each tool step.
     Recurses into inline subworkflows via the ``run`` key.
+
+    Format2 state carries no bookkeeping keys (they are a native tool_state
+    concern), so there is no bookkeeping toggle here.
     """
-    if policy is None:
-        policy = StaleKeyPolicy.for_clean([], [])
     result = CleanResult()
     raw_steps = workflow_dict.get("steps", {})
 
@@ -518,9 +501,7 @@ def clean_format2_state(
         run = step_dict.get("run")
         is_inline = inline_class_from_run(run) is not None
         if isinstance(run, dict) and not is_inline:
-            sub_result = clean_format2_state(
-                run, get_tool_info, policy=policy, skip_uuid=skip_uuid, prefix=f"{step_label}."
-            )
+            sub_result = clean_format2_state(run, get_tool_info, skip_uuid=skip_uuid, prefix=f"{step_label}.")
             result.merge(sub_result)
             continue
 
@@ -594,7 +575,7 @@ def _is_format2(workflow_dict: dict) -> bool:
 def clean_single(
     workflow_path: str,
     tool_info: GetToolInfo,
-    policy: StaleKeyPolicy | None = None,
+    preserve_bookkeeping: bool = False,
     include_content: bool = False,
     validate: bool = False,
 ) -> SingleCleanReport:
@@ -623,7 +604,9 @@ def clean_single(
         )
 
     normalized = ensure_native(workflow)
-    result = clean_stale_state(normalized, workflow, tool_info, policy=policy, validate=validate)
+    result = clean_stale_state(
+        normalized, workflow, tool_info, preserve_bookkeeping=preserve_bookkeeping, validate=validate
+    )
 
     after_content: str | None = None
     if include_content:
@@ -656,7 +639,7 @@ def expand_output_path(template: str, original_path: str) -> str:
 
 
 def _make_clean_process_one(
-    policy: StaleKeyPolicy | None = None,
+    preserve_bookkeeping: bool = False,
     output_template: str | None = None,
     skip_uuid: bool = False,
     validate: bool = False,
@@ -671,14 +654,19 @@ def _make_clean_process_one(
             work_copy = wf_dict
 
         if _is_format2(work_copy):
-            result = clean_format2_state(work_copy, get_tool_info, policy=policy, skip_uuid=skip_uuid)
+            result = clean_format2_state(work_copy, get_tool_info, skip_uuid=skip_uuid)
         else:
             precheck = precheck_native_workflow(wf_dict, get_tool_info)
             if not precheck.can_process:
                 skip_workflow(precheck.skip_reasons[0].value)
             normalized = ensure_native(work_copy)
             result = clean_stale_state(
-                normalized, work_copy, get_tool_info, policy=policy, skip_uuid=skip_uuid, validate=validate
+                normalized,
+                work_copy,
+                get_tool_info,
+                preserve_bookkeeping=preserve_bookkeeping,
+                skip_uuid=skip_uuid,
+                validate=validate,
             )
 
         if result.total_removed > 0 and output_template is not None:
@@ -736,7 +724,7 @@ def clean_tree(
     root: str,
     get_tool_info: "GetToolInfo",
     output_template: str | None = None,
-    policy: StaleKeyPolicy | None = None,
+    preserve_bookkeeping: bool = False,
     skip_uuid: bool = False,
     validate: bool = False,
 ) -> TreeCleanReport:
@@ -751,7 +739,10 @@ def clean_tree(
 
     ctx = TreeContext(root=root, tool_info=get_tool_info, include_format2=True)
     process_one = _make_clean_process_one(
-        policy=policy, output_template=output_template, skip_uuid=skip_uuid, validate=validate
+        preserve_bookkeeping=preserve_bookkeeping,
+        output_template=output_template,
+        skip_uuid=skip_uuid,
+        validate=validate,
     )
     tree_result = collect_tree(ctx, process_one)
     return _aggregate_clean(tree_result)
@@ -846,13 +837,7 @@ def run_clean(options: CleanOptions) -> int:
 
     tool_info = setup_tool_info(options)
 
-    try:
-        policy = StaleKeyPolicy.for_clean(options.preserve, options.strip)
-    except (InvalidCategoryError, ConflictingCategoryError) as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 2
-
-    return _run_single(options, tool_info, policy)
+    return _run_single(options, tool_info)
 
 
 def run_clean_tree(options: CleanTreeOptions) -> int:
@@ -863,12 +848,6 @@ def run_clean_tree(options: CleanTreeOptions) -> int:
 
     tool_info = setup_tool_info(options)
 
-    try:
-        policy = StaleKeyPolicy.for_clean(options.preserve, options.strip)
-    except (InvalidCategoryError, ConflictingCategoryError) as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 2
-
     from ._tree_orchestrator import (
         run_tree,
         TreeContext,
@@ -876,7 +855,7 @@ def run_clean_tree(options: CleanTreeOptions) -> int:
 
     ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=True)
     process_one = _make_clean_process_one(
-        policy=policy,
+        preserve_bookkeeping=options.preserve_bookkeeping,
         output_template=options.output_template,
         skip_uuid=options.skip_uuid,
         validate=options.validate_state,
@@ -894,7 +873,7 @@ def run_clean_tree(options: CleanTreeOptions) -> int:
     )
 
 
-def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int:
+def _run_single(options: CleanOptions, tool_info) -> int:
     workflow = load_workflow(options.workflow_path)
 
     original_json = json.dumps(workflow, indent=4) + "\n"
@@ -907,7 +886,7 @@ def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int
         work_copy = workflow
 
     if _is_format2(work_copy):
-        result = clean_format2_state(work_copy, tool_info, policy=policy, skip_uuid=options.skip_uuid)
+        result = clean_format2_state(work_copy, tool_info, skip_uuid=options.skip_uuid)
     else:
         precheck = precheck_native_workflow(workflow, tool_info)
         if not precheck.can_process:
@@ -918,7 +897,7 @@ def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int
             normalized,
             work_copy,
             tool_info,
-            policy=policy,
+            preserve_bookkeeping=options.preserve_bookkeeping,
             skip_uuid=options.skip_uuid,
             validate=options.validate_state,
         )
