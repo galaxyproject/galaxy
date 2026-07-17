@@ -25,6 +25,7 @@ from sqlalchemy import select
 from tusclient import client
 
 from galaxy import model
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
@@ -203,8 +204,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         job.add_output_dataset("output1", output_hda)
         sa_session.commit()
         self._app.object_store.create(output_hda.dataset)
-        self._app.object_store.create(job, base_dir="job_work", dir_only=True, obj_dir=True)
-        working_directory = self._app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
+        working_directory = JobWorkingDirectory(job, self._app.object_store).create()
         return job, output_hda, working_directory
 
     def _api_job_keys(self, job):

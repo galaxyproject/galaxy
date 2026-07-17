@@ -247,5 +247,5 @@ class JobFilesAPIController(BaseGalaxyAPIController):
     def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp):
         # Use extra_dir=str(job.id) to match the legacy path that this site historically used;
         # this produces a different JWD than the obj_dir=True path used by regular jobs.
-        working_directory = JobWorkingDirectory(job, app.object_store).resolve(extra_dir=str(job.id))
+        working_directory = JobWorkingDirectory(job, app.object_store).resolve(legacy_extra_dir=str(job.id))
         return util.in_directory(path, working_directory)

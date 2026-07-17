@@ -168,7 +168,7 @@ class SetMetadataToolAction(ToolAction):
         # Use extra_dir=str(job.id) to match the legacy path that this site historically used;
         # this produces a different JWD than the obj_dir=True path used by regular jobs,
         # but changing it would break existing metadata job file lookups.
-        job_working_dir = JobWorkingDirectory(job, app.object_store).create(extra_dir=str(job.id))
+        job_working_dir = JobWorkingDirectory(job, app.object_store).create(legacy_extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, "registry.xml")
         app.datatypes_registry.to_xml_file(path=datatypes_config)
         external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id, tool_id=tool.id)
