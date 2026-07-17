@@ -377,8 +377,17 @@ class JobWorkingDirectory:
         """True when the JWD is a filesystem path set via destination params."""
         return self._custom_path is not None
 
-    def resolve(self) -> str:
-        """Return the working directory path, creating nothing on disk."""
+    def resolve(self, extra_dir: str | None = None) -> str:
+        """Return the working directory path, creating nothing on disk.
+
+        Args:
+            extra_dir: Optional subdirectory for legacy object-store paths.
+                For legacy (object-store) paths, this is passed through to
+                ``object_store.get_filename`` as ``extra_dir``. For custom
+                paths, this is ignored because the custom path is already
+                the full JWD (the ``extra_dir=str(job.id)`` legacy quirk
+                was an object-store artifact, not a conceptual JWD model).
+        """
         if self._custom_path:
             return self._custom_path
         return self._object_store.get_filename(
@@ -386,6 +395,7 @@ class JobWorkingDirectory:
             base_dir=_JOB_WORK_BASE_DIR,
             dir_only=True,
             obj_dir=True,
+            extra_dir=extra_dir,
         )
 
     def exists(self) -> bool:
@@ -399,10 +409,16 @@ class JobWorkingDirectory:
             obj_dir=True,
         )
 
-    def create(self) -> str:
+    def create(self, extra_dir: str | None = None) -> str:
         """Create the working directory and return its path.
 
         Idempotent: a pre-existing custom path is not an error.
+
+        Args:
+            extra_dir: Optional subdirectory for legacy object-store paths.
+                For legacy paths, passes ``extra_dir`` through to the object
+                store. For custom paths, this is ignored because the custom
+                path is already the full JWD.
         """
         if self._custom_path:
             _validate_custom_path(self._custom_path)
@@ -413,12 +429,14 @@ class JobWorkingDirectory:
             base_dir=_JOB_WORK_BASE_DIR,
             dir_only=True,
             obj_dir=True,
+            extra_dir=extra_dir,
         )
         return self._object_store.get_filename(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
             dir_only=True,
             obj_dir=True,
+            extra_dir=extra_dir,
         )
 
     def delete(self) -> None:
