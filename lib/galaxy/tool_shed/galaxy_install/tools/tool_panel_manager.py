@@ -15,7 +15,6 @@ from galaxy.tool_util.toolbox.base import resolve_tool_path
 from galaxy.tools.source_store.populator import populate_for_paths
 from galaxy.util import (
     Element,
-    parse_xml_string,
     SubElement,
     xml_to_string,
 )
@@ -221,7 +220,19 @@ class ToolPanelManager:
         value of config_filename.
         """
         try:
-            root = parse_xml_string(f'<?xml version="1.0"?>\n<toolbox tool_path="{tool_path}"></toolbox>')
+            # Managed shed confs may carry publisher/operator attributes such
+            # as ``store`` or ``monitor``.  Rebuilding the root from only
+            # ``tool_path`` used to silently discard them on every install,
+            # update, metadata refresh, or uninstall.
+            root_attributes: dict[str, str] = {}
+            if os.path.exists(config_filename):
+                existing_tree, _error_message = parse_xml(config_filename)
+                if existing_tree is not None:
+                    root_attributes.update(existing_tree.getroot().attrib)
+            # The resolved tool path passed by the manager remains
+            # authoritative even if the old root contained another value.
+            root_attributes["tool_path"] = tool_path
+            root = Element("toolbox", root_attributes)
             for elem in config_elems:
                 root.append(elem)
             with RenamedTemporaryFile(config_filename, mode="w") as fh:

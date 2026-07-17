@@ -10,6 +10,7 @@ Following test guidelines:
 """
 
 import os
+import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -375,6 +376,30 @@ class TestIncrementalFastPath:
         # write, carrying both index entries forward.
         r2 = populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="itest_", incremental=True)
         assert (r2["stored"], r2["unchanged"]) == (0, 2)
+
+    def test_manifest_is_opt_in_for_cli_callers(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tools_dir.mkdir()
+        (tools_dir / "manifest_tool.xml").write_text(
+            '<tool id="manifest_tool" name="Manifest" version="1.0" profile="21.09"><command>echo</command></tool>'
+        )
+        conf = tmp_path / "tool_conf.xml"
+        conf.write_text(f'<toolbox tool_path="{tools_dir}"><tool file="manifest_tool.xml"/></toolbox>')
+        cfg = _populate_config(tmp_path, conf)
+        sidecar = tmp_path / "ts.sqlite.manifest.json"
+
+        populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="manifest_tool")
+        assert not sidecar.exists()
+
+        populate_store_inline(
+            cfg,
+            target=DEFAULT_STORE_NAME,
+            pattern="manifest_tool",
+            write_manifests=True,
+        )
+        payload = json.loads(sidecar.read_text())
+        assert payload["store"] == DEFAULT_STORE_NAME
+        assert payload["tool_snapshot"]["default_tool_count"] == 1
 
 
 class TestTwinDeterminism:

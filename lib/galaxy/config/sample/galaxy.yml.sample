@@ -619,9 +619,12 @@ galaxy:
   # process composes its named store with the default
   # (``tool_source_database_connection``) store at runtime, with reads
   # tried in declared order and writes always landing on the default.
-  # Each entry takes a SQLAlchemy ``url`` and an optional ``read_only:
-  # true`` flag. For SQLite connection-level read-only, use a SQLite URI
-  # with ``mode=ro&uri=true``.
+  # Each entry takes either a normal SQLAlchemy ``url`` or an
+  # ``external_store_directory`` of versioned publisher bundles. Manifests
+  # are ignored for normal URL stores. Galaxy automatically selects the
+  # newest manifest-compatible bundle from an external directory, which is
+  # always read-only. For an explicit SQLite URL, use ``mode=ro&uri=true``
+  # when connection-level read-only behavior is wanted.
   # For details see
   # https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
   #tool_source_stores: null
@@ -3431,4 +3434,3 @@ galaxy:
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
-

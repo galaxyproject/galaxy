@@ -92,6 +92,10 @@ from galaxy.tools.source_store.interface import (
     StoredToolSource,
     ToolSourceStore,
 )
+from galaxy.tools.source_store.manifest import (
+    build_manifest,
+    write_manifest,
+)
 from galaxy.tools.source_store.search import (
     ToolSearchTuning,
     ToolWhooshIndex,
@@ -246,6 +250,7 @@ class ToolFileWatcher:
         verbose: bool = False,
         notify_callable: Callable[[_ReloadNotificationConfig], bool] | None = None,
         populate_callable: Callable[..., Any] | None = None,
+        write_manifests: bool = False,
     ) -> None:
         self.config = config
         self.store = store
@@ -255,6 +260,7 @@ class ToolFileWatcher:
         # populator + the AMQP notifier.
         self._notify = notify_callable or send_reload_notification
         self._populate: Callable[..., Any] = populate_callable or populate_store_inline
+        self._write_manifests = write_manifests
         observer_class = get_observer_class(
             "watch_tool_sources",
             "polling" if use_polling else "auto",
@@ -332,7 +338,12 @@ class ToolFileWatcher:
             return False
 
         # ``_on_change`` sends the reload notification when this returns True.
-        self._populate(self.config, paths=[path], rebuild_whoosh=True)
+        self._populate(
+            self.config,
+            paths=[path],
+            rebuild_whoosh=True,
+            write_manifests=self._write_manifests,
+        )
         log.info("Updated tool: %s", path)
         return True
 
@@ -350,7 +361,12 @@ class ToolFileWatcher:
         siblings = [str(p) for p in macro_dir.glob("*.xml") if str(p) != macro_path]
         if not siblings:
             return False
-        self._populate(self.config, paths=siblings, rebuild_whoosh=True)
+        self._populate(
+            self.config,
+            paths=siblings,
+            rebuild_whoosh=True,
+            write_manifests=self._write_manifests,
+        )
         log.info("Macro change in %s — re-expanded %d sibling file(s)", macro_path, len(siblings))
         return True
 
@@ -636,6 +652,7 @@ def populate_store(
         incremental=incremental,
         verbose=verbose,
         target=target,
+        write_manifests=True,
     )
 
 
@@ -654,6 +671,7 @@ def populate_store_inline(
     prune: bool = False,
     path_guids: dict[str, str | None] | None = None,
     app=None,
+    write_manifests: bool = False,
 ) -> dict[str, int]:
     """In-process populator entry.
 
@@ -993,7 +1011,19 @@ def populate_store_inline(
                 )
             except Exception as e:
                 log.error("store_index for %s raised: %s", store_name, e)
+                if write_manifests:
+                    raise
                 continue
+            if write_manifests:
+                store_url = getattr(stores[store_name], "url", None)
+                if store_url is None:
+                    log.info("Skipping manifest for non-file store %s", store_name)
+                else:
+                    manifest_path = write_manifest(store_url, build_manifest(store_name, index))
+                    if manifest_path is None:
+                        log.info("Skipping manifest for non-file SQLite store %s", store_name)
+                    else:
+                        log.info("Wrote tool source store manifest for %s to %s", store_name, manifest_path)
             # Rebuild the whoosh search index from the persisted ToolIndex.
             # Single-writer principle: the toolbox stops re-building this in
             # the search hot path.
@@ -1103,6 +1133,7 @@ def watch_mode(
         tools_dirs=tools_dirs,
         use_polling=use_polling,
         verbose=verbose,
+        write_manifests=True,
     )
 
     # Handle shutdown signals

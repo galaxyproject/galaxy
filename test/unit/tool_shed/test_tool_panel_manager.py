@@ -10,7 +10,10 @@ from galaxy.app_unittest_utils.toolbox_support import (
 )
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_util.toolbox.base import resolve_tool_path
-from galaxy.util import parse_xml
+from galaxy.util import (
+    Element as GalaxyElement,
+    parse_xml,
+)
 from tool_shed.tools import tool_version_manager
 from ._util import TestToolShedApp
 
@@ -266,3 +269,25 @@ def test_collect_new_tool_paths_absolute_tool_path(tmp_path):
     )
     assert all(p.startswith(f"{base}/") for p in path_guids)
     assert set(path_guids.values()) == {DEFAULT_GUID, GUID_V2}
+
+
+def test_config_rewrite_preserves_custom_toolbox_attributes(tmp_path):
+    config_path = tmp_path / "shed_tool_conf.xml"
+    config_path.write_text(
+        '<?xml version="1.0"?>\n'
+        '<toolbox tool_path="/old/tools" store="cvmfs_main" monitor="true" publisher="usegalaxy-tools">'
+        '<tool file="old.xml"/>'
+        "</toolbox>"
+    )
+    replacement = GalaxyElement("tool", {"file": "new.xml"})
+
+    tool_panel_manager.ToolPanelManager(None).config_elems_to_xml_file([replacement], str(config_path), "/new/tools")
+
+    root = parse_xml(config_path).getroot()
+    assert root.attrib == {
+        "tool_path": "/new/tools",
+        "store": "cvmfs_main",
+        "monitor": "true",
+        "publisher": "usegalaxy-tools",
+    }
+    assert [child.get("file") for child in root] == ["new.xml"]

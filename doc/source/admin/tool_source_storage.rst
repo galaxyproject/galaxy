@@ -90,9 +90,10 @@ processes can resolve every tool in that conf with local-cached lookups
 instead of one network round-trip per JSON file.
 
 Declare the named stores under the top-level ``tool_source_stores`` key in
-``galaxy.yml``. Each entry takes a SQLAlchemy ``url`` and optional
-``read_only`` flag. SQLite is the typical choice for CVMFS bundles (single
-self-contained file), but any SQLAlchemy-supported database works:
+``galaxy.yml``. Each entry takes either a normal SQLAlchemy ``url`` or a
+published ``external_store_directory``. Manifests are ignored for normal URL
+stores. SQLite is the typical choice for CVMFS bundles (single self-contained
+file), but any SQLAlchemy-supported database works for an explicit URL:
 
 .. code-block:: yaml
 
@@ -133,6 +134,12 @@ Build the SQLite file from a writable host before shipping it:
 
     $ python scripts/tool_source/populate_store.py -c galaxy.yml --target cvmfs_main
 
+For a file-backed SQLite target, the standalone populator also writes a
+sidecar named after the database, for example
+``sources.sqlite.manifest.json``. External-store consumers use it to select a
+compatible bundle. Failure to write the sidecar fails the command. ``--dry-run``
+and in-process Galaxy population do not produce manifests.
+
 Use ``--target`` to restrict population to a single named store; without
 it, ``populate_store.py`` populates **every writable store** referenced
 from a tool_conf in the same run.
@@ -141,6 +148,23 @@ Once the bundle is in place on CVMFS (or any read-only mount), restart
 Galaxy. The ``read_only: true`` flag prevents Galaxy from writing through that
 store. For SQLite connection-level read-only, use ``mode=ro&uri=true`` in the
 SQLite URI as shown above.
+
+Cross-version CVMFS bundles
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use ``external_store_directory`` to let Galaxy select a compatible bundle from
+a published cohort directory:
+
+.. code-block:: yaml
+
+    galaxy:
+      tool_source_stores:
+        cvmfs_main:
+          external_store_directory: /cvmfs/example.org/config/tool_source_store
+
+External stores are read-only. If no compatible bundle is available, Galaxy
+logs a warning and parses the tools normally. Galaxy versions predating
+automatic selection should configure a specific bundle with ``url`` instead.
 
 Populating the Tool Source Store
 --------------------------------
@@ -192,6 +216,10 @@ Command Line Options
       --verbose, -v          Verbose output
       --watch, -w            Watch tool directories and send reload notifications
       --watch-polling        Use polling observer (for NFS/CVMFS/network FS)
+
+Every non-dry-run invocation of the standalone command, including watch mode,
+refreshes the manifest beside each writable file-backed SQLite store it
+updates. Non-SQLite and in-memory stores have no sidecar and are skipped.
 
 Examples
 ^^^^^^^^

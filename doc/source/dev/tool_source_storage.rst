@@ -49,6 +49,52 @@ shed metadata). The index is serialized and gzip-compressed as a blob.
 The schema is auto-created on first open; ``tool_index`` holds a single
 row per index version.
 
+Bundle Compatibility Contract
+-----------------------------
+
+The SQLite layout, stored source serialization, and index payload evolve
+independently. A published bundle therefore carries a JSON sidecar with a
+version for each format, an overall compatibility cohort, the exact index
+schema hash, producer identity, capabilities, and a content-derived tool
+snapshot digest. It is both a publisher/CI contract and the consumer-side
+selection contract for named stores configured with
+``external_store_directory``. Normal URL stores never read a manifest.
+
+Compatibility changes follow these rules:
+
+- Adding optional/defaultable index data is a minor change. Older readers must
+  ignore unknown fields; newer readers must tolerate absence or use an
+  advertised capability to choose a correct fallback.
+- Required fields, removals or renames, type changes, changed projection
+  semantics, SQLite table changes, and incompatible stored-source changes are
+  major changes. Increment the cohort and publish a parallel bundle.
+- Keep the exact schema hash as a diagnostic fingerprint. It is deliberately
+  stricter than the future major/minor contract and protects current readers
+  from silently accepting stale projections.
+
+For every supported cohort, CI should exercise both an older producer with a
+newer consumer and a newer producer with an older consumer. Cover index-backed
+batch APIs, exact-version lookup, XML/YAML materialization, and the clean eager
+fallback for an incompatible read-only index. Before changing any format,
+classify the change, update its version/capability, rebuild with ``--full``,
+and retain the previous immutable cohort until its consumers leave support.
+
+The standalone populator writes ``<database>.manifest.json`` after a
+successful SQLite index commit. The snapshot digest covers stable tool/source
+identity and deliberately excludes build timestamps, so an unchanged
+incremental run has the same snapshot identity. The write uses a temporary
+file and atomic rename; an incomplete sidecar is a population failure.
+
+At application startup, the named-store factory scans sidecars one directory
+below a configured ``external_store_directory``. A candidate is eligible only when its
+manifest version, cohort, stable store alias, database/source/index formats,
+exact index schema hash, and required capabilities match the running Galaxy.
+The newest eligible ``built_at`` wins, with path ordering as a deterministic
+tie-breaker. No-match and malformed-manifest cases produce an unavailable
+read-only member: index/source lookups miss and normal eager parsing remains
+correct. Do not relax this gate without also teaching the relevant readers to
+handle the newly accepted format.
+
 Backend Abstraction
 -------------------
 

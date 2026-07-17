@@ -498,6 +498,15 @@ class CachedToolBox(ToolBox):
         placement recording, return ``False`` and let the parent
         implementation take the conservative path.
         """
+        if isinstance(self._store, CompositeToolSourceStore):
+            unavailable = self._store.unavailable_read_only_member_names
+            if unavailable:
+                log.warning(
+                    "Cached toolbox fast panel initialization disabled because read-only "
+                    "tool source stores have no compatible index: %s",
+                    sorted(unavailable),
+                )
+                return False
         placements = self._index_panel_items()
         if not placements:
             return False

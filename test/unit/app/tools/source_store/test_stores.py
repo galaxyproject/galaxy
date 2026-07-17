@@ -19,6 +19,11 @@ from galaxy.tools.source_store.index import (
     ToolIndexEntry,
 )
 from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
+from galaxy.tools.source_store.manifest import (
+    build_manifest,
+    write_manifest,
+)
+from galaxy.tools.source_store.unavailable import UnavailableToolSourceStore
 
 
 class FakeConfig:
@@ -281,6 +286,74 @@ class TestBuildToolSourceStore:
     def test_named_store_old_backend_path_spec_raises(self, tmp_path):
         with pytest.raises(ConfigurationError):
             build_named_store("old", {"backend": "sqlalchemy", "path": str(tmp_path / "old.sqlite")}, None)  # type: ignore[arg-type]
+
+    def test_normal_url_store_does_not_consult_manifest(self, tmp_path):
+        database_path = tmp_path / "normal.sqlite"
+        SqlAlchemyToolSourceStore(url=_sqlite_url(database_path))
+        (tmp_path / "normal.sqlite.manifest.json").write_text("not valid json")
+
+        store = build_named_store(
+            "normal",
+            {"url": _sqlite_url(database_path), "read_only": True},
+            None,  # type: ignore[arg-type]
+        )
+
+        assert isinstance(store, SqlAlchemyToolSourceStore)
+        assert store.url == _sqlite_url(database_path)
+
+    def test_named_store_resolves_compatible_published_cohort(self, tmp_path):
+        database_path = tmp_path / "cohorts" / "v1" / "sources.sqlite"
+        database_path.parent.mkdir(parents=True)
+        database_path.touch()
+        write_manifest(f"sqlite:///{database_path}", build_manifest("cvmfs_main", ToolIndex()))
+
+        store = build_named_store(
+            "cvmfs_main",
+            {
+                "external_store_directory": str(tmp_path / "cohorts"),
+                "read_only": True,
+            },
+            None,  # type: ignore[arg-type]
+        )
+
+        assert isinstance(store, SqlAlchemyToolSourceStore)
+        assert store.read_only
+        assert str(database_path) in store.url
+        assert "mode=ro" in store.url
+
+    def test_named_store_without_compatible_cohort_uses_eager_fallback(self, tmp_path):
+        external_store_directory = tmp_path / "cohorts"
+        external_store_directory.mkdir()
+
+        store = build_named_store(
+            "cvmfs_main",
+            {"external_store_directory": str(external_store_directory)},
+            None,  # type: ignore[arg-type]
+        )
+
+        assert isinstance(store, UnavailableToolSourceStore)
+        assert store.load_index() is None
+        assert store.get_by_source_path("/cvmfs/tool.xml") is None
+
+    def test_auto_resolved_store_must_be_read_only(self, tmp_path):
+        with pytest.raises(ConfigurationError, match="must be read-only"):
+            build_named_store(
+                "cvmfs_main",
+                {"external_store_directory": str(tmp_path), "read_only": False},
+                None,  # type: ignore[arg-type]
+            )
+
+    def test_url_and_external_directory_are_mutually_exclusive(self, tmp_path):
+        with pytest.raises(ConfigurationError, match="cannot define both"):
+            build_named_store(
+                "cvmfs_main",
+                {
+                    "url": _sqlite_url(tmp_path / "store.sqlite"),
+                    "external_store_directory": str(tmp_path),
+                    "read_only": True,
+                },
+                None,  # type: ignore[arg-type]
+            )
 
 
 class TestPerConfStoreRouting:
