@@ -30,10 +30,7 @@ afterEach(() => {
     Object.keys(translations).forEach((text) => delete translations[text]);
 });
 
-function mountDefault() {
-    const data = {
-        name: "workflow_name",
-    };
+function mountDefault(data = { name: "workflow_name" }) {
     server.use(
         http.untyped.get("/api/workflows/workflow_id/download", ({ request }) => {
             getRequests.push({ url: request.url });
@@ -46,7 +43,8 @@ function mountDefault() {
             embedded: false,
             expanded: false,
         },
-        global: localVue,
+        // ToolLinkPopover fetches tool details we don't mock here
+        global: { ...localVue, stubs: { ...localVue.stubs, ToolLinkPopover: true } },
     });
 }
 
@@ -144,6 +142,30 @@ describe("WorkflowDisplay", () => {
         expect(getRequests.length).toBe(1);
         expect(getRequests[0].url).toContain("/api/workflows/workflow_id/download");
         expect(getRequests[0].url).toContain("style=preview");
+    });
+
+    it("renders numbered step titles from preview steps", async () => {
+        const wrapper = mountDefault({
+            name: "workflow_name",
+            steps: [
+                { order_index: 0, type: "data_input", label: "Input dataset", inputs: [] },
+                {
+                    order_index: 1,
+                    type: "tool",
+                    label: "My cool tool",
+                    tool_id: "cat1",
+                    tool_version: "1.0",
+                    inputs: [],
+                },
+                { order_index: 2, type: "subworkflow", label: "My subworkflow", inputs: [] },
+            ],
+        });
+        await flushPromises();
+        const text = wrapper.text();
+        expect(text).toContain("Step 1: Input dataset");
+        expect(text).toContain("Step 2: My cool tool");
+        expect(text).toContain("Step 3: My subworkflow");
+        expect(text).not.toContain("NaN");
     });
 
     it("error message as object", async () => {
