@@ -2,6 +2,7 @@
 import axios from "axios";
 import { computed, ref, watch } from "vue";
 
+import { getStepTitle } from "@/components/WorkflowInvocationState/util";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
@@ -9,7 +10,6 @@ import WorkflowTree from "./WorkflowTree.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
-import WorkflowStepTitle from "@/components/WorkflowInvocationState/WorkflowStepTitle.vue";
 
 interface WorkflowDisplayProps {
     workflowId: string;
@@ -28,6 +28,12 @@ type ItemContent = {
     name: string;
     steps: Array<any>; // This isn't actually a proper workflow step type, right?  TODO, unify w/ workflowStepStore?
 };
+
+// preview-style steps carry order_index and a server-resolved label rather
+// than the id/tool fields WorkflowStepTitle expects
+function stepTitle(step: any): string {
+    return getStepTitle(step.order_index, step.type, step.label || undefined);
+}
 
 const errorContent = ref();
 const itemContent = ref<ItemContent | null>(null);
@@ -123,7 +129,7 @@ watch(
                             :target="`step-icon-${step.order_index}`"
                             :tool-id="step.tool_id"
                             :tool-version="step.tool_version" />
-                        <WorkflowStepTitle :workflow-step="step" />
+                        <span>{{ stepTitle(step) }}</span>
                         <WorkflowTree :input="step" :skip-head="true" />
                     </div>
                 </div>
