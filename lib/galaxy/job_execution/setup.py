@@ -469,11 +469,14 @@ class JobWorkingDirectory:
         the JWD's own ``<base>/<hash>/<obj_id>/``.
 
         For the custom-path case, the archive is a **sibling** of the JWD
-        (``<parent>/_cleared_contents/<basename>``), not a subdirectory of
+        (``<parent>/_cleared_contents/<job.id>``), not a subdirectory of
         it. This is critical: ``clear_working_directory`` does
         ``shutil.move(jwd, arc_dir)`` — if ``arc_dir`` were inside ``jwd``,
         the move would attempt to relocate a directory into its own subtree
         and fail.
+
+        The archive is keyed by ``job.id`` (not the JWD basename) so that
+        resubmits of the same job don't collide on the archive name.
 
         Note: if the custom path's parent directory is on a different filesystem
         than the JWD, ``shutil.move`` will fall back to copy-then-delete rather
@@ -482,8 +485,8 @@ class JobWorkingDirectory:
         if self._custom_path:
             _validate_custom_path(self._custom_path)
             parent = os.path.dirname(self._custom_path)
-            name = os.path.basename(self._custom_path)
-            path = os.path.join(parent, _CLEARED_CONTENTS_EXTRA_DIR, name)
+            job_id = str(self._job.id)
+            path = os.path.join(parent, _CLEARED_CONTENTS_EXTRA_DIR, job_id)
             os.makedirs(path, exist_ok=True)
             return path
         self._object_store.create(
