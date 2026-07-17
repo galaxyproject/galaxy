@@ -46,6 +46,7 @@ from galaxy.tool_util.parameters import (
     ToolParameterBundle,
 )
 from galaxy.tool_util.parser.interface import (
+    resolve_element_tests,
     TestCollectionDef,
     TestCollectionOutputDef,
     TestSourceTestOutputColllection,
@@ -1493,6 +1494,13 @@ def verify_hid(
 def verify_collection(output_collection_def, data_collection, verify_dataset):
     name = output_collection_def.name
 
+    if "elements" not in data_collection:
+        message = (
+            f"Output collection '{name}': expected a collection, but the output was a single dataset — "
+            "use 'asserts' instead of 'element_tests'."
+        )
+        raise AssertionError(message)
+
     expected_collection_type = output_collection_def.collection_type
     if expected_collection_type:
         collection_type = data_collection["collection_type"]
@@ -1540,7 +1548,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             else:
                 elements = element["object"]["elements"]
                 element_count = len(elements)
-                verify_elements(elements, element_attrib.get("elements", {}))
+                verify_elements(elements, resolve_element_tests(element_attrib))
             expected_count = element_attrib.get("count")
             if expected_count is not None and expected_count != element_count:
                 raise AssertionError(
