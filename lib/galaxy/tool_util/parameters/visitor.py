@@ -1,4 +1,5 @@
 from collections.abc import (
+    Callable,
     Collection,
     Iterable,
 )
@@ -232,6 +233,26 @@ def select_which_when_native(conditional: ConditionalParameterModel, conditional
     return None
 
 
+def active_branch_params(
+    conditional: ConditionalParameterModel,
+    conditional_state: dict,
+    select: Callable[[ConditionalParameterModel, dict], ConditionalWhen | None] = select_which_when_native,
+) -> list[ToolParameterT]:
+    """Return the tool inputs active for a conditional given its current state.
+
+    Always includes the test parameter; appends the matched branch's parameters
+    when a branch is active, and returns just the test parameter when no branch
+    matches. *select* overrides the branch-matching strategy (e.g. the
+    error-suppressing format2 selector) — it must share
+    ``select_which_when_native``'s "None means no active branch" contract.
+    """
+    when = select(conditional, conditional_state)
+    params: list[ToolParameterT] = [conditional.test_parameter]
+    if when is not None:
+        params += list(when.parameters)
+    return params
+
+
 def strip_undeclared_keys(
     state: dict[str, Any],
     tool_inputs: list[ToolParameterT],
@@ -272,12 +293,7 @@ def strip_undeclared_keys(
                 continue
             cond_state = value
 
-            test_param = conditional.test_parameter
-            target_when = select_which_when_native(conditional, cond_state)
-            if target_when is None:
-                branch_inputs: list[ToolParameterT] = [test_param]
-            else:
-                branch_inputs = [test_param] + list(target_when.parameters)
+            branch_inputs = active_branch_params(conditional, cond_state)
             strip_undeclared_keys(
                 cond_state, branch_inputs, removed_keys, prefix=child_prefix, preserve_keys=preserve_keys
             )

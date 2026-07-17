@@ -18,6 +18,7 @@ from typing import (
 )
 
 from galaxy.tool_util.parameters import (
+    active_branch_params,
     ConditionalParameterModel,
     ConditionalWhen,
     flat_state_path,
@@ -120,11 +121,7 @@ def walk_native_state(
                     raise Exception(f"Invalid conditional state found {value!r} for conditional {parameter_name}")
                 continue
             conditional_state = value
-            target_when = select_which_when_native(conditional, conditional_state)
-            if target_when is None:
-                all_params: list[ToolParameterT] = [conditional.test_parameter]
-            else:
-                all_params = [conditional.test_parameter] + list(target_when.parameters)
+            all_params = active_branch_params(conditional, conditional_state)
             nested = walk_native_state(
                 input_connections,
                 all_params,
