@@ -24,6 +24,7 @@ from typing import (
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
     RepeatParameterModel,
+    select_which_when_native,
     ToolParameterT,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
@@ -31,10 +32,7 @@ from ._types import (
     NativeStepDict,
     ToolInputs,
 )
-from ._walker import (
-    _NATIVE_BOOKKEEPING_KEYS,
-    _select_which_when_native,
-)
+from ._walker import _NATIVE_BOOKKEEPING_KEYS
 
 
 class StaleKeyCategory(Enum):
@@ -167,7 +165,7 @@ def _classify_conditional(
     cond_state = value
 
     test_param = conditional.test_parameter
-    active_when = _select_which_when_native(conditional, cond_state)
+    active_when = select_which_when_native(conditional, cond_state)
     if active_when is None:
         return
 
@@ -330,13 +328,6 @@ class StaleKeyPolicy:
         """Export defaults: allow everything."""
         defaults: set[StaleKeyCategory] = set()
         return cls._build(defaults, allow_args=allow, deny_args=deny)
-
-    @classmethod
-    def for_clean(cls, preserve: list[str], strip: list[str]) -> "StaleKeyPolicy":
-        """Clean defaults: strip all categories including bookkeeping."""
-        defaults = set(ALL_CATEGORIES)
-        # For clean, "strip" = deny, "preserve" = allow
-        return cls._build(defaults, allow_args=preserve, deny_args=strip)
 
     @classmethod
     def _build(
