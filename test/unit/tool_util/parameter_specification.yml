@@ -4291,3 +4291,32 @@ cwl_directory:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+
+gx_section_underscore_name:
+  request_valid:
+  - { __section_opts__: { param: "hello" } }
+  - {}
+  request_invalid:
+  - { __section_opts__: { param: "hello", not_a_param: "x" } }
+  workflow_step_valid:
+  - { __section_opts__: { param: "hello" } }
+  - {}
+  workflow_step_linked_valid:
+  - { __section_opts__: { param: "hello" } }
+  - { __section_opts__: { param: {__class__: ConnectedValue} } }
+  - {}
+
+gx_conditional_underscore_name:
+  request_valid:
+  - { __cond_opts__: { __selector__: "a", param_a: "test" } }
+  - { __cond_opts__: { __selector__: "b", param_b: "test" } }
+  - {}
+  request_invalid:
+  - { __cond_opts__: { __selector__: "not_a_or_b" } }
+  workflow_step_valid:
+  - { __cond_opts__: { __selector__: "a", param_a: "test" } }
+  - {}
+  workflow_step_linked_valid:
+  - { __cond_opts__: { __selector__: "a", param_a: "test" } }
+  - { __cond_opts__: { __selector__: "a", param_a: {__class__: ConnectedValue} } }
+  - {}
