@@ -113,10 +113,9 @@ def _handle_resubmit_definitions(
         # Persist the new destination before clearing the working directory.
         # set_job_destination() assigns job.destination_params = new_destination.params
         # and flushes, so when clear_working_directory() → _setup_working_directory()
-        # → _set_working_directory() calls get_destination_configuration(), the model's
-        # get_destination_configuration (model/__init__.py) reads job.destination_params
-        # first — which now holds the *new* params, not the stale values from the prior
-        # attempt. This is what makes a resubmitted job resolve its new JWD correctly.
+        # → _set_working_directory() reads self.job_destination.params, which now
+        # holds the *new* params, not the stale values from the prior attempt.
+        # This is what makes a resubmitted job resolve its new JWD correctly.
         job_state.job_wrapper.set_job_destination(new_destination)
         # Reset job state. clear_working_directory() flushes the session after
         # _setup_working_directory() → _set_working_directory() mutates the

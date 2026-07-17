@@ -1875,7 +1875,7 @@ class MinimalJobWrapper(HasResourceParameters):
         ``clear_working_directory``) must flush/commit themselves. The enqueue
         path is covered by the ``commit()`` in ``enqueue()``.
         """
-        working_directory = self.get_destination_configuration("job_working_directory", None)
+        working_directory = self.job_destination.params.get("job_working_directory", None)
         if isinstance(working_directory, str):
             validate_working_directory_path(working_directory)
             job.working_directory = working_directory
