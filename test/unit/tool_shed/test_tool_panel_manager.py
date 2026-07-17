@@ -281,10 +281,12 @@ def test_config_rewrite_preserves_custom_toolbox_attributes(tmp_path):
     )
     replacement = GalaxyElement("tool", {"file": "new.xml"})
 
-    tool_panel_manager.ToolPanelManager(None).config_elems_to_xml_file([replacement], str(config_path), "/new/tools")
+    manager = tool_panel_manager.ToolPanelManager.__new__(tool_panel_manager.ToolPanelManager)
+    manager.config_elems_to_xml_file([replacement], str(config_path), "/new/tools")
 
     root = parse_xml(config_path).getroot()
-    assert root.attrib == {
+    attributes = {key: value for key, value in root.attrib.items() if isinstance(key, str) and isinstance(value, str)}
+    assert attributes == {
         "tool_path": "/new/tools",
         "store": "cvmfs_main",
         "monitor": "true",

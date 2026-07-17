@@ -16,7 +16,6 @@ from pydantic import BaseModel
 from sqlalchemy.engine import make_url
 
 from galaxy.version import VERSION
-
 from .index import (
     INDEX_SCHEMA_HASH,
     INDEX_SCHEMA_REVISION,

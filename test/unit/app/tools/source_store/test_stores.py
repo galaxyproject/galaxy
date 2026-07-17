@@ -18,11 +18,11 @@ from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
-from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 from galaxy.tools.source_store.manifest import (
     build_manifest,
     write_manifest,
 )
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 from galaxy.tools.source_store.unavailable import UnavailableToolSourceStore
 
 

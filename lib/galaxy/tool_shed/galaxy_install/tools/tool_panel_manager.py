@@ -228,7 +228,9 @@ class ToolPanelManager:
             if os.path.exists(config_filename):
                 existing_tree, _error_message = parse_xml(config_filename)
                 if existing_tree is not None:
-                    root_attributes.update(existing_tree.getroot().attrib)
+                    for key, value in existing_tree.getroot().attrib.items():
+                        if isinstance(key, str) and isinstance(value, str):
+                            root_attributes[key] = value
             # The resolved tool path passed by the manager remains
             # authoritative even if the old root contained another value.
             root_attributes["tool_path"] = tool_path

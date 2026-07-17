@@ -5,8 +5,8 @@ import tempfile
 
 import pytest
 
-from galaxy.tools.source_store import StoredToolSource
 from galaxy.tools.cached_toolbox import CachedToolBox
+from galaxy.tools.source_store import StoredToolSource
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.index import (
     ToolIndex,

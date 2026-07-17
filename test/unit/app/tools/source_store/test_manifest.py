@@ -88,6 +88,7 @@ def test_write_manifest_uses_database_name_sidecar(tmp_path, monkeypatch):
 
     path = write_manifest(url, build_manifest("cvmfs_main", _index()))
 
+    assert path is not None
     assert path == manifest_path_for_url(url)
     assert path == tmp_path / "sources.sqlite.manifest.json"
     payload = json.loads(path.read_text())
@@ -105,7 +106,7 @@ def test_atomic_replace_failure_preserves_prior_manifest(tmp_path, monkeypatch):
     def fail_replace(source, destination):
         raise OSError("replace failed")
 
-    monkeypatch.setattr(manifest_module.os, "replace", fail_replace)
+    monkeypatch.setattr("galaxy.tools.source_store.manifest.os.replace", fail_replace)
     with pytest.raises(OSError, match="replace failed"):
         write_manifest(f"sqlite:///{database_path}", build_manifest("cvmfs_main", _index()))
 
