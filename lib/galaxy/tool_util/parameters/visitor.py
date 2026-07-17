@@ -226,6 +226,7 @@ def select_which_when_native(conditional: ConditionalParameterModel, conditional
         elif test_value is not None and _test_value_matches_discriminator(test_value, when.discriminator):
             return when
 
+    # No branch matched — try default when as fallback
     for when in conditional.whens:
         if when.is_default_when:
             return when
