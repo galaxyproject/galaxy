@@ -165,7 +165,10 @@ class SetMetadataToolAction(ToolAction):
         # Out-of-band metadata job: no destination params, so working_directory is None.
         # JobWorkingDirectory falls back to the object-store path (config.jobs_directory),
         # which is the correct location for metadata jobs that run in the web thread.
-        job_working_dir = JobWorkingDirectory(job, app.object_store).create()
+        # Use extra_dir=str(job.id) to match the legacy path that this site historically used;
+        # this produces a different JWD than the obj_dir=True path used by regular jobs,
+        # but changing it would break existing metadata job file lookups.
+        job_working_dir = JobWorkingDirectory(job, app.object_store).create(extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, "registry.xml")
         app.datatypes_registry.to_xml_file(path=datatypes_config)
         external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id, tool_id=tool.id)
