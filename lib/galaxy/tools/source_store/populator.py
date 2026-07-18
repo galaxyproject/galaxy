@@ -929,6 +929,8 @@ def populate_store_inline(
                     ):
                         updates["panel_section_id"] = discovered.section_id
                         updates["panel_section_name"] = discovered.section_name
+                    if old_entry.in_panel != discovered.in_panel:
+                        updates["in_panel"] = discovered.in_panel
                     if discovered.guid is not None and (
                         old_entry.tool_shed,
                         old_entry.repository_name,

@@ -377,6 +377,59 @@ class TestIncrementalFastPath:
         r2 = populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="itest_", incremental=True)
         assert (r2["stored"], r2["unchanged"]) == (0, 2)
 
+    def test_adhoc_shed_tool_becomes_panel_tool_when_conf_catches_up(self, tmp_path):
+        tools_dir = tmp_path / "shed_tools"
+        tools_dir.mkdir()
+        tool_path = tools_dir / "fastp.xml"
+        tool_path.write_text("""<tool id="fastp" name="fastp" version="0.20.1+galaxy0" profile="21.09">
+<command>echo</command>
+</tool>""")
+        conf = tmp_path / "shed_tool_conf.xml"
+        conf.write_text(f'<toolbox tool_path="{tools_dir}"/>')
+        cfg = _populate_config(tmp_path, conf)
+        guid = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.20.1+galaxy0"
+
+        populate_store_inline(
+            cfg,
+            target=DEFAULT_STORE_NAME,
+            paths=[str(tool_path)],
+            path_guids={str(tool_path): guid},
+            incremental=True,
+            rebuild_whoosh=False,
+        )
+        store = build_tool_source_store(cfg)
+        index = store.load_index()
+        assert index is not None
+        entry = index.entries[guid]
+        assert entry.in_panel is False
+
+        conf.write_text(
+            f'<toolbox tool_path="{tools_dir}">'
+            '<section id="test_section_multi" name="Test Section with Multiple Versions">'
+            f'<tool file="{tool_path.name}" guid="{guid}">'
+            "<tool_shed>toolshed.g2.bx.psu.edu</tool_shed>"
+            "<repository_name>fastp</repository_name>"
+            "<repository_owner>iuc</repository_owner>"
+            "<installed_changeset_revision>dbf9c561ef29</installed_changeset_revision>"
+            "</tool></section></toolbox>"
+        )
+
+        result = populate_store_inline(
+            cfg,
+            target=DEFAULT_STORE_NAME,
+            pattern="fastp.xml",
+            incremental=True,
+            rebuild_whoosh=False,
+        )
+        assert result["unchanged"] == 1
+        store.invalidate_index_cache()
+        index = store.load_index()
+        assert index is not None
+        entry = index.entries[guid]
+        assert entry.in_panel is True
+        assert entry.panel_section_id == "test_section_multi"
+        assert [(item.tool_id, item.section_id) for item in index.panel_items] == [(guid, "test_section_multi")]
+
     def test_manifest_is_opt_in_for_cli_callers(self, tmp_path):
         tools_dir = tmp_path / "tools"
         tools_dir.mkdir()
