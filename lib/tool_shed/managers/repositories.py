@@ -224,7 +224,10 @@ def check_updates(app: ToolShedApp, request: UpdatesRequest) -> str | dict[str, 
 
 def guid_to_repository(app: ToolShedApp, tool_id: str) -> Repository:
     # tool_id = remove_protocol_and_user_from_clone_url(tool_id)
-    shed, _, owner, name, rest = tool_id.split("/", 5)
+    parts = tool_id.split("/", 5)
+    if len(parts) < 5:
+        raise RequestParameterInvalidException(f"Malformed tool id '{tool_id}'")
+    _shed, _, owner, name = parts[:4]
     return _get_repository_by_name_and_owner(app.model.context, name, owner)
 
 
