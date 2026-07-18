@@ -1,5 +1,21 @@
+from datetime import (
+    datetime,
+    timedelta,
+)
+from unittest.mock import MagicMock
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
+from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
-from galaxy.celery.tasks import clean_object_store_caches
+from galaxy.celery.tasks import (
+    _cleanup_jwds,
+    clean_object_store_caches,
+)
+from galaxy.exceptions import ObjectNotFound
+from galaxy.model.unittest_utils.model_testing_utils import initialize_model
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import CacheTarget
 
@@ -34,3 +50,165 @@ def test_clean_object_store_caches(tmp_path):
     clean_object_store_caches()
 
     assert not path.exists()
+
+
+@pytest.fixture
+def sa_session():
+    engine = create_engine("sqlite:///:memory:")
+    initialize_model(model.mapper_registry, engine)
+    with Session(engine) as session:
+        yield session
+
+
+def _make_job(state: str, age_days: int) -> model.Job:
+    job = model.Job()
+    job.state = state
+    job.update_time = datetime.now() - timedelta(days=age_days)
+    job.object_store_id = "mock_store"
+    return job
+
+
+class TestCleanupJwds:
+    """Tests for _cleanup_jwds using a real in-memory database with actual Job model instances."""
+
+    def test_no_failed_jobs_returns_zero(self, sa_session):
+        object_store = MagicMock()
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+        assert result == 0
+        object_store.get_filename.assert_not_called()
+
+    def test_deletes_jwd_for_old_failed_jobs(self, sa_session, tmp_path):
+        job = _make_job(state="error", age_days=10)
+        sa_session.add(job)
+        sa_session.commit()
+
+        jwd_path = tmp_path / "job_work" / str(job.id)
+        jwd_path.mkdir(parents=True)
+        (jwd_path / "some_file.txt").write_text("job output")
+
+        object_store = MagicMock()
+        object_store.get_filename.return_value = str(jwd_path)
+
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 1
+        object_store.get_filename.assert_called_once()
+        assert isinstance(object_store.get_filename.call_args[0][0], model.Job)
+        assert not jwd_path.exists()
+
+    def test_deletes_multiple_old_failed_jobs(self, sa_session, tmp_path):
+        jobs = [_make_job(state="error", age_days=10) for _ in range(3)]
+        sa_session.add_all(jobs)
+        sa_session.commit()
+
+        jwd_paths = []
+        for job in jobs:
+            jwd_path = tmp_path / "job_work" / str(job.id)
+            jwd_path.mkdir(parents=True)
+            jwd_paths.append(jwd_path)
+
+        object_store = MagicMock()
+        object_store.get_filename.side_effect = [str(p) for p in jwd_paths]
+
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 3
+        assert object_store.get_filename.call_count == 3
+        assert all(not p.exists() for p in jwd_paths)
+
+    def test_skips_jobs_not_old_enough(self, sa_session, tmp_path):
+        job = _make_job(state="error", age_days=1)
+        sa_session.add(job)
+        sa_session.commit()
+
+        jwd_path = tmp_path / "job_work" / str(job.id)
+        jwd_path.mkdir(parents=True)
+
+        object_store = MagicMock()
+        object_store.get_filename.return_value = str(jwd_path)
+
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 0
+        object_store.get_filename.assert_not_called()
+        assert jwd_path.exists()
+
+    def test_skips_non_failed_jobs(self, sa_session, tmp_path):
+        job = _make_job(state="ok", age_days=30)
+        sa_session.add(job)
+        sa_session.commit()
+
+        jwd_path = tmp_path / "job_work" / str(job.id)
+        jwd_path.mkdir(parents=True)
+
+        object_store = MagicMock()
+        object_store.get_filename.return_value = str(jwd_path)
+
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 0
+        object_store.get_filename.assert_not_called()
+        assert jwd_path.exists()
+
+    def test_deletes_jwd_for_jobs_without_object_store_id(self, sa_session, tmp_path):
+        """Jobs using the default object store have object_store_id=None but should still be cleaned up."""
+        job = _make_job(state="error", age_days=10)
+        job.object_store_id = None
+        sa_session.add(job)
+        sa_session.commit()
+
+        jwd_path = tmp_path / "job_work" / str(job.id)
+        jwd_path.mkdir(parents=True)
+
+        object_store = MagicMock()
+        object_store.get_filename.return_value = str(jwd_path)
+
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 1
+        object_store.get_filename.assert_called_once()
+        assert not jwd_path.exists()
+
+    def test_only_deletes_matching_jobs_when_mixed(self, sa_session, tmp_path):
+        """With both matching and non-matching jobs in the DB, only matching ones are deleted.
+
+        This catches the 'Query is always truthy' bug: without .all(), the `if not failed_jobs`
+        check never triggers, and iterating a Query that should be empty may yield wrong rows.
+        """
+        # Matching: old + failed + has object_store_id
+        old_failed = _make_job(state="error", age_days=10)
+        # Matching: old + failed but no object_store_id (default object store)
+        no_store = _make_job(state="error", age_days=10)
+        no_store.object_store_id = None
+        # Non-matching: old + ok
+        old_ok = _make_job(state="ok", age_days=10)
+        # Non-matching: recent + failed
+        recent_failed = _make_job(state="error", age_days=1)
+        sa_session.add_all([old_failed, no_store, old_ok, recent_failed])
+        sa_session.commit()
+
+        jwd_matching = tmp_path / "job_work" / str(old_failed.id)
+        jwd_matching.mkdir(parents=True)
+        jwd_no_store = tmp_path / "job_work" / str(no_store.id)
+        jwd_no_store.mkdir(parents=True)
+
+        object_store = MagicMock()
+        object_store.get_filename.side_effect = [str(jwd_matching), str(jwd_no_store)]
+
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 2
+        assert object_store.get_filename.call_count == 2
+        assert not jwd_matching.exists()
+        assert not jwd_no_store.exists()
+
+    def test_handles_already_deleted_jwd(self, sa_session):
+        job = _make_job(state="error", age_days=10)
+        sa_session.add(job)
+        sa_session.commit()
+
+        object_store = MagicMock()
+        object_store.get_filename.side_effect = ObjectNotFound("JWD not found")
+
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+        assert result == 0
