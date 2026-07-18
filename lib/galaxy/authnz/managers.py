@@ -188,6 +188,7 @@ class AuthnzManager:
             "client_secret": config_xml.find("client_secret").text,
             "redirect_uri": config_xml.find("redirect_uri").text,
             "enable_idp_logout": asbool(config_xml.findtext("enable_idp_logout", "false")),
+            "require_user_activation": asbool(config_xml.findtext("require_user_activation", "false")),
         }
         if config_xml.find("label") is not None:
             rtv["label"] = config_xml.find("label").text

@@ -8,6 +8,10 @@ from datetime import (
     timedelta,
 )
 from types import SimpleNamespace
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 from unittest.mock import (
     MagicMock,
     patch,
@@ -40,13 +44,19 @@ from galaxy import model
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.authnz.oidc_utils import decode_access_token as decode_access_token_oidc
 from galaxy.authnz.psa_authnz import (
+    apply_user_activation_policy,
     AUTH_PIPELINE,
     BACKENDS,
+    create_and_activate_oidc_user,
+    create_user_and_activate,
     decode_access_token,
     PSAAuthnz,
     Strategy,
     sync_user_profile,
 )
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesAppContext
 
 
 @pytest.fixture(scope="module")
@@ -480,6 +490,85 @@ class TestPSAAuthnzRefresh:
             result = psa_authnz.refresh(make_mock_trans(), token)
         assert result is True
         token.refresh_token.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "global_activation, require_user_activation, expected_active, expected_emails",
+    [
+        (True, False, True, 0),
+        (True, True, False, 1),
+        (False, False, True, 0),
+        (False, True, True, 0),
+    ],
+)
+def test_apply_user_activation_policy(global_activation, require_user_activation, expected_active, expected_emails):
+    user = SimpleNamespace(email="new@example.com", username="newuser", active=False)
+    session = MagicMock()
+    user_manager = MagicMock()
+    trans = SimpleNamespace(
+        app=SimpleNamespace(config=SimpleNamespace(user_activation_on=global_activation), user_manager=user_manager),
+        sa_session=session,
+    )
+
+    apply_user_activation_policy(cast("ProvidesAppContext", trans), cast(model.User, user), require_user_activation)
+
+    assert user.active is expected_active
+    session.add.assert_called_once_with(user)
+    session.commit.assert_called_once()
+    assert user_manager.send_activation_email.call_count == expected_emails
+
+
+def test_create_user_and_activate_only_applies_activation_policy_to_new_users(monkeypatch):
+    new_user = SimpleNamespace(email="new@example.com", username="newuser", active=False)
+    social_create = MagicMock(return_value={"is_new": True, "user": new_user})
+    monkeypatch.setattr("galaxy.authnz.psa_authnz.social_create_user", social_create)
+    session = MagicMock()
+    user_manager = MagicMock()
+    trans = SimpleNamespace(
+        app=SimpleNamespace(config=SimpleNamespace(user_activation_on=True), user_manager=user_manager),
+        sa_session=session,
+    )
+    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "REQUIRE_USER_ACTIVATION": False})
+
+    result = create_user_and_activate(strategy=strategy, details={}, backend=MagicMock())
+
+    assert result == {"is_new": True, "user": new_user}
+    assert new_user.active is True
+    user_manager.send_activation_email.assert_not_called()
+
+    existing_user = SimpleNamespace(email="existing@example.com", username="existing", active=False)
+    social_create.return_value = {"is_new": False}
+    result = create_user_and_activate(strategy=strategy, details={}, backend=MagicMock(), user=existing_user)
+
+    assert result == {"is_new": False}
+    assert existing_user.active is False
+    assert session.add.call_count == 1
+    assert session.commit.call_count == 1
+    user_manager.send_activation_email.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "require_user_activation, expected_trusted, expected_send",
+    [(True, False, True), (False, True, False)],
+)
+def test_create_and_activate_oidc_user_delegates_to_user_manager(
+    require_user_activation, expected_trusted, expected_send
+):
+    user_manager = MagicMock()
+    trans = SimpleNamespace(app=SimpleNamespace(user_manager=user_manager), sa_session=MagicMock())
+
+    user = create_and_activate_oidc_user(
+        cast("ProvidesAppContext", trans), "new@example.com", "newuser", require_user_activation
+    )
+
+    assert user is user_manager.create.return_value
+    user_manager.create.assert_called_once_with(
+        email="new@example.com",
+        username="newuser",
+        trans=trans,
+        trusted_email=expected_trusted,
+        send_activation_email=expected_send,
+    )
 
 
 def test_sync_user_profile_skips_when_account_interface_enabled():
