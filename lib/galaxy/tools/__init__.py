@@ -2021,7 +2021,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         try:
             return rst_to_html(help_content.content)
         except Exception:
-            log.info("Exception while parsing help for tool with id '%s'", self.id)
+            log.warning("Exception while parsing help for tool with id '%s'", self.id, exc_info=True)
             return ""
 
     def render_help(self, static_path: str, host_url: str) -> str:
