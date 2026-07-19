@@ -682,9 +682,9 @@ def verify_job_metadata(
         if str(expect_exit_code) != str(actual):
             raise AssertionError(f"Expected exit code {expect_exit_code}, got {actual}")
     if command_assertions:
-        verify_assertions(job_stdio.get("command_line", "").encode("utf-8"), command_assertions)
+        verify_assertions((job_stdio.get("command_line") or "").encode("utf-8"), command_assertions)
     if command_version_assertions:
-        verify_assertions(job_stdio.get("command_version", "").encode("utf-8"), command_version_assertions)
+        verify_assertions((job_stdio.get("command_version") or "").encode("utf-8"), command_version_assertions)
     if stdout_assertions or stderr_assertions:
         stdout_prefix = ""
         stderr_prefix = ""
