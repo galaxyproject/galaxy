@@ -20647,7 +20647,7 @@ export interface components {
             /** Version */
             version: string | null;
             /** Xrefs */
-            xrefs: components["schemas"]["XrefDict-Output"][];
+            xrefs: components["schemas"]["XrefDict"][];
         };
         /** ParsedWorkbook */
         ParsedWorkbook: {
@@ -26412,7 +26412,7 @@ export interface components {
              */
             version: string;
             /** xrefs */
-            xrefs?: components["schemas"]["XrefDict-Input"][] | null;
+            xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /**
          * UserToolSource
@@ -26519,7 +26519,7 @@ export interface components {
              */
             version: string;
             /** xrefs */
-            xrefs?: components["schemas"]["XrefDict-Output"][] | null;
+            xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /** UserUpdatePayload */
         UserUpdatePayload: {
@@ -27695,17 +27695,10 @@ export interface components {
             target_uri: string;
         };
         /** XrefDict */
-        "XrefDict-Input": {
+        XrefDict: {
             /** type */
             type: string;
             /** value */
-            value: string;
-        };
-        /** XrefDict */
-        "XrefDict-Output": {
-            /** Type */
-            type: string;
-            /** Value */
             value: string;
         };
         /** XrefItem */
@@ -28330,7 +28323,7 @@ export interface components {
              */
             version?: string | null;
             /** xrefs */
-            xrefs?: components["schemas"]["XrefDict-Input"][] | null;
+            xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /**
          * YamlToolTest
