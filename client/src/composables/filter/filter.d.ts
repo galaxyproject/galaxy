@@ -12,4 +12,4 @@ export declare function useFilterObjectArray<O extends object, K extends keyof O
     array: MaybeRefOrGetter<Array<O>>,
     filter: MaybeRefOrGetter<string>,
     objectFields: MaybeRefOrGetter<Array<K | string[]>>,
-): Ref<O[]>;
+): { filtered: Ref<O[]>; pending: Ref<boolean> };
