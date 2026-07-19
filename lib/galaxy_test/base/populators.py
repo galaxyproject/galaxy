@@ -2934,6 +2934,7 @@ class BaseWorkflowPopulator(BasePopulator):
         copy_inputs_to_history: bool = False,
         job_dir: str | None = None,
         test_data_format: Literal["cwl_style"] | None = None,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
     ):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows.
 
@@ -3050,6 +3051,7 @@ class BaseWorkflowPopulator(BasePopulator):
             assert_ok=assert_ok,
             invocations=invocations,
             expected_response=expected_response,
+            timeout=timeout,
         )
 
     def rerun(
@@ -3089,6 +3091,7 @@ class BaseWorkflowPopulator(BasePopulator):
         assert_ok: bool,
         invocations: int,
         expected_response: int,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
     ):
         workflow_populator = self
         assert invocations > 0
@@ -3107,10 +3110,10 @@ class BaseWorkflowPopulator(BasePopulator):
                 # complete.
                 if wait:
                     if assert_ok:
-                        workflow_populator.wait_for_invocation_and_completion(invocation_id)
+                        workflow_populator.wait_for_invocation_and_completion(invocation_id, timeout=timeout)
                     else:
                         workflow_populator.wait_for_workflow(
-                            workflow_id, invocation_id, history_id, assert_ok=assert_ok
+                            workflow_id, invocation_id, history_id, assert_ok=assert_ok, timeout=timeout
                         )
                 jobs.extend(self.dataset_populator.invocation_jobs(invocation_id))
 

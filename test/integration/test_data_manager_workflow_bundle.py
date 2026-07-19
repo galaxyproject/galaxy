@@ -102,4 +102,8 @@ test_data:
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,
+                # Both data manager jobs resolve their biocontainers image via live
+                # quay.io queries, which alone take 15-75s each on a cold CI runner —
+                # the 60s default invocation timeout is sized for lightweight tools.
+                timeout=180,
             )
