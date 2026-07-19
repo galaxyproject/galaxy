@@ -29,6 +29,7 @@ from galaxy.tool_util.deps.conda_util import (
     CondaTarget,
 )
 from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
+from galaxy.tool_util.deps.mulled.mulled_cache import quay_repositories
 from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
@@ -133,22 +134,14 @@ def quay_repository(namespace: str, pkg_name: str, session: Session | None = Non
 
 def _get_namespace(namespace: str) -> list[str]:
     log.debug(f"Querying {QUAY_REPOSITORY_API_ENDPOINT} for repos within {namespace}")
-    next_page = None
-    repo_names = []
     repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
-    while True:
-        repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
-        repos_response = requests.get(
-            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT
-        )
+
+    def fetch_json(endpoint: str, parameters: dict[str, str]) -> dict[str, Any]:
+        repos_response = requests.get(endpoint, headers=repos_headers, params=parameters, timeout=MULLED_SOCKET_TIMEOUT)
         repos_response.raise_for_status()
-        repos_response_json = repos_response.json()
-        repos = repos_response_json["repositories"]
-        repo_names += [r["name"] for r in repos]
-        next_page = repos_response_json.get("next_page")
-        if not next_page:
-            break
-    return repo_names
+        return repos_response.json()
+
+    return quay_repositories(namespace, fetch_json=fetch_json)
 
 
 def _namespace_has_repo_name(namespace: str, repo_name: str, resolution_cache: "ResolutionCache") -> bool:
@@ -215,7 +208,12 @@ def mulled_tags_for(
 
     if not tags_cached:
         tags = quay_versions(namespace, image, session)
-        tag_cache[namespace][image] = tags
+        tag_cache.setdefault(namespace, {})[image] = tags
+        if resolution_cache is not None:
+            # File-backed Beaker caches do not persist mutations made to a
+            # previously retrieved value. Reassign it so subsequent resolver
+            # requests (and Galaxy test applications) can reuse the response.
+            resolution_cache[cache_key] = tag_cache
 
     if tag_prefix is not None:
         tags = [t for t in tags if t.startswith(tag_prefix)]
