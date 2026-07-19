@@ -108,8 +108,8 @@ plyr:
 rerunio:
     package: "@galaxyproject/rerunio"
     version: 0.0.0
-rmsx-flipbook:
-    package: "@finn2400/rmsx-flipbook"
+rmsxflipbook:
+    package: "@galaxyproject/rmsxflipbook"
     version: 0.0.1
 tabulator:
     package: "@galaxyproject/tabulator"
