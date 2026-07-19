@@ -20,6 +20,7 @@
             :class="headerClass"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <b-button-group class="float-right">
@@ -104,6 +105,7 @@
             class="node-error m-0 rounded-0 rounded-bottom"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected">
             {{ errors }}
         </b-alert>
@@ -114,6 +116,7 @@
             :class="{ 'cursor-pointer': isInvocation || isPopulatedInput }"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <NodeInput
@@ -352,10 +355,8 @@ function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTermina
 
 const mouseMovementThreshold = 9;
 const singleClickTimeout = 800;
-const doubleClickTimeout = 500;
 
 let mouseDownTime = 0;
-let doubleClickTime = 0;
 
 let movementDistance = 0;
 let lastPosition: XYPosition | null = null;
@@ -381,15 +382,19 @@ function onPointerUp(e: PointerEvent) {
         makeActive();
     }
 
-    const timeBetweenClicks = mouseUpTime - doubleClickTime;
-
-    if (timeBetweenClicks < doubleClickTimeout) {
-        inspectorStore.setMaximized(props.step, true);
-    }
-
-    doubleClickTime = Date.now();
     lastPosition = null;
     movementDistance = 0;
+}
+
+function onDoubleClick(e: MouseEvent) {
+    const path = composedPartialPath(e);
+    const unclickable = path.every((target) => !isClickable(target as Element));
+
+    if (!unclickable) {
+        return;
+    }
+
+    inspectorStore.setMaximized(props.step, true);
 }
 
 function onMoveTo(position: XYPosition) {
