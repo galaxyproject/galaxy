@@ -78,12 +78,12 @@ class DatasetInstanceMaterializer:
     def __init__(
         self,
         attached: bool,
+        datatypes_registry: Registry,
         object_store_populator: ObjectStorePopulator | None = None,
         transient_path_mapper: TransientPathMapper | None = None,
         file_sources: ConfiguredFileSources | None = None,
         sa_session: Session | None = None,
         user_context: OptionalUserContext = None,
-        datatypes_registry: Registry | None = None,
     ):
         """Constructor for DatasetInstanceMaterializer.
 
@@ -96,7 +96,7 @@ class DatasetInstanceMaterializer:
         materializing from ``gxfiles://`` URIs.
 
         ``datatypes_registry`` enables content sniffing for deferred datasets whose
-        extension is ``"auto"``. Optional; no-op when unset.
+        extension is ``"auto"``.
         """
         self._attached = attached
         self._transient_path_mapper = transient_path_mapper
@@ -276,8 +276,6 @@ class DatasetInstanceMaterializer:
         the content is not available to sniff at request time. ``path`` is the first point
         the bytes exist locally, so we sniff here while materializing.
         """
-        if self._datatypes_registry is None:
-            return
         if dataset_instance.extension != "auto":
             return
         sniffed = guess_ext(path, self._datatypes_registry.sniff_order)
@@ -415,6 +413,7 @@ def _materialize_collection_element(
 
 def materializer_factory(
     attached: bool,
+    datatypes_registry: Registry,
     object_store: ObjectStore | None = None,
     object_store_populator: ObjectStorePopulator | None = None,
     transient_path_mapper: TransientPathMapper | None = None,
@@ -422,7 +421,6 @@ def materializer_factory(
     file_sources: ConfiguredFileSources | None = None,
     sa_session: Session | None = None,
     user_context: OptionalUserContext = None,
-    datatypes_registry: Registry | None = None,
 ) -> DatasetInstanceMaterializer:
     if object_store_populator is None and object_store is not None:
         object_store_populator = ObjectStorePopulator(object_store, None)
@@ -430,12 +428,12 @@ def materializer_factory(
         transient_path_mapper = SimpleTransientPathMapper(transient_directory)
     return DatasetInstanceMaterializer(
         attached,
+        datatypes_registry,
         object_store_populator=object_store_populator,
         transient_path_mapper=transient_path_mapper,
         file_sources=file_sources,
         sa_session=sa_session,
         user_context=user_context,
-        datatypes_registry=datatypes_registry,
     )
 
 

@@ -36,7 +36,7 @@ def test_undeferred_hdas_untouched(tmpdir):
     hda = _create_hda(sa_session, app.object_store, history, hda_fh, include_metadata_file=False)
     sa_session.commit()
 
-    materializer = materializer_factory(True, object_store=app.object_store)
+    materializer = materializer_factory(True, object_store=app.object_store, datatypes_registry=app.datatypes_registry)
     assert materializer.ensure_materialized(hda) == hda
 
 
@@ -49,7 +49,11 @@ def test_deferred_hdas_basic_attached():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -72,7 +76,11 @@ def test_hash_validate():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -89,7 +97,11 @@ def test_hash_invalid():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -138,7 +150,11 @@ def test_hash_validate_source_of_download():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -157,7 +173,11 @@ def test_hash_invalid_source_of_download():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -174,7 +194,11 @@ def test_deferred_hdas_basic_attached_store_by_uuid():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -196,7 +220,11 @@ def test_deferred_hdas_basic_detached(tmpdir):
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(
+        False,
+        transient_directory=tmpdir,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -218,7 +246,11 @@ def test_deferred_datasets_with_legacy_transforms_respect_transform(tmpdir):
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(
+        False,
+        transient_directory=tmpdir,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -244,7 +276,11 @@ def test_deferred_datasets_with_requested_transforms_respect_transform(tmpdir):
         {"action": "datatype_groom"},
         {"action": "spaces_to_tabs"},
     ]
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(
+        False,
+        transient_directory=tmpdir,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -270,7 +306,11 @@ def test_deferred_datasets_do_not_apply_unspecified_transforms_legacy(tmpdir):
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == []
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(
+        False,
+        transient_directory=tmpdir,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -293,7 +333,11 @@ def test_deferred_datasets_do_not_apply_unspecified_transforms(tmpdir):
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == [{"action": "datatype_groom"}]
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(
+        False,
+        transient_directory=tmpdir,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -317,7 +361,11 @@ def test_deferred_hdas_basic_detached_from_detached_hda(tmpdir):
 
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(
+        False,
+        transient_directory=tmpdir,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -341,7 +389,10 @@ def test_deferred_hdas_basic_attached_from_detached_hda():
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(
-        True, object_store=fixture_context.app.object_store, sa_session=fixture_context.sa_session()
+        True,
+        object_store=fixture_context.app.object_store,
+        sa_session=fixture_context.sa_session(),
+        datatypes_registry=fixture_context.app.datatypes_registry,
     )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
@@ -368,7 +419,11 @@ def test_deferred_ldda_basic_attached():
     assert deferred_ldda.dataset is not None
     assert deferred_ldda.dataset.state == "deferred"
 
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_ldda)
     assert materialized_hda.history is None
     materialized_dataset = materialized_hda.dataset
@@ -397,7 +452,12 @@ def test_deferred_hdas_basic_attached_file_sources(tmpdir):
     assert deferred_hda
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        file_sources=file_sources,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -419,7 +479,11 @@ def test_deferred_hdas_with_deferred_metadata():
     assert deferred_hda
     assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
@@ -464,7 +528,11 @@ def test_deferred_hda_with_auto_extension_gets_sniffed_from_content():
 
 def test_materialize_attached_hdcas_unimplemented(tmpdir):
     fixture_context = setup_fixture_context_with_history()
-    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     hdca = _test_hdca(tmpdir, fixture_context)
     exception_found = False
     try:
@@ -476,7 +544,11 @@ def test_materialize_attached_hdcas_unimplemented(tmpdir):
 
 def test_materialize_unattached_undeferred_hdcas_noop(tmpdir):
     fixture_context = setup_fixture_context_with_history()
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(
+        False,
+        transient_directory=tmpdir,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     input_hdca = _test_hdca(tmpdir, fixture_context, include_element_deferred=False)
     materialized_hdca = materialize_collection_instance(input_hdca, materializer)
     assert input_hdca == materialized_hdca  # doesn't have deferred data so just assert it is input.
@@ -484,7 +556,11 @@ def test_materialize_unattached_undeferred_hdcas_noop(tmpdir):
 
 def test_materialize_unattached_deferred_hdcas(tmpdir):
     fixture_context = setup_fixture_context_with_history()
-    materializer = materializer_factory(False, transient_directory=tmpdir)
+    materializer = materializer_factory(
+        False,
+        transient_directory=tmpdir,
+        datatypes_registry=fixture_context.app.datatypes_registry,
+    )
     deferred_hdca = _test_hdca(tmpdir, fixture_context)
     assert deferred_hdca.has_deferred_data
     assert len(deferred_hdca.collection.elements) == 2
