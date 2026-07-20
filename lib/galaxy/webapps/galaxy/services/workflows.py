@@ -173,7 +173,7 @@ class WorkflowsService(ServiceBase):
 
     def invoke_workflow(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         workflow_id,
         payload: InvokeWorkflowPayload,
     ) -> WorkflowInvocationResponse | list[WorkflowInvocationResponse]:
@@ -202,7 +202,7 @@ class WorkflowsService(ServiceBase):
                 tool["tool_id"],
                 tool_version=tool["tool_version"],
                 tool_uuid=tool["tool_uuid"],
-                exact=require_exact_tool_versions,
+                exact=bool(require_exact_tool_versions),
                 user=trans.user,
             )
         ]
@@ -370,17 +370,17 @@ class WorkflowsService(ServiceBase):
                 )
             seen_labels.add(sanitized_label)
 
-    def delete(self, trans, workflow_id):
+    def delete(self, trans: ProvidesUserContext, workflow_id):
         workflow_to_delete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
         self._workflows_manager.check_security(trans, workflow_to_delete)
         self._workflows_manager.delete(workflow_to_delete)
 
-    def undelete(self, trans, workflow_id):
+    def undelete(self, trans: ProvidesUserContext, workflow_id):
         workflow_to_undelete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
         self._workflows_manager.check_security(trans, workflow_to_undelete)
         self._workflows_manager.undelete(workflow_to_undelete)
 
-    def get_versions(self, trans, workflow_id, instance: bool):
+    def get_versions(self, trans: ProvidesUserContext, workflow_id, instance: bool):
         stored_workflow: StoredWorkflow = self._workflows_manager.get_stored_accessible_workflow(
             trans, workflow_id, by_stored_id=not instance
         )
@@ -389,13 +389,13 @@ class WorkflowsService(ServiceBase):
             for i, w in enumerate(reversed(stored_workflow.workflows))
         ]
 
-    def invocation_counts(self, trans, workflow_id, instance: bool) -> InvocationsStateCounts:
+    def invocation_counts(self, trans: ProvidesUserContext, workflow_id, instance: bool) -> InvocationsStateCounts:
         stored_workflow: StoredWorkflow = self._workflows_manager.get_stored_accessible_workflow(
             trans, workflow_id, by_stored_id=not instance
         )
         return stored_workflow.invocation_counts()
 
-    def get_workflow_menu(self, trans, payload):
+    def get_workflow_menu(self, trans: ProvidesUserContext, payload):
         ids_in_menu = [x.stored_workflow_id for x in trans.user.stored_workflow_menu_entries]
         workflows = self._get_workflows_list(
             trans,
@@ -405,7 +405,7 @@ class WorkflowsService(ServiceBase):
 
     def refactor(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         workflow_id: DecodedDatabaseIdField,
         payload: RefactorRequest,
         instance: bool,
@@ -413,7 +413,9 @@ class WorkflowsService(ServiceBase):
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
         return self._workflow_contents_manager.refactor(trans, stored_workflow, payload)
 
-    def show_workflow(self, trans, workflow_id, instance, legacy, version) -> StoredWorkflowDetailed:
+    def show_workflow(
+        self, trans: ProvidesHistoryContext, workflow_id, instance, legacy, version
+    ) -> StoredWorkflowDetailed:
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
             wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)

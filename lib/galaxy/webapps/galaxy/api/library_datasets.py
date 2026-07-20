@@ -26,6 +26,11 @@ from galaxy.managers import (
     library_datasets,
     roles,
 )
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import DatasetPermissions
 from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.structured_app import StructuredApp
@@ -43,6 +48,7 @@ from galaxy.web import (
     expose_api_anonymous,
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
@@ -58,7 +64,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         self.ldda_manager = lddas.LDDAManager(app)
 
     @expose_api_anonymous
-    def show(self, trans, id, **kwd):
+    def show(self, trans: ProvidesUserContext, id, **kwd):
         """
         GET /api/libraries/datasets/{encoded_dataset_id}
 
@@ -75,7 +81,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return serialized
 
     @expose_api_anonymous
-    def show_version(self, trans, encoded_dataset_id, encoded_ldda_id, **kwd):
+    def show_version(self, trans: ProvidesUserContext, encoded_dataset_id, encoded_ldda_id, **kwd):
         """
         GET /api/libraries/datasets/{encoded_dataset_id}/versions/{encoded_ldda_id}
 
@@ -108,7 +114,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return rval
 
     @expose_api
-    def show_roles(self, trans, encoded_dataset_id, **kwd):
+    def show_roles(self, trans: ProvidesUserContext, encoded_dataset_id, **kwd):
         """
         GET /api/libraries/datasets/{encoded_dataset_id}/permissions
 
@@ -164,7 +170,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 "The value of 'scope' parameter is invalid. Alllowed values: current, available"
             )
 
-    def _get_current_roles(self, trans, library_dataset):
+    def _get_current_roles(self, trans: ProvidesAppContext, library_dataset):
         """
         Find all roles currently connected to relevant permissions
         on the library dataset and the underlying dataset.
@@ -178,7 +184,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return self.ldda_manager.serialize_dataset_association_roles(library_dataset)
 
     @expose_api
-    def update(self, trans, encoded_dataset_id, payload=None, **kwd):
+    def update(self, trans: ProvidesUserContext, encoded_dataset_id, payload=None, **kwd):
         """
         PATCH /api/libraries/datasets/{encoded_dataset_id}
 
@@ -209,7 +215,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return serialized
 
     @expose_api
-    def update_permissions(self, trans, encoded_dataset_id, payload=None, **kwd):
+    def update_permissions(self, trans: ProvidesUserContext, encoded_dataset_id, payload=None, **kwd):
         """
         POST /api/libraries/datasets/{encoded_dataset_id}/permissions
 
@@ -332,7 +338,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return self._get_current_roles(trans, library_dataset)
 
     @expose_api
-    def delete(self, trans, encoded_dataset_id, **kwd):
+    def delete(self, trans: ProvidesUserContext, encoded_dataset_id, **kwd):
         """
         DELETE /api/libraries/datasets/{encoded_dataset_id}
 
@@ -374,7 +380,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return rval
 
     @expose_api
-    def load(self, trans, payload=None, **kwd):
+    def load(self, trans: ProvidesHistoryContext, payload=None, **kwd):
         """
         POST /api/libraries/datasets
 
@@ -524,6 +530,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         # Set up the traditional tool state/params
         tool_id = "upload1"
         tool = trans.app.toolbox.get_tool(tool_id)
+        assert tool is not None, f"'{tool_id}' tool not found in toolbox"
         state = tool.new_state(trans)
         populate_state(trans, tool.inputs, kwd, state.inputs)
         tool_params = state.inputs
@@ -578,7 +585,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
 
     @web.expose
     #  TODO convert to expose_api
-    def download(self, trans, archive_format, **kwd):
+    def download(self, trans: GalaxyWebTransaction, archive_format, **kwd):
         """
         GET /api/libraries/datasets/download/{archive_format}
         POST /api/libraries/datasets/download/{archive_format}

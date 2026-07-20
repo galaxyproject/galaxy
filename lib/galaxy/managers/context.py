@@ -46,6 +46,8 @@ from typing import (
     Any,
     cast,
     Literal,
+    Optional,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import select
@@ -68,6 +70,9 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import bunch
+
+if TYPE_CHECKING:
+    from galaxy.tools.parameters.dataset_matcher import DatasetMatcherFactory
 
 
 class ProvidesAppContext:
@@ -313,6 +318,10 @@ class ProvidesHistoryContext(ProvidesUserContext):
     Mixed in class must provide `user`, `history`, and `app`
     properties.
     """
+
+    # set per-request by galaxy.tools.parameters.dataset_matcher while a tool
+    # form is being evaluated
+    dataset_matcher_factory: Optional["DatasetMatcherFactory"] = None
 
     @property
     @abc.abstractmethod

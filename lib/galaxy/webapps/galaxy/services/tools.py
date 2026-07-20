@@ -395,7 +395,9 @@ class ToolsService(ServiceBase):
         )
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
-    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars) -> JobCreateResponse:
+    def _handle_inputs_output_to_api_response(
+        self, trans: ProvidesHistoryContext, tool, target_history, vars
+    ) -> JobCreateResponse:
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get("out_data", [])
         rval: dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
@@ -537,7 +539,7 @@ class ToolsService(ServiceBase):
                     detected_versions.append(tool.version)
         return detected_versions
 
-    def get_tool_icon_path(self, trans, tool_id, tool_version=None) -> str | None:
+    def get_tool_icon_path(self, trans: ProvidesUserContext, tool_id, tool_version=None) -> str | None:
         tool = self._get_tool(trans, tool_id, tool_version)
         if tool and tool.icon:
             icon_file_path = tool.icon

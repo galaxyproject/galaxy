@@ -4,6 +4,10 @@ from galaxy import exceptions
 from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import prepare_pdf_download
 from galaxy.managers import base
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
     to_basic_markdown,
@@ -65,7 +69,7 @@ class PagesService(ServiceBase):
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(
-        self, trans, payload: PageIndexQueryPayload, include_total_count: bool = False
+        self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False
     ) -> tuple[PageSummaryList, int | None]:
         """Return a list of Pages viewable by the user
 
@@ -83,7 +87,7 @@ class PagesService(ServiceBase):
             total_matches,
         )
 
-    def _page_to_details(self, trans, page) -> PageDetails:
+    def _page_to_details(self, trans: ProvidesHistoryContext, page) -> PageDetails:
         """Serialize a Page (with the content of its latest revision) to PageDetails."""
         rval = page.to_dict()
         rval["annotation"] = get_item_annotation_str(trans.sa_session, trans.user, page)
@@ -93,14 +97,14 @@ class PagesService(ServiceBase):
         self.manager.rewrite_content_for_export(trans, rval)
         return PageDetails(**rval)
 
-    def create(self, trans, payload: CreatePagePayload) -> PageDetails:
+    def create(self, trans: ProvidesHistoryContext, payload: CreatePagePayload) -> PageDetails:
         """
         Create a page and return it.
         """
         page = self.manager.create_page(trans, payload)
         return self._page_to_details(trans, page)
 
-    def delete(self, trans, id: DecodedDatabaseIdField):
+    def delete(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField):
         """
         Mark page as deleted
 
@@ -111,7 +115,7 @@ class PagesService(ServiceBase):
         page.deleted = True
         trans.sa_session.commit()
 
-    def undelete(self, trans, id: DecodedDatabaseIdField):
+    def undelete(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField):
         """
         Undelete page
 
@@ -122,7 +126,7 @@ class PagesService(ServiceBase):
         page.deleted = False
         trans.sa_session.commit()
 
-    def show(self, trans, id: DecodedDatabaseIdField) -> PageDetails:
+    def show(self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField) -> PageDetails:
         """View a page summary and the content of the latest revision
 
         :param  id:    ID of page to be displayed
@@ -133,7 +137,7 @@ class PagesService(ServiceBase):
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         return self._page_to_details(trans, page)
 
-    def show_pdf(self, trans, id: DecodedDatabaseIdField):
+    def show_pdf(self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField):
         """
         View a page summary and the content of the latest revision as PDF.
 
@@ -148,7 +152,7 @@ class PagesService(ServiceBase):
         internal_galaxy_markdown = page.latest_revision.content
         return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, PdfDocumentType.page)
 
-    def prepare_pdf(self, trans, id: DecodedDatabaseIdField) -> AsyncFile:
+    def prepare_pdf(self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         short_term_storage_target = self.short_term_storage_allocator.new_target(
@@ -166,14 +170,16 @@ class PagesService(ServiceBase):
         result = prepare_pdf_download.delay(request=pdf_download_request, task_user_id=getattr(trans.user, "id", None))
         return AsyncFile(storage_request_id=request_id, task=async_task_summary(result))
 
-    def update(self, trans, id: PageIdPathParam, payload: UpdatePagePayload) -> PageDetails:
+    def update(self, trans: ProvidesHistoryContext, id: PageIdPathParam, payload: UpdatePagePayload) -> PageDetails:
         """
         Update a page and return it.
         """
         page = self.manager.update_page(trans, id, payload)
         return self._page_to_details(trans, page)
 
-    def list_revisions(self, trans, id: DecodedDatabaseIdField, sort_desc: bool = False) -> PageRevisionList:
+    def list_revisions(
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, sort_desc: bool = False
+    ) -> PageRevisionList:
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         revisions = self.manager.list_revisions(trans, page, sort_desc=sort_desc)
         return PageRevisionList(
@@ -190,7 +196,7 @@ class PagesService(ServiceBase):
         )
 
     def show_revision(
-        self, trans, id: DecodedDatabaseIdField, revision_id: DecodedDatabaseIdField
+        self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField, revision_id: DecodedDatabaseIdField
     ) -> PageRevisionDetails:
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         revision = self.manager.get_revision(trans, page, revision_id)
@@ -200,7 +206,7 @@ class PagesService(ServiceBase):
         return PageRevisionDetails(**rval)
 
     def revert_revision(
-        self, trans, id: DecodedDatabaseIdField, revision_id: DecodedDatabaseIdField
+        self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField, revision_id: DecodedDatabaseIdField
     ) -> PageRevisionDetails:
         page = base.get_object(trans, id, "Page", check_ownership=True, check_accessible=True)
         new_revision = self.manager.restore_revision(trans, page, revision_id)

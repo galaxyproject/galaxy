@@ -12,7 +12,10 @@ from galaxy.exceptions import (
     ReferenceDataError,
     RequestParameterInvalidException,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import User
 from galaxy.model.database_utils import is_postgres
 from galaxy.structured_app import (
@@ -41,7 +44,7 @@ class GenomesManager:
         return False
 
     def get_genome(
-        self, trans: ProvidesUserContext, id: str, num: int, chrom: str, low: int, high: int, reference: bool
+        self, trans: ProvidesHistoryContext, id: str, num: int, chrom: str, low: int, high: int, reference: bool
     ) -> Any:
         if reference:
             region = self.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)

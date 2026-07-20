@@ -12,6 +12,7 @@ from galaxy import util
 from galaxy.util.tool_shed import encoding_util
 
 if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
     from .tool_shed_registry import Registry as ToolShedRegistry
 
 log = logging.getLogger(__name__)
@@ -149,7 +150,7 @@ def get_tool_shed_repository_url(app: HasToolShedRegistry, tool_shed: str, owner
     return tool_shed_url
 
 
-def handle_galaxy_url(trans, **kwd):
+def handle_galaxy_url(trans: "GalaxyWebTransaction", **kwd):
     galaxy_url = kwd.get("galaxy_url", None)
     if galaxy_url:
         trans.set_cookie(galaxy_url, name="toolshedgalaxyurl")

@@ -27,7 +27,10 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.agents import AgentService
 from galaxy.managers.chat import ChatManager
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_util import ready_galaxy_markdown_for_export
 from galaxy.managers.workflows import WorkflowsManager
@@ -129,7 +132,7 @@ class ChatAPI:
         payload: ChatPayload | None = None,
         query: str | None = Query(default=None, description="Query string for general chat"),
         agent_type: str = Query(default="auto", description="Agent type to use for the query"),
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> ChatResponse:
         """GalaxyAI endpoint - handles both job-based and general chat queries

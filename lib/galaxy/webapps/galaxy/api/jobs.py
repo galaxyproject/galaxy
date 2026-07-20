@@ -60,6 +60,7 @@ from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.web import expose_api_anonymous
 from galaxy.webapps.base.controller import UsesVisualizationMixin
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
@@ -76,7 +77,10 @@ from galaxy.webapps.galaxy.services.jobs import (
     JobRequest,
     JobsService,
 )
-from galaxy.work.context import proxy_work_context_for_history
+from galaxy.work.context import (
+    proxy_work_context_for_history,
+    SessionRequestContext,
+)
 from .tools import validate_not_protected
 
 log = logging.getLogger(__name__)
@@ -483,7 +487,7 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         hda_ldda: Annotated[DatasetSourceType | None, DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """Resolve parameters as a list for nested display."""
         hda_ldda_str = hda_ldda or "hda"
@@ -501,7 +505,7 @@ class FastAPIJobs:
         self,
         dataset_id: DatasetIdPathParam,
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """Resolve parameters as a list for nested display."""
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
@@ -666,7 +670,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     job_manager = depends(JobManager)
 
     @expose_api_anonymous
-    def build_for_rerun(self, trans: ProvidesHistoryContext, id, **kwd):
+    def build_for_rerun(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         * GET /api/jobs/{id}/build_for_rerun
             returns a tool input/param template prepopulated with this job's
@@ -692,7 +696,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.ConfigDoesNotAllowException(f"Tool '{job.tool_id}' cannot be rerun.")
         return tool.to_json(trans, {}, job=job)
 
-    def __get_job(self, trans, job_id=None, dataset_id=None, **kwd):
+    def __get_job(self, trans: GalaxyWebTransaction, job_id=None, dataset_id=None, **kwd):
         if job_id is not None:
             decoded_job_id = self.decode_id(job_id)
             return self.job_manager.get_accessible_job(trans, decoded_job_id)

@@ -57,7 +57,11 @@ from galaxy.managers.base import (
     decode_id,
     security_check,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.executables import artifact_class
 from galaxy.model import (
     History,
@@ -296,7 +300,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         result = trans.sa_session.scalars(stmt).unique()
         return result, total_matches
 
-    def get_stored_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
+    def get_stored_workflow(self, trans: ProvidesUserContext, workflow_id, by_stored_id=True) -> StoredWorkflow:
         """Use a supplied ID (UUID or encoded stored workflow ID) to find
         a workflow.
         """
@@ -318,7 +322,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow
 
-    def get_stored_accessible_workflow(self, trans, workflow_id, by_stored_id=True):
+    def get_stored_accessible_workflow(self, trans: ProvidesUserContext, workflow_id, by_stored_id=True):
         """Get a stored workflow from a encoded stored workflow id and
         make sure it accessible to the user.
         """
@@ -335,7 +339,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
 
         return stored_workflow
 
-    def attach_stored_workflow(self, trans, workflow):
+    def attach_stored_workflow(self, trans: ProvidesUserContext, workflow):
         """Attach and return stored workflow if possible."""
         # Imported Subworkflows are not created with a StoredWorkflow association
         # To properly serialize them we do need a StoredWorkflow, so we create and attach one here.
@@ -346,7 +350,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             trans.sa_session.commit()
             return stored_workflow
 
-    def get_owned_workflow(self, trans, encoded_workflow_id):
+    def get_owned_workflow(self, trans: ProvidesUserContext, encoded_workflow_id):
         """Get a workflow (non-stored) from a encoded workflow id and
         make sure it accessible to the user.
         """
@@ -355,7 +359,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         self.check_security(trans, workflow, check_ownership=True)
         return workflow
 
-    def check_security(self, trans, has_workflow, check_ownership=True, check_accessible=True):
+    def check_security(self, trans: ProvidesUserContext, has_workflow, check_ownership=True, check_accessible=True):
         """check accessibility or ownership of workflows, storedworkflows, and
         workflowinvocations. Throw an exception or returns True if user has
         needed level of access.
@@ -391,12 +395,12 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
 
         return True
 
-    def get_workflow_svg_from_id(self, trans, id, version=None, for_embed=False) -> bytes:
+    def get_workflow_svg_from_id(self, trans: ProvidesUserContext, id, version=None, for_embed=False) -> bytes:
         stored = self.get_stored_accessible_workflow(trans, id)
         workflow = stored.get_internal_version(version)
         return self.get_workflow_svg(trans, workflow, for_embed=for_embed)
 
-    def get_workflow_svg(self, trans, workflow, for_embed=False) -> bytes:
+    def get_workflow_svg(self, trans: ProvidesUserContext, workflow, for_embed=False) -> bytes:
         try:
             svg = self._workflow_to_svg_canvas(trans, workflow, for_embed=for_embed)
             s = STANDALONE_SVG_TEMPLATE % svg.tostring()
@@ -407,7 +411,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             )
             raise exceptions.MessageException(message)
 
-    def _workflow_to_svg_canvas(self, trans, workflow, for_embed=False):
+    def _workflow_to_svg_canvas(self, trans: ProvidesUserContext, workflow, for_embed=False):
         workflow_canvas = WorkflowCanvas()
         for step in workflow.steps:
             # Load from database representation
@@ -425,7 +429,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         return workflow_canvas.finish(for_embed=for_embed)
 
     def get_invocation(
-        self, trans, decoded_invocation_id: int, check_ownership=True, check_accessible=True
+        self, trans: ProvidesUserContext, decoded_invocation_id: int, check_ownership=True, check_accessible=True
     ) -> WorkflowInvocation:
         workflow_invocation = _get_invocation(trans.sa_session, decoded_invocation_id)
         if not workflow_invocation:
@@ -437,7 +441,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         )
         return workflow_invocation
 
-    def get_invocation_report(self, trans, invocation_id, **kwd):
+    def get_invocation_report(self, trans: ProvidesUserContext, invocation_id, **kwd):
         decoded_workflow_invocation_id = (
             trans.security.decode_id(invocation_id) if isinstance(invocation_id, str) else invocation_id
         )
@@ -458,7 +462,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             target_format=target_format,
         )
 
-    def request_invocation_cancellation(self, trans, decoded_invocation_id: int):
+    def request_invocation_cancellation(self, trans: ProvidesUserContext, decoded_invocation_id: int):
         workflow_invocation = self.get_invocation(trans, decoded_invocation_id, check_ownership=True)
         cancelled = workflow_invocation.cancel()
 
@@ -471,7 +475,11 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         return workflow_invocation
 
     def get_invocation_step(
-        self, trans, decoded_workflow_invocation_step_id, check_ownership: bool = True, check_accessible: bool = True
+        self,
+        trans: ProvidesUserContext,
+        decoded_workflow_invocation_step_id,
+        check_ownership: bool = True,
+        check_accessible: bool = True,
     ) -> WorkflowInvocationStep:
         try:
             workflow_invocation_step = trans.sa_session.get(WorkflowInvocationStep, decoded_workflow_invocation_step_id)
@@ -485,7 +493,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         )
         return workflow_invocation_step
 
-    def update_invocation_step(self, trans, decoded_workflow_invocation_step_id, action):
+    def update_invocation_step(self, trans: ProvidesUserContext, decoded_workflow_invocation_step_id, action):
         if action is None:
             raise exceptions.RequestParameterMissingException(
                 "Updating workflow invocation step requires an action parameter. "
@@ -664,7 +672,7 @@ class WorkflowContentsManager(UsesAnnotations):
         created_workflow = self.build_workflow_from_raw_description(trans, raw_description, WorkflowCreateOptions())
         return created_workflow.workflow
 
-    def normalize_workflow_format(self, trans, as_dict):
+    def normalize_workflow_format(self, trans: ProvidesUserContext, as_dict):
         """Process incoming workflow descriptions for consumption by other methods.
 
         Currently this mostly means converting format 2 workflows into standard Galaxy
@@ -699,7 +707,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def build_workflow_from_raw_description(
         self,
-        trans,
+        trans: ProvidesUserContext,
         raw_workflow_description,
         workflow_create_options,
         source=None,
@@ -763,7 +771,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def update_workflow_from_raw_description(
         self,
-        trans,
+        trans: ProvidesUserContext,
         stored_workflow: StoredWorkflow,
         raw_workflow_description: RawWorkflowDescription,
         workflow_update_options: WorkflowUpdateOptions,
@@ -836,7 +844,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _workflow_from_raw_description(
         self,
-        trans,
+        trans: ProvidesUserContext,
         raw_workflow_description,
         workflow_state_resolution_options,
         name,
@@ -976,7 +984,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def workflow_to_dict(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         stored: StoredWorkflow,
         style: str = "export",
         version: int | None = None,
@@ -1053,7 +1061,7 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict["version"] = len(stored.workflows) - 1
         return wf_dict
 
-    def _sync_stored_workflow(self, trans, stored_workflow: StoredWorkflow) -> None:
+    def _sync_stored_workflow(self, trans: ProvidesUserContext, stored_workflow: StoredWorkflow) -> None:
         if trans.user_is_admin:
             workflow_path = stored_workflow.from_path
             assert workflow_path is not None
@@ -1083,7 +1091,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_path: str,
         stored_workflow: StoredWorkflow,
         workflow: Workflow,
-        trans=None,
+        trans: ProvidesUserContext | None = None,
         history: History | None = None,
         user: User | None = None,
     ) -> None:
@@ -1102,7 +1110,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 f.write(wf_dict["yaml_content"])
 
     def _workflow_to_dict_run(
-        self, trans: ProvidesUserContext, stored: StoredWorkflow, workflow: Workflow, history: History | None = None
+        self, trans: ProvidesHistoryContext, stored: StoredWorkflow, workflow: Workflow, history: History | None = None
     ) -> dict[str, Any]:
         """
         Builds workflow dictionary used by run workflow form
@@ -1217,7 +1225,7 @@ class WorkflowContentsManager(UsesAnnotations):
             "workflow_resource_parameters": self._workflow_resource_parameters(trans, stored, workflow),
         }
 
-    def _workflow_to_dict_preview(self, trans, workflow):
+    def _workflow_to_dict_preview(self, trans: ProvidesHistoryContext, workflow):
         """
         Builds workflow dictionary containing input labels and values.
         Used to create embedded workflow previews.
@@ -1325,6 +1333,9 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.type == "tool":
                 tool = trans.app.toolbox.get_tool(step.tool_id, step.tool_version)
+                assert (
+                    tool is not None
+                ), f"Tool '{step.tool_id}' unexpectedly missing after successful runtime state computation"
                 step_dict["tool_id"] = step.tool_id
                 step_dict["tool_version"] = step.tool_version
                 step_dict["label"] = step.label or tool.name
@@ -1346,13 +1357,13 @@ class WorkflowContentsManager(UsesAnnotations):
             "steps": step_dicts,
         }
 
-    def _workflow_resource_parameters(self, trans, stored, workflow):
+    def _workflow_resource_parameters(self, trans: ProvidesUserContext, stored, workflow):
         """Get workflow scheduling resource parameters for this user and workflow or None if not configured."""
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
     def _workflow_to_dict_editor(
         self,
-        trans,
+        trans: ProvidesUserContext,
         stored: StoredWorkflow | None,
         workflow: Workflow,
         tooltip: bool = True,
@@ -1585,7 +1596,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _workflow_to_dict_export(
         self,
-        trans,
+        trans: ProvidesUserContext,
         workflow: Workflow,
         stored: StoredWorkflow | None = None,
         internal: bool = False,
@@ -1833,12 +1844,13 @@ class WorkflowContentsManager(UsesAnnotations):
         return data
 
     def _workflow_to_dict_instance(
-        self, trans, stored: StoredWorkflow, workflow: Workflow, legacy: bool = True
+        self, trans: ProvidesAppContext, stored: StoredWorkflow, workflow: Workflow, legacy: bool = True
     ) -> dict[str, Any]:
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
         item = stored.to_dict(view="element")
         item["name"] = workflow.name
+        assert trans.url_builder
         item["url"] = trans.url_builder("workflow", id=encode(stored.id))
         item["owner"] = stored.user.username
         item["email_hash"] = md5_hash_str(stored.user.email)
@@ -1976,7 +1988,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __load_subworkflows(
         self,
-        trans,
+        trans: ProvidesUserContext,
         step_dict,
         subworkflow_id_map,
         workflow_state_resolution_options,
@@ -1997,7 +2009,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __module_from_dict(
         self,
-        trans,
+        trans: ProvidesUserContext,
         steps: list[model.WorkflowStep],
         steps_by_external_id: dict[str, model.WorkflowStep],
         step_dict,
@@ -2083,7 +2095,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __load_subworkflow_from_step_dict(
         self,
-        trans,
+        trans: ProvidesUserContext,
         step_dict,
         subworkflow_id_map,
         workflow_state_resolution_options,
@@ -2147,7 +2159,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __build_subworkflow_from_url(
         self,
-        trans,
+        trans: ProvidesUserContext,
         url: str,
         resolving_urls: frozenset[str],
     ) -> model.Workflow:
@@ -2173,7 +2185,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __build_subworkflow_from_trs_url(
         self,
-        trans,
+        trans: ProvidesUserContext,
         trs_url: str,
         resolving_urls: frozenset[str],
     ) -> model.Workflow:
@@ -2206,7 +2218,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __build_subworkflow_from_trs_id(
         self,
-        trans,
+        trans: ProvidesUserContext,
         step_dict: dict,
         resolving_urls: frozenset[str],
     ) -> model.Workflow:
@@ -2227,7 +2239,11 @@ class WorkflowContentsManager(UsesAnnotations):
         return self.__build_subworkflow_from_trs_url(trans, trs_url, resolving_urls)
 
     def __build_embedded_subworkflow(
-        self, trans, data, workflow_state_resolution_options, resolving_urls: frozenset[str] = frozenset()
+        self,
+        trans: ProvidesUserContext,
+        data,
+        workflow_state_resolution_options,
+        resolving_urls: frozenset[str] = frozenset(),
     ):
         raw_workflow_description = self.ensure_raw_description(data)
         subworkflow = self.build_workflow_from_raw_description(
@@ -2290,7 +2306,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 step.label = module.label = default_label
 
     def do_refactor(
-        self, trans: ProvidesUserContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest
+        self, trans: ProvidesHistoryContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest
     ):
         """Apply supplied actions to either the latest version of the workflow or a specific version to build a new version."""
         # Get the workflow version to refactor (latest or specific version)
@@ -2323,7 +2339,9 @@ class WorkflowContentsManager(UsesAnnotations):
         #   we send back anyway
         return refactored_workflow, action_executions
 
-    def refactor(self, trans: ProvidesUserContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest):
+    def refactor(
+        self, trans: ProvidesHistoryContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest
+    ):
         refactored_workflow, action_executions = self.do_refactor(trans, stored_workflow, refactor_request)
         return RefactorResponse(
             action_executions=action_executions,

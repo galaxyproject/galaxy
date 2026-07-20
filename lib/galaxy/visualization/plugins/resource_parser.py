@@ -7,6 +7,7 @@ import json
 import logging
 import weakref
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import galaxy.exceptions
 import galaxy.util
@@ -14,12 +15,16 @@ from galaxy.managers import (
     hdas as hda_manager,
     visualizations as visualization_manager,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     HistoryDatasetAssociation,
     LibraryDatasetDatasetAssociation,
     Visualization,
 )
 from galaxy.util import bunch
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +64,9 @@ class ResourceParser:
             hda=app[hda_manager.HDAManager],
         )
 
-    def parse_parameter_dictionary(self, trans, param_config_dict, query_params, param_modifiers=None):
+    def parse_parameter_dictionary(
+        self, trans: "GalaxyWebTransaction", param_config_dict, query_params, param_modifiers=None
+    ):
         """
         Parse all expected params from the query dictionary `query_params`.
 
@@ -111,7 +118,7 @@ class ResourceParser:
 
         return resources
 
-    def parse_config(self, trans, param_config_dict, query_params):
+    def parse_config(self, trans: ProvidesUserContext, param_config_dict, query_params):
         """
         Return `query_params` dict parsing only JSON serializable params.
         Complex params such as models, etc. are left as the original query value.
@@ -149,7 +156,7 @@ class ResourceParser:
 
     # TODO: I would LOVE to rip modifiers out completely
     def parse_parameter_modifiers(
-        self, trans, param_modifiers, query_params
+        self, trans: ProvidesUserContext, param_modifiers, query_params
     ) -> dict[str, dict[str, ParameterType | None]]:
         """
         Parse and return parameters that are meant to modify other parameters,
@@ -177,7 +184,7 @@ class ResourceParser:
 
         return parsed_modifiers
 
-    def parse_parameter_default(self, trans, param_config) -> ParameterType | None:
+    def parse_parameter_default(self, trans: ProvidesUserContext, param_config) -> ParameterType | None:
         """
         Parse any default values for the given param, defaulting the default
         to `None`.
@@ -192,7 +199,9 @@ class ResourceParser:
         #   (and adding this code to the xml parser)
         return self.parse_parameter(trans, param_config, default)
 
-    def parse_parameter(self, trans, expected_param_data, query_param, recurse=True, param_modifiers=None):
+    def parse_parameter(
+        self, trans: ProvidesUserContext, expected_param_data, query_param, recurse=True, param_modifiers=None
+    ):
         """
         Use data in `expected_param_data` to parse `query_param` from a string into
         a resource usable directly by a template.

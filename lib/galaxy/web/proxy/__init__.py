@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from collections import namedtuple
+from typing import TYPE_CHECKING
 
 from galaxy.util import (
     requests,
@@ -17,6 +18,9 @@ from galaxy.util.lazy_process import (
 )
 from galaxy.web.framework import url_for
 
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
+
 log = logging.getLogger(__name__)
 
 
@@ -30,6 +34,11 @@ class ProxyManager:
         "host",
         "port",
     )
+
+    # Attributes populated dynamically from config via setattr in __init__.
+    manage_dynamic_proxy: bool
+    dynamic_proxy_bind_port: int
+    dynamic_proxy_external_proxy: bool
 
     def __init__(self, config):
         for option in [
@@ -64,7 +73,7 @@ class ProxyManager:
 
     def setup_proxy(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         host=DEFAULT_PROXY_TO_HOST,
         port=None,
         proxy_prefix="",
@@ -105,14 +114,14 @@ class ProxyManager:
             "proxied_host": proxy_requests.host,
         }
 
-    def update_proxy(self, trans, **kwargs):
+    def update_proxy(self, trans: "GalaxyWebTransaction", **kwargs):
         authentication = AuthenticationToken(trans)
         for k in kwargs.keys():
             if k not in self.valid_update_keys:
                 raise Exception(f"Invalid proxy request update key: {k}")
         return self.proxy_ipc.update_requests(authentication, **kwargs)
 
-    def query_proxy(self, trans):
+    def query_proxy(self, trans: "GalaxyWebTransaction"):
         authentication = AuthenticationToken(trans)
         return self.proxy_ipc.fetch_requests(authentication)
 
@@ -182,7 +191,7 @@ class GolangProxyLauncher:
 
 
 class AuthenticationToken:
-    def __init__(self, trans):
+    def __init__(self, trans: "GalaxyWebTransaction"):
         self.cookie_name = SECURE_COOKIE
         self.cookie_value = trans.get_cookie(self.cookie_name)
 

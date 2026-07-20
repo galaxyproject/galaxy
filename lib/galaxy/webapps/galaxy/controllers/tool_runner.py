@@ -17,6 +17,7 @@ from galaxy.web import (
     url_for,
 )
 from galaxy.webapps.base.controller import BaseUIController
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -24,18 +25,18 @@ log = logging.getLogger(__name__)
 class ToolRunner(BaseUIController):
     # Hack to get biomart to work, ideally, we could pass tool_id to biomart and receive it back
     @web.expose
-    def biomart(self, trans, tool_id="biomart", **kwd):
+    def biomart(self, trans: GalaxyWebTransaction, tool_id="biomart", **kwd):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
 
     # test to get hapmap to work, ideally, we could pass tool_id to hapmap biomart and receive it back
     @web.expose
-    def hapmapmart(self, trans, tool_id="hapmapmart", **kwd):
+    def hapmapmart(self, trans: GalaxyWebTransaction, tool_id="hapmapmart", **kwd):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
 
     @web.expose
-    def default(self, trans, tool_id=None, **kwd):
+    def default(self, trans: GalaxyWebTransaction, tool_id=None, **kwd):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
 
@@ -53,7 +54,7 @@ class ToolRunner(BaseUIController):
         return self.get_toolbox().get_tool(tool_id, tool_version=tool_version)
 
     @web.expose
-    def index(self, trans, tool_id=None, from_noframe=None, **kwd):
+    def index(self, trans: GalaxyWebTransaction, tool_id=None, from_noframe=None, **kwd):
         def __tool_404__():
             log.debug("index called with tool id '%s' but no such tool exists", tool_id)
             trans.log_event(f"Tool id '{tool_id}' does not exist")
@@ -131,7 +132,7 @@ class ToolRunner(BaseUIController):
         return trans.response.send_redirect(url_for("/?notification=tool-submitted"))
 
     @web.expose
-    def rerun(self, trans, id=None, job_id=None, **kwd):
+    def rerun(self, trans: GalaxyWebTransaction, id=None, job_id=None, **kwd):
         """
         Given a HistoryDatasetAssociation id, find the job and that created
         the dataset, extract the parameters, and display the appropriate tool
@@ -165,7 +166,7 @@ class ToolRunner(BaseUIController):
         return trans.response.send_redirect(url_for(f"/?job_id={job_id}"))
 
     @web.expose
-    def data_source_redirect(self, trans, tool_id=None):
+    def data_source_redirect(self, trans: GalaxyWebTransaction, tool_id=None):
         """
         Redirects a user accessing a Data Source tool to its target action link.
         This method will subvert mix-mode content blocking in several browsers when

@@ -6,6 +6,7 @@ from typing import (
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.parser.xml import parse_change_format
@@ -191,7 +192,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         self._init_tool(contents)
         job, out_data, *_ = self.action.execute(
             tool=self.tool,
-            trans=self.trans,
+            trans=cast(ProvidesHistoryContext, self.trans),
             history=self.history,
             incoming=incoming,
         )

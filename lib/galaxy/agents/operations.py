@@ -7,6 +7,7 @@ Delegates to the Galaxy service layer for validation, permission checks, and pag
 import logging
 from typing import (
     Any,
+    cast,
     Literal,
 )
 
@@ -40,6 +41,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.workflows import InvokeWorkflowPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -634,10 +636,13 @@ class AgentOperationsManager:
         }
 
     def get_tool_panel(self, view: str | None = None) -> dict[str, Any]:
+        # The agents stack types trans as ProvidesUserContext throughout, but at runtime it is
+        # always the SessionRequestContext the panel-view methods require.
+        trans = cast("SessionRequestContext", self.trans)
         if view is None:
-            view = self.app.toolbox._default_panel_view(self.trans)
+            view = self.app.toolbox._default_panel_view(trans)
 
-        tool_panel = self.app.toolbox.to_panel_view(self.trans, view=view)
+        tool_panel = self.app.toolbox.to_panel_view(trans, view=view)
 
         return {"tool_panel": tool_panel, "view": view}
 

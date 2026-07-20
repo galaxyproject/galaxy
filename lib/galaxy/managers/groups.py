@@ -138,7 +138,8 @@ class GroupsManager:
         trans.sa_session.add(group)
         trans.sa_session.commit()
 
-    def _url_for(self, trans, name, **kwargs):
+    def _url_for(self, trans: ProvidesAppContext, name, **kwargs):
+        assert trans.url_builder
         return trans.url_builder(name, **kwargs)
 
     def _check_duplicated_group_name(self, sa_session: galaxy_scoped_session, group_name: str) -> None:

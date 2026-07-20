@@ -5,6 +5,10 @@ Contains library functions
 import json
 import logging
 import os.path
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from markupsafe import escape
 
@@ -15,6 +19,10 @@ from galaxy import (
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
+)
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
 )
 from galaxy.model import (
     HistoryDatasetAssociation,
@@ -29,10 +37,13 @@ from galaxy.util.path import (
     unsafe_walk,
 )
 
+if TYPE_CHECKING:
+    from galaxy.managers.collections import DatasetCollectionManager
+
 log = logging.getLogger(__name__)
 
 
-def validate_server_directory_upload(trans, server_dir):
+def validate_server_directory_upload(trans: ProvidesUserContext, server_dir):
     if server_dir in [None, "None", ""]:
         raise exceptions.RequestParameterInvalidException("Invalid or unspecified server_dir parameter")
 
@@ -81,7 +92,7 @@ def validate_server_directory_upload(trans, server_dir):
     return full_dir, import_dir_desc
 
 
-def validate_path_upload(trans):
+def validate_path_upload(trans: ProvidesUserContext):
     if not trans.app.config.allow_library_path_paste:
         raise exceptions.ConfigDoesNotAllowException(
             '"allow_path_paste" is not set to True in the Galaxy configuration file'
@@ -98,7 +109,16 @@ class LibraryActions:
     Mixin for controllers that provide library functionality.
     """
 
-    def _upload_dataset(self, trans, folder_id: int, payload):
+    if TYPE_CHECKING:
+        # Supplied by the concrete controller/service classes that mix this in
+        # (LibraryDatasetsController, LibraryContentsService).
+        collection_manager: DatasetCollectionManager
+
+        def check_user_can_add_to_library_item(
+            self, trans: ProvidesUserContext, item, check_accessible: bool = True
+        ) -> None: ...
+
+    def _upload_dataset(self, trans: ProvidesHistoryContext, folder_id: int, payload):
         # Set up the traditional tool state/params
         cntrller = "api"
         tool_id = "upload1"
@@ -106,6 +126,8 @@ class LibraryActions:
             datatypes_registry=trans.app.datatypes_registry, ext=payload.file_type
         )
         tool = trans.app.toolbox.get_tool(tool_id)
+        if tool is None:
+            raise exceptions.ToolMissingException(f"Tool '{tool_id}' is missing from the toolbox")
         state = tool.new_state(trans)
         populate_state(trans, tool.inputs, payload.model_dump(), state.inputs)
         tool_params = state.inputs
@@ -160,7 +182,9 @@ class LibraryActions:
             raise exceptions.RequestParameterInvalidException("Upload failed")
         return output
 
-    def _get_server_dir_uploaded_datasets(self, trans, payload, full_dir, import_dir_desc, library_bunch):
+    def _get_server_dir_uploaded_datasets(
+        self, trans: ProvidesHistoryContext, payload, full_dir, import_dir_desc, library_bunch
+    ):
         files = self._get_server_dir_files(payload, full_dir, import_dir_desc)
         uploaded_datasets = []
         for file in files:
@@ -206,9 +230,11 @@ class LibraryActions:
             raise exceptions.ObjectAttributeMissingException(f"The directory '{full_dir}' contains no valid files")
         return files
 
-    def _get_path_paste_uploaded_datasets(self, trans, params, library_bunch, response_code, message):
+    def _get_path_paste_uploaded_datasets(
+        self, trans: ProvidesHistoryContext, params, library_bunch, response_code, message
+    ):
         preserve_dirs = util.string_as_bool(params.get("preserve_dirs", False))
-        uploaded_datasets = []
+        uploaded_datasets: list = []
         files_and_folders, _response_code, _message = self._get_path_files_and_folders(params, preserve_dirs)
         if _response_code:
             return (uploaded_datasets, _response_code, _message)
@@ -264,12 +290,14 @@ class LibraryActions:
             return None, response_code, message
         return None
 
-    def _make_library_uploaded_dataset(self, trans, params, name, path, type, library_bunch, in_folder=None):
+    def _make_library_uploaded_dataset(
+        self, trans: ProvidesHistoryContext, params, name, path, type, library_bunch, in_folder=None
+    ):
         link_data_only = params.get("link_data_only", "copy_files")
         uuid_str = params.get("uuid", None)
         file_type = params.get("file_type", None)
         library_bunch.replace_dataset = None  # not valid for these types of upload
-        uploaded_dataset = util.bunch.Bunch()
+        uploaded_dataset: Any = util.bunch.Bunch()
         new_name = name
         # Remove compressed file extensions, if any, but only if
         # we're copying files into Galaxy's file space.
@@ -300,7 +328,7 @@ class LibraryActions:
             trans.sa_session.commit()
         return uploaded_dataset
 
-    def _upload_library_dataset(self, trans, payload):
+    def _upload_library_dataset(self, trans: ProvidesHistoryContext, payload):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         folder = trans.sa_session.get(LibraryFolder, payload.folder_id)
@@ -320,7 +348,7 @@ class LibraryActions:
         created_outputs_dict = self._upload_dataset(trans, folder.id, payload)
         return created_outputs_dict
 
-    def _create_folder(self, trans, payload):
+    def _create_folder(self, trans: ProvidesUserContext, payload):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         parent_folder = trans.sa_session.get(LibraryFolder, payload.folder_id)
@@ -343,7 +371,7 @@ class LibraryActions:
         new_folder_dict = dict(created=new_folder)
         return new_folder_dict
 
-    def _create_collection(self, trans, payload, parent):
+    def _create_collection(self, trans: ProvidesUserContext, payload, parent):
         # Not delegating to library_common, so need to check access to parent folder here.
         self.check_user_can_add_to_library_item(trans, parent, check_accessible=True)
         create_params = api_payload_to_create_params(payload.model_dump())
@@ -356,13 +384,14 @@ class LibraryActions:
         )
         return [dataset_collection]
 
-    def _check_access(self, trans, is_admin, item, current_user_roles):
+    def _check_access(self, trans: ProvidesUserContext, is_admin, item, current_user_roles):
         if isinstance(item, HistoryDatasetAssociation):
             # Make sure the user has the DATASET_ACCESS permission on the history_dataset_association.
             if not item:
                 message = f"Invalid history dataset ({escape(str(item))}) specified."
                 raise exceptions.ObjectNotFound(message)
-            elif (
+            assert item.dataset is not None
+            if (
                 not trans.app.security_agent.can_access_dataset(current_user_roles, item.dataset)
                 and item.user == trans.user
             ):
@@ -385,7 +414,7 @@ class LibraryActions:
                 message = f"You do not have permission to access the {escape(item_type)} with id ({str(item.id)})."
                 raise exceptions.ItemAccessibilityException(message)
 
-    def _check_add(self, trans, is_admin, item, current_user_roles):
+    def _check_add(self, trans: ProvidesUserContext, is_admin, item, current_user_roles):
         # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
         if not (is_admin or trans.app.security_agent.can_add_library_item(current_user_roles, item)):
             message = f"You are not authorized to add an item to ({escape(item.name)})."

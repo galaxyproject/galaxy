@@ -3,9 +3,11 @@ from datetime import (
     datetime,
     timedelta,
 )
+from typing import cast
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.users import UserManager
 from galaxy.security.passwords import check_password
 from galaxy.util.unittest import TestCase
@@ -87,7 +89,7 @@ class TestLoginController(TestCase):
 
     def test_get_reset_token(self):
         def _check_reset_token(email):
-            reset_user, prt = self.user_manager.get_reset_token(self.trans, email)
+            reset_user, prt = self.user_manager.get_reset_token(cast(ProvidesAppContext, self.trans), email)
             assert user2 == reset_user
             assert prt.user == user2
 

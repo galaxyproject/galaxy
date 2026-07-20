@@ -49,6 +49,7 @@ from galaxy.util import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.datatypes.data import Data
     from galaxy.datatypes.registry import Registry
     from galaxy.job_execution.compute_environment import ComputeEnvironment
     from galaxy.model.metadata import MetadataCollection
@@ -359,7 +360,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         compute_environment: Optional["ComputeEnvironment"] = None,
         identifier: str | None = None,
         io_type: str = "input",
-        formats: list[str] | None = None,
+        formats: Sequence[Union[str, "Data"]] | None = None,
         tool_evaluator: Optional["ToolEvaluator"] = None,
     ) -> None:
         dataset_instance: DatasetInstance | None = None
@@ -382,7 +383,12 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                 dataset_instance = dataset
             assert dataset_instance
             if formats:
-                direct_match, target_ext, converted_dataset = dataset_instance.find_conversion_destination(formats)
+                # find_conversion_destination ultimately accepts extension strings or Data
+                # instances (see Registry.find_conversion_destination_for_dataset_by_extensions),
+                # but the intermediate model/datatype signatures are annotated as list[str].
+                direct_match, target_ext, converted_dataset = dataset_instance.find_conversion_destination(
+                    cast("list[str]", formats)
+                )
                 if not direct_match and target_ext and converted_dataset:
                     dataset_instance = converted_dataset
             self.unsanitized: DatasetInstance = dataset_instance

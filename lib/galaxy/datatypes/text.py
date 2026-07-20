@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 from typing import (
     IO,
+    TYPE_CHECKING,
 )
 
 import ijson
@@ -41,6 +42,13 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -207,7 +215,7 @@ class Ipynb(Json):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -223,7 +231,7 @@ class Ipynb(Json):
 
     def _display_data_trusted(
         self,
-        trans,
+        trans: "ProvidesUserContext",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -1280,7 +1288,9 @@ class Yaml(Text):
         """Returns the mime type of the datatype"""
         return "application/yaml"
 
-    def _yield_user_file_content(self, trans, from_dataset: HasCreatingJob, filename: str, headers: Headers) -> IO:
+    def _yield_user_file_content(
+        self, trans: "ProvidesAppContext", from_dataset: HasCreatingJob, filename: str, headers: Headers
+    ) -> IO:
         # Override non-standard application/yaml mediatype with
         # text/plain, so preview is shown in preview iframe,
         # instead of downloading the file.

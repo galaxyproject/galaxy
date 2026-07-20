@@ -128,6 +128,7 @@ from galaxy.webapps.galaxy.services.invocations import (
     WriteInvocationStoreToPayload,
 )
 from galaxy.webapps.galaxy.services.workflows import WorkflowsService
+from galaxy.work.context import SessionRequestContext
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 
@@ -690,7 +691,7 @@ class WorkflowsAPIController(
         item["url"] = url_for("workflow", id=encoded_id)
         return item
 
-    def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
+    def _workflow_from_dict(self, trans: ProvidesUserContext, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
 
         Created workflow is stored in the database and returned.
@@ -715,7 +716,7 @@ class WorkflowsAPIController(
         self._import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
         return created_workflow.stored_workflow, created_workflow.missing_tools
 
-    def _import_tools_if_needed(self, trans, workflow_create_options, raw_workflow_description):
+    def _import_tools_if_needed(self, trans: ProvidesUserContext, workflow_create_options, raw_workflow_description):
         if not workflow_create_options.import_tools:
             return
 
@@ -754,11 +755,11 @@ class WorkflowsAPIController(
             changeset_revision = item["changeset_revision"]
             irm.install(tool_shed_url, name, owner, changeset_revision, install_options)
 
-    def __get_stored_accessible_workflow(self, trans, workflow_id, **kwd):
+    def __get_stored_accessible_workflow(self, trans: ProvidesUserContext, workflow_id, **kwd):
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
 
-    def __get_stored_workflow(self, trans, workflow_id, **kwd):
+    def __get_stored_workflow(self, trans: ProvidesUserContext, workflow_id, **kwd):
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
 
@@ -1012,7 +1013,7 @@ class FastAPIWorkflows:
         workflow_id: StoredWorkflowIDPathParam,
         payload: RefactorWorkflowBody,
         instance: InstanceQueryParam = False,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> RefactorResponse:
         return self.service.refactor(trans, workflow_id, payload, instance or False)
 
@@ -1371,7 +1372,7 @@ class FastAPIInvocations:
         view: SerializationViewQueryParam = None,
         step_details: StepDetailQueryParam = False,
         include_nested_invocations: bool = True,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         if not trans.user:
             # Anon users don't have accessible invocations (currently, though published invocations should be a thing)
@@ -1424,7 +1425,7 @@ class FastAPIInvocations:
         instance: InvocationsInstanceQueryParam = False,
         view: SerializationViewQueryParam = None,
         step_details: StepDetailQueryParam = False,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> list[WorkflowInvocationResponse]:
         invocations = self.index_invocations(
             response=response,
@@ -1451,7 +1452,7 @@ class FastAPIInvocations:
     def prepare_store_download(
         self,
         invocation_id: InvocationIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: PrepareStoreDownloadPayload = Body(...),
     ) -> AsyncFile:
         return self.invocations_service.prepare_store_download(
@@ -1467,7 +1468,7 @@ class FastAPIInvocations:
     def write_store(
         self,
         invocation_id: InvocationIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: WriteInvocationStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         rval = self.invocations_service.write_store(

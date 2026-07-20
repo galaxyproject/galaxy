@@ -28,6 +28,7 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
@@ -430,7 +431,7 @@ class MockTrans:
 
 
 class MockVisualizationsRegistry:
-    def get_visualizations(self, trans, target):
+    def get_visualizations(self, trans: ProvidesAppContext, target):
         return []
 
 

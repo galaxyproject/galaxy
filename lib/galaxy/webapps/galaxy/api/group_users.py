@@ -26,9 +26,10 @@ log = logging.getLogger(__name__)
 router = Router(tags=["group_users"])
 
 
-def group_user_to_model(trans, group_id, user) -> GroupUserResponse:
+def group_user_to_model(trans: ProvidesAppContext, group_id, user) -> GroupUserResponse:
     encoded_group_id = Security.security.encode_id(group_id)
     encoded_user_id = Security.security.encode_id(user.id)
+    assert trans.url_builder
     url = trans.url_builder("group_user", group_id=encoded_group_id, user_id=encoded_user_id)
     return GroupUserResponse(id=user.id, email=user.email, url=url)
 

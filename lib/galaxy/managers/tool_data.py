@@ -72,7 +72,7 @@ class ToolDataManager:
         data_table.reload_from_files()
         return self._reload_data_table(table_name)
 
-    def get_field_file_path(self, trans, table_name: str, field_name: str, file_name: str) -> Path:
+    def get_field_file_path(self, trans: ProvidesUserContext, table_name: str, field_name: str, file_name: str) -> Path:
         """Get the absolute path to a given file name in the table field"""
         field_value = self._data_table_field(table_name, field_name)
         if table_name not in PUBLIC_TABLES and not trans.user_is_admin:

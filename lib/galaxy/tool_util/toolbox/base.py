@@ -9,9 +9,11 @@ from collections.abc import Iterator
 from errno import ENOENT
 from typing import (
     Any,
+    cast,
     Literal,
     Optional,
     TYPE_CHECKING,
+    TypeAlias,
     Union,
 )
 from urllib.parse import urlparse
@@ -70,6 +72,10 @@ from .views.interface import (
 from .views.static import StaticToolPanelView
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import (
+        ProvidesHistoryContext,
+        ProvidesUserContext,
+    )
     from galaxy.model import (
         DynamicTool,
         User,
@@ -78,6 +84,11 @@ if TYPE_CHECKING:
     from galaxy.model.tool_shed_install import ToolShedRepository
     from galaxy.tools import Tool
     from galaxy.tools.cache import ToolCache
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
+    from galaxy.work.context import SessionRequestContext
+
+    # both web transactions and FastAPI/agents request contexts render tool panels
+    PanelViewTrans: TypeAlias = "GalaxyWebTransaction | SessionRequestContext"
 
 log = logging.getLogger(__name__)
 
@@ -315,7 +326,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()
 
-    def _default_panel_view(self, trans):
+    def _default_panel_view(self, trans: "PanelViewTrans"):
         config = self.app.config
         if hasattr(config, "config_value_for_host"):
             config_value = config.config_value_for_host("default_panel_view", trans.host)
@@ -1366,7 +1377,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             self._tool_edam_topics = self._collect_tool_attribute_set("edam_topics")
         return self._tool_edam_topics
 
-    def package_tool(self, trans, tool_id):
+    def package_tool(self, trans: "GalaxyWebTransaction", tool_id):
         """
         Create a tarball with the tool's xml, help images, and test data.
         :param trans: the web transaction
@@ -1471,7 +1482,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     tool_panel_section_id = ""
         return tool_panel_section_id
 
-    def tool_panel_contents(self, trans, view=None, **kwds):
+    def tool_panel_contents(self, trans: "PanelViewTrans", view=None, **kwds):
         """Filter tool_panel contents for displaying for user."""
         if view is None:
             view = self._default_panel_view(trans)
@@ -1495,7 +1506,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if elt:
                 yield elt
 
-    def get_tool_to_dict(self, trans, tool: "Tool", tool_help: bool = False) -> dict[str, Any]:
+    def get_tool_to_dict(self, trans: "ProvidesUserContext", tool: "Tool", tool_help: bool = False) -> dict[str, Any]:
         """Return tool's panel payload.
         Use cache if present, store to cache otherwise.
         Note: The cached payload is specific to the calls from toolbox.
@@ -1510,21 +1521,29 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if not tool_help:
                 to_dict = self._tool_to_dict_cache.get(tool.id)
             if not to_dict:
-                to_dict = tool.to_dict(trans, tool_help=True) if tool_help else tool.to_panel_entry(trans)
+                to_dict = (
+                    tool.to_dict(cast("ProvidesHistoryContext", trans), tool_help=True)
+                    if tool_help
+                    else tool.to_panel_entry(trans)
+                )
                 if not tool_help:
                     self._tool_to_dict_cache[tool.id] = to_dict
         else:
             if not tool_help:
                 to_dict = self._tool_to_dict_cache_admin.get(tool.id)
             if not to_dict:
-                to_dict = tool.to_dict(trans, tool_help=True) if tool_help else tool.to_panel_entry(trans)
+                to_dict = (
+                    tool.to_dict(cast("ProvidesHistoryContext", trans), tool_help=True)
+                    if tool_help
+                    else tool.to_panel_entry(trans)
+                )
                 if not tool_help:
                     self._tool_to_dict_cache_admin[tool.id] = to_dict
         return to_dict
 
     def to_dict(
         self,
-        trans,
+        trans: "PanelViewTrans",
         in_panel: bool = True,
         tool_help: bool = False,
         view: str | None = None,
@@ -1553,7 +1572,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 rval.append(self.get_tool_to_dict(trans, tool, tool_help=tool_help))
         return rval
 
-    def to_panel_view(self, trans, view="default_panel_view", **kwds):
+    def to_panel_view(self, trans: "PanelViewTrans", view="default_panel_view", **kwds):
         """
         Create a panel view representation of the toolbox.
         Uses the structure:
@@ -1602,7 +1621,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         else:
             return self._tool_versions_by_id.get(lineage_tool_version.id, {}).get(lineage_tool_version.version)
 
-    def _build_filter_method(self, trans):
+    def _build_filter_method(self, trans: "ProvidesUserContext"):
         context = Bunch(toolbox=self, trans=trans)
         filters = self._filter_factory.build_filters(trans)
         return lambda element, item_type: _filter_for_panel(element, item_type, filters, context)

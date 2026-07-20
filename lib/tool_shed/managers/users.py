@@ -65,9 +65,12 @@ def _validate(trans: ProvidesUserContext, email: str, password: str, confirm: st
         return f"The term '{username}' is a reserved word in the Tool Shed, so it cannot be used as a public user name."
     message = "\n".join(
         (
-            validate_email(trans, email),
-            validate_password(trans, password, confirm),
-            validate_publicname(trans, username),
+            # tool_shed.context.ProvidesUserContext is a structurally analogous but
+            # nominally distinct hierarchy from galaxy.managers.context.ProvidesAppContext;
+            # trans satisfies everything these helpers actually use (.app, .sa_session).
+            validate_email(trans, email),  # type: ignore[arg-type]
+            validate_password(trans, password, confirm),  # type: ignore[arg-type]
+            validate_publicname(trans, username),  # type: ignore[arg-type]
         )
     ).rstrip()
     return message

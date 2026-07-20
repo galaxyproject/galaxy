@@ -241,12 +241,17 @@ from galaxy.util.sanitize_html import sanitize_html
 if TYPE_CHECKING:
     from sqlalchemy.sql.expression import BindParameter
 
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
     from galaxy.objectstore import (
         BaseObjectStore,
         ObjectStorePopulator,
         QuotaSourceMap,
     )
     from galaxy.schema.invocation import InvocationMessageUnion
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -333,6 +338,7 @@ CANNOT_SHARE_PRIVATE_DATASET_MESSAGE = "Attempting to share a non-shareable data
 
 if TYPE_CHECKING:
     from galaxy.datatypes.data import Data
+    from galaxy.datatypes.protocols import DatasetHasHidProtocol
     from galaxy.tools import DefaultToolState
     from galaxy.workflow.modules import WorkflowModule
 
@@ -5790,7 +5796,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                     return item
         return None
 
-    def get_converted_dataset_deps(self, trans, target_ext, use_cached_job=False):
+    def get_converted_dataset_deps(self, trans: "ProvidesUserContext", target_ext, use_cached_job=False):
         """
         Returns dict of { "dependency" => HDA }
         """
@@ -5802,7 +5808,13 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return {dep: self.get_converted_dataset(trans, dep, use_cached_job=use_cached_job) for dep in depends_list}
 
     def get_converted_dataset(
-        self, trans, target_ext, target_context=None, history=None, include_errored=False, use_cached_job=False
+        self,
+        trans: "ProvidesUserContext",
+        target_ext,
+        target_context=None,
+        history=None,
+        include_errored=False,
+        use_cached_job=False,
     ):
         """
         Return converted dataset(s) if they exist, along with a dict of dependencies.
@@ -5846,7 +5858,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             iter(
                 self.datatype.convert_dataset(
                     trans,
-                    self,
+                    # get_converted_dataset is only invoked on hid-bearing datasets
+                    # (history dataset associations), which carry the conversion output.
+                    cast("DatasetHasHidProtocol", self),
                     target_ext,
                     return_output=True,
                     visible=False,
@@ -5992,10 +6006,10 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             return creating_job_associations[0].job
         return None
 
-    def get_display_applications(self, trans):
+    def get_display_applications(self, trans: "GalaxyWebTransaction"):
         return self.datatype.get_display_applications_by_dataset(self, trans)
 
-    def get_datasources(self, trans):
+    def get_datasources(self, trans: "ProvidesUserContext"):
         """
         Returns datasources for dataset; if datasources are not available
         due to indexing, indexing is started. Return value is a dictionary
@@ -6011,12 +6025,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 msg = None
                 data_source = source_list
             else:
-                # Convert.
-                if isinstance(source_list, str):
-                    source_list = [source_list]
-
+                # Convert. Each data_sources entry maps to a single source name.
                 # Loop through sources until viable one is found.
-                for source in source_list:
+                for source in [source_list]:
                     msg = self.convert_dataset(trans, source)
                     # No message or PENDING means that source is viable. No
                     # message indicates conversion was done and is successful.
@@ -6029,7 +6040,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
         return data_sources_dict
 
-    def convert_dataset(self, trans, target_type):
+    def convert_dataset(self, trans: "ProvidesUserContext", target_type):
         """
         Converts a dataset to the target_type and returns a message indicating
         status of the conversion. None is returned to indicate that dataset
@@ -6046,7 +6057,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             return {"kind": self.conversion_messages.ERROR, "message": dep_error.value}
 
         # Check dataset state and return any messages.
-        msg = None
+        msg: dict[str, Any] | Dataset.conversion_messages | None = None
         if converted_dataset and converted_dataset.state == Dataset.states.ERROR:
             stmt = select(JobToOutputDatasetAssociation.job_id).filter_by(dataset_id=converted_dataset.id).limit(1)
             job_id = trans.sa_session.scalars(stmt).first()
@@ -6258,7 +6269,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
 
     def to_library_dataset_dataset_association(
         self,
-        trans,
+        trans: "ProvidesUserContext",
         target_folder,
         replace_dataset=None,
         parent_id=None,
@@ -11421,7 +11432,7 @@ class UserAddress(Base, RepresentById):
     # TODO: db migration to rename column, then use `desc`
     user: Mapped[Optional["User"]] = relationship(back_populates="addresses", order_by=sqlalchemy.desc("update_time"))
 
-    def to_dict(self, trans):
+    def to_dict(self, trans: "ProvidesAppContext"):
         return {
             "id": trans.security.encode_id(self.id),
             "name": sanitize_html(self.name),

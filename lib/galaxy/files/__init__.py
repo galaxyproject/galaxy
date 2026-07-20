@@ -7,6 +7,7 @@ from typing import (
     Any,
     NamedTuple,
     Protocol,
+    TYPE_CHECKING,
 )
 
 from galaxy import exceptions
@@ -25,6 +26,9 @@ from .plugins import (
     FileSourcePluginLoader,
     FileSourcePluginsConfig,
 )
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
 
 log = logging.getLogger(__name__)
 
@@ -371,7 +375,7 @@ OptionalUserContext = FileSourcesUserContext | None
 class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
-    def __init__(self, trans, **kwargs):
+    def __init__(self, trans: "ProvidesUserContext", **kwargs):
         self.trans = trans
 
     @property
@@ -422,6 +426,9 @@ class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiab
     @property
     def app_vault(self):
         """App vault namespace"""
+        # `.vault` is only declared on the full `StructuredApp`, not on the narrower
+        # `MinimalManagerApp` that `ProvidesAppContext.app` is typed as (e.g. Celery
+        # task contexts). The real Galaxy app always has it.
         vault = self.trans.app.vault
         return vault or defaultdict(lambda: None)
 

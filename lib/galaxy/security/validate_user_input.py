@@ -7,6 +7,7 @@ user inputs - so these methods do not need to be escaped.
 
 import logging
 import re
+from typing import TYPE_CHECKING
 
 import dns.resolver
 from dns.exception import DNSException
@@ -17,6 +18,12 @@ from sqlalchemy import (
 from typing_extensions import LiteralString
 
 from galaxy.objectstore import ObjectStore
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -75,7 +82,9 @@ def validate_publicname_str(publicname):
     return ""
 
 
-def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, validate_domain=False):
+def validate_email(
+    trans: "ProvidesAppContext", email, user=None, check_dup=True, allow_empty=False, validate_domain=False
+):
     """
     Validates the email format.
     Checks whether the domain is blocklisted in the disposable domains configuration.
@@ -134,7 +143,7 @@ def extract_domain(email, base_only=False):
     return domain
 
 
-def validate_publicname(trans, publicname, user=None):
+def validate_publicname(trans: "ProvidesAppContext", publicname, user=None):
     """
     Check that publicname respects the minimum and maximum string length, the
     allowed characters, and that the username is not taken already.
@@ -165,13 +174,15 @@ def transform_publicname(publicname):
     return publicname
 
 
-def validate_password(trans, password, confirm):
+def validate_password(trans: "ProvidesAppContext", password, confirm):
     if password != confirm:
         return "Passwords do not match."
     return validate_password_str(password)
 
 
-def validate_preferred_object_store_id(trans, object_store: ObjectStore, preferred_object_store_id: str | None) -> str:
+def validate_preferred_object_store_id(
+    trans: "ProvidesUserContext", object_store: ObjectStore, preferred_object_store_id: str | None
+) -> str:
     return object_store.validate_selected_object_store_id(trans.user, preferred_object_store_id) or ""
 
 

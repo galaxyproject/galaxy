@@ -27,9 +27,12 @@ log = logging.getLogger(__name__)
 router = Router(tags=["group_roles"])
 
 
-def group_role_to_model(trans, group_id: int, role, displayed_name: str | None = None) -> GroupRoleResponse:
+def group_role_to_model(
+    trans: ProvidesAppContext, group_id: int, role, displayed_name: str | None = None
+) -> GroupRoleResponse:
     encoded_group_id = Security.security.encode_id(group_id)
     encoded_role_id = Security.security.encode_id(role.id)
+    assert trans.url_builder
     url = trans.url_builder("group_role", group_id=encoded_group_id, role_id=encoded_role_id)
     displayed_name = displayed_name or role.name
     return GroupRoleResponse(id=role.id, name=displayed_name, url=url)

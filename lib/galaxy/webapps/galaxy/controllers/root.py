@@ -34,7 +34,7 @@ class RootController(controller.BaseUIController, UsesAnnotations):
         super().__init__(app)
 
     @web.expose
-    def default(self, trans, target1=None, target2=None, **kwd):
+    def default(self, trans: GalaxyWebTransaction, target1=None, target2=None, **kwd):
         """
         Called on any url that does not match a controller method.
         """

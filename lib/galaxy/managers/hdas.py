@@ -44,7 +44,11 @@ from galaxy.managers import (
     taggable,
     users,
 )
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -83,6 +87,7 @@ from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
     from galaxy.model import LibraryDatasetDatasetAssociation
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -338,7 +343,7 @@ class HDAManager(
         # override to scope to history owner
         return self._user_annotation(hda, hda.user)
 
-    def _set_permissions(self, trans, hda, role_ids_dict):
+    def _set_permissions(self, trans: ProvidesUserContext, hda, role_ids_dict):
         # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
         # need to ensure that they did not associate roles that would cause accessibility problems.
         security_agent = trans.app.security_agent
@@ -656,7 +661,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             keys = self._view_to_keys("inaccessible")
         return super().serialize(item, keys, user=user, **context)
 
-    def serialize_display_apps(self, item, key, trans=None, **context):
+    def serialize_display_apps(self, item, key, trans: ProvidesAppContext | None = None, **context):
         """
         Return dictionary containing new-style display app urls.
         """
@@ -680,7 +685,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         return display_apps
 
-    def serialize_old_display_applications(self, item, key, trans=None, **context):
+    def serialize_old_display_applications(self, item, key, trans: "GalaxyWebTransaction | None" = None, **context):
         """
         Return dictionary containing old-style display app urls.
         """
@@ -691,6 +696,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             and hda.state == HistoryDatasetAssociation.states.OK
             and not hda.deleted
         ):
+            assert trans is not None
             display_link_fn = hda.datatype.get_display_links
             for display_app in hda.datatype.get_display_types():
                 target_frame, display_links = display_link_fn(

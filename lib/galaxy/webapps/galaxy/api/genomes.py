@@ -10,6 +10,7 @@ from fastapi.responses import Response
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
+from galaxy.work.context import SessionRequestContext
 from . import (
     depends,
     DependsOnTrans,
@@ -82,7 +83,7 @@ class FastAPIGenomes:
     )
     def show(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         id: str = IdPathParam,
         reference: bool = ReferenceQueryParam,
         num: int = NumQueryParam,

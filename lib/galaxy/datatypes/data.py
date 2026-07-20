@@ -69,6 +69,11 @@ from . import (
 if TYPE_CHECKING:
     from galaxy.datatypes.display_applications.application import DisplayApplication
     from galaxy.datatypes.registry import Registry
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 XSS_VULNERABLE_MIME_TYPES = [
     "image/svg+xml",  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -397,7 +402,7 @@ class Data(metaclass=DataMeta):
         return error, msg, messagetype
 
     def _archive_composite_dataset(
-        self, trans, data: DatasetHasHidProtocol, headers: Headers, do_action: str = "zip"
+        self, trans: "GalaxyWebTransaction", data: DatasetHasHidProtocol, headers: Headers, do_action: str = "zip"
     ) -> tuple[ZipstreamWrapper | str, Headers]:
         # save a composite object into a compressed archive for downloading
         assert data.name
@@ -518,7 +523,7 @@ class Data(metaclass=DataMeta):
         )
         return to_content_disposition(filename)
 
-    def _serve_file_download(self, headers, data, trans, to_ext, file_size, **kwd):
+    def _serve_file_download(self, headers, data, trans: "GalaxyWebTransaction", to_ext, file_size, **kwd):
         if self.is_archive_download(trans.app.datatypes_registry, data.extension):
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
         else:
@@ -529,7 +534,9 @@ class Data(metaclass=DataMeta):
             headers["Content-Disposition"] = self.download_content_disposition(data, to_ext, **kwd)
             return open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb"), headers
 
-    def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
+    def _serve_binary_file_contents_as_text(
+        self, trans: "ProvidesUserContext", data, headers, file_size, max_peek_size
+    ):
         # Use text/plain so the browser preserves whitespace and line endings
         # and does not attempt to interpret stray markup as HTML.
         headers["content-type"] = "text/plain; charset=utf-8"
@@ -538,7 +545,7 @@ class Data(metaclass=DataMeta):
         with open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb") as fh:
             return unicodify(fh.read(max_peek_size)), headers
 
-    def _serve_file_contents(self, trans, data, headers, preview, file_size, max_peek_size):
+    def _serve_file_contents(self, trans: "ProvidesUserContext", data, headers, preview, file_size, max_peek_size):
         from galaxy.datatypes import images
 
         preview = util.string_as_bool(preview)
@@ -559,7 +566,7 @@ class Data(metaclass=DataMeta):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -671,7 +678,9 @@ class Data(metaclass=DataMeta):
                 result += indicate_data_truncated()
         return result
 
-    def _yield_user_file_content(self, trans, from_dataset: HasCreatingJob, filename: str, headers: Headers) -> IO:
+    def _yield_user_file_content(
+        self, trans: "ProvidesAppContext", from_dataset: HasCreatingJob, filename: str, headers: Headers
+    ) -> IO:
         """This method sets the content type header to text/plain if we don't trust html content."""
         if trans.app.config.sanitize_all_html and headers.get("content-type", None) == "text/html":
             # Check to see if this dataset's parent job is allowlisted
@@ -790,7 +799,9 @@ class Data(metaclass=DataMeta):
     ) -> Union["DisplayApplication", None]:
         return self.display_applications.get(key, default)
 
-    def get_display_applications_by_dataset(self, dataset: DatasetProtocol, trans) -> dict[str, "DisplayApplication"]:
+    def get_display_applications_by_dataset(
+        self, dataset: DatasetProtocol, trans: "GalaxyWebTransaction"
+    ) -> dict[str, "DisplayApplication"]:
         rval = {}
         for key, value in self.display_applications.items():
             value = value.filter_by_dataset(dataset, trans)
@@ -860,7 +871,7 @@ class Data(metaclass=DataMeta):
 
     def convert_dataset(
         self,
-        trans,
+        trans: "ProvidesUserContext",
         original_dataset: DatasetHasHidProtocol,
         target_type: str,
         return_output: bool = False,
@@ -1048,7 +1059,7 @@ class Data(metaclass=DataMeta):
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
 
-    def _clean_and_set_mime_type(self, trans, mime: str, headers: Headers) -> None:
+    def _clean_and_set_mime_type(self, trans: "ProvidesAppContext", mime: str, headers: Headers) -> None:
         if mime.lower() in XSS_VULNERABLE_MIME_TYPES:
             if not getattr(trans.app.config, "serve_xss_vulnerable_mimetypes", True):
                 mime = DEFAULT_MIME_TYPE
@@ -1330,7 +1341,7 @@ class ZarrDirectory(Directory):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,

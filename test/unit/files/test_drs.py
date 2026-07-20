@@ -2,7 +2,10 @@ import io
 import json
 import os
 import urllib
-from typing import Any
+from typing import (
+    Any,
+    cast,
+)
 from unittest import mock
 
 import pytest
@@ -12,6 +15,7 @@ from galaxy.files import (
     DictFileSourcesUserContext,
     ProvidesFileSourcesUserContext,
 )
+from galaxy.managers.context import ProvidesUserContext
 from ._util import (
     assert_realizes_as,
     assert_realizes_contains,
@@ -42,7 +46,7 @@ def test_provides_file_sources_user_context_oidc_access_tokens():
     class DummyTrans:
         user = DummyUser()
 
-    tokens = ProvidesFileSourcesUserContext(DummyTrans()).oidc_access_tokens
+    tokens = ProvidesFileSourcesUserContext(cast(ProvidesUserContext, DummyTrans())).oidc_access_tokens
     assert tokens == {"oidc": "oidc-token", "keycloak": "keycloak-token"}
 
 
@@ -52,7 +56,7 @@ def test_provides_file_sources_user_context_oidc_access_tokens_anonymous():
     class DummyTrans:
         user = None
 
-    assert ProvidesFileSourcesUserContext(DummyTrans()).oidc_access_tokens is None
+    assert ProvidesFileSourcesUserContext(cast(ProvidesUserContext, DummyTrans())).oidc_access_tokens is None
 
 
 def test_drs_http_headers_template_expansion():

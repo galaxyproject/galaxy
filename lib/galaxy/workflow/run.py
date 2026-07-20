@@ -3,6 +3,7 @@ import uuid
 from collections.abc import MutableMapping
 from typing import (
     Any,
+    cast,
     Optional,
     TYPE_CHECKING,
 )
@@ -46,6 +47,7 @@ from galaxy.workflow.run_request import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.model import (
         HistoryItem,
         Workflow,
@@ -53,7 +55,7 @@ if TYPE_CHECKING:
         WorkflowStep,
         WorkflowStepConnection,
     )
-    from galaxy.webapps.base.webapp import GalaxyWebTransaction
+    from galaxy.structured_app import StructuredApp
     from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
@@ -125,7 +127,7 @@ def __invoke(
 
 
 def queue_invoke(
-    trans: "GalaxyWebTransaction",
+    trans: "ProvidesHistoryContext",
     workflow: "Workflow",
     workflow_run_config: WorkflowRunConfig,
     request_params: dict[str, Any] | None = None,
@@ -145,7 +147,10 @@ def queue_invoke(
     initial_state = model.WorkflowInvocation.states.NEW
     if workflow_run_config.requires_materialization:
         initial_state = model.WorkflowInvocation.states.REQUIRES_MATERIALIZATION
-    return trans.app.workflow_scheduling_manager.queue(
+    # workflow_scheduling_manager is only declared on StructuredApp; every caller
+    # reaches this with the full application, not a minimal Celery app
+    app = cast("StructuredApp", trans.app)
+    return app.workflow_scheduling_manager.queue(
         workflow_invocation, request_params, flush=flush, initial_state=initial_state
     )
 
@@ -375,7 +380,7 @@ STEP_OUTPUT_DELAYED = object()
 
 
 class ModuleInjector(Protocol):
-    trans: "WorkRequestContext"
+    trans: "ProvidesHistoryContext"
 
     def inject(self, step, step_args=None, steps=None, **kwargs):
         pass
@@ -458,7 +463,7 @@ class WorkflowProgress:
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
-    def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: dict[str, Any]):
+    def replacement_for_input(self, trans: "ProvidesHistoryContext", step: "WorkflowStep", input_dict: dict[str, Any]):
         replacement: (
             NoReplacement | model.DatasetCollectionInstance | list[model.DatasetCollectionInstance] | HistoryItem
         ) = NO_REPLACEMENT
@@ -492,6 +497,7 @@ class WorkflowProgress:
         elif (step_input := step.inputs_by_name.get(prefixed_name)) and step_input.default_value_set:
             replacement = step_input.default_value
             if is_data:
+                assert trans.history is not None
                 replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
         return replacement
 
@@ -825,7 +831,9 @@ class WorkflowProgress:
         )
 
     def raw_to_galaxy(self, value: dict):
-        return raw_to_galaxy(self.module_injector.trans.app, self.module_injector.trans.history, value)
+        trans = self.module_injector.trans
+        assert trans.history is not None
+        return raw_to_galaxy(trans.app, trans.history, value)
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
         assert step_invocation.workflow_step.module

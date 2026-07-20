@@ -120,7 +120,9 @@ class ServiceBase:
         """
         return get_class(class_name)
 
-    def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+    def get_object(
+        self, trans: ProvidesUserContext, id, class_name, check_ownership=False, check_accessible=False, deleted=None
+    ):
         """
         Convenience method to get a model object with the specified checks.
         """
@@ -167,7 +169,7 @@ class ServesExportStores:
 class ConsumesModelStores:
     def create_objects_from_store(
         self,
-        trans,
+        trans: ProvidesUserContext,
         payload,
         history=None,
         for_library=False,

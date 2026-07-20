@@ -4,6 +4,7 @@ User Manager testing.
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
 
+from typing import cast
 from unittest.mock import patch
 
 from sqlalchemy import (
@@ -22,6 +23,7 @@ from galaxy.managers import (
 )
 from galaxy.security.passwords import check_password
 from galaxy.util import now
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from .base import BaseTestCase
 
 # =============================================================================
@@ -95,7 +97,7 @@ class TestUserManager(BaseTestCase):
     def test_trimming(self):
         self.log("emails must be trimmed")
         user2b, message = self.user_manager.register(
-            self.trans,
+            cast(GalaxyWebTransaction, self.trans),
             email=" user2b@user2.user2 ",
             username="user2b",
             password=default_password,
@@ -105,7 +107,7 @@ class TestUserManager(BaseTestCase):
         assert user2b.email == "user2b@user2.user2"
         self.log("usernames must be trimmed")
         user2c, message = self.user_manager.register(
-            self.trans,
+            cast(GalaxyWebTransaction, self.trans),
             email="user2c@user2.user2",
             username=" user2c ",
             password=default_password,
@@ -289,7 +291,9 @@ class TestUserManager(BaseTestCase):
 
         with patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
             with patch("galaxy.model.unique_id", return_value="reset_token") as mock_unique_id:
-                result = self.user_manager.send_reset_email(self.trans, dict(email="user@nopassword.com"))
+                result = self.user_manager.send_reset_email(
+                    cast(GalaxyWebTransaction, self.trans), dict(email="user@nopassword.com")
+                )
                 mock_send_mail.assert_called_once()
                 mock_unique_id.assert_called_once()
         assert result is None
@@ -301,7 +305,7 @@ class TestUserManager(BaseTestCase):
         user = self.user_manager.create(email=user_email, username="nopassword")
         self.user_manager.delete(user)
         assert user.deleted is True
-        message = self.user_manager.send_reset_email(self.trans, {"email": user_email})
+        message = self.user_manager.send_reset_email(cast(GalaxyWebTransaction, self.trans), {"email": user_email})
         assert message is None
 
     def test_get_user_by_identity(self):

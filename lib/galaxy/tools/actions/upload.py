@@ -4,8 +4,11 @@ import os
 
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.job_execution.output_collect import copy_collection_metadata_from_target_dict
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
     History,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     Job,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -39,7 +42,7 @@ class BaseUploadToolAction(ToolAction):
     def execute(
         self,
         tool,
-        trans,
+        trans: ProvidesHistoryContext,
         incoming: ToolStateJobInstancePopulatedT | None = None,
         history: History | None = None,
         job_params=None,
@@ -69,7 +72,9 @@ class BaseUploadToolAction(ToolAction):
         rval = self._setup_job(tool, trans, incoming, dataset_upload_inputs, history, preferred_object_store_id)
         return rval
 
-    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history, preferred_object_store_id):
+    def _setup_job(
+        self, tool, trans: ProvidesHistoryContext, incoming, dataset_upload_inputs, history, preferred_object_store_id
+    ):
         """Take persisted uploads and create a job for given tool."""
 
     def _create_job(self, *args, **kwds):
@@ -81,7 +86,9 @@ class BaseUploadToolAction(ToolAction):
 
 
 class UploadToolAction(BaseUploadToolAction):
-    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history, preferred_object_store_id):
+    def _setup_job(
+        self, tool, trans: ProvidesHistoryContext, incoming, dataset_upload_inputs, history, preferred_object_store_id
+    ):
         check_timer = ExecutionTimer()
         uploaded_datasets = upload_common.get_uploaded_datasets(
             trans, "", incoming, dataset_upload_inputs, history=history
@@ -105,7 +112,9 @@ class UploadToolAction(BaseUploadToolAction):
 
 
 class FetchUploadToolAction(BaseUploadToolAction):
-    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history, preferred_object_store_id):
+    def _setup_job(
+        self, tool, trans: ProvidesHistoryContext, incoming, dataset_upload_inputs, history, preferred_object_store_id
+    ):
         # Now replace references in requests with these.
         files = incoming.get("files", [])
         files_iter = iter(files)
@@ -135,7 +144,7 @@ class FetchUploadToolAction(BaseUploadToolAction):
 
         replace_file_srcs(request)
 
-        outputs = []
+        outputs: list[HistoryDatasetAssociation | HistoryDatasetCollectionAssociation] = []
         for target in request.get("targets", []):
             destination = target.get("destination")
             destination_type = destination.get("type")
@@ -161,7 +170,7 @@ class FetchUploadToolAction(BaseUploadToolAction):
         )
 
 
-def _precreate_fetched_hdas(trans, history, target, outputs):
+def _precreate_fetched_hdas(trans: ProvidesHistoryContext, history, target, outputs):
     for item in target.get("elements", []):
         name = item.get("name", None)
         if name is None:
@@ -186,7 +195,7 @@ def _precreate_fetched_hdas(trans, history, target, outputs):
         item["object_id"] = data.id
 
 
-def _precreate_fetched_collection_instance(trans, history, target, outputs):
+def _precreate_fetched_collection_instance(trans: ProvidesHistoryContext, history, target, outputs):
     collection_type = target.get("collection_type")
     if not collection_type:
         # Can't precreate collections of unknown type at this time.
