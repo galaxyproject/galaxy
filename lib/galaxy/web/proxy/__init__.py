@@ -19,6 +19,7 @@ from galaxy.util.lazy_process import (
 from galaxy.web.framework import url_for
 
 if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
@@ -35,28 +36,20 @@ class ProxyManager:
         "port",
     )
 
-    # Attributes populated dynamically from config via setattr in __init__.
-    manage_dynamic_proxy: bool
-    dynamic_proxy_bind_port: int
-    dynamic_proxy_external_proxy: bool
-
-    def __init__(self, config):
-        for option in [
-            "manage_dynamic_proxy",
-            "dynamic_proxy_bind_port",
-            "dynamic_proxy_bind_ip",
-            "dynamic_proxy_debug",
-            "dynamic_proxy_external_proxy",
-            "dynamic_proxy_prefix",
-            "proxy_session_map",
-            "dynamic_proxy",
-            "cookie_path",
-            "dynamic_proxy_golang_noaccess",
-            "dynamic_proxy_golang_clean_interval",
-            "dynamic_proxy_golang_docker_address",
-            "dynamic_proxy_golang_api_key",
-        ]:
-            setattr(self, option, getattr(config, option))
+    def __init__(self, config: "GalaxyAppConfiguration"):
+        self.manage_dynamic_proxy = config.manage_dynamic_proxy
+        self.dynamic_proxy_bind_port = config.dynamic_proxy_bind_port
+        self.dynamic_proxy_bind_ip = config.dynamic_proxy_bind_ip
+        self.dynamic_proxy_debug = config.dynamic_proxy_debug
+        self.dynamic_proxy_external_proxy = config.dynamic_proxy_external_proxy
+        self.dynamic_proxy_prefix = config.dynamic_proxy_prefix
+        self.proxy_session_map = config.proxy_session_map
+        self.dynamic_proxy = config.dynamic_proxy
+        self.cookie_path = config.cookie_path
+        self.dynamic_proxy_golang_noaccess = config.dynamic_proxy_golang_noaccess
+        self.dynamic_proxy_golang_clean_interval = config.dynamic_proxy_golang_clean_interval
+        self.dynamic_proxy_golang_docker_address = config.dynamic_proxy_golang_docker_address
+        self.dynamic_proxy_golang_api_key = config.dynamic_proxy_golang_api_key
 
         if self.manage_dynamic_proxy:
             self.lazy_process = self.__setup_lazy_process(config)
