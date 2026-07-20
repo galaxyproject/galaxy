@@ -1,0 +1,10 @@
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list:paired
+steps:
+  step1:
+    tool_id: collection_type_source
+    in:
+      input_collect: input_collection

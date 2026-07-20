@@ -5,9 +5,9 @@ registry coupling (rank_type_plugin) that requires galaxy-data's model layer.
 """
 
 from galaxy.tool_util.collections import (  # noqa: F401 — re-exports
+    _normalize_collection_type,
     CollectionTypeDescription as _BaseCollectionTypeDescription,
     CollectionTypeDescriptionFactory as _BaseFactory,
-    _normalize_collection_type,
     map_over_collection_type,
 )
 from .registry import DATASET_COLLECTION_TYPES_REGISTRY
