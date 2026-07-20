@@ -28,7 +28,6 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.dataset_collections.adapters import CollectionAdapter
-from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.data.bundles.models import get_path_headers
 from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters.options import ParameterOption
@@ -591,16 +590,12 @@ class DataTableFilter(Filter):
         # get column from data table, by index or column name
         entries = None
         try:
-            entries = {
-                f[int(self.data_table_column)]
-                for f in cast(TabularToolDataTable, trans.app.tool_data_tables[self.table_name]).get_fields()
-            }
+            entries = {f[int(self.data_table_column)] for f in trans.app.tool_data_tables[self.table_name].get_fields()}
         except ValueError:
             pass
         try:
             entries = {
-                f[self.data_table_column]
-                for f in cast(TabularToolDataTable, trans.app.tool_data_tables[self.table_name]).get_named_fields_list()
+                f[self.data_table_column] for f in trans.app.tool_data_tables[self.table_name].get_named_fields_list()
             }
         except KeyError:
             pass

@@ -326,6 +326,12 @@ class ToolDataTable(Dictifiable):
     def is_current_version(self, other_version):
         return self._loaded_content_version == other_version
 
+    def get_fields(self) -> list[list[str]]:
+        raise NotImplementedError("Abstract method")
+
+    def get_named_fields_list(self) -> list[dict[str | int, str]]:
+        raise NotImplementedError("Abstract method")
+
     def merge_tool_data_table(
         self,
         other_table: "ToolDataTable",
