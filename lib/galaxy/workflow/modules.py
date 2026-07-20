@@ -156,7 +156,6 @@ if TYPE_CHECKING:
     from galaxy.managers.context import (
         ProvidesAppContext,
         ProvidesHistoryContext,
-        ProvidesUserContext,
     )
     from galaxy.schema.invocation import InvocationMessageUnion
     from galaxy.structured_app import StructuredApp
@@ -342,21 +341,15 @@ class WorkflowModule:
     type: str
     name: str
 
-    def __init__(self, trans: "ProvidesUserContext", content_id=None, **kwds):
-        # Every runtime construction path supplies a history context (a web
-        # transaction in the editor, a SessionRequestContext from the API, or a
-        # WorkRequestContext during invocation); the module's config- and
-        # run-time methods rely on that. The one narrower caller
-        # (tools/recommendations.py, ProvidesAppContext) only introspects tool
-        # inputs and never reaches a history-dependent path.
-        self.trans = cast("ProvidesHistoryContext", trans)
+    def __init__(self, trans: "ProvidesHistoryContext", content_id=None, **kwds):
+        self.trans = trans
         self.content_id = content_id
         self.state = DefaultToolState()
 
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
+    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
         module = Class(trans, **kwds)
         input_connections = d.get("input_connections", {})
         module.recover_state(d.get("tool_state"), input_connections=input_connections, **kwds)
@@ -364,7 +357,7 @@ class WorkflowModule:
         return module
 
     @classmethod
-    def from_workflow_step(Class, trans: "ProvidesUserContext", step, **kwds):
+    def from_workflow_step(Class, trans: "ProvidesHistoryContext", step, **kwds):
         module = Class(trans, **kwds)
         module.recover_state(step.tool_inputs, from_tool_form=False)
         module.label = step.label
@@ -749,12 +742,12 @@ class SubWorkflowModule(WorkflowModule):
     _modules: list[Any] | None = None
     subworkflow: Workflow
 
-    def __init__(self, trans: "ProvidesUserContext", content_id=None, **kwds):
+    def __init__(self, trans: "ProvidesHistoryContext", content_id=None, **kwds):
         super().__init__(trans, content_id, **kwds)
         self.post_job_actions: dict[str, Any] | None = None
 
     @classmethod
-    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
+    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
         module = super().from_dict(trans, d, **kwds)
         if "subworkflow" in d:
             detached = kwds.get("detached", False)
@@ -767,7 +760,7 @@ class SubWorkflowModule(WorkflowModule):
         return module
 
     @classmethod
-    def from_workflow_step(Class, trans: "ProvidesUserContext", step, **kwds):
+    def from_workflow_step(Class, trans: "ProvidesHistoryContext", step, **kwds):
         module = super().from_workflow_step(trans, step, **kwds)
         module.subworkflow = step.subworkflow
         return module
@@ -2013,18 +2006,18 @@ class PickValueModule(WorkflowModule):
 
     MODES = ("first_non_null", "first_or_skip", "the_only_non_null", "all_non_null")
 
-    def __init__(self, trans: "ProvidesUserContext", content_id=None, **kwds):
+    def __init__(self, trans: "ProvidesHistoryContext", content_id=None, **kwds):
         super().__init__(trans, content_id=content_id, **kwds)
         self.post_job_actions: dict[str, Any] = {}
 
     @classmethod
-    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
+    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
         module = super().from_dict(trans, d, **kwds)
         module.post_job_actions = d.get("post_job_actions", {})
         return module
 
     @classmethod
-    def from_workflow_step(Class, trans: "ProvidesUserContext", step, **kwds):
+    def from_workflow_step(Class, trans: "ProvidesHistoryContext", step, **kwds):
         module = super().from_workflow_step(trans, step, **kwds)
         module.post_job_actions = {}
         for pja in step.post_job_actions:
@@ -2519,7 +2512,7 @@ class ToolModule(WorkflowModule):
     name = "Tool"
 
     def __init__(
-        self, trans: "ProvidesUserContext", tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds
+        self, trans: "ProvidesHistoryContext", tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds
     ):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
@@ -2554,7 +2547,7 @@ class ToolModule(WorkflowModule):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
+    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
         tool_id = d.get("content_id") or d.get("tool_id")
         tool_version = d.get("tool_version")
         if tool_version:
@@ -2606,7 +2599,7 @@ class ToolModule(WorkflowModule):
         return module
 
     @classmethod
-    def from_workflow_step(Class, trans: "ProvidesUserContext", step, **kwds):
+    def from_workflow_step(Class, trans: "ProvidesHistoryContext", step, **kwds):
         tool_version = step.tool_version
         tool_uuid = step.tool_uuid
         kwds["exact_tools"] = False
@@ -3385,7 +3378,7 @@ class WorkflowModuleFactory:
     def __init__(self, module_types: dict[str, type[WorkflowModule]]):
         self.module_types = module_types
 
-    def from_dict(self, trans: "ProvidesUserContext", d, **kwargs) -> WorkflowModule:
+    def from_dict(self, trans: "ProvidesHistoryContext", d, **kwargs) -> WorkflowModule:
         """
         Return module initialized from the data in dictionary `d`.
         """
@@ -3395,7 +3388,7 @@ class WorkflowModuleFactory:
         ), f"Unexpected workflow step type [{type}] not found in [{self.module_types.keys()}]"
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
-    def from_workflow_step(self, trans: "ProvidesUserContext", step: WorkflowStep, **kwargs) -> WorkflowModule:
+    def from_workflow_step(self, trans: "ProvidesHistoryContext", step: WorkflowStep, **kwargs) -> WorkflowModule:
         """
         Return module initialized from the WorkflowStep object `step`.
         """

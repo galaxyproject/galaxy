@@ -395,12 +395,12 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
 
         return True
 
-    def get_workflow_svg_from_id(self, trans: ProvidesUserContext, id, version=None, for_embed=False) -> bytes:
+    def get_workflow_svg_from_id(self, trans: ProvidesHistoryContext, id, version=None, for_embed=False) -> bytes:
         stored = self.get_stored_accessible_workflow(trans, id)
         workflow = stored.get_internal_version(version)
         return self.get_workflow_svg(trans, workflow, for_embed=for_embed)
 
-    def get_workflow_svg(self, trans: ProvidesUserContext, workflow, for_embed=False) -> bytes:
+    def get_workflow_svg(self, trans: ProvidesHistoryContext, workflow, for_embed=False) -> bytes:
         try:
             svg = self._workflow_to_svg_canvas(trans, workflow, for_embed=for_embed)
             s = STANDALONE_SVG_TEMPLATE % svg.tostring()
@@ -411,7 +411,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             )
             raise exceptions.MessageException(message)
 
-    def _workflow_to_svg_canvas(self, trans: ProvidesUserContext, workflow, for_embed=False):
+    def _workflow_to_svg_canvas(self, trans: ProvidesHistoryContext, workflow, for_embed=False):
         workflow_canvas = WorkflowCanvas()
         for step in workflow.steps:
             # Load from database representation
@@ -493,7 +493,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         )
         return workflow_invocation_step
 
-    def update_invocation_step(self, trans: ProvidesUserContext, decoded_workflow_invocation_step_id, action):
+    def update_invocation_step(self, trans: ProvidesHistoryContext, decoded_workflow_invocation_step_id, action):
         if action is None:
             raise exceptions.RequestParameterMissingException(
                 "Updating workflow invocation step requires an action parameter. "
@@ -707,7 +707,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def build_workflow_from_raw_description(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         raw_workflow_description,
         workflow_create_options,
         source=None,
@@ -771,7 +771,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def update_workflow_from_raw_description(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         stored_workflow: StoredWorkflow,
         raw_workflow_description: RawWorkflowDescription,
         workflow_update_options: WorkflowUpdateOptions,
@@ -844,7 +844,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _workflow_from_raw_description(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         raw_workflow_description,
         workflow_state_resolution_options,
         name,
@@ -1061,7 +1061,7 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict["version"] = len(stored.workflows) - 1
         return wf_dict
 
-    def _sync_stored_workflow(self, trans: ProvidesUserContext, stored_workflow: StoredWorkflow) -> None:
+    def _sync_stored_workflow(self, trans: ProvidesHistoryContext, stored_workflow: StoredWorkflow) -> None:
         if trans.user_is_admin:
             workflow_path = stored_workflow.from_path
             assert workflow_path is not None
@@ -1091,7 +1091,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_path: str,
         stored_workflow: StoredWorkflow,
         workflow: Workflow,
-        trans: ProvidesUserContext | None = None,
+        trans: ProvidesHistoryContext | None = None,
         history: History | None = None,
         user: User | None = None,
     ) -> None:
@@ -1363,7 +1363,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _workflow_to_dict_editor(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         stored: StoredWorkflow | None,
         workflow: Workflow,
         tooltip: bool = True,
@@ -1596,7 +1596,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _workflow_to_dict_export(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         workflow: Workflow,
         stored: StoredWorkflow | None = None,
         internal: bool = False,
@@ -1988,7 +1988,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __load_subworkflows(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         step_dict,
         subworkflow_id_map,
         workflow_state_resolution_options,
@@ -2009,7 +2009,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __module_from_dict(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         steps: list[model.WorkflowStep],
         steps_by_external_id: dict[str, model.WorkflowStep],
         step_dict,
@@ -2095,7 +2095,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __load_subworkflow_from_step_dict(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         step_dict,
         subworkflow_id_map,
         workflow_state_resolution_options,
@@ -2159,7 +2159,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __build_subworkflow_from_url(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         url: str,
         resolving_urls: frozenset[str],
     ) -> model.Workflow:
@@ -2185,7 +2185,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __build_subworkflow_from_trs_url(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         trs_url: str,
         resolving_urls: frozenset[str],
     ) -> model.Workflow:
@@ -2218,7 +2218,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __build_subworkflow_from_trs_id(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         step_dict: dict,
         resolving_urls: frozenset[str],
     ) -> model.Workflow:
@@ -2240,7 +2240,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __build_embedded_subworkflow(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         data,
         workflow_state_resolution_options,
         resolving_urls: frozenset[str] = frozenset(),
@@ -2372,7 +2372,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def get_or_create_workflow_from_trs(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         trs_url: str | None,
         trs_id: str | None = None,
         trs_version: str | None = None,
@@ -2394,7 +2394,7 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow
 
     def create_workflow_from_trs_url(
-        self, trans: ProvidesUserContext, trs_url: str, trs_server: str | None = None
+        self, trans: ProvidesHistoryContext, trs_url: str, trs_server: str | None = None
     ) -> StoredWorkflow:
         _, trs_tool_id, trs_version_id = self.trs_proxy.get_trs_id_and_version_from_trs_url(trs_url=trs_url)
         data = self.trs_proxy.get_version_from_trs_url(trs_url)
@@ -2413,7 +2413,7 @@ class WorkflowContentsManager(UsesAnnotations):
         )
         return created_workflow.stored_workflow
 
-    def get_or_create_workflow_from_url(self, trans: ProvidesUserContext, url: str) -> StoredWorkflow:
+    def get_or_create_workflow_from_url(self, trans: ProvidesHistoryContext, url: str) -> StoredWorkflow:
         """Fetch and import a workflow from an arbitrary URL.
 
         Supports various URL schemes including http://, https://, and base64://.

@@ -14,7 +14,7 @@ import yaml
 
 from galaxy.managers.context import (
     ProvidesAppContext,
-    ProvidesUserContext,
+    ProvidesHistoryContext,
 )
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
@@ -123,7 +123,7 @@ class ToolRecommendations:
         outputs = Dense(vocab_size, activation="sigmoid")(x)
         return Model(inputs=inputs, outputs=[outputs, weights])
 
-    def get_predictions(self, trans: ProvidesUserContext, tool_sequence, remote_model_url):
+    def get_predictions(self, trans: ProvidesHistoryContext, tool_sequence, remote_model_url):
         """
         Compute tool predictions
         """
@@ -193,7 +193,7 @@ class ToolRecommendations:
             model_file.write(model_binary.content)
             return local_dir
 
-    def __get_tool_extensions(self, trans: ProvidesUserContext, tool_id):
+    def __get_tool_extensions(self, trans: ProvidesHistoryContext, tool_id):
         """
         Get the input and output extensions of a tool
         """
@@ -216,7 +216,7 @@ class ToolRecommendations:
         return input_extensions, output_extensions
 
     def __filter_tool_predictions(
-        self, trans: ProvidesUserContext, prediction_data, tool_ids, tool_scores, last_tool_name
+        self, trans: ProvidesHistoryContext, prediction_data, tool_ids, tool_scores, last_tool_name
     ):
         """
         Filter tool predictions based on datatype compatibility and tool connections.
@@ -337,7 +337,7 @@ class ToolRecommendations:
         sorted_c_t, sorted_c_v = self.__get_predicted_tools(last_base_tools, pred_tool_names, last_tool_name, topk)
         return sorted_c_t, sorted_c_v
 
-    def __compute_tool_prediction(self, trans: ProvidesUserContext, tool_sequence):
+    def __compute_tool_prediction(self, trans: ProvidesHistoryContext, tool_sequence):
         """
         Compute the predicted tools for a tool sequences
         Return a payload with the tool sequences and recommended tools

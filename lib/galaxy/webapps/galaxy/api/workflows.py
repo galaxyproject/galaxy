@@ -575,7 +575,7 @@ class WorkflowsAPIController(
         return step_dict
 
     @expose_api
-    def get_tool_predictions(self, trans: ProvidesUserContext, payload, **kwd):
+    def get_tool_predictions(self, trans: ProvidesHistoryContext, payload, **kwd):
         """
         POST /api/workflows/get_tool_predictions
         Fetch predicted tools for a workflow
@@ -691,7 +691,7 @@ class WorkflowsAPIController(
         item["url"] = url_for("workflow", id=encoded_id)
         return item
 
-    def _workflow_from_dict(self, trans: ProvidesUserContext, data, workflow_create_options, source=None):
+    def _workflow_from_dict(self, trans: ProvidesHistoryContext, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
 
         Created workflow is stored in the database and returned.
@@ -1205,7 +1205,7 @@ class FastAPIWorkflows:
     @router.post("/api/workflow_landings/{uuid}/claim")
     def claim_landing(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         uuid: UUID4 = LandingUuidPathParam,
         payload: ClaimLandingPayload | None = Body(...),
         user: model.User = DependsOnUser,
@@ -1215,7 +1215,7 @@ class FastAPIWorkflows:
     @router.get("/api/workflow_landings/{uuid}")
     def get_landing(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         uuid: UUID4 = LandingUuidPathParam,
         user: model.User = DependsOnUser,
     ) -> WorkflowLandingRequest:
@@ -1697,7 +1697,7 @@ class FastAPIInvocations:
         self,
         invocation_id: InvocationIDPathParam,
         step_id: WorkflowInvocationStepIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         payload: InvocationUpdatePayload = Body(...),
     ) -> InvocationStep:
         return self.invocations_service.update_invocation_step(trans=trans, step_id=step_id, action=payload.action)
