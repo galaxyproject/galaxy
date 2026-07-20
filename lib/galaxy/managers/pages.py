@@ -422,8 +422,6 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         return page_revision
 
     def list_revisions(self, trans: ProvidesUserContext, page, sort_desc: bool = False):
-        # security_check actually requires ProvidesUserContext; widened to ProvidesAppContext here
-        # because the services/pages.py callers only declare that much. See report.
         page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
         return sorted(page.revisions, key=lambda r: r.create_time, reverse=sort_desc)
 
@@ -478,8 +476,6 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
             content = unicodify(processor.output(), "utf-8")
             as_dict["content"] = content
         elif content_format == PageContentFormat.markdown.value:
-            # ready_galaxy_markdown_for_export actually requires ProvidesHistoryContext; widened to
-            # ProvidesAppContext here because services/pages.py callers only declare that much. See report.
             content, content_embed_expanded, extra_attributes = ready_galaxy_markdown_for_export(trans, content)
             as_dict["content"] = content_embed_expanded
             as_dict["content_editor"] = content
