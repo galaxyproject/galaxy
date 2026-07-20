@@ -1361,11 +1361,6 @@ class MinimalJobWrapper(HasResourceParameters):
     def working_directory(self):
         if self.__working_directory is None:
             job = self.get_job()
-            # For legacy jobs with working_directory=None and no object_store_id,
-            # JobWorkingDirectory.resolve() falls back to object_store.get_filename()
-            # which uses the config.jobs_directory default. This is equivalent to
-            # the old behavior where _set_object_store_ids was called here as a
-            # no-op guard when object_store_id was already set.
             self.__working_directory = JobWorkingDirectory(job, self.app.object_store).resolve()
         return self.__working_directory
 
@@ -1875,7 +1870,18 @@ class MinimalJobWrapper(HasResourceParameters):
         ``clear_working_directory``) must flush/commit themselves. The enqueue
         path is covered by the ``commit()`` in ``enqueue()``.
         """
-        working_directory = self.job_destination.params.get("job_working_directory", None)
+        # Reads from ``job.destination_params`` (persisted) directly, not via
+        # ``get_destination_configuration``. The latter would fall back to
+        # ``app.config.job_working_directory`` (mapped to ``jobs_directory``) when
+        # no destination param specifies the key, causing the column to be set to
+        # the config default even for destinations that don't specify one. We only
+        # want to persist the column when a destination param explicitly sets it.
+
+        # Reading the persisted params is also what makes the resubmit reorder
+        # load-bearing: ``set_job_destination`` persists the new params but does
+        # not update the mapper's cached destination, so reading
+        # ``self.job_destination.params`` directly would return stale values.
+        working_directory = (job.destination_params or {}).get("job_working_directory", None)
         if isinstance(working_directory, str):
             validate_working_directory_path(working_directory)
             job.working_directory = working_directory
