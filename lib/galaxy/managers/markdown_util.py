@@ -20,10 +20,7 @@ import shutil
 import tempfile
 from datetime import datetime
 from re import Match
-from typing import (
-    Any,
-    cast,
-)
+from typing import Any
 
 import markdown
 
@@ -60,7 +57,6 @@ from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
 )
-from galaxy.structured_app import StructuredApp
 from galaxy.util import now
 from galaxy.util.markdown import literal_via_fence
 from galaxy.util.resources import resource_string
@@ -149,7 +145,8 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         hda_manager = trans.app.hda_manager
         history_manager = trans.app.history_manager
         workflow_manager = trans.app.workflow_manager
-        job_manager = JobManager(cast(StructuredApp, trans.app), history_manager)
+        # not trans.app.job_manager, which is the job queue manager of the same name
+        job_manager = trans.app[JobManager]
         collection_manager = trans.app.dataset_collection_manager
 
         def _job_for_job_directive(object_type, object_id):
