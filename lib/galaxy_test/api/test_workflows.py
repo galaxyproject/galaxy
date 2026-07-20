@@ -1226,6 +1226,85 @@ steps:
         refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
         refactor_response.raise_for_status()
 
+    def test_refactor_upgrade_strips_stale_tool_state_keys(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  step:
+    tool_id: multiple_versions_removed
+    tool_version: "0.1"
+    state:
+      inttest: 1
+      old_param: "hello"
+""",
+            fill_defaults=False,
+        )
+        actions = [{"action_type": "upgrade_all_steps"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
+        refactor_response.raise_for_status()
+        workflow_dict = self._download_workflow(workflow_id)
+        step = list(workflow_dict["steps"].values())[0]
+        tool_state = json.loads(step["tool_state"])
+        assert step["tool_version"] == "0.2"
+        assert "inttest" in tool_state
+        assert "old_param" not in tool_state
+
+    def test_import_export_strips_stale_tool_state_keys(self):
+        # Upload a clean workflow at v0.2, download it to get a valid .ga structure,
+        # then inject a stale key and re-import to test the import path.
+        seed_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  step:
+    tool_id: multiple_versions_removed
+    tool_version: "0.2"
+    state:
+      inttest: 1
+""",
+            fill_defaults=False,
+        )
+        workflow_dict = self._download_workflow(seed_id)
+        step = list(workflow_dict["steps"].values())[0]
+        tool_state = json.loads(step["tool_state"])
+        tool_state["old_param"] = "hello"
+        step["tool_state"] = json.dumps(tool_state)
+        workflow_dict["name"] = "Test Stale Keys Re-import"
+        workflow_id = self.workflow_populator.create_workflow(workflow_dict)
+        exported = self._download_workflow(workflow_id)
+        step = list(exported["steps"].values())[0]
+        tool_state = json.loads(step["tool_state"])
+        assert "inttest" in tool_state
+        assert "old_param" not in tool_state
+
+    def test_refactor_upgrade_strips_stale_keys_after_restructure(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  step:
+    tool_id: multiple_versions_restructured
+    tool_version: "0.1"
+    state:
+      filter_type: "gaussian"
+      radius: 3
+""",
+            fill_defaults=False,
+        )
+        actions = [{"action_type": "upgrade_all_steps"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
+        refactor_response.raise_for_status()
+        workflow_dict = self._download_workflow(workflow_id)
+        step = list(workflow_dict["steps"].values())[0]
+        tool_state = json.loads(step["tool_state"])
+        assert step["tool_version"] == "0.2"
+        assert "filter_type" not in tool_state
+        assert "radius" not in tool_state
+
     def test_refactor_subworkflow_tool_state_upgrade(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """

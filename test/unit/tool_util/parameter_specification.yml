@@ -82,12 +82,24 @@ gx_int:
   workflow_step_invalid:
     - parameterx: 5
     - parameter: 'foobar'
+    # stringified numerics are native encoding, not valid decoded format2 state
+    - parameter: "5"
   workflow_step_linked_valid:
     - parameter: 5
     - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
     - parameter: null
     - parameter: 'foobar'
+    - parameter: {__class__: 'ConnectedValue2'}
+  workflow_step_native_valid:
+    - parameter: 5
+    - parameter: "5"
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - parameterx: 5
+    - parameter: "foobar"
     - parameter: {__class__: 'ConnectedValue2'}
 
 
@@ -143,6 +155,16 @@ gx_boolean:
   workflow_step_linked_invalid:
     - parameter: "true"
     - parameter: {__class__: 'ConnectedValue3'}
+  workflow_step_native_valid:
+    - parameter: True
+    - parameter: "true"
+    - parameter: "false"
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - parameter: mytrue
+    - parameter: "yes"
 
 gx_boolean_user:
   request_valid:
@@ -443,6 +465,19 @@ gx_text:
     - parameter: {}
     - parameter: { "moo": "cow" }
     - parameter: {"class": 'ConnectedValue'}
+  workflow_step_native_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    - parameter: null
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {"class": 'ConnectedValue'}
 
 gx_text_optional:
   request_valid:
@@ -658,6 +693,13 @@ gx_select:
   workflow_step_linked_invalid:
   - parameter: 'foobar'
   - parameter: null
+  workflow_step_native_valid:
+  - parameter: "--ex1"
+  - {}
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+  - parameter: 'foobar'
 
 gx_select_optional:
   request_valid:
@@ -797,6 +839,18 @@ gx_select_multiple:
   - parameter: null
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
+  - parameter: ["Ex1"]
+  - parameter: {}
+  - parameter: 5
+  workflow_step_native_valid:
+  - parameter: ["--ex1"]
+  - parameter: ["ex2"]
+  - parameter: "--ex1,ex2"
+  - {}
+  - parameter: null
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
   - parameter: ["Ex1"]
   - parameter: {}
   - parameter: 5
@@ -1009,6 +1063,14 @@ gx_hidden:
   workflow_step_linked_invalid:
     - parameter: 5
     - parameter: null
+  workflow_step_native_valid:
+    - parameter: moocow
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+    - parameter: null
+    - {}
+  workflow_step_native_invalid:
+    - parameter: 5
 
 gx_hidden_optional:
   request_valid:
@@ -1129,6 +1191,9 @@ gx_float:
   workflow_step_invalid:
     - parameterx: 5
     - parameter: 'foobar'
+    # stringified numerics are native encoding, not valid decoded format2 state
+    - parameter: "0.01"
+    - parameter: "5.0"
   workflow_step_linked_valid:
     - parameter: 5
     - parameter: 5.4
@@ -1139,6 +1204,18 @@ gx_float:
     - parameter: {__class__: 'ConnectedValue2'}
   _json_schema_valid_skip:
     test_case_xml_valid: "Galaxy infinity sentinels (__Infinity__, __-Infinity__) are strings not expressible as JSON Schema numbers"
+  workflow_step_native_valid:
+    - parameter: 5
+    - parameter: 5.4
+    - parameter: "5"
+    - parameter: "3.14"
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - parameterx: 5
+    - parameter: "foobar"
+    - parameter: {__class__: 'ConnectedValue2'}
 
 
 gx_float_optional:
@@ -1392,6 +1469,15 @@ gx_data:
    - {src: hda, id: 7}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {__class__: 'ConnectedValueX'}
+  workflow_step_native_valid:
+   - parameter: {__class__: 'ConnectedValue'}
+   - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+   - {}
+   - parameter: null
+   - {src: hda, id: abcdabcd}
+   - {src: hda, id: 7}
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
 
 
 gx_data_optional:
@@ -1664,6 +1750,13 @@ gx_data_collection:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - {}
+  workflow_step_native_valid:
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+  - {}
+  - parameter: null
+  - parameter: {src: hdca, id: abcdabcd}
   test_case_xml_valid:
   - parameter: {class: Collection, collection_type: list, elements: []}
   - parameter:
@@ -1923,6 +2016,33 @@ gx_conditional_boolean:
         test_parameter: true
     - conditional_parameter:
         boolean_parameter: true
+  workflow_step_native_valid:
+    - conditional_parameter:
+        test_parameter: true
+        integer_parameter: 5
+    - conditional_parameter:
+        test_parameter: "true"
+        integer_parameter: "5"
+    - conditional_parameter:
+        test_parameter: false
+        boolean_parameter: true
+    - conditional_parameter:
+        test_parameter: "false"
+        boolean_parameter: "true"
+    - {}
+    - conditional_parameter: {}
+    - conditional_parameter:
+        test_parameter: true
+        integer_parameter: {__class__: 'ConnectedValue'}
+    - conditional_parameter:
+        test_parameter: true
+        integer_parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - conditional_parameter:
+        test_parameter: false
+        integer_parameter: 1
+    - conditional_parameter:
+        test_parameter: "yes"
 
 gx_conditional_boolean_checked:
   request_valid:
@@ -4306,6 +4426,239 @@ gx_section_underscore_name:
   - { __section_opts__: { param: {__class__: ConnectedValue} } }
   - {}
 
+gx_rules:
+  request_valid: &gx_rules_request_valid
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+            expression: '(o)+'
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+          - type: add_filter_regex
+            target_column: 0
+            invert: false
+            expression: '^sample'
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+          - type: paired_identifier
+            columns: [2]
+    - parameter:
+        rules:
+          - type: sort
+            target_column: 0
+            numeric: false
+        mapping: []
+    - parameter:
+        rules:
+          - type: add_filter_compare
+            target_column: 0
+            value: 13.5
+            compare_type: less_than
+        mapping: []
+    - parameter:
+        rules:
+          - type: add_column_substr
+            target_column: 0
+            length: 3
+            substr_type: keep_prefix
+        mapping:
+          - type: paired_or_unpaired_identifier
+            columns: [0]
+    - parameter:
+        rules:
+          - type: add_column_value
+            value: "moo"
+          - type: remove_columns
+            target_columns: [0, 1]
+          - type: swap_columns
+            target_column_0: 0
+            target_column_1: 1
+          - type: split_columns
+            target_columns_0: [0]
+            target_columns_1: [1]
+          - type: add_column_rownum
+            start: 1
+          - type: add_column_basename
+            target_column: 0
+          - type: add_column_concatenate
+            target_column_0: 0
+            target_column_1: 1
+          - type: add_column_group_tag_value
+            value: where
+            default_value: barn
+          - type: add_filter_count
+            count: 1
+            invert: false
+            which: first
+          - type: add_filter_empty
+            target_column: 0
+            invert: false
+          - type: add_filter_matches
+            target_column: 0
+            invert: false
+            value: "cow"
+          - type: add_column_from_sample_sheet_index
+            value: 0
+        mapping: []
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+            expression: '(f)(o)'
+            group_count: 2
+            replacement: null
+            allow_unmatched: true
+        mapping: []
+  request_invalid: &gx_rules_request_invalid
+    # missing entirely
+    - {}
+    # null not allowed
+    - parameter: null
+    # not a dict
+    - parameter: "rules"
+    - parameter: 5
+    # missing required fields
+    - parameter: {rules: []}
+    - parameter: {mapping: []}
+    # invalid rule type
+    - parameter:
+        rules:
+          - type: bogus_rule_type
+        mapping: []
+    # rule missing required keys
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+        mapping: []
+    # invalid regex expression
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+            expression: '(unclosed'
+        mapping: []
+    # invalid mapping type
+    - parameter:
+        rules:
+          - type: sort
+            target_column: 0
+            numeric: false
+        mapping:
+          - type: bogus_mapping
+            columns: [0]
+    # invalid substr_type enum
+    - parameter:
+        rules:
+          - type: add_column_substr
+            target_column: 0
+            length: 3
+            substr_type: invalid_type
+        mapping: []
+    # invalid compare_type enum
+    - parameter:
+        rules:
+          - type: add_filter_compare
+            target_column: 0
+            value: 13
+            compare_type: invalid_compare
+        mapping: []
+    # invalid which enum
+    - parameter:
+        rules:
+          - type: add_filter_count
+            count: 1
+            invert: false
+            which: middle
+        mapping: []
+    # string where int expected
+    - parameter:
+        rules:
+          - type: sort
+            target_column: "zero"
+            numeric: false
+        mapping: []
+    # ConnectedValue not allowed in request
+    - parameter: {__class__: 'ConnectedValue'}
+  request_internal_valid:
+    *gx_rules_request_valid
+  request_internal_invalid:
+    *gx_rules_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_rules_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_rules_request_invalid
+  job_internal_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+  job_internal_invalid:
+    - {}
+    - parameter: null
+  workflow_step_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    # rules not required in workflow_step (connected params absent)
+    - {}
+  workflow_step_invalid:
+    - parameter: "not_a_rules_dict"
+    - parameter: 5
+    - parameterx:
+        rules: []
+        mapping: []
+  workflow_step_linked_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: null
+    - parameter: "not_a_rules_dict"
+    - parameter: {__class__: 'ConnectedValue2'}
+  workflow_step_native_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - parameterx:
+        rules: []
+        mapping: []
+    - parameter: "not_a_rules_dict"
+    - parameter: {__class__: 'ConnectedValue2'}
+    - {}
+  # Index 8 is the unclosed-regex add_column_regex case, rejected by an
+  # AfterValidator that JSON Schema cannot express; the rest of the combo stays checked.
+  _json_schema_skip:
+    request_invalid: [8]
+    request_internal_invalid: [8]
+    request_internal_dereferenced_invalid: [8]
+
 gx_conditional_underscore_name:
   request_valid:
   - { __cond_opts__: { __selector__: "a", param_a: "test" } }
@@ -4320,3 +4673,23 @@ gx_conditional_underscore_name:
   - { __cond_opts__: { __selector__: "a", param_a: "test" } }
   - { __cond_opts__: { __selector__: "a", param_a: {__class__: ConnectedValue} } }
   - {}
+
+gx_conditional_single_when:
+  request_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: false } }
+  request_invalid:
+  - { cond: { enabled: false, param: "not allowed in false branch" } }
+  request_internal_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: false } }
+  job_internal_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: false } }
+  workflow_step_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: false } }
+  workflow_step_linked_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: true, param: {__class__: ConnectedValue} } }
+  - { cond: { enabled: false } }

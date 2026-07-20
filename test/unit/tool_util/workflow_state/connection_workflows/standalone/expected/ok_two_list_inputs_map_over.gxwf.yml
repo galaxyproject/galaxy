@@ -1,0 +1,12 @@
+- target: [valid]
+  value: true
+- target: [step_results, 2, map_over]
+  value: "list"
+- target: [step_results, 2, connections, 0, status]
+  value: "ok"
+- target: [step_results, 2, connections, 0, mapping]
+  value: "list"
+- target: [step_results, 2, connections, 1, status]
+  value: "ok"
+- target: [step_results, 2, connections, 1, mapping]
+  value: "list"

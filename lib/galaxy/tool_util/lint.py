@@ -312,25 +312,44 @@ class LintContext:
 NETWORK_LINTERS = ("BioToolsValid", "EDAMTermsValid")
 
 
-def lint_user_tool_source(user_tool_source: "UserToolSource") -> list[str]:
+def lint_user_tool_source_structured(
+    user_tool_source: "UserToolSource", *, skip_network: bool = True
+) -> "tuple[list[str], list[str]]":
     """Run the lint pipeline against a ``UserToolSource`` pydantic value.
 
-    Returns a list of formatted ``"<linter>: <message>"`` bullets at WARN
-    level or above, suitable for surfacing through ``format_validation_errors``-
-    style consumers (the agent's bullet list, an API 4xx body).
+    Returns ``(error_bullets, warning_bullets)`` — each list contains
+    ``"<linter>: <message>"`` strings split by severity. Callers that need
+    the flat WARN-or-above list can use :func:`lint_user_tool_source`.
 
-    Network-touching linters (``NETWORK_LINTERS``) are skipped; callers
-    create/edit tools synchronously and should not block on third-party
-    services.
+    Network-touching linters (``NETWORK_LINTERS``) are skipped when
+    ``skip_network`` is true. Interactive callers (tool editor save path)
+    keep the default; offline-friendly workflow tooling passes
+    ``skip_network=offline_mode``.
     """
     root_dict = user_tool_source.model_dump(by_alias=True, exclude_none=True)
     tool_source = YamlToolSource(root_dict)
-    lint_context = get_lint_context_for_tool_source(tool_source, skip_types=list(NETWORK_LINTERS))
-    bullets: list[str] = []
-    for message in lint_context.error_messages + lint_context.warn_messages:
-        prefix = f"{message.linter}: " if message.linter else ""
-        bullets.append(f"{prefix}{message.message}")
-    return bullets
+    skip = list(NETWORK_LINTERS) if skip_network else []
+    lint_context = get_lint_context_for_tool_source(tool_source, skip_types=skip)
+    errors = [_format_lint_message(m) for m in lint_context.error_messages]
+    warnings = [_format_lint_message(m) for m in lint_context.warn_messages]
+    return errors, warnings
+
+
+def _format_lint_message(message: "LintMessage") -> str:
+    prefix = f"{message.linter}: " if message.linter else ""
+    return f"{prefix}{message.message}"
+
+
+def lint_user_tool_source(user_tool_source: "UserToolSource") -> list[str]:
+    """Backwards-compatible shim returning a flat WARN-or-above bullet list.
+
+    Preserved for interactive callers (``managers/tools.py``,
+    ``agents/custom_tool.py``) that pre-date the severity-split API and want
+    network linters skipped. New callers should prefer
+    :func:`lint_user_tool_source_structured`.
+    """
+    errors, warnings = lint_user_tool_source_structured(user_tool_source, skip_network=True)
+    return errors + warnings
 
 
 def lint_tool_source(

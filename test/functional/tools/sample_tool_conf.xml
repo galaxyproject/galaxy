@@ -270,6 +270,10 @@
 
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />
+  <tool file="multiple_versions_removed_v01.xml" />
+  <tool file="multiple_versions_removed_v02.xml" />
+  <tool file="multiple_versions_restructured_v01.xml" />
+  <tool file="multiple_versions_restructured_v02.xml" />
   <tool file="html_output.xml" />
   <tool file="html_output_with_extra_files.xml" />
 

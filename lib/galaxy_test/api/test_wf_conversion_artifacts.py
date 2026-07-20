@@ -15,6 +15,7 @@ import json
 from typing import Any
 
 from galaxy.util.resources import resource_string
+from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES
 from .test_workflows import BaseWorkflowsApiTestCase
 
 
@@ -176,3 +177,67 @@ class TestWfConversionArtifacts(BaseWorkflowsApiTestCase):
         # Verify the tool executed and emitted our data
         content = self._history_content(history_id, hid=2)
         assert "Connection only test content" in content
+
+
+class TestWfExportToolStateEncoding(BaseWorkflowsApiTestCase):
+    """Verify .ga export can drop the extra JSON encoding on tool_state."""
+
+    def _tool_steps(self, workflow_dict):
+        return [s for s in workflow_dict["steps"].values() if s.get("type") == "tool"]
+
+    def test_default_download_double_encodes_tool_state(self):
+        """Default .ga export keeps tool_state as a double-encoded JSON string."""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES)
+        downloaded = self.workflow_populator.download_workflow(workflow_id, style="ga")
+        tool_steps = self._tool_steps(downloaded)
+        assert tool_steps
+        for step in tool_steps:
+            assert isinstance(step["tool_state"], str)
+
+    def test_download_tool_state_as_dict(self):
+        """tool_state_as_dict emits tool_state as a JSON object that re-imports."""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES)
+        downloaded = self.workflow_populator.download_workflow(workflow_id, style="ga", tool_state_as_dict=True)
+        tool_steps = self._tool_steps(downloaded)
+        assert tool_steps
+        for step in tool_steps:
+            assert isinstance(step["tool_state"], dict)
+        # The un-stringified .ga round-trips back into Galaxy.
+        reimported_id = self.workflow_populator.create_workflow(downloaded)
+        redownloaded = self.workflow_populator.download_workflow(reimported_id, style="ga")
+        assert self._tool_steps(redownloaded)
+
+    def test_download_clean_as_dict(self):
+        """clean emits cleaned dict tool_state without bookkeeping keys."""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES)
+        downloaded = self.workflow_populator.download_workflow(
+            workflow_id,
+            style="ga",
+            clean=True,
+            tool_state_as_dict=True,
+        )
+        tool_steps = self._tool_steps(downloaded)
+        assert tool_steps
+        for step in tool_steps:
+            tool_state = step["tool_state"]
+            assert isinstance(tool_state, dict)
+            assert "__page__" not in tool_state, tool_state
+            assert "__rerun_remap_job_id__" not in tool_state, tool_state
+
+    def test_download_clean_validate_as_dict(self):
+        """clean + clean_validate keeps the clean for steps that validate."""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES)
+        downloaded = self.workflow_populator.download_workflow(
+            workflow_id,
+            style="ga",
+            clean=True,
+            clean_validate=True,
+            tool_state_as_dict=True,
+        )
+        tool_steps = self._tool_steps(downloaded)
+        assert tool_steps
+        for step in tool_steps:
+            tool_state = step["tool_state"]
+            assert isinstance(tool_state, dict)
+            assert "__page__" not in tool_state, tool_state
+            assert "__rerun_remap_job_id__" not in tool_state, tool_state

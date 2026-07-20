@@ -12,13 +12,9 @@ from typing import (
 )
 
 import yaml
-from gxformat2 import (
-    from_galaxy_native,
-    ImportOptions,
-    python_to_workflow,
-)
 from gxformat2.abstract import from_dict
 from gxformat2.cytoscape import to_cytoscape
+from gxformat2.normalized import ensure_native
 from gxformat2.yaml import ordered_dump
 from pydantic import (
     BaseModel,
@@ -82,6 +78,8 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util.workflow_state.clean import clean_stale_state
+from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values,
@@ -108,6 +106,11 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 from galaxy.work.context import WorkRequestContext
+from galaxy.workflow.format2 import (
+    convert_from_format2,
+    convert_to_format2,
+)
+from galaxy.workflow.gx_validator import ToolboxGetToolInfo
 from galaxy.workflow.modules import (
     module_factory,
     PickValueModule,
@@ -656,10 +659,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_class, as_dict, object_id = artifact_class(trans, as_dict, allow_in_directory=allow_in_directory)
         assert workflow_class == "GalaxyWorkflow"
         # Format 2 Galaxy workflow.
-        galaxy_interface = None
-        import_options = ImportOptions()
-        import_options.deduplicate_subworkflows = True
-        as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
+        as_dict = convert_from_format2(as_dict, None)
         raw_description = RawWorkflowDescription(as_dict)
         created_workflow = self.build_workflow_from_raw_description(trans, raw_description, WorkflowCreateOptions())
         return created_workflow.workflow
@@ -686,15 +686,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_class, as_dict, object_id = artifact_class(trans, as_dict)
         if workflow_class == "GalaxyWorkflow" or "yaml_content" in as_dict:
             # Format 2 Galaxy workflow.
-            galaxy_interface = None
-            import_options = ImportOptions()
-            import_options.deduplicate_subworkflows = True
-            try:
-                as_dict = python_to_workflow(
-                    as_dict, galaxy_interface, workflow_directory=workflow_directory, import_options=import_options
-                )
-            except yaml.scanner.ScannerError as e:
-                raise exceptions.MalformedContents(str(e))
+            as_dict = convert_from_format2(as_dict, workflow_directory)
         return RawWorkflowDescription(as_dict, workflow_path)
 
     def build_workflow_from_raw_description(
@@ -983,6 +975,9 @@ class WorkflowContentsManager(UsesAnnotations):
         history: History | None = None,
         instance_id: int | None = None,
         preserve_external_subworkflow_links: bool = False,
+        clean: bool = False,
+        clean_validate: bool = False,
+        tool_state_as_dict: bool = False,
     ) -> dict[str, Any]:
         """Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
@@ -995,10 +990,17 @@ class WorkflowContentsManager(UsesAnnotations):
         If preserve_external_subworkflow_links is True, subworkflow steps whose subworkflow has
         source_metadata (indicating it was fetched from a URL or TRS) will preserve the external
         reference instead of embedding the full subworkflow content.
+
+        If clean is True, all stale keys are stripped from tool_state using tool definitions.
+        If clean_validate is True, each step's cleaned native tool_state is validated against
+        its tool definition and reverted if it fails (per step).
+
+        If tool_state_as_dict is True, native ('ga' style) tool_state is emitted as a JSON
+        object instead of the default double-encoded JSON string ("the extra JSON encoding").
         """
 
-        def to_format_2(wf_dict, **kwds):
-            return from_galaxy_native(wf_dict, None, **kwds)
+        def to_format_2(wf_dict, json_wrapper: bool):
+            return convert_to_format2(wf_dict, json_wrapper=json_wrapper)
 
         if version is None and instance_id:
             # If the instance_id is provided, we need to extract the workflow instance via the version.
@@ -1019,29 +1021,21 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict = self._workflow_to_dict_run(trans, stored, workflow=workflow, history=history or trans.history)
         elif style == "preview":
             wf_dict = self._workflow_to_dict_preview(trans, workflow=workflow)
-        elif style == "format2":
+        elif style in ("format2", "format2_wrapped_yaml", "ga"):
             wf_dict = self._workflow_to_dict_export(
                 trans,
                 workflow=workflow,
                 stored=stored,
                 preserve_external_subworkflow_links=preserve_external_subworkflow_links,
             )
-            wf_dict = to_format_2(wf_dict)
-        elif style == "format2_wrapped_yaml":
-            wf_dict = self._workflow_to_dict_export(
-                trans,
-                workflow=workflow,
-                stored=stored,
-                preserve_external_subworkflow_links=preserve_external_subworkflow_links,
-            )
-            wf_dict = to_format_2(wf_dict, json_wrapper=True)
-        elif style == "ga":
-            wf_dict = self._workflow_to_dict_export(
-                trans,
-                workflow=workflow,
-                stored=stored,
-                preserve_external_subworkflow_links=preserve_external_subworkflow_links,
-            )
+            if clean:
+                self._clean_native_dict(trans, wf_dict, validate=clean_validate)
+            if style == "format2":
+                wf_dict = self._export_as_format2(trans, wf_dict)
+            elif style == "format2_wrapped_yaml":
+                wf_dict = to_format_2(wf_dict, json_wrapper=True)
+            else:  # native "ga" style
+                self._normalize_native_tool_state(wf_dict, as_dict=tool_state_as_dict)
         else:
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
         if version is not None:
@@ -1052,6 +1046,53 @@ class WorkflowContentsManager(UsesAnnotations):
         else:
             wf_dict["version"] = len(stored.workflows) - 1
         return wf_dict
+
+    def _export_as_format2(self, trans, native_dict):
+        """Export native workflow dict as format2 with schema-aware state blocks.
+
+        Uses the toolbox to resolve tool definitions for clean state conversion.
+        """
+        get_tool_info = ToolboxGetToolInfo(trans.app.toolbox)
+        result = export_workflow_to_format2(ensure_native(native_dict), get_tool_info)
+        return result.format2_dict
+
+    def _clean_native_dict(self, trans, wf_dict, validate=False):
+        """Strip stale keys from a native workflow dict in place.
+
+        Strips every stale key category, including bookkeeping keys such as
+        __current_case__. Leaves each step's tool_state as a decoded JSON
+        object; the caller decides whether to re-encode via
+        ``_normalize_native_tool_state``.
+        """
+        get_tool_info = ToolboxGetToolInfo(trans.app.toolbox)
+        clean_stale_state(
+            ensure_native(wf_dict),
+            wf_dict,
+            get_tool_info,
+            validate=validate,
+        )
+
+    def _normalize_native_tool_state(self, wf_dict, as_dict):
+        """Normalize the encoding of native tool_state across all steps in place.
+
+        When ``as_dict`` is True, tool_state is left as a decoded JSON object
+        (dropping "the extra JSON encoding"); when False, it is (re-)serialized
+        to a double-encoded JSON string, the historical .ga export form. Recurses
+        into embedded subworkflows.
+        """
+        for step_dict in wf_dict.get("steps", {}).values():
+            if not isinstance(step_dict, dict):
+                continue
+            if step_dict.get("type") == "subworkflow" and isinstance(step_dict.get("subworkflow"), dict):
+                self._normalize_native_tool_state(step_dict["subworkflow"], as_dict=as_dict)
+            tool_state = step_dict.get("tool_state")
+            if tool_state is None:
+                continue
+            if as_dict:
+                if isinstance(tool_state, str):
+                    step_dict["tool_state"] = safe_loads(tool_state)
+            elif not isinstance(tool_state, str):
+                step_dict["tool_state"] = json.dumps(tool_state)
 
     def _sync_stored_workflow(self, trans, stored_workflow: StoredWorkflow) -> None:
         if trans.user_is_admin:
@@ -1098,7 +1139,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 abstract_dict = from_dict(wf_dict)
                 ordered_dump(abstract_dict, f)
             else:
-                wf_dict = from_galaxy_native(wf_dict, None, json_wrapper=True)
+                wf_dict = convert_to_format2(wf_dict, json_wrapper=True)
                 f.write(wf_dict["yaml_content"])
 
     def _workflow_to_dict_run(

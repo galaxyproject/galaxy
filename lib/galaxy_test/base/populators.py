@@ -114,6 +114,7 @@ from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util_models.sample_sheet import SampleSheetColumnDefinitions
 from galaxy.util import (
+    asbool,
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
     UNKNOWN,
@@ -2637,6 +2638,13 @@ class BaseWorkflowPopulator(BasePopulator):
                 round_trip_converted_content, client_convert=False, round_trip_conversion=False
             )
 
+        if asbool(os.environ.get("GALAXY_TEST_STRIP_BOOKKEEPING_FROM_WORKFLOWS", "0")):
+            from galaxy.tool_util.workflow_state.clean import strip_bookkeeping_from_workflow
+
+            native = self.download_workflow(workflow_id)
+            strip_bookkeeping_from_workflow(native)
+            workflow_id = self.create_workflow(native)
+
         return workflow_id
 
     def wait_for_invocation(
@@ -2853,6 +2861,9 @@ class BaseWorkflowPopulator(BasePopulator):
         instance: bool | None = None,
         version: int | None = None,
         preserve_external_subworkflow_links: bool | None = None,
+        clean: bool | None = None,
+        clean_validate: bool | None = None,
+        tool_state_as_dict: bool | None = None,
     ) -> dict:
         params: dict[str, Any] = {}
         if style is not None:
@@ -2865,6 +2876,12 @@ class BaseWorkflowPopulator(BasePopulator):
             params["version"] = version
         if preserve_external_subworkflow_links is not None:
             params["preserve_external_subworkflow_links"] = preserve_external_subworkflow_links
+        if clean is not None:
+            params["clean"] = clean
+        if clean_validate is not None:
+            params["clean_validate"] = clean_validate
+        if tool_state_as_dict is not None:
+            params["tool_state_as_dict"] = tool_state_as_dict
         response = self._get(f"workflows/{workflow_id}/download", data=params)
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":

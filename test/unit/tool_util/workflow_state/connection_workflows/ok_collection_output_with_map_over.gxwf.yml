@@ -1,0 +1,15 @@
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list
+steps:
+  split:
+    tool_id: collection_creates_pair
+    in:
+      input1: input_collection
+  consumer:
+    tool_id: collection_paired_test
+    in:
+      f1:
+        source: split/paired_output

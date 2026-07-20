@@ -1,0 +1,4 @@
+- target: [step_results, 1, resolved_outputs, 0, collection_type]
+  value: "paired"
+- target: [step_results, 2, connections, 0, status]
+  value: "ok"

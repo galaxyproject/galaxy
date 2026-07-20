@@ -22,6 +22,7 @@ from galaxy.tool_util_models.parameters import (
     create_test_case_model,
     create_workflow_step_linked_model,
     create_workflow_step_model,
+    create_workflow_step_native_model,
     StateRepresentationT,
     ToolParameterBundle,
     ToolParameterBundleModel,
@@ -165,3 +166,11 @@ class WorkflowStepLinkedToolState(ToolState):
     @classmethod
     def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_workflow_step_linked_model(parameters, name)
+
+
+class WorkflowStepNativeToolState(ToolState):
+    state_representation: Literal["workflow_step_native"] = "workflow_step_native"
+
+    @classmethod
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
+        return create_workflow_step_native_model(parameters, name)

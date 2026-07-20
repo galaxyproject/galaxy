@@ -1,0 +1,20 @@
+<tool id="multiple_versions_restructured" name="multiple_versions_restructured" version="0.2">
+    <command><![CDATA[echo "$filter.filter_type $filter.size" > '$out_file1']]></command>
+    <inputs>
+        <conditional name="filter">
+            <param name="filter_type" type="select">
+                <option value="gaussian" selected="true">Gaussian</option>
+                <option value="median">Median</option>
+            </param>
+            <when value="gaussian">
+                <param name="size" type="float" value="3.0" label="Sigma" />
+            </when>
+            <when value="median">
+                <param name="size" type="integer" value="3" label="Radius" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+</tool>

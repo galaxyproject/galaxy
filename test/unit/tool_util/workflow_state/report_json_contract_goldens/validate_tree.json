@@ -1,0 +1,362 @@
+{
+  "all_failures": [
+    {
+      "message": "unknown key: legacy_param",
+      "step": "2",
+      "tool_id": "Grep1",
+      "workflow": "catA/wf_fail.ga"
+    },
+    {
+      "message": "type mismatch: data vs collection",
+      "step": "2",
+      "tool_id": "Grep1",
+      "workflow": "catA/wf_fail.ga"
+    }
+  ],
+  "categories": [
+    {
+      "name": "catA",
+      "results": [
+        {
+          "category": "catA",
+          "connection_report": null,
+          "error": null,
+          "failures": [],
+          "inline_source_summary": {
+            "invalid": 0,
+            "lint_errors": 0,
+            "lint_warnings": 0,
+            "unsupported": 0
+          },
+          "name": "wf_ok.ga",
+          "path": "catA/wf_ok.ga",
+          "results": [
+            {
+              "errors": [],
+              "inline_source": null,
+              "status": "ok",
+              "step": "0",
+              "tool_id": null,
+              "version": null
+            },
+            {
+              "errors": [],
+              "inline_source": null,
+              "status": "ok",
+              "step": "1",
+              "tool_id": "cat1",
+              "version": "1.0.0"
+            }
+          ],
+          "skipped_reason": null,
+          "summary": {
+            "fail": 0,
+            "ok": 2,
+            "skip": 0
+          }
+        },
+        {
+          "category": "catA",
+          "connection_report": {
+            "has_details": true,
+            "step_results": [
+              {
+                "connections": [
+                  {
+                    "errors": [],
+                    "mapping": null,
+                    "source_output": "output",
+                    "source_step": "0",
+                    "status": "ok",
+                    "target_input": "input",
+                    "target_step": "1"
+                  },
+                  {
+                    "errors": [
+                      "type mismatch: data vs collection"
+                    ],
+                    "mapping": null,
+                    "source_output": "output",
+                    "source_step": "0",
+                    "status": "invalid",
+                    "target_input": "other",
+                    "target_step": "1"
+                  }
+                ],
+                "errors": [],
+                "map_over": null,
+                "resolved_outputs": [
+                  {
+                    "collection_type": null,
+                    "name": "output"
+                  }
+                ],
+                "step": "1",
+                "step_type": "tool",
+                "tool_id": "cat1",
+                "version": "1.0.0"
+              }
+            ],
+            "summary": {
+              "invalid": 1,
+              "ok": 1
+            },
+            "valid": false
+          },
+          "error": null,
+          "failures": [
+            {
+              "message": "unknown key: legacy_param",
+              "step": "2",
+              "tool_id": "Grep1"
+            },
+            {
+              "message": "type mismatch: data vs collection",
+              "step": "2",
+              "tool_id": "Grep1"
+            }
+          ],
+          "inline_source_summary": {
+            "invalid": 0,
+            "lint_errors": 0,
+            "lint_warnings": 0,
+            "unsupported": 0
+          },
+          "name": "wf_fail.ga",
+          "path": "catA/wf_fail.ga",
+          "results": [
+            {
+              "errors": [
+                "unknown key: legacy_param",
+                "type mismatch: data vs collection"
+              ],
+              "inline_source": null,
+              "status": "fail",
+              "step": "2",
+              "tool_id": "Grep1",
+              "version": "1.0.1"
+            },
+            {
+              "errors": [],
+              "inline_source": null,
+              "status": "skip_tool_not_found",
+              "step": "3",
+              "tool_id": "missing_tool",
+              "version": null
+            }
+          ],
+          "skipped_reason": null,
+          "summary": {
+            "fail": 1,
+            "ok": 0,
+            "skip": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "catB",
+      "results": [
+        {
+          "category": "catB",
+          "connection_report": null,
+          "error": "parse error: invalid yaml",
+          "failures": null,
+          "inline_source_summary": null,
+          "name": "wf_error.ga",
+          "path": "catB/wf_error.ga",
+          "results": [],
+          "skipped_reason": null,
+          "summary": null
+        },
+        {
+          "category": "catB",
+          "connection_report": null,
+          "error": null,
+          "failures": null,
+          "inline_source_summary": null,
+          "name": "wf_legacy.ga",
+          "path": "catB/wf_legacy.ga",
+          "results": [],
+          "skipped_reason": "legacy_encoding",
+          "summary": null
+        }
+      ]
+    }
+  ],
+  "inline_source_summary": {
+    "invalid": 0,
+    "lint_errors": 0,
+    "lint_warnings": 0,
+    "unsupported": 0
+  },
+  "root": "/tmp/workflows",
+  "summary": {
+    "error": 1,
+    "fail": 1,
+    "ok": 2,
+    "skip": 1,
+    "skipped": 1
+  },
+  "workflows": [
+    {
+      "category": "catA",
+      "connection_report": null,
+      "error": null,
+      "failures": [],
+      "inline_source_summary": {
+        "invalid": 0,
+        "lint_errors": 0,
+        "lint_warnings": 0,
+        "unsupported": 0
+      },
+      "name": "wf_ok.ga",
+      "path": "catA/wf_ok.ga",
+      "results": [
+        {
+          "errors": [],
+          "inline_source": null,
+          "status": "ok",
+          "step": "0",
+          "tool_id": null,
+          "version": null
+        },
+        {
+          "errors": [],
+          "inline_source": null,
+          "status": "ok",
+          "step": "1",
+          "tool_id": "cat1",
+          "version": "1.0.0"
+        }
+      ],
+      "skipped_reason": null,
+      "summary": {
+        "fail": 0,
+        "ok": 2,
+        "skip": 0
+      }
+    },
+    {
+      "category": "catA",
+      "connection_report": {
+        "has_details": true,
+        "step_results": [
+          {
+            "connections": [
+              {
+                "errors": [],
+                "mapping": null,
+                "source_output": "output",
+                "source_step": "0",
+                "status": "ok",
+                "target_input": "input",
+                "target_step": "1"
+              },
+              {
+                "errors": [
+                  "type mismatch: data vs collection"
+                ],
+                "mapping": null,
+                "source_output": "output",
+                "source_step": "0",
+                "status": "invalid",
+                "target_input": "other",
+                "target_step": "1"
+              }
+            ],
+            "errors": [],
+            "map_over": null,
+            "resolved_outputs": [
+              {
+                "collection_type": null,
+                "name": "output"
+              }
+            ],
+            "step": "1",
+            "step_type": "tool",
+            "tool_id": "cat1",
+            "version": "1.0.0"
+          }
+        ],
+        "summary": {
+          "invalid": 1,
+          "ok": 1
+        },
+        "valid": false
+      },
+      "error": null,
+      "failures": [
+        {
+          "message": "unknown key: legacy_param",
+          "step": "2",
+          "tool_id": "Grep1"
+        },
+        {
+          "message": "type mismatch: data vs collection",
+          "step": "2",
+          "tool_id": "Grep1"
+        }
+      ],
+      "inline_source_summary": {
+        "invalid": 0,
+        "lint_errors": 0,
+        "lint_warnings": 0,
+        "unsupported": 0
+      },
+      "name": "wf_fail.ga",
+      "path": "catA/wf_fail.ga",
+      "results": [
+        {
+          "errors": [
+            "unknown key: legacy_param",
+            "type mismatch: data vs collection"
+          ],
+          "inline_source": null,
+          "status": "fail",
+          "step": "2",
+          "tool_id": "Grep1",
+          "version": "1.0.1"
+        },
+        {
+          "errors": [],
+          "inline_source": null,
+          "status": "skip_tool_not_found",
+          "step": "3",
+          "tool_id": "missing_tool",
+          "version": null
+        }
+      ],
+      "skipped_reason": null,
+      "summary": {
+        "fail": 1,
+        "ok": 0,
+        "skip": 1
+      }
+    },
+    {
+      "category": "catB",
+      "connection_report": null,
+      "error": "parse error: invalid yaml",
+      "failures": null,
+      "inline_source_summary": null,
+      "name": "wf_error.ga",
+      "path": "catB/wf_error.ga",
+      "results": [],
+      "skipped_reason": null,
+      "summary": null
+    },
+    {
+      "category": "catB",
+      "connection_report": null,
+      "error": null,
+      "failures": null,
+      "inline_source_summary": null,
+      "name": "wf_legacy.ga",
+      "path": "catB/wf_legacy.ga",
+      "results": [],
+      "skipped_reason": "legacy_encoding",
+      "summary": null
+    }
+  ]
+}
