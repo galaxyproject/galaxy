@@ -361,15 +361,14 @@ class ToolRecommendations:
                 except Exception:
                     log.exception(f"Failed to find tool {tool_name} in model")
                     return prediction_data
-            sample = np.reshape(sample, (1, self.max_seq_len))
+            model_input = np.reshape(sample, (1, self.max_seq_len))
             # boost the predicted scores using tools' usage
             weight_values = list(self.tool_weights_sorted.values())
             # predict next tools for a test path
             try:
                 import tensorflow as tf
 
-                sample = tf.convert_to_tensor(sample, dtype=tf.int64)
-                prediction, _ = self.loaded_model(sample, training=False)
+                prediction, _ = self.loaded_model(tf.convert_to_tensor(model_input, dtype=tf.int64), training=False)
             except Exception as e:
                 log.exception(e)
                 return prediction_data
