@@ -368,27 +368,15 @@ class JobWorkingDirectory:
         """
         return self._job.working_directory
 
-    def resolve(self, legacy_extra_dir: str | None = None) -> str:
-        """Return the working directory path, creating nothing on disk.
-
-        Args:
-            legacy_extra_dir: Optional subdirectory for legacy object-store
-                paths only. Passed through to ``object_store.get_filename`` as
-                ``extra_dir``. Ignored for custom paths (the custom path is
-                already the full JWD; the ``extra_dir=str(job.id)`` legacy
-                quirk was an object-store artifact, not a conceptual JWD
-                model). Passing this for a custom-path job is a caller bug and
-                raises ``AssertionError``.
-        """
+    def resolve(self) -> str:
+        """Return the working directory path, creating nothing on disk."""
         if self._custom_path:
-            assert legacy_extra_dir is None, "legacy_extra_dir is ignored for custom-path JWDs; caller bug"
             return self._custom_path
         return self._object_store.get_filename(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
             dir_only=True,
             obj_dir=True,
-            extra_dir=legacy_extra_dir,
         )
 
     def exists(self) -> bool:
@@ -402,19 +390,12 @@ class JobWorkingDirectory:
             obj_dir=True,
         )
 
-    def create(self, legacy_extra_dir: str | None = None) -> str:
+    def create(self) -> str:
         """Create the working directory and return its path.
 
         Idempotent: a pre-existing custom path is not an error.
-
-        Args:
-            legacy_extra_dir: Optional subdirectory for legacy object-store
-                paths only. Passed through to the object store as ``extra_dir``.
-                Ignored for custom paths. Passing this for a custom-path job is
-                a caller bug and raises ``AssertionError``.
         """
         if self._custom_path:
-            assert legacy_extra_dir is None, "legacy_extra_dir is ignored for custom-path JWDs; caller bug"
             validate_working_directory_path(self._custom_path)
             os.makedirs(self._custom_path, exist_ok=True)
             return self._custom_path
@@ -423,14 +404,12 @@ class JobWorkingDirectory:
             base_dir=_JOB_WORK_BASE_DIR,
             dir_only=True,
             obj_dir=True,
-            extra_dir=legacy_extra_dir,
         )
         return self._object_store.get_filename(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
             dir_only=True,
             obj_dir=True,
-            extra_dir=legacy_extra_dir,
         )
 
     def delete(self) -> None:
