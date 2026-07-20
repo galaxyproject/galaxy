@@ -4082,9 +4082,9 @@ export interface components {
         }
         /** XrefDict */
         XrefDict: {
-            /** Type */
+            /** type */
             type: string
-            /** Value */
+            /** value */
             value: string
         }
     }

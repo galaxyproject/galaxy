@@ -25,8 +25,57 @@ concurrency:
   cancel-in-progress: true
 permissions: {}
 jobs:
+  prepare-mulled-cache:
+    name: Prepare mulled resolution cache
+    runs-on: ubuntu-latest
+    steps:
+      - name: Select weekly cache
+        run: echo "MULLED_CACHE_WEEK=$(date -u +%G-%V)" >> "$GITHUB_ENV"
+      - name: Restore Biocontainers repository index
+        id: restore-mulled-cache
+        uses: actions/cache/restore@v6.1.0
+        with:
+          key: biocontainers-repository-index-${{ env.MULLED_CACHE_WEEK }}
+          path: '${{ runner.temp }}/mulled-resolution-seed'
+      - name: Check out Galaxy for mulled-cache
+        if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7.0.0
+        with:
+          path: 'galaxy cache source'
+          persist-credentials: false
+      - name: Fetch Biocontainers repository index
+        id: fetch-mulled-cache
+        if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        env:
+          SEED_DIRECTORY: '${{ runner.temp }}/mulled-resolution-seed'
+        run: |
+          python3 'galaxy cache source/lib/galaxy/tool_util/deps/mulled/mulled_cache.py' \
+              --namespace biocontainers \
+              --output "$SEED_DIRECTORY/biocontainers.json"
+      - name: Save Biocontainers repository index
+        if: steps.restore-mulled-cache.outputs.cache-hit != 'true' && steps.fetch-mulled-cache.outcome == 'success'
+        uses: actions/cache/save@v6.1.0
+        with:
+          key: biocontainers-repository-index-${{ env.MULLED_CACHE_WEEK }}
+          path: '${{ runner.temp }}/mulled-resolution-seed'
+      - name: Create fallback seed
+        if: steps.fetch-mulled-cache.outcome == 'failure'
+        env:
+          SEED_DIRECTORY: '${{ runner.temp }}/mulled-resolution-seed'
+        run: |
+          mkdir -p "$SEED_DIRECTORY"
+          echo '{"namespace":"biocontainers","repositories":[]}' > "$SEED_DIRECTORY/biocontainers.json"
+      - name: Upload mulled resolution cache seed
+        uses: actions/upload-artifact@v7
+        with:
+          name: mulled-resolution-cache-seed
+          path: '${{ runner.temp }}/mulled-resolution-seed/biocontainers.json'
+          retention-days: 1
+
   test:
     name: Test
+    needs: prepare-mulled-cache
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -63,9 +112,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Python
         run: uv python install
+      - name: Download mulled resolution cache seed
+        uses: actions/download-artifact@v8
+        with:
+          name: mulled-resolution-cache-seed
+          path: '${{ runner.temp }}/mulled-resolution-seed'
       - name: Install Apptainer's singularity
         uses: './galaxy root/.github/actions/install_apptainer'
       - name: Run tests
+        env:
+          GALAXY_TEST_MULLED_RESOLUTION_CACHE_SEED: '${{ runner.temp }}/mulled-resolution-seed/biocontainers.json'
+          GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_DATA_DIR: '${{ runner.temp }}/mulled-resolution-cache/data'
+          GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_LOCK_DIR: '${{ runner.temp }}/mulled-resolution-cache/locks'
         run: |
           . .ci/minikube-test-setup/start_services.sh
           ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
