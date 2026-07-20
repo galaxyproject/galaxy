@@ -133,8 +133,8 @@ importers:
         specifier: ^3.0.6
         version: 3.4.10
       echarts:
-        specifier: ^5.5.1
-        version: 5.5.1
+        specifier: ^6.1.0
+        version: 6.1.0
       elkjs:
         specifier: ^0.11.1
         version: 0.11.1
@@ -227,7 +227,7 @@ importers:
         version: 1.16.1
       postcss:
         specifier: ^8.4.6
-        version: 8.5.15
+        version: 8.5.20
       pretty-bytes:
         specifier: ^6.1.1
         version: 6.1.1
@@ -296,7 +296,7 @@ importers:
         version: 0.14.10(vue@2.7.16)
       vue-echarts:
         specifier: ^7.0.3
-        version: 7.0.3(echarts@5.5.1)(vue@2.7.16)
+        version: 7.0.3(echarts@6.1.0)(vue@2.7.16)
       vue-infinite-scroll:
         specifier: ^2.0.2
         version: 2.0.2
@@ -393,7 +393,7 @@ importers:
         version: 0.4.0
       autoprefixer:
         specifier: 10.5.0
-        version: 10.5.0(postcss@8.5.15)
+        version: 10.5.0(postcss@8.5.20)
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -496,7 +496,7 @@ importers:
         version: 6.1.3
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@types/node@25.9.3)(typescript@5.8.3)
+        version: 10.9.2(@types/node@26.1.1)(typescript@5.8.3)
       tsup:
         specifier: ^8.4.0
         version: 8.5.1(postcss@8.5.20)(typescript@5.8.3)(yaml@2.9.0)
@@ -505,7 +505,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^4.0.14
-        version: 4.1.8(@types/node@25.9.3)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@25.9.3)(typescript@5.8.3))(vite@8.1.5(@types/node@25.9.3)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@26.1.1)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.1.1)(typescript@5.8.3))(vite@8.1.5(@types/node@26.1.1)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
 
 packages:
 
@@ -2946,8 +2946,8 @@ packages:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
 
-  echarts@5.5.1:
-    resolution: {integrity: sha512-Fce8upazaAXUVUVsjgV6mBnGuqgO+JNDlcgF79Dksy4+wgGpQB2lmYoO4TSweFg/mZITdpGHomw/cNBJZj1icA==}
+  echarts@6.1.0:
+    resolution: {integrity: sha512-q0yaFPggC9FUdsWH4blavRWFmxdrIodbkoKNAjJudAI6CA9gNPxHtV2RcZNEepZVlk4yvBYkOkbk6HIVpIyHZA==}
 
   editorconfig@0.15.3:
     resolution: {integrity: sha512-M9wIMFx96vq0R4F+gRpY3o2exzb8hEj/n9S8unZtHSvYjibBp/iMufSzvmOcV/laG0ZtuTVGtiJggPOSW2r93g==}
@@ -5933,8 +5933,8 @@ packages:
     resolution: {integrity: sha512-U/PBtDf35ff0D8X8D0jfdzHYEPFxAI7jJlxZXwCSez5M3190m+QobIfh+sWDWSHMCWWJN2AWamkegn6vr6YBTw==}
     engines: {node: '>=18'}
 
-  zrender@5.6.0:
-    resolution: {integrity: sha512-uzgraf4njmmHAbEUxMJ8Oxg+P3fT04O+9p7gY+wJRVxo8Ge+KmYv0WJev945EH4wFuc4OY2NLXz46FZrWS9xJg==}
+  zrender@6.1.0:
+    resolution: {integrity: sha512-oEGMDB6pOP2S6OwRR4PdVv610zrjnA3Bh+JnSG12fYJlBKjtNAoEb5fSUoCOOINlH96I2fU38/A2UpRKs67xYQ==}
 
 snapshots:
 
@@ -6410,12 +6410,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 26.1.1
 
-  '@inquirer/confirm@6.1.1(@types/node@25.9.3)':
+  '@inquirer/confirm@6.1.1(@types/node@26.1.1)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@25.9.3)
-      '@inquirer/type': 4.0.7(@types/node@25.9.3)
+      '@inquirer/core': 11.2.1(@types/node@26.1.1)
+      '@inquirer/type': 4.0.7(@types/node@26.1.1)
     optionalDependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.1.1
     optional: true
 
   '@inquirer/core@10.3.2(@types/node@26.1.1)':
@@ -6431,17 +6431,17 @@ snapshots:
     optionalDependencies:
       '@types/node': 26.1.1
 
-  '@inquirer/core@11.2.1(@types/node@25.9.3)':
+  '@inquirer/core@11.2.1(@types/node@26.1.1)':
     dependencies:
       '@inquirer/ansi': 2.0.7
       '@inquirer/figures': 2.0.7
-      '@inquirer/type': 4.0.7(@types/node@25.9.3)
+      '@inquirer/type': 4.0.7(@types/node@26.1.1)
       cli-width: 4.1.0
       fast-wrap-ansi: 0.2.2
       mute-stream: 3.0.0
       signal-exit: 4.1.0
     optionalDependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.1.1
     optional: true
 
   '@inquirer/figures@1.0.15': {}
@@ -6453,9 +6453,9 @@ snapshots:
     optionalDependencies:
       '@types/node': 26.1.1
 
-  '@inquirer/type@4.0.7(@types/node@25.9.3)':
+  '@inquirer/type@4.0.7(@types/node@26.1.1)':
     optionalDependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.1.1
     optional: true
 
   '@isaacs/cliui@9.0.0': {}
@@ -7235,7 +7235,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.8(@types/node@25.9.3)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@25.9.3)(typescript@5.8.3))(vite@8.1.5(@types/node@25.9.3)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@26.1.1)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.1.1)(typescript@5.8.3))(vite@8.1.5(@types/node@26.1.1)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
 
   '@vitest/expect@4.1.8':
     dependencies:
@@ -7255,14 +7255,14 @@ snapshots:
       msw: 2.10.5(@types/node@26.1.1)(typescript@5.8.3)
       vite: 8.0.16(@types/node@26.1.1)(esbuild@0.28.1)(sass@1.101.0)(yaml@2.9.0)
 
-  '@vitest/mocker@4.1.8(msw@2.14.6(@types/node@25.9.3)(typescript@5.8.3))(vite@8.1.5(@types/node@25.9.3)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))':
+  '@vitest/mocker@4.1.8(msw@2.14.6(@types/node@26.1.1)(typescript@5.8.3))(vite@8.1.5(@types/node@26.1.1)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.8
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      msw: 2.14.6(@types/node@25.9.3)(typescript@5.8.3)
-      vite: 8.1.5(@types/node@25.9.3)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0)
+      msw: 2.14.6(@types/node@26.1.1)(typescript@5.8.3)
+      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0)
 
   '@vitest/pretty-format@4.1.8':
     dependencies:
@@ -7291,7 +7291,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
-      vitest: 4.1.8(@types/node@25.9.3)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@25.9.3)(typescript@5.8.3))(vite@8.1.5(@types/node@25.9.3)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@26.1.1)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.1.1)(typescript@5.8.3))(vite@8.1.5(@types/node@26.1.1)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
 
   '@vitest/utils@4.1.8':
     dependencies:
@@ -7558,13 +7558,13 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  autoprefixer@10.5.0(postcss@8.5.15):
+  autoprefixer@10.5.0(postcss@8.5.20):
     dependencies:
       browserslist: 4.28.2
       caniuse-lite: 1.0.30001799
       fraction.js: 5.3.4
       picocolors: 1.1.1
-      postcss: 8.5.15
+      postcss: 8.5.20
       postcss-value-parser: 4.2.0
 
   available-typed-arrays@1.0.5: {}
@@ -8227,10 +8227,10 @@ snapshots:
       es-errors: 1.3.0
       gopd: 1.2.0
 
-  echarts@5.5.1:
+  echarts@6.1.0:
     dependencies:
       tslib: 2.3.0
-      zrender: 5.6.0
+      zrender: 6.1.0
 
   editorconfig@0.15.3:
     dependencies:
@@ -9714,9 +9714,9 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  msw@2.14.6(@types/node@25.9.3)(typescript@5.8.3):
+  msw@2.14.6(@types/node@26.1.1)(typescript@5.8.3):
     dependencies:
-      '@inquirer/confirm': 6.1.1(@types/node@25.9.3)
+      '@inquirer/confirm': 6.1.1(@types/node@26.1.1)
       '@mswjs/interceptors': 0.41.9
       '@open-draft/deferred-promise': 3.0.0
       '@types/statuses': 2.0.6
@@ -10765,14 +10765,14 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  ts-node@10.9.2(@types/node@25.9.3)(typescript@5.8.3):
+  ts-node@10.9.2(@types/node@26.1.1)(typescript@5.8.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.12
       '@tsconfig/node12': 1.0.11
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
-      '@types/node': 25.9.3
+      '@types/node': 26.1.1
       acorn: 8.15.0
       acorn-walk: 8.3.5
       arg: 4.1.3
@@ -11275,7 +11275,7 @@ snapshots:
       sass: 1.101.0
       yaml: 2.9.0
 
-  vite@8.1.5(@types/node@25.9.3)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0):
+  vite@8.1.5(@types/node@26.1.1)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.5
@@ -11283,7 +11283,7 @@ snapshots:
       rolldown: 1.1.5
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.1.1
       esbuild: 0.27.7
       fsevents: 2.3.3
       sass: 1.101.0
@@ -11300,10 +11300,10 @@ snapshots:
     dependencies:
       '@jedmao/location': 3.0.0
 
-  vitest@4.1.8(@types/node@25.9.3)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@25.9.3)(typescript@5.8.3))(vite@8.1.5(@types/node@25.9.3)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0)):
+  vitest@4.1.8(@types/node@26.1.1)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(happy-dom@20.10.2)(jsdom@28.1.0)(msw@2.14.6(@types/node@26.1.1)(typescript@5.8.3))(vite@8.1.5(@types/node@26.1.1)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.8
-      '@vitest/mocker': 4.1.8(msw@2.14.6(@types/node@25.9.3)(typescript@5.8.3))(vite@8.1.5(@types/node@25.9.3)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.8(msw@2.14.6(@types/node@26.1.1)(typescript@5.8.3))(vite@8.1.5(@types/node@26.1.1)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.8
       '@vitest/runner': 4.1.8
       '@vitest/snapshot': 4.1.8
@@ -11320,10 +11320,10 @@ snapshots:
       tinyexec: 1.1.2
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
-      vite: 8.1.5(@types/node@25.9.3)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0)
+      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.27.7)(sass@1.101.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.1.1
       '@vitest/coverage-v8': 4.1.8(vitest@4.1.8)
       '@vitest/ui': 4.1.8(vitest@4.1.8)
       happy-dom: 20.10.2
@@ -11391,9 +11391,9 @@ snapshots:
     dependencies:
       vue: 2.7.16
 
-  vue-echarts@7.0.3(echarts@5.5.1)(vue@2.7.16):
+  vue-echarts@7.0.3(echarts@6.1.0)(vue@2.7.16):
     dependencies:
-      echarts: 5.5.1
+      echarts: 6.1.0
       vue: 2.7.16
       vue-demi: 0.13.11(vue@2.7.16)
     transitivePeerDependencies:
@@ -11642,6 +11642,6 @@ snapshots:
 
   yoctocolors-cjs@2.1.3: {}
 
-  zrender@5.6.0:
+  zrender@6.1.0:
     dependencies:
       tslib: 2.3.0
