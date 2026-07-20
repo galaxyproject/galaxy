@@ -3,7 +3,6 @@ import uuid
 from collections.abc import MutableMapping
 from typing import (
     Any,
-    cast,
     Optional,
     TYPE_CHECKING,
 )
@@ -55,8 +54,8 @@ if TYPE_CHECKING:
         WorkflowStep,
         WorkflowStepConnection,
     )
-    from galaxy.structured_app import StructuredApp
     from galaxy.work.context import WorkRequestContext
+    from galaxy.workflow.scheduling_manager import WorkflowSchedulingManager
 
 log = logging.getLogger(__name__)
 
@@ -130,6 +129,7 @@ def queue_invoke(
     trans: "ProvidesHistoryContext",
     workflow: "Workflow",
     workflow_run_config: WorkflowRunConfig,
+    workflow_scheduling_manager: "WorkflowSchedulingManager",
     request_params: dict[str, Any] | None = None,
     populate_state: bool = True,
     flush: bool = True,
@@ -147,10 +147,7 @@ def queue_invoke(
     initial_state = model.WorkflowInvocation.states.NEW
     if workflow_run_config.requires_materialization:
         initial_state = model.WorkflowInvocation.states.REQUIRES_MATERIALIZATION
-    # workflow_scheduling_manager is only declared on StructuredApp; every caller
-    # reaches this with the full application, not a minimal Celery app
-    app = cast("StructuredApp", trans.app)
-    return app.workflow_scheduling_manager.queue(
+    return workflow_scheduling_manager.queue(
         workflow_invocation, request_params, flush=flush, initial_state=initial_state
     )
 

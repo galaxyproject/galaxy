@@ -54,6 +54,7 @@ from galaxy.workflow.extract import (
 )
 from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
+from galaxy.workflow.scheduling_manager import WorkflowSchedulingManager
 
 log = logging.getLogger(__name__)
 
@@ -102,8 +103,10 @@ class WorkflowsService(ServiceBase):
         tool_shed_registry: Registry,
         notification_service: NotificationService,
         job_manager: JobManager,
+        workflow_scheduling_manager: WorkflowSchedulingManager,
     ):
         self._workflows_manager = workflows_manager
+        self._workflow_scheduling_manager = workflow_scheduling_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
         self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
@@ -225,6 +228,7 @@ class WorkflowsService(ServiceBase):
                 trans=trans,
                 workflow=workflow,
                 workflow_run_config=run_config,
+                workflow_scheduling_manager=self._workflow_scheduling_manager,
                 request_params=work_request_params,
                 flush=False,
             )
