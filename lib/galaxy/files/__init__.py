@@ -7,7 +7,6 @@ from typing import (
     Any,
     NamedTuple,
     Protocol,
-    TYPE_CHECKING,
 )
 
 from galaxy import exceptions
@@ -27,8 +26,28 @@ from .plugins import (
     FileSourcePluginsConfig,
 )
 
-if TYPE_CHECKING:
-    from galaxy.managers.context import ProvidesUserContext
+
+class ProvidesFileSourcesTransaction(Protocol):
+    """The slice of a Galaxy transaction ProvidesFileSourcesUserContext reads."""
+
+    @property
+    def anonymous(self) -> bool: ...
+
+    @property
+    def user(self) -> Any: ...
+
+    @property
+    def user_ftp_dir(self) -> str | None: ...
+
+    @property
+    def user_is_admin(self) -> bool: ...
+
+    @property
+    def user_vault(self) -> Any: ...
+
+    @property
+    def app(self) -> Any: ...
+
 
 log = logging.getLogger(__name__)
 
@@ -375,7 +394,7 @@ OptionalUserContext = FileSourcesUserContext | None
 class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
-    def __init__(self, trans: "ProvidesUserContext", **kwargs):
+    def __init__(self, trans: ProvidesFileSourcesTransaction, **kwargs):
         self.trans = trans
 
     @property
