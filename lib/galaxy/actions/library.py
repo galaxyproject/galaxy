@@ -7,7 +7,7 @@ import logging
 import os.path
 from typing import (
     Any,
-    TYPE_CHECKING,
+    Protocol,
 )
 
 from markupsafe import escape
@@ -16,6 +16,7 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
@@ -36,9 +37,6 @@ from galaxy.util.path import (
     safe_relpath,
     unsafe_walk,
 )
-
-if TYPE_CHECKING:
-    from galaxy.managers.collections import DatasetCollectionManager
 
 log = logging.getLogger(__name__)
 
@@ -104,19 +102,22 @@ def validate_path_upload(trans: ProvidesUserContext):
         )
 
 
+class CreatesLibraryCollections(Protocol):
+    """What LibraryActions._create_collection needs from its host class.
+
+    Hosts inject collection_manager; check_user_can_add_to_library_item comes
+    from UsesLibraryMixinItems, which they all mix in as well.
+    """
+
+    collection_manager: DatasetCollectionManager
+
+    def check_user_can_add_to_library_item(self, trans: ProvidesUserContext, item, check_accessible: bool = True): ...
+
+
 class LibraryActions:
     """
     Mixin for controllers that provide library functionality.
     """
-
-    if TYPE_CHECKING:
-        # Supplied by the concrete controller/service classes that mix this in
-        # (LibraryDatasetsController, LibraryContentsService).
-        collection_manager: DatasetCollectionManager
-
-        def check_user_can_add_to_library_item(
-            self, trans: ProvidesUserContext, item, check_accessible: bool = True
-        ) -> None: ...
 
     def _upload_dataset(self, trans: ProvidesHistoryContext, folder_id: int, payload):
         # Set up the traditional tool state/params
@@ -371,7 +372,7 @@ class LibraryActions:
         new_folder_dict = dict(created=new_folder)
         return new_folder_dict
 
-    def _create_collection(self, trans: ProvidesUserContext, payload, parent):
+    def _create_collection(self: CreatesLibraryCollections, trans: ProvidesUserContext, payload, parent):
         # Not delegating to library_common, so need to check access to parent folder here.
         self.check_user_can_add_to_library_item(trans, parent, check_accessible=True)
         create_params = api_payload_to_create_params(payload.model_dump())
