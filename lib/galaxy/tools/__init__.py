@@ -3322,10 +3322,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         return message
 
     def get_default_history_by_trans(self, trans: "ProvidesHistoryContext", create=False):
-        # get_history is defined on both concrete contexts (WorkRequestContext and
-        # GalaxyWebTransaction) but not on the ProvidesHistoryContext base; cast is
-        # runtime-erased so the real object's implementation is invoked.
-        return cast(WorkRequestContext, trans).get_history(create=create)
+        return trans.get_history(create=create)
 
     @classmethod
     def get_externally_referenced_paths(self, path):

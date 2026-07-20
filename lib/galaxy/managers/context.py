@@ -323,6 +323,14 @@ class ProvidesHistoryContext(ProvidesUserContext):
     # form is being evaluated
     dataset_matcher_factory: Optional["DatasetMatcherFactory"] = None
 
+    @abc.abstractmethod
+    def get_history(self, create: bool = False) -> History | None:
+        """Return the current history, optionally creating one when there is none.
+
+        Transactions do not always have an active history, so None is a valid
+        response even when create is set.
+        """
+
     @property
     @abc.abstractmethod
     def history(self) -> History | None:
