@@ -6025,15 +6025,12 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 msg = None
                 data_source = source_list
             else:
-                # Convert. Each data_sources entry maps to a single source name.
-                # Loop through sources until viable one is found.
-                for source in [source_list]:
-                    msg = self.convert_dataset(trans, source)
-                    # No message or PENDING means that source is viable. No
-                    # message indicates conversion was done and is successful.
-                    if not msg or msg == self.conversion_messages.PENDING:
-                        data_source = source
-                        break
+                # Convert. Each data_sources entry names a single source.
+                msg = self.convert_dataset(trans, source_list)
+                # No message or PENDING means that source is viable. No
+                # message indicates conversion was done and is successful.
+                if not msg or msg == self.conversion_messages.PENDING:
+                    data_source = source_list
 
             # Store msg.
             data_sources_dict[source_type] = {"name": data_source, "message": msg}
