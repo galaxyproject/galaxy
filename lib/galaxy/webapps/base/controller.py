@@ -6,6 +6,7 @@ import logging
 from collections.abc import Callable
 from typing import (
     Any,
+    Protocol,
     TYPE_CHECKING,
 )
 
@@ -802,31 +803,41 @@ class SharableMixin:
         raise NotImplementedError()
 
 
-class UsesTagsMixin(SharableItemSecurityMixin):
-    if TYPE_CHECKING:
-        # supplied by the BaseController subclasses this mixin is combined with
-        def get_object(
-            self,
-            trans: ProvidesUserContext,
-            id,
-            class_name,
-            check_ownership=False,
-            check_accessible=False,
-            deleted=None,
-        ): ...
+class LooksUpTaggedItems(Protocol):
+    """What the tag helpers need from the object they run on.
 
-    def _get_user_tags(self, trans: ProvidesUserContext, item_class_name, id):
+    get_object comes from the BaseController subclass UsesTagsMixin is combined
+    with, _get_tagged_item from the mixin itself.
+    """
+
+    def get_object(
+        self,
+        trans: ProvidesUserContext,
+        id,
+        class_name,
+        check_ownership=False,
+        check_accessible=False,
+        deleted=None,
+    ): ...
+
+    def _get_tagged_item(self, trans: ProvidesUserContext, item_class_name, id, check_ownership=True): ...
+
+
+class UsesTagsMixin(SharableItemSecurityMixin):
+    def _get_user_tags(self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         return [tag for tag in tagged_item.tags if tag.user == user]
 
-    def _get_tagged_item(self, trans: ProvidesUserContext, item_class_name, id, check_ownership=True):
+    def _get_tagged_item(
+        self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id, check_ownership=True
+    ):
         tagged_item = self.get_object(
             trans, id, item_class_name, check_ownership=check_ownership, check_accessible=True
         )
         return tagged_item
 
-    def _remove_items_tag(self, trans: ProvidesUserContext, item_class_name, id, tag_name):
+    def _remove_items_tag(self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id, tag_name):
         """Remove a tag from an item."""
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
@@ -834,14 +845,16 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         trans.sa_session.commit()
         return deleted
 
-    def _apply_item_tag(self, trans: ProvidesUserContext, item_class_name, id, tag_name, tag_value=None):
+    def _apply_item_tag(
+        self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id, tag_name, tag_value=None
+    ):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         tag_assoc = trans.tag_handler.apply_item_tag(user, tagged_item, tag_name, tag_value)
         trans.sa_session.commit()
         return tag_assoc
 
-    def _get_item_tag_assoc(self, trans: ProvidesUserContext, item_class_name, id, tag_name):
+    def _get_item_tag_assoc(self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id, tag_name):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         log.debug(f"In get_item_tag_assoc with tagged_item {tagged_item}")
