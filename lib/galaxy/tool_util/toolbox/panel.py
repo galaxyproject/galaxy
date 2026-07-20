@@ -10,7 +10,7 @@ from galaxy.util.odict import odict
 from .parser import ensure_tool_conf_item
 
 if TYPE_CHECKING:
-    from galaxy.managers.context import ProvidesUserContext
+    from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.tools import Tool
 
 
@@ -100,7 +100,9 @@ class ToolSection(UsesDictVisibleKeys, HasPanelItems):
 
         return copy
 
-    def to_dict(self, trans: "ProvidesUserContext", link_details=False, tool_help=False, toolbox=None, only_ids=False):
+    def to_dict(
+        self, trans: "ProvidesHistoryContext", link_details=False, tool_help=False, toolbox=None, only_ids=False
+    ):
         """Return a dict that includes section's attributes.
 
         if `only_ids` is `True`, we store only the ids of the section's tools in `section.tools`

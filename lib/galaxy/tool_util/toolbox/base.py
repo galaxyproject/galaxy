@@ -9,7 +9,6 @@ from collections.abc import Iterator
 from errno import ENOENT
 from typing import (
     Any,
-    cast,
     Literal,
     Optional,
     TYPE_CHECKING,
@@ -1506,7 +1505,9 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if elt:
                 yield elt
 
-    def get_tool_to_dict(self, trans: "ProvidesUserContext", tool: "Tool", tool_help: bool = False) -> dict[str, Any]:
+    def get_tool_to_dict(
+        self, trans: "ProvidesHistoryContext", tool: "Tool", tool_help: bool = False
+    ) -> dict[str, Any]:
         """Return tool's panel payload.
         Use cache if present, store to cache otherwise.
         Note: The cached payload is specific to the calls from toolbox.
@@ -1521,22 +1522,14 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if not tool_help:
                 to_dict = self._tool_to_dict_cache.get(tool.id)
             if not to_dict:
-                to_dict = (
-                    tool.to_dict(cast("ProvidesHistoryContext", trans), tool_help=True)
-                    if tool_help
-                    else tool.to_panel_entry(trans)
-                )
+                to_dict = tool.to_dict(trans, tool_help=True) if tool_help else tool.to_panel_entry(trans)
                 if not tool_help:
                     self._tool_to_dict_cache[tool.id] = to_dict
         else:
             if not tool_help:
                 to_dict = self._tool_to_dict_cache_admin.get(tool.id)
             if not to_dict:
-                to_dict = (
-                    tool.to_dict(cast("ProvidesHistoryContext", trans), tool_help=True)
-                    if tool_help
-                    else tool.to_panel_entry(trans)
-                )
+                to_dict = tool.to_dict(trans, tool_help=True) if tool_help else tool.to_panel_entry(trans)
                 if not tool_help:
                     self._tool_to_dict_cache_admin[tool.id] = to_dict
         return to_dict
