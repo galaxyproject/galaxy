@@ -426,9 +426,6 @@ class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiab
     @property
     def app_vault(self):
         """App vault namespace"""
-        # `.vault` is only declared on the full `StructuredApp`, not on the narrower
-        # `MinimalManagerApp` that `ProvidesAppContext.app` is typed as (e.g. Celery
-        # task contexts). The real Galaxy app always has it.
         vault = self.trans.app.vault
         return vault or defaultdict(lambda: None)
 
