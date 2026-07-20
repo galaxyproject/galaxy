@@ -173,6 +173,8 @@ def repeat_inputs_to_array(flat_state_path: str, inputs: dict[str, KVT]) -> list
 
 def validate_explicit_conditional_test_value(test_parameter_name: str, value: Any) -> str | bool | None:
     if value is not None and not isinstance(value, (str, bool)):
+        if isinstance(value, (int, float)):
+            return str(value)
         raise Exception(f"Invalid conditional test value ({value}) for parameter ({test_parameter_name})")
     return value
 
