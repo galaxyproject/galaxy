@@ -19,6 +19,7 @@ from galaxy.schema.groups import (
     GroupUpdatePayload,
 )
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.work.context import SessionRequestContext
 
 
 class GroupsManager:
@@ -27,7 +28,7 @@ class GroupsManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext):
+    def index(self, trans: SessionRequestContext):
         """
         Displays a collection (list) of groups.
         """
@@ -39,7 +40,7 @@ class GroupsManager:
             rval.append(item)
         return rval
 
-    def create(self, trans: ProvidesAppContext, payload: GroupCreatePayload):
+    def create(self, trans: SessionRequestContext, payload: GroupCreatePayload):
         """
         Creates a new group.
         """
@@ -73,7 +74,7 @@ class GroupsManager:
         item["url"] = self._url_for(trans, "group", id=encoded_id)
         return [item]
 
-    def show(self, trans: ProvidesAppContext, group_id: int):
+    def show(self, trans: SessionRequestContext, group_id: int):
         """
         Displays information about a group.
         """
@@ -85,7 +86,7 @@ class GroupsManager:
         item["roles_url"] = self._url_for(trans, "group_roles", group_id=encoded_id)
         return item
 
-    def update(self, trans: ProvidesAppContext, group_id: int, payload: GroupUpdatePayload):
+    def update(self, trans: SessionRequestContext, group_id: int, payload: GroupUpdatePayload):
         """
         Modifies a group.
         """
@@ -138,8 +139,7 @@ class GroupsManager:
         trans.sa_session.add(group)
         trans.sa_session.commit()
 
-    def _url_for(self, trans: ProvidesAppContext, name, **kwargs):
-        assert trans.url_builder
+    def _url_for(self, trans: SessionRequestContext, name, **kwargs):
         return trans.url_builder(name, **kwargs)
 
     def _check_duplicated_group_name(self, sa_session: galaxy_scoped_session, group_name: str) -> None:
