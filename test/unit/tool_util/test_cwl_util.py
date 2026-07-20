@@ -1,9 +1,13 @@
 import tempfile
 
+import pytest
+
 from galaxy.tool_util.cwl.util import (
     FileLiteralTarget,
     galactic_job_json,
+    GalaxyOutput,
     output_properties,
+    output_to_cwl_json,
     UploadTarget,
 )
 
@@ -151,3 +155,56 @@ def test_galactic_job_json_collection_element_filetype():
     for target in captured_targets:
         assert isinstance(target, FileLiteralTarget)
         assert target.properties.get("filetype") == "fastqsanger"
+
+
+def _mock_dataset_metadata(element_id):
+    return {
+        "history_content_type": "dataset",
+        "id": element_id,
+        "file_ext": "txt",
+        "name": element_id,
+    }
+
+
+def _collection_output(collection_type, element_identifiers):
+    metadata = {
+        "history_content_type": "dataset_collection",
+        "collection_type": collection_type,
+        "elements": [
+            {"element_identifier": identifier, "object": _mock_dataset_metadata(identifier)}
+            for identifier in element_identifiers
+        ],
+    }
+    return GalaxyOutput("history_id", "dataset_collection", "collection_id", metadata)
+
+
+def _output_to_cwl_json(galaxy_output):
+    def get_metadata(history_content_type, history_content_id):
+        return _mock_dataset_metadata(history_content_id)
+
+    def get_dataset(dataset_details, filename=None):
+        return {"content": b"hello world", "basename": dataset_details["name"]}
+
+    def get_extra_files(dataset_details):
+        return []
+
+    return output_to_cwl_json(galaxy_output, get_metadata, get_dataset, get_extra_files)
+
+
+def test_output_to_cwl_json_sample_sheet():
+    rval = _output_to_cwl_json(_collection_output("sample_sheet", ["sample1", "sample2"]))
+    assert isinstance(rval, list)
+    assert len(rval) == 2
+    assert rval[0]["basename"] == "sample1"
+
+
+def test_output_to_cwl_json_paired_or_unpaired():
+    rval = _output_to_cwl_json(_collection_output("paired_or_unpaired", ["unpaired"]))
+    assert isinstance(rval, list)
+    assert len(rval) == 1
+    assert rval[0]["basename"] == "unpaired"
+
+
+def test_output_to_cwl_json_unsupported_collection_type():
+    with pytest.raises(NotImplementedError, match="not_a_real_type"):
+        _output_to_cwl_json(_collection_output("not_a_real_type", ["e1"]))
