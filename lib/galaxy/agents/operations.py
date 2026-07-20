@@ -7,14 +7,12 @@ Delegates to the Galaxy service layer for validation, permission checks, and pag
 import logging
 from typing import (
     Any,
-    cast,
     Literal,
 )
 
 from sqlalchemy import select
 
 from galaxy.agents import iwc
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import UserDynamicToolAssociation
@@ -63,7 +61,7 @@ ID_FIELDS = {
 class AgentOperationsManager:
     """Shared operations for AI agents, delegating to Galaxy's service layer."""
 
-    def __init__(self, app: MinimalManagerApp, trans: ProvidesUserContext):
+    def __init__(self, app: MinimalManagerApp, trans: SessionRequestContext):
         self.app = app
         self.trans = trans
         self._tools_service: Any | None = None
@@ -636,13 +634,10 @@ class AgentOperationsManager:
         }
 
     def get_tool_panel(self, view: str | None = None) -> dict[str, Any]:
-        # The agents stack types trans as ProvidesUserContext throughout, but at runtime it is
-        # always the SessionRequestContext the panel-view methods require.
-        trans = cast("SessionRequestContext", self.trans)
         if view is None:
-            view = self.app.toolbox._default_panel_view(trans)
+            view = self.app.toolbox._default_panel_view(self.trans)
 
-        tool_panel = self.app.toolbox.to_panel_view(trans, view=view)
+        tool_panel = self.app.toolbox.to_panel_view(self.trans, view=view)
 
         return {"tool_panel": tool_panel, "view": view}
 

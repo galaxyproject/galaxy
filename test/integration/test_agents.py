@@ -14,6 +14,7 @@ For deterministic tests without LLM, see test_static_agent_backend.py.
 import asyncio
 import logging
 import os
+from typing import cast
 
 import pytest
 from fastmcp import (
@@ -26,6 +27,7 @@ from galaxy.agents.operations import AgentOperationsManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.util.unittest_utils import pytestmark_live_llm
 from galaxy.webapps.galaxy.api.mcp import get_mcp_app
+from galaxy.work.context import SessionRequestContext
 from galaxy_test.base.populators import (
     DatasetPopulator,
     TOOL_WITH_SHELL_COMMAND,
@@ -216,7 +218,8 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
             def user_is_admin(self):
                 return False
 
-        trans = MinimalTrans(self._app)
+        # the double only needs security.encode_id for _encode_ids_in_response
+        trans = cast(SessionRequestContext, MinimalTrans(self._app))
         return AgentOperationsManager(app=self._app, trans=trans)
 
     def test_encode_ids_helper_encodes_nested_ids(self):

@@ -28,7 +28,6 @@ from galaxy.exceptions import (
 from galaxy.managers.agents import AgentService
 from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import (
-    ProvidesHistoryContext,
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import JobManager
@@ -53,6 +52,7 @@ from galaxy.webapps.galaxy.api import (
     DependsOnUser,
     Router,
 )
+from galaxy.work.context import SessionRequestContext
 
 # Import agent system
 try:
@@ -132,7 +132,7 @@ class ChatAPI:
         payload: ChatPayload | None = None,
         query: str | None = Query(default=None, description="Query string for general chat"),
         agent_type: str = Query(default="auto", description="Agent type to use for the query"),
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> ChatResponse:
         """GalaxyAI endpoint - handles both job-based and general chat queries
@@ -412,7 +412,7 @@ class ChatAPI:
         workflow_id: str = Path(..., description="Workflow ID to generate the report for"),
         version: int | None = Query(None, description="Version of the workflow"),
         instance: bool = Query(False, description="Whether the workflow_id is an instance ID"),
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> WorkflowReportResponse:
         """Generate a report for the specified workflow."""
@@ -566,7 +566,7 @@ class ChatAPI:
         self,
         query: str,
         agent_type: str,
-        trans: ProvidesUserContext,
+        trans: SessionRequestContext,
         user: User,
         job=None,
         context: dict[str, Any] | None = None,
@@ -579,7 +579,7 @@ class ChatAPI:
         self,
         query: str,
         agent_type: str,
-        trans: ProvidesUserContext,
+        trans: SessionRequestContext,
         user: User,
         job=None,
         context: dict[str, Any] | None = None,
