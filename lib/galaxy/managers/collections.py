@@ -177,6 +177,54 @@ class DatasetCollectionManager:
 
         return dataset_collection
 
+    @overload
+    def create(
+        self,
+        trans: ProvidesHistoryContext,
+        parent: model.History,
+        name,
+        collection_type,
+        element_identifiers=None,
+        elements=None,
+        implicit_collection_info=None,
+        trusted_identifiers=None,
+        hide_source_items: bool = False,
+        tags=None,
+        copy_elements: bool = False,
+        history=None,
+        set_hid: bool = True,
+        flush=True,
+        completed_job=None,
+        output_name=None,
+        fields: str | list["FieldDict"] | None = None,
+        column_definitions=None,
+        rows=None,
+    ) -> model.HistoryDatasetCollectionAssociation: ...
+
+    @overload
+    def create(
+        self,
+        trans: ProvidesHistoryContext,
+        parent: model.LibraryFolder,
+        name,
+        collection_type,
+        element_identifiers=None,
+        elements=None,
+        implicit_collection_info=None,
+        trusted_identifiers=None,
+        hide_source_items: bool = False,
+        tags=None,
+        copy_elements: bool = False,
+        history=None,
+        set_hid: bool = True,
+        flush=True,
+        completed_job=None,
+        output_name=None,
+        fields: str | list["FieldDict"] | None = None,
+        column_definitions=None,
+        rows=None,
+    ) -> model.LibraryDatasetCollectionAssociation: ...
+
     def create(
         self,
         trans: ProvidesHistoryContext,

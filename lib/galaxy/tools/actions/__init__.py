@@ -1257,7 +1257,7 @@ class OutputCollections:
             # name here is name of the output element - not name
             # of the hdca.
             self.history.stage_addition(hdca)
-            self.out_collection_instances[name] = cast(HistoryDatasetCollectionAssociation, hdca)
+            self.out_collection_instances[name] = hdca
 
 
 def get_ext_or_implicit_ext(hda):
