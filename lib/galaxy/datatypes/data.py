@@ -862,7 +862,7 @@ class Data(metaclass=DataMeta):
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
 
     def find_conversion_destination(
-        self, dataset: DatasetProtocol, accepted_formats: list[str], datatypes_registry, **kwd
+        self, dataset: DatasetProtocol, accepted_formats: Iterable[Union[str, "Data"]], datatypes_registry, **kwd
     ) -> tuple[bool, str | None, Any]:
         """Returns ( direct_match, converted_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions(

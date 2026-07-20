@@ -383,12 +383,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                 dataset_instance = dataset
             assert dataset_instance
             if formats:
-                # find_conversion_destination ultimately accepts extension strings or Data
-                # instances (see Registry.find_conversion_destination_for_dataset_by_extensions),
-                # but the intermediate model/datatype signatures are annotated as list[str].
-                direct_match, target_ext, converted_dataset = dataset_instance.find_conversion_destination(
-                    cast("list[str]", formats)
-                )
+                direct_match, target_ext, converted_dataset = dataset_instance.find_conversion_destination(formats)
                 if not direct_match and target_ext and converted_dataset:
                     dataset_instance = converted_dataset
             self.unsanitized: DatasetInstance = dataset_instance
