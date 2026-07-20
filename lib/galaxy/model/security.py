@@ -13,7 +13,6 @@ from sqlalchemy import (
     not_,
     or_,
     select,
-    Select,
     text,
 )
 from sqlalchemy.exc import IntegrityError
@@ -324,13 +323,13 @@ class GalaxyRBACAgent(RBACAgent):
             # SM: NB: LibraryDatasets became Datasets for some odd reason.
             if isinstance(permission_items[0], LibraryDataset):
                 ids = [item.library_dataset_id for item in permission_items]
-                stmt: Select = select(LibraryDatasetPermissions).where(
+                library_dataset_stmt = select(LibraryDatasetPermissions).where(
                     and_(
                         LibraryDatasetPermissions.library_dataset_id.in_(ids),
                         LibraryDatasetPermissions.action == action.action,
                     )
                 )
-                permissions = trans.sa_session.scalars(stmt)
+                permissions = trans.sa_session.scalars(library_dataset_stmt)
                 # Massage the return data. We will return a list of permissions
                 # for each library dataset. So we initialize the return list to
                 # have an empty list for each dataset. Then each permission is
@@ -344,10 +343,10 @@ class GalaxyRBACAgent(RBACAgent):
             elif isinstance(permission_items[0], Dataset):
                 ids = [item.id for item in permission_items]
 
-                stmt = select(DatasetPermissions).where(
+                dataset_stmt = select(DatasetPermissions).where(
                     and_(DatasetPermissions.dataset_id.in_(ids), DatasetPermissions.action == action.action)
                 )
-                permissions = trans.sa_session.scalars(stmt)
+                permissions = trans.sa_session.scalars(dataset_stmt)
                 # Massage the return data. We will return a list of permissions
                 # for each library dataset. So we initialize the return list to
                 # have an empty list for each dataset. Then each permission is
@@ -535,20 +534,22 @@ class GalaxyRBACAgent(RBACAgent):
         current_user_role_ids = [role.id for role in user.all_roles()]
         library_access_action = self.permitted_actions.LIBRARY_ACCESS.action
 
-        stmt: Select = select(LibraryPermissions).where(LibraryPermissions.action == library_access_action).distinct()
-        restricted_library_ids = [lp.library_id for lp in trans.sa_session.scalars(stmt)]
+        restricted_stmt = (
+            select(LibraryPermissions).where(LibraryPermissions.action == library_access_action).distinct()
+        )
+        restricted_library_ids = [lp.library_id for lp in trans.sa_session.scalars(restricted_stmt)]
 
-        stmt = select(LibraryPermissions).where(
+        accessible_stmt = select(LibraryPermissions).where(
             and_(
                 LibraryPermissions.action == library_access_action,
                 LibraryPermissions.role_id.in_(current_user_role_ids),
             )
         )
-        accessible_restricted_library_ids = [lp.library_id for lp in trans.sa_session.scalars(stmt)]
+        accessible_restricted_library_ids = [lp.library_id for lp in trans.sa_session.scalars(accessible_stmt)]
 
         # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
-        stmt = (
+        library_stmt = (
             select(Library)
             .where(
                 and_(
@@ -561,7 +562,7 @@ class GalaxyRBACAgent(RBACAgent):
             )
             .order_by(Library.name)
         )
-        for library in trans.sa_session.scalars(stmt):
+        for library in trans.sa_session.scalars(library_stmt):
             accessible_libraries.append(library)
         return accessible_libraries
 
