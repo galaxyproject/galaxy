@@ -7,7 +7,11 @@ user inputs - so these methods do not need to be escaped.
 
 import logging
 import re
-from typing import TYPE_CHECKING
+from typing import (
+    Any,
+    Protocol,
+    TYPE_CHECKING,
+)
 
 import dns.resolver
 from dns.exception import DNSException
@@ -20,8 +24,24 @@ from typing_extensions import LiteralString
 from galaxy.objectstore import ObjectStore
 
 if TYPE_CHECKING:
-    from galaxy.managers.context import ProvidesAppContext
     from galaxy.model import User
+
+
+class UserValidationContext(Protocol):
+    """What the user input validators need from a transaction.
+
+    Galaxy and the tool shed keep separate context hierarchies with their own
+    app, config and User classes. Both offer a session and an app, so the
+    validators ask for that much rather than naming either hierarchy and
+    forcing one side to depend on the other.
+    """
+
+    @property
+    def app(self) -> Any: ...
+
+    @property
+    def sa_session(self) -> Any: ...
+
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +101,7 @@ def validate_publicname_str(publicname):
 
 
 def validate_email(
-    trans: "ProvidesAppContext", email, user=None, check_dup=True, allow_empty=False, validate_domain=False
+    trans: UserValidationContext, email, user=None, check_dup=True, allow_empty=False, validate_domain=False
 ):
     """
     Validates the email format.
@@ -141,7 +161,7 @@ def extract_domain(email, base_only=False):
     return domain
 
 
-def validate_publicname(trans: "ProvidesAppContext", publicname, user=None):
+def validate_publicname(trans: UserValidationContext, publicname, user=None):
     """
     Check that publicname respects the minimum and maximum string length, the
     allowed characters, and that the username is not taken already.
@@ -172,7 +192,7 @@ def transform_publicname(publicname):
     return publicname
 
 
-def validate_password(trans: "ProvidesAppContext", password, confirm):
+def validate_password(trans: UserValidationContext, password, confirm):
     if password != confirm:
         return "Passwords do not match."
     return validate_password_str(password)
