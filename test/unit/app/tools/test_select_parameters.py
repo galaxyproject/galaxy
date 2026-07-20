@@ -39,6 +39,13 @@ class TestSelectToolParameter(BaseParameterTestCase):
         self.trans.workflow_building_mode = True
         assert self.param.from_json("42", self.trans) == "42"
 
+    def test_get_initial_value_without_trans(self):
+        # conditional case inference calls this with no transaction
+        param = self._parameter_for(
+            xml="""<param name="my_name" type="select"><option value="a">A</option><option value="b" selected="true">B</option></param>"""
+        )
+        assert param.get_initial_value(None, {}) == "b"
+
     def test_validated_datasets(self):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         with pytest.raises(ValueError) as exc_info:

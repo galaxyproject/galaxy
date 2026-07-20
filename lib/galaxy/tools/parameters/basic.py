@@ -1184,11 +1184,17 @@ class SelectToolParameter(ToolParameter):
         return super().to_python(value, app)
 
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
-        assert trans is not None
-        try:
-            options = cast(list[ParameterOption], self.get_options(trans, other_values))
-        except ImplicitConversionRequired:
-            return None
+        options: list[ParameterOption]
+        if trans is None:
+            # Conditional case inference walks tool state without a transaction
+            # (see galaxy.tools.parameters.visit_input_values); only statically
+            # declared options can be resolved without one.
+            options = [ParameterOption(*o) for o in self.static_options]
+        else:
+            try:
+                options = cast(list[ParameterOption], self.get_options(trans, other_values))
+            except ImplicitConversionRequired:
+                return None
         if not options:
             return None
         value = [option.value for option in options if option.selected]
