@@ -83,11 +83,13 @@ from galaxy.tool_util_models.parameters import (
     FileRequestUri,
 )
 from galaxy.util.compression_utils import get_fileobj
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import (
+    SessionRequestContext,
+    WorkRequestContext,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import LibraryDatasetDatasetAssociation
-    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -685,7 +687,9 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         return display_apps
 
-    def serialize_old_display_applications(self, item, key, trans: "GalaxyWebTransaction | None" = None, **context):
+    # trans arrives through the serializer dispatch's **context, so it has to be optional here;
+    # a request context is required in practice, for trans.request.base.
+    def serialize_old_display_applications(self, item, key, trans: "SessionRequestContext | None" = None, **context):
         """
         Return dictionary containing old-style display app urls.
         """
