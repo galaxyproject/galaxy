@@ -110,7 +110,7 @@ rerunio:
     version: 0.0.0
 rmsxflipbook:
     package: "@galaxyproject/rmsxflipbook"
-    version: 0.0.1
+    version: 0.0.2
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.11
