@@ -821,10 +821,8 @@ class UserDeserializer(base.ModelDeserializer):
         self, item: Any, key: Any, val: Any, trans: ProvidesUserContext | None = None, **context
     ):
         preferred_object_store_id = val
-        # trans defaults to None but validate_preferred_object_store_id requires it; pre-existing pattern,
-        # see the similar TODO on deserialize_username below.
         validation_error = validate_preferred_object_store_id(
-            trans, self.app.object_store, preferred_object_store_id  # type: ignore[arg-type]
+            trans.user if trans else None, self.app.object_store, preferred_object_store_id
         )
         if validation_error:
             raise base.ModelDeserializingError(validation_error)

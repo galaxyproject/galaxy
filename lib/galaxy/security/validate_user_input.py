@@ -20,10 +20,8 @@ from typing_extensions import LiteralString
 from galaxy.objectstore import ObjectStore
 
 if TYPE_CHECKING:
-    from galaxy.managers.context import (
-        ProvidesAppContext,
-        ProvidesUserContext,
-    )
+    from galaxy.managers.context import ProvidesAppContext
+    from galaxy.model import User
 
 log = logging.getLogger(__name__)
 
@@ -181,9 +179,9 @@ def validate_password(trans: "ProvidesAppContext", password, confirm):
 
 
 def validate_preferred_object_store_id(
-    trans: "ProvidesUserContext", object_store: ObjectStore, preferred_object_store_id: str | None
+    user: "User | None", object_store: ObjectStore, preferred_object_store_id: str | None
 ) -> str:
-    return object_store.validate_selected_object_store_id(trans.user, preferred_object_store_id) or ""
+    return object_store.validate_selected_object_store_id(user, preferred_object_store_id) or ""
 
 
 def is_email_banned(email: str, filepath: str | None, canonical_email_rules: dict | None) -> bool:
