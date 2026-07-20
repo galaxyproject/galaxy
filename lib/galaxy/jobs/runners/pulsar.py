@@ -628,16 +628,20 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         Container resolution runs against the Galaxy-side filesystem, but the
         image is read on the compute node, which may expose e.g. CVMFS at a
         different path (cvmfsexec mountrepo mode). Route the resolved image path
-        through the same ``ComputeEnvironment.unstructured_path_rewrite`` used
-        for unstructured tool parameters (only populated in ``rewrite_parameters``
-        mode) so a destination ``file_actions`` ``rewrite`` rule can remap it.
+        through ``ComputeEnvironment.container_path_rewrite`` (only populated in
+        ``rewrite_parameters`` mode) so a destination ``file_actions`` rule with
+        ``path_types: container`` can remap it.
 
         No-op when there is no compute environment (the rewrite is a Pulsar
-        ``rewrite_parameters`` concept) or no matching rule is configured.
+        ``rewrite_parameters`` concept), when the image identifier is not a
+        filesystem path (e.g. a ``docker://`` or registry reference, which the
+        compute node resolves itself), or when no matching rule is configured.
         """
         if container is None or compute_environment is None:
             return
-        rewritten_container_id = compute_environment.unstructured_path_rewrite(container.container_id)
+        if not container.image_identifier_is_path:
+            return
+        rewritten_container_id = compute_environment.container_path_rewrite(container.container_id)
         if rewritten_container_id:
             container.container_id = rewritten_container_id
 
@@ -1342,6 +1346,14 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         else:
             # Did not need to rewrite, use original path or value.
             return None
+
+    def container_path_rewrite(self, container_path):
+        # Container images are resolved against the Galaxy-side filesystem but
+        # read on the compute node, which may expose them at a different path
+        # (e.g. cvmfsexec mountrepo mode). A destination ``file_actions`` rule
+        # with ``path_types: container`` remaps the image; unlike unstructured
+        # paths, container images are never staged.
+        return self.path_mapper.check_for_container_rewrite(container_path)
 
     def working_directory(self):
         return self._working_directory
