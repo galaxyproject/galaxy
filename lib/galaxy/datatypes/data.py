@@ -34,6 +34,7 @@ from galaxy.datatypes.protocols import (
     HasExt,
     HasExtraFilesAndMetadata,
     HasFileName,
+    HasHid,
     HasInfo,
     HasMetadata,
     HasName,
@@ -872,7 +873,7 @@ class Data(metaclass=DataMeta):
     def convert_dataset(
         self,
         trans: "ProvidesUserContext",
-        original_dataset: DatasetHasHidProtocol,
+        original_dataset: DatasetProtocol,
         target_type: str,
         return_output: bool = False,
         visible: bool = True,
@@ -920,6 +921,9 @@ class Data(metaclass=DataMeta):
                 value.visible = False
         if return_output:
             return converted_datasets
+        # Only this message names the dataset by hid; library datasets do not have one
+        # and reach conversion through the return_output callers instead.
+        assert isinstance(original_dataset, HasHid)
         return f"The file conversion of {converter.name} on data {original_dataset.hid} has been added to the Queue."
 
     # We need to clear associated files before we set metadata

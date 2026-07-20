@@ -338,7 +338,6 @@ CANNOT_SHARE_PRIVATE_DATASET_MESSAGE = "Attempting to share a non-shareable data
 
 if TYPE_CHECKING:
     from galaxy.datatypes.data import Data
-    from galaxy.datatypes.protocols import DatasetHasHidProtocol
     from galaxy.tools import DefaultToolState
     from galaxy.workflow.modules import WorkflowModule
 
@@ -5858,9 +5857,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             iter(
                 self.datatype.convert_dataset(
                     trans,
-                    # get_converted_dataset is only invoked on hid-bearing datasets
-                    # (history dataset associations), which carry the conversion output.
-                    cast("DatasetHasHidProtocol", self),
+                    self,
                     target_ext,
                     return_output=True,
                     visible=False,
