@@ -191,18 +191,70 @@ def _output_to_cwl_json(galaxy_output):
     return output_to_cwl_json(galaxy_output, get_metadata, get_dataset, get_extra_files)
 
 
+def _nested_collection_output(collection_type, sub_collection_type, element_identifiers):
+    metadata = {
+        "history_content_type": "dataset_collection",
+        "collection_type": collection_type,
+        "elements": [
+            {
+                "element_identifier": identifier,
+                "object": {
+                    "id": identifier,
+                    "collection_type": sub_collection_type,
+                    "elements": [
+                        {
+                            "element_identifier": sub_identifier,
+                            "object": _mock_dataset_metadata(f"{identifier}_{sub_identifier}"),
+                        }
+                        for sub_identifier in ["forward", "reverse"]
+                    ],
+                },
+            }
+            for identifier in element_identifiers
+        ],
+    }
+    return GalaxyOutput("history_id", "dataset_collection", "collection_id", metadata)
+
+
+def _assert_cwl_file(rval, basename):
+    assert rval["class"] == "File"
+    assert rval["basename"] == basename
+    assert rval["checksum"] == "sha1$2aae6c35c94fcfb415dbe95f408b9ce91ee846ed"
+    assert rval["size"] == 11
+
+
 def test_output_to_cwl_json_sample_sheet():
     rval = _output_to_cwl_json(_collection_output("sample_sheet", ["sample1", "sample2"]))
     assert isinstance(rval, list)
     assert len(rval) == 2
-    assert rval[0]["basename"] == "sample1"
+    _assert_cwl_file(rval[0], "sample1")
+    _assert_cwl_file(rval[1], "sample2")
+
+
+def test_output_to_cwl_json_sample_sheet_paired():
+    rval = _output_to_cwl_json(_nested_collection_output("sample_sheet", "paired", ["sample1", "sample2"]))
+    assert isinstance(rval, list)
+    assert len(rval) == 2
+    for index, identifier in enumerate(["sample1", "sample2"]):
+        assert isinstance(rval[index], list)
+        assert len(rval[index]) == 2
+        _assert_cwl_file(rval[index][0], f"{identifier}_forward")
+        _assert_cwl_file(rval[index][1], f"{identifier}_reverse")
 
 
 def test_output_to_cwl_json_paired_or_unpaired():
     rval = _output_to_cwl_json(_collection_output("paired_or_unpaired", ["unpaired"]))
     assert isinstance(rval, list)
     assert len(rval) == 1
-    assert rval[0]["basename"] == "unpaired"
+    _assert_cwl_file(rval[0], "unpaired")
+
+
+def test_output_to_cwl_json_paired_or_unpaired_paired():
+    rval = _output_to_cwl_json(_collection_output("paired_or_unpaired", ["forward", "reverse"]))
+    assert isinstance(rval, list)
+    assert len(rval) == 2
+    _assert_cwl_file(rval[0], "forward")
+    _assert_cwl_file(rval[1], "reverse")
 
 
 def test_output_to_cwl_json_unsupported_collection_type():
