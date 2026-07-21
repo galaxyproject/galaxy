@@ -7,6 +7,7 @@ from .._cli_common import (
 )
 from ..export_format2 import (
     ExportTreeOptions,
+    ExportTreeReport,
     run_export_tree,
 )
 
@@ -32,7 +33,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), ExportTreeOptions, run_export_tree, argv)
+    cli_main(build_parser(), ExportTreeOptions, run_export_tree, argv, report_schema_model=ExportTreeReport)
 
 
 if __name__ == "__main__":

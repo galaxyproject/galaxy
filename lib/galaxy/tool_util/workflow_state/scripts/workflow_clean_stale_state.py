@@ -5,6 +5,7 @@ from .._cli_common import (
     build_base_parser,
     cli_main,
 )
+from .._report_models import SingleCleanReport
 from ..clean import (
     CleanOptions,
     run_clean,
@@ -31,7 +32,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), CleanOptions, run_clean, argv)
+    cli_main(build_parser(), CleanOptions, run_clean, argv, report_schema_model=SingleCleanReport)
 
 
 if __name__ == "__main__":

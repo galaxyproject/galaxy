@@ -1140,7 +1140,7 @@ class RoundTripTreeReport(TreeReportBase):
     """Tree-level report for roundtrip validation across a directory."""
 
     options: dict[str, Any] = Field(default_factory=dict)
-    results: list[RoundTripValidationResult] = Field(default_factory=list)
+    results: list[RoundTripValidationResult] = Field(default_factory=list, serialization_alias="workflows")
 
     def _workflow_results(self) -> list:
         return self.results
@@ -1211,6 +1211,38 @@ def _is_passing(result: RoundTripValidationResult, strict: bool) -> bool:
             and (not result.conversion_result or result.conversion_result.success)
         )
     return result.ok
+
+
+# -- Library-level entry point --
+
+
+def roundtrip_single(
+    workflow_path: str,
+    tool_info: "GetToolInfo",
+    strip_bookkeeping: bool = False,
+) -> SingleRoundTripReport:
+    """Run round-trip validation on a single workflow, return structured report.
+
+    Library-level entry point with no CLI dependencies.
+    Loads the workflow, validates it's native, runs the roundtrip, wraps the result.
+    """
+    workflow = load_workflow(workflow_path)
+    workflow_name = os.path.basename(workflow_path)
+
+    if _format(workflow) != "native":
+        result = RoundTripValidationResult(
+            workflow_path=workflow_path,
+            error="round-trip validation requires a native .ga workflow",
+        )
+        return SingleRoundTripReport(workflow=workflow_name, result=result)
+
+    result = roundtrip_validate(
+        workflow,
+        tool_info,
+        workflow_path=workflow_path,
+        strip_bookkeeping=strip_bookkeeping,
+    )
+    return SingleRoundTripReport(workflow=workflow_name, result=result)
 
 
 # -- Formatters --
