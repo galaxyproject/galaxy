@@ -200,12 +200,6 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             except json.JSONDecodeError:
                 return f"Invalid inputs JSON: {inputs_json}"
 
-            # Count the demonstration (shown vs. coached) for the empower-vs-dependence signal.
-            try:
-                teaching_assistant.learning_state_manager.record_demonstration(teaching_assistant.deps.trans)
-            except Exception as e:
-                log.warning(f"Failed to record demonstration: {e}")
-
             if not teaching_assistant._tool_execution_allowed():
                 # Safe default: describe the tool instead of running it (no side effects).
                 try:
@@ -228,6 +222,14 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                 result = teaching_assistant.ops.run_tool(history_id, tool_id, inputs)
             except Exception as e:
                 return f"Could not run tool '{tool_id}': {e}"
+
+            # Only a real execution counts toward the empower-vs-dependence signal --
+            # the read-only describe path above is coaching, not showing.
+            try:
+                teaching_assistant.learning_state_manager.record_demonstration(teaching_assistant.deps.trans)
+            except Exception as e:
+                log.warning(f"Failed to record demonstration: {e}")
+
             return f"Demonstration: Ran tool '{tool_id}' in history.\nResult: {json.dumps(result, default=str)[:500]}"
 
         @agent.tool
