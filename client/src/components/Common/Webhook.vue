@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { nextTick, onMounted, ref } from "vue";
 
 import { appendScriptStyle } from "@/utils/utils";
 import { loadWebhooks, pickWebhook } from "@/utils/webhooks";
@@ -28,6 +28,9 @@ onMounted(async () => {
     if (webhooks.length > 0) {
         const model = pickWebhook(webhooks);
         webhookId.value = model.id;
+        // Wait for the `#<webhookId>` mount point to render before injecting the
+        // webhook script, which targets that element as soon as it executes.
+        await nextTick();
         appendScriptStyle(model);
     }
 });
