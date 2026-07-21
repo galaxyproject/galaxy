@@ -7,13 +7,25 @@ import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useServerMock } from "@/api/client/__mocks__";
+import { testDatatypesMapper, typesAndMappingResponse } from "@/components/Datatypes/test_fixtures";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useEventStore } from "@/stores/eventStore";
 
 import MountTarget from "./FormData.vue";
 
 vi.mock("@/composables/filter");
+
+const { server, http } = useServerMock();
+
+// FormData resolves its datatypes mapper on mount; stub the request so the tests
+// never hit a real fetch that gets aborted at teardown and surfaces as an
+// unhandled error that fails the run.
+server.use(
+    http.get("/api/datatypes/types_and_mapping", ({ response }) => {
+        return response(200).json(typesAndMappingResponse);
+    }),
+);
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
