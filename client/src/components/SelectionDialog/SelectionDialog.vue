@@ -293,6 +293,7 @@ defineExpose({
                     clickable-rows
                     compact
                     hover
+                    primary-key="id"
                     :current-page="currentPage"
                     :fields="fieldDetails"
                     :filter="filter"

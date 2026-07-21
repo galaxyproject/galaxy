@@ -618,8 +618,8 @@ pages:
       dataset_selector:
         type: xpath
         selector: '//span[text() = "1: 1.fasta"]'
-      workflow_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
-      history_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
+      workflow_selection: .selection-dialog-modal tr[data-pk="${id}"]
+      history_selection: .selection-dialog-modal tr[data-pk="${id}"]
       embed_dialog_add_button: '.pages-embed .buttons #button-0'
       markdown_editor: '.markdown-textarea'
 
@@ -944,7 +944,7 @@ workflow_run:
           type: xpath
           selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]//span[contains(text(), "${item}")]'
         select_collection: '[data-description="selection collection card"]'
-        collection_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
+        collection_selection: .selection-dialog-modal tr[data-pk="${id}"]
 
   form_element:
     selectors:
@@ -1390,7 +1390,7 @@ libraries:
       import_datasets_from_history_modal_dataset_search: '.selection-dialog-modal input[placeholder="search datasets"]'
       import_datasets_from_history_modal_list_is_ready: '.selection-dialog-modal [data-description="selection dialog busy spinners"]'
       import_datasets_from_history_modal_select_list_items: '.selection-dialog-modal table tbody tr'
-      import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[id^="g-table-row-${row_index}-"]'
+      import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"]'
       import_datasets_from_history_modal_ok: '.selection-dialog-modal [data-description="selection dialog ok"]'
       import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
       add_to_history_as_collection:

@@ -193,6 +193,14 @@ interface Props {
     perPage?: number;
 
     /**
+     * Item field to expose as each row's `data-pk` attribute, enabling row
+     * selection by key (e.g. in selenium selectors). When unset, no `data-pk`
+     * is rendered.
+     * @default ""
+     */
+    primaryKey?: string;
+
+    /**
      * Whether to show striped rows
      * @default true
      */
@@ -294,6 +302,7 @@ const props = withDefaults(defineProps<Props>(), {
     noSelectOnClick: false,
     overlayLoading: false,
     perPage: undefined,
+    primaryKey: "",
     selectable: false,
     selectCheckboxTitle: "Select for bulk actions",
     selectedItems: () => [],
@@ -763,6 +772,8 @@ defineExpose({
                                 <tr
                                     :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
                                     :key="`tr` + getGlobalIndex(paginatedIndex)"
+                                    :aria-rowindex="getGlobalIndex(paginatedIndex) + 1"
+                                    :data-pk="props.primaryKey ? item[props.primaryKey] : undefined"
                                     :class="[
                                         {
                                             'g-table-row-clickable': clickableRows || (selectable && !noSelectOnClick),
