@@ -667,7 +667,11 @@ defineExpose({
 </script>
 
 <template>
-    <div :id="`g-table-container-${props.id}`" class="g-table-container" :class="containerClass">
+    <div
+        :id="`g-table-container-${props.id}`"
+        class="g-table-container"
+        :class="containerClass"
+        :aria-busy="props.loading ? 'true' : 'false'">
         <!-- Table wrapper -->
         <GOverlay :show="overlayLoading" class="position-relative w-100">
             <div
