@@ -493,7 +493,11 @@ class WesService(ServiceBase):
             )
 
             # Use the existing workflow directly - no need to create a new one
-            # Skip to step 5 (engine parameters and history)
+            if instance:
+                # The URI named a specific version - invoke that one, not the latest.
+                invoke_workflow_id = trans.security.decode_id(encoded_workflow_id)
+            else:
+                invoke_workflow_id = stored_workflow.id
         else:
             # Step 2: Determine/validate workflow type
             detected_type = _determine_workflow_type(workflow_dict)
@@ -520,6 +524,8 @@ class WesService(ServiceBase):
                 source="WES API",
             )
             stored_workflow = created_workflow.stored_workflow
+            invoke_workflow_id = stored_workflow.id
+            instance = False
 
         # Step 5: Parse engine parameters and create/select history
         engine_params = {}
@@ -532,9 +538,10 @@ class WesService(ServiceBase):
         history = _get_or_create_history(trans, engine_params)
 
         # Step 6: Parse workflow parameters
-        invoke_params = {
+        invoke_params: dict[str, Any] = {
             "history_id": trans.security.encode_id(history.id),
             "inputs_by": "name",
+            "instance": instance,
         }
 
         if workflow_params:
@@ -554,7 +561,7 @@ class WesService(ServiceBase):
         invoke_payload = InvokeWorkflowPayload(**invoke_params)
         workflow_invocation_response = self._workflows_service.invoke_workflow(
             trans,
-            trans.security.encode_id(stored_workflow.id),
+            invoke_workflow_id,
             invoke_payload,
         )
 
