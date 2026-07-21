@@ -111,17 +111,8 @@ def _handle_resubmit_definitions(
             except ValueError:
                 log.warning(f"Cannot delay job with delay [{delay}], does not appear to be a number.")
         # Persist the new destination before clearing the working directory.
-        # set_job_destination() assigns job.destination_params = new_destination.params
-        # and flushes, so when clear_working_directory() → _setup_working_directory()
-        # → _set_working_directory() reads self.job_destination.params, which now
-        # holds the *new* params, not the stale values from the prior attempt.
         # This is what makes a resubmitted job resolve its new JWD correctly.
         job_state.job_wrapper.set_job_destination(new_destination)
-        # Reset job state. clear_working_directory() flushes the session after
-        # _setup_working_directory() → _set_working_directory() mutates the
-        # working_directory column, so the column survives the sa_session.refresh()
-        # that mark_as_resubmitted() performs at the end of this flow even when no
-        # handler commit runs below.
         job_state.job_wrapper.clear_working_directory()
         job = job_state.job_wrapper.get_job()
         if handler := resubmit.get("handler"):

@@ -1327,13 +1327,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if job is None:
             job = self.get_job()
         # Resolve and set job.working_directory from destination params before
-        # creating anything on disk. The mutation is not flushed here; callers
-        # that need it durable before a refresh (the resubmit path via
-        # clear_working_directory) flush themselves, and enqueue()'s commit()
-        # covers the enqueue path. This is critical for the resubmit path:
-        # set_job_destination() flushes destination_params, then
-        # clear_working_directory() → _setup_working_directory() →
-        # _set_working_directory() reads those params via get_destination_configuration().
+        # creating anything on disk.
         self._set_working_directory(job)
         try:
             working_directory = self._create_working_directory(job)
@@ -1389,11 +1383,8 @@ class MinimalJobWrapper(HasResourceParameters):
         arc_dir = os.path.join(base, date_str)
         shutil.move(self.working_directory, arc_dir)
         self._setup_working_directory(job=job)
-        # Flush so the working_directory column (mutated by _set_working_directory
-        # above) survives the sa_session.refresh() that mark_as_resubmitted()
-        # performs at the end of the resubmit flow. This is the only caller that
-        # needs the flush: enqueue()'s commit() covers the enqueue path, and the
-        # JobWrapper.__init__ path is followed by a prepare() commit.
+        # Flush so the working_directory column survives the sa_session.refresh()
+        # that mark_as_resubmitted() performs at the end of the resubmit flow.
         self.sa_session.flush()
         log.debug("(%s) Previous working directory moved to %s", self.job_id, arc_dir)
 
