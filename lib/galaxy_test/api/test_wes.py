@@ -546,6 +546,44 @@ steps:
             # Validate response
             assert run_id is not None
 
+    def test_wes_submit_run_with_gxworkflow_uri_published_workflow(self):
+        """A published workflow owned by another user can be run via gxworkflow://."""
+        with self._different_user():
+            workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
+            self.workflow_populator.make_public(workflow_id)
+
+        with self.dataset_populator.test_history() as history_id:
+            dataset_id = self._get_test_dataset_id(history_id)
+
+            data = {
+                "workflow_type": "gx_workflow_ga",
+                "workflow_type_version": "v1",
+                "workflow_params": json.dumps({"input1": dataset_id}),
+                "workflow_url": f"gxworkflow://{workflow_id}",
+            }
+
+            response = self._wes_post("ga4gh/wes/v1/runs", data=data)
+            self._assert_status_code_is(response, 200)
+            assert response.json()["run_id"] is not None
+
+    def test_wes_submit_run_with_gxworkflow_uri_inaccessible_workflow(self):
+        """An unshared workflow owned by another user cannot be run via gxworkflow://."""
+        with self._different_user():
+            workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
+
+        with self.dataset_populator.test_history() as history_id:
+            dataset_id = self._get_test_dataset_id(history_id)
+
+            data = {
+                "workflow_type": "gx_workflow_ga",
+                "workflow_type_version": "v1",
+                "workflow_params": json.dumps({"input1": dataset_id}),
+                "workflow_url": f"gxworkflow://{workflow_id}",
+            }
+
+            response = self._wes_post("ga4gh/wes/v1/runs", data=data)
+            self._assert_status_code_is(response, 403)
+
     def test_wes_job_stdout_endpoint(self):
         """Test /api/jobs/{job_id}/stdout endpoint returns job stdout."""
         with self.dataset_populator.test_history() as history_id:

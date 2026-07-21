@@ -483,22 +483,14 @@ class WesService(ServiceBase):
             workflow_uri = workflow_dict["workflow_uri"]
             encoded_workflow_id, instance = _parse_gxworkflow_uri(workflow_uri)
 
-            # Load the workflow from the database
+            # Load the workflow from the database, applying the same accessibility
+            # rules as a normal invocation (owned, shared, published, or admin).
             # by_stored_id=not instance means:
             # - False (instance=False) -> load StoredWorkflow (by_stored_id=True)
             # - True (instance=True) -> load Workflow (by_stored_id=False)
-            try:
-                stored_workflow = self._workflows_service._workflows_manager.get_stored_workflow(
-                    trans, encoded_workflow_id, by_stored_id=not instance
-                )
-            except Exception as e:
-                raise exceptions.ObjectNotFound(
-                    f"Workflow '{encoded_workflow_id}' not found or not accessible: {str(e)}"
-                )
-
-            # Validate user has access to this workflow
-            if stored_workflow.user_id != trans.user.id and not trans.user_is_admin:
-                raise exceptions.ItemAccessibilityException("You do not have access to this workflow")
+            stored_workflow = self._workflows_service._workflows_manager.get_stored_accessible_workflow(
+                trans, encoded_workflow_id, by_stored_id=not instance
+            )
 
             # Use the existing workflow directly - no need to create a new one
             # Skip to step 5 (engine parameters and history)

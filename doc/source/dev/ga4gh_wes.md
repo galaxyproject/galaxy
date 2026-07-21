@@ -129,16 +129,16 @@ Trimmed to the WES-relevant fields (the real response also carries
 
 A WES `RunRequest` is `multipart/form-data`. The fields Galaxy honors:
 
-| Field                                         | Required              | Notes                                                                                                               |
-| --------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `workflow_type`                               | yes                   | `gx_workflow_format2` or `gx_workflow_ga`. Must match the auto-detected type or you get a 400.                      |
-| `workflow_type_version`                       | yes                   | Free-form string, e.g. `"1.0.0"`.                                                                                   |
-| `workflow_url`                                | one of url/attachment | A URL Galaxy can fetch (`http(s)`, `s3`, `gs`, `file`, `base64://`) **or** a `gxworkflow://` reference (see below). |
-| `workflow_attachment`                         | one of url/attachment | The workflow file uploaded inline.                                                                                  |
-| `workflow_params`                             | no                    | JSON object of workflow inputs (see below).                                                                         |
-| `workflow_engine_parameters`                  | no                    | JSON object of Galaxy-specific run options (see below).                                                             |
-| `tags`                                        | no                    | Accepted but currently not persisted onto the invocation.                                                           |
-| `workflow_engine` / `workflow_engine_version` | no                    | Accepted; informational.                                                                                            |
+| Field                                         | Required              | Notes                                                                                                                           |
+| --------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `workflow_type`                               | yes                   | `gx_workflow_format2` or `gx_workflow_ga`. Must match the auto-detected type or you get a 400.                                  |
+| `workflow_type_version`                       | yes                   | Free-form string, e.g. `"1.0.0"`.                                                                                               |
+| `workflow_url`                                | one of url/attachment | A URL Galaxy can fetch (`http(s)://`, `s3://`, `gs://`, `file://`, `base64://`) **or** a `gxworkflow://` reference (see below). |
+| `workflow_attachment`                         | one of url/attachment | The workflow file uploaded inline.                                                                                              |
+| `workflow_params`                             | no                    | JSON object of workflow inputs (see below).                                                                                     |
+| `workflow_engine_parameters`                  | no                    | JSON object of Galaxy-specific run options (see below).                                                                         |
+| `tags`                                        | no                    | Accepted but currently not persisted onto the invocation.                                                                       |
+| `workflow_engine` / `workflow_engine_version` | no                    | Accepted; informational.                                                                                                        |
 
 ### `workflow_params` — wiring up inputs
 
@@ -180,7 +180,9 @@ gxworkflow://<encoded_workflow_id>            # the StoredWorkflow (latest versi
 gxworkflow://<encoded_workflow_id>?instance=true  # a specific Workflow instance
 ```
 
-The caller must own the workflow (or be an admin). With `gxworkflow://`, Galaxy skips
+The workflow just has to be accessible to the caller — the same rule a normal invocation
+uses: owned by them, shared with them, published/importable, or the caller is an admin.
+Otherwise you get a 403. With `gxworkflow://`, Galaxy skips
 import and invokes the stored workflow directly. `workflow_type` is still required by the
 form but is **not** validated against the stored workflow in this case — the
 "must match the auto-detected type or 400" check only applies to inline
@@ -400,8 +402,8 @@ Access to resources you do not own is **not** reported uniformly — watch for t
 
 - Reading a **run** you don't own → `403` (`AuthenticationRequired`).
 - Submitting against a **history** you don't own → `404` (`ObjectNotFound`).
-- A `gxworkflow://` reference to a **workflow** you don't own → `403`
-  (`ItemAccessibilityException`).
+- A `gxworkflow://` reference to a **workflow** you cannot access (not owned, not shared
+  with you, not published) → `403` (`ItemAccessibilityException`).
 
 So a `404` on submission can mean "your history id is wrong" _or_ "that history belongs to
 someone else"; don't assume `404` always means the object is absent.
