@@ -5596,7 +5596,7 @@
     `/api/tools` endpoint when this is disabled, when Celery is not
     enabled, or when the tool does not provide a typed parameter
     schema.
-:Default: ``true``
+:Default: ``false``
 :Type: bool
 
 

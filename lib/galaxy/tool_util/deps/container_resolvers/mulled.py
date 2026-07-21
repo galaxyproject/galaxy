@@ -400,7 +400,7 @@ def targets_to_mulled_name(
     def cached_name(cache_key: str) -> str | None:
         if mulled_resolution_cache:
             try:
-                return resolution_cache.get(cache_key)  # type: ignore[union-attr] # mulled_resolution_cache not None implies resolution_cache not None
+                return mulled_resolution_cache.get(cache_key)
             except KeyError:
                 return None
         return None

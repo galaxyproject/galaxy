@@ -131,24 +131,28 @@ def quay_repository(namespace: str, pkg_name: str, session: Session | None = Non
     return data
 
 
-def _get_namespace(namespace: str) -> list[str]:
+def quay_repositories(namespace: str) -> list[str]:
+    """Return all public repository names in a Quay namespace."""
     log.debug(f"Querying {QUAY_REPOSITORY_API_ENDPOINT} for repos within {namespace}")
     next_page = None
-    repo_names = []
+    repo_names: list[str] = []
     repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
     while True:
-        repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
+        repos_parameters = {"public": "true", "namespace": namespace}
+        if next_page:
+            repos_parameters["next_page"] = next_page
         repos_response = requests.get(
-            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT
+            QUAY_REPOSITORY_API_ENDPOINT,
+            headers=repos_headers,
+            params=repos_parameters,
+            timeout=MULLED_SOCKET_TIMEOUT,
         )
         repos_response.raise_for_status()
         repos_response_json = repos_response.json()
-        repos = repos_response_json["repositories"]
-        repo_names += [r["name"] for r in repos]
+        repo_names.extend(repository["name"] for repository in repos_response_json["repositories"])
         next_page = repos_response_json.get("next_page")
         if not next_page:
-            break
-    return repo_names
+            return repo_names
 
 
 def _namespace_has_repo_name(namespace: str, repo_name: str, resolution_cache: "ResolutionCache") -> bool:
@@ -167,7 +171,7 @@ def _namespace_has_repo_name(namespace: str, repo_name: str, resolution_cache: "
             # preferred_resolution_cache may be a beaker Cache instance, which
             # raises KeyError if key is not present on `.get`
             pass
-    repo_names = _get_namespace(namespace)
+    repo_names = quay_repositories(namespace)
     if preferred_resolution_cache is not None:
         preferred_resolution_cache[cache_key] = repo_names
     return repo_name in repo_names
@@ -215,7 +219,12 @@ def mulled_tags_for(
 
     if not tags_cached:
         tags = quay_versions(namespace, image, session)
-        tag_cache[namespace][image] = tags
+        tag_cache.setdefault(namespace, {})[image] = tags
+        if resolution_cache is not None:
+            # File-backed Beaker caches do not persist mutations made to a
+            # previously retrieved value. Reassign it so subsequent resolver
+            # requests (and Galaxy test applications) can reuse the response.
+            resolution_cache[cache_key] = tag_cache
 
     if tag_prefix is not None:
         tags = [t for t in tags if t.startswith(tag_prefix)]

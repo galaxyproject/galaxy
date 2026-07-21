@@ -24,7 +24,9 @@ interface Props {
     title?: string;
     histories: HistorySummary[];
     additionalOptions?: AdditionalOptions[];
+    hideDeleted?: boolean;
     showModal: boolean;
+    selectionInstruction?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,7 +34,9 @@ const props = withDefaults(defineProps<Props>(), {
     title: "Switch to history",
     histories: () => [],
     additionalOptions: () => [],
+    hideDeleted: false,
     showModal: false,
+    selectionInstruction: "Click a history to switch to it",
 });
 
 const emit = defineEmits<{
@@ -138,6 +142,7 @@ const modalBodyClasses = computed(() => {
             :multiple="props.multiple"
             :selected-histories="selectedHistories"
             :additional-options="props.additionalOptions"
+            :hide-deleted="props.hideDeleted"
             :show-modal.sync="propShowModal"
             in-modal
             :filter="filter"
@@ -164,7 +169,7 @@ const modalBodyClasses = computed(() => {
                         @click="selectHistories">
                         Change Selected
                     </GButton>
-                    <span v-else v-localize> Click a history to switch to it </span>
+                    <span v-else>{{ localize(props.selectionInstruction) }}</span>
                 </span>
             </template>
         </HistoryList>

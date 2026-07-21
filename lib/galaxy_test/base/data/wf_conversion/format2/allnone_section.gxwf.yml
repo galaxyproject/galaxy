@@ -1,0 +1,5 @@
+class: GalaxyWorkflow
+label: Test all-None section roundtrip artifact
+steps:
+  section_defaults:
+    tool_id: gx_section_boolean

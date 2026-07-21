@@ -28,6 +28,10 @@ _______________
 
 - require_create_confirmation:            A boolean value that decides whether a NewUserConfirmation page shows up.
 
+- require_user_activation:                A boolean value that requires Galaxy email activation for accounts
+                                          created through this provider. Defaults to false because the IdP email
+                                          address is trusted.
+
 - require_session_refresh:                A boolean value that decides whether failed token refresh requires the
                                           user to reauthenticate with this provider.
 
@@ -122,6 +126,8 @@ Please mind `http` and `https`.
         <!-- <label>My provider name</label> -->
         <!-- (Optional): whether to show a create account confirmation page -->
         <!-- <require_create_confirmation>false</require_create_confirmation> -->
+        <!-- (Optional): require Galaxy email activation for accounts created through this provider -->
+        <!-- <require_user_activation>false</require_user_activation> -->
         <!-- (Optional) Trusted CA certificate file or directory to use when verifying the keycloak authorization server.
              See http://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification for more information. -->
         <!-- <ca_bundle>/path/to/ca_bundle</ca_bundle> -->

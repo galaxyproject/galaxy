@@ -997,20 +997,34 @@ steps:
 
     def test_update_name(self):
         original_name = "test update name"
+        readme = "This is the body of my readme..."
+        help = "This is my instruction for the workflow!"
+        logo_url = "https://galaxyproject.org/images/galaxy_logo_hub_white.svg"
+        doi = ["doi:10.1000/1"]
         workflow_object = self.workflow_populator.load_workflow(name=original_name)
         workflow_object["license"] = "AAL"
+        workflow_object["readme"] = readme
+        workflow_object["help"] = help
+        workflow_object["logo_url"] = logo_url
+        workflow_object["doi"] = doi
         upload_response = self.__test_upload(workflow=workflow_object, name=original_name)
         workflow = upload_response.json()
         workflow_id = workflow["id"]
         assert workflow["name"] == original_name
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
         assert workflow_dict["license"] == "AAL"
+        assert workflow_dict["readme"] == readme
 
         data = {"name": "my cool new name"}
         update_response = self._update_workflow(workflow["id"], data).json()
         assert update_response["name"] == "my cool new name"
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
+        # A rename copies the workflow to a new revision; the copy must not drop metadata.
         assert workflow_dict["license"] == "AAL"
+        assert workflow_dict["readme"] == readme
+        assert workflow_dict["help"] == help
+        assert workflow_dict["logo_url"] == logo_url
+        assert workflow_dict["doi"] == doi
 
     def test_update_name_for_workflow_with_subworkflows(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
@@ -1895,6 +1909,31 @@ steps:
             self._assert_status_code_is(other_import_response, 200)
             workflow = self._download_workflow(other_import_response.json()["id"])
             assert workflow["steps"]["2"]["tool_version"] == "1.0.0"
+
+    def test_import_published_preserves_metadata(self):
+        name = "test_import_published_preserves_metadata"
+        readme = "This is the body of my readme..."
+        help = "This is my instruction for the workflow!"
+        logo_url = "https://galaxyproject.org/images/galaxy_logo_hub_white.svg"
+        doi = ["doi:10.1000/1"]
+        workflow_object = self.workflow_populator.load_workflow(name=name)
+        workflow_object["license"] = "AAL"
+        workflow_object["readme"] = readme
+        workflow_object["help"] = help
+        workflow_object["logo_url"] = logo_url
+        workflow_object["doi"] = doi
+        workflow_id = self.workflow_populator.create_workflow(workflow_object, publish=True)
+
+        with self._different_user():
+            import_response = self.__import_workflow(workflow_id, deprecated_route=False)
+            self._assert_status_code_is(import_response, 200)
+            # Importing a shared workflow copies it; the copy must not drop metadata.
+            imported_workflow = self._download_workflow(import_response.json()["id"])
+            assert imported_workflow["license"] == "AAL"
+            assert imported_workflow["readme"] == readme
+            assert imported_workflow["help"] == help
+            assert imported_workflow["logo_url"] == logo_url
+            assert imported_workflow["doi"] == doi
 
     def test_export(self):
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export")
@@ -6721,8 +6760,7 @@ steps:
     def test_workflow_with_deleted_dataset_step_parameter(self):
         """Verify workflow fails gracefully when a step parameter references a deleted dataset.
 
-        Uses a pause step so we can delete the dataset after the invocation is
-        queued but before the cat step executes, avoiding a race condition.
+        The pause ensures deletion happens after the initial parameter validation.
         """
         with self.dataset_populator.test_history() as history_id:
             workflow_id = self._upload_yaml_workflow("""
@@ -6756,15 +6794,10 @@ steps:
                 },
                 inputs_by="name",
             )
-            # Wait for the scheduler to hit the pause step (invocation state "new" → "ready")
-            # before deleting, otherwise the scheduler may detect the deleted dataset
-            # on step 2 during scheduling and fail the invocation before we can resume.
-            self._wait_for_invocation_state(workflow_id, invocation_id, "ready")
-            # Invocation is paused — delete the dataset before resuming.
+            # Ensure the parameter override is initially valid before deleting its dataset.
+            assert self._wait_for_invocation_state(workflow_id, invocation_id, "ready")
+            # The scheduler revalidates the override while the invocation is paused.
             self.dataset_populator.delete_dataset(history_id=history_id, content_id=to_delete_id, purge=False)
-            # Resume the pause step. The cat step will now run and
-            # ToolModule.execute() → compute_runtime_state will find the deleted dataset.
-            self.__review_paused_steps(workflow_id, invocation_id, order_index=1, action=True)
             self.workflow_populator.wait_for_invocation_and_jobs(
                 history_id=history_id,
                 workflow_id=workflow_id,

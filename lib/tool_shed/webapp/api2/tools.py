@@ -158,6 +158,19 @@ class FastAPITools:
         return parsed_tool_model_cached_for(trans, tool_id, tool_version)
 
     @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/interop",
+        operation_id="tools__interop",
+        summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
+    )
+    def interop(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        tool_id: str = TOOL_ID_PATH_PARAM,
+        tool_version: str = TOOL_VERSION_PATH_PARAM,
+    ) -> ShedParsedTool:
+        return parsed_tool_model_cached_for(trans, tool_id, tool_version)
+
+    @router.get(
         "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema",
         operation_id="tools__parameter_request_schema",
         summary="Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point",

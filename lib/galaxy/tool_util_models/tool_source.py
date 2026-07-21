@@ -105,6 +105,7 @@ class JavascriptRequirement(ToolSourceBaseModel):
     )
 
 
+@with_config(ConfigDict(field_title_generator=lambda field_name, field_info: field_name.lower()))
 class XrefDict(TypedDict):
     value: str
     type: str
