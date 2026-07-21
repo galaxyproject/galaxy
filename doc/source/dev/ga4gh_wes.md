@@ -180,13 +180,14 @@ gxworkflow://<encoded_workflow_id>            # the StoredWorkflow (latest versi
 gxworkflow://<encoded_workflow_id>?instance=true  # a specific Workflow instance
 ```
 
-The workflow just has to be accessible to the caller — the same rule a normal invocation
+The workflow only has to be accessible to the caller — the same rule a normal invocation
 uses: owned by them, shared with them, published/importable, or the caller is an admin.
-Otherwise you get a 403. With `gxworkflow://`, Galaxy skips
-import and invokes the stored workflow directly. `workflow_type` is still required by the
-form but is **not** validated against the stored workflow in this case — the
-"must match the auto-detected type or 400" check only applies to inline
-`workflow_attachment` / fetched `workflow_url` submissions.
+Anything else is a 403.
+
+With `gxworkflow://`, Galaxy skips the import step and invokes the referenced workflow
+directly. `workflow_type` is still required by the form but is **not** validated against
+the stored workflow in this case — the "must match the auto-detected type or 400" check
+only applies to inline `workflow_attachment` / fetched `workflow_url` submissions.
 
 ## 3. Submit the run
 
