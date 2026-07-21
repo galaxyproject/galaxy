@@ -121,14 +121,29 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             message = self.send_subscription_email(email)
             if message:
                 return None, message
-        user = self.create(email=email, username=username, password=password)
-        if self.app.config.user_activation_on:
-            self.send_activation_email(trans, email, username)
+        user = self.create(email=email, username=username, password=password, trans=trans, send_activation_email=True)
         return user, None
 
-    def create(self, email=None, username=None, password=None, **kwargs):
+    def create(
+        self,
+        email=None,
+        username=None,
+        password=None,
+        *,
+        trans=None,
+        trusted_email=False,
+        send_activation_email=False,
+        **kwargs,
+    ):
         """
         Create a new user.
+
+        The account is active unless email activation is enabled
+        (``user_activation_on``). ``trusted_email`` activates the account
+        regardless, for emails already verified by a trusted source such as an
+        OIDC identity provider. When the account is created inactive and
+        ``send_activation_email`` is set, an activation email is sent (requires
+        ``trans``).
         """
         self._error_on_duplicate_email(email)
         user = self.model_class(email=email, username=username)
@@ -136,11 +151,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             user.set_password_cleartext(password)
         else:
             user.set_random_password()
-        if self.app.config.user_activation_on:
-            user.active = False
-        else:
-            # Activation is off, every new user is active by default.
-            user.active = True
+        user.active = trusted_email or not self.app.config.user_activation_on
         session = self.session()
         session.add(user)
         try:
@@ -148,6 +159,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             self.app.security_agent.create_user_role(user, self.app)
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
+        if send_activation_email and not user.active:
+            self.send_activation_email(trans, email, username)
         return user
 
     def update_email(
@@ -169,11 +182,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session.add_all([user, private_role])
         if trans.app.config.user_activation_on:
             user.active = False
-            if send_activation_email and not self.send_activation_email(trans, user.email, user.username):
-                error_message = "Unable to send activation email, please contact your local Galaxy administrator."
-                if trans.app.config.error_email_to is not None:
-                    error_message += f" Contact: {trans.app.config.error_email_to}"
-                raise exceptions.InternalServerError(error_message)
+            if send_activation_email:
+                if not self.send_activation_email(trans, user.email, user.username):
+                    session.rollback()
+                    error_message = "Unable to send activation email, please contact your local Galaxy administrator."
+                    if trans.app.config.error_email_to is not None:
+                        error_message += f" Contact: {trans.app.config.error_email_to}"
+                    raise exceptions.InternalServerError(error_message)
         if commit:
             session.commit()
 
@@ -560,6 +575,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         subject = "Galaxy Account Activation"
         try:
             util.send_mail(self.app.config.email_from, to, subject, body, self.app.config, html=html)
+            self.session().commit()
             return True
         except Exception:
             log.debug(body)
@@ -569,14 +585,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def __get_activation_token(self, trans, email):
         """
         Check for the activation token. Create new activation token and store it in the database if no token found.
+        Flushes but does not commit—the caller is responsible for committing the transaction.
         """
-        user = get_user_by_email(trans.sa_session, email, self.app.model.User)
+        session = trans.sa_session
+        # Flush pending changes so the user is visible to the DB query below.
+        session.flush()
+        user = get_user_by_email(session, email, self.app.model.User)
         activation_token = user.activation_token
         if activation_token is None:
             activation_token = util.hash_util.new_secure_hash_v2(str(random.getrandbits(256)))
             user.activation_token = activation_token
-            trans.sa_session.add(user)
-            trans.sa_session.commit()
+            session.add(user)
+            session.flush()
         return activation_token
 
     def send_reset_email(self, trans, payload, **kwd):

@@ -70,6 +70,20 @@ class TestShedToolsApi(ShedApiTestCase):
         tool_response = self.api_interactor.get(url)
         tool_response.raise_for_status()
 
+    def test_tool_interop(self):
+        populator = self.populator
+        repository = populator.setup_column_maker_repo(prefix="toolinterop")
+        tool_id = populator.tool_guid(self, repository, "Add_a_column1")
+        tool_shed_base, encoded_tool_id = encode_identifier(tool_id)
+        url = f"tools/{encoded_tool_id}/versions/1.1.0/interop"
+        tool_response = self.api_interactor.get(url)
+        tool_response.raise_for_status()
+        parsed = tool_response.json()
+        assert parsed["id"] == "Add_a_column1"
+        assert parsed["version"] == "1.1.0"
+        assert "inputs" in parsed
+        assert "outputs" in parsed
+
     def test_tool_source(self):
         populator = self.populator
         repository = populator.setup_column_maker_repo(prefix="toolsource")

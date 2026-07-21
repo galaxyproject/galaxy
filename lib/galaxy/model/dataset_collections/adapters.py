@@ -229,10 +229,10 @@ class PromoteDatasetsToCollection(CollectionAdapter):
         return self
 
     @property
-    def dataset_action_tuples(self):
-        tuples = []
+    def dataset_action_tuples(self) -> list[tuple[str | None, int | None]]:
+        tuples: list[tuple[str | None, int | None]] = []
         for hda in self.dataset_instances:
-            tuples.append([(permission.action, permission.role_id) for permission in hda.dataset.actions])
+            tuples.extend((permission.action, permission.role_id) for permission in hda.dataset.actions)
         return tuples
 
     @property

@@ -587,7 +587,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             wait_on(is_enabled, "locator to be enabled", timeout=timeout_ms / 1000)
 
             element_handle = locator.element_handle()
-            return PlaywrightElement(element_handle, self)
+            return PlaywrightElement(element_handle, self, locator=locator)
         except TimeoutAssertionError as e:
             # found the element but it never became enabled, TODO: richer error message
             raise PlaywrightTimeoutException(self._timeout_message(message)) from e

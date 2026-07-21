@@ -58,7 +58,10 @@ const emit = defineEmits<{
 }>();
 
 const filter = ref("");
-const filteredOptions = useFilterObjectArray(() => props.options, filter, ["label", ["value", "tags"]]);
+const { filtered: filteredOptions, pending: filterPending } = useFilterObjectArray(() => props.options, filter, [
+    "label",
+    ["value", "tags"],
+]);
 
 // Debounced upward emit so consumers (e.g. ``FormData`` paginating against the
 // backend) can refetch on typing without firing on every keystroke. The local
@@ -241,6 +244,7 @@ function isSelected(item: SelectValue): boolean {
             v-if="hasOptions"
             :id="id"
             v-model="currentValue"
+            :data-filter-pending="filterPending ? 'true' : undefined"
             :allow-empty="optional || multiple"
             :aria-expanded="ariaExpanded"
             :close-on-select="!multiple"
@@ -258,7 +262,10 @@ function isSelected(item: SelectValue): boolean {
             @open="onOpen"
             @close="onClose">
             <template v-slot:option="{ option }">
-                <div class="d-flex align-items-center justify-content-between">
+                <!-- Replace recycled option content when its identity changes. -->
+                <div
+                    :key="`${option.label}:${String(option.value)}`"
+                    class="d-flex align-items-center justify-content-between">
                     <div>
                         <span>{{ option.label }}</span>
                         <StatelessTags

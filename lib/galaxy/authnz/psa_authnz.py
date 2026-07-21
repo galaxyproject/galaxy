@@ -13,6 +13,7 @@ from social_core.actions import (
     do_disconnect,
 )
 from social_core.backends.utils import get_backend
+from social_core.pipeline.user import create_user as social_create_user
 from social_core.strategy import BaseStrategy
 from social_core.utils import (
     module_member,
@@ -139,7 +140,7 @@ AUTH_PIPELINE = (
     # redirect to confirmation page instead of creating user immediately.
     "galaxy.authnz.psa_authnz.check_user_creation_confirmation",
     # Create a user account if we haven't found one yet.
-    "social_core.pipeline.user.create_user",
+    "galaxy.authnz.psa_authnz.create_user_and_activate",
     # Create the record that associated the social account with this user.
     "social_core.pipeline.social_auth.associate_user",
     # Populate the extra_data field in the social record with the values
@@ -238,6 +239,7 @@ class PSAAuthnz(IdentityProvider):
 
         # Galaxy-specific pipeline settings (affect all backends)
         self.config["REQUIRE_CREATE_CONFIRMATION"] = oidc_backend_config.get("require_create_confirmation", False)
+        self.config["REQUIRE_USER_ACTIVATION"] = oidc_backend_config.get("require_user_activation", False)
 
         # Optional generic settings
         if oidc_backend_config.get("prompt") is not None:
@@ -537,10 +539,8 @@ class PSAAuthnz(IdentityProvider):
                 count += 1
             username = f"{username}{count}"
 
-        # Create the user
-        user = trans.app.user_manager.create(email=email, username=username)
-        if trans.app.config.user_activation_on:
-            trans.app.user_manager.send_activation_email(trans, email, username)
+        # Create the user and apply the activation policy
+        user = create_and_activate_oidc_user(trans, email, username, self.config["REQUIRE_USER_ACTIVATION"])
 
         # Create the UserAuthnzToken record
         user_id = userinfo.get("sub")
@@ -634,6 +634,64 @@ def on_the_fly_config(sa_session):
     PSANonce.sa_session = sa_session
     PSAPartial.sa_session = sa_session
     PSAAssociation.sa_session = sa_session
+
+
+def create_user_and_activate(strategy=None, details=None, backend=None, user=None, *args, **kwargs):
+    """Pipeline step: let PSA create the user, then apply Galaxy's OIDC activation policy.
+
+    Replaces ``social_core.pipeline.user.create_user`` in ``AUTH_PIPELINE``. The
+    deferred (``require_create_confirmation``) path does not go through the pipeline;
+    it calls :func:`create_and_activate_oidc_user` instead. Both funnel the activation
+    decision through :func:`apply_user_activation_policy`.
+    """
+    result = social_create_user(strategy, details, backend, user, *args, **kwargs)
+    if not result or not result.get("is_new"):
+        return result
+
+    # GALAXY_TRANS is set by callback() before the pipeline runs, and PSA always
+    # returns the created user for a new association, so both are invariants here.
+    trans = strategy.config["GALAXY_TRANS"]
+    created_user = result["user"]
+    apply_user_activation_policy(trans, created_user, strategy.config.get("REQUIRE_USER_ACTIVATION", False))
+    return result
+
+
+def create_and_activate_oidc_user(
+    trans: "ProvidesAppContext", email: str, username: str, require_user_activation: bool
+) -> User:
+    """Create a Galaxy user for an OIDC login, routing activation through the user manager.
+
+    Used by the deferred (``require_create_confirmation``) creation path, which builds the
+    user via ``user_manager.create``. Unless the provider requires activation, the
+    IdP-verified email is trusted and the account is activated immediately. The normal
+    login path instead lets ``social_core`` create the user (outside the user manager) and
+    applies :func:`apply_user_activation_policy` to the result.
+    """
+    return trans.app.user_manager.create(
+        email=email,
+        username=username,
+        trans=trans,
+        trusted_email=not require_user_activation,
+        send_activation_email=require_user_activation,
+    )
+
+
+def apply_user_activation_policy(trans: "ProvidesAppContext", user: User, require_user_activation: bool) -> None:
+    """Activation authority for the pipeline path, where ``social_core`` already created the user.
+
+    ``user_manager.create`` handles activation for users it creates (see
+    :func:`create_and_activate_oidc_user`), but the normal login pipeline creates the user
+    through ``social_core``'s storage adapter, so its activation state is set here instead.
+    When the Galaxy instance requires activation (``user_activation_on``) *and* the provider
+    opts in (``require_user_activation``), the user is left inactive and sent an activation
+    email; otherwise the IdP-verified email is trusted and the account is activated immediately.
+    """
+    requires_activation = trans.app.config.user_activation_on and require_user_activation
+    user.active = not requires_activation
+    trans.sa_session.add(user)
+    trans.sa_session.commit()
+    if requires_activation:
+        trans.app.user_manager.send_activation_email(trans, user.email, user.username)
 
 
 def contains_required_data(response=None, is_new=False, backend=None, **kwargs):
@@ -1008,7 +1066,7 @@ def check_user_creation_confirmation(
     and this is a new user (no existing Galaxy account), the pipeline is interrupted
     and the user is redirected to a confirmation page with the token stored for later.
 
-    This step should be placed before create_user in the pipeline.
+    This step should be placed before create_user_and_activate in the pipeline.
     """
     require_confirmation = strategy.config.get("REQUIRE_CREATE_CONFIRMATION", False)
 

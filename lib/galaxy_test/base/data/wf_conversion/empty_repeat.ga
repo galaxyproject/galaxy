@@ -1,0 +1,25 @@
+{
+    "steps": {
+        "0": {
+            "tool_id": "simple_constructs",
+            "label": "empty_repeat",
+            "id": 0,
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "type": "tool",
+            "name": "simple_constructs",
+            "post_job_actions": {},
+            "tool_version": null,
+            "annotation": "",
+            "input_connections": {},
+            "tool_state": "{\"__page__\": 0, \"p1\": \"{\\\"p1use\\\": false, \\\"p1val\\\": \\\"p1notused\\\"}\", \"booltest\": \"false\", \"inttest\": \"42\", \"floattest\": \"3.14\", \"radio_select\": \"\\\"a_radio\\\"\", \"check_select\": \"[\\\"a_check\\\"]\", \"drop_select\": \"\\\"a_drop\\\"\"}"
+        }
+    },
+    "a_galaxy_workflow": "true",
+    "format-version": "0.1",
+    "name": "Test empty repeat roundtrip artifact",
+    "uuid": "b2a93e10-ed98-4c25-9405-2dc1a81e2956",
+    "annotation": ""
+}
