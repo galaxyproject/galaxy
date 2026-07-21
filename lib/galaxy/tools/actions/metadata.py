@@ -5,6 +5,7 @@ from typing import (
 )
 
 from galaxy.job_execution.datasets import DatasetPath
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Dataset,
@@ -162,12 +163,9 @@ class SetMetadataToolAction(ToolAction):
         incoming["__ORIGINAL_DATASET_STATE__"] = dataset.state
         input_paths = [DatasetPath(dataset.id, real_path=dataset.get_file_name(), mutable=False)]
         # Out-of-band metadata job: runs in the web thread before any destination
-        # is resolved, so job.working_directory is None. This site uses
-        # extra_dir=str(job.id), a different path scheme than the obj_dir=True sites
-        # that JobWorkingDirectory manages. Keep the direct object-store call so the
-        # path matches what later metadata file lookups expect.
-        app.object_store.create(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
-        job_working_dir = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
+        # is resolved, so job.working_directory is None and JobWorkingDirectory
+        # falls through to the object-store path.
+        job_working_dir = JobWorkingDirectory(job, app.object_store).create()
         datatypes_config = os.path.join(job_working_dir, "registry.xml")
         app.datatypes_registry.to_xml_file(path=datatypes_config)
         external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id, tool_id=tool.id)
