@@ -6,7 +6,6 @@ inventory emission.
 """
 
 from copy import deepcopy
-from typing import Optional
 
 from galaxy.tool_util.workflow_state.cache import (
     _collect_inline_representations,
@@ -21,7 +20,6 @@ from galaxy.tool_util.workflow_state.validation_json_schema import (
     validate_native_workflow_json_schema,
 )
 from galaxy.tool_util_models import ParsedTool
-
 from .inline_udt_fixtures import (
     cat_udt_body,
     load_native_inline_udt as _native_with_inline_udt,
@@ -29,7 +27,7 @@ from .inline_udt_fixtures import (
 
 
 class _EmptyGetToolInfo:
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         return None
 
 

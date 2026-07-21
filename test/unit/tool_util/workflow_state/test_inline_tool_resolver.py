@@ -130,7 +130,10 @@ def test_lint_structured_network_linters_gated_by_skip_network():
         # Return an empty lint context-like stub to avoid running the
         # real linters; the structured wrapper only reads
         # error_messages / warn_messages.
-        from galaxy.tool_util.lint import LintContext, LintLevel
+        from galaxy.tool_util.lint import (
+            LintContext,
+            LintLevel,
+        )
 
         return LintContext(level=LintLevel.ALL, skip_types=skip_types, object_name=name)
 

@@ -7,11 +7,6 @@ two ``resolve_for_step`` calls in ``_validate_format2``) all touch the
 same step instance.
 """
 
-from typing import (
-    List,
-    Optional,
-    Tuple,
-)
 from unittest.mock import patch
 
 from galaxy.tool_util.workflow_state import (
@@ -22,11 +17,10 @@ from galaxy.tool_util.workflow_state import (
 )
 from galaxy.tool_util.workflow_state._inline_tool import _parse_inline_tool
 from galaxy.tool_util_models import ParsedTool
-
 from .test_inline_udt_workflows import (
+    _EmptyGetToolInfo,
     _format2_with_inline_udt,
     _native_with_inline_udt,
-    _EmptyGetToolInfo,
 )
 
 
@@ -34,9 +28,9 @@ class _CountingGetToolInfo:
     """Records every (tool_id, version) lookup for cache assertions."""
 
     def __init__(self) -> None:
-        self.calls: List[Tuple[str, Optional[str]]] = []
+        self.calls: list[tuple[str, str | None]] = []
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         self.calls.append((tool_id, tool_version))
         return None
 

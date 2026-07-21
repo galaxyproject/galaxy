@@ -7,12 +7,12 @@ workflow format, so a format2 step that carries it is validated through the
 native validation path (``WorkflowStepNativeToolState``) rather than skipped.
 """
 
+import pytest
+from pydantic import ValidationError
+
 from galaxy.tool_util.workflow_state.validate import validate_workflow_cli
 from galaxy.tool_util.workflow_state.validation_format2 import validate_workflow_format2
 from galaxy.workflow.gx_validator import GET_TOOL_INFO
-
-import pytest
-from pydantic import ValidationError
 
 
 def _wf(step_extra: dict) -> dict:
