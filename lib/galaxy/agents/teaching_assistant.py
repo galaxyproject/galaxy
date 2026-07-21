@@ -268,20 +268,6 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             f"**Scaffolding level:** {state.get('scaffolding_level', 3)} (1=max support, 5=minimal)",
             f"**Interaction count:** {state.get('interaction_count', 0)}",
         ]
-
-        completed = state.get("completed_tutorials", [])
-        if completed:
-            lines.append(f"**Completed tutorials:** {', '.join(completed[-5:])}")
-
-        pathway = state.get("current_pathway")
-        if pathway:
-            progress = state.get("pathway_progress", {}).get(pathway, 0)
-            lines.append(f"**Current pathway:** {pathway} (step {progress})")
-
-        topics = state.get("topics_explored", [])
-        if topics:
-            lines.append(f"**Topics explored:** {', '.join(topics[-5:])}")
-
         return "\n".join(lines)
 
     def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:

@@ -523,10 +523,10 @@ class ChatAPI:
     ) -> dict[str, Any]:
         """Update the user's learning state (partial update).
 
-        Only a small allowlist of fields is user-settable. The free-text fields that get
-        injected into the tutor's system prompt (expertise_level, topics_explored,
-        current_pathway, ...) are intentionally rejected here so a user cannot inject
-        prompt content into their own tutor session.
+        Only a small allowlist of fields is user-settable. Fields that get injected into
+        the tutor's system prompt or are derived server-side (expertise_level,
+        interaction_count, ...) are intentionally rejected here so a user cannot inject
+        prompt content or forge their own progress.
         """
         updates: dict[str, Any] = {}
         if "tutor_mode_enabled" in payload:

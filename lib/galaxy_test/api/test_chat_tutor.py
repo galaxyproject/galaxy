@@ -13,11 +13,8 @@ from ._framework import ApiTestCase
 EXPECTED_STATE_KEYS = {
     "expertise_level",
     "scaffolding_level",
-    "completed_tutorials",
-    "current_pathway",
-    "pathway_progress",
-    "topics_explored",
     "interaction_count",
+    "demonstrations_count",
     "tutor_mode_enabled",
     "last_interaction",
 }

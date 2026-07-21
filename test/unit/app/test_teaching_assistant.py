@@ -20,7 +20,6 @@ from galaxy.managers.learning_state import (
     LearningStateManager,
 )
 from galaxy.schema.agents import (
-    ActionType,
     LearningState,
     TutorModeToggle,
 )
@@ -144,7 +143,7 @@ class TestLearningStateManager:
         state = self.manager.get_learning_state(self.mock_trans)
         assert state["expertise_level"] == "beginner"
         assert state["scaffolding_level"] == 3
-        assert state["completed_tutorials"] == []
+        assert state["interaction_count"] == 0
         assert state["tutor_mode_enabled"] is False
 
     def test_get_state_no_user(self):
@@ -158,7 +157,7 @@ class TestLearningStateManager:
         saved_state = {
             "expertise_level": "intermediate",
             "scaffolding_level": 2,
-            "completed_tutorials": ["intro/galaxy-intro-short"],
+            "interaction_count": 42,
             "tutor_mode_enabled": True,
         }
         self.mock_user.preferences = {"learning_state": json.dumps(saved_state)}
@@ -166,10 +165,10 @@ class TestLearningStateManager:
         state = self.manager.get_learning_state(self.mock_trans)
         assert state["expertise_level"] == "intermediate"
         assert state["scaffolding_level"] == 2
-        assert state["completed_tutorials"] == ["intro/galaxy-intro-short"]
+        assert state["interaction_count"] == 42
         assert state["tutor_mode_enabled"] is True
         # Should merge with defaults for missing keys
-        assert "interaction_count" in state
+        assert "demonstrations_count" in state
 
     def test_corrupted_json_returns_defaults(self):
         """Should handle corrupted JSON gracefully."""
@@ -177,26 +176,6 @@ class TestLearningStateManager:
 
         state = self.manager.get_learning_state(self.mock_trans)
         assert state == DEFAULT_LEARNING_STATE
-
-    def test_adjust_scaffolding_up(self):
-        """Should increase scaffolding level (less support)."""
-        state = self.manager.adjust_scaffolding(self.mock_trans, "up")
-        assert state["scaffolding_level"] == 4  # default 3 + 1
-
-    def test_adjust_scaffolding_down(self):
-        """Should decrease scaffolding level (more support)."""
-        state = self.manager.adjust_scaffolding(self.mock_trans, "down")
-        assert state["scaffolding_level"] == 2  # default 3 - 1
-
-    def test_scaffolding_clamped_at_bounds(self):
-        """Should not exceed 1-5 bounds."""
-        # Set to max
-        saved = dict(DEFAULT_LEARNING_STATE)
-        saved["scaffolding_level"] = 5
-        self.mock_user.preferences = {"learning_state": json.dumps(saved)}
-
-        state = self.manager.adjust_scaffolding(self.mock_trans, "up")
-        assert state["scaffolding_level"] == 5  # stays at 5
 
     def test_enable_tutor_mode(self):
         """Should enable tutor mode."""
@@ -208,52 +187,35 @@ class TestLearningStateManager:
         state = self.manager.disable_tutor_mode(self.mock_trans)
         assert state["tutor_mode_enabled"] is False
 
-    def test_record_tutorial_completion(self):
-        """Should track completed tutorials."""
-        state = self.manager.record_tutorial_completion(self.mock_trans, "transcriptomics/ref-based", topic="rna-seq")
-        assert "transcriptomics/ref-based" in state["completed_tutorials"]
-        assert "rna-seq" in state["topics_explored"]
-
-    def test_duplicate_tutorial_not_added(self):
-        """Should not duplicate completed tutorials."""
-        saved = dict(DEFAULT_LEARNING_STATE)
-        saved["completed_tutorials"] = ["intro/galaxy-intro-short"]
-        self.mock_user.preferences = {"learning_state": json.dumps(saved)}
-
-        state = self.manager.record_tutorial_completion(self.mock_trans, "intro/galaxy-intro-short")
-        assert state["completed_tutorials"].count("intro/galaxy-intro-short") == 1
-
-    def test_expertise_inference_beginner(self):
-        """Should infer beginner for few completions."""
-        level = self.manager.get_expertise_level(self.mock_trans)
-        assert level == "beginner"
-
-    def test_expertise_inference_progression(self):
-        """Expertise should progress based on completions."""
-        saved = dict(DEFAULT_LEARNING_STATE)
-        saved["completed_tutorials"] = [f"tutorial_{i}" for i in range(4)]
-        saved["interaction_count"] = 35
-        self.mock_user.preferences = {"learning_state": json.dumps(saved)}
-
-        # After recording another completion, should trigger intermediate
-        state = self.manager.record_tutorial_completion(self.mock_trans, "new_tutorial")
-        assert state["expertise_level"] == "intermediate"
-
     def test_record_interaction(self):
         """Should increment interaction count."""
         state = self.manager.record_interaction(self.mock_trans)
         assert state["interaction_count"] == 1
         assert state["last_interaction"] is not None
 
+    def test_record_interaction_advances_expertise(self):
+        """Crossing 30 interactions should promote beginner -> intermediate."""
+        saved = dict(DEFAULT_LEARNING_STATE)
+        saved["interaction_count"] = 29
+        self.mock_user.preferences = {"learning_state": json.dumps(saved)}
+
+        state = self.manager.record_interaction(self.mock_trans)
+        assert state["interaction_count"] == 30
+        assert state["expertise_level"] == "intermediate"
+
+    def test_expertise_advances_to_advanced(self):
+        """Crossing 100 interactions should infer advanced."""
+        saved = dict(DEFAULT_LEARNING_STATE)
+        saved["interaction_count"] = 99
+        self.mock_user.preferences = {"learning_state": json.dumps(saved)}
+
+        state = self.manager.record_interaction(self.mock_trans)
+        assert state["expertise_level"] == "advanced"
+
     def test_record_demonstration(self):
         """Should increment the demonstrations count (empower-vs-dependence signal)."""
         state = self.manager.record_demonstration(self.mock_trans)
         assert state["demonstrations_count"] == 1
-
-    def test_set_current_pathway(self):
-        """Should set the current learning pathway."""
-        state = self.manager.set_current_pathway(self.mock_trans, "transcriptomics")
-        assert state["current_pathway"] == "transcriptomics"
 
 
 class TestSchemaAdditions:
@@ -271,22 +233,17 @@ class TestSchemaAdditions:
         data = {
             "expertise_level": "advanced",
             "scaffolding_level": 5,
-            "completed_tutorials": ["a", "b"],
+            "interaction_count": 120,
             "tutor_mode_enabled": True,
         }
         state = LearningState(**data)
         assert state.expertise_level == "advanced"
-        assert len(state.completed_tutorials) == 2
+        assert state.interaction_count == 120
 
     def test_tutor_mode_toggle(self):
         """TutorModeToggle should validate."""
         toggle = TutorModeToggle(enabled=True)
         assert toggle.enabled is True
-
-    def test_new_action_types(self):
-        """New action types should be defined."""
-        assert ActionType.START_TUTORIAL == "start_tutorial"
-        assert ActionType.NEXT_PATHWAY_STEP == "next_pathway_step"
 
 
 class TestTeachingAssistantWiring:
