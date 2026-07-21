@@ -110,7 +110,7 @@ describe("FormData", () => {
         expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(7);
     });
 
-    it("styles the workflow run no-options alert to fill the select height", async () => {
+    it("styles the no-options alert to match the control height in both run and tool forms", async () => {
         const wrapper = createTarget({
             type: "data",
             value: null,
@@ -121,8 +121,9 @@ describe("FormData", () => {
         expect(alert.exists()).toBe(true);
         expect(alert.text()).toBe("No datasets available");
 
+        // The alert keeps the aligned styling outside of workflow runs too.
         await wrapper.setProps({ workflowRun: false });
-        expect(wrapper.find(".form-data-no-options-alert").exists()).toBe(false);
+        expect(wrapper.find(".form-data-no-options-alert").exists()).toBe(true);
     });
 
     it("multiple datasets", async () => {
