@@ -4320,3 +4320,223 @@ gx_conditional_underscore_name:
   - { __cond_opts__: { __selector__: "a", param_a: "test" } }
   - { __cond_opts__: { __selector__: "a", param_a: {__class__: ConnectedValue} } }
   - {}
+
+gx_rules:
+  request_valid: &gx_rules_request_valid
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+            expression: '(o)+'
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+          - type: add_filter_regex
+            target_column: 0
+            invert: false
+            expression: '^sample'
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+          - type: paired_identifier
+            columns: [2]
+    - parameter:
+        rules:
+          - type: sort
+            target_column: 0
+            numeric: false
+        mapping: []
+    - parameter:
+        rules:
+          - type: add_filter_compare
+            target_column: 0
+            value: 13.5
+            compare_type: less_than
+        mapping: []
+    - parameter:
+        rules:
+          - type: add_column_substr
+            target_column: 0
+            length: 3
+            substr_type: keep_prefix
+        mapping:
+          - type: paired_or_unpaired_identifier
+            columns: [0]
+    - parameter:
+        rules:
+          - type: add_column_value
+            value: "moo"
+          - type: remove_columns
+            target_columns: [0, 1]
+          - type: swap_columns
+            target_column_0: 0
+            target_column_1: 1
+          - type: split_columns
+            target_columns_0: [0]
+            target_columns_1: [1]
+          - type: add_column_rownum
+            start: 1
+          - type: add_column_basename
+            target_column: 0
+          - type: add_column_concatenate
+            target_column_0: 0
+            target_column_1: 1
+          - type: add_column_group_tag_value
+            value: where
+            default_value: barn
+          - type: add_filter_count
+            count: 1
+            invert: false
+            which: first
+          - type: add_filter_empty
+            target_column: 0
+            invert: false
+          - type: add_filter_matches
+            target_column: 0
+            invert: false
+            value: "cow"
+          - type: add_column_from_sample_sheet_index
+            value: 0
+        mapping: []
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+            expression: '(f)(o)'
+            group_count: 2
+            replacement: null
+            allow_unmatched: true
+        mapping: []
+  request_invalid: &gx_rules_request_invalid
+    # missing entirely
+    - {}
+    # null not allowed
+    - parameter: null
+    # not a dict
+    - parameter: "rules"
+    - parameter: 5
+    # missing required fields
+    - parameter: {rules: []}
+    - parameter: {mapping: []}
+    # invalid rule type
+    - parameter:
+        rules:
+          - type: bogus_rule_type
+        mapping: []
+    # rule missing required keys
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+        mapping: []
+    # invalid regex expression
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+            expression: '(unclosed'
+        mapping: []
+    # invalid mapping type
+    - parameter:
+        rules:
+          - type: sort
+            target_column: 0
+            numeric: false
+        mapping:
+          - type: bogus_mapping
+            columns: [0]
+    # invalid substr_type enum
+    - parameter:
+        rules:
+          - type: add_column_substr
+            target_column: 0
+            length: 3
+            substr_type: invalid_type
+        mapping: []
+    # invalid compare_type enum
+    - parameter:
+        rules:
+          - type: add_filter_compare
+            target_column: 0
+            value: 13
+            compare_type: invalid_compare
+        mapping: []
+    # invalid which enum
+    - parameter:
+        rules:
+          - type: add_filter_count
+            count: 1
+            invert: false
+            which: middle
+        mapping: []
+    # string where int expected
+    - parameter:
+        rules:
+          - type: sort
+            target_column: "zero"
+            numeric: false
+        mapping: []
+    # ConnectedValue not allowed in request
+    - parameter: {__class__: 'ConnectedValue'}
+  request_internal_valid:
+    *gx_rules_request_valid
+  request_internal_invalid:
+    *gx_rules_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_rules_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_rules_request_invalid
+  job_internal_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+  job_internal_invalid:
+    - {}
+    - parameter: null
+  workflow_step_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    # rules not required in workflow_step (connected params absent)
+    - {}
+  workflow_step_invalid:
+    - parameter: "not_a_rules_dict"
+    - parameter: 5
+    - parameterx:
+        rules: []
+        mapping: []
+  workflow_step_linked_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: null
+    - parameter: "not_a_rules_dict"
+    - parameter: {__class__: 'ConnectedValue2'}
+  _json_schema_skip:
+    # index 8 is the unclosed-regex case: add_column_regex expression validity is an
+    # AfterValidator (regex compilation) not representable in JSON Schema. Every other
+    # invalid entry in these combos is rejected by the generated schema, so skip only [8].
+    request_invalid:
+      8: "add_column_regex expression validator uses AfterValidator"
+    request_internal_invalid:
+      8: "add_column_regex expression validator uses AfterValidator"
+    request_internal_dereferenced_invalid:
+      8: "add_column_regex expression validator uses AfterValidator"
