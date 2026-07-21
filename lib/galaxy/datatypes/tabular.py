@@ -390,6 +390,12 @@ class Tabular(TabularData):
     def get_column_names(self, first_line: str) -> Optional[list[str]]:
         return None
 
+    def make_html_peek_header(self, dataset: DatasetProtocol, *args, **kwargs) -> str:
+        # Only generic tabular loses generated headers; subclasses may define real column labels.
+        if type(self) is Tabular:
+            return ""
+        return super().make_html_peek_header(dataset, *args, **kwargs)
+
     def set_meta(
         self,
         dataset: DatasetProtocol,
