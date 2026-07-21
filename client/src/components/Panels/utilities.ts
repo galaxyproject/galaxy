@@ -429,7 +429,65 @@ export function searchTools(
         "description",
     ]);
     const { idResults, resultPanel } = createSortedResultPanel(matchedResults, currentPanel);
-    return { results: idResults, resultPanel: resultPanel, closestTerm: closestTerm };
+    // An instance may install and place more than one version of the same tool,
+    // sometimes across different sections. Collapse those to a single result so a
+    // tool doesn't surface as a duplicate in the search results (issue #23151).
+    const { results, resultPanel: dedupedPanel } = dedupeResultsByToolLineage(idResults, resultPanel, tools);
+    return { results, resultPanel: dedupedPanel, closestTerm: closestTerm };
+}
+
+/**
+ * Collapses search results that belong to the same tool lineage (the same tool
+ * installed at multiple versions) down to a single result, keeping the first
+ * (highest-ranked) occurrence. Also prunes the sectioned `resultPanel` so the
+ * dropped ids no longer render, removing any section left empty as a result.
+ *
+ * @param idResults ordered result tool ids from `createSortedResultPanel`
+ * @param resultPanel sectioned result panel from `createSortedResultPanel`
+ * @param tools the searched tools, used to resolve each id's version
+ * @returns the de-duplicated `results` and matching `resultPanel`
+ */
+export function dedupeResultsByToolLineage(
+    idResults: string[],
+    resultPanel: Record<string, Tool | ToolSection>,
+    tools: Tool[],
+): { results: string[]; resultPanel: Record<string, Tool | ToolSection> } {
+    const toolById = new Map(tools.map((tool) => [tool.id, tool]));
+    const keptLineages = new Set<string>();
+    const results: string[] = [];
+    for (const id of idResults) {
+        const lineage = getVersionlessToolId(id, toolById.get(id));
+        if (keptLineages.has(lineage)) {
+            continue;
+        }
+        keptLineages.add(lineage);
+        results.push(id);
+    }
+
+    // Nothing collapsed: keep the original panel untouched.
+    if (results.length === idResults.length) {
+        return { results: idResults, resultPanel };
+    }
+
+    const keptIds = new Set(results);
+    const prunedPanel: Record<string, Tool | ToolSection> = {};
+    for (const [key, item] of Object.entries(resultPanel)) {
+        if (isToolSection(item)) {
+            const sectionTools = (item.tools ?? []).filter(
+                (toolId) => typeof toolId !== "string" || keptIds.has(toolId),
+            );
+            if (sectionTools.length > 0) {
+                prunedPanel[key] = { ...item, tools: sectionTools };
+            }
+        } else if (isTool(item)) {
+            if (keptIds.has(item.id)) {
+                prunedPanel[key] = item;
+            }
+        } else {
+            prunedPanel[key] = item;
+        }
+    }
+    return { results, resultPanel: prunedPanel };
 }
 
 export function searchSections(sections: ToolSection[], query: string) {
