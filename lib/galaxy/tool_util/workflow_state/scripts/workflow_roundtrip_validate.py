@@ -8,6 +8,7 @@ from .._cli_common import (
 from ..roundtrip import (
     RoundTripValidateOptions,
     run_roundtrip_validate,
+    SingleRoundTripReport,
 )
 
 
@@ -42,7 +43,13 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), RoundTripValidateOptions, run_roundtrip_validate, argv)
+    cli_main(
+        build_parser(),
+        RoundTripValidateOptions,
+        run_roundtrip_validate,
+        argv,
+        report_schema_model=SingleRoundTripReport,
+    )
 
 
 if __name__ == "__main__":

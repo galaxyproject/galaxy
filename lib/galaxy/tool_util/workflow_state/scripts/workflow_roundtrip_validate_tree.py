@@ -6,6 +6,7 @@ from .._cli_common import (
     cli_main,
 )
 from ..roundtrip import (
+    RoundTripTreeReport,
     RoundTripValidateTreeOptions,
     run_roundtrip_validate_tree,
 )
@@ -32,7 +33,13 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), RoundTripValidateTreeOptions, run_roundtrip_validate_tree, argv)
+    cli_main(
+        build_parser(),
+        RoundTripValidateTreeOptions,
+        run_roundtrip_validate_tree,
+        argv,
+        report_schema_model=RoundTripTreeReport,
+    )
 
 
 if __name__ == "__main__":

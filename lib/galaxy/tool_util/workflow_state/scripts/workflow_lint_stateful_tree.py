@@ -5,6 +5,7 @@ from .._cli_common import (
     build_base_parser,
     cli_main,
 )
+from .._report_models import LintTreeReport
 from ..lint_stateful import (
     LintStatefulTreeOptions,
     run_lint_stateful_tree,
@@ -37,7 +38,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), LintStatefulTreeOptions, run_lint_stateful_tree, argv)
+    cli_main(build_parser(), LintStatefulTreeOptions, run_lint_stateful_tree, argv, report_schema_model=LintTreeReport)
 
 
 if __name__ == "__main__":

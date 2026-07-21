@@ -1,5 +1,6 @@
 """Tests for tool cache infrastructure: index, workflow extraction, CLI."""
 
+import json
 import os
 
 import pytest
@@ -509,3 +510,40 @@ class TestLintStatefulCLIParser:
         args = parser.parse_args(["test.ga", "--populate-cache", "--tool-source", "galaxy"])
         assert args.populate_cache is True
         assert args.tool_source == "galaxy"
+
+
+# --- --output-schema CLI flag ---
+
+
+class TestOutputSchema:
+    """Test --output-schema across all workflow_state CLIs."""
+
+    @pytest.mark.parametrize(
+        "main_fn,expected_title",
+        [
+            ("galaxy.tool_util.workflow_state.scripts.workflow_validate:main", "SingleValidationReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_validate_tree:main", "TreeValidationReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_clean_stale_state:main", "SingleCleanReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_clean_stale_state_tree:main", "TreeCleanReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_to_format2_stateful:main", "SingleExportReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_to_format2_stateful_tree:main", "ExportTreeReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_to_native_stateful:main", "SingleToNativeReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_to_native_stateful_tree:main", "ToNativeTreeReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_lint_stateful:main", "SingleLintReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_lint_stateful_tree:main", "LintTreeReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_roundtrip_validate:main", "SingleRoundTripReport"),
+            ("galaxy.tool_util.workflow_state.scripts.workflow_roundtrip_validate_tree:main", "RoundTripTreeReport"),
+        ],
+    )
+    def test_output_schema(self, main_fn, expected_title, capsys):
+        module_path, fn_name = main_fn.rsplit(":", 1)
+        from importlib import import_module
+
+        mod = import_module(module_path)
+        main = getattr(mod, fn_name)
+        with pytest.raises(SystemExit) as exc_info:
+            main(["--output-schema"])
+        assert exc_info.value.code == 0
+        schema = json.loads(capsys.readouterr().out)
+        assert schema["title"] == expected_title
+        assert "properties" in schema
