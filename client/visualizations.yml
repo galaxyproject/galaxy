@@ -48,6 +48,9 @@ hyphyvision:
 igv:
     package: "@galaxyproject/igv"
     version: 0.0.25
+jsonviewer:
+    package: "@galaxyproject/jsonviewer"
+    version: 0.0.0
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
     version: 0.0.30
