@@ -12,6 +12,14 @@ export type FieldAlignment = "left" | "center" | "right";
 /** Shared class value shape used by row/cell class bindings */
 export type TableClassValue = string | readonly string[] | Record<string, boolean>;
 
+/** Optional per-item class metadata a row can carry to style itself/its cells */
+export interface TableItemClassMeta {
+    /** CSS classes applied to the row */
+    class?: TableClassValue;
+    /** CSS classes applied to individual cells, keyed by field key */
+    cellClass?: Record<string, TableClassValue>;
+}
+
 /** Table field definition */
 export interface TableField {
     /** Unique key for the field (matches data property name) */

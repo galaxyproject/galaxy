@@ -13,18 +13,13 @@ import type {
     RowIcon,
     RowSelectEvent,
     TableAction,
-    TableClassValue,
     TableEmptyState,
     TableField,
+    TableItemClassMeta,
 } from "./GTable.types";
 
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-type TableItemClassMeta = {
-    class?: TableClassValue;
-    cellClass?: Record<string, TableClassValue>;
-};
 
 interface Props {
     /**
@@ -225,6 +220,13 @@ interface Props {
     selectedItems?: number[];
 
     /**
+     * Array of item indices whose selection is partial/mixed. Their row checkbox
+     * renders as indeterminate (e.g. a folder with only some children selected).
+     * @default []
+     */
+    indeterminateItems?: number[];
+
+    /**
      * Whether to show the empty state message when no items are available
      * @default false
      */
@@ -306,6 +308,7 @@ const props = withDefaults(defineProps<Props>(), {
     selectable: false,
     selectCheckboxTitle: "Select for bulk actions",
     selectedItems: () => [],
+    indeterminateItems: () => [],
     showEmpty: false,
     showSelectAll: false,
     sortBy: "",
@@ -337,7 +340,7 @@ const emit = defineEmits<{
      * Emitted when select all checkbox is toggled
      * @event select-all
      */
-    (e: "select-all"): void;
+    (e: "select-all", selected: boolean): void;
 
     /**
      * Emitted when a row is selected/deselected
@@ -542,7 +545,7 @@ function onRowClick(item: T, index: number, event: MouseEvent | KeyboardEvent) {
 }
 
 function onSelectAll(selected: boolean) {
-    emit("select-all");
+    emit("select-all", selected);
 }
 
 /**
@@ -625,6 +628,10 @@ function getItemCellClass(item: T, fieldKey: string) {
  */
 function isRowSelected(index: number) {
     return props.selectedItems.includes(index);
+}
+
+function isRowIndeterminate(index: number) {
+    return props.indeterminateItems.includes(index);
 }
 
 /**
@@ -788,6 +795,7 @@ defineExpose({
                                             :id="`${getRowId(props.id, getGlobalIndex(paginatedIndex))}-select`"
                                             v-g-tooltip.hover
                                             :checked="isRowSelected(getGlobalIndex(paginatedIndex))"
+                                            :indeterminate="isRowIndeterminate(getGlobalIndex(paginatedIndex))"
                                             :title="props.selectCheckboxTitle"
                                             @click.stop
                                             @change="onRowSelect(item, getGlobalIndex(paginatedIndex))" />
