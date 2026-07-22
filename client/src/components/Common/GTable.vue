@@ -1071,6 +1071,15 @@ defineExpose({
 
             .custom-checkbox {
                 cursor: pointer;
+
+                // The visible checkbox is the (empty) label's ::before box, while
+                // the real input is visually hidden; both default to the arrow
+                // cursor, making the checkbox look unclickable. Force a pointer
+                // across the whole control.
+                :deep(.custom-control-input:not(:disabled)),
+                :deep(.custom-control-input:not(:disabled) ~ .custom-control-label) {
+                    cursor: pointer;
+                }
             }
         }
 
