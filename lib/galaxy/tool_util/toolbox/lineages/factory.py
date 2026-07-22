@@ -23,21 +23,32 @@ class LineageMap:
     def register(self, tool: "Tool") -> ToolLineage:
         tool_id = tool.id
         assert tool_id
-        versionless_tool_id = remove_version_from_guid(tool_id)
-        lineage: ToolLineage
-        if versionless_tool_id not in self.lineage_map:
-            lineage = ToolLineage.from_tool(tool)
-        else:
-            lineage = self.lineage_map[versionless_tool_id]
-            # A lineage for a tool with the same versionless_tool_id exists,
-            # but this lineage may not have the current tools' version,
-            # so we add tool.version to the lineage
-            lineage.register_version(tool.version)
-        if versionless_tool_id and versionless_tool_id not in self.lineage_map:
-            self.lineage_map[versionless_tool_id] = lineage
-        if tool_id not in self.lineage_map:
-            self.lineage_map[tool_id] = lineage
+        # An existing lineage may not have the current tool's version yet, so
+        # register it either way. The map entry can be an older, unshared
+        # lineage (`get` aliases a tool_id without its versionless key), and
+        # that is what callers have always been handed back.
+        lineage = self._shared_lineage(tool_id, lambda: ToolLineage.from_tool(tool))
+        lineage.register_version(tool.version)
         return self.lineage_map[tool_id]
+
+    def _shared_lineage(self, tool_id: str, build: Callable[[], ToolLineage]) -> ToolLineage:
+        """Return the lineage `tool_id` contributes its versions to.
+
+        Every tool_id sharing a versionless guid resolves to one lineage
+        object, and the map is keyed under both. Callers depend on that
+        sharing: `ToolSection.copy(merge_tools=True)` dedups panel entries by
+        lineage, so two installed revisions of the same tool must collapse.
+        The versionless key wins, so a lineage reached by any one version
+        accumulates them all; `build` runs only when neither key is mapped.
+        """
+        versionless_tool_id = remove_version_from_guid(tool_id)
+        lineage = self.lineage_map.get(versionless_tool_id) if versionless_tool_id else None
+        if lineage is None:
+            lineage = self.lineage_map.get(tool_id) or build()
+        if versionless_tool_id:
+            self.lineage_map.setdefault(versionless_tool_id, lineage)
+        self.lineage_map.setdefault(tool_id, lineage)
+        return lineage
 
     def get(self, tool_id: str) -> ToolLineage | None:
         """
@@ -88,45 +99,24 @@ class CachedLineageMap(LineageMap):
         self._versions_for = versions_for
 
     def get(self, tool_id: str) -> ToolLineage | None:
-        # Always source versions from the index when available — the parent's
-        # fallback path builds a lineage from a single ``Tool`` object's
-        # version (via ``ToolLineage.from_tool``) and memoises it, which
-        # would freeze ``tool_versions`` at ``[just-loaded version]`` and
-        # hide every other version present in the index. That breaks
-        # ``get_safe_version`` (used by ``ToolModule.__init__`` at workflow
-        # upload to map a pinned-but-missing tool_version onto the nearest
-        # safe-upgrade version, e.g. ``__BUILD_LIST__`` 1.0.0 → 1.1.0): it
-        # walks ``tool.lineage.tool_versions`` and only finds candidates
-        # within ``WORKFLOW_SAFE_TOOL_VERSION_UPDATES``' bounds, so a
-        # one-element ``[1.2.0]`` lineage misses 1.1.0 and the workflow
-        # ends up bound to 1.2.0 with state shaped for 1.0.0.
+        # An eager toolbox seeds every version through ``register`` as it
+        # loads tools, so ``LineageMap.get`` is only ever a lookup. Nothing
+        # walks the tools here, so ``get`` is the construction path and has
+        # to source versions from the index — the inherited fallback would
+        # build a lineage from a single just-loaded ``Tool`` and memoise it,
+        # freezing ``tool_versions`` at one entry and hiding the rest. That
+        # breaks ``get_safe_version`` (``ToolModule.__init__`` maps a
+        # pinned-but-missing tool_version onto the nearest safe upgrade,
+        # e.g. ``__BUILD_LIST__`` 1.0.0 → 1.1.0): a one-element ``[1.2.0]``
+        # lineage misses 1.1.0, so the workflow binds to 1.2.0 with state
+        # shaped for 1.0.0.
         if self._versions_for is not None:
             try:
                 versions = list(self._versions_for(tool_id))
             except Exception:
                 versions = []
             if versions:
-                # Share the lineage object across every tool_id that maps
-                # to the same versionless guid — eager ``LineageMap.register``
-                # does this via the ``versionless_tool_id`` key, and tools
-                # rely on it for ``ToolSection.copy(merge_tools=True)``.
-                # Without sharing, two shed installs of the same tool (e.g.
-                # ``fastp/0.19.5+galaxy1`` and ``fastp/0.20.1+galaxy0``) get
-                # distinct ``ToolLineage`` objects whose ``tool_versions``
-                # only carry the version that happened to be in the index
-                # at first lookup. ``test_only_latest_version_in_panel_fastp``
-                # then sees both tools survive lineage dedup (with
-                # ``tools[0]`` reflecting whichever was inserted first into
-                # ``section.elems`` instead of the newest version).
-                versionless = remove_version_from_guid(tool_id)
-                lineage = self.lineage_map.get(tool_id)
-                if lineage is None and versionless:
-                    lineage = self.lineage_map.get(versionless)
-                if lineage is None:
-                    lineage = ToolLineage(tool_id)
-                    if versionless:
-                        self.lineage_map[versionless] = lineage
-                self.lineage_map[tool_id] = lineage
+                lineage = self._shared_lineage(tool_id, lambda: ToolLineage(tool_id))
                 for version in versions:
                     if version:
                         lineage.register_version(version)
