@@ -12,21 +12,40 @@ Highlights
 
 Discover some of the exciting new features, enhancements, and improvements in Galaxy 26.1.
 
-Feature1
+Galaxy Notebooks
 --------
 
-A description of the feature and its main highlights. Include screenshots/videos if applicable.
+Turn every Galaxy history into a living scientific notebook. Galaxy Notebooks let you combine narrative, datasets, visualizations, and AI-assisted writing in a single collaborative workspace. Capture the reasoning behind your analysis, document results as you go, and create rich, reproducible reports that stay connected to the data they describe.
 
-Feature2
+<https://github.com/galaxyproject/galaxy/pull/22361>
+
+Bulk Dataset Storage Migration
 --------
 
-A description of the feature and its main highlights. Include screenshots/videos if applicable.
+Managing storage at scale just got much easier. Move multiple datasets and collections between storage locations in a single operation, preview the impact before you begin, and track progress from start to finish. Galaxy keeps you informed with detailed status updates and optional notifications, making large storage migrations safer, simpler, and more transparent.
 
-Feature3
+<https://github.com/galaxyproject/galaxy/pull/22606>
+
+Modern Workflow Extraction Interface
 --------
 
-A description of the feature and its main highlights. Include screenshots/videos if applicable.
+The history-to-workflow extraction interface has been rebuilt in Vue with a modern card-based design. Tool steps and workflow inputs are clearly distinguished, inputs can be renamed before extraction, related jobs can be opened directly, and the newly created workflow is displayed immediately after extraction.
 
+<https://github.com/galaxyproject/galaxy/pull/21935>
+
+Favorite and Recent Tools Panel
+--------
+
+Galaxy now includes an optional tool panel focused on faster access to frequently used tools. It highlights favorite tools, automatically tracks recently executed tools on the client side, supports keyboard navigation, and integrates search with quick favorite/unfavorite actions. When no favorites are configured, the panel guides users to discover and organize tools using the redesigned tool discovery interface.
+
+<https://github.com/galaxyproject/galaxy/pull/21600>
+
+View Workflow Step Configuration During Execution
+--------
+
+No more switching back to the workflow editor to inspect a running workflow. You can now view the full configuration of any workflow step directly from the invocation graph, making it easy to understand tool settings, inputs, and parameters while monitoring an analysis.
+
+<https://github.com/galaxyproject/galaxy/pull/22144>
 
 ----
 
