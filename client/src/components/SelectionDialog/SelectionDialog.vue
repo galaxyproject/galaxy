@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { RowClickEvent, TableField } from "@/components/Common/GTable.types";
+import type { RowClickEvent, RowSelectEvent, TableField } from "@/components/Common/GTable.types";
 import { type ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 import type Filtering from "@/utils/filtering";
 
@@ -160,6 +160,17 @@ function onSortChanged(newSortBy: string, newSortDesc: boolean) {
 }
 
 function onRowClick(event: RowClickEvent<SelectionItem>) {
+    // For a selectable table GTable also emits "row-select" on a row click
+    // (handled by onRowSelect), so emitting here too would toggle selection
+    // twice. Only emit for non-selectable dialogs.
+    if (!props.selectable) {
+        emit("onClick", event.item);
+    }
+}
+
+// Selection for a selectable table: a row click and a checkbox toggle both
+// arrive here as a single "row-select", so the checkbox behaves like the row.
+function onRowSelect(event: RowSelectEvent<SelectionItem>) {
     emit("onClick", event.item);
 }
 
@@ -307,6 +318,7 @@ defineExpose({
                     :selected-items="selectedItems"
                     :show-select-all="props.selectable"
                     @row-click="onRowClick"
+                    @row-select="onRowSelect"
                     @select-all="onSelectAll"
                     @sort-changed="onSortChanged">
                     <template v-slot:cell(label)="data">
