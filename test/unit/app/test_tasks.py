@@ -1,4 +1,3 @@
-import os
 from datetime import (
     datetime,
     timedelta,
@@ -19,7 +18,6 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.model.unittest_utils.model_testing_utils import initialize_model
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import CacheTarget
-from galaxy.util import directory_hash_id
 
 
 class MockObjectStore:
@@ -73,14 +71,23 @@ def _make_job(state: str, age_days: int) -> model.Job:
 class TestCleanupJwds:
     """Tests for _cleanup_jwds using a real in-memory database with actual Job model instances."""
 
-    def test_no_failed_jobs_returns_zero(self, sa_session):
+    @pytest.fixture
+    def mock_jwd_delete(self, mocker):
+        """Patch ``JobWorkingDirectory.delete`` and return the mock.
+
+        The patched method is a no-op by default; individual tests can configure
+        side effects to simulate errors.
+        """
+        return mocker.patch("galaxy.celery.tasks.JobWorkingDirectory.delete")
+
+    def test_no_failed_jobs_returns_zero(self, sa_session, mock_jwd_delete):
         object_store = MagicMock()
         result = _cleanup_jwds(sa_session, object_store, days=7)
         assert result == 0
-        object_store.delete.assert_not_called()
+        mock_jwd_delete.assert_not_called()
 
-    def test_deletes_jwd_for_old_failed_jobs(self, sa_session):
-        """Legacy job (working_directory=None): object_store.delete is called."""
+    def test_deletes_jwd_for_old_failed_jobs(self, sa_session, mock_jwd_delete):
+        """A matching job is delegated to JobWorkingDirectory.delete and counted."""
         job = _make_job(state="error", age_days=10)
         sa_session.add(job)
         sa_session.commit()
@@ -89,13 +96,9 @@ class TestCleanupJwds:
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 1
-        object_store.delete.assert_called_once()
-        call_args = object_store.delete.call_args
-        assert isinstance(call_args[0][0], model.Job)
-        assert call_args[1]["base_dir"] == "job_work"
-        assert call_args[1]["entire_dir"] is True
+        mock_jwd_delete.assert_called_once()
 
-    def test_deletes_multiple_old_failed_jobs(self, sa_session):
+    def test_deletes_multiple_old_failed_jobs(self, sa_session, mock_jwd_delete):
         jobs = [_make_job(state="error", age_days=10) for _ in range(3)]
         sa_session.add_all(jobs)
         sa_session.commit()
@@ -104,9 +107,9 @@ class TestCleanupJwds:
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 3
-        assert object_store.delete.call_count == 3
+        assert mock_jwd_delete.call_count == 3
 
-    def test_skips_jobs_not_old_enough(self, sa_session):
+    def test_skips_jobs_not_old_enough(self, sa_session, mock_jwd_delete):
         job = _make_job(state="error", age_days=1)
         sa_session.add(job)
         sa_session.commit()
@@ -115,9 +118,9 @@ class TestCleanupJwds:
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 0
-        object_store.delete.assert_not_called()
+        mock_jwd_delete.assert_not_called()
 
-    def test_skips_non_failed_jobs(self, sa_session):
+    def test_skips_non_failed_jobs(self, sa_session, mock_jwd_delete):
         job = _make_job(state="ok", age_days=30)
         sa_session.add(job)
         sa_session.commit()
@@ -126,9 +129,9 @@ class TestCleanupJwds:
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 0
-        object_store.delete.assert_not_called()
+        mock_jwd_delete.assert_not_called()
 
-    def test_deletes_jwd_for_jobs_without_object_store_id(self, sa_session):
+    def test_deletes_jwd_for_jobs_without_object_store_id(self, sa_session, mock_jwd_delete):
         """Jobs using the default object store have object_store_id=None but should still be cleaned up."""
         job = _make_job(state="error", age_days=10)
         job.object_store_id = None
@@ -139,9 +142,9 @@ class TestCleanupJwds:
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 1
-        object_store.delete.assert_called_once()
+        mock_jwd_delete.assert_called_once()
 
-    def test_only_deletes_matching_jobs_when_mixed(self, sa_session):
+    def test_only_deletes_matching_jobs_when_mixed(self, sa_session, mock_jwd_delete):
         """With both matching and non-matching jobs in the DB, only matching ones are deleted.
 
         This catches the 'Query is always truthy' bug: without .all(), the `if not failed_jobs`
@@ -163,62 +166,44 @@ class TestCleanupJwds:
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 2
-        assert object_store.delete.call_count == 2
+        assert mock_jwd_delete.call_count == 2
 
-    def test_handles_already_deleted_jwd(self, sa_session):
-        """When object_store.delete raises ObjectNotFound, the job is skipped."""
+    def test_handles_already_deleted_jwd(self, sa_session, mock_jwd_delete):
+        """When JobWorkingDirectory.delete raises ObjectNotFound, the job is skipped."""
         job = _make_job(state="error", age_days=10)
         sa_session.add(job)
         sa_session.commit()
 
-        object_store = MagicMock()
-        object_store.delete.side_effect = ObjectNotFound("JWD not found")
+        mock_jwd_delete.side_effect = ObjectNotFound("JWD not found")
 
+        object_store = MagicMock()
         result = _cleanup_jwds(sa_session, object_store, days=7)
         assert result == 0
 
-    def test_deletes_custom_path_jwd(self, sa_session, tmp_path):
-        """Custom-path job (working_directory set): shutil.rmtree is used on the per-job subdir."""
+    def test_handles_os_error_on_delete(self, sa_session, mock_jwd_delete):
+        """OSError from JobWorkingDirectory.delete is logged and the job is skipped."""
         job = _make_job(state="error", age_days=10)
-        # The column holds the parent base; the per-job dir is <base>/<hash>/<job.id>/.
-        base = tmp_path / "custom_jwd"
-        base.mkdir(parents=True)
-        job.working_directory = str(base)
         sa_session.add(job)
         sa_session.commit()
 
-        jwd_path = base.joinpath(*directory_hash_id(job.id), str(job.id))
-        jwd_path.mkdir(parents=True)
-        (jwd_path / "some_file.txt").write_text("job output")
+        mock_jwd_delete.side_effect = OSError("disk failure")
 
         object_store = MagicMock()
-        result = _cleanup_jwds(sa_session, object_store, days=7)
-
-        assert result == 1
-        object_store.delete.assert_not_called()
-        assert not jwd_path.exists()
-        # The parent base must survive — other jobs may share it.
-        assert base.exists()
-
-    def test_handles_os_error_on_delete(self, sa_session, tmp_path):
-        """OSError during delete is logged and the job is skipped."""
-        job = _make_job(state="error", age_days=10)
-        base = tmp_path / "custom_jwd"
-        base.mkdir(parents=True)
-        job.working_directory = str(base)
-        sa_session.add(job)
-        sa_session.commit()
-
-        jwd_path = base.joinpath(*directory_hash_id(job.id), str(job.id))
-        jwd_path.mkdir(parents=True)
-
-        object_store = MagicMock()
-        # Make shutil.rmtree fail by making the per-job directory read-only
-        os.chmod(jwd_path, 0o000)
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 0
-        object_store.delete.assert_not_called()
-        # Restore permissions for cleanup
-        os.chmod(jwd_path, 0o755)
+
+    def test_continues_after_error_on_one_job(self, sa_session, mock_jwd_delete):
+        """An error deleting one job's JWD does not prevent deleting subsequent jobs."""
+        jobs = [_make_job(state="error", age_days=10) for _ in range(3)]
+        sa_session.add_all(jobs)
+        sa_session.commit()
+
+        # The second job fails; the first and third should still be counted.
+        mock_jwd_delete.side_effect = [None, OSError("disk failure"), None]
+
+        object_store = MagicMock()
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 2
+        assert mock_jwd_delete.call_count == 3
