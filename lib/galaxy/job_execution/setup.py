@@ -364,14 +364,14 @@ class JobWorkingDirectory:
         obj_id = self._job.id
         return os.path.join(*directory_hash_id(obj_id), str(obj_id))
 
-    def _per_job_path(self) -> str:
+    def _per_job_path(self, custom_path: str) -> str:
         """Return ``<custom_base>/<directory_hash_id(job.id)>/<job.id>/``."""
-        return os.path.join(self._custom_path, self._per_job_subpath())
+        return os.path.join(custom_path, self._per_job_subpath())
 
     def resolve(self) -> str:
         """Return the working directory path, creating nothing on disk."""
-        if self._custom_path:
-            return self._per_job_path()
+        if custom_path := self._custom_path:
+            return self._per_job_path(custom_path)
         return self._object_store.get_filename(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
@@ -381,8 +381,8 @@ class JobWorkingDirectory:
 
     def exists(self) -> bool:
         """Check whether the working directory exists on disk."""
-        if self._custom_path:
-            return os.path.exists(self._per_job_path())
+        if custom_path := self._custom_path:
+            return os.path.exists(self._per_job_path(custom_path))
         return self._object_store.exists(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
@@ -396,9 +396,9 @@ class JobWorkingDirectory:
         Raises ``FileExistsError`` if the per-job directory already exists
         (job id collision or leftover from a crashed run).
         """
-        if self._custom_path:
-            validate_working_directory_path(self._custom_path)
-            path = self._per_job_path()
+        if custom_path := self._custom_path:
+            validate_working_directory_path(custom_path)
+            path = self._per_job_path(custom_path)
             try:
                 os.makedirs(path, exist_ok=False)
             except FileExistsError as exc:
@@ -427,9 +427,9 @@ class JobWorkingDirectory:
         For custom paths, only the per-job subdirectory is removed; the
         admin-supplied base is preserved for other jobs.
         """
-        if self._custom_path:
-            validate_working_directory_path(self._custom_path)
-            resolved = self._per_job_path()
+        if custom_path := self._custom_path:
+            validate_working_directory_path(custom_path)
+            resolved = self._per_job_path(custom_path)
             if os.path.exists(resolved):
                 shutil.rmtree(resolved)
             return
@@ -448,10 +448,10 @@ class JobWorkingDirectory:
         sibling tree of the JWD (keyed by ``<hash>/<job.id>``) so resubmits
         don't collide on the archive name.
         """
-        if self._custom_path:
-            validate_working_directory_path(self._custom_path)
+        if custom_path := self._custom_path:
+            validate_working_directory_path(custom_path)
             path = os.path.join(
-                self._custom_path,
+                custom_path,
                 _CLEARED_CONTENTS_EXTRA_DIR,
                 self._per_job_subpath(),
             )
