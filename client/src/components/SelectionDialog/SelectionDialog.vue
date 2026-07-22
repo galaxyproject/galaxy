@@ -39,7 +39,6 @@ interface Props {
     optionsShow?: boolean;
     undoShow?: boolean;
     selectable?: boolean;
-    allSelected?: boolean;
     title?: string;
     searchTitle?: string;
     okButtonText?: string;
@@ -65,7 +64,6 @@ const props = withDefaults(defineProps<Props>(), {
     optionsShow: false,
     undoShow: false,
     selectable: false,
-    allSelected: undefined,
     title: "",
     searchTitle: undefined,
     okButtonText: "Select",
@@ -78,7 +76,7 @@ const emit = defineEmits<{
     (e: "onClick", record: SelectionItem): void;
     (e: "onOk"): void;
     (e: "onOpen", record: SelectionItem): void;
-    (e: "onSelectAll"): void;
+    (e: "onSelectAll", selected: boolean): void;
     (e: "onUndo"): void;
 }>();
 
@@ -87,6 +85,7 @@ const currentPage = ref(1);
 const perPage = ref(25);
 const showAdvancedSearch = ref(false);
 const selectedItems = ref<number[]>([]);
+const indeterminateItems = ref<number[]>([]);
 
 const providerRequestId = ref(0);
 const providerItems = ref<SelectionItem[]>([]);
@@ -111,17 +110,24 @@ const fieldDetails = computed<TableField[]>(() => {
 });
 
 /**
- * Sync selectedItems based on item classes/selection state.
- * Updates the selected items array whenever the items change.
+ * Derive the GTable checkbox state from each item's selectionState: fully
+ * selected rows are checked, MIXED rows (e.g. partially-selected folders)
+ * render as indeterminate. Runs whenever the items change.
  */
 function syncSelectedItems() {
-    selectedItems.value = tableItems.value
-        .map((item, index) => {
-            const hasClass = (item as any)?.class === "table-success";
-            const isSelected = (item as any)?.selectionState === SELECTION_STATES.SELECTED;
-            return hasClass || isSelected ? index : -1;
-        })
-        .filter((index) => index !== -1);
+    const selected: number[] = [];
+    const indeterminate: number[] = [];
+
+    tableItems.value.forEach((item, index) => {
+        if (item.selectionState === SELECTION_STATES.SELECTED) {
+            selected.push(index);
+        } else if (item.selectionState === SELECTION_STATES.MIXED) {
+            indeterminate.push(index);
+        }
+    });
+
+    selectedItems.value = selected;
+    indeterminateItems.value = indeterminate;
 }
 
 const tableItems = computed(() => {
@@ -155,16 +161,14 @@ function onSortChanged(newSortBy: string, newSortDesc: boolean) {
 
 function onRowClick(event: RowClickEvent<SelectionItem>) {
     emit("onClick", event.item);
-    syncSelectedItems();
 }
 
 function onOpen(item: SelectionItem) {
     emit("onOpen", item);
 }
 
-function onSelectAll() {
-    emit("onSelectAll");
-    syncSelectedItems();
+function onSelectAll(selected: boolean) {
+    emit("onSelectAll", selected);
 }
 
 /** Format time stamp */
@@ -275,11 +279,7 @@ defineExpose({
                     :loading="props.isBusy"
                     :show-advanced.sync="showAdvancedSearch" />
 
-                <DataDialogSearch
-                    v-else
-                    :value="filter"
-                    :title="props.searchTitle || props.title"
-                    @input="filter = $event" />
+                <DataDialogSearch v-else v-model="filter" :title="props.searchTitle || props.title" />
             </div>
         </template>
         <slot name="helper" />
@@ -301,6 +301,7 @@ defineExpose({
                     :loading="isBusy"
                     :local-filtering="!usingProvider"
                     :local-sorting="!usingProvider"
+                    :indeterminate-items="indeterminateItems"
                     :per-page="perPage"
                     :selectable="props.selectable"
                     :selected-items="selectedItems"

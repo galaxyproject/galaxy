@@ -48,7 +48,6 @@ const hasValue = ref(false);
 const modalShow = ref(true);
 const errorMessage = ref("");
 const submitting = ref(false);
-const allSelected = ref(false);
 const datasetsVisible = ref(false);
 
 const items = ref<SelectionItem[]>([]);
@@ -126,20 +125,8 @@ function formatRows() {
                     : SELECTION_STATES.UNSELECTED;
 
             set(item, "selectionState", selectionState);
-            set(item, "class", selectionState === SELECTION_STATES.SELECTED ? "table-success" : undefined);
         }
     }
-
-    allSelected.value = checkIfAllSelected();
-}
-
-function checkIfAllSelected(): boolean {
-    return Boolean(
-        items.value.length &&
-            items.value.every((item) => {
-                return selected.value.findIndex((i) => i.id === item.id) !== -1;
-            }),
-    );
 }
 
 async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promise<SelectionItem[]> {
@@ -261,8 +248,8 @@ async function onDatasetClick(item: SelectionItem) {
     }
 }
 
-function selectAll() {
-    if (allSelected.value) {
+function selectAll(checked: boolean) {
+    if (!checked) {
         selected.value = [];
     } else {
         for (const item of items.value) {
@@ -305,7 +292,6 @@ function onCancel() {
         :modal-show="modalShow"
         :file-mode="false"
         :multiple="true"
-        :all-selected="allSelected"
         :selectable="datasetsVisible"
         :items="items"
         :undo-show="datasetsVisible"

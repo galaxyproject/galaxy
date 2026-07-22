@@ -70,7 +70,6 @@ const selectionModel = ref<Model>(new Model({ multiple: props.multiple }));
 
 const query = ref<string>();
 const selectionDialog = ref();
-const allSelected = ref(false);
 const selectedDirectories = ref<SelectionItem[]>([]);
 const errorMessage = ref<string>();
 const filter = ref();
@@ -223,9 +222,10 @@ function formatRows() {
             selectionState = getIcon(isDirectorySelected(item.id), item.url);
         }
         Vue.set(item, "selectionState", selectionState);
-        Vue.set(item, "class", selectionState === SELECTION_STATES.SELECTED ? "table-success" : undefined);
     }
-    allSelected.value = checkIfAllSelected();
+    // Called for its side effect: auto-selects the current folder when all
+    // of its children are selected.
+    checkIfAllSelected();
 }
 
 function isDirectorySelected(directoryId: string): boolean {
@@ -480,7 +480,6 @@ onMounted(() => {
         :modal-show="modalShow"
         :multiple="multiple"
         :options-show="optionsShow"
-        :all-selected="allSelected"
         :selectable="undoShow && multiple"
         :undo-show="undoShow"
         :watch-on-page-changes="false"
