@@ -19,6 +19,7 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.model.unittest_utils.model_testing_utils import initialize_model
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import CacheTarget
+from galaxy.util import directory_hash_id
 
 
 class MockObjectStore:
@@ -177,14 +178,18 @@ class TestCleanupJwds:
         assert result == 0
 
     def test_deletes_custom_path_jwd(self, sa_session, tmp_path):
-        """Custom-path job (working_directory set): shutil.rmtree is used on the custom path."""
+        """Custom-path job (working_directory set): shutil.rmtree is used on the per-job subdir."""
         job = _make_job(state="error", age_days=10)
-        jwd_path = tmp_path / "custom_jwd" / str(job.id)
-        jwd_path.mkdir(parents=True)
-        (jwd_path / "some_file.txt").write_text("job output")
-        job.working_directory = str(jwd_path)
+        # The column holds the parent base; the per-job dir is <base>/<hash>/<job.id>/.
+        base = tmp_path / "custom_jwd"
+        base.mkdir(parents=True)
+        job.working_directory = str(base)
         sa_session.add(job)
         sa_session.commit()
+
+        jwd_path = base.joinpath(*directory_hash_id(job.id), str(job.id))
+        jwd_path.mkdir(parents=True)
+        (jwd_path / "some_file.txt").write_text("job output")
 
         object_store = MagicMock()
         result = _cleanup_jwds(sa_session, object_store, days=7)
@@ -192,18 +197,23 @@ class TestCleanupJwds:
         assert result == 1
         object_store.delete.assert_not_called()
         assert not jwd_path.exists()
+        # The parent base must survive — other jobs may share it.
+        assert base.exists()
 
     def test_handles_os_error_on_delete(self, sa_session, tmp_path):
         """OSError during delete is logged and the job is skipped."""
         job = _make_job(state="error", age_days=10)
-        jwd_path = tmp_path / "custom_jwd" / str(job.id)
-        jwd_path.mkdir(parents=True)
-        job.working_directory = str(jwd_path)
+        base = tmp_path / "custom_jwd"
+        base.mkdir(parents=True)
+        job.working_directory = str(base)
         sa_session.add(job)
         sa_session.commit()
 
+        jwd_path = base.joinpath(*directory_hash_id(job.id), str(job.id))
+        jwd_path.mkdir(parents=True)
+
         object_store = MagicMock()
-        # Make shutil.rmtree fail by making the directory read-only
+        # Make shutil.rmtree fail by making the per-job directory read-only
         os.chmod(jwd_path, 0o000)
 
         result = _cleanup_jwds(sa_session, object_store, days=7)

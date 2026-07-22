@@ -29,7 +29,10 @@ from galaxy.model import (
     MetadataFile,
 )
 from galaxy.objectstore import ObjectStore
-from galaxy.util import safe_makedirs
+from galaxy.util import (
+    directory_hash_id,
+    safe_makedirs,
+)
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.path import StrPath
 
@@ -368,10 +371,25 @@ class JobWorkingDirectory:
         """
         return self._job.working_directory
 
+    def _per_job_subpath(self) -> str:
+        """Return the per-job relative subpath ``<directory_hash_id(job.id)>/<job.id>/``."""
+        obj_id = self._job.id
+        return os.path.join(*directory_hash_id(obj_id), str(obj_id))
+
+    def _per_job_path(self) -> str:
+        """Resolve the per-job working directory under a custom base.
+
+        Returns ``<custom_base>/<directory_hash_id(job.id)>/<job.id>/``. The
+        custom base (``job.working_directory``) is the admin/TPV-supplied
+        parent; the per-job subdirectory isolates concurrent jobs that share
+        the same base.
+        """
+        return os.path.join(self._custom_path, self._per_job_subpath())
+
     def resolve(self) -> str:
         """Return the working directory path, creating nothing on disk."""
         if self._custom_path:
-            return self._custom_path
+            return self._per_job_path()
         return self._object_store.get_filename(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
@@ -382,7 +400,7 @@ class JobWorkingDirectory:
     def exists(self) -> bool:
         """Check whether the working directory exists on disk."""
         if self._custom_path:
-            return os.path.exists(self._custom_path)
+            return os.path.exists(self._per_job_path())
         return self._object_store.exists(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
@@ -393,12 +411,24 @@ class JobWorkingDirectory:
     def create(self) -> str:
         """Create the working directory and return its path.
 
-        Idempotent: a pre-existing custom path is not an error.
+        For custom paths, the per-job subdirectory (``<base>/<hash>/<job.id>/``)
+        is created. A pre-existing per-job directory is a loud error (job id
+        collision or leftover from a crashed run) rather than a silent
+        overwrite, since resubmits go through ``clear_working_directory`` first
+        and should not leave a stale directory behind.
         """
         if self._custom_path:
             validate_working_directory_path(self._custom_path)
-            os.makedirs(self._custom_path, exist_ok=True)
-            return self._custom_path
+            path = self._per_job_path()
+            try:
+                os.makedirs(path, exist_ok=False)
+            except FileExistsError as exc:
+                raise FileExistsError(
+                    f"Job working directory already exists for job {self._job.id} "
+                    f"at {path!r}; this indicates a job id collision or a leftover "
+                    f"directory from a previous run."
+                ) from exc
+            return path
         self._object_store.create(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
@@ -415,14 +445,16 @@ class JobWorkingDirectory:
     def delete(self) -> None:
         """Recursively delete the working directory.
 
-        For custom paths, validates the target is a non-empty absolute path
-        before removing it, since ``job.working_directory`` is an
-        admin-supplied string and ``shutil.rmtree`` will obey it literally.
+        For custom paths, only the per-job subdirectory
+        (``<base>/<hash>/<job.id>/``) is removed — the admin-supplied base is
+        preserved for other jobs. The base is validated before any disk
+        operation since ``job.working_directory`` is an admin-supplied string.
         """
         if self._custom_path:
             validate_working_directory_path(self._custom_path)
-            if os.path.exists(self._custom_path):
-                shutil.rmtree(self._custom_path)
+            resolved = self._per_job_path()
+            if os.path.exists(resolved):
+                shutil.rmtree(resolved)
             return
         self._object_store.delete(
             self._job,
@@ -442,25 +474,27 @@ class JobWorkingDirectory:
         ``<base>/_cleared_contents/<hash>/<obj_id>/``, which is **outside**
         the JWD's own ``<base>/<hash>/<obj_id>/``.
 
-        For the custom-path case, the archive is a **sibling** of the JWD
-        (``<parent>/_cleared_contents/<job.id>``), not a subdirectory of
-        it. This is critical: ``clear_working_directory`` does
-        ``shutil.move(jwd, arc_dir)`` — if ``arc_dir`` were inside ``jwd``,
-        the move would attempt to relocate a directory into its own subtree
-        and fail.
+        For the custom-path case, the archive mirrors the object-store
+        root-divergent layout with the custom base in place of ``<base>``:
+        ``<custom>/_cleared_contents/<hash>/<job.id>/``. This is a **sibling
+        tree** of the JWD tree (both rooted at ``<custom>``), so
+        ``shutil.move(jwd, archive)`` in ``clear_working_directory`` never
+        moves a directory into its own subtree.
 
-        The archive is keyed by ``job.id`` (not the JWD basename) so that
-        resubmits of the same job don't collide on the archive name.
+        The archive is keyed by ``<hash>/<job.id>`` so that resubmits of the
+        same job don't collide on the archive name.
 
-        Note: if the custom path's parent directory is on a different filesystem
-        than the JWD, ``shutil.move`` will fall back to copy-then-delete rather
-        than a rename. This is slower but correct.
+        Note: if the custom base is on a different filesystem than the JWD,
+        ``shutil.move`` will fall back to copy-then-delete rather than a rename.
+        This is slower but correct.
         """
         if self._custom_path:
             validate_working_directory_path(self._custom_path)
-            parent = os.path.dirname(self._custom_path)
-            job_id = str(self._job.id)
-            path = os.path.join(parent, _CLEARED_CONTENTS_EXTRA_DIR, job_id)
+            path = os.path.join(
+                self._custom_path,
+                _CLEARED_CONTENTS_EXTRA_DIR,
+                self._per_job_subpath(),
+            )
             os.makedirs(path, exist_ok=True)
             return path
         self._object_store.create(
@@ -491,8 +525,10 @@ def validate_working_directory_path(path: str) -> None:
     only guard.
 
     ``job.working_directory`` is a ``String(1024)`` populated from destination
-    params (admin/TPV-controlled). Refuse to operate on anything that is not an
-    absolute, non-root, non-empty path.
+    params (admin/TPV-controlled) and is treated as a **parent/base** path:
+    Galaxy appends ``<directory_hash_id(job.id)>/<job.id>/`` for per-job
+    isolation. Refuse to operate on anything that is not an absolute,
+    non-root, non-empty path.
     """
     if not path:
         raise ValueError("Refusing to operate on empty job working_directory")
