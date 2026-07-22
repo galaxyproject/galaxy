@@ -146,7 +146,7 @@ watch(
             </template>
 
             <template v-slot:cell(update_time)="data">
-                <UtcDate :date="data.item.update_time" mode="timeonly" />
+                <UtcDate :date="data.item.update_time" mode="elapsed" />
             </template>
 
             <template v-slot:cell(state)="data">
