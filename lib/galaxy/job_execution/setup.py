@@ -343,17 +343,9 @@ _CLEARED_CONTENTS_EXTRA_DIR = "_cleared_contents"
 class JobWorkingDirectory:
     """Unified handle for a job's working directory.
 
-    Encapsulates the two backing strategies — a custom path persisted on
-    ``job.working_directory`` (set from the ``job_working_directory``
-    destination param) and the legacy object-store-derived path — behind a
-    single object so callers never branch on ``job.working_directory``.
-
-    All create / resolve / exists / delete / cleared-contents logic lives here.
-
-    ``_custom_path`` is read fresh on each access, so a ``JobWorkingDirectory``
-    may be constructed before ``job.working_directory`` is mutated and will
-    observe the up-to-date value on the next method call. This eliminates
-    construction-order sensitivity.
+    Hides the two backing strategies — a custom path on ``job.working_directory``
+    (from the ``job_working_directory`` destination param) and the legacy
+    object-store-derived path — behind a single object.
     """
 
     __slots__ = ("_job", "_object_store")
@@ -364,11 +356,7 @@ class JobWorkingDirectory:
 
     @property
     def _custom_path(self) -> str | None:
-        """Read ``job.working_directory`` fresh on each access.
-
-        Not cached: the column may be mutated after this object is constructed.
-        Reading fresh eliminates construction-order sensitivity entirely.
-        """
+        """Read ``job.working_directory`` fresh on each access (not cached)."""
         return self._job.working_directory
 
     def _per_job_subpath(self) -> str:
@@ -377,13 +365,7 @@ class JobWorkingDirectory:
         return os.path.join(*directory_hash_id(obj_id), str(obj_id))
 
     def _per_job_path(self) -> str:
-        """Resolve the per-job working directory under a custom base.
-
-        Returns ``<custom_base>/<directory_hash_id(job.id)>/<job.id>/``. The
-        custom base (``job.working_directory``) is the admin/TPV-supplied
-        parent; the per-job subdirectory isolates concurrent jobs that share
-        the same base.
-        """
+        """Return ``<custom_base>/<directory_hash_id(job.id)>/<job.id>/``."""
         return os.path.join(self._custom_path, self._per_job_subpath())
 
     def resolve(self) -> str:
@@ -411,11 +393,8 @@ class JobWorkingDirectory:
     def create(self) -> str:
         """Create the working directory and return its path.
 
-        For custom paths, the per-job subdirectory (``<base>/<hash>/<job.id>/``)
-        is created. A pre-existing per-job directory is a loud error (job id
-        collision or leftover from a crashed run) rather than a silent
-        overwrite, since resubmits go through ``clear_working_directory`` first
-        and should not leave a stale directory behind.
+        Raises ``FileExistsError`` if the per-job directory already exists
+        (job id collision or leftover from a crashed run).
         """
         if self._custom_path:
             validate_working_directory_path(self._custom_path)
@@ -445,10 +424,8 @@ class JobWorkingDirectory:
     def delete(self) -> None:
         """Recursively delete the working directory.
 
-        For custom paths, only the per-job subdirectory
-        (``<base>/<hash>/<job.id>/``) is removed — the admin-supplied base is
-        preserved for other jobs. The base is validated before any disk
-        operation since ``job.working_directory`` is an admin-supplied string.
+        For custom paths, only the per-job subdirectory is removed; the
+        admin-supplied base is preserved for other jobs.
         """
         if self._custom_path:
             validate_working_directory_path(self._custom_path)
@@ -467,26 +444,9 @@ class JobWorkingDirectory:
     def cleared_contents_base(self) -> str:
         """Return the directory under which cleared JWDs are archived.
 
-        Creates the archive directory if it does not exist.
-
-        For the object-store case, mirrors the ``extra_dir="_cleared_contents",
-        extra_dir_at_root=True`` layout: the archive lives at
-        ``<base>/_cleared_contents/<hash>/<obj_id>/``, which is **outside**
-        the JWD's own ``<base>/<hash>/<obj_id>/``.
-
-        For the custom-path case, the archive mirrors the object-store
-        root-divergent layout with the custom base in place of ``<base>``:
-        ``<custom>/_cleared_contents/<hash>/<job.id>/``. This is a **sibling
-        tree** of the JWD tree (both rooted at ``<custom>``), so
-        ``shutil.move(jwd, archive)`` in ``clear_working_directory`` never
-        moves a directory into its own subtree.
-
-        The archive is keyed by ``<hash>/<job.id>`` so that resubmits of the
-        same job don't collide on the archive name.
-
-        Note: if the custom base is on a different filesystem than the JWD,
-        ``shutil.move`` will fall back to copy-then-delete rather than a rename.
-        This is slower but correct.
+        Creates the archive directory if it does not exist. The archive is a
+        sibling tree of the JWD (keyed by ``<hash>/<job.id>``) so resubmits
+        don't collide on the archive name.
         """
         if self._custom_path:
             validate_working_directory_path(self._custom_path)
