@@ -391,17 +391,14 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         instance_tool_parameter_models = input_models_for_page(instance_sources, profile)
         min_raw = input_source.get("min", None)
         max_raw = input_source.get("max", None)
-        default_raw = input_source.get("default", None)
         min = int(min_raw) if min_raw is not None else None
         max = int(max_raw) if max_raw is not None else None
-        default = int(default_raw) if default_raw is not None else 0
         return RepeatParameterModel(
             type="repeat",
             name=name,
             parameters=instance_tool_parameter_models,
             min=min,
             max=max,
-            default=default,
             **_common_param_kwargs(input_source),
         )
     elif input_type == "section":

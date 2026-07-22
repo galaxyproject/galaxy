@@ -631,10 +631,9 @@ def _initialize_repeat_state(parameter: RepeatParameterModel, tool_state: dict[s
     if parameter_name not in tool_state:
         tool_state[parameter_name] = []
     repeat_instances = cast(list[dict[str, Any]], tool_state[parameter_name])
-    # Seed ``max(min, default)`` empty instances when the request supplies none.
-    floor = max(parameter.min or 0, parameter.default or 0)
-    while len(repeat_instances) < floor:
-        repeat_instances.append({})
+    if parameter.min:
+        while len(repeat_instances) < parameter.min:
+            repeat_instances.append({})
     return repeat_instances
 
 
