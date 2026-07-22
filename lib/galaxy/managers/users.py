@@ -589,8 +589,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             "custom_message": self.app.config.custom_activation_email_message,
             "expiry_days": self.app.config.activation_grace_period,
         }
-        body = templates.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
-        html = templates.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
+        # The HTML body is autoescaped to prevent XSS via attacker-influenced
+        # values such as the Host-derived ``hostname``; pre-escaped ``Markup``
+        # values (``name``/``user_email``) pass through unchanged under
+        # autoescape, and the admin's ``custom_message`` is marked ``| safe`` in
+        # the template. The plain-text body is never autoescaped (see
+        # templates.render's ``.txt`` guard).
+        body = templates.render(
+            TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir, autoescape=False
+        )
+        html = templates.render(
+            HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir, autoescape=True
+        )
         to = email
         subject = "Galaxy Account Activation"
         try:
