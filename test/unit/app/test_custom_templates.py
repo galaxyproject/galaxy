@@ -1,5 +1,7 @@
 """Test custom template configuration and rendering."""
 
+import pytest
+
 from galaxy.config import templates
 
 TEMPLATE_RELPATH = "mail/activation-email.html"
@@ -61,19 +63,30 @@ def test_html_templates_autoescape_user_supplied_content_when_enabled(tmp_path):
     assert "&lt;script&gt;" in output
 
 
-def test_html_templates_do_not_escape_by_default(tmp_path):
-    """Autoescape is opt-in: existing callers keep the historical raw behavior."""
+def test_html_templates_autoescape_by_default(tmp_path):
+    """Autoescape is now default: new callers are secured by default."""
     custom_templates_dir = tmp_path
     template_path = custom_templates_dir / "mail/inject.html"
     template_path.parent.mkdir(parents=True, exist_ok=True)
     with open(template_path, "w") as f:
         f.write(">>>>>> body\n{{ value }}")
     output = templates.render("mail/inject.html", {"value": "<b>bold</b>"}, custom_templates_dir)
+    assert output == "&lt;b&gt;bold&lt;/b&gt;"
+
+
+def test_html_templates_can_opt_out_of_autoescape(tmp_path):
+    """Existing HTML templates can opt out to keep raw behavior."""
+    custom_templates_dir = tmp_path
+    template_path = custom_templates_dir / "mail/inject.html"
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(template_path, "w") as f:
+        f.write(">>>>>> body\n{{ value }}")
+    output = templates.render("mail/inject.html", {"value": "<b>bold</b>"}, custom_templates_dir, autoescape=False)
     assert output == "<b>bold</b>"
 
 
 def test_txt_templates_do_not_escape_content(tmp_path):
-    """Plain-text templates are not autoescaped by default (callers must not opt in for .txt)."""
+    """Plain-text templates are not autoescaped by default (even without opt out)."""
     custom_templates_dir = tmp_path
     template_path = custom_templates_dir / "mail/inject.txt"
     template_path.parent.mkdir(parents=True, exist_ok=True)
@@ -81,6 +94,17 @@ def test_txt_templates_do_not_escape_content(tmp_path):
         f.write(">>>>>> body\n{{ value }}")
     output = templates.render("mail/inject.txt", {"value": "<b>bold</b>"}, custom_templates_dir)
     assert output == "<b>bold</b>"
+
+
+def test_txt_templates_explicit_autoescape_true_is_rejected(tmp_path):
+    """Explicitly opting into autoescape for a .txt template is a programming error."""
+    custom_templates_dir = tmp_path
+    template_path = custom_templates_dir / "mail/inject.txt"
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(template_path, "w") as f:
+        f.write(">>>>>> body\n{{ value }}")
+    with pytest.raises(ValueError, match="must never be autoescaped"):
+        templates.render("mail/inject.txt", {"value": "<b>bold</b>"}, custom_templates_dir, autoescape=True)
 
 
 def test_html_templates_respect_safe_filter(tmp_path):
