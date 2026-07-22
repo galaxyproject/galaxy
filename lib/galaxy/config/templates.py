@@ -18,20 +18,32 @@ from galaxy.util.resources import (
 TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 
 
-def render(template_path: str, context: dict, custom_templates_dir: str, autoescape: bool = False) -> str:
+def render(
+    template_path: str,
+    context: dict,
+    custom_templates_dir: str,
+    autoescape: bool | None = None,
+) -> str:
     """Read and return templated content as string.
 
-    ``autoescape`` defaults to ``False`` to preserve the historical behavior of
-    the templates rendered through this helper (e.g. the activation email,
-    which pre-escapes some values itself). Callers rendering user-supplied
-    content in HTML templates (e.g. notification emails) should opt in by
-    passing ``autoescape=True`` for the ``.html`` format. Plain-text (``.txt``)
-    templates must never be autoescaped. When autoescape is enabled, template
-    authors who intentionally inject trusted HTML must mark the value with the
-    ``| safe`` filter.
+    ``autoescape`` defaults to ``True`` for HTML templates to prevent XSS.
+    Plain-text (``.txt``) templates must never be autoescaped: when left at the
+    default (``None``) they render unescaped, and explicitly passing
+    ``autoescape=True`` for a ``.txt`` template is a programming error that
+    raises ``ValueError`` rather than being silently ignored. When autoescape is
+    enabled, template authors who intentionally inject trusted HTML must mark
+    the value with the ``| safe`` filter.
     """
     with _get_template_path(template_path, custom_templates_dir).open() as f:
         template_str = _get_template_body(f.read())
+    if template_path.endswith(".txt"):
+        if autoescape is True:
+            raise ValueError(
+                f"Plain-text templates must never be autoescaped; got autoescape=True for '{template_path}'."
+            )
+        autoescape = False
+    elif autoescape is None:
+        autoescape = True
     env = Environment(autoescape=autoescape)
     tmpl = env.from_string(template_str)
     return tmpl.render(**context)
