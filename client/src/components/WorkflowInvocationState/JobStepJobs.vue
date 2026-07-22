@@ -35,7 +35,6 @@ const showModal = ref(false);
 
 const fields: TableField[] = [
     { key: "id", label: "Job ID" },
-    { key: "tool_id", label: "Tool" },
     { key: "update_time", label: "Updated", sortable: true },
     { key: "duration", label: "Time To Finish" },
     { key: "state", label: "State" },
