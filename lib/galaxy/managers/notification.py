@@ -854,12 +854,11 @@ class EmailNotificationTemplateBuilder(Protocol):
         """
         return f"mail/notifications/{self.notification.category}-email.{template_format.value}"
 
-    #: Whether the HTML body should be autoescaped. Defaults to ``False`` to
-    #: preserve the historical behavior of existing notification templates
-    #: (e.g. ``message``/``storage_operation``, whose ``content['message']``
-    #: is pre-rendered to HTML). Builders for templates that render raw
-    #: user-supplied content should opt in.
-    autoescape_html: bool = False
+    #: Whether the HTML body should be autoescaped. Defaults to ``True`` to
+    #: secure templates that render raw user-supplied content. Templates that
+    #: inject pre-rendered HTML (e.g. via ``to_html``) must opt out by setting
+    #: this to ``False``; document the reason at the opt-out site.
+    autoescape_html: bool = True
 
     def get_body(self, template_format: TemplateFormats) -> str:
         template_path = self.get_template_path(template_format)
@@ -875,6 +874,10 @@ class EmailNotificationTemplateBuilder(Protocol):
 
 
 class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    # content['message'] is pre-rendered to HTML via to_html() and is marked
+    # | safe in the template; the remaining fields (subject, name, hostname) are
+    # raw/user-controlled, so keep autoescape on to escape them.
+    autoescape_html = True
     markdown_to = {
         TemplateFormats.HTML: to_html,
         TemplateFormats.TXT: lambda x: x,  # TODO: strip markdown?
@@ -891,6 +894,9 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 
 
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    # item_name/owner_name are raw user-supplied strings; escape them in HTML.
+    autoescape_html = True
+
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
         content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         return content
@@ -901,6 +907,9 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
 
 
 class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    # content['message'] is pre-rendered to HTML via to_html(); autoescape would
+    # double-escape it, so this template must opt out.
+    autoescape_html = False
     markdown_to = {
         TemplateFormats.HTML: to_html,
         TemplateFormats.TXT: lambda x: x,
