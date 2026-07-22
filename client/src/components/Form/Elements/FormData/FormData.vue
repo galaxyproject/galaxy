@@ -33,6 +33,7 @@ import { containsDataOption, isDataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
+import FormSelectionPreference from "../FormSelectionPreference.vue";
 import FormDataContextButtons from "./FormDataContextButtons.vue";
 import FormDataExtensions from "./FormDataExtensions.vue";
 import FormDataWorkflowRunTabs from "./FormDataWorkflowRunTabs.vue";
@@ -383,6 +384,26 @@ const usingSimpleSelect = computed(
     () =>
         !formSelectionRef.value ||
         ("displayMany" in formSelectionRef.value && formSelectionRef.value.displayMany === false),
+);
+
+/**
+ * Mirrors `FormSelection`'s simple/column select preference so the control can be
+ * rendered below the "accepted formats" row instead of inside the select field.
+ */
+const formSelectionPreference = ref({ showManyButton: false, showMultiButton: false });
+
+function onPreferenceChange(state: { showManyButton: boolean; showMultiButton: boolean }) {
+    formSelectionPreference.value = state;
+}
+
+function setFormSelectionUseMany(value: boolean) {
+    formSelectionRef.value?.setUseMany(value);
+}
+
+const showSelectionPreference = computed(
+    () =>
+        Boolean(currentVariant.value?.multiple) &&
+        (formSelectionPreference.value.showManyButton || formSelectionPreference.value.showMultiButton),
 );
 
 /**
@@ -1141,10 +1162,7 @@ const noOptionsWarningMessage = computed(() => {
                     :placeholder="`Select a ${placeholder}`"
                     @search-change="onSearchChange">
                     <template v-slot:no-options>
-                        <BAlert
-                            :class="props.workflowRun && 'py-0 my-0 d-flex w-100 h-100 align-items-center'"
-                            variant="warning"
-                            show>
+                        <BAlert class="form-data-no-options-alert" variant="warning" show>
                             {{ noOptionsWarningMessage }}
                         </BAlert>
                     </template>
@@ -1164,11 +1182,13 @@ const noOptionsWarningMessage = computed(() => {
                     class="w-100"
                     :data="formattedOptions"
                     :total-estimate="currentSourceTotalEstimate"
+                    defer-preference
                     optional
                     multiple
+                    @preference-change="onPreferenceChange"
                     @search-change="onSearchChange">
                     <template v-slot:no-options>
-                        <BAlert class="py-2 my-0" variant="warning" show>
+                        <BAlert class="form-data-no-options-alert" variant="warning" show>
                             {{ noOptionsWarningMessage }}
                         </BAlert>
                     </template>
@@ -1197,12 +1217,19 @@ const noOptionsWarningMessage = computed(() => {
                 @uploaded-data="handleUploadedDataOptions" />
         </div>
 
-        <FormDataExtensions
-            v-if="restrictsExtensions"
-            class="mt-1"
-            :extensions="props.extensions"
-            :formats-button-id="formatsButtonId"
-            :formats-visible.sync="formatsVisible" />
+        <div v-if="restrictsExtensions || showSelectionPreference" class="d-flex align-items-center flex-gapx-1 mt-1">
+            <FormDataExtensions
+                v-if="restrictsExtensions"
+                :extensions="props.extensions"
+                :formats-button-id="formatsButtonId"
+                :formats-visible.sync="formatsVisible" />
+
+            <FormSelectionPreference
+                v-if="showSelectionPreference"
+                :show-many-button="formSelectionPreference.showManyButton"
+                :show-multi-button="formSelectionPreference.showMultiButton"
+                @use-many="setFormSelectionUseMany" />
+        </div>
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
             <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
@@ -1294,6 +1321,19 @@ const noOptionsWarningMessage = computed(() => {
                 padding-left: 5px;
             }
         }
+    }
+
+    .form-data-no-options-alert {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        // Match the adjacent context-button / select control height so the warning
+        // aligns with the row instead of over-filling it (multiple mode pushes the
+        // "switch to column select" control below) or leaving default alert padding.
+        min-height: 2.125rem;
+        margin: 0;
+        padding-top: 0;
+        padding-bottom: 0;
     }
 }
 
