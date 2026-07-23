@@ -2520,7 +2520,10 @@ class ToolModule(WorkflowModule):
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
         self.tool: Tool | None = None
-        if getattr(trans.app, "toolbox", None):
+        # ``toolbox_or_none`` because Celery workers run without a toolbox
+        # (they build a toolbox-less ``GalaxyManagerApplication``); the plain
+        # ``toolbox`` property asserts and would abort store export there.
+        if trans.app.toolbox_or_none:
             tool_like: ToolLike | None = None
             if trans.user and tool_uuid:
                 tool_like = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
