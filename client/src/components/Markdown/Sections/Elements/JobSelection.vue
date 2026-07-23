@@ -23,7 +23,7 @@ defineProps<JobSelectionProps>();
         <slot v-if="jobId"> </slot>
         <div v-else>
             <b-navbar>
-                <b-collapse id="nav-text-collapse" is-nav>
+                <div class="navbar-collapse">
                     <b-navbar-nav>
                         <b-nav-text>Select Job</b-nav-text>
                     </b-navbar-nav>
@@ -36,7 +36,7 @@ defineProps<JobSelectionProps>();
                                 @input="handleInput"></b-form-select>
                         </b-input-group>
                     </b-nav-form>
-                </b-collapse>
+                </div>
             </b-navbar>
             <slot />
         </div>
