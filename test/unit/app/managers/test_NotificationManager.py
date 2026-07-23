@@ -361,6 +361,28 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
         assert actual_preferences == default_preferences
 
+    def test_preferences_get_falls_back_to_default_for_missing_category(self):
+        """Users who saved preferences before a category was introduced have no
+        key for it in their stored blob. ``get`` must fall back to default
+        settings rather than raising ``KeyError`` (which would silently drop
+        the notification at association-creation time).
+        """
+        # Build preferences from a stale blob that predates tool_installation_request.
+        stale_blob = {
+            PersonalNotificationCategory.message: {
+                "enabled": True,
+                "channels": {"push": True, "email": True, "webhook": False},
+            }
+        }
+        preferences = UserNotificationPreferences.model_validate({"preferences": stale_blob})
+
+        settings = preferences.get(PersonalNotificationCategory.tool_installation_request)
+
+        # Default settings, not a raise.
+        assert settings == NotificationCategorySettings()
+        assert settings.enabled is True
+        assert settings.channels.push is True
+
     def test_update_user_notification_preferences(self):
         user = self._create_test_user()
         preferences = self.notification_manager.get_user_notification_preferences(user)

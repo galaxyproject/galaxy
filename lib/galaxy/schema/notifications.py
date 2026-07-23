@@ -553,8 +553,13 @@ class UserNotificationPreferences(Model):
             self.preferences.update(other)
 
     def get(self, category: PersonalNotificationCategory) -> NotificationCategorySettings:
-        """Get the notification preferences for a specific category."""
-        return self.preferences[category]
+        """Get the notification preferences for a specific category.
+
+        Falls back to default settings when the category is absent from the stored
+        preferences -- e.g. for users who saved preferences before this category was
+        introduced (no migration backfills newly added categories).
+        """
+        return self.preferences.get(category, NotificationCategorySettings())
 
     @classmethod
     def default(cls):
