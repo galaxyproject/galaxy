@@ -83,6 +83,7 @@ export function generateToolInstallationRequestNotification(): ToolInstallationR
             scientific_domain: "Genomics",
             requested_version: "1.0.0",
             requester_email: "requester@example.com",
+            is_confirmation: false,
         },
         seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
         deleted: false,
