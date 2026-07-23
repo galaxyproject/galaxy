@@ -934,29 +934,19 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
         content = ToolInstallationRequestNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         return content
 
-    def _is_confirmation_to_requester(self) -> bool:
-        """Whether this email is the request confirmation sent to the requester.
+    def _is_confirmation(self) -> bool:
+        """Whether this email renders the request confirmation sent to the requester.
 
-        The requester is identified by matching their email to the
-        ``requester_email`` recorded in the notification content. Both the
-        email comparison and the admin exclusion are case-insensitive so the
-        outcome does not depend on the case of the stored admin email (which
-        ``config.is_admin_user`` compares case-sensitively).
+        The service stamps ``is_confirmation`` on the notification content when
+        building the requester's copy, so the template is selected from a real
+        content field rather than by re-inferring the recipient's identity from
+        email-string matching at render time.
         """
         content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
-        requester_email = content.requester_email
-        if not self.user.email or not requester_email:
-            return False
-        if self.user.email.lower().strip() != requester_email.lower().strip():
-            return False
-        # Exclude admins even if they happen to be the requester, using a
-        # case-insensitive check so an admin whose email is stored with a
-        # different case is still recognized as an admin here.
-        admin_emails = [addr.lower().strip() for addr in self.config.admin_users_list if addr]
-        return self.user.email.lower().strip() not in admin_emails and not self.user.bootstrap_admin_user
+        return bool(content.is_confirmation)
 
     def get_template_path(self, template_format: TemplateFormats) -> str:
-        if self._is_confirmation_to_requester():
+        if self._is_confirmation():
             return f"mail/notifications/tool_installation_request_confirmation-email.{template_format.value}"
         return super().get_template_path(template_format)
 
@@ -991,7 +981,7 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
 
     def get_subject(self) -> str:
         content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
-        if self._is_confirmation_to_requester():
+        if self._is_confirmation():
             if len(content.tool_names) == 1:
                 return f"[Galaxy] Tool installation request submitted: {content.tool_names[0]}"
             return f"[Galaxy] Tool installation request submitted ({len(content.tool_names)} tools)"
