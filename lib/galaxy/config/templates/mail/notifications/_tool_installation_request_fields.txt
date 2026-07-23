@@ -1,0 +1,13 @@
+{# Shared tool-request field block for the plain-text email body.
+   Included by tool_installation_request-email.txt and
+   tool_installation_request_confirmation-email.txt. Pure partial body (no
+   >>>>>> doc header). Variables: content. #}
+{% if content['tool_names'] | length == 1 %}Tool name:    {{ content['tool_names'][0] }}
+{% else %}Tools:
+{% for tool in content['tool_names'] %}  - {{ tool }}
+{% endfor %}{% endif %}{% if content['tool_url'] %}URL:          {{ content['tool_url'] }}
+{% endif %}Description:  {{ content['description'] }}
+{% if content['scientific_domain'] %}Domain:       {{ content['scientific_domain'] }}
+{% endif %}{% if content['requested_version'] %}Version:      {{ content['requested_version'] }}
+{% endif %}{% if content['additional_remarks'] %}Remarks:      {{ content['additional_remarks'] }}
+{% endif %}
