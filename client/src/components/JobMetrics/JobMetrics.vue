@@ -59,7 +59,7 @@ async function getJobMetrics() {
     if (props.jobId) {
         await jobMetricsStore.fetchJobMetricsForJobId(props.jobId);
     } else {
-        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
+        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType as "hda" | "ldda");
     }
 }
 
