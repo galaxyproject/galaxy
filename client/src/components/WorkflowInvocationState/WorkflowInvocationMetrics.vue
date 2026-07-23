@@ -37,6 +37,16 @@ watch(
     { immediate: true },
 );
 
+// Trigger a fetch of invocation metrics when the workflow transitions to a terminal state.
+watch(
+    () => props.notTerminal,
+    (notTerminal, wasNotTerminal) => {
+        if (wasNotTerminal && !notTerminal) {
+            invocationStore.fetchInvocationMetricsForId({ id: props.invocationId });
+        }
+    },
+);
+
 function itemToX(item: WorkflowJobMetric) {
     if (groupBy.value === "tool_id") {
         return item.tool_id;
