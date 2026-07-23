@@ -534,15 +534,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     def toolbox_or_none(self) -> tools.ToolBox | None:
         return self._toolbox
 
-    def reindex_tool_search(self) -> None:
-        # Call this when tools are added or removed.
-        self.toolbox_search.build_index(
-            tool_cache=self.tool_cache,
-            toolbox=self.toolbox,
-            index_help=self.config.index_tool_help,
-        )
-        self.tool_cache.reset_status()
-
     def _set_enabled_container_types(self):
         container_types_to_destinations = collections.defaultdict(list)
         for destinations in self.job_config.destinations.values():
@@ -927,6 +918,17 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         return (
             self.config.track_jobs_in_database and self.job_config.is_handler
         ) or not self.config.track_jobs_in_database
+
+    def reindex_tool_search(self) -> None:
+        # Call this when tools are added or removed. Defined here rather than on
+        # MinimalGalaxyApplication so it wins over the MinimalManagerApp
+        # interface stub in the MRO, the same way is_job_handler does.
+        self.toolbox_search.build_index(
+            tool_cache=self.tool_cache,
+            toolbox=self.toolbox,
+            index_help=self.config.index_tool_help,
+        )
+        self.tool_cache.reset_status()
 
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationTarget[tools.ToolBox]):
