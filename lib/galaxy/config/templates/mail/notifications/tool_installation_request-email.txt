@@ -34,18 +34,9 @@ Hello {{ name }},
 
 A user has submitted a request to install {% if content['tool_names'] | length == 1 %}a new tool{% else %}new tools{% endif %} on {{ hostname }} on {{ date }}.
 
-{% if content['tool_names'] | length == 1 %}Tool name:    {{ content['tool_names'][0] }}
-{% else %}Tools:
-{% for tool in content['tool_names'] %}  - {{ tool }}
-{% endfor %}{% endif %}{% if content['tool_url'] %}URL:          {{ content['tool_url'] }}
-{% endif %}Description:  {{ content['description'] }}
-{% if content['scientific_domain'] %}Domain:       {{ content['scientific_domain'] }}
-{% endif %}{% if content['requested_version'] %}Version:      {{ content['requested_version'] }}
-{% endif %}{% if content['workflow_id'] %}Workflow:     {{ workflow_name if workflow_name else content['workflow_id'] }}
-{% endif %}{% if content['additional_remarks'] %}Remarks:      {{ content['additional_remarks'] }}
+{% include "mail/notifications/_tool_installation_request_fields.txt" %}{% if content['workflow_id'] %}Workflow:     {{ workflow_name if workflow_name else content['workflow_id'] }}
 {% endif %}{% if content['requester_email'] %}Requested by: {{ content['requester_email'] }}
 {% endif %}
-
 {% if galaxy_url %}
 You can review the notification in Galaxy: {{ galaxy_url }}/user/notifications
 {% endif %}
