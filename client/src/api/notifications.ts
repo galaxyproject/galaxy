@@ -43,6 +43,19 @@ export interface ToolInstallationRequestNotification extends BaseUserNotificatio
     content: ToolInstallationRequestNotificationContent;
 }
 
+/**
+ * Caller-supplied fields for a tool installation request.
+ *
+ * Omits server-stamped fields the caller must never set: `category` (a fixed
+ * discriminator), `requester_email` and `is_confirmation` (both stamped by the
+ * service from the authenticated user). `submitToolInstallationRequest` fills
+ * these in when building the request payload.
+ */
+export type ToolInstallationRequestInput = Omit<
+    ToolInstallationRequestNotificationContent,
+    "category" | "requester_email" | "is_confirmation"
+>;
+
 export type UserNotification =
     | MessageNotification
     | SharedItemNotification
@@ -59,7 +72,7 @@ export type NewSharedItemNotificationContentItemType =
     components["schemas"]["NewSharedItemNotificationContent"]["item_type"];
 
 /** Submit a tool installation request as the authenticated user. */
-export async function submitToolInstallationRequest(content: ToolInstallationRequestNotificationContent) {
+export async function submitToolInstallationRequest(content: ToolInstallationRequestInput) {
     const { error } = await GalaxyApi().POST("/api/notifications", {
         body: {
             recipients: { user_ids: [], group_ids: [], role_ids: [] },
@@ -67,7 +80,13 @@ export async function submitToolInstallationRequest(content: ToolInstallationReq
                 source: "tool_installation_request_form",
                 category: "tool_installation_request",
                 variant: "info",
-                content,
+                // `category`/`is_confirmation`/`requester_email` are server-stamped;
+                // fill the discriminator + default here so callers never spell them.
+                content: {
+                    ...content,
+                    category: "tool_installation_request",
+                    is_confirmation: false,
+                },
             },
         },
     });

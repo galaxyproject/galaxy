@@ -44,12 +44,9 @@ async function requestInstallation() {
 
     try {
         await submitToolInstallationRequest({
-            category: "tool_installation_request",
             tool_names: props.missingToolIds,
             workflow_id: props.workflowId,
             description,
-            // Server-stamped; sent only to satisfy the generated (required) schema.
-            is_confirmation: false,
         });
 
         submitted.value = true;
