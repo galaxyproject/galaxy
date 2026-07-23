@@ -618,15 +618,24 @@ class ToolPanelManager:
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
         guids_to_remove = list(tool_panel_dict.keys())
-        toolbox = self.app.toolbox
-        # Remove the tools from the toolbox's tools_by_id dictionary.
-        for guid_to_remove in guids_to_remove:
-            # remove_from_tool_panel to false, will handling that logic below.
-            toolbox.remove_tool_by_id(guid_to_remove, remove_from_panel=False)
         shed_tool_conf_dict = self.get_shed_tool_conf_dict(shed_tool_conf)
-        if uninstall:
-            # Remove from the shed_tool_conf file on disk.
-            self.remove_from_shed_tool_config(shed_tool_conf_dict, repository.metadata_)
+        # The conf rewrite must precede the toolbox/index removal, and neither
+        # may interleave with a toolbox rebuild: a rebuild reading the conf
+        # after the index prune but before the rewrite sees a conf-listed tool
+        # file with no index entry — the state the cached toolbox's ad-hoc
+        # self-heal repairs by re-indexing the tool, resurrecting it in the
+        # persisted index after uninstall. The reverse intermediate (conf
+        # rewritten, index not yet pruned) is safe: remove_tool_by_id
+        # re-prunes whatever toolbox is current.
+        with self.app._toolbox_lock:
+            if uninstall:
+                # Remove from the shed_tool_conf file on disk.
+                self.remove_from_shed_tool_config(shed_tool_conf_dict, repository.metadata_)
+            toolbox = self.app.toolbox
+            # Remove the tools from the toolbox's tools_by_id dictionary.
+            for guid_to_remove in guids_to_remove:
+                # remove_from_tool_panel to false, will handling that logic below.
+                toolbox.remove_tool_by_id(guid_to_remove, remove_from_panel=False)
 
     def update_tool_panel_dict(self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups):
         for tool_guid in tool_panel_dict:

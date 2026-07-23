@@ -1,4 +1,5 @@
 import os
+from unittest import mock
 from xml.etree.ElementTree import (
     Element,
     SubElement,
@@ -18,6 +19,16 @@ from tool_shed.tools import tool_version_manager
 from ._util import TestToolShedApp
 
 DEFAULT_GUID = "123456"
+
+
+class _RecordingLock:
+    held = False
+
+    def __enter__(self):
+        self.held = True
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.held = False
 
 
 class TestToolPanelManager(BaseToolBoxTestCase):
@@ -154,6 +165,36 @@ class TestToolPanelManager(BaseToolBoxTestCase):
         new_toolbox = self.get_new_toolbox()
         all_versions = new_toolbox.get_tool("test_tool", get_all_versions=True)
         assert not all_versions
+
+    def test_uninstall_rewrites_conf_before_toolbox_removal(self):
+        # A toolbox rebuild interleaving between the index prune and the conf
+        # rewrite sees a conf-listed tool file with no index entry — the state
+        # the cached toolbox's ad-hoc self-heal repairs by re-indexing the
+        # tool, resurrecting it after uninstall.
+        self._init_tool()
+        self._setup_two_versions_in_config(section=True)
+        self._setup_two_versions()
+        guid = "github.com/galaxyproject/example/test_tool/0.2"
+        conf_path = os.path.join(self.test_directory, "tool_conf.xml")
+        recording_lock = _RecordingLock()
+        conf_when_removed = {}
+        lock_held_when_removed = {}
+        original_remove = self.toolbox.remove_tool_by_id
+
+        def recording_remove(tool_id, remove_from_panel=True):
+            with open(conf_path) as fh:
+                conf_when_removed[tool_id] = fh.read()
+            lock_held_when_removed[tool_id] = recording_lock.held
+            return original_remove(tool_id, remove_from_panel=remove_from_panel)
+
+        with (
+            mock.patch.object(self.app, "_toolbox_lock", recording_lock),
+            mock.patch.object(self.toolbox, "remove_tool_by_id", side_effect=recording_remove),
+        ):
+            self._remove_repository_contents(guid, uninstall=True)
+
+        assert guid not in conf_when_removed[guid]
+        assert lock_held_when_removed[guid]
 
     def _setup_two_versions_remove_one(self, section, uninstall):
         self._init_tool()
