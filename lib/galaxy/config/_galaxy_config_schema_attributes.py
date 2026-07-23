@@ -469,6 +469,7 @@ class GalaxyAppConfigurationAttributes:
     dispatch_notifications_interval: int
     help_forum_api_url: str
     enable_help_forum_tool_panel_integration: bool
+    enable_tool_installation_request_form: bool
     file_source_temp_dir: str | None
     file_source_webdav_use_temp_files: bool
     file_source_listings_expiry_time: int
