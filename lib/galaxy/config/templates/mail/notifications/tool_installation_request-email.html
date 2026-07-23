@@ -47,43 +47,9 @@ Template begins here >>>>>>
       on <b>{{ hostname }}</b> on <b>{{ date }}</b>.
     </p>
 
+    {% include "mail/notifications/_tool_installation_request_fields.html" %}
+
     <table style="font-size: 12pt; border-collapse: collapse; width: 100%;">
-      <tr>
-        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">
-          Tool{{ " names" if content['tool_names'] | length > 1 else " name" }}
-        </td>
-        <td style="padding: 4px 8px;">
-          {% if content['tool_names'] | length == 1 %}
-          {{ content['tool_names'][0] }}
-          {% else %}
-          <ul style="margin: 0; padding-left: 1.2em;">
-            {% for name in content['tool_names'] %}<li>{{ name }}</li>{% endfor %}
-          </ul>
-          {% endif %}
-        </td>
-      </tr>
-      {% if content['tool_url'] %}
-      <tr>
-        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">URL</td>
-        <td style="padding: 4px 8px;">{{ content['tool_url'] }}</td>
-      </tr>
-      {% endif %}
-      <tr>
-        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Description</td>
-        <td style="padding: 4px 8px;">{{ content['description'] }}</td>
-      </tr>
-      {% if content['scientific_domain'] %}
-      <tr>
-        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Scientific domain</td>
-        <td style="padding: 4px 8px;">{{ content['scientific_domain'] }}</td>
-      </tr>
-      {% endif %}
-      {% if content['requested_version'] %}
-      <tr>
-        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Requested version</td>
-        <td style="padding: 4px 8px;">{{ content['requested_version'] }}</td>
-      </tr>
-      {% endif %}
       {% if content['workflow_id'] %}
       <tr>
         <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Workflow</td>
@@ -96,12 +62,6 @@ Template begins here >>>>>>
           {{ content['workflow_id'] }}
           {% endif %}
         </td>
-      </tr>
-      {% endif %}
-      {% if content['additional_remarks'] %}
-      <tr>
-        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Additional remarks</td>
-        <td style="padding: 4px 8px;">{{ content['additional_remarks'] }}</td>
       </tr>
       {% endif %}
       {% if content['requester_email'] %}
