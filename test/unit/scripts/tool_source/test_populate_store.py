@@ -380,7 +380,6 @@ class TestIncrementalFastPath:
             paths=[str(tool_path)],
             path_guids={str(tool_path): guid},
             incremental=True,
-            rebuild_whoosh=False,
         )
         store, index = _load_default_index(cfg)
         entry = index.entries[guid]
@@ -402,7 +401,6 @@ class TestIncrementalFastPath:
             cfg,
             pattern="fastp.xml",
             incremental=True,
-            rebuild_whoosh=False,
         )
         assert result["unchanged"] == 1
         store.invalidate_index_cache()
@@ -443,8 +441,8 @@ class TestTwinDeterminism:
     Regression: the winner among same-id/same-version twins is decided by
     index add-order. Consuming pool results as_completed — or adding
     carried-forward entries before re-parsed ones — flipped the winner (and
-    its panel section in the whoosh corpus) between runs, defeating the
-    whoosh corpus-signature rebuild skip.
+    its panel section in the search corpus) between runs even though no input
+    changed.
     """
 
     def test_twin_winner_stable_across_runs(self, tmp_path):

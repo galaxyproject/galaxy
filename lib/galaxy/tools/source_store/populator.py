@@ -3,8 +3,8 @@ Tool source store populator.
 
 Walks Galaxy's tool configuration files, parses each tool source, and writes
 the canonical ``StoredToolSource`` + ``ToolIndex`` rows into every writable
-tool source store. The populator is the single writer of the index and the
-whoosh search index; store consumers are read-only.
+tool source store. The rendered toolbox owns its per-view search indexes;
+the populator only persists source and metadata rows.
 
 Two execution modes:
 
@@ -21,7 +21,6 @@ loop that updates the store as tool files change on disk and broadcasts a
 import argparse
 import hashlib
 import logging
-import os
 import signal
 import sys
 import threading
@@ -96,10 +95,7 @@ from galaxy.tools.source_store.manifest import (
     build_manifest,
     write_manifest,
 )
-from galaxy.tools.source_store.search import (
-    ToolSearchTuning,
-    ToolWhooshIndex,
-)
+from galaxy.tools.source_store.search import MAX_TOOL_SEARCH_HELP_CHARS
 from galaxy.util import listify
 from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.properties import load_app_properties
@@ -115,12 +111,6 @@ from galaxy.util.watcher import (
 )
 
 log = logging.getLogger(__name__)
-
-# Upper bound on the help text carried onto each ``ToolIndexEntry``. Tool help
-# is occasionally enormous (embedded tables, long tutorials); cap it so the
-# persisted index and whoosh corpus stay bounded while still covering the help
-# body for search.
-MAX_HELP_TEXT_CHARS = 20000
 
 
 class _ReloadNotificationConfig(Protocol):
@@ -308,7 +298,7 @@ class ToolFileWatcher:
         If the content is new, delegates to :func:`populate_for_paths`,
         which runs the full parse-and-persist path: ``StoredToolSource``
         write, ``ToolIndexEntry`` build (with section + labels from the
-        conf walk), whoosh rebuild, and the ``reload_tool_source_cache``
+        conf walk), metadata rebuild, and the ``reload_tool_source_cache``
         broadcast — same machinery a shed install hits.
         """
         try:
@@ -341,7 +331,6 @@ class ToolFileWatcher:
         self._populate(
             self.config,
             paths=[path],
-            rebuild_whoosh=True,
             write_manifests=self._write_manifests,
         )
         log.info("Updated tool: %s", path)
@@ -364,7 +353,6 @@ class ToolFileWatcher:
         self._populate(
             self.config,
             paths=siblings,
-            rebuild_whoosh=True,
             write_manifests=self._write_manifests,
         )
         log.info("Macro change in %s — re-expanded %d sibling file(s)", macro_path, len(siblings))
@@ -385,43 +373,6 @@ class ToolFileWatcher:
 
 
 DEFAULT_STORE_NAME = "__default__"
-
-# Sub-directory under ``config.tool_search_index_dir`` where the default
-# store's whoosh index lives.
-_WHOOSH_DEFAULT_SUBDIR = "_store_default"
-
-
-def whoosh_dir_for_store(tool_search_index_dir: str | None, store_name: str) -> str | None:
-    """Resolve the on-disk whoosh dir for ``store_name``.
-
-    Returns ``None`` if the config doesn't define ``tool_search_index_dir``
-    (whoosh search is then disabled). The default store maps to a fixed
-    sub-dir; named stores get their own sub-dir.
-    """
-    if not tool_search_index_dir:
-        return None
-    sub = _WHOOSH_DEFAULT_SUBDIR if store_name == DEFAULT_STORE_NAME else store_name
-    return os.path.join(tool_search_index_dir, sub)
-
-
-def build_whoosh_for_store(config: GalaxyAppConfiguration, store_name: str, tool_index: ToolIndex) -> None:
-    """Rebuild the whoosh index for ``store_name`` from ``tool_index``.
-
-    No-ops if ``tool_search_index_dir`` is unset. Logs and swallows whoosh
-    failures: the toolbox surfaces them to users at query time (the
-    populator's job is to write what it can; an unbuildable index is a
-    deploy issue, not a populator-CLI fatal).
-    """
-    index_dir = whoosh_dir_for_store(config.tool_search_index_dir, store_name)
-    if index_dir is None:
-        return
-    try:
-        tuning = ToolSearchTuning.from_config(config)
-        searcher = ToolWhooshIndex(index_dir=index_dir, tuning=tuning)
-        count = searcher.build(tool_index)
-        log.info("Built whoosh index for store %s at %s (%d docs)", store_name, index_dir, count)
-    except Exception as e:
-        log.error("Whoosh build for store %s failed: %s", store_name, e)
 
 
 def _merge_panel_order(previous: list[ToolPanelItem], rebuilt: list[ToolPanelItem]) -> list[ToolPanelItem]:
@@ -526,14 +477,14 @@ def build_index_entry_from_source(
         requirements, containers, _, _, _ = tool_source.parse_requirements()
         tests = tool_source.parse_tests_to_dict().get("tests", [])
 
-        # Capture help text for the whoosh corpus. Parse failures drop help
+        # Capture bounded help text for the toolbox-owned search corpus. Parse failures drop help
         # for this entry rather than failing the populate — a malformed help
         # block must not lose the whole tool.
         help_text = ""
         try:
             parsed_help = tool_source.parse_help()
             if parsed_help and parsed_help.content:
-                help_text = parsed_help.content[:MAX_HELP_TEXT_CHARS]
+                help_text = parsed_help.content[:MAX_TOOL_SEARCH_HELP_CHARS]
         except Exception:
             help_text = ""
 
@@ -665,7 +616,6 @@ def populate_store_inline(
     dry_run: bool = False,
     incremental: bool = True,
     verbose: bool = False,
-    rebuild_whoosh: bool = True,
     broadcast: bool = False,
     target: str | None = None,
     prune: bool = False,
@@ -896,8 +846,8 @@ def populate_store_inline(
     # One ordered stream matters: same-id twins are resolved by index
     # add-order, so consuming as_completed (thread timing) or adding carried
     # entries before parsed ones flips which twin wins ``entries[id]`` run to
-    # run — changing its panel section in the whoosh corpus and defeating the
-    # corpus-signature rebuild skip.
+    # run — changing its panel section in the search corpus even though no
+    # input changed.
     index_inputs: dict[str, list[ToolIndexEntry | tuple[DiscoveredTool, StoredToolSource, Any]]] = {
         name: [] for name in writable_names
     }
@@ -1026,12 +976,6 @@ def populate_store_inline(
                         log.info("Skipping manifest for non-file SQLite store %s", store_name)
                     else:
                         log.info("Wrote tool source store manifest for %s to %s", store_name, manifest_path)
-            # Rebuild the whoosh search index from the persisted ToolIndex.
-            # Single-writer principle: the toolbox stops re-building this in
-            # the search hot path.
-            if rebuild_whoosh:
-                build_whoosh_for_store(config, store_name, index)
-
         if broadcast:
             # Tell peer Galaxy processes to drop their cached index so the
             # next request reloads what we just wrote.
@@ -1044,7 +988,6 @@ def populate_for_paths(
     config: GalaxyAppConfiguration,
     paths: list[str],
     *,
-    rebuild_whoosh: bool = True,
     path_guids: dict[str, str | None] | None = None,
     app=None,
 ) -> dict[str, int]:
@@ -1062,7 +1005,6 @@ def populate_for_paths(
     return populate_store_inline(
         config,
         paths=paths,
-        rebuild_whoosh=rebuild_whoosh,
         broadcast=True,
         path_guids=path_guids,
         app=app,
@@ -1072,7 +1014,6 @@ def populate_for_paths(
 def reconcile_index(
     config: GalaxyAppConfiguration,
     *,
-    rebuild_whoosh: bool = True,
     app=None,
 ) -> dict[str, int]:
     """Full prune-enabled scan; used by ``reset_shed_tools``.
@@ -1087,7 +1028,6 @@ def reconcile_index(
         config,
         paths=None,
         prune=True,
-        rebuild_whoosh=rebuild_whoosh,
         broadcast=True,
         app=app,
     )

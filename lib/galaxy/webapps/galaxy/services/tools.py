@@ -691,22 +691,17 @@ class ToolsService(ServiceBase):
     ) -> list[str]:
         """Search tools via the ``app.toolbox_search`` singleton.
 
-        In cached-toolbox mode that singleton is :class:`CachedToolboxSearch`, which reads
-        the populator-owned whoosh index; in eager mode it's
-        :class:`ToolBoxSearch` walking ``tool_cache``. Both expose the same
-        ``search(q, panel_view, config)`` interface, so this method doesn't
-        branch on which toolbox flavour is active.
+        Cached and eager toolbox search both own a Whoosh corpus for each
+        rendered panel view and expose the same
+        ``search(q, panel_view, config)`` interface.
 
         Every hit is resolved with a per-tool access check
         (``allow_user_access``, e.g. ``require_login`` tools for anonymous
         users) so denied tools are filtered out.
 
-        In cached-toolbox mode ``get_tool`` would *materialise* every hit (it loads the
-        tool from the store on demand) and the populator-owned whoosh index
-        can carry ids that aren't loaded in this toolbox, so hits are instead
-        resolved against the registered stubs via
-        :meth:`CachedToolBox.resolve_search_hit` — no parse, and hits foreign to
-        this toolbox are skipped just as eager search skips them.
+        In cached-toolbox mode ``get_tool`` would materialise every hit, so
+        hits are instead resolved against registered stubs via
+        :meth:`CachedToolBox.resolve_search_hit`.
         """
         cached_toolbox = self._get_cached_toolbox(trans)
         results: list[str] = []

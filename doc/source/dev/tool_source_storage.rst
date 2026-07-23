@@ -224,8 +224,8 @@ model. Tools are parsed in a
 ``ThreadPoolExecutor`` (``--parallel``, default 4 workers); each tool is
 matched to its source path and carried forward when its raw file hash is unchanged
 (``--incremental``, the default). Once the JSON index is committed the
-populator rebuilds the Whoosh search index (``search.py``) so ranked tool
-search stays in sync with the stored sources.
+rendered cached toolbox builds one Whoosh corpus per panel view from the
+merged ``ToolIndex`` and that view's in-memory membership.
 
 Watch mode (``--watch``) uses ``watchdog`` to monitor every directory yielded
 by ``discover_tools``. File events are debounced (default 2 s), the changed
@@ -255,12 +255,12 @@ materialising tools:
   ``ToolIndex`` entries when the cached toolbox is active, and iterate the toolbox
   otherwise.
 
-``CachedToolboxSearch`` (``tools/search/__init__.py``) queries the whoosh index
-of *every* configured store — the default plus each named per-conf store —
-via ``ToolWhooshIndex.search_scored``, then merges the per-store hit lists by
-BM25 score and post-filters them to the requested panel view. A tool served
-from a named store is therefore reachable through ``/api/tools?q=`` even
-though its source lives outside the default store.
+``CachedToolboxSearch`` (``tools/search/__init__.py``) builds and queries one
+Whoosh index for each rendered panel view. Membership is read directly from
+the toolbox and is not persisted in ``ToolIndex``. Eager and cached search use
+the same document normalization, fields, boosts, scoring, and 20,000-character
+help-text bound, so the same panel corpus produces the same ordered results.
+Named-store tools participate through the merged runtime index.
 
 App Wiring
 ----------
@@ -285,11 +285,6 @@ expansions is expensive and shouldn't block worker startup. Keeping the
 populator separate also lets it run on a single host while many web workers
 share the resulting store.
 
-**Why subclass ToolBox instead of building a parallel hierarchy?**
-``trans.app.toolbox`` is referenced from hundreds of call sites that expect
-the full ToolBox interface. Subclassing keeps the Liskov-substitution
-property and lets unmodified callers benefit from lazy loading transparently.
-
 **Why hash-keyed storage?** Content-addressed storage gives us cheap
 deduplication across versions and shed installations, and idempotent
 incremental updates: re-running the populator over an unchanged tree is
@@ -298,14 +293,6 @@ effectively a no-op.
 Testing
 -------
 
-- Store unit tests: ``test/unit/app/tools/source_store/`` exercises each backend
-  through the ``ToolSourceStore`` interface (``test_stores.py``,
-  ``test_sqlite_store.py``, ``test_composite_store.py``,
-  ``test_index_versions.py``, ``test_multi_store_search.py``).
-- Populator/discovery unit tests: ``test/unit/scripts/tool_source/``
-  (``test_populate_store.py``, ``test_discover.py``,
-  ``test_build_index_entry.py``, ``test_whoosh_dir.py``). These use fakes
-  (not mocks) of ``ToolSourceStore`` so behavior is verified against the real
-  interface.
-- Integration tests: ``test/integration/test_tool_source_storage.py`` spins
-  up Galaxy against the store and verifies end-to-end behavior.
+Tests cover backend contracts, discovery and population, per-view search
+parity, lazy API behavior, store recovery, and selected integration workflows
+under both eager and cached toolboxes.

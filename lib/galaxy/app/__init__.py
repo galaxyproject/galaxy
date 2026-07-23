@@ -412,10 +412,8 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
         if self._use_cached_toolbox():
-            # Populator owns the whoosh index in cached-toolbox mode; the toolbox search
-            # singleton is a thin reader. The toolbox is threaded in so
-            # ``search`` can scope hits to the requested panel view. See
-            # ``CachedToolboxSearch``.
+            # Build search corpora from rendered cached panel views without
+            # materializing their tool stubs.
             search_singleton: ToolBoxSearch = CachedToolboxSearch(self.config, self.toolbox)
         else:
             search_singleton = ToolBoxSearch(
@@ -442,11 +440,8 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         stats = self.tool_source_store.get_stats()
         tool_count = stats.get("count", 0)
         log.info(f"Initialized tool source store (backend: {stats.get('backend', 'unknown')}, tools: {tool_count})")
-        # Hand the store + (eventual) cached toolbox to ``Galaxy.shutdown()``
-        # so embedded restarts (IntegrationTestCase.restart) drop their
-        # in-memory caches before the next boot wires its own. Without this,
-        # the prior boot's cached ToolIndex sticks around long enough to
-        # race with the new boot's _load_index_from_store.
+        # Close cached state before a replacement application boot wires its
+        # own store and toolbox, so no prior ToolIndex survives the handoff.
         self.haltables.insert(1, ("tool source store", self._shutdown_tool_source_store))
         self.haltables.insert(2, ("cached toolbox", self._shutdown_cached_toolbox))
 
@@ -532,7 +527,11 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
     def reindex_tool_search(self) -> None:
         # Call this when tools are added or removed.
-        self.toolbox_search.build_index(tool_cache=self.tool_cache, toolbox=self.toolbox)
+        self.toolbox_search.build_index(
+            tool_cache=self.tool_cache,
+            toolbox=self.toolbox,
+            index_help=self.config.index_tool_help,
+        )
         self.tool_cache.reset_status()
 
     def _set_enabled_container_types(self):

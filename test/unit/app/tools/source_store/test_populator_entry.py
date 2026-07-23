@@ -13,8 +13,8 @@ from galaxy.tools.source_store.discover import (
 from galaxy.tools.source_store.interface import StoredToolSource
 from galaxy.tools.source_store.populator import (
     build_index_entry_from_source,
-    MAX_HELP_TEXT_CHARS,
 )
+from galaxy.tools.source_store.search import MAX_TOOL_SEARCH_HELP_CHARS
 
 _TOOL_XML = """<tool id="help_tool" name="Help Tool" version="1.0">
   <command>echo</command>
@@ -76,8 +76,8 @@ def test_entry_help_text_empty_without_help_block(tmp_path):
 
 
 def test_entry_help_text_capped(tmp_path):
-    huge = "quaxifier " * (MAX_HELP_TEXT_CHARS // 2)
+    huge = "quaxifier " * (MAX_TOOL_SEARCH_HELP_CHARS // 2)
     xml = _TOOL_XML.replace("This wraps the quaxifier subroutine.", huge)
     entry = _build(tmp_path, xml)
     assert entry is not None
-    assert len(entry.help_text) <= MAX_HELP_TEXT_CHARS
+    assert len(entry.help_text) <= MAX_TOOL_SEARCH_HELP_CHARS

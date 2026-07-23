@@ -746,7 +746,7 @@ class CachedToolBox(ToolBox):
         return False
 
     def _run_inline_populator(self) -> None:
-        """Cold-start hook: write the index + whoosh in this process.
+        """Cold-start hook: write source rows and metadata in this process.
 
         Wraps ``populator.populate_store_inline`` so boot can use the same
         single-writer machinery as the CLI script and the shed-install
@@ -756,10 +756,7 @@ class CachedToolBox(ToolBox):
         load instead of degrading silently.
         """
         log.info("CachedToolBox: running populator inline to backfill the index")
-        populate_store_inline(
-            self.app.config,
-            rebuild_whoosh=True,
-        )
+        populate_store_inline(self.app.config)
 
     def _index_versions_for(self, tool_id: str) -> list[str]:
         """Return every version present in the index for ``tool_id``.
@@ -1545,23 +1542,17 @@ class CachedToolBox(ToolBox):
     def close(self) -> None:
         """Drop in-memory state at app shutdown.
 
-        Wired into ``GalaxyUniverseApplication.haltables`` so an embedded
-        restart (``IntegrationTestCase.restart``) releases the LRU cache,
-        the ``ToolIndex`` reference, and the link back to the
-        ``tool_source_store`` before the next boot wires up a fresh
-        toolbox. Idempotent; safe to call more than once.
+        Release the LRU cache, ``ToolIndex`` reference, and store link before
+        a replacement boot wires a fresh toolbox. Idempotent; safe to call
+        more than once.
         """
         with self._cache_lock:
             self._tool_object_cache.clear()
         self._cached_tools.clear()
         self._tool_index = None
         self._store = None
-        # ``ToolLineage.lineages_by_id`` is a *class*-level dict, so a
-        # ``ToolLineage`` from a prior process / embedded restart would
-        # otherwise carry its ``tool_versions`` SortedSet across boots and
-        # shadow the new boot's index versions. Reset on shutdown so the
-        # next ``CachedLineageMap.get`` rebuilds from the freshly-loaded
-        # index.
+        # ``ToolLineage.lineages_by_id`` is class-level, so reset it on
+        # shutdown before the next toolbox rebuilds from its index.
         ToolLineage.reset()
         # ``_tools_by_id`` and friends still get GC'd when the surrounding
         # app object drops. We don't clear them here because the eager
@@ -1615,6 +1606,7 @@ class CachedToolBox(ToolBox):
             current = getattr(self.app, "toolbox", None)
             if current is not self and isinstance(current, CachedToolBox):
                 current._remove_tool_in_memory(tool_id, remove_from_panel=remove_from_panel)
+        self.app.reindex_tool_search()
         return result
 
     def _remove_tool_in_memory(self, tool_id: str, remove_from_panel: bool = True):

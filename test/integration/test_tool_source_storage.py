@@ -10,8 +10,6 @@ plumbing.
 import os
 import tempfile
 
-import pytest
-
 from galaxy.queue_worker import reload_toolbox
 from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.source_store import ToolIndex
@@ -50,11 +48,12 @@ class BaseToolSourceStorageIntegrationTestCase(integration_util.IntegrationTestC
 class TestEagerBootSkipsStore(BaseToolSourceStorageIntegrationTestCase):
     """Default deployments never initialize a tool source store."""
 
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["use_cached_toolbox"] = False
+
     def test_no_store_initialized(self):
-        if self._app.config.use_cached_toolbox:
-            # GALAXY_CONFIG_OVERRIDE_USE_CACHED_TOOLBOX (the cached-toolbox CI dispatch)
-            # trumps per-class config kwds, so an eager boot is impossible here.
-            pytest.skip("use_cached_toolbox forced on by environment override")
         assert self._app.tool_source_store is None
         self._test_api_tools_list()
         self._test_api_tools_show()
@@ -397,10 +396,8 @@ class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
         _probe("tests_summary", self._get("tools/tests_summary"))
         # all_requirements is admin-only; it aggregates from the index in cached-toolbox mode.
         _probe("all_requirements", self._get("tools/all_requirements", admin=True))
-        # Search resolves whoosh hits against the registered stubs, not through
-        # the materialising get_tool — the populator-owned index carries ~150
-        # tool_conf.xml.sample ids that aren't loaded here, and resolving them
-        # via get_tool would parse every one.
+        # Search resolves Whoosh hits against registered stubs, not through the
+        # materialising get_tool.
         _probe("search", self._get("tools", data={"q": "Concatenate multiple datasets"}))
 
         assert all(v == 0 for v in deltas.values()), f"batch endpoints materialised tools (expected 0 each): {deltas}"
@@ -427,6 +424,7 @@ class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
         tool = tools_by_id["cat1"]
         assert tool is not None
         assert getattr(tool, "tool_requirements", None) is not None
+        assert tool.dependencies == []
         # ``.copy()`` is what ``ContainerFinder.find_best_container_description``
         # invokes via ``copy.copy`` on the registry; placeholder ``None``
         # values would crash callers iterating the copy.

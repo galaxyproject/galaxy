@@ -237,11 +237,9 @@ class ToolSourceStore(ABC):
     def close(self) -> None:  # noqa: B027 — intentional empty default
         """Release any state the store is holding.
 
-        Wired into ``GalaxyUniverseApplication.haltables`` so a Python-side
-        ``app.shutdown()`` (e.g. the embedded ``IntegrationTestCase.restart()``
-        path) clears references that would otherwise survive into the next
-        boot. Default is a no-op; backends holding an engine or cache
-        override, and the composite store propagates.
+        Application shutdown clears references before a replacement boot.
+        Default is a no-op; backends holding an engine or cache override, and
+        the composite store propagates.
         """
 
 

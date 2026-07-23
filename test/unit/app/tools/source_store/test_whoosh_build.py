@@ -6,6 +6,7 @@ from galaxy.tools.source_store.index import (
     ToolIndexEntry,
 )
 from galaxy.tools.source_store.search import (
+    MAX_TOOL_SEARCH_HELP_CHARS,
     ToolSearchTuning,
     ToolWhooshIndex,
 )
@@ -54,6 +55,14 @@ def test_changed_corpus_rebuilds_and_drops_stale_docs(tmp_path):
     assert searcher.search("caller") == []
 
 
+def test_build_scopes_corpus_to_panel_membership(tmp_path):
+    searcher = ToolWhooshIndex(index_dir=str(tmp_path / "ix"), tuning=_TUNING)
+
+    assert searcher.build(_index("mapper", "caller"), {"mapper"}) == 1
+    assert searcher.search("mapper") == ["mapper"]
+    assert searcher.search("caller") == []
+
+
 def test_data_managers_are_excluded_from_search(tmp_path):
     tool_index = ToolIndex()
     tool_index.add_entry(
@@ -99,6 +108,21 @@ def test_help_only_phrase_matches_when_help_indexed(tmp_path):
     # "quaxifier" appears only in help, never in id/name — a hit proves help
     # made it into the corpus and is searchable.
     assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).search("quaxifier") == ["mytool"]
+
+
+def test_help_after_shared_limit_is_not_indexed(tmp_path):
+    index_dir = str(tmp_path / "ix")
+    bounded_prefix = "a" * MAX_TOOL_SEARCH_HELP_CHARS
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_help_index("mytool", f"{bounded_prefix} quaxifier"))
+
+    assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).search("quaxifier") == []
+
+
+def test_plain_id_field_is_searchable(tmp_path):
+    index_dir = str(tmp_path / "ix")
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("exact_tool_id"))
+
+    assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).search("exact_tool_id") == ["exact_tool_id"]
 
 
 def test_help_omitted_when_index_tool_help_disabled(tmp_path):

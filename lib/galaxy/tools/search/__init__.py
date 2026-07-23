@@ -27,7 +27,6 @@ Filters - various filters are available for processing content as the index is
 
 import logging
 import os
-import re
 import shutil
 from typing import (
     Any,
@@ -35,36 +34,19 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from whoosh import (
-    analysis,
-    index,
-)
+from whoosh import index
 from whoosh.fields import Schema
-from whoosh.qparser import (
-    MultifieldParser,
-    OrGroup,
-)
-from whoosh.scoring import (
-    BM25F,
-    Frequency,
-    MultiWeighting,
-)
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.tools.source_store.populator import (
-    DEFAULT_STORE_NAME,
-    whoosh_dir_for_store,
-)
 from galaxy.tools.source_store.search import (
+    build_search_document,
     build_search_schema,
+    search_whoosh_index,
     ToolSearchTuning,
     ToolWhooshIndex,
 )
-from galaxy.util import (
-    ExecutionTimer,
-    unicodify,
-)
+from galaxy.util import ExecutionTimer
 
 if TYPE_CHECKING:
     from galaxy.tools import (
@@ -132,75 +114,47 @@ class ToolBoxSearch:
 
 
 class CachedToolboxSearch(ToolBoxSearch):
-    """Drop-in for :class:`ToolBoxSearch` in cached-toolbox mode.
-
-    The populator (``galaxy.tools.source_store.populator``) builds and owns
-    one whoosh index per store; this class is a thin reader that opens them
-    on each query and merges hits by score.
-
-    Per-view scoping mirrors the eager :class:`ToolBoxSearch`: the merged hits
-    are filtered down to the tools the requested panel view holds, and an
-    unknown ``panel_view`` raises ``KeyError``. Membership is read off the
-    toolbox's rendered panel by id (:meth:`AbstractToolBox.panel_view_tool_ids`),
-    so no tool is materialised just to filter.
-
-    ``build_index`` is a no-op (the populator's job). ``index_count`` is
-    still incremented so :func:`galaxy.queue_worker.rebuild_toolbox_search_index`
-    keeps its watermark check happy — it stops at "in sync with the
-    toolbox reload count" without re-building anything.
-    """
+    """Build one metadata-only Whoosh corpus per rendered panel view."""
 
     def __init__(self, config: GalaxyAppConfiguration, toolbox: Optional["ToolBox"] = None) -> None:
-        # Skip ToolBoxSearch.__init__ — it walks ``toolbox.panel_views()`` and
-        # builds a ToolPanelViewSearch per view. Under the cached toolbox the
-        # populator owns the whoosh indexes; view scoping is a post-filter on
-        # the merged hits instead of a per-view index.
         self.config = config
         self._toolbox = toolbox
-        self.panel_searches: dict[str, ToolPanelViewSearch] = {}
+        self.panel_searches: dict[str, ToolWhooshIndex] = {}
+        self._panel_view_ids: set[str] = set()
         self.index_count = -1
+        if toolbox is not None:
+            self._sync_panel_searches(toolbox)
 
     def build_index(self, tool_cache: Any, toolbox: Any, index_help: bool = True) -> None:
-        # Populator side owns whoosh writes; bump the watermark so the
-        # rebuild_toolbox_search_index control task observes "in sync".
+        self._toolbox = toolbox
+        self._sync_panel_searches(toolbox)
+        tool_index = toolbox.tool_index
+        if tool_index is not None:
+            for panel_view_id, searcher in self.panel_searches.items():
+                searcher.build(tool_index, toolbox.panel_view_tool_ids(panel_view_id))
         self.index_count += 1
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
-        # Resolve view membership first so an unknown view raises ``KeyError``
-        # even when whoosh search is disabled — parity with eager
-        # ``ToolBoxSearch.search``. ``None`` (no toolbox wired, e.g. in unit
-        # tests) skips scoping and returns the raw merged hits.
-        member_ids: set[str] | None = None
-        if self._toolbox is not None:
-            member_ids = self._toolbox.panel_view_tool_ids(panel_view)
+        if panel_view not in self._panel_view_ids:
+            raise KeyError(f"Unknown panel_view specified {panel_view}")
         if not config.tool_search_index_dir:
-            # No index dir means whoosh search is off entirely.
             return []
-        # The populator writes one whoosh index per store — searching only
-        # the default's would make every named-store tool invisible to
-        # ``/api/tools?q=``. Search each configured store's index and merge
-        # by score. Over-searching a catalog store no conf references is
-        # harmless: the panel-view filter (and ``resolve_search_hit``
-        # downstream) drops ids not placed in this toolbox.
-        store_names = [DEFAULT_STORE_NAME, *sorted(config.tool_source_stores or {})]
-        tuning = ToolSearchTuning.from_config(config)
-        scored: dict[str, float] = {}
-        for store_name in store_names:
-            index_dir = whoosh_dir_for_store(config.tool_search_index_dir, store_name)
-            assert index_dir  # tool_search_index_dir checked above
-            searcher = ToolWhooshIndex(index_dir=index_dir, tuning=tuning)
-            # limit=None matches ToolPanelViewSearch below, which searches
-            # unlimited — capping here would truncate uniform-score matches.
-            for tool_id, score in searcher.search_scored(q, limit=None):
-                if tool_id not in scored or score > scored[tool_id]:
-                    scored[tool_id] = score
-        # BM25 scores from different indexes aren't strictly comparable
-        # (per-corpus statistics), but interleaving by score beats
-        # concatenation; ties keep first-seen order (default store first).
-        ordered = [tool_id for tool_id, _score in sorted(scored.items(), key=lambda kv: -kv[1])]
-        if member_ids is None:
-            return ordered
-        return [tool_id for tool_id in ordered if tool_id in member_ids]
+        return self.panel_searches[panel_view].search(q, limit=None)
+
+    def _sync_panel_searches(self, toolbox: "ToolBox") -> None:
+        panel_view_ids = {panel_view.id for panel_view in toolbox.panel_views()}
+        self._panel_view_ids = panel_view_ids
+        if not self.config.tool_search_index_dir:
+            self.panel_searches = {}
+            return
+        tuning = ToolSearchTuning.from_config(self.config)
+        self.panel_searches = {
+            panel_view_id: ToolWhooshIndex(
+                index_dir=os.path.join(self.config.tool_search_index_dir, panel_view_id),
+                tuning=tuning,
+            )
+            for panel_view_id in panel_view_ids
+        }
 
 
 class ToolPanelViewSearch:
@@ -217,14 +171,12 @@ class ToolPanelViewSearch:
         index_help: bool = True,
     ) -> None:
         """Build the schema and validate against the index."""
-        # Shared with the store's ``ToolWhooshIndex`` so eager and cached
-        # search rank identically; ``help_boost`` adds the eager-only help
-        # field the populator can't index.
+        tuning = ToolSearchTuning.from_config(config)
         self.schema = build_search_schema(
-            ToolSearchTuning.from_config(config),
-            help_boost=config.tool_help_boost,
+            tuning,
+            help_boost=tuning.help_boost if index_help else None,
         )
-        self.rex = analysis.RegexTokenizer()
+        self.tuning = tuning
         self.index_dir = index_dir
         self.panel_view_id = panel_view_id
         self.index = self._index_setup()
@@ -312,51 +264,22 @@ class ToolPanelViewSearch:
         tool: "Tool",
         index_help: bool = True,
     ) -> dict[str, str | list[str]]:
-        def clean(s: str) -> str:
-            """Remove hyphens as they are Whoosh wildcards."""
-            if "-" in s:
-                return " ".join(token.text for token in self.rex(s))
-            else:
-                return s
-
-        if tool.tool_type == "manage_data":
-            #  Do not add data managers to the public index
-            return {}
-        add_doc_kwds: dict[str, str | list[str]] = {
-            "id": unicodify(tool.id),
-            "id_exact": unicodify(tool.id),
-            "name": clean(tool.name),
-            "description": unicodify(tool.description),
-            "section": tool.get_panel_section()[1] or "",
-            "edam_operations": [clean(_) for _ in tool.edam_operations or []],
-            "edam_topics": [clean(_) for _ in tool.edam_topics or []],
-            "repository": unicodify(tool.repository_name),
-            "owner": unicodify(tool.repository_owner),
-            "help": unicodify(""),
-        }
-        if tool.guid:
-            # Create a stub consisting of owner, repo, and tool from guid
-            slash_indexes = [m.start() for m in re.finditer("/", tool.guid)]
-            id_stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
-            add_doc_kwds["stub"] = clean(id_stub)
-        else:
-            add_doc_kwds["stub"] = unicodify(tool.id)
-        if tool.labels:
-            add_doc_kwds["labels"] = unicodify(" ".join(tool.labels))
-        if tool.tool_tags:
-            add_doc_kwds["tool_tags"] = unicodify(",".join(tool.tool_tags))
-        if index_help:
-            raw_help = tool.raw_help
-            if raw_help:
-                try:
-                    add_doc_kwds["help"] = unicodify(raw_help)
-                except Exception:
-                    # Don't fail to build index when help fails to parse
-                    pass
-
-        add_doc_kwds["name_exact"] = add_doc_kwds["name"]
-
-        return add_doc_kwds
+        document = build_search_document(
+            tool_id=tool.id,
+            guid=tool.guid,
+            name=tool.name,
+            description=tool.description,
+            section=tool.get_panel_section()[1],
+            edam_operations=tool.edam_operations,
+            edam_topics=tool.edam_topics,
+            repository=tool.repository_name,
+            owner=tool.repository_owner,
+            labels=tool.labels,
+            tool_tags=tool.tool_tags,
+            help_text=tool.raw_help if index_help else None,
+            tool_type=tool.tool_type,
+        )
+        return document or {}
 
     def search(
         self,
@@ -364,40 +287,5 @@ class ToolPanelViewSearch:
         config: GalaxyAppConfiguration,
     ) -> list[str]:
         """Perform search on the in-memory index."""
-        # Change field boosts for searcher
-        self.searcher = self.index.searcher(
-            weighting=MultiWeighting(
-                Frequency(),
-                help=BM25F(K1=config.tool_help_bm25f_k1),
-            )
-        )
-        fields = [
-            "id",
-            "id_exact",
-            "name",
-            "name_exact",
-            "description",
-            "section",
-            "edam_operations",
-            "edam_topics",
-            "repository",
-            "owner",
-            "help",
-            "labels",
-            "tool_tags",
-            "stub",
-        ]
-        self.parser = MultifieldParser(
-            fields,
-            schema=self.schema,
-            group=OrGroup,
-        )
-        parsed_query = self.parser.parse(q)
-        hits = self.searcher.search(
-            parsed_query,
-            limit=None,
-            sortedby="",
-            terms=True,
-        )
-
-        return [hit["id"] for hit in hits]
+        tuning = ToolSearchTuning.from_config(config)
+        return [tool_id for tool_id, _score in search_whoosh_index(self.index, q, tuning, limit=None)]

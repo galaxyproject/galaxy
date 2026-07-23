@@ -25,6 +25,19 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 log = logging.getLogger(__name__)
 
 
+def toolbox_with_new_tool_path(config_filename: str, tool_path: str) -> Element:
+    """Return a toolbox root that preserves attributes and overrides its path."""
+    root_attributes: dict[str, str] = {}
+    if os.path.exists(config_filename):
+        existing_tree, _error_message = parse_xml(config_filename)
+        if existing_tree is not None:
+            for key, value in existing_tree.getroot().attrib.items():
+                if isinstance(key, str) and isinstance(value, str):
+                    root_attributes[key] = value
+    root_attributes["tool_path"] = tool_path
+    return Element("toolbox", root_attributes)
+
+
 def _collect_new_tool_paths(elem_list, tool_path: str, shed_tool_conf: str) -> dict[str, str | None]:
     """Walk ``elem_list`` and map each new ``<tool>``'s absolute path to its guid.
 
@@ -150,7 +163,7 @@ class ToolPanelManager:
             use_cached_toolbox = self.app.config.use_cached_toolbox
             if use_cached_toolbox:
                 # The populator writes ``StoredToolSource`` + ``ToolIndexEntry``
-                # + whoosh for every new tool file, then broadcasts
+                # for every new tool file, then broadcasts
                 # ``reload_tool_source_cache`` so peer Galaxy processes
                 # refresh. ``create_tool`` raises on index miss, so this MUST
                 # run before ``load_item`` reaches the seam — and the
@@ -177,7 +190,6 @@ class ToolPanelManager:
                     populate_for_paths(
                         self.app.config,
                         paths=list(new_path_guids),
-                        rebuild_whoosh=True,
                         path_guids=new_path_guids,
                         app=self.app,
                     )
@@ -195,6 +207,7 @@ class ToolPanelManager:
                         load_panel_dict=True,
                         guid=config_elem.get("guid"),
                     )
+                self.app.reindex_tool_search()
             else:
                 # Eager path: append + load each elem, then persist the
                 # updated shed_tool_conf.
@@ -220,21 +233,7 @@ class ToolPanelManager:
         value of config_filename.
         """
         try:
-            # Managed shed confs may carry publisher/operator attributes such
-            # as ``store`` or ``monitor``.  Rebuilding the root from only
-            # ``tool_path`` used to silently discard them on every install,
-            # update, metadata refresh, or uninstall.
-            root_attributes: dict[str, str] = {}
-            if os.path.exists(config_filename):
-                existing_tree, _error_message = parse_xml(config_filename)
-                if existing_tree is not None:
-                    for key, value in existing_tree.getroot().attrib.items():
-                        if isinstance(key, str) and isinstance(value, str):
-                            root_attributes[key] = value
-            # The resolved tool path passed by the manager remains
-            # authoritative even if the old root contained another value.
-            root_attributes["tool_path"] = tool_path
-            root = Element("toolbox", root_attributes)
+            root = toolbox_with_new_tool_path(config_filename, tool_path)
             for elem in config_elems:
                 root.append(elem)
             with RenamedTemporaryFile(config_filename, mode="w") as fh:

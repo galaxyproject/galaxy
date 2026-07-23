@@ -75,10 +75,8 @@ class ToolLineage:
     def reset(cls) -> None:
         """Clear the global ``lineages_by_id`` cache.
 
-        ``lineages_by_id`` is a class attribute, so a ``ToolLineage`` built
-        in a prior process / embedded ``IntegrationTestCase.restart()`` boot
-        carries its ``tool_versions`` SortedSet into the next boot. Wired
-        into ``CachedToolBox.close()`` so a restart sees a clean cache.
+        ``lineages_by_id`` is a class attribute, so toolbox shutdown clears
+        it before another boot reconstructs lineages from current metadata.
         """
         with cls.lock:
             cls.lineages_by_id.clear()

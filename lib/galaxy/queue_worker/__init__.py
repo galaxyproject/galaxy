@@ -410,6 +410,7 @@ def reload_tool_source_cache(app, **kwargs):
     toolbox = app.toolbox
     if isinstance(toolbox, CachedToolBox):
         toolbox.invalidate_index_cache()
+        app.reindex_tool_search()
         log.info("Tool source index cache invalidated")
 
     # Invalidate the tool source store cache if it exists

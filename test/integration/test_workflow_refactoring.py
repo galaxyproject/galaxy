@@ -1046,6 +1046,31 @@ def _step_with_label(native_dict, label):
     raise AssertionError(f"Failed to find step with label {label}")
 
 
+class TestCachedWorkflowUpgradeAllSteps(
+    integration_util.CachedToolBoxIntegrationMixin,
+    integration_util.IntegrationTestCase,
+    UsesShedApi,
+):
+    """Cached regression for the workflow-upgrade failure seen in dispatch runs."""
+
+    framework_tool_and_types = True
+
+    def setUp(self):
+        super().setUp()
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
+    _export_for_update = TestWorkflowRefactoringIntegration._export_for_update
+    _refactor = TestWorkflowRefactoringIntegration._refactor
+    _manager = TestWorkflowRefactoringIntegration._manager
+    _most_recent_stored_workflow = TestWorkflowRefactoringIntegration._most_recent_stored_workflow
+    _recent_stored_workflow = TestWorkflowRefactoringIntegration._recent_stored_workflow
+    _latest_workflow = TestWorkflowRefactoringIntegration._latest_workflow
+    _increment_nested_workflow_version = TestWorkflowRefactoringIntegration._increment_nested_workflow_version
+
+    def test_upgrade_all_steps(self):
+        TestWorkflowRefactoringIntegration.test_upgrade_all_steps(self)
+
+
 class MockTrans(ProvidesAppContext):
     def __init__(self, app, user):
         self._app = app

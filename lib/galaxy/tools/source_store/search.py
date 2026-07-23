@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import shutil
+from collections.abc import Collection
 from dataclasses import dataclass
 
 from whoosh import (
@@ -23,7 +24,11 @@ from whoosh.qparser import (
     MultifieldParser,
     OrGroup,
 )
-from whoosh.scoring import BM25F
+from whoosh.scoring import (
+    BM25F,
+    Frequency,
+    MultiWeighting,
+)
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
@@ -45,6 +50,11 @@ log = logging.getLogger(__name__)
 # Matching sidecar signatures let ``build`` skip an unchanged corpus.
 _CORPUS_SIGNATURE_FILE = "corpus.md5"
 
+# Tool help can contain embedded tables and tutorials large enough to dominate
+# both the persisted metadata index and Whoosh. Eager and cached search must
+# apply the same bound so their corpora and ranking remain equivalent.
+MAX_TOOL_SEARCH_HELP_CHARS = 20_000
+
 
 @dataclass(frozen=True)
 class ToolSearchTuning:
@@ -64,6 +74,7 @@ class ToolSearchTuning:
     # Defaults preserve existing explicit tuning literals.
     help_boost: float = 1.0
     index_tool_help: bool = True
+    help_bm25f_k1: float = 1.2
 
     @classmethod
     def from_config(cls, config: GalaxyAppConfiguration) -> "ToolSearchTuning":
@@ -81,6 +92,7 @@ class ToolSearchTuning:
             ngram_factor=float(config.tool_ngram_factor),
             help_boost=float(config.tool_help_boost),
             index_tool_help=bool(config.index_tool_help),
+            help_bm25f_k1=float(config.tool_help_bm25f_k1),
         )
 
 
@@ -139,51 +151,127 @@ def _clean(s: str | None) -> str:
     return text
 
 
-def _entry_to_doc(entry: ToolIndexEntry, *, include_help: bool = False) -> dict | None:
-    """Turn a ``ToolIndexEntry`` into the document shape ``Schema`` expects.
-
-    ``include_help`` projects the entry's captured help text into a ``help``
-    field, mirroring the eager toolbox's ``index_tool_help`` behaviour. It's
-    off by default so callers that build a help-less schema never emit a field
-    the schema lacks.
-    """
-    if entry.tool_type == DataManagerTool.tool_type:
+def build_search_document(
+    *,
+    tool_id: str,
+    name: str,
+    description: str | None = None,
+    section: str | None = None,
+    edam_operations: Collection[str] | None = None,
+    edam_topics: Collection[str] | None = None,
+    repository: str | None = None,
+    owner: str | None = None,
+    labels: Collection[str] | None = None,
+    tool_tags: Collection[str] | None = None,
+    guid: str | None = None,
+    help_text: object | None = None,
+    tool_type: str = "default",
+) -> dict | None:
+    """Build the common eager/cached Whoosh document for one tool."""
+    if tool_type == DataManagerTool.tool_type:
         return None
-    name_clean = _clean(entry.name)
+    name_clean = _clean(name)
     doc: dict = {
-        "id": unicodify(entry.id),
-        "id_exact": unicodify(entry.id),
+        "id": unicodify(tool_id),
+        "id_exact": unicodify(tool_id),
         "name": name_clean,
         "name_exact": name_clean,
-        "description": unicodify(entry.description or ""),
-        "section": unicodify(entry.panel_section_name or ""),
-        "edam_operations": [_clean(op) for op in entry.edam_operations or []],
-        "edam_topics": [_clean(topic) for topic in entry.edam_topics or []],
-        "repository": unicodify(entry.repository_name or ""),
-        "owner": unicodify(entry.repository_owner or ""),
+        "description": unicodify(description or ""),
+        "section": unicodify(section or ""),
+        "edam_operations": [_clean(op) for op in edam_operations or []],
+        "edam_topics": [_clean(topic) for topic in edam_topics or []],
+        "repository": unicodify(repository or ""),
+        "owner": unicodify(owner or ""),
     }
-    # GUID has shape ``shed/repos/owner/repo/tool/version``. The eager path
-    # carves out ``owner/repo/tool`` as the search stub; fall back to the
-    # plain id for local tools.
-    if "/" in entry.id:
-        slash_indexes = [m.start() for m in re.finditer("/", entry.id)]
+    # A Tool Shed GUID has shape ``shed/repos/owner/repo/tool/version``.
+    # Carve out ``owner/repo/tool`` as the search stub.
+    stub_source = guid or tool_id
+    if guid:
+        slash_indexes = [m.start() for m in re.finditer("/", stub_source)]
         if len(slash_indexes) >= 5:
-            doc["stub"] = _clean(entry.id[slash_indexes[1] + 1 : slash_indexes[4]])
+            doc["stub"] = _clean(stub_source[slash_indexes[1] + 1 : slash_indexes[4]])
         else:
-            doc["stub"] = unicodify(entry.id)
+            doc["stub"] = unicodify(tool_id)
     else:
-        doc["stub"] = unicodify(entry.id)
-    if entry.labels:
-        doc["labels"] = unicodify(" ".join(entry.labels))
-    tool_id = (entry.id or "").lower()
-    all_ids = [tool_id]
-    if is_shed_guid(tool_id):
-        all_ids = [tool_id, remove_version_from_guid(tool_id) or tool_id, short_tool_id(tool_id)]
-    if tags := curated_tool_tags(all_ids):
-        doc["tool_tags"] = unicodify(",".join(tags))
-    if include_help and entry.help_text:
-        doc["help"] = unicodify(entry.help_text)
+        doc["stub"] = unicodify(tool_id)
+    if labels:
+        doc["labels"] = unicodify(" ".join(labels))
+    if tool_tags is None:
+        normalized_id = tool_id.lower()
+        all_ids = [normalized_id]
+        if is_shed_guid(normalized_id):
+            all_ids = [
+                normalized_id,
+                remove_version_from_guid(normalized_id) or normalized_id,
+                short_tool_id(normalized_id),
+            ]
+        tool_tags = curated_tool_tags(all_ids)
+    if tool_tags:
+        doc["tool_tags"] = unicodify(",".join(tool_tags))
+    if help_text is not None:
+        help_content = getattr(help_text, "content", help_text)
+        doc["help"] = unicodify(help_content or "")[:MAX_TOOL_SEARCH_HELP_CHARS]
     return doc
+
+
+def entry_to_search_document(entry: ToolIndexEntry, *, include_help: bool = False) -> dict | None:
+    """Project one cached metadata entry into the common document shape."""
+    entry_id = entry.id
+    return build_search_document(
+        tool_id=entry_id,
+        guid=entry_id if is_shed_guid(entry_id) else None,
+        name=entry.name,
+        description=entry.description,
+        section=entry.panel_section_name,
+        edam_operations=entry.edam_operations,
+        edam_topics=entry.edam_topics,
+        repository=entry.repository_name,
+        owner=entry.repository_owner,
+        labels=entry.labels,
+        help_text=entry.help_text if include_help else None,
+        tool_type=entry.tool_type,
+    )
+
+
+def search_whoosh_index(
+    ix: index.FileIndex,
+    query: str,
+    tuning: ToolSearchTuning,
+    limit: int | None = None,
+) -> list[tuple[str, float]]:
+    """Search an eager or cached index with one parser and scoring policy."""
+    if not query or not query.strip():
+        return []
+    search_fields = [
+        "id",
+        "id_exact",
+        "name",
+        "name_exact",
+        "stub",
+        "description",
+        "section",
+        "edam_operations",
+        "edam_topics",
+        "repository",
+        "owner",
+        "labels",
+        "tool_tags",
+    ]
+    if "help" in ix.schema.names():
+        search_fields.append("help")
+    parser = MultifieldParser(search_fields, schema=ix.schema, group=OrGroup)
+    parsed = parser.parse(query)
+    weighting = MultiWeighting(
+        Frequency(),
+        help=BM25F(K1=tuning.help_bm25f_k1),
+    )
+    with ix.searcher(weighting=weighting) as searcher:
+        hits = searcher.search(parsed, limit=None, sortedby="", terms=True)
+        scored = [(hit["id"], hit.score) for hit in hits]
+    # Whoosh does not define a stable tie order. Sharing an explicit secondary
+    # key makes eager and cached result ordering deterministic.
+    scored.sort(key=lambda hit: (-hit[1], hit[0]))
+    return scored if limit is None else scored[:limit]
 
 
 class ToolWhooshIndex:
@@ -221,13 +309,18 @@ class ToolWhooshIndex:
             + json.dumps(sorted(docs, key=lambda d: d["id"]), sort_keys=True)
         )
 
-    def build(self, tool_index: ToolIndex) -> int:
-        """Rebuild from entries, returning zero when the corpus is unchanged."""
+    def build(self, tool_index: ToolIndex, tool_ids: Collection[str] | None = None) -> int:
+        """Rebuild one panel-view corpus, or all entries when unscoped."""
         docs = []
-        for entry in tool_index.entries.values():
+        entries = (
+            tool_index.entries.values()
+            if tool_ids is None
+            else (tool_index.entries[tool_id] for tool_id in sorted(tool_ids) if tool_id in tool_index.entries)
+        )
+        for entry in entries:
             if entry.hidden:
                 continue
-            doc = _entry_to_doc(entry, include_help=self.index_help)
+            doc = entry_to_search_document(entry, include_help=self.index_help)
             if doc is None:
                 continue
             docs.append(doc)
@@ -265,36 +358,10 @@ class ToolWhooshIndex:
         return [tool_id for tool_id, _score in self.search_scored(query, limit=limit)]
 
     def search_scored(self, query: str, limit: int | None = None) -> list[tuple[str, float]]:
-        """Like :meth:`search`, but pair each tool id with its BM25 score.
-
-        Callers merging hits across several store indexes need the scores
-        to interleave results instead of concatenating whole result lists.
-        """
+        """Like :meth:`search`, but pair each tool id with its score."""
         if not query or not query.strip():
             return []
         if not (os.path.isdir(self.index_dir) and index.exists_in(self.index_dir)):
             return []
         ix = index.open_dir(self.index_dir)
-        search_fields = [
-            "id_exact",
-            "name",
-            "name_exact",
-            "stub",
-            "description",
-            "section",
-            "edam_operations",
-            "edam_topics",
-            "repository",
-            "owner",
-            "labels",
-            "tool_tags",
-        ]
-        # ``help`` is only present when the corpus was built with help indexing
-        # on; querying a field the on-disk schema lacks raises in the parser.
-        if "help" in ix.schema.names():
-            search_fields.append("help")
-        parser = MultifieldParser(search_fields, schema=ix.schema, group=OrGroup)
-        parsed = parser.parse(query)
-        with ix.searcher(weighting=BM25F()) as searcher:
-            hits = searcher.search(parsed, limit=limit)
-            return [(hit["id"], hit.score) for hit in hits]
+        return search_whoosh_index(ix, query, self.tuning, limit=limit)
