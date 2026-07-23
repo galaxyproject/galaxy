@@ -416,7 +416,9 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         if self._use_cached_toolbox():
             # Build search corpora from rendered cached panel views without
             # materializing their tool stubs.
-            search_singleton: ToolBoxSearch = CachedToolboxSearch(self.config, self.toolbox)
+            cached_toolbox = self.toolbox
+            assert isinstance(cached_toolbox, CachedToolBox)
+            search_singleton: ToolBoxSearch = CachedToolboxSearch(self.config, cached_toolbox)
         else:
             search_singleton = ToolBoxSearch(
                 self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help

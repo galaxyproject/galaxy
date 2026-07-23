@@ -6,7 +6,6 @@ from typing import (
 
 import pytest
 
-from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.search import CachedToolboxSearch
 from galaxy.tools.source_store.index import (
     ToolIndex,
@@ -29,11 +28,11 @@ _TUNING = ToolSearchTuning(
 )
 
 
-class _FakeToolbox(CachedToolBox):
+class _FakeToolbox:
     def __init__(self, entries, views):
-        self._tool_index = ToolIndex()
+        self.tool_index = ToolIndex()
         for entry in entries:
-            self._tool_index.add_entry(entry)
+            self.tool_index.add_entry(entry)
         self._views = views
 
     def panel_views(self):
@@ -47,7 +46,7 @@ def _search(index_root, entries, views, search_config):
     config = search_config(_TUNING, index_root)
     toolbox = _FakeToolbox(entries, views)
     search = CachedToolboxSearch(config, toolbox)
-    search.build_index(tool_cache=cast(Any, None), toolbox=toolbox)
+    search.build_index(tool_cache=cast(Any, None), toolbox=cast(Any, toolbox))
     return search, config
 
 
