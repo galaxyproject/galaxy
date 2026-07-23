@@ -171,6 +171,13 @@ class ToolInstallationRequestNotificationContent(Model):
     additional_remarks: str | None = Field(
         None, title="Additional remarks", description="Any additional information or context for the request."
     )
+    is_confirmation: bool = Field(
+        default=False,
+        title="Is confirmation",
+        description="Set server-side to mark this as the request confirmation copy delivered to the requester "
+        "(as opposed to the admin-facing request). Selects the confirmation email template and subject. "
+        "Client-supplied values are ignored; the service always stamps this when building the requester copy.",
+    )
 
     @model_validator(mode="after")
     def _tool_url_single_tool_only(self) -> "ToolInstallationRequestNotificationContent":
