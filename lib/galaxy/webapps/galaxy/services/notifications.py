@@ -184,35 +184,32 @@ class NotificationService(ServiceBase):
 
         # Admin-facing request: delivered to all admins (the submitter receives it
         # too if they are an admin).
-        admin_recipient_ids = list(admin_ids)
-        requests = [
-            NotificationCreateRequest.model_construct(
-                notification=notification_data,
-                recipients=NotificationRecipients(user_ids=admin_recipient_ids),
-                galaxy_url=galaxy_url,
-            )
-        ]
+        admin_request = NotificationCreateRequest.model_construct(
+            notification=notification_data,
+            recipients=NotificationRecipients(user_ids=list(admin_ids)),
+            galaxy_url=galaxy_url,
+        )
+        requests = [admin_request]
 
         # Requester confirmation copy: only when the submitter is not an admin --
-        # an admin submitter already gets the admin-facing request above.
+        # an admin submitter already gets the admin-facing request above. The
+        # confirmation is the admin request with the content's ``is_confirmation``
+        # flag flipped and the recipient set narrowed to the submitter; everything
+        # else (source/category/variant/expiration) is identical, so derive it
+        # rather than reconstruct the envelope.
         if (
             category == PersonalNotificationCategory.tool_installation_request
             and isinstance(content, ToolInstallationRequestNotificationContent)
             and sender_id not in admin_ids
         ):
             confirmation_content = content.model_copy(update={"is_confirmation": True})
-            confirmation_data = NotificationCreateData.model_construct(
-                source=payload.notification.source or "tool_installation_request_form",
-                category=payload.notification.category,
-                variant=payload.notification.variant or NotificationVariant.info,
-                content=confirmation_content,
-                expiration_time=payload.notification.expiration_time,
-            )
+            confirmation_notification = notification_data.model_copy(update={"content": confirmation_content})
             requests.append(
-                NotificationCreateRequest.model_construct(
-                    notification=confirmation_data,
-                    recipients=NotificationRecipients(user_ids=[sender_id]),
-                    galaxy_url=galaxy_url,
+                admin_request.model_copy(
+                    update={
+                        "notification": confirmation_notification,
+                        "recipients": NotificationRecipients(user_ids=[sender_id]),
+                    }
                 )
             )
 
