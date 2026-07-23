@@ -255,14 +255,6 @@ config/galaxy.yml.sample:galaxy
 -  mapping.galaxy.mapping.enable_beta_workflow_modules
 
 
-Deprecation Notices
-===========================================================
-Add content or drop section.
-
-Developer Notes
-===========================================================
-Add content or drop section.
-
 Release Team
 ===========================================================
 
