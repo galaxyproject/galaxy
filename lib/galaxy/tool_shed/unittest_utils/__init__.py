@@ -251,3 +251,6 @@ class StandaloneInstallationTarget(InstallationTarget):
 
     def wait_for_toolbox_reload(self, toolbox):
         return
+
+    def reindex_tool_search(self) -> None:
+        return None

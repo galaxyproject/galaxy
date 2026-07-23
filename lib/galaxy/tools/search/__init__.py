@@ -29,7 +29,6 @@ import logging
 import os
 import shutil
 from typing import (
-    Any,
     Optional,
     TYPE_CHECKING,
 )
@@ -39,6 +38,7 @@ from whoosh.fields import Schema
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.source_store.search import (
     build_search_document,
     build_search_schema,
@@ -118,20 +118,21 @@ class CachedToolboxSearch(ToolBoxSearch):
 
     def __init__(self, config: GalaxyAppConfiguration, toolbox: Optional["ToolBox"] = None) -> None:
         self.config = config
-        self._toolbox = toolbox
-        self.panel_searches: dict[str, ToolWhooshIndex] = {}
+        self._toolbox: CachedToolBox | None = None
+        self.cached_panel_searches: dict[str, ToolWhooshIndex] = {}
         self._panel_view_ids: set[str] = set()
         self.index_count = -1
         if toolbox is not None:
             self._sync_panel_searches(toolbox)
 
-    def build_index(self, tool_cache: Any, toolbox: Any, index_help: bool = True) -> None:
-        self._toolbox = toolbox
-        self._sync_panel_searches(toolbox)
-        tool_index = toolbox.tool_index
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
+        cached_toolbox = self._require_cached_toolbox(toolbox)
+        self._toolbox = cached_toolbox
+        self._sync_panel_searches(cached_toolbox)
+        tool_index = cached_toolbox.tool_index
         if tool_index is not None:
-            for panel_view_id, searcher in self.panel_searches.items():
-                searcher.build(tool_index, toolbox.panel_view_tool_ids(panel_view_id))
+            for panel_view_id, searcher in self.cached_panel_searches.items():
+                searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
         self.index_count += 1
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
@@ -139,22 +140,30 @@ class CachedToolboxSearch(ToolBoxSearch):
             raise KeyError(f"Unknown panel_view specified {panel_view}")
         if not config.tool_search_index_dir:
             return []
-        return self.panel_searches[panel_view].search(q, limit=None)
+        return self.cached_panel_searches[panel_view].search(q, limit=None)
 
     def _sync_panel_searches(self, toolbox: "ToolBox") -> None:
-        panel_view_ids = {panel_view.id for panel_view in toolbox.panel_views()}
+        cached_toolbox = self._require_cached_toolbox(toolbox)
+        self._toolbox = cached_toolbox
+        panel_view_ids = {panel_view.id for panel_view in cached_toolbox.panel_views()}
         self._panel_view_ids = panel_view_ids
         if not self.config.tool_search_index_dir:
-            self.panel_searches = {}
+            self.cached_panel_searches = {}
             return
         tuning = ToolSearchTuning.from_config(self.config)
-        self.panel_searches = {
+        self.cached_panel_searches = {
             panel_view_id: ToolWhooshIndex(
                 index_dir=os.path.join(self.config.tool_search_index_dir, panel_view_id),
                 tuning=tuning,
             )
             for panel_view_id in panel_view_ids
         }
+
+    @staticmethod
+    def _require_cached_toolbox(toolbox: "ToolBox") -> CachedToolBox:
+        if not isinstance(toolbox, CachedToolBox):
+            raise TypeError("CachedToolboxSearch requires a CachedToolBox")
+        return toolbox
 
 
 class ToolPanelViewSearch:
@@ -264,6 +273,8 @@ class ToolPanelViewSearch:
         tool: "Tool",
         index_help: bool = True,
     ) -> dict[str, str | list[str]]:
+        if tool.id is None:
+            return {}
         document = build_search_document(
             tool_id=tool.id,
             guid=tool.guid,

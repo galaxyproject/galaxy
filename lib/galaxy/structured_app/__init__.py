@@ -155,6 +155,8 @@ class MinimalManagerApp(MinimalApp):
 
     def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None: ...
 
+    def reindex_tool_search(self) -> None: ...
+
 
 class StructuredApp(MinimalManagerApp):
     """Interface defining typed description of the Galaxy UniverseApplication.

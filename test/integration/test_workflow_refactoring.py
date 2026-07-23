@@ -3,6 +3,7 @@ import json
 from collections.abc import Hashable
 from typing import (
     Any,
+    cast,
 )
 
 from sqlalchemy import select
@@ -1068,7 +1069,11 @@ class TestCachedWorkflowUpgradeAllSteps(
     _increment_nested_workflow_version = TestWorkflowRefactoringIntegration._increment_nested_workflow_version
 
     def test_upgrade_all_steps(self):
-        TestWorkflowRefactoringIntegration.test_upgrade_all_steps(self)
+        # This class intentionally reruns only the upgrade-all regression with
+        # the cached toolbox; borrowing the focused helpers avoids duplicating
+        # the much larger eager integration class and its complete test suite.
+        eager_case = cast(TestWorkflowRefactoringIntegration, self)
+        TestWorkflowRefactoringIntegration.test_upgrade_all_steps(eager_case)
 
 
 class MockTrans(ProvidesAppContext):

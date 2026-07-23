@@ -1,7 +1,6 @@
 from types import SimpleNamespace
-from typing import cast
 
-from galaxy.config import GalaxyAppConfiguration
+from galaxy.tool_util_models.tool_source import HelpContent
 from galaxy.tools.search import ToolPanelViewSearch
 from galaxy.tools.source_store.index import (
     ToolIndex,
@@ -43,15 +42,14 @@ def _tool(entry: ToolIndexEntry):
         repository_name=entry.repository_name,
         repository_owner=entry.repository_owner,
         labels=entry.labels,
-        tool_tags=[],
+        tool_tags=None,
         raw_help=entry.help_text,
         tool_type=entry.tool_type,
     )
 
 
-def test_eager_and_cached_documents_share_help_bound(tmp_path, monkeypatch):
-    monkeypatch.setattr(ToolSearchTuning, "from_config", classmethod(lambda cls, config: _TUNING))
-    config = cast(GalaxyAppConfiguration, SimpleNamespace())
+def test_eager_and_cached_documents_share_help_bound(tmp_path, search_config):
+    config = search_config(_TUNING)
     eager = ToolPanelViewSearch("default", str(tmp_path / "eager"), config)
     entry = ToolIndexEntry(
         id="mapper",
@@ -73,20 +71,30 @@ def test_eager_and_cached_documents_share_help_bound(tmp_path, monkeypatch):
     assert len(eager_document["help"]) == MAX_TOOL_SEARCH_HELP_CHARS
 
 
-def test_eager_help_content_object_is_normalized(tmp_path, monkeypatch):
-    monkeypatch.setattr(ToolSearchTuning, "from_config", classmethod(lambda cls, config: _TUNING))
-    config = cast(GalaxyAppConfiguration, SimpleNamespace())
+def test_eager_help_content_object_is_normalized(tmp_path, search_config):
+    config = search_config(_TUNING)
     eager = ToolPanelViewSearch("default", str(tmp_path / "eager"), config)
     entry = ToolIndexEntry(id="mapper", version="1.0", name="Sequence mapper")
     tool = _tool(entry)
-    tool.raw_help = SimpleNamespace(content="quaxifier help")
+    tool.raw_help = HelpContent(format="restructuredtext", content="quaxifier help")
 
     assert eager._create_doc(tool)["help"] == "quaxifier help"
 
 
-def test_eager_and_cached_indexes_return_same_ordered_hits(tmp_path, monkeypatch):
-    monkeypatch.setattr(ToolSearchTuning, "from_config", classmethod(lambda cls, config: _TUNING))
-    config = cast(GalaxyAppConfiguration, SimpleNamespace())
+def test_curated_tool_tags_are_equal_in_eager_and_cached_documents(tmp_path, search_config):
+    config = search_config(_TUNING)
+    eager = ToolPanelViewSearch("default", str(tmp_path / "eager"), config)
+    entry = ToolIndexEntry(id="Remove beginning1", version="1.0", name="Remove beginning")
+
+    eager_document = eager._create_doc(_tool(entry))
+    cached_document = entry_to_search_document(entry, include_help=True)
+
+    assert eager_document == cached_document
+    assert eager_document["tool_tags"] == "Text Manipulation"
+
+
+def test_eager_and_cached_indexes_return_same_ordered_hits(tmp_path, search_config):
+    config = search_config(_TUNING)
     entries = [
         ToolIndexEntry(
             id="mapper_a",

@@ -55,6 +55,7 @@ _CORPUS_SIGNATURE_FILE = "corpus.md5"
 # both the persisted metadata index and Whoosh. Eager and cached search must
 # apply the same bound so their corpora and ranking remain equivalent.
 MAX_TOOL_SEARCH_HELP_CHARS = 20_000
+SearchDocument = dict[str, str | list[str]]
 
 
 @dataclass(frozen=True)
@@ -167,12 +168,12 @@ def build_search_document(
     guid: str | None = None,
     help_text: str | HelpContent | None = None,
     tool_type: str = "default",
-) -> dict | None:
+) -> SearchDocument | None:
     """Build the common eager/cached Whoosh document for one tool."""
     if tool_type == DataManagerTool.tool_type:
         return None
     name_clean = _clean(name)
-    doc: dict = {
+    doc: SearchDocument = {
         "id": unicodify(tool_id),
         "id_exact": unicodify(tool_id),
         "name": name_clean,
@@ -215,7 +216,7 @@ def build_search_document(
     return doc
 
 
-def entry_to_search_document(entry: ToolIndexEntry, *, include_help: bool = False) -> dict | None:
+def entry_to_search_document(entry: ToolIndexEntry, *, include_help: bool = False) -> SearchDocument | None:
     """Project one cached metadata entry into the common document shape."""
     entry_id = entry.id
     return build_search_document(
@@ -302,7 +303,7 @@ class ToolWhooshIndex:
             os.makedirs(self.index_dir, exist_ok=True)
         return index.create_in(self.index_dir, schema=self.schema)
 
-    def _corpus_signature(self, docs: list[dict]) -> str:
+    def _corpus_signature(self, docs: list[SearchDocument]) -> str:
         """Fingerprint document content, schema, and tuning."""
         return md5_hash_str(
             repr(self.tuning)
