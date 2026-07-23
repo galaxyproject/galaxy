@@ -84,6 +84,8 @@ async function submit() {
             scientific_domain: scientificDomain.value.trim() || undefined,
             requested_version: requestedVersion.value.trim() || undefined,
             additional_remarks: additionalRemarks.value.trim() || undefined,
+            // Server-stamped; sent only to satisfy the generated (required) schema.
+            is_confirmation: false,
         });
 
         submitting.value = false;
