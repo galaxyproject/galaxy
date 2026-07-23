@@ -309,6 +309,7 @@ class ToolEvaluator:
             transient_directory=transient_directory,
             file_sources=self.app.file_sources,
             user_context=user_context,
+            datatypes_registry=self.app.datatypes_registry,
         )
         for key, value in deferred_objects.items():
             if isinstance(value, model.DatasetInstance):

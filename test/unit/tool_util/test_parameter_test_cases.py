@@ -628,6 +628,41 @@ def test_legacy_boolean_test_values_are_coerced_to_booleans():
     assert flag_value_for("-") is False
 
 
+def test_legacy_numeric_empty_test_values_are_none():
+    # An optional numeric param given value="" in a test is the legacy "not set" convention.
+    # The test-case builder must emit None rather than raising on int("")/float(""). Regression
+    # for async failures on macs2 (macs2_predictd tsize), ucsc_blat (blat), vegan
+    # (vegan_rarefaction sample_size), and vsearch (dereplication topn).
+    tool_template = """
+<tool id="numeric_legacy_empty" name="numeric_legacy_empty" version="1.0.0" profile="23.02">
+    <command>echo</command>
+    <inputs>
+        <param name="int_param" type="integer" value="" optional="true" />
+        <param name="float_param" type="float" value="" optional="true" />
+    </inputs>
+    <outputs />
+    <tests>
+        <test><param name="int_param" value="{int_value}" /><param name="float_param" value="{float_value}" /></test>
+    </tests>
+</tool>
+        """
+
+    def state_for(int_value: str, float_value: str):
+        tool_source = raw_xml_tool_source(tool_template.format(int_value=int_value, float_value=float_value))
+        parsed_tool = parse_tool(tool_source)
+        test_case = tool_source.parse_tests_to_dict()["tests"][0]
+        return case_state(test_case, parsed_tool.inputs, tool_source.parse_profile()).tool_state.input_state
+
+    # value="" -> None (was: raised int("")/float(""))
+    empty = state_for("", "")
+    assert empty["int_param"] is None
+    assert empty["float_param"] is None
+    # non-empty values still coerce normally
+    typed = state_for("5", "2.5")
+    assert typed["int_param"] == 5
+    assert typed["float_param"] == 2.5
+
+
 def test_legacy_unqualified_conditional_discriminator_in_section_is_resolved():
     # A conditional inside a section may have its name elided in the test, with the
     # discriminator given directly under the section (e.g. <section name="adv">

@@ -96,18 +96,23 @@ def legacy_from_string(parameter: ToolParameterT, value: Any | None, warnings: l
     """
     result_value: Any = value
     if isinstance(value, str):
-        if isinstance(parameter, (IntegerParameterModel,)):
-            if WARN_ON_UNTYPED_XML_STRINGS:
-                warnings.append(
-                    f"Implicitly converted {parameter.name} to an integer from a string value, please use 'value_json' to define this test input parameter value instead."
-                )
-            result_value = int(value)
-        elif isinstance(parameter, (FloatParameterModel,)):
-            if WARN_ON_UNTYPED_XML_STRINGS:
-                warnings.append(
-                    f"Implicitly converted {parameter.name} to a floating point number from a string value, please use 'value_json' to define this test input parameter value instead."
-                )
-            result_value = float(value)
+        if isinstance(parameter, (IntegerParameterModel, FloatParameterModel)):
+            # ``value=""`` on a numeric param is the legacy "not set" convention; emit None
+            # rather than raising on int("")/float("").
+            if value == "":
+                result_value = None
+            elif isinstance(parameter, IntegerParameterModel):
+                if WARN_ON_UNTYPED_XML_STRINGS:
+                    warnings.append(
+                        f"Implicitly converted {parameter.name} to an integer from a string value, please use 'value_json' to define this test input parameter value instead."
+                    )
+                result_value = int(value)
+            else:
+                if WARN_ON_UNTYPED_XML_STRINGS:
+                    warnings.append(
+                        f"Implicitly converted {parameter.name} to a floating point number from a string value, please use 'value_json' to define this test input parameter value instead."
+                    )
+                result_value = float(value)
         elif isinstance(parameter, (BooleanParameterModel,)):
             if WARN_ON_UNTYPED_XML_STRINGS:
                 warnings.append(

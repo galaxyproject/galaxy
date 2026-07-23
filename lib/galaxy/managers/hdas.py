@@ -184,6 +184,7 @@ class HDAManager(
             file_sources=self.app.file_sources,
             sa_session=session,
             user_context=user_context,
+            datatypes_registry=self.app.datatypes_registry,
         )
         if request.source == DatasetSourceType.hda:
             dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation = self.get_accessible(
