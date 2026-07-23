@@ -8,6 +8,7 @@ import type {
     StepJobSummary,
     WorkflowInvocation,
     WorkflowInvocationRequest,
+    WorkflowJobMetric,
 } from "@/api/invocations";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
@@ -37,6 +38,16 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     async function fetchInvocationStepJobsSummary(params: FetchParams): Promise<StepJobSummary[]> {
         const { data, error, response } = await GalaxyApi().GET("/api/invocations/{invocation_id}/step_jobs_summary", {
+            params: { path: { invocation_id: params.id } },
+        });
+        if (error) {
+            rethrowSimpleWithStatus(error, response);
+        }
+        return data;
+    }
+
+    async function fetchInvocationMetrics(params: FetchParams): Promise<WorkflowJobMetric[]> {
+        const { data, error, response } = await GalaxyApi().GET("/api/invocations/{invocation_id}/metrics", {
             params: { path: { invocation_id: params.id } },
         });
         if (error) {
@@ -124,6 +135,9 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     const { getItemById: getInvocationStepJobsSummaryById, fetchItemById: fetchInvocationStepJobsSummaryForId } =
         useKeyedCache<StepJobSummary[]>(fetchInvocationStepJobsSummary);
 
+    const { getItemById: getInvocationMetricsById, fetchItemById: fetchInvocationMetricsForId } =
+        useKeyedCache<WorkflowJobMetric[]>(fetchInvocationMetrics);
+
     const {
         getItemById: getInvocationStepById,
         fetchItemById: fetchInvocationStepById,
@@ -147,10 +161,12 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         fetchInvocationById,
         fetchInvocationJobsSummaryForId,
         fetchInvocationStepJobsSummaryForId,
+        fetchInvocationMetricsForId,
         fetchInvocationStepById,
         getInvocationById,
         getInvocationJobsSummaryById,
         getInvocationStepJobsSummaryById,
+        getInvocationMetricsById,
         getInvocationLoadError,
         getInvocationStepById,
         getInvocationRequestById,

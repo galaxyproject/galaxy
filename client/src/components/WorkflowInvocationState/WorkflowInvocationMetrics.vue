@@ -4,9 +4,9 @@ import type { VisualizationSpec } from "vega-embed";
 import type { ComputedRef } from "vue";
 import { computed, ref, watch } from "vue";
 
-import { type components, GalaxyApi } from "@/api";
+import type { WorkflowJobMetric } from "@/api/invocations";
 import { getAppRoot } from "@/onload/loadConfig";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import LoadingSpan from "../LoadingSpan.vue";
@@ -20,38 +20,24 @@ interface Props {
 }
 const props = defineProps<Props>();
 
+const invocationStore = useInvocationStore();
+
 const groupBy = ref<"tool_id" | "step_id">("tool_id");
 const timing = ref<"seconds" | "minutes" | "hours">("seconds");
-const jobMetrics = ref<components["schemas"]["WorkflowJobMetric"][]>();
-const fetchError = ref<string>();
+const jobMetrics = computed(() => invocationStore.getInvocationMetricsById(props.invocationId) ?? undefined);
 
 const attributeToLabel = {
     tool_id: "Tool ID",
     step_id: "Step",
 };
 
-async function fetchMetrics() {
-    const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/metrics", {
-        params: {
-            path: {
-                invocation_id: props.invocationId,
-            },
-        },
-    });
-    if (error) {
-        fetchError.value = errorMessageAsString(error);
-    } else {
-        jobMetrics.value = data;
-    }
-}
-
 watch(
     () => props.invocationId,
-    () => fetchMetrics(),
+    (invocationId) => invocationStore.fetchInvocationMetricsForId({ id: invocationId }),
     { immediate: true },
 );
 
-function itemToX(item: components["schemas"]["WorkflowJobMetric"]) {
+function itemToX(item: WorkflowJobMetric) {
     if (groupBy.value === "tool_id") {
         return item.tool_id;
     } else if (groupBy.value === "step_id") {
@@ -99,11 +85,9 @@ interface DerivedMetric {
     step_label: string | null;
 }
 
-type AnyMetric = components["schemas"]["WorkflowJobMetric"] & DerivedMetric;
+type AnyMetric = WorkflowJobMetric & DerivedMetric;
 
-function computeAllocatedCoreTime(
-    jobMetrics: components["schemas"]["WorkflowJobMetric"][] | undefined,
-): DerivedMetric[] {
+function computeAllocatedCoreTime(jobMetrics: WorkflowJobMetric[] | undefined): DerivedMetric[] {
     const walltimePerJob: Record<string, number> = {};
     const coresPerJob: Record<string, number> = {};
     const jobInfo: Record<string, JobInfo> = {};
