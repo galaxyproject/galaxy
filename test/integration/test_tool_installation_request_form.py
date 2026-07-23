@@ -115,7 +115,12 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
         ), "An admin submitter should not receive a separate confirmation copy"
 
     def test_requester_email_overridden_server_side(self):
-        """The requester_email in the notification content must be the user's real email, never the client-supplied one."""
+        """Server-stamped content fields must override any client-supplied values.
+
+        requester_email must be the user's real email, and is_confirmation must be
+        False on the admin-facing copy -- never trusting a client-supplied True that
+        would render the confirmation template/subject to admins.
+        """
         user = self._setup_user("tool_installation_request_email_check@galaxy.test")
         payload_with_spoofed_email = {
             "recipients": {"user_ids": [], "group_ids": [], "role_ids": []},
@@ -132,6 +137,7 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
                     "requested_version": "0.12.1",
                     "additional_remarks": "Would be great for the genomics team.",
                     "requester_email": "spoofed@example.com",
+                    "is_confirmation": True,
                 },
             },
         }
@@ -146,6 +152,24 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
         assert (
             content["requester_email"] == user["email"]
         ), f"requester_email should be {user['email']!r}, got {content['requester_email']!r}"
+
+        # The admin-facing copy must have is_confirmation=False even though the
+        # client sent True -- a client-supplied True must never reach admins and
+        # render the confirmation template/subject to them.
+        with self._different_user(ADMIN_TEST_USER):
+            admin_notifications = self._get("notifications").json()
+        admin_copies = [
+            n
+            for n in admin_notifications
+            if n.get("category") == "tool_installation_request"
+            and not n.get("content", {}).get("is_confirmation", False)
+        ]
+        assert admin_copies, "Expected an admin-facing tool request notification with is_confirmation=False"
+        # This request's admin copy must carry the server-stamped requester_email.
+        this_request_admin_copies = [n for n in admin_copies if n["content"].get("requester_email") == user["email"]]
+        assert (
+            this_request_admin_copies
+        ), "Expected the admin-facing copy of this request to carry the server-stamped requester_email"
 
     def test_client_supplied_recipients_ignored(self):
         """The server must override recipients regardless of what the client sends."""
