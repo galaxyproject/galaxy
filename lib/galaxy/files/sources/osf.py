@@ -1,4 +1,39 @@
-"""Galaxy FileSource implementation for OSF."""
+"""
+Galaxy FilesSource implementation for OSF.
+
+This module implements a FilesSource that interacts with the Open Science Framework (OSF) [1]. OSF is a free,
+open-source platform for managing and sharing research projects, data and preprints. The central OSF concept is the
+*node* [2]. This FilesSource works with two kinds of nodes: *projects* (mutable containers for research activity) and
+*registrations* (immutable, timestamped snapshots of a project). A project can also contain child nodes called
+*components*, which are themselves projects and can be nested arbitrarily. Files attached to a node live in one of
+several storage providers; this implementation currently targets ``osfstorage``, OSF's default provider [3].
+
+The FilesSource exposes three top-level categories under the plugin root: Projects lists the user's own projects (or
+public projects when browsing anonymously), Registrations lists public registrations, and Files runs a search against
+OSF's public file index [4]. Descending into a project or registration reveals its ``osfstorage`` contents and its
+child components; components appear as subfolders and can be entered like any other folder. With a personal access
+token [5] the user gains access to their private projects and can create new draft projects to upload Galaxy datasets
+into.
+
+Galaxy URIs take the form ``osf://osf/category/container_id/file_path``, where:
+
+- ``category`` is one of ``projects``, ``registrations`` or ``files``
+- ``container_id`` is the OSF node GUID (a short alphanumeric identifier, e.g. ``q2anz``)
+- ``file_path`` is the slash-separated path to the file within the node's ``osfstorage``
+
+The implementation is layered: ``OSFClient`` wraps the OSF REST API v2 [4] and the WaterButler API [6] using
+``requests``; ``OSFRepositoryInteractor`` translates Galaxy's RDM interactor contract into OSF calls; and
+``OSFFilesSource`` implements Galaxy's FilesSource contract on top of the interactor.
+
+References:
+
+- [1] https://osf.io/
+- [2] https://help.osf.io/collection/75-projects-and-components
+- [3] https://help.osf.io/article/387-files
+- [4] https://developer.osf.io/
+- [5] https://help.osf.io/article/390-profile-and-account#Create-a-Personal-Access-Token-8Z7ta
+- [6] https://waterbutler.readthedocs.io/
+"""
 
 from abc import ABC
 from pathlib import Path
@@ -99,15 +134,17 @@ class OSFClient:
         write_intent: bool = False,
         sort: Optional[str] = None,
     ) -> dict:
+        endpoint = "nodes/"
         params: dict[str, Any] = {"page": page, "page[size]": page_size}
         if query:
             params["filter[title]"] = query
         if write_intent:
+            endpoint = "users/me/nodes/"
             params["filter[current_user_permissions]"] = "write"
         if sort:
             params["sort"] = sort
         return self._request(
-            "GET", "users/me/nodes/",
+            "GET", endpoint,
             params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
 
@@ -124,7 +161,7 @@ class OSFClient:
         if sort:
             params["sort"] = sort
         return self._request(
-            "GET", "users/me/registrations/",
+            "GET", "registrations/",
             params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
 
@@ -155,11 +192,22 @@ class OSFClient:
         )
         return payload.get("data", [])
 
-    def create_project(self, payload: dict) -> dict:
+    def create_project(self, title: str, description: str) -> dict:
+        payload = {
+            "data": {
+                "type": "nodes",
+                "attributes": {
+                    "title": title,
+                    "category": "project",
+                    "public": False,
+                    "description": description,
+                },
+            }
+        }
         return self._request(
             "POST", "nodes/",
             json=payload, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
-        )
+        ).get("data", {})
 
     # WaterButler
     def waterbutler_url(self, container_id: str, wb_path: str = "/") -> str:
@@ -327,8 +375,6 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> tuple[list[RemoteFile], int]:
-        if not query:
-            return [], 0
         client = self._client(context)
         page, page_size = galaxy_pagination_to_osf(limit, offset)
         payload = client.list_files(
@@ -441,18 +487,10 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         public_name: str,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
     ) -> dict[str, Any]:
-        payload = {
-            "data": {
-                "type": "nodes",
-                "attributes": {
-                    "title": title,
-                    "category": "project",
-                    "public": False,
-                    "description": f"Created by Galaxy on behalf of {public_name}",
-                },
-            }
-        }
-        return self._client(context).create_project(payload).get("data", {})
+        return self._client(context).create_project(
+            title=title,
+            description=f"Created by Galaxy on behalf of {public_name}",
+        )
 
     def upload_file_to_draft_container(
         self,
