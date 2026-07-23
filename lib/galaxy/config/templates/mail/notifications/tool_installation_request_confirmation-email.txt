@@ -6,16 +6,7 @@ Hello {{ name }},
 
 Your request to install the following tool(s) on {{ hostname }} has been submitted to the administrators:
 
-{% if content['tool_names'] | length == 1 %}Tool name:    {{ content['tool_names'][0] }}
-{% else %}Tools:
-{% for tool in content['tool_names'] %}  - {{ tool }}
-{% endfor %}{% endif %}{% if content['tool_url'] %}URL:          {{ content['tool_url'] }}
-{% endif %}Description:  {{ content['description'] }}
-{% if content['scientific_domain'] %}Domain:       {{ content['scientific_domain'] }}
-{% endif %}{% if content['requested_version'] %}Version:      {{ content['requested_version'] }}
-{% endif %}{% if content['additional_remarks'] %}Remarks:      {{ content['additional_remarks'] }}
-{% endif %}
-
+{% include "mail/notifications/_tool_installation_request_fields.txt" %}
 ---
 
 You received this email because you submitted a tool installation request on this Galaxy instance.

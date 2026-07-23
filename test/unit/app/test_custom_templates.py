@@ -116,3 +116,93 @@ def test_html_templates_respect_safe_filter(tmp_path):
         f.write(">>>>>> body\n{{ value | safe }}")
     output = templates.render("mail/safe.html", {"value": "<p>ok</p>"}, custom_templates_dir, autoescape=True)
     assert output == "<p>ok</p>"
+
+
+def test_template_can_include_a_packaged_partial(tmp_path):
+    """A template can {% include %} a partial bundled with the package."""
+    custom_templates_dir = tmp_path
+    template_path = custom_templates_dir / "mail/uses_partial.html"
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+    # The packaged tool-request field partial renders the tool_names row.
+    with open(template_path, "w") as f:
+        f.write(">>>>>> body\n{% include 'mail/notifications/_tool_installation_request_fields.html' %}")
+    content = {
+        "tool_names": ["FastQC"],
+        "description": "QC tool",
+        "tool_url": None,
+        "scientific_domain": None,
+        "requested_version": None,
+        "additional_remarks": None,
+    }
+    output = templates.render("mail/uses_partial.html", {"content": content}, custom_templates_dir)
+    assert "FastQC" in output
+    assert "Description" in output
+    assert "QC tool" in output
+
+
+def test_custom_partial_overrides_packaged_partial(tmp_path):
+    """A partial in the custom templates dir takes precedence over the packaged one."""
+    custom_templates_dir = tmp_path
+    template_path = custom_templates_dir / "mail/uses_partial.html"
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(template_path, "w") as f:
+        f.write(">>>>>> body\n{% include 'mail/notifications/_tool_installation_request_fields.html' %}")
+    # Custom partial shadows the packaged one (custom-first precedence).
+    custom_partial = custom_templates_dir / "mail/notifications/_tool_installation_request_fields.html"
+    custom_partial.parent.mkdir(parents=True, exist_ok=True)
+    with open(custom_partial, "w") as f:
+        f.write("CUSTOM-PARTIAL-{{ content['tool_names'][0] }}")
+    output = templates.render("mail/uses_partial.html", {"content": {"tool_names": ["MyTool"]}}, custom_templates_dir)
+    assert "CUSTOM-PARTIAL-MyTool" in output
+
+
+def test_partial_output_is_autoescaped(tmp_path):
+    """Autoescape applies to partial output (a partial variable must be escaped)."""
+    custom_templates_dir = tmp_path
+    template_path = custom_templates_dir / "mail/uses_partial.html"
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(template_path, "w") as f:
+        f.write(">>>>>> body\n{% include 'mail/notifications/_tool_installation_request_fields.html' %}")
+    content = {
+        "tool_names": ["<script>x</script>"],
+        "description": "d",
+        "tool_url": None,
+        "scientific_domain": None,
+        "requested_version": None,
+        "additional_remarks": None,
+    }
+    output = templates.render("mail/uses_partial.html", {"content": content}, custom_templates_dir)
+    assert "<script>" not in output
+    assert "&lt;script&gt;" in output
+
+
+def test_tool_installation_request_email_renders_with_partial(tmp_path):
+    """The bundled admin tool-request template renders end-to-end via its partial include."""
+    custom_templates_dir = tmp_path
+    content = {
+        "category": "tool_installation_request",
+        "tool_names": ["BWA"],
+        "tool_url": "https://github.com/lh3/bwa",
+        "description": "Aligner",
+        "scientific_domain": "Genomics",
+        "requested_version": "0.7.17",
+        "requester_email": "user@example.org",
+        "workflow_id": None,
+        "additional_remarks": None,
+    }
+    output = templates.render(
+        "mail/notifications/tool_installation_request-email.html",
+        {
+            "content": content,
+            "name": "Admin",
+            "hostname": "galaxy.example",
+            "galaxy_url": "https://galaxy.example",
+            "workflow_name": None,
+        },
+        custom_templates_dir,
+    )
+    # Shared partial content + admin-only rows both present
+    assert "BWA" in output
+    assert "Aligner" in output
+    assert "user@example.org" in output  # admin-only "Requested by" row
+    assert "<!DOCTYPE html>" in output
