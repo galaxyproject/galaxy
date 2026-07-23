@@ -1,10 +1,14 @@
 import time
 from typing import ClassVar
 from unittest import SkipTest
+from urllib.parse import urljoin
 from uuid import uuid4
 
 import pytest
-from requests import put
+from requests import (
+    post,
+    put,
+)
 
 from galaxy.model.unittest_utils.store_fixtures import (
     history_model_store_dict,
@@ -637,6 +641,19 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
                 "name": imported_history_name,
             }
             self.dataset_populator.import_history(import_data)
+
+    def test_anonymous_without_session_cannot_copy_published(self):
+        history_id = self.dataset_populator.new_history(name=f"for_copying_without_session_{uuid4()}")
+        self.dataset_populator.make_public(history_id)
+
+        # A request with neither an API key nor a galaxysession cookie has no session to own the copy,
+        # so copying a published history is rejected rather than doing the copy and orphaning it.
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/23148.
+        copy_response = post(
+            urljoin(self.url, "api/histories"),
+            json={"history_id": history_id, "name": f"copied_without_session_{uuid4()}"},
+        )
+        self._assert_status_code_is(copy_response, 403)
 
     def test_publish_non_alphanumeric(self):
         history_name = "تاریخچه"

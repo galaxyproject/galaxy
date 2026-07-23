@@ -177,34 +177,47 @@ defineExpose({
     .container-root {
         container-type: inline-size;
         width: 100%;
+        height: 100%;
+        min-height: 0;
         overflow: auto;
     }
 
     .published-workflow {
         display: grid;
         gap: 0.5rem 1rem;
-        grid-template-columns: auto auto 30%;
+        grid-template-columns: minmax(0, 1fr) minmax(18rem, 30%);
+        grid-template-rows: auto minmax(0, 1fr);
 
         height: 100%;
+        min-height: 0;
 
         .workflow-header {
-            grid-column: 1 / span 3;
+            grid-column: 1 / -1;
 
             display: flex;
+            align-items: center;
+            gap: 1rem;
             justify-content: flex-end;
         }
 
         .workflow-preview {
-            grid-column: 1 / span 2;
+            grid-column: 1;
+            min-height: 0;
 
             &.only-preview {
-                grid-column: 1 / span 3;
+                grid-column: 1 / -1;
+            }
+
+            &:deep(.card-body) {
+                height: 100%;
+                min-height: 0;
             }
         }
 
         &:deep(.workflow-information-container) {
             height: 100%;
             max-width: 500px;
+            align-self: stretch;
             overflow: auto;
         }
     }
@@ -212,10 +225,11 @@ defineExpose({
     @container (max-width: 900px) {
         .published-workflow {
             height: unset;
-            grid-template-columns: auto;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: auto auto auto;
 
             .workflow-preview {
-                grid-column: 1 / span 3;
+                grid-column: 1;
                 height: 450px;
             }
 
@@ -225,7 +239,7 @@ defineExpose({
             }
 
             .workflow-information-container {
-                grid-column: 1 / span 3;
+                grid-column: 1;
             }
         }
     }
