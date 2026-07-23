@@ -96,30 +96,46 @@ class NotificationService(ServiceBase):
         galaxy_url = (
             str(sender_context.url_builder("/", qualified=True)).rstrip("/") if sender_context.url_builder else None
         )
-        request = self._build_user_sender_request(sender_context, payload, galaxy_url)
-        return self.send_internal_notification(request, force_sync=False)
+        requests = self._build_user_sender_requests(sender_context, payload, galaxy_url)
+        # Send each built request. The first (primary) is the admin-facing
+        # notification, so the API response describes the request the admin will
+        # act on -- return that one, not the last iteration's (confirmation) result.
+        response: NotificationCreatedResponse | AsyncTaskResultSummary | None = None
+        for index, request in enumerate(requests):
+            sent = self.send_internal_notification(request, force_sync=False)
+            if index == 0:
+                response = sent
+        assert response is not None
+        return response
 
-    def _build_user_sender_request(
+    def _build_user_sender_requests(
         self,
         sender_context: ProvidesUserContext,
         payload: NotificationCreateRequestBody,
         galaxy_url: str | None,
-    ) -> NotificationCreateRequest:
+    ) -> list[NotificationCreateRequest]:
         """Validate and rewrite a user notification submission.
 
         For admin users sending non-user-allowed categories, passes through the payload as-is.
         For all other cases (non-admins, or admins sending user-allowed categories), validates
         the category and rewrites recipients/content server-side.
+
+        Tool installation requests produce two notifications: an admin-facing request
+        (``is_confirmation=False``) and a request confirmation copy for the submitter
+        (``is_confirmation=True``). If the submitter is themselves an admin, only the
+        admin-facing request is produced -- they already receive it.
         """
         category = payload.notification.category
 
         # Admin sending arbitrary category notification: pass through unchanged
         if sender_context.user_is_admin and category not in _USER_ALLOWED_CATEGORIES:
-            return NotificationCreateRequest.model_construct(
-                notification=payload.notification,
-                recipients=payload.recipients,
-                galaxy_url=galaxy_url,
-            )
+            return [
+                NotificationCreateRequest.model_construct(
+                    notification=payload.notification,
+                    recipients=payload.recipients,
+                    galaxy_url=galaxy_url,
+                )
+            ]
 
         # All other cases: validate and rewrite
         user_manager = self.user_manager
@@ -145,14 +161,18 @@ class NotificationService(ServiceBase):
         if not admin_users:
             raise ServerNotConfiguredForRequest("No admin users are configured on this Galaxy instance.")
 
-        sender_id = sender_context.user.id
-        recipient_ids = list({u.id for u in admin_users} | {sender_id})
+        sender = sender_context.user
+        sender_id = sender.id
+        admin_ids = {u.id for u in admin_users}
 
         content = payload.notification.content
         if category == PersonalNotificationCategory.tool_installation_request and isinstance(
             content, ToolInstallationRequestNotificationContent
         ):
-            content = content.model_copy(update={"requester_email": sender_context.user.email})
+            # Stamp the requester's real email server-side (never trust the client).
+            # Client-supplied is_confirmation is discarded -- the service decides
+            # which copy is the confirmation below.
+            content = content.model_copy(update={"requester_email": sender.email, "is_confirmation": False})
 
         notification_data = NotificationCreateData.model_construct(
             source=payload.notification.source or "tool_installation_request_form",
@@ -162,11 +182,41 @@ class NotificationService(ServiceBase):
             expiration_time=payload.notification.expiration_time,
         )
 
-        return NotificationCreateRequest.model_construct(
-            notification=notification_data,
-            recipients=NotificationRecipients(user_ids=recipient_ids),
-            galaxy_url=galaxy_url,
-        )
+        # Admin-facing request: delivered to all admins (the submitter receives it
+        # too if they are an admin).
+        admin_recipient_ids = list(admin_ids)
+        requests = [
+            NotificationCreateRequest.model_construct(
+                notification=notification_data,
+                recipients=NotificationRecipients(user_ids=admin_recipient_ids),
+                galaxy_url=galaxy_url,
+            )
+        ]
+
+        # Requester confirmation copy: only when the submitter is not an admin --
+        # an admin submitter already gets the admin-facing request above.
+        if (
+            category == PersonalNotificationCategory.tool_installation_request
+            and isinstance(content, ToolInstallationRequestNotificationContent)
+            and sender_id not in admin_ids
+        ):
+            confirmation_content = content.model_copy(update={"is_confirmation": True})
+            confirmation_data = NotificationCreateData.model_construct(
+                source=payload.notification.source or "tool_installation_request_form",
+                category=payload.notification.category,
+                variant=payload.notification.variant or NotificationVariant.info,
+                content=confirmation_content,
+                expiration_time=payload.notification.expiration_time,
+            )
+            requests.append(
+                NotificationCreateRequest.model_construct(
+                    notification=confirmation_data,
+                    recipients=NotificationRecipients(user_ids=[sender_id]),
+                    galaxy_url=galaxy_url,
+                )
+            )
+
+        return requests
 
     def broadcast(
         self, sender_context: ProvidesUserContext, payload: BroadcastNotificationCreateRequest

@@ -78,6 +78,10 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
         assert (
             len(tool_installation_request_notifications) >= 1
         ), f"Expected at least one tool_installation_request notification for admin, got: {notifications}"
+        # The admin-facing copy must not be flagged as a confirmation.
+        assert all(
+            not n.get("content", {}).get("is_confirmation", False) for n in tool_installation_request_notifications
+        ), "Admin-facing tool request notification must have is_confirmation=False"
 
     def test_sender_receives_notification_too(self):
         """The submitter should also receive the notification in their own inbox."""
@@ -91,6 +95,24 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
         assert (
             len(tool_installation_request_notifications) >= 1
         ), f"Expected sender to receive the notification, got: {notifications}"
+        # The submitter's copy must be the confirmation (is_confirmation=True).
+        assert any(
+            n.get("content", {}).get("is_confirmation", False) for n in tool_installation_request_notifications
+        ), "Sender's tool request notification must have is_confirmation=True"
+
+    def test_admin_submitter_receives_only_admin_copy(self):
+        """An admin who submits their own request gets the admin copy, not a separate confirmation."""
+        with self._different_user(ADMIN_TEST_USER):
+            response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
+            self._assert_status_code_is(response, 200)
+            notifications = self._get("notifications").json()
+        tool_installation_request_notifications = [
+            n for n in notifications if n.get("category") == "tool_installation_request"
+        ]
+        assert tool_installation_request_notifications, "Expected the admin to receive their own request"
+        assert all(
+            not n.get("content", {}).get("is_confirmation", False) for n in tool_installation_request_notifications
+        ), "An admin submitter should not receive a separate confirmation copy"
 
     def test_requester_email_overridden_server_side(self):
         """The requester_email in the notification content must be the user's real email, never the client-supplied one."""
