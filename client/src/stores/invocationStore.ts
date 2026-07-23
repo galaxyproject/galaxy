@@ -154,6 +154,24 @@ export const useInvocationStore = defineStore("invocationStore", () => {
             .filter((invocation) => invocation !== undefined);
     });
 
+    /**
+     * A computed function that returns a `job_id -> runtime (wall clock)` lookup for a given
+     * invocation, using the `core` plugin's pre-formatted `runtime_seconds` metric value
+     * (see `getInvocationMetricsById`).
+     */
+    const getInvocationJobRuntimeById = computed(() => {
+        return (invocationId: string): Record<string, string> => {
+            const metrics = getInvocationMetricsById.value(invocationId);
+            const runtimeByJobId: Record<string, string> = {};
+            for (const metric of metrics ?? []) {
+                if (metric.name === "runtime_seconds") {
+                    runtimeByJobId[metric.job_id] = metric.value;
+                }
+            }
+            return runtimeByJobId;
+        };
+    });
+
     const totalInvocationCount = ref<number | undefined>(undefined);
 
     return {
@@ -167,6 +185,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getInvocationJobsSummaryById,
         getInvocationStepJobsSummaryById,
         getInvocationMetricsById,
+        getInvocationJobRuntimeById,
         getInvocationLoadError,
         getInvocationStepById,
         getInvocationRequestById,
