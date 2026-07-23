@@ -32,6 +32,7 @@ from whoosh.scoring import (
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
+from galaxy.tool_util_models.tool_source import HelpContent
 from galaxy.tools import DataManagerTool
 from galaxy.tools.source_store.index import (
     ToolIndex,
@@ -164,7 +165,7 @@ def build_search_document(
     labels: Collection[str] | None = None,
     tool_tags: Collection[str] | None = None,
     guid: str | None = None,
-    help_text: object | None = None,
+    help_text: str | HelpContent | None = None,
     tool_type: str = "default",
 ) -> dict | None:
     """Build the common eager/cached Whoosh document for one tool."""
@@ -209,7 +210,7 @@ def build_search_document(
     if tool_tags:
         doc["tool_tags"] = unicodify(",".join(tool_tags))
     if help_text is not None:
-        help_content = getattr(help_text, "content", help_text)
+        help_content = help_text.content if isinstance(help_text, HelpContent) else help_text
         doc["help"] = unicodify(help_content or "")[:MAX_TOOL_SEARCH_HELP_CHARS]
     return doc
 

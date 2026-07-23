@@ -40,6 +40,10 @@ class StoredToolSource:
 class ToolSourceStore(ABC):
     """Abstract base class for tool source storage backends."""
 
+    # URL suitable for writing a sidecar manifest, when the backend exposes
+    # one. Non-SQL and composite stores leave this capability unset.
+    manifest_url: str | None = None
+
     # Backends that wrap a read-only target (e.g. CVMFS-resident sqlite)
     # set this to ``True`` so the populator and reload paths can skip them
     # cleanly instead of crashing on a write attempt.

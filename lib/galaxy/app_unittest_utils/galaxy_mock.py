@@ -114,7 +114,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     config: "MockAppConfig"
     amqp_type: str
     job_search: JobSearch | None = None
-    _toolbox: ToolBox
+    _toolbox: ToolBox | None
     tool_cache: ToolCache
     install_model: ModelMapping
     watchers: ConfigWatchers
@@ -131,6 +131,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
 
     def __init__(self, config=None, **kwargs) -> None:
         super().__init__()
+        self._toolbox = None
         config = config or MockAppConfig(**kwargs)
         GalaxyDataTestApp.__init__(self, config=config, **kwargs)
         self.install_model = self.model
@@ -180,6 +181,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
 
     @property
     def toolbox(self) -> ToolBox:
+        assert self._toolbox is not None
         return self._toolbox
 
     @toolbox.setter

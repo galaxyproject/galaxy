@@ -18,6 +18,7 @@ from typing import (
     Optional,
     overload,
     TYPE_CHECKING,
+    TypedDict,
 )
 from uuid import UUID
 
@@ -72,7 +73,9 @@ from . import (
 
 if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
+    from galaxy.managers.context import ProvidesUserContext
     from galaxy.model import User
+    from galaxy.model.tool_shed_install import ToolShedRepository
     from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
@@ -101,28 +104,22 @@ class ToolMaterializationError(RuntimeError):
 MaterializeCallback = Callable[["ToolIndexEntry", MaterializationReason], "Tool"]
 
 
-def _entry_attr(name: str, entry_attr: str | None = None, mutable: bool = False):
-    """Build a ``CachedTool`` property forwarding ``name`` to ``ToolIndexEntry``.
+class CachedToolOverrides(TypedDict, total=False):
+    """Metadata mutations made by the eager toolbox registration pipeline."""
 
-    ``_overrides`` shadows the entry so writes from the eager pipeline
-    (``tool.hidden = True``, ``tool.tool_shed = ...``) round-trip through
-    materialisation.
-    """
-    src = entry_attr or name
-
-    def getter(self):
-        overrides = self._overrides
-        if name in overrides:
-            return overrides[name]
-        return getattr(self._entry, src)
-
-    if mutable:
-
-        def setter(self, value):
-            self._overrides[name] = value
-
-        return property(getter, setter)
-    return property(getter)
+    name: str
+    version: str | None
+    hidden: bool
+    labels: list[str]
+    tool_shed: str | None
+    repository_name: str | None
+    repository_owner: str | None
+    installed_changeset_revision: str | None
+    guid: str | None
+    old_id: str
+    tool_tags: list[str]
+    tool_shed_repository: "ToolShedRepository | None"
+    tool_errors: str | None
 
 
 class CachedTool:
@@ -148,41 +145,125 @@ class CachedTool:
     # Cached sources are content-addressed, so file watching is a no-op.
     _macro_paths: tuple = ()
 
-    # --- forwarded read-only entry surface ---
-    id = _entry_attr("id")
-    uuid = _entry_attr("uuid")
-    name = _entry_attr("name", mutable=True)
-    description = _entry_attr("description")
-    tool_type = _entry_attr("tool_type")
-    tags = _entry_attr("tags")
-    require_login = _entry_attr("require_login")
-    edam_operations = _entry_attr("edam_operations")
-    edam_topics = _entry_attr("edam_topics")
-    icon = _entry_attr("icon")
-    xrefs = _entry_attr("xrefs")
-    is_workflow_compatible = _entry_attr("is_workflow_compatible")
-    is_datatype_converter = _entry_attr("is_datatype_converter")
+    # --- forwarded entry surface ---
+    @property
+    def id(self) -> str:
+        return self._entry.id
 
-    # --- forwarded mutable entry surface ---
+    @property
+    def uuid(self) -> str | None:
+        return self._entry.uuid
+
+    @property
+    def name(self) -> str:
+        return self._overrides.get("name", self._entry.name)
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self._overrides["name"] = value
+
+    @property
+    def description(self) -> str:
+        return self._entry.description
+
+    @property
+    def tool_type(self) -> str:
+        return self._entry.tool_type
+
+    @property
+    def tags(self) -> list[str]:
+        return self._entry.tags
+
+    @property
+    def require_login(self) -> bool:
+        return self._entry.require_login
+
+    @property
+    def edam_operations(self) -> list[str]:
+        return self._entry.edam_operations
+
+    @property
+    def edam_topics(self) -> list[str]:
+        return self._entry.edam_topics
+
+    @property
+    def icon(self) -> str | None:
+        return self._entry.icon
+
+    @property
+    def xrefs(self) -> list[dict[str, Any]]:
+        return self._entry.xrefs
+
+    @property
+    def is_workflow_compatible(self) -> bool:
+        return self._entry.is_workflow_compatible
+
+    @property
+    def is_datatype_converter(self) -> bool:
+        return self._entry.is_datatype_converter
+
     # Eager ``_load_tool_tag_set`` (base.py:964-987) mutates these post-create.
-    version = _entry_attr("version", mutable=True)
-    hidden = _entry_attr("hidden", mutable=True)
-    labels = _entry_attr("labels", mutable=True)
-    tool_shed = _entry_attr("tool_shed", mutable=True)
-    repository_name = _entry_attr("repository_name", mutable=True)
-    repository_owner = _entry_attr("repository_owner", mutable=True)
-    # Eager naming: ``installed_changeset_revision`` (vs entry's ``changeset_revision``).
-    installed_changeset_revision = _entry_attr(
-        "installed_changeset_revision",
-        entry_attr="changeset_revision",
-        mutable=True,
-    )
+    @property
+    def version(self) -> str | None:
+        return self._overrides.get("version", self._entry.version)
+
+    @version.setter
+    def version(self, value: str | None) -> None:
+        self._overrides["version"] = value
+
+    @property
+    def hidden(self) -> bool:
+        return self._overrides.get("hidden", self._entry.hidden)
+
+    @hidden.setter
+    def hidden(self, value: bool) -> None:
+        self._overrides["hidden"] = value
+
+    @property
+    def labels(self) -> list[str]:
+        return self._overrides.get("labels", self._entry.labels)
+
+    @labels.setter
+    def labels(self, value: list[str]) -> None:
+        self._overrides["labels"] = value
+
+    @property
+    def tool_shed(self) -> str | None:
+        return self._overrides.get("tool_shed", self._entry.tool_shed)
+
+    @tool_shed.setter
+    def tool_shed(self, value: str | None) -> None:
+        self._overrides["tool_shed"] = value
+
+    @property
+    def repository_name(self) -> str | None:
+        return self._overrides.get("repository_name", self._entry.repository_name)
+
+    @repository_name.setter
+    def repository_name(self, value: str | None) -> None:
+        self._overrides["repository_name"] = value
+
+    @property
+    def repository_owner(self) -> str | None:
+        return self._overrides.get("repository_owner", self._entry.repository_owner)
+
+    @repository_owner.setter
+    def repository_owner(self, value: str | None) -> None:
+        self._overrides["repository_owner"] = value
+
+    @property
+    def installed_changeset_revision(self) -> str | None:
+        return self._overrides.get("installed_changeset_revision", self._entry.changeset_revision)
+
+    @installed_changeset_revision.setter
+    def installed_changeset_revision(self, value: str | None) -> None:
+        self._overrides["installed_changeset_revision"] = value
 
     def __init__(
         self,
         entry: "ToolIndexEntry",
         materialize_callback: MaterializeCallback,
-        is_admin_user,
+        is_admin_user: Callable[["User"], bool],
         *,
         preserve_python_environment: str = "legacy_only",
     ) -> None:
@@ -190,11 +271,11 @@ class CachedTool:
         self._materialize_cb = materialize_callback
         self._is_admin_user = is_admin_user
         self._preserve_python_environment = preserve_python_environment
-        self._overrides: dict[str, Any] = {}
+        self._overrides: CachedToolOverrides = {}
         self._requirements: ToolRequirements | None = None
         self._containers: list[ContainerDescription] | None = None
         # Assigned by AbstractToolBox.__add_tool via _lineage_map.register(tool).
-        self._lineage: Any | None = None
+        self._lineage: ToolLineage | None = None
         # ``DependencyManager.requirements_to_dependencies`` caches resolved
         # dependencies on the tool instance it was handed (the admin
         # dependency summary passes stubs); mirror ``Tool.__init__``'s default.
@@ -207,11 +288,11 @@ class CachedTool:
 
     # --- derived properties ---
     @property
-    def guid(self):
+    def guid(self) -> str | None:
         return self._overrides.get("guid") or (self._entry.id if is_shed_guid(self._entry.id) else None)
 
     @guid.setter
-    def guid(self, value):
+    def guid(self, value: str | None) -> None:
         self._overrides["guid"] = value
 
     @property
@@ -219,6 +300,10 @@ class CachedTool:
         if "old_id" in self._overrides:
             return self._overrides["old_id"]
         return short_tool_id(self._entry.id)
+
+    @old_id.setter
+    def old_id(self, value: str) -> None:
+        self._overrides["old_id"] = value
 
     @property
     def tool_tags(self) -> list[str]:
@@ -238,7 +323,7 @@ class CachedTool:
         return curated_tool_tags(all_ids)
 
     @tool_tags.setter
-    def tool_tags(self, value):
+    def tool_tags(self, value: list[str]) -> None:
         self._overrides["tool_tags"] = value
 
     @property
@@ -246,7 +331,7 @@ class CachedTool:
         return self._entry.source_path
 
     @property
-    def lineage(self):
+    def lineage(self) -> ToolLineage | None:
         return self._lineage
 
     def get_panel_section(self) -> tuple[str, str] | tuple[None, None]:
@@ -270,7 +355,7 @@ class CachedTool:
         return parse_tool_version_for_comparison(self._entry.version or "")
 
     @property
-    def tool_shed_repository(self):
+    def tool_shed_repository(self) -> "ToolShedRepository | None":
         # The eager pipeline sets this on the real ``Tool`` for shed-installed
         # tools (passing ``tool_shed_repository=<repo>`` to ``create_tool``);
         # the CachedTool stub doesn't carry the repo object. Default to None —
@@ -280,15 +365,15 @@ class CachedTool:
         return self._overrides.get("tool_shed_repository")
 
     @tool_shed_repository.setter
-    def tool_shed_repository(self, value):
+    def tool_shed_repository(self, value: "ToolShedRepository | None") -> None:
         self._overrides["tool_shed_repository"] = value
 
     @property
-    def tool_errors(self):
+    def tool_errors(self) -> str | None:
         return self._overrides.get("tool_errors")
 
     @tool_errors.setter
-    def tool_errors(self, value):
+    def tool_errors(self, value: str | None) -> None:
         self._overrides["tool_errors"] = value
 
     @property
@@ -315,7 +400,9 @@ class CachedTool:
         # the ToolConfRepository used when a cached shed tool materializes.
         return None
 
-    produces_real_jobs = _entry_attr("produces_real_jobs")
+    @property
+    def produces_real_jobs(self) -> bool:
+        return self._entry.produces_real_jobs
 
     @property
     def requires_galaxy_python_environment(self) -> bool:
@@ -329,7 +416,7 @@ class CachedTool:
         )
 
     # --- entry-only methods (no materialise) ---
-    def allow_user_access(self, user, attempting_access: bool = True) -> bool:
+    def allow_user_access(self, user: "User | None", attempting_access: bool = True) -> bool:
         """Mirror of :meth:`Tool.allow_user_access` derived from index metadata.
 
         ``DataManagerTool`` overrides ``allow_user_access`` to require admin
@@ -342,15 +429,18 @@ class CachedTool:
         if self.tool_type == DataManagerTool.tool_type:
             if user is None or not bool(self._is_admin_user(user)):
                 if attempting_access:
+                    user_id = None
+                    if user is not None:
+                        user_id = user.id
                     log.debug(
                         "User (%s) attempted to access a data manager tool (%s), but is not an admin.",
-                        getattr(user, "id", None),
+                        user_id,
                         self.id,
                     )
                 return False
         return True
 
-    def to_panel_entry(self, trans=None) -> dict[str, Any]:
+    def to_panel_entry(self, trans: "ProvidesUserContext | None" = None) -> dict[str, Any]:
         """Cheap entry-shape dict for the panel-view walk.
 
         Returned by :meth:`AbstractToolBox.get_tool_to_dict` when no help
@@ -363,7 +453,7 @@ class CachedTool:
             versions = list(self._lineage.tool_versions)
         else:
             versions = [entry.version] if entry.version else []
-        payload = {
+        payload: dict[str, Any] = {
             "model_class": entry.model_class,
             "id": self.id,
             "name": self.name,
@@ -392,7 +482,7 @@ class CachedTool:
                 "changeset_revision": entry.changeset_revision,
                 "tool_shed": entry.tool_shed,
             }
-        if trans is not None and getattr(trans, "user_is_admin", False):
+        if trans is not None and trans.user_is_admin:
             payload["config_file"] = entry.source_path
         return payload
 
@@ -440,7 +530,7 @@ class CachedToolBox(ToolBox):
     ) -> None:
         # Needed by the overridden initialization invoked from ``super()``.
         self._store = tool_source_store
-        self._tool_object_cache: LRUCache = LRUCache(maxsize=cache_size)
+        self._tool_object_cache: LRUCache[tuple[str, str, str], Tool] = LRUCache(maxsize=cache_size)
         self._cache_lock = threading.RLock()
         self._materialization_locks = tuple(threading.Lock() for _ in range(64))
         self._cached_tools: dict[tuple[str, str], CachedTool] = {}
@@ -582,7 +672,7 @@ class CachedToolBox(ToolBox):
             super()._mark_integrated_panel_section_positioned(key)
 
     def _load_tool_panel(self) -> None:
-        if getattr(self, "_tool_panel_loaded_from_index", False):
+        if self._tool_panel_loaded_from_index:
             return
         super()._load_tool_panel()
 
@@ -1481,7 +1571,7 @@ class CachedToolBox(ToolBox):
         # removal of this stub.
         if old_id:
             bucket = self._tools_by_old_id.setdefault(old_id, [])
-            if not any(getattr(t, "id", None) == tool_id for t in bucket):
+            if not any(t.id == tool_id for t in bucket):
                 bucket.append(stub)  # type: ignore[arg-type]
         if entry.uuid:
             self._tools_by_uuid[UUID(entry.uuid)] = stub  # type: ignore[assignment]
@@ -1603,7 +1693,7 @@ class CachedToolBox(ToolBox):
             # ``self`` is then the superseded instance and cleaning it alone
             # leaves ``app.toolbox`` serving the uninstalled tool. The swap
             # holds the same lock, so the current object is stable here.
-            current = getattr(self.app, "toolbox", None)
+            current = self.app.toolbox
             if current is not self and isinstance(current, CachedToolBox):
                 current._remove_tool_in_memory(tool_id, remove_from_panel=remove_from_panel)
         self.app.reindex_tool_search()
@@ -1650,9 +1740,7 @@ class CachedToolBox(ToolBox):
         if short_id != tool_id:
             bucket = self._tools_by_old_id.get(short_id)
             if bucket:
-                survivors = [
-                    t for t in bucket if getattr(t, "id", None) != tool_id and getattr(t, "guid", None) != tool_id
-                ]
+                survivors = [t for t in bucket if t.id != tool_id and t.guid != tool_id]
                 if survivors:
                     self._tools_by_old_id[short_id] = survivors
                 else:
@@ -1678,11 +1766,7 @@ class CachedToolBox(ToolBox):
         """Drop every parsed-tool LRU entry for ``tool_id``."""
         with self._cache_lock:
             for key, cached in list(self._tool_object_cache.items()):
-                if (
-                    key[0] == tool_id
-                    or getattr(cached, "id", None) == tool_id
-                    or getattr(cached, "guid", None) == tool_id
-                ):
+                if key[0] == tool_id or cached.id == tool_id or cached.guid == tool_id:
                     self._tool_object_cache.pop(key, None)
 
     # === Override has_tool to check index ===

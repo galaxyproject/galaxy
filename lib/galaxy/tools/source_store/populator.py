@@ -967,7 +967,7 @@ def populate_store_inline(
                     raise
                 continue
             if write_manifests:
-                store_url = getattr(stores[store_name], "url", None)
+                store_url = stores[store_name].manifest_url
                 if store_url is None:
                     log.info("Skipping manifest for non-file store %s", store_name)
                 else:

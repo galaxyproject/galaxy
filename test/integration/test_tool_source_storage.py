@@ -423,7 +423,7 @@ class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
         tools_by_id = self._app.toolbox.tools_by_id
         tool = tools_by_id["cat1"]
         assert tool is not None
-        assert getattr(tool, "tool_requirements", None) is not None
+        assert tool.tool_requirements is not None
         assert tool.dependencies == []
         # ``.copy()`` is what ``ContainerFinder.find_best_container_description``
         # invokes via ``copy.copy`` on the registry; placeholder ``None``

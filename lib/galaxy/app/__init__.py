@@ -308,11 +308,13 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     object_store: BaseObjectStore
     _tool_data_tables: BaseToolDataTableManager | None
     _genome_builds: GenomeBuilds | None
+    _toolbox: tools.ToolBox | None
 
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
         self._genome_builds = None
         self._tool_data_tables = None
+        self._toolbox = None
         self.haltables = [
             ("object store", self._shutdown_object_store),
             ("database connection", self._shutdown_model),
@@ -410,7 +412,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         # Initialize container finder and toolbox search (requires toolbox)
         self._init_container_finder()
         self._set_enabled_container_types()
-        index_help = getattr(self.config, "index_tool_help", True)
+        index_help = self.config.index_tool_help
         if self._use_cached_toolbox():
             # Build search corpora from rendered cached panel views without
             # materializing their tool stubs.
@@ -453,7 +455,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 self.tool_source_store = None
 
     def _shutdown_cached_toolbox(self) -> None:
-        toolbox = getattr(self, "_toolbox", None)
+        toolbox = self._toolbox
         if isinstance(toolbox, CachedToolBox):
             try:
                 toolbox.close()
@@ -523,6 +525,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
     @property
     def toolbox(self) -> tools.ToolBox:
+        assert self._toolbox is not None
         return self._toolbox
 
     def reindex_tool_search(self) -> None:

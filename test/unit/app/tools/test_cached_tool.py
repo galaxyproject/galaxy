@@ -66,18 +66,33 @@ def _stub(entry=None, materialize=None, is_admin=None):
 
 
 def test_forwarded_reads_off_entry():
-    e = _entry()
+    e = _entry(
+        uuid="891d4dcb-727a-4710-9d18-0fd4791a85c9",
+        tags=["mapping"],
+        icon="map",
+        xrefs=[{"reftype": "bio.tools", "value": "bowtie2"}],
+        is_workflow_compatible=False,
+        is_datatype_converter=True,
+        produces_real_jobs=False,
+    )
     t = _stub(e)
     assert t.id == e.id
+    assert t.uuid == e.uuid
     assert t.version == e.version
     assert t.name == e.name
     assert t.description == e.description
     assert t.hidden is False
     assert t.require_login is False
     assert t.tool_type == "default"
+    assert t.tags == ["mapping"]
     assert t.labels == ["align"]
     assert t.edam_operations == ["operation_0292"]
     assert t.edam_topics == ["topic_0102"]
+    assert t.icon == "map"
+    assert t.xrefs == [{"reftype": "bio.tools", "value": "bowtie2"}]
+    assert t.is_workflow_compatible is False
+    assert t.is_datatype_converter is True
+    assert t.produces_real_jobs is False
 
 
 def test_overrides_shadow_entry_and_survive_materialise():
@@ -104,6 +119,44 @@ def test_overrides_shadow_entry_and_survive_materialise():
     assert real.hidden is True
     assert real.labels == ["a", "b"]
     assert real.tool_shed == "toolshed.example.com"
+
+
+def test_mutable_metadata_overrides_round_trip():
+    t = _stub(
+        _entry(
+            changeset_revision="original",
+            repository_name="old-name",
+            repository_owner="old-owner",
+        )
+    )
+    repository = MagicMock()
+    t.name = "Updated"
+    t.version = None
+    t.hidden = True
+    t.labels = ["new"]
+    t.tool_shed = "toolshed.example.com"
+    t.repository_name = "new-name"
+    t.repository_owner = "new-owner"
+    t.installed_changeset_revision = "updated"
+    t.guid = "shed/repos/owner/repo/tool/1.0"
+    t.old_id = "tool"
+    t.tool_tags = ["curated"]
+    t.tool_shed_repository = repository
+    t.tool_errors = "broken"
+
+    assert t.name == "Updated"
+    assert t.version is None
+    assert t.hidden is True
+    assert t.labels == ["new"]
+    assert t.tool_shed == "toolshed.example.com"
+    assert t.repository_name == "new-name"
+    assert t.repository_owner == "new-owner"
+    assert t.installed_changeset_revision == "updated"
+    assert t.guid == "shed/repos/owner/repo/tool/1.0"
+    assert t.old_id == "tool"
+    assert t.tool_tags == ["curated"]
+    assert t.tool_shed_repository is repository
+    assert t.tool_errors == "broken"
 
 
 def test_shed_metadata_derives_guid_and_installed_changeset_revision():
@@ -186,6 +239,14 @@ def test_to_panel_entry_carries_client_contract_fields():
     assert d["versions"] == ["2.5.0"]
     assert d["tool_shed_repository"]["changeset_revision"] == "abc123"
     assert "config_file" not in d
+
+
+def test_to_panel_entry_includes_config_file_for_admin():
+    trans = MagicMock()
+    trans.user_is_admin = True
+    tool = _stub(_entry(source_path="/galaxy/tools/bowtie2.xml"))
+
+    assert tool.to_panel_entry(trans)["config_file"] == "/galaxy/tools/bowtie2.xml"
 
 
 def test_get_panel_section_answered_off_entry_without_materialise():

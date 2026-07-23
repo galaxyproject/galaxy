@@ -421,12 +421,22 @@ def tool_requires_galaxy_python_environment(
     return parsed_version < fixed_version
 
 
+def load_tool_action_class(module_name: str, class_name: str) -> type[ToolAction]:
+    """Load and validate a configured tool action class."""
+    module = __import__(module_name, globals(), locals(), [class_name])
+    try:
+        action_class: object = getattr(module, class_name)
+    except AttributeError as exc:
+        raise AttributeError(f"Tool action module {module_name!r} has no class {class_name!r}") from exc
+    if not isinstance(action_class, type) or not issubclass(action_class, ToolAction):
+        raise TypeError(f"Configured tool action {module_name}.{class_name} is not a ToolAction subclass")
+    return action_class
+
+
 def tool_produces_real_jobs(tool_type: str, action_module: tuple[str, str] | None) -> bool:
     """Return the action policy without constructing a complete tool."""
     if action_module is not None:
-        module_name, class_name = action_module
-        module = __import__(module_name, globals(), locals(), [class_name])
-        action_class = getattr(module, class_name)
+        action_class = load_tool_action_class(*action_module)
     else:
         action_class = tool_types.get(tool_type, Tool).default_tool_action
     return action_class.produces_real_jobs
@@ -613,7 +623,7 @@ class ToolBox(AbstractToolBox):
         # Load built-in converters
         if app.config.display_builtin_converters:
             self.load_builtin_converters()
-        if old_toolbox := getattr(app, "toolbox", None):
+        if old_toolbox := app._toolbox:
             self.dependency_manager = old_toolbox.dependency_manager
         else:
             self._init_dependency_manager()
@@ -1622,8 +1632,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             self.tool_action = self.default_tool_action()
         else:
             module, cls = action
-            mod = __import__(module, globals(), locals(), [cls])
-            self.tool_action = getattr(mod, cls)()
+            self.tool_action = load_tool_action_class(module, cls)()
             if getattr(self.tool_action, "requires_js_runtime", False):
                 try:
                     expressions.find_engine(self.app.config)

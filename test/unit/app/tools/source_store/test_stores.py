@@ -52,7 +52,9 @@ class TestSqlAlchemyBackend:
     """Tests for the sqlalchemy/sqlite backend."""
 
     def test_sqlalchemy_store_basic_operations(self, tmp_path):
-        store = SqlAlchemyToolSourceStore(url=_sqlite_url(tmp_path / "ts.sqlite"))
+        url = _sqlite_url(tmp_path / "ts.sqlite")
+        store = SqlAlchemyToolSourceStore(url=url)
+        assert store.manifest_url == url
 
         tool_source = StoredToolSource(
             hash="sa_test_hash_123",
