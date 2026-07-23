@@ -24703,6 +24703,12 @@ export interface components {
              */
             description: string;
             /**
+             * Is confirmation
+             * @description Set server-side to mark this as the request confirmation copy delivered to the requester (as opposed to the admin-facing request). Selects the confirmation email template and subject. Client-supplied values are ignored; the service always stamps this when building the requester copy.
+             * @default false
+             */
+            is_confirmation: boolean;
+            /**
              * Requested version
              * @description The version of the tool being requested.
              */
