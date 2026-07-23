@@ -77,15 +77,12 @@ async function submit() {
 
     try {
         await submitToolInstallationRequest({
-            category: "tool_installation_request",
             tool_names: [toolName.value.trim()],
             tool_url: toolUrl.value.trim() || undefined,
             description: description.value.trim(),
             scientific_domain: scientificDomain.value.trim() || undefined,
             requested_version: requestedVersion.value.trim() || undefined,
             additional_remarks: additionalRemarks.value.trim() || undefined,
-            // Server-stamped; sent only to satisfy the generated (required) schema.
-            is_confirmation: false,
         });
 
         submitting.value = false;
