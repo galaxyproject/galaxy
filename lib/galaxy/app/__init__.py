@@ -530,6 +530,10 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         assert self._toolbox is not None
         return self._toolbox
 
+    @property
+    def toolbox_or_none(self) -> tools.ToolBox | None:
+        return self._toolbox
+
     def reindex_tool_search(self) -> None:
         # Call this when tools are added or removed.
         self.toolbox_search.build_index(

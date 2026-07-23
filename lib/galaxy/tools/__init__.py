@@ -623,7 +623,7 @@ class ToolBox(AbstractToolBox):
         # Load built-in converters
         if app.config.display_builtin_converters:
             self.load_builtin_converters()
-        if old_toolbox := app._toolbox:
+        if old_toolbox := app.toolbox_or_none:
             self.dependency_manager = old_toolbox.dependency_manager
         else:
             self._init_dependency_manager()

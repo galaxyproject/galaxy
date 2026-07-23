@@ -92,6 +92,11 @@ class BasicSharedApp(Container):
     def toolbox(self) -> "ToolBox":
         raise NotImplementedError()
 
+    @property
+    def toolbox_or_none(self) -> "ToolBox | None":
+        """The registered toolbox, or None before one has been configured."""
+        raise NotImplementedError()
+
 
 class MinimalToolApp(Protocol):
     is_webapp: bool

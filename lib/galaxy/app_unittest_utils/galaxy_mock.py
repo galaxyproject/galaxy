@@ -188,6 +188,10 @@ class MockApp(di.Container, GalaxyDataTestApp):
     def toolbox(self, toolbox: ToolBox):
         self._toolbox = toolbox
 
+    @property
+    def toolbox_or_none(self) -> ToolBox | None:
+        return self._toolbox
+
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really
         # need to wait.
