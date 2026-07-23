@@ -278,15 +278,35 @@ def galaxy_pagination_to_osf(
 
 
 def galaxy_sort_to_osf(sort_by: Optional[str]) -> Optional[str]:
+    """Translate Galaxy's sort_by string into an OSF ``sort`` query value.
+
+    Galaxy passes a field name, optionally prefixed with ``-`` for descending
+    order (e.g. ``name`` for A-Z, ``-name`` for Z-A). OSF's ``sort`` parameter
+    uses the same convention, so we only rename the field.
+
+    Note: as of this writing ``client/src/components/FilesDialog/FilesDialog.vue``
+    does not send ``sort_by`` to the ``/api/remote_files`` endpoint, so clicking
+    the column headers in the file picker will not currently trigger this
+    mapping. The backend route and this plugin are ready for it as soon as the
+    frontend is wired up (compare ``client/src/components/SelectionDialog/
+    HistoryDatasetPicker.vue`` for a working example). Until then, sort can be
+    exercised by passing ``sort_by=`` directly on ``/api/remote_files`` calls.
+    """
     if not sort_by:
         return None
-    return {
+    descending = sort_by.startswith("-")
+    field = sort_by.lstrip("-")
+    mapping = {
         "name": "title",
-        "uri": "id",
-        "path": "id",
-        "ctime": "-date_modified",
+        "update_time": "date_modified",
+        "create_time": "date_created",
+        "ctime": "date_modified",
         "size": "size",
-    }.get(sort_by, "id")
+    }
+    osf_field = mapping.get(field)
+    if osf_field is None:
+        return None
+    return f"-{osf_field}" if descending else osf_field
 
 
 class OSFRepositoryInteractor(RDMRepositoryInteractor):
