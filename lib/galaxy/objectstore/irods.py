@@ -47,6 +47,13 @@ logging.getLogger("irods.connection").setLevel(logging.INFO)  # irods logging ge
 _IRODS_RETRY_ATTEMPTS = 3
 _IRODS_RETRY_BACKOFF = 0.5
 
+# python-irodsclient is optional; fall back to ssl errors when NetworkException is unavailable.
+_RETRYABLE_CONNECTION_ERRORS: "tuple[type[BaseException], ...]"
+if irods is None:
+    _RETRYABLE_CONNECTION_ERRORS = (ssl.SSLError,)
+else:
+    _RETRYABLE_CONNECTION_ERRORS = (NetworkException, ssl.SSLError)
+
 
 def _retry_on_connection_error(func):
     """Retry iRODS read operations on a transient connection error."""
@@ -56,7 +63,7 @@ def _retry_on_connection_error(func):
         for attempt in range(1, _IRODS_RETRY_ATTEMPTS + 1):
             try:
                 return func(*args, **kwargs)
-            except (NetworkException, ssl.SSLError) as exc:
+            except _RETRYABLE_CONNECTION_ERRORS as exc:
                 if attempt == _IRODS_RETRY_ATTEMPTS:
                     raise
                 log.warning(
