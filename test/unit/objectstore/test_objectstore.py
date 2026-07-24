@@ -1023,7 +1023,7 @@ def test_cache_monitor_thread(tmp_path):
     path.write_text("this is an example file")
 
     cache_target = CacheTarget(cache_dir, 1, 0.000000001)
-    monitor = InProcessCacheMonitor(cache_target, 30, 0)
+    monitor = InProcessCacheMonitor([cache_target], 30, 0)
 
     path_cleaned = False
     for _ in range(100):
