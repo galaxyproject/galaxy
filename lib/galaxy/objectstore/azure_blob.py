@@ -19,7 +19,9 @@ except ImportError:
 from galaxy.util import now
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
+    CacheShardManager,
     enable_cache_monitor,
+    ObjectId,
     parse_caching_config_dict_from_xml,
 )
 
@@ -139,9 +141,8 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                 typed_transfer_dict[key] = int(value)
         self.transfer_dict = typed_transfer_dict
 
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
-        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
 
         self._initialize()
 
@@ -168,11 +169,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                     "name": self.container_name,
                 },
                 "transfer": self.transfer_dict,
-                "cache": {
-                    "size": self.cache_size,
-                    "path": self.staging_path,
-                    "cache_updated_data": self.cache_updated_data,
-                },
+                "cache": self._cache_config_to_dict(),
             }
         )
         return as_dict
@@ -239,11 +236,11 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
     def _blob_client(self, rel_path: str):
         return self.service.get_blob_client(self.container_name, rel_path)
 
-    def _download(self, rel_path):
-        local_destination = self._get_cache_path(rel_path)
+    def _download(self, rel_path, object_id: ObjectId):
+        local_destination = self._get_cache_path(rel_path, object_id)
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
-            if not self._caching_allowed(rel_path):
+            if not self._caching_allowed(rel_path, object_id=object_id):
                 return False
             else:
                 with self._atomic_download(local_destination) as tmp:

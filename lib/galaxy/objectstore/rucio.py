@@ -35,7 +35,9 @@ from galaxy.util import (
 )
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
+    CacheShardManager,
     enable_cache_monitor,
+    ObjectId,
     parse_caching_config_dict_from_xml,
 )
 
@@ -340,10 +342,9 @@ class RucioObjectStore(CachingConcreteObjectStore):
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
-        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
-        self.cache_config = cache_dict
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
+        self.cache_config = self._cache_config_to_dict()
         self._initialize()
 
     def _initialize(self):
@@ -351,17 +352,17 @@ class RucioObjectStore(CachingConcreteObjectStore):
             self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
 
-    def _pull_into_cache(self, rel_path, **kwargs) -> bool:
+    def _pull_into_cache(self, rel_path, object_id: ObjectId, **kwargs) -> bool:
         log.debug("rucio _pull_into_cache: %s", rel_path)
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
-        if not os.path.exists(self._get_cache_path(rel_path_dir)):
-            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
+        if not os.path.exists(self._get_cache_path(rel_path_dir, object_id)):
+            os.makedirs(self._get_cache_path(rel_path_dir, object_id), exist_ok=True)
         # Now pull in the file
-        dest = self._get_cache_path(rel_path)
+        dest = self._get_cache_path(rel_path, object_id)
         auth_token = self._get_token(**kwargs)
         file_ok = self.rucio_broker.download(rel_path, dest, auth_token)
-        self._fix_permissions(self._get_cache_path(rel_path_dir))
+        self._fix_permissions(self._get_cache_path(rel_path_dir, object_id))
         return file_ok
 
     def _fix_file_permissions(self, path):
@@ -382,13 +383,14 @@ class RucioObjectStore(CachingConcreteObjectStore):
 
     def _exists(self, obj, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
         log.debug("rucio _exists: %s", rel_path)
 
         dir_only = kwargs.get("dir_only", False)
         base_dir = kwargs.get("base_dir", None)
 
         # Check cache and rucio
-        if self._in_cache(rel_path) or (not dir_only and self.rucio_broker.data_object_exists(rel_path)):
+        if self._in_cache(rel_path, object_id) or (not dir_only and self.rucio_broker.data_object_exists(rel_path)):
             return True
 
         # dir_only does not get synced so shortcut the decision
@@ -411,8 +413,10 @@ class RucioObjectStore(CachingConcreteObjectStore):
             dir_only = kwargs.get("dir_only", False)
             alt_name = kwargs.get("alt_name", None)
 
+            object_id = self._get_object_id(obj)
+
             # Construct hashed path
-            rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
+            rel_path = os.path.join(*directory_hash_id(object_id))
 
             # Optionally append extra_dir
             if extra_dir is not None:
@@ -422,25 +426,26 @@ class RucioObjectStore(CachingConcreteObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
 
             # Create given directory in cache
-            cache_dir = os.path.join(self.staging_path, rel_path)
+            cache_dir = self._get_cache_path(rel_path, object_id)
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir, exist_ok=True)
 
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{object_id}.dat")
                 # need this line to set the dataset filename, not sure how this is done - filesystem is monitored?
-                open(os.path.join(self.staging_path, rel_path), "w").close()
+                open(self._get_cache_path(rel_path, object_id), "w").close()
             log.debug("rucio _create: %s", rel_path)
         return self
 
     def _size(self, obj, **kwargs) -> int:
         rel_path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
         log.debug("rucio _size: %s", rel_path)
 
-        if self._in_cache(rel_path):
+        if self._in_cache(rel_path, object_id):
             size: int | None = None
             try:
-                size = os.path.getsize(self._get_cache_path(rel_path))
+                size = os.path.getsize(self._get_cache_path(rel_path, object_id))
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try iRODS. Error: %s", rel_path, ex)
             if size is not None:
@@ -455,6 +460,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
 
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
         extra_dir = kwargs.get("extra_dir", None)
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
@@ -470,9 +476,9 @@ class RucioObjectStore(CachingConcreteObjectStore):
 
             # Delete from cache first
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
+                shutil.rmtree(self._get_cache_path(rel_path, object_id), ignore_errors=True)
             else:
-                unlink(self._get_cache_path(rel_path), ignore_errors=True)
+                unlink(self._get_cache_path(rel_path, object_id), ignore_errors=True)
 
             # Delete from rucio as well
             if self.rucio_broker.data_object_exists(rel_path):
@@ -504,6 +510,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
         rel_path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
 
         log.debug("rucio _get_filename: %s", rel_path)
 
@@ -511,14 +518,14 @@ class RucioObjectStore(CachingConcreteObjectStore):
         if base_dir and dir_only:
             return os.path.abspath(rel_path)
 
-        cache_path = self._get_cache_path(rel_path)
+        cache_path = self._get_cache_path(rel_path, object_id)
         if not sync_cache:
             return cache_path
 
-        in_cache = self._in_cache(rel_path)
+        in_cache = self._in_cache(rel_path, object_id)
         size_in_cache = 0
         if in_cache:
-            size_in_cache = os.path.getsize(self._get_cache_path(rel_path))
+            size_in_cache = os.path.getsize(self._get_cache_path(rel_path, object_id))
 
         # return path if we do not need to update cache
         if in_cache and dir_only:
@@ -535,13 +542,13 @@ class RucioObjectStore(CachingConcreteObjectStore):
             if dir_only:  # Directories do not get pulled into cache
                 return cache_path
             else:
-                if self._pull_into_cache(rel_path, auth=kwargs.get("auth")):
+                if self._pull_into_cache(rel_path, object_id=object_id, auth=kwargs.get("auth")):
                     return cache_path
         raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
 
-    def _register_file(self, rel_path, file_name):
+    def _register_file(self, rel_path, file_name, object_id: ObjectId):
         if file_name is None:
-            file_name = self._get_cache_path(rel_path)
+            file_name = self._get_cache_path(rel_path, object_id)
             if not os.path.islink(file_name):
                 raise ObjectInvalid(
                     "rucio objectstore._register_file, rucio_register_only is set, but file in cache is not a link "
@@ -556,6 +563,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
         self, obj, file_name=None, create: bool = False, preserve_symlinks: bool = False, **kwargs
     ) -> None:
         rel_path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
         log.debug("rucio _update_from_file: %s", rel_path)
 
         if not create:
@@ -564,14 +572,14 @@ class RucioObjectStore(CachingConcreteObjectStore):
             )
 
         if self.rucio_config["register_only"]:
-            self._register_file(rel_path, file_name)
+            self._register_file(rel_path, file_name, object_id=object_id)
             return
 
         # Choose whether to use the dataset file itself or an alternate file
         if file_name:
             source_file = os.path.abspath(file_name)
             # Copy into cache
-            cache_file = self._get_cache_path(rel_path)
+            cache_file = self._get_cache_path(rel_path, object_id)
             try:
                 if source_file != cache_file and self.cache_updated_data:
                     try:
@@ -584,7 +592,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
             except OSError:
                 log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
         else:
-            source_file = self._get_cache_path(rel_path)
+            source_file = self._get_cache_path(rel_path, object_id)
 
         # Update the file on rucio
         self.rucio_broker.upload(rel_path, source_file)

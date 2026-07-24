@@ -8,7 +8,11 @@ import os.path
 
 from ._caching_base import CachingConcreteObjectStore
 from ._util import UsesAxel
-from .caching import enable_cache_monitor
+from .caching import (
+    CacheShardManager,
+    enable_cache_monitor,
+    ObjectId,
+)
 from .s3 import parse_config_xml
 
 try:
@@ -51,9 +55,8 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         self.use_rr = bucket_dict.get("use_reduced_redundancy", False)
         self.max_chunk_size = bucket_dict.get("max_chunk_size", 250)
 
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
-        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
 
         self._initialize()
 
@@ -195,11 +198,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 "name": self.bucket_name,
                 "use_reduced_redundancy": self.use_rr,
             },
-            "cache": {
-                "size": self.cache_size,
-                "path": self.staging_path,
-                "cache_updated_data": self.cache_updated_data,
-            },
+            "cache": self._cache_config_to_dict(),
         }
 
     def _get_bucket(self, bucket_name):
@@ -245,13 +244,13 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             return False
         return exists
 
-    def _download(self, rel_path):
-        local_destination = self._get_cache_path(rel_path)
+    def _download(self, rel_path, object_id: ObjectId):
+        local_destination = self._get_cache_path(rel_path, object_id)
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
             key = self.bucket.objects.get(rel_path)
             remote_size = key.size
-            if not self._caching_allowed(rel_path, remote_size):
+            if not self._caching_allowed(rel_path, remote_size, object_id=object_id):
                 return False
             log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
             with self._atomic_download(local_destination) as tmp:

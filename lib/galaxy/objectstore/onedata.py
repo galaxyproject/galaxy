@@ -21,7 +21,9 @@ from galaxy.util import (
 )
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
+    CacheShardManager,
     enable_cache_monitor,
+    ObjectId,
     parse_caching_config_dict_from_xml,
 )
 
@@ -110,9 +112,8 @@ class OnedataObjectStore(CachingConcreteObjectStore):
 
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
-        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
@@ -156,11 +157,7 @@ class OnedataObjectStore(CachingConcreteObjectStore):
                     "disable_tls_certificate_validation": self.disable_tls_certificate_validation,
                 },
                 "space": {"name": self.space_name, "galaxy_root_dir": self.galaxy_root_dir},
-                "cache": {
-                    "size": self.cache_size,
-                    "path": self.staging_path,
-                    "cache_updated_data": self.cache_updated_data,
-                },
+                "cache": self._cache_config_to_dict(),
             }
         )
         return as_dict
@@ -188,9 +185,9 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             log.exception("Trouble checking '%s' existence in Onedata", rel_path)
             return False
 
-    def _download(self, rel_path):
+    def _download(self, rel_path, object_id: ObjectId):
         try:
-            dst_path = self._get_cache_path(rel_path)
+            dst_path = self._get_cache_path(rel_path, object_id)
 
             log.debug("Pulling file '%s' into cache to %s", rel_path, dst_path)
 
@@ -198,7 +195,7 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             file_size = self._client.get_attributes(self.space_name, attributes=["size"], file_path=remote_path)["size"]
 
             # Test if cache is large enough to hold the new file
-            if not self._caching_allowed(rel_path, file_size):
+            if not self._caching_allowed(rel_path, file_size, object_id=object_id):
                 return False
 
             with self._atomic_download(dst_path) as tmp:
@@ -215,14 +212,14 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             log.exception("Problem downloading file '%s'", rel_path)
             return False
 
-    def _push_to_storage(self, rel_path, source_file=None, from_string=None):
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, object_id: ObjectId):
         """
         Push the file pointed to by ``rel_path`` to the object store under ``rel_path``.
         If ``source_file`` is provided, push that file instead while still using
         ``rel_path`` as the path.
         """
         try:
-            source_file = source_file or self._get_cache_path(rel_path)
+            source_file = source_file or self._get_cache_path(rel_path, object_id)
             if os.path.exists(source_file):
                 if os.path.getsize(source_file) == 0 and self._exists_remotely(rel_path):
                     log.debug(
