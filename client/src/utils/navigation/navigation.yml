@@ -800,6 +800,7 @@ tool_form:
 workflows:
   selectors:
     activity: '#activity-workflows'
+    curated_tab: '#curated a'
     shared_with_me_tab: '#shared-with-me'
     published_tab: '#published a'
     new_button: '#workflow-create'
@@ -815,6 +816,7 @@ workflows:
     workflow_not_found_message: '#no-workflow-found'
     workflow_cards: '.workflow-card-list'
     workflow_card: '.g-card.workflow-card'
+    curated_workflow_card: '.g-card.curated-workflow-card'
     workflow_card_title: '[id^="g-card-title-"] a'
     workflow_card_button: '[id^="g-card-action-"] button[title="${title}"]'
     workflow_copy_steps: '[id^="g-card-action-workflow-copy-steps-"]'

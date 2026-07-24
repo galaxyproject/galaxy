@@ -1517,6 +1517,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.workflows.activity.wait_for_and_click()
         self.components.workflows.published_tab.wait_for_and_click()
 
+    def navigate_to_curated_workflows(self):
+        self.home()
+        self.components.workflows.activity.wait_for_and_click()
+        self.components.workflows.curated_tab.wait_for_and_click()
+
     def navigate_to_published_histories(self):
         self.home()
         self.components.histories.activity.wait_for_and_click()
