@@ -42,13 +42,12 @@ def test_same_shard_for_same_object_id():
     extra_path = mgr.get_cache_path(obj_id, "000/dataset_12345_files/extra.txt")
     meta_path = mgr.get_cache_path(obj_id, "000/metadata_12345.dat")
     shard_paths = mgr.paths
-    for path in [main_path, extra_path, meta_path]:
-        assert any(path.startswith(sp) for sp in shard_paths), f"{path} not in any shard"
+
+    def shard_root(path):
+        return next(sp for sp in shard_paths if path == sp or path.startswith(sp + os.sep))
+
     # All three must resolve to the same shard root
-    main_root = next(sp for sp in shard_paths if main_path.startswith(sp))
-    extra_root = next(sp for sp in shard_paths if extra_path.startswith(sp))
-    meta_root = next(sp for sp in shard_paths if meta_path.startswith(sp))
-    assert main_root == extra_root == meta_root
+    assert shard_root(main_path) == shard_root(extra_path) == shard_root(meta_path)
 
 
 def test_weight_distribution():
