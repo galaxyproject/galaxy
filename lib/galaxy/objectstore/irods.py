@@ -2,11 +2,13 @@
 Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
 
+import functools
 import logging
 import os
 import shutil
 import ssl
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -16,10 +18,12 @@ try:
     from irods.exception import (
         CollectionDoesNotExist,
         DataObjectDoesNotExist,
+        NetworkException,
     )
     from irods.session import iRODSSession
 except ImportError:
     irods = None
+
 
 from galaxy.util import (
     ExecutionTimer,
@@ -38,6 +42,33 @@ IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature
 CHUNK_SIZE = 2**20
 log = logging.getLogger(__name__)
 logging.getLogger("irods.connection").setLevel(logging.INFO)  # irods logging generates gigabytes of logs
+
+
+_IRODS_RETRY_ATTEMPTS = 3
+_IRODS_RETRY_BACKOFF = 0.5
+
+
+def _retry_on_connection_error(func):
+    """Retry iRODS read operations on a transient connection error."""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        for attempt in range(1, _IRODS_RETRY_ATTEMPTS + 1):
+            try:
+                return func(*args, **kwargs)
+            except (NetworkException, ssl.SSLError) as exc:
+                if attempt == _IRODS_RETRY_ATTEMPTS:
+                    raise
+                log.warning(
+                    "Transient iRODS error in %s (attempt %d/%d), retrying on a fresh connection: %s",
+                    func.__name__,
+                    attempt,
+                    _IRODS_RETRY_ATTEMPTS,
+                    exc,
+                )
+                time.sleep(_IRODS_RETRY_BACKOFF * attempt)
+
+    return wrapper
 
 
 def _config_xml_error(tag):
@@ -382,6 +413,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         }
 
     # rel_path is file or folder?
+    @_retry_on_connection_error
     def _get_remote_size(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
@@ -402,6 +434,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             log.debug("irods_pt _get_remote_size: %s", ipt_timer)
 
     # rel_path is file or folder?
+    @_retry_on_connection_error
     def _exists_remotely(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
@@ -421,6 +454,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _exists_remotely: %s", ipt_timer)
 
+    @_retry_on_connection_error
     def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
         ipt_timer = ExecutionTimer()
         log.debug("Pulling data object '%s' into cache to %s", rel_path, cache_path)

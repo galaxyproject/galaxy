@@ -1,8 +1,15 @@
 import os
+import ssl
 
 import pytest
 
-from galaxy.objectstore.irods import parse_config_xml
+from galaxy.objectstore import irods as irods_module
+from galaxy.objectstore.irods import (
+    _IRODS_RETRY_ATTEMPTS,
+    _retry_on_connection_error,
+    NetworkException,
+    parse_config_xml,
+)
 from galaxy.util import parse_xml
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -80,3 +87,46 @@ def test_parse_config_xml_no_auth():
     root = tree.getroot()
     with pytest.raises(Exception, match="No auth element in config XML tree"):
         parse_config_xml(root)
+
+
+def _make_flaky(exc, fail_times):
+    calls = {"n": 0}
+
+    @_retry_on_connection_error
+    def op(_self):
+        calls["n"] += 1
+        if calls["n"] <= fail_times:
+            raise exc
+        return "ok"
+
+    return op, calls
+
+
+@pytest.fixture(autouse=True)
+def _no_sleep(monkeypatch):
+    monkeypatch.setattr(irods_module.time, "sleep", lambda *_: None)
+
+
+def test_retry_recovers_from_network_exception():
+    op, calls = _make_flaky(NetworkException("reset"), fail_times=_IRODS_RETRY_ATTEMPTS - 1)
+    assert op(object()) == "ok"
+    assert calls["n"] == _IRODS_RETRY_ATTEMPTS
+
+
+def test_retry_recovers_from_ssl_error():
+    op, calls = _make_flaky(ssl.SSLEOFError("handshake"), fail_times=1)
+    assert op(object()) == "ok"
+    assert calls["n"] == 2
+
+
+def test_retry_gives_up_after_max_attempts():
+    op, calls = _make_flaky(ssl.SSLEOFError("handshake"), fail_times=_IRODS_RETRY_ATTEMPTS)
+    with pytest.raises(ssl.SSLError):
+        op(object())
+    assert calls["n"] == _IRODS_RETRY_ATTEMPTS
+
+
+def test_no_retry_on_success():
+    op, calls = _make_flaky(NetworkException("reset"), fail_times=0)
+    assert op(object()) == "ok"
+    assert calls["n"] == 1
