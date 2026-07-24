@@ -3,9 +3,14 @@ import tempfile
 from contextlib import contextmanager
 from unittest import mock
 
+import pytest
+
 from galaxy import model
+from galaxy.exceptions import MalformedContents
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_util import (
+    _remap_galaxy_markdown_calls,
+    populate_invocation_markdown,
     ready_galaxy_markdown_for_export,
     to_basic_markdown,
 )
@@ -490,3 +495,32 @@ I ran a cool analysis at [http://mycoolgalaxy.org](http://mycoolgalaxy.org).
 
     def _ready_export(self, example: str):
         return ready_galaxy_markdown_for_export(self.trans, example)
+
+
+class TestPopulateInvocationMarkdown(BaseExportTestCase):
+    def test_directive_followed_by_stray_prose_remaps_directive(self):
+        invocation = self._new_invocation()
+        example = """# Report
+```galaxy
+history_dataset_as_image(output="spatial scatter plots filtered")
+
+
+---
+<br>
+### Filtering by cell area
+<br>
+### Quality metrics after filtering by cell area
+<br>
+```
+"""
+        result = populate_invocation_markdown(self.trans, invocation, example)
+        assert 'history_dataset_as_image(invocation_id=1, output="spatial scatter plots filtered")' in result
+
+    def test_two_directives_in_one_block_raises(self):
+        example = """```galaxy
+history_dataset_display(history_dataset_id=1)
+history_dataset_display(history_dataset_id=2)
+```
+"""
+        with pytest.raises(MalformedContents):
+            _remap_galaxy_markdown_calls(lambda container, line: (line, False), example)
