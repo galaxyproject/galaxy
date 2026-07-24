@@ -1690,6 +1690,111 @@ class WorkflowIndexPayload(WorkflowIndexQueryPayload):
     missing_tools: bool = False
 
 
+class CuratedWorkflowSourceEnum(str, Enum):
+    """Where the curated workflow listing was drawn from."""
+
+    iwc = "iwc"
+    local = "local"
+    preparing = "preparing"
+    unavailable = "unavailable"
+
+
+class CuratedWorkflowsQueryPayload(Model):
+    search: str | None = Field(default=None, title="Filter text", description="Freetext to search.")
+    sort_by: WorkflowSortByEnum | None = Field(
+        None, title="Sort By", description="Sort curated workflows by this attribute"
+    )
+    sort_desc: bool | None = Field(
+        None, title="Sort descending", description="Explicitly sort by descending if sort_by is specified."
+    )
+    limit: int = Field(default=24, title="Limit", description="Maximum number of curated workflows to return.")
+    offset: int = Field(default=0, title="Offset", description="Number of curated workflows to skip.")
+
+
+class CuratedWorkflow(Model):
+    id: str = Field(
+        ...,
+        title="ID",
+        description=(
+            "Stable identifier for this curated workflow. The encoded stored workflow id when the catalog is "
+            "served from this Galaxy, otherwise the identifier of the workflow in the public catalog."
+        ),
+    )
+    name: str = Field(..., title="Name", description="The name of the workflow.")
+    description: str = Field(default="", title="Description", description="Short annotation describing the workflow.")
+    tags: list[str] = Field(default_factory=list, title="Tags", description="Tags associated with the workflow.")
+    collections: list[str] = Field(
+        default_factory=list,
+        title="Collections",
+        description="Names of the curated collections this workflow belongs to.",
+    )
+    number_of_steps: int | None = Field(
+        default=None, title="Number of Steps", description="The number of steps in the workflow."
+    )
+    update_time: datetime | None = Field(
+        default=None, title="Update Time", description="The last time the workflow was updated."
+    )
+    release: str | None = Field(
+        default=None, title="Release", description="The release version of the workflow, if published with one."
+    )
+    doi: str | None = Field(default=None, title="DOI", description="The DOI of the workflow, if it has one.")
+    external_url: str | None = Field(
+        default=None,
+        title="External URL",
+        description="Link to the workflow on the external catalog that published it.",
+    )
+    owner: str | None = Field(
+        default=None,
+        title="Owner",
+        description="Username of the account owning the workflow on this Galaxy, if it is hosted here.",
+    )
+    stored_workflow_id: str | None = Field(
+        default=None,
+        title="Stored Workflow ID",
+        description=(
+            "Encoded id of the stored workflow on this Galaxy. Only set when the workflow is hosted here, in which "
+            "case it can be run directly."
+        ),
+    )
+    trs_url: str | None = Field(
+        default=None,
+        title="TRS URL",
+        description="Full TRS URL of the workflow version to import, pinned to its release when it has one.",
+    )
+    trs_fallback_url: str | None = Field(
+        default=None,
+        title="TRS Fallback URL",
+        description=(
+            "TRS URL of the workflow's development branch, to import when the TRS server has not yet published "
+            "the release that trs_url pins."
+        ),
+    )
+
+
+class CuratedWorkflowsIndexResponse(Model):
+    source: CuratedWorkflowSourceEnum = Field(
+        ...,
+        title="Source",
+        description=(
+            "Where the listing came from: the public IWC catalog, this Galaxy's own curated owners, or a state "
+            "indicating the catalog is being prepared or could not be reached."
+        ),
+    )
+    total_matches: int = Field(
+        ...,
+        title="Total Matches",
+        description="Total number of curated workflows matching the query, ignoring limit and offset.",
+    )
+    workflows: list[CuratedWorkflow] = Field(
+        default_factory=list, title="Workflows", description="The requested page of curated workflows."
+    )
+    message: str | None = Field(
+        default=None,
+        title="Message",
+        description="Human readable explanation shown when no workflows could be listed.",
+    )
+
+
 class JobIndexSortByEnum(str, Enum):
     create_time = "create_time"
     update_time = "update_time"

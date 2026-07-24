@@ -2,6 +2,7 @@
 
 from sqlalchemy import (
     and_,
+    func,
     or_,
     select,
 )
@@ -67,21 +68,35 @@ def append_user_filter(query, model_class, term: FilteredTerm):
     return query
 
 
-def tag_exists_filter(association_model_class, fk_column, parent_id_column, term_text, quoted: bool = False):
+def tag_exists_filter(
+    association_model_class,
+    fk_column,
+    parent_id_column,
+    term_text,
+    quoted: bool = False,
+    tag_user_id_column=None,
+    owner_id_column=None,
+):
     """Correlated EXISTS subquery that matches any tag on the parent row against term_text.
 
     Prefer this over adding a per-term outer join on the tag-association table: each
     extra outer join multiplies rows (forcing an expensive DISTINCT) and in free-text
     search N whitespace-separated terms produce N such joins.
+
+    Pass ``tag_user_id_column`` and ``owner_id_column`` together to consider only
+    the owner's own tags. Anyone who can see a shared or published item may tag
+    it, so unrestricted matching lets one user's private tag decide whether
+    another user's item appears in someone else's search results.
     """
-    return (
+    stmt = (
         select(1)
         .select_from(association_model_class)
         .where(fk_column == parent_id_column)
         .where(tag_filter(association_model_class, term_text, quoted))
-        .correlate_except(association_model_class)
-        .exists()
     )
+    if tag_user_id_column is not None and owner_id_column is not None:
+        stmt = stmt.where(tag_user_id_column == owner_id_column)
+    return stmt.correlate_except(association_model_class).exists()
 
 
 def user_exists_filter(owner_id_column, term_text: str):
@@ -91,6 +106,23 @@ def user_exists_filter(owner_id_column, term_text: str):
         .select_from(model.User)
         .where(model.User.id == owner_id_column)
         .where(model.User.username.ilike(f"%{term_text}%"))
+        .correlate_except(model.User)
+        .exists()
+    )
+
+
+def user_in_filter(owner_id_column, usernames: list[str]):
+    """Correlated EXISTS subquery matching the owning user against an exact, case-insensitive username allowlist.
+
+    Distinct from `user_exists_filter`, which is a substring match appropriate for free-text
+    `user:` search but not for a config-driven allowlist -- a value of `iwc` must not also
+    match `iwc-mirror`.
+    """
+    return (
+        select(1)
+        .select_from(model.User)
+        .where(model.User.id == owner_id_column)
+        .where(func.lower(model.User.username).in_([username.lower() for username in usernames]))
         .correlate_except(model.User)
         .exists()
     )
