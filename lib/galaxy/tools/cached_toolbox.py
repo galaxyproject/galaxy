@@ -1664,16 +1664,19 @@ class CachedToolBox(ToolBox):
         with self.app._toolbox_lock:
             if self._tools_by_id.get(tool_id) is None:
                 self.get_tool(tool_id=tool_id)
-            result = self._remove_tool_in_memory(tool_id, remove_from_panel=remove_from_panel)
             if self._store is not None:
-                # The pops above are in-memory. The persisted singleton index
-                # still carries the entry, and any later cache invalidation
-                # (every populate broadcasts one) would reload it —
-                # resurrecting an uninstalled tool.
+                # Persist first. For the common single-store configuration,
+                # ``self._tool_index`` and the SQLAlchemy store's cached index
+                # are the same object. Mutating the toolbox index first would
+                # make ``remove_index_entry`` see an already-absent entry and
+                # skip its database write; the next cache invalidation would
+                # then reload and resurrect the uninstalled tool.
                 try:
                     self._store.remove_index_entry(tool_id)
                 except Exception as e:
                     log.warning("Persisting index removal of %s raised: %s", tool_id, e)
+            result = self._remove_tool_in_memory(tool_id, remove_from_panel=remove_from_panel)
+            if self._store is not None:
                 # Installs converge across processes because every populate
                 # broadcasts an invalidation; removals must broadcast too or
                 # peer web workers keep serving the uninstalled tool until an

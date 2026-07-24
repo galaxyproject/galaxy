@@ -31,6 +31,7 @@ from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 
 
 def _entry(**overrides):
@@ -634,6 +635,29 @@ def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):
     box._store.remove_index_entry.assert_called_once_with("doomed")
     assert calls == [("reload_tool_source_cache", {"noop_self": True})]
     assert "doomed" not in box._tools_by_id
+
+
+def test_remove_tool_by_id_persists_shared_cached_index_before_mutating(monkeypatch, tmp_path):
+    """A cache invalidation must not resurrect a locally removed tool."""
+    store = SqlAlchemyToolSourceStore(f"sqlite:///{tmp_path / 'tool-source.sqlite'}")
+    index = ToolIndex()
+    entry = _entry(id="doomed")
+    index.add_entry(entry)
+    store.store_index(index)
+
+    box = _registry_box()
+    box._store = store
+    box._tool_index = store.load_index()
+    assert box._tool_index is index
+    box._register_cached_entry(entry)
+    monkeypatch.setattr(queue_worker_mod, "send_control_task", lambda app, task, **kwargs: None)
+
+    box.remove_tool_by_id("doomed")
+    store.invalidate_index_cache()
+
+    reloaded = store.load_index()
+    assert reloaded is not None
+    assert "doomed" not in reloaded.entries
 
 
 def test_remove_tool_by_id_also_cleans_swapped_in_toolbox(monkeypatch):
