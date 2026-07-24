@@ -50,6 +50,10 @@ The history-to-workflow extraction interface has been rebuilt in Vue with a mode
 Extracting a workflow from your history is now clearer and more intuitive.
 [`#21935 <https://github.com/galaxyproject/galaxy/pull/21935>`__]
 
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/NFUxEZeBnlw" title="Galaxy 26.1 - Modern Workflow Extraction Interface" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 Favorite and Recent Tools Panel
 -------------------------------
 
@@ -75,6 +79,10 @@ No more switching back to the workflow editor to inspect a running workflow.
 
 Monitoring a running workflow is now more transparent and informative.
 [`#22144 <https://github.com/galaxyproject/galaxy/pull/22144>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/k8O4JAbmB50" title="Galaxy 26.1 - View Workflow Step Configuration During Execution" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ----
 
