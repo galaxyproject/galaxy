@@ -21,7 +21,10 @@ from typing import (
     ClassVar,
 )
 from unittest.mock import patch
+from urllib.parse import urljoin
 from uuid import uuid4
+
+import requests
 
 from galaxy.exceptions import error_codes
 from galaxy.model import StoredWorkflow
@@ -414,3 +417,20 @@ class TestCuratedWorkflowsUnavailable(_CuratedWorkflowsTestCase):
         second = self._curated_index()
         assert second["source"] == "unavailable"
         assert "iwc.galaxyproject.org" in second["message"]
+
+
+class TestCuratedWorkflowsClientRoute(_CuratedWorkflowsTestCase):
+    """The tab's URL has to be served by the SPA, not just exist in the Vue router."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["curated_workflows_source"] = "iwc"
+
+    def test_curated_route_is_served_like_its_sibling_tabs(self):
+        # Bookmarking or hard-refreshing the tab hits the server for this path.
+        # Without an add_client_route registration it 404s while every other
+        # workflow tab loads, which no API-level test would notice.
+        for path in ("workflows/list_published", "workflows/list_curated"):
+            response = requests.get(urljoin(self.url, path))
+            api_asserts.assert_status_code_is(response, 200)

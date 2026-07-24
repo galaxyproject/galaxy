@@ -308,6 +308,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/jobs/{job_id}/view")
     webapp.add_client_route("/rules")
     webapp.add_client_route("/workflows/list")
+    webapp.add_client_route("/workflows/list_curated")
     webapp.add_client_route("/workflows/list_published")
     webapp.add_client_route("/workflows/list_shared_with_me")
     webapp.add_client_route("/workflows/edit")
