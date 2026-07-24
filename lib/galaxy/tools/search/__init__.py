@@ -28,6 +28,7 @@ Filters - various filters are available for processing content as the index is
 import logging
 import os
 import shutil
+import threading
 from typing import (
     Protocol,
     runtime_checkable,
@@ -136,17 +137,28 @@ class CachedToolboxSearch(ToolBoxSearch):
         self.cached_panel_searches: dict[str, ToolWhooshIndex] = {}
         self._panel_view_ids: set[str] = set()
         self.index_count = -1
+        # ``reindex_tool_search`` reaches ``build_index`` concurrently from
+        # boot, the ``rebuild_toolbox_search_index`` control task, and
+        # ``remove_tool_by_id`` — all writing the same on-disk Whoosh dirs.
+        # Two builds racing there corrupt each other: one thread's
+        # ``ToolWhooshIndex._open`` can ``create_in``/``rmtree`` a dir another
+        # thread is mid-write on, surfacing as ``whoosh.index.LockError`` or a
+        # fatal ``FileNotFoundError`` on the segment TOC (observed killing
+        # TestCachedDataManagerIntegration setup in CI). Serialize the whole
+        # build so only one rebuild touches the index dirs at a time.
+        self._build_lock = threading.RLock()
         if toolbox is not None:
             self._sync_panel_searches(toolbox)
 
     def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
         cached_toolbox = self._require_search_toolbox(toolbox)
-        self._sync_panel_searches(cached_toolbox)
-        tool_index = cached_toolbox.tool_index
-        if tool_index is not None:
-            for panel_view_id, searcher in self.cached_panel_searches.items():
-                searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
-        self.index_count += 1
+        with self._build_lock:
+            self._sync_panel_searches(cached_toolbox)
+            tool_index = cached_toolbox.tool_index
+            if tool_index is not None:
+                for panel_view_id, searcher in self.cached_panel_searches.items():
+                    searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
+            self.index_count += 1
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
         if panel_view not in self._panel_view_ids:
