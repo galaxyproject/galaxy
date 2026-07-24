@@ -741,7 +741,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             # NOTE: no files
             if isinstance(val, model.MetadataFile):
                 # only when explicitly set: fetching filepaths can be expensive
-                if not self.app.config.expose_dataset_path:
+                if not self.app.config.expose_dataset_path or dataset_assoc.purged:
                     continue
                 val = val.get_file_name()
             # TODO:? possibly split this off?
