@@ -144,7 +144,7 @@ class DummyDataManager(DataManagerInterface):
     def process_result(self, out_data):
         return None
 
-    def write_bundle(self, out) -> dict[str, OutputDataset]:
+    def write_bundle(self, out, source_extra_files_paths=None) -> dict[str, OutputDataset]:
         return {}
 
 
