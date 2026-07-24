@@ -37,7 +37,7 @@ def _clear_cache():
 
 
 def test_fetch_manifest_caches_response():
-    with patch("galaxy.agents.iwc.requests.get") as mock_get:
+    with patch("galaxy.workflow.iwc_manifest.requests.get") as mock_get:
         mock_get.return_value.json.return_value = SAMPLE_MANIFEST
         mock_get.return_value.raise_for_status.return_value = None
 
@@ -49,7 +49,7 @@ def test_fetch_manifest_caches_response():
 
 
 def test_refresh_manifest_replaces_cached_value():
-    with patch("galaxy.agents.iwc.requests.get") as mock_get:
+    with patch("galaxy.workflow.iwc_manifest.requests.get") as mock_get:
         mock_get.return_value.json.return_value = SAMPLE_MANIFEST
         mock_get.return_value.raise_for_status.return_value = None
 
@@ -66,7 +66,7 @@ def test_refresh_manifest_replaces_cached_value():
 
 
 def test_refresh_manifest_failure_leaves_prior_cache():
-    with patch("galaxy.agents.iwc.requests.get") as mock_get:
+    with patch("galaxy.workflow.iwc_manifest.requests.get") as mock_get:
         mock_get.return_value.json.return_value = SAMPLE_MANIFEST
         mock_get.return_value.raise_for_status.return_value = None
         iwc.fetch_manifest()  # prime the cache
@@ -81,7 +81,7 @@ def test_refresh_manifest_failure_leaves_prior_cache():
 
 
 def test_refresh_manifest_rejects_non_list_payload():
-    with patch("galaxy.agents.iwc.requests.get") as mock_get:
+    with patch("galaxy.workflow.iwc_manifest.requests.get") as mock_get:
         mock_get.return_value.json.return_value = {"not": "a list"}
         mock_get.return_value.raise_for_status.return_value = None
 

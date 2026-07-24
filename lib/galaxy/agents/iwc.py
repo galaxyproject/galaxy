@@ -14,11 +14,10 @@ from typing import (
 
 from cachetools import TTLCache
 
-from galaxy.util import requests
+from galaxy.workflow.iwc_manifest import download_manifest
 
 log = logging.getLogger(__name__)
 
-IWC_MANIFEST_URL = "https://iwc.galaxyproject.org/workflow_manifest.json"
 CACHE_TTL_SECONDS = 60 * 60  # one hour
 _CACHE_KEY = "manifest"
 
@@ -32,16 +31,6 @@ def clear_manifest_cache() -> None:
         _manifest_cache.clear()
 
 
-def _download_manifest(timeout: float) -> list[dict[str, Any]]:
-    """Fetch and validate the IWC manifest over the network, bypassing the cache."""
-    response = requests.get(IWC_MANIFEST_URL, timeout=timeout)
-    response.raise_for_status()
-    manifest = response.json()
-    if not isinstance(manifest, list):
-        raise ValueError(f"IWC manifest at {IWC_MANIFEST_URL} did not return a JSON array")
-    return manifest
-
-
 def fetch_manifest(timeout: float = 30.0) -> list[dict[str, Any]]:
     """Fetch the IWC manifest, returning a cached copy when fresh.
 
@@ -53,7 +42,7 @@ def fetch_manifest(timeout: float = 30.0) -> list[dict[str, Any]]:
         if cached is not None:
             return cached
 
-        manifest = _download_manifest(timeout)
+        manifest = download_manifest(timeout)
         _manifest_cache[_CACHE_KEY] = manifest
         return manifest
 
@@ -71,7 +60,7 @@ def refresh_manifest(timeout: float = 30.0) -> list[dict[str, Any]]:
     continue without the data); this one is called from a periodic task
     that has to tolerate transient failure.
     """
-    manifest = _download_manifest(timeout)
+    manifest = download_manifest(timeout)
     with _manifest_cache_lock:
         _manifest_cache[_CACHE_KEY] = manifest
     return manifest
