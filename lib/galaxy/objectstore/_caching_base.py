@@ -150,8 +150,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
 
         in_cache = self._in_cache(rel_path, object_id)
         exists_remotely = self._exists_remotely(rel_path)
-        dir_only = kwargs.get("dir_only", False)
-        base_dir = kwargs.get("base_dir", None)
         if dir_only:
             if in_cache or exists_remotely:
                 return True
