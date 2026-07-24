@@ -22,6 +22,16 @@ def make_shards(paths, weights=None, sizes=None):
     return [CacheShard(path=p, weight=w, size=s) for p, w, s in zip(paths, weights, sizes)]
 
 
+def _is_in_shard(path: str, shard_path: str) -> bool:
+    """True if *path* is *shard_path* itself or a file/directory inside it."""
+    return path == shard_path or path.startswith(shard_path + os.sep)
+
+
+def _shard_root(path: str, shard_paths: list[str]) -> str:
+    """Return the shard root that *path* belongs to."""
+    return next(sp for sp in shard_paths if _is_in_shard(path, sp))
+
+
 def test_multi_shard_manager():
     shards = make_shards(["/fast", "/slow"], weights=[3, 1], sizes=[500, 200])
     mgr = CacheShardManager(shards)
@@ -43,11 +53,12 @@ def test_same_shard_for_same_object_id():
     meta_path = mgr.get_cache_path(obj_id, "000/metadata_12345.dat")
     shard_paths = mgr.paths
 
-    def shard_root(path):
-        return next(sp for sp in shard_paths if path == sp or path.startswith(sp + os.sep))
-
     # All three must resolve to the same shard root
-    assert shard_root(main_path) == shard_root(extra_path) == shard_root(meta_path)
+    assert (
+        _shard_root(main_path, shard_paths)
+        == _shard_root(extra_path, shard_paths)
+        == _shard_root(meta_path, shard_paths)
+    )
 
 
 def test_weight_distribution():
@@ -57,7 +68,7 @@ def test_weight_distribution():
     n = 10000
     for i in range(n):
         path = mgr.get_cache_path(i, "file.dat")
-        if path.startswith("/a"):
+        if _is_in_shard(path, "/a"):
             counts["a"] += 1
         else:
             counts["b"] += 1
@@ -249,7 +260,7 @@ def test_backend_get_filename_no_sync(two_dir_cache):
     backend, cache_a, cache_b = two_dir_cache
     obj_id = 42
     cache_path = backend._get_cache_path("000/dataset_42.dat", object_id=obj_id)
-    assert cache_path.startswith(cache_a) or cache_path.startswith(cache_b)
+    assert _is_in_shard(cache_path, cache_a) or _is_in_shard(cache_path, cache_b)
 
 
 def test_backend_create_and_delete(two_dir_cache):
