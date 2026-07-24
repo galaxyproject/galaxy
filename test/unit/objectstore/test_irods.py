@@ -3,7 +3,6 @@ import ssl
 import time
 
 import pytest
-from irods.exception import NetworkException
 
 from galaxy.objectstore.irods import (
     _IRODS_RETRY_ATTEMPTS,
@@ -107,16 +106,10 @@ def _no_sleep(monkeypatch):
     monkeypatch.setattr(time, "sleep", lambda *_: None)
 
 
-def test_retry_recovers_from_network_exception():
-    op, calls = _make_flaky(NetworkException("reset"), fail_times=_IRODS_RETRY_ATTEMPTS - 1)
+def test_retry_recovers_from_transient_error():
+    op, calls = _make_flaky(ssl.SSLEOFError("handshake"), fail_times=_IRODS_RETRY_ATTEMPTS - 1)
     assert op(object()) == "ok"
     assert calls["n"] == _IRODS_RETRY_ATTEMPTS
-
-
-def test_retry_recovers_from_ssl_error():
-    op, calls = _make_flaky(ssl.SSLEOFError("handshake"), fail_times=1)
-    assert op(object()) == "ok"
-    assert calls["n"] == 2
 
 
 def test_retry_gives_up_after_max_attempts():
@@ -127,6 +120,13 @@ def test_retry_gives_up_after_max_attempts():
 
 
 def test_no_retry_on_success():
-    op, calls = _make_flaky(NetworkException("reset"), fail_times=0)
+    op, calls = _make_flaky(ssl.SSLEOFError("handshake"), fail_times=0)
     assert op(object()) == "ok"
+    assert calls["n"] == 1
+
+
+def test_no_retry_on_unrelated_error():
+    op, calls = _make_flaky(ValueError("boom"), fail_times=1)
+    with pytest.raises(ValueError):
+        op(object())
     assert calls["n"] == 1
