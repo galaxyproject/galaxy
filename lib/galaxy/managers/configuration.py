@@ -169,6 +169,7 @@ class ConfigSerializer(base.ModelSerializer):
             "markdown_to_pdf_available": lambda item, key, **context: weasyprint_available(),
             "matomo_server": _use_config,
             "matomo_site_id": _use_config,
+            "curated_workflows_source": _use_config,
             "enable_unique_workflow_defaults": _use_config,
             "enable_beta_markdown_export": _use_config,
             "enable_beacon_integration": _use_config,

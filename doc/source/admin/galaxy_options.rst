@@ -4671,6 +4671,65 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``curated_workflows_source``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Where the "Curated workflows" tab on the workflows list page (and
+    the /api/workflows/curated endpoint behind it) gets its workflows.
+    ``iwc`` (the default) lists the public catalog published by the
+    Intergalactic Workflow Commission (https://iwc.galaxyproject.org),
+    which Galaxy refreshes hourly into ``curated_workflows_path``.
+    That refresh is the only outbound request this feature makes: one
+    HTTPS GET of a public static JSON file, carrying no user data.
+    ``local`` lists the published workflows of the accounts named in
+    ``curated_workflow_owners``, and makes no outbound requests.
+    Galaxy refuses to start if ``local`` is set without any owners.
+    ``off`` hides the tab and disables the endpoint. Use it on
+    instances with no outbound network access that have no local
+    curation, or where the tab is not wanted.
+    Any other value is a startup error.
+:Default: ``iwc``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``curated_workflow_owners``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma-separated list of Galaxy usernames (not email addresses)
+    whose published workflows populate the "Curated workflows" tab
+    when ``curated_workflows_source`` is ``local``. Accepts a single
+    name, a comma-separated string, or a YAML list. Usernames are
+    matched exactly and case-insensitively. Ignored, with a warning at
+    startup, under any other source.
+    Only list accounts you control on this instance: any user who
+    registers a listed username and publishes a workflow will appear
+    on the tab. The tab shows exactly the published workflows owned by
+    those accounts -- including one entry per published release, if
+    the accounts publish that way.
+:Default: ``""``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``curated_workflows_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to the cached projection of the IWC workflow catalog. Written
+    by the ``refresh_iwc_manifest`` celery task on the
+    ``iwc_manifest_refresh_interval`` schedule, and lazily on first
+    use if the file is missing. Web workers only ever read this file
+    -- they never fetch the catalog on a request thread.
+    The value of this option will be resolved with respect to
+    <data_dir>.
+:Default: ``curated/iwc_workflows.json``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_unique_workflow_defaults``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5969,13 +6028,17 @@
 :Description:
     Time (in seconds) between celery-beat triggered refreshes of the
     in-process IWC workflow manifest cache used by the agent-ops
-    layer. Default matches the cache's in-process TTL so the cache
-    stays continuously warm rather than expiring between user-driven
-    hits. Failures are logged and the prior cached copy is retained.
-    Only registered when ``inference_services`` is configured (i.e.
-    GalaxyAI is in use). Set to 0 to disable automatic refresh --
-    agent-ops callers will then fall back to lazy on-demand fetching
-    with the same hour TTL. Requires celery.
+    layer. The same task also writes the slim catalog projection read
+    by the "Curated workflows" tab to ``curated_workflows_path``.
+    Default matches the cache's in-process TTL so the cache stays
+    continuously warm rather than expiring between user-driven hits.
+    Failures are logged and the prior cached copy is retained. Only
+    registered when ``inference_services`` is configured (i.e.
+    GalaxyAI is in use) or ``curated_workflows_source`` is ``iwc``.
+    Set to 0 to disable automatic refresh -- agent-ops callers will
+    then fall back to lazy on-demand fetching with the same hour TTL,
+    and the curated workflows tab will refresh its projection lazily
+    on first use. Requires celery.
 :Default: ``3600``
 :Type: int
 

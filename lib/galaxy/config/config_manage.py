@@ -558,6 +558,7 @@ _ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
         "object_store_store_by": "str",
         # Listified by _process_config or CommonConfigurationMixin
         "allowed_origin_hostnames": "list[str]",
+        "curated_workflow_owners": "list[str]",
         "mulled_channels": "list[str]",
         "tool_filters": "list[str]",
         "tool_label_filters": "list[str]",
