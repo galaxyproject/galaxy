@@ -199,7 +199,7 @@ class StubCachingBackend(CachingConcreteObjectStore):
     def _exists_remotely(self, rel_path):
         return False
 
-    def _download(self, rel_path, object_id=None):
+    def _download(self, rel_path, object_id):
         return False
 
     def _push_string_to_path(self, rel_path, from_string):

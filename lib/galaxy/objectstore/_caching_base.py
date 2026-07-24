@@ -17,7 +17,6 @@ from galaxy.util import (
 from galaxy.util.path import safe_relpath
 from ._util import fix_permissions
 from .caching import (
-    CacheShard,
     CacheShardManager,
     CacheTarget,
     InProcessCacheMonitor,
@@ -42,7 +41,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 os.makedirs(path, exist_ok=True)
                 if not os.path.exists(path):
                     raise Exception(f"Caching object store created with path '{path}' that does not exist")
-
             if not os.access(path, os.R_OK):
                 raise Exception(f"Caching object store created with path '{path}' that does not readable")
             if not os.access(path, os.W_OK):
@@ -201,12 +199,10 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 self._push_to_storage(rel_path, from_string="", object_id=object_id)
         return self
 
-    def _caching_allowed(
-        self, rel_path: str, remote_size: int | None = None, object_id: ObjectId | None = None
-    ) -> bool:
+    def _caching_allowed(self, rel_path: str, object_id: ObjectId, remote_size: int | None = None) -> bool:
         if remote_size is None:
             remote_size = self._get_remote_size(rel_path)
-        cache_target = self._cache_shards.get_cache_target(object_id) if object_id is not None else self.cache_target
+        cache_target = self._cache_shards.get_cache_target(object_id)
         if not cache_target.fits_in_cache(remote_size):
             log.critical(
                 "File %s is larger (%s bytes) than the configured cache allows (%s). Cannot download.",
@@ -392,10 +388,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
     @property
     def staging_path(self) -> str:
         return self._cache_shards.paths[0]
-
-    @staging_path.setter
-    def staging_path(self, value: str) -> None:
-        self._cache_shards = CacheShardManager([CacheShard(path=value, weight=1, size=self.cache_size)])
 
     @property
     def cache_size(self) -> float:

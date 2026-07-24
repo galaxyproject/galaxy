@@ -250,7 +250,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
             key = self.bucket.objects.get(rel_path)
             remote_size = key.size
-            if not self._caching_allowed(rel_path, remote_size, object_id=object_id):
+            if not self._caching_allowed(rel_path, object_id, remote_size=remote_size):
                 return False
             log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
             with self._atomic_download(local_destination) as tmp:

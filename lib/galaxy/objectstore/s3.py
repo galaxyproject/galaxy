@@ -312,7 +312,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
                 log.critical(message)
                 raise Exception(message)
             remote_size = key.size
-            if not self._caching_allowed(rel_path, remote_size, object_id=object_id):
+            if not self._caching_allowed(rel_path, object_id, remote_size=remote_size):
                 return False
             if self.use_axel:
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)
