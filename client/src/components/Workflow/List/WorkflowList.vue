@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BNav, BNavItem, BPagination } from "bootstrap-vue";
+import { BAlert, BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -27,10 +27,10 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
-import LoginRequired from "@/components/Common/LoginRequired.vue";
 import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
+import WorkflowListTabs from "@/components/Workflow/List/WorkflowListTabs.vue";
 
 interface Props {
     activeList?: "my" | "shared_with_me" | "published";
@@ -396,25 +396,7 @@ onMounted(() => {
                 <WorkflowListActions />
             </BreadcrumbHeading>
 
-            <BNav pills justified class="mb-2">
-                <BNavItem id="my" :active="activeList === 'my'" :disabled="userStore.isAnonymous" to="/workflows/list">
-                    <span v-localize>My workflows</span>
-                    <LoginRequired v-if="userStore.isAnonymous" target="my" title="Manage your workflows" />
-                </BNavItem>
-
-                <BNavItem
-                    id="shared-with-me"
-                    :active="sharedWithMe"
-                    :disabled="userStore.isAnonymous"
-                    to="/workflows/list_shared_with_me">
-                    <span v-localize>Workflows shared with me</span>
-                    <LoginRequired v-if="userStore.isAnonymous" target="shared-with-me" title="Manage your workflows" />
-                </BNavItem>
-
-                <BNavItem id="published" :active="published" to="/workflows/list_published">
-                    <span v-localize>Public workflows</span>
-                </BNavItem>
-            </BNav>
+            <WorkflowListTabs :active="activeList" />
 
             <FilterMenu
                 id="workflow-list-filter"

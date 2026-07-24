@@ -63,6 +63,10 @@ describe("WorkflowList", () => {
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
                 return response(200).json({});
             }),
+            // The tab bar reads useConfig(), and the configuration store fetches in its setup body
+            http.get("/api/configuration", ({ response }) => {
+                return response(200).json({});
+            }),
         );
     });
 
