@@ -1,13 +1,13 @@
 import os
 import ssl
+import time
 
 import pytest
+from irods.exception import NetworkException
 
-from galaxy.objectstore import irods as irods_module
 from galaxy.objectstore.irods import (
     _IRODS_RETRY_ATTEMPTS,
     _retry_on_connection_error,
-    NetworkException,
     parse_config_xml,
 )
 from galaxy.util import parse_xml
@@ -104,7 +104,7 @@ def _make_flaky(exc, fail_times):
 
 @pytest.fixture(autouse=True)
 def _no_sleep(monkeypatch):
-    monkeypatch.setattr(irods_module.time, "sleep", lambda *_: None)
+    monkeypatch.setattr(time, "sleep", lambda *_: None)
 
 
 def test_retry_recovers_from_network_exception():
