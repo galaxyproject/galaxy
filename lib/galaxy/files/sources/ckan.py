@@ -7,7 +7,10 @@ from urllib.parse import urlparse
 import requests
 from fsspec import AbstractFileSystem
 
-from galaxy.files.models import FilesSourceRuntimeContext
+from galaxy.files.models import (
+    AnyRemoteEntry,
+    FilesSourceRuntimeContext,
+)
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
     FsspecBaseFileSourceConfiguration,
@@ -253,7 +256,29 @@ class CKANFilesSource(FsspecFilesSource[CKANFileSourceTemplateConfiguration, CKA
         dataset_id, resource_name = fs._split_path(target_path)
         if not resource_name:
             raise ValueError("Select a dataset as the upload target, not the root.")
+        dataset = fs._get_dataset(dataset_id)
+        if not dataset.get("private", False):
+            raise ValueError("Cannot export to a public CKAN dataset. Select a private dataset instead.")
         fs._post_resource(dataset_id, resource_name, native_path)
+
+    # for the export destination picker only offer datasets the user can write to
+    def _list(
+        self,
+        context: FilesSourceRuntimeContext[CKANFileSourceConfiguration],
+        path="/",
+        recursive=False,
+        write_intent: bool = False,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
+    ) -> tuple[list[AnyRemoteEntry], int]:
+        if write_intent and path in ("", "/"):
+            fs = self._open_fs(context, {})
+            entries = [self._info_to_entry(fs._dataset_entry(name), context.config) for name in fs._list_private_datasets()]
+            total_count = len(entries)
+            return self._apply_pagination(entries, limit, offset), total_count
+        return super()._list(context, path, recursive, write_intent, limit, offset, query, sort_by)
 
 
 __all__ = ("CKANFilesSource",)
