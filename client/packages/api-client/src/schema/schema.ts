@@ -6687,6 +6687,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflows/curated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists curated workflows for discovery.
+         * @description Lists workflows curated for this Galaxy, or the public IWC catalog.
+         */
+        get: operations["curated_api_workflows_curated_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflows/extract": {
         parameters: {
             query?: never;
@@ -10303,6 +10323,109 @@ export interface components {
             dialect: components["schemas"]["CsvDialect"];
             /** Message */
             message: string;
+        };
+        /** CuratedWorkflow */
+        CuratedWorkflow: {
+            /**
+             * Collections
+             * @description Names of the curated collections this workflow belongs to.
+             */
+            collections?: string[];
+            /**
+             * Description
+             * @description Short annotation describing the workflow.
+             * @default
+             */
+            description: string;
+            /**
+             * DOI
+             * @description The DOI of the workflow, if it has one.
+             */
+            doi?: string | null;
+            /**
+             * External URL
+             * @description Link to the workflow on the external catalog that published it.
+             */
+            external_url?: string | null;
+            /**
+             * ID
+             * @description Stable identifier for this curated workflow. The encoded stored workflow id when the catalog is served from this Galaxy, otherwise the identifier of the workflow in the public catalog.
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the workflow.
+             */
+            name: string;
+            /**
+             * Number of Steps
+             * @description The number of steps in the workflow.
+             */
+            number_of_steps?: number | null;
+            /**
+             * Owner
+             * @description Username of the account owning the workflow on this Galaxy, if it is hosted here.
+             */
+            owner?: string | null;
+            /**
+             * Release
+             * @description The release version of the workflow, if published with one.
+             */
+            release?: string | null;
+            /**
+             * Stored Workflow ID
+             * @description Encoded id of the stored workflow on this Galaxy. Only set when the workflow is hosted here, in which case it can be run directly.
+             */
+            stored_workflow_id?: string | null;
+            /**
+             * Tags
+             * @description Tags associated with the workflow.
+             */
+            tags?: string[];
+            /**
+             * TRS Fallback URL
+             * @description TRS URL of the workflow's development branch, to import when the TRS server has not yet published the release that trs_url pins.
+             */
+            trs_fallback_url?: string | null;
+            /**
+             * TRS URL
+             * @description Full TRS URL of the workflow version to import, pinned to its release when it has one.
+             */
+            trs_url?: string | null;
+            /**
+             * Update Time
+             * @description The last time the workflow was updated.
+             */
+            update_time?: string | null;
+        };
+        /**
+         * CuratedWorkflowSourceEnum
+         * @description Where the curated workflow listing was drawn from.
+         * @enum {string}
+         */
+        CuratedWorkflowSourceEnum: "iwc" | "local" | "preparing" | "unavailable";
+        /** CuratedWorkflowsIndexResponse */
+        CuratedWorkflowsIndexResponse: {
+            /**
+             * Message
+             * @description Human readable explanation shown when no workflows could be listed.
+             */
+            message?: string | null;
+            /**
+             * Source
+             * @description Where the listing came from: the public IWC catalog, this Galaxy's own curated owners, or a state indicating the catalog is being prepared or could not be reached.
+             */
+            source: components["schemas"]["CuratedWorkflowSourceEnum"];
+            /**
+             * Total Matches
+             * @description Total number of curated workflows matching the query, ignoring limit and offset.
+             */
+            total_matches: number;
+            /**
+             * Workflows
+             * @description The requested page of curated workflows.
+             */
+            workflows?: components["schemas"]["CuratedWorkflow"][];
         };
         /**
          * CustomArchivedHistoryView
@@ -53663,6 +53786,86 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     }[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    curated_api_workflows_curated_get: {
+        parameters: {
+            query?: {
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                 *
+                 *     ## Query Structure
+                 *
+                 *     GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 *     `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 *     *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 *     being indexed (i.e. a column in the database).
+                 *
+                 *     If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 *     generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 *     this means the database operation `ILIKE` will typically be used).
+                 *
+                 *     Once the tagged filters are extracted from the search query, the remaining text is just
+                 *     used to search various documented attributes of the object.
+                 *
+                 *     ## GitHub-style Tags Available
+                 *
+                 *     `name`
+                 *     : The curated workflow's name. (The tag `n` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 *     `tag`
+                 *     : A tag on the curated workflow. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 *     ## Free Text
+                 *
+                 *     Free text search terms will be searched against the following attributes of the
+                 *     Curated Workflows: `name`, `description`, `tag`.
+                 */
+                search?: string | null;
+                /** @description Sort curated workflows by this attribute. Defaults to most recently updated. */
+                sort_by?: ("create_time" | "update_time" | "name") | null;
+                /** @description Sort in descending order? */
+                sort_desc?: boolean | null;
+                /** @description Maximum number of curated workflows to return. */
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Curated workflows plus the source they were drawn from. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratedWorkflowsIndexResponse"];
                 };
             };
             /** @description Request Error */

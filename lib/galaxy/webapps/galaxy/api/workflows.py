@@ -71,6 +71,8 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     ClaimLandingPayload,
     CreateWorkflowLandingRequestPayload,
+    CuratedWorkflowsIndexResponse,
+    CuratedWorkflowsQueryPayload,
     InvocationIndexPayload,
     InvocationSortByEnum,
     InvocationsStateCounts,
@@ -905,6 +907,39 @@ SkipStepCountsQueryParam: bool = Query(
     description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
+# The curated endpoint understands only name and tag; the stored-workflow tags
+# above would advertise filters it silently drops into free text.
+curated_query_tags = [
+    IndexQueryTag("name", "The curated workflow's name.", "n"),
+    IndexQueryTag("tag", "A tag on the curated workflow.", "t"),
+]
+
+CuratedSearchQueryParam: str | None = search_query_param(
+    model_name="Curated Workflow",
+    tags=curated_query_tags,
+    free_text_fields=["name", "description", "tag"],
+)
+
+CuratedSortByQueryParam: WorkflowSortByEnum | None = Query(
+    default=None,
+    title="Sort By",
+    description="Sort curated workflows by this attribute. Defaults to most recently updated.",
+)
+
+CuratedLimitQueryParam: int = Query(
+    default=24,
+    ge=1,
+    le=100,
+    title="Limit",
+    description="Maximum number of curated workflows to return.",
+)
+
+CuratedOffsetQueryParam: int = Query(
+    default=0,
+    ge=0,
+    title="Number of curated workflows to skip in sorted query (to enable pagination).",
+)
+
 InvokeWorkflowBody = Annotated[
     InvokeWorkflowPayload,
     Body(
@@ -967,6 +1002,29 @@ class FastAPIWorkflows:
         workflows, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
         return workflows
+
+    # Declared before any /api/workflows/{workflow_id} route so FastAPI does not
+    # try to decode the literal "curated" as an encoded StoredWorkflow id.
+    @router.get(
+        "/api/workflows/curated",
+        public=True,
+        summary="Lists curated workflows for discovery.",
+        response_description="Curated workflows plus the source they were drawn from.",
+    )
+    def curated(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        search: str | None = CuratedSearchQueryParam,
+        sort_by: WorkflowSortByEnum | None = CuratedSortByQueryParam,
+        sort_desc: bool | None = SortDescQueryParam,
+        limit: int = CuratedLimitQueryParam,
+        offset: int = CuratedOffsetQueryParam,
+    ) -> CuratedWorkflowsIndexResponse:
+        """Lists workflows curated for this Galaxy, or the public IWC catalog."""
+        payload = CuratedWorkflowsQueryPayload(
+            search=search, sort_by=sort_by, sort_desc=sort_desc, limit=limit, offset=offset
+        )
+        return self.service.index_curated(trans, payload)
 
     @router.get(
         "/api/workflows/{workflow_id}/sharing",

@@ -10,6 +10,8 @@ from galaxy import (
     exceptions,
     web,
 )
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
@@ -29,9 +31,14 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowLandingRequest,
 )
+from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import WorkflowInvocationResponse
 from galaxy.schema.schema import (
+    CuratedWorkflow,
+    CuratedWorkflowsIndexResponse,
+    CuratedWorkflowSourceEnum,
+    CuratedWorkflowsQueryPayload,
     InvocationsStateCounts,
     WorkflowIndexPayload,
 )
@@ -42,10 +49,12 @@ from galaxy.schema.workflows import (
     WorkflowExtractionPayload,
     WorkflowExtractionResult,
 )
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
+from galaxy.workflow import curated
 from galaxy.workflow.extract import (
     collect_output_label_targets,
     extract_workflow,
@@ -57,6 +66,15 @@ from galaxy.workflow.run_request import build_workflow_run_configs
 from galaxy.workflow.scheduling_manager import WorkflowSchedulingManager
 
 log = logging.getLogger(__name__)
+
+PREPARING_MESSAGE = (
+    "Galaxy is fetching the curated workflow catalog. This takes a few seconds the first time -- reload to see it."
+)
+UNAVAILABLE_MESSAGE = "Galaxy could not reach the curated workflow catalog at iwc.galaxyproject.org."
+CATALOG_MESSAGES = {
+    CuratedWorkflowSourceEnum.preparing: PREPARING_MESSAGE,
+    CuratedWorkflowSourceEnum.unavailable: UNAVAILABLE_MESSAGE,
+}
 
 
 def _to_extraction_result(stored_workflow: StoredWorkflow) -> WorkflowExtractionResult:
@@ -104,6 +122,7 @@ class WorkflowsService(ServiceBase):
         notification_service: NotificationService,
         job_manager: JobManager,
         workflow_scheduling_manager: WorkflowSchedulingManager,
+        config: GalaxyAppConfiguration,
     ):
         self._workflows_manager = workflows_manager
         self._workflow_scheduling_manager = workflow_scheduling_manager
@@ -112,6 +131,7 @@ class WorkflowsService(ServiceBase):
         self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
         self._tool_shed_registry = tool_shed_registry
         self._job_manager = job_manager
+        self._config = config
 
     def index(
         self,
@@ -173,6 +193,70 @@ class WorkflowsService(ServiceBase):
                 workflows.append(workflows_by_toolshed[repo_tag])
             return workflows, total_matches
         return rval, total_matches
+
+    def index_curated(
+        self,
+        trans: ProvidesUserContext,
+        payload: CuratedWorkflowsQueryPayload,
+    ) -> CuratedWorkflowsIndexResponse:
+        """List the curated workflow catalog for this Galaxy.
+
+        Never performs network I/O: in IWC mode the catalog is read from a
+        projection on disk that the celery beat task (or a cooldown-guarded
+        background thread) writes.
+        """
+        config = self._config
+        mode = config.curated_workflows_source
+        if mode == "off":
+            raise ConfigDoesNotAllowException("The curated workflows catalog is not enabled on this Galaxy instance.")
+
+        if mode == "local":
+            rows, total = self._workflows_manager.curated_index_query(trans, payload, config.curated_workflow_owners)
+            return CuratedWorkflowsIndexResponse(
+                source=CuratedWorkflowSourceEnum.local,
+                total_matches=total,
+                workflows=[self._local_to_curated(trans, wf) for wf in rows],
+            )
+
+        page = curated.list_catalog(
+            config.curated_workflows_path,
+            search=payload.search,
+            sort_by=payload.sort_by,
+            sort_desc=payload.sort_desc,
+            offset=payload.offset,
+            limit=payload.limit,
+            max_age_seconds=config.iwc_manifest_refresh_interval,
+        )
+        source = CuratedWorkflowSourceEnum(page.source)
+        return CuratedWorkflowsIndexResponse(
+            source=source,
+            total_matches=page.total_matches,
+            workflows=[CuratedWorkflow(**entry) for entry in page.entries],
+            message=CATALOG_MESSAGES.get(source),
+        )
+
+    def _local_to_curated(self, trans: ProvidesUserContext, wf: StoredWorkflow) -> CuratedWorkflow:
+        encoded = trans.security.encode_id(wf.id)
+        source_metadata = wf.latest_workflow.source_metadata or {}
+        # Owner-scoped on both counts. ``annotations`` and ``tags`` collect
+        # associations from more than just the owner -- an admin, or a legacy row
+        # -- so on an anonymous endpoint the plain relationships risk publishing
+        # someone else's notes as if they described the workflow.
+        owner_annotation = get_item_annotation_str(trans.sa_session, wf.user, wf)
+        return CuratedWorkflow(
+            id=encoded,
+            name=wf.name,
+            # Sanitized on output too: the client renders this through v-html on
+            # an anonymous endpoint, so don't rely on write-time sanitization alone.
+            description=sanitize_html(owner_annotation or ""),
+            tags=trans.tag_handler.get_tags_list(wf.owner_tags),
+            collections=[],
+            number_of_steps=wf.latest_workflow.step_count,
+            update_time=wf.update_time,
+            owner=wf.user.username,
+            stored_workflow_id=encoded,
+            trs_url=source_metadata.get("trs_url"),
+        )
 
     def invoke_workflow(
         self,

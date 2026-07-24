@@ -822,3 +822,93 @@ def test_import_does_not_load_galaxy_agents() -> None:
     env = {**os.environ, "PYTHONPATH": lib_dir}
     result = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True)
     assert result.stdout.strip() == "False"
+
+
+def list_sample_catalog(projection_path: str, **overrides: Any) -> curated.CatalogPage:
+    kwds: dict[str, Any] = dict(search=None, sort_by=None, sort_desc=None, offset=0, limit=24, max_age_seconds=0)
+    kwds.update(overrides)
+    return curated.list_catalog(projection_path, **kwds)
+
+
+@pytest.fixture
+def recorded_refreshes(monkeypatch) -> list[str]:
+    calls: list[str] = []
+
+    def record(path: str) -> bool:
+        calls.append(path)
+        return True
+
+    monkeypatch.setattr(curated, "request_background_refresh", record)
+    return calls
+
+
+def test_list_catalog_orders_and_pages_the_projection(projection_path: str, recorded_refreshes: list[str]) -> None:
+    curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
+
+    everything = list_sample_catalog(projection_path)
+    assert everything.source == "iwc"
+    assert everything.total_matches == 3
+    assert [entry["id"] for entry in everything.entries] == [
+        "parallel-accession-download-main",
+        "velocyto-velocyto-on10x-filtered-barcodes",
+        "sparse-workflow",
+    ]
+
+    second_page = list_sample_catalog(projection_path, offset=1, limit=1)
+    assert second_page.total_matches == 3
+    assert [entry["id"] for entry in second_page.entries] == ["velocyto-velocyto-on10x-filtered-barcodes"]
+
+    by_name = list_sample_catalog(projection_path, sort_by="name", sort_desc=False)
+    assert [entry["name"] for entry in by_name.entries] == [
+        "Parallel Accession Download",
+        "Sparse Workflow",
+        "Velocyto on 10x filtered barcodes",
+    ]
+
+    # The total counts matches, not the page, so the client can paginate.
+    searched = list_sample_catalog(projection_path, search="name:velocyto", limit=0)
+    assert searched.total_matches == 1
+    assert searched.entries == []
+
+    assert recorded_refreshes == [], "a fresh projection must not trigger a refresh"
+
+
+def test_list_catalog_past_the_end_is_an_empty_page_with_the_real_total(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
+
+    page = list_sample_catalog(projection_path, offset=24)
+
+    assert page == curated.CatalogPage("iwc", 3, [])
+
+
+def test_list_catalog_serves_a_stale_projection_while_refreshing_behind_it(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
+    an_hour_ago = os.stat(projection_path).st_mtime - 3600
+    os.utime(projection_path, (an_hour_ago, an_hour_ago))
+
+    page = list_sample_catalog(projection_path, max_age_seconds=60)
+
+    assert page.source == "iwc"
+    assert page.total_matches == 3
+    assert recorded_refreshes == [projection_path]
+
+
+def test_list_catalog_without_a_projection_is_preparing_while_a_refresh_runs(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    page = list_sample_catalog(projection_path)
+
+    assert page == curated.CatalogPage("preparing", 0, [])
+    assert recorded_refreshes == [projection_path]
+
+
+def test_list_catalog_without_a_projection_is_unavailable_during_the_cooldown(
+    projection_path: str, monkeypatch
+) -> None:
+    monkeypatch.setattr(curated, "request_background_refresh", lambda path: False)
+
+    assert list_sample_catalog(projection_path) == curated.CatalogPage("unavailable", 0, [])

@@ -28,7 +28,11 @@ from time import (
     monotonic,
     time,
 )
-from typing import Any
+from typing import (
+    Any,
+    Literal,
+    NamedTuple,
+)
 
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.search import (
@@ -474,6 +478,48 @@ def sort_curated(entries: list[dict[str, Any]], sort_by: str | None, sort_desc: 
         key=lambda entry: (entry.get("update_time") or missing_last, entry.get("id") or ""),
         reverse=descending,
     )
+
+
+class CatalogPage(NamedTuple):
+    """One page of the IWC catalog, or the reason there isn't one yet."""
+
+    source: Literal["iwc", "preparing", "unavailable"]
+    total_matches: int
+    entries: list[dict[str, Any]]
+
+
+def list_catalog(
+    path: str,
+    *,
+    search: str | None,
+    sort_by: str | None,
+    sort_desc: bool | None,
+    offset: int,
+    limit: int,
+    max_age_seconds: float,
+) -> CatalogPage:
+    """Search, sort and page the projection at ``path`` for one request.
+
+    Never performs network I/O. A missing projection kicks the background
+    refresh and reports ``preparing`` (or ``unavailable`` while the cooldown
+    from a failed attempt is still running) with no entries.
+    """
+    entries = load_projection(path)
+    if entries is None:
+        started = request_background_refresh(path)
+        return CatalogPage("preparing" if started else "unavailable", 0, [])
+
+    # Serve what we have and refresh behind it when it has aged out. Without
+    # this the projection is only ever written on a cold start, so a Galaxy
+    # running no celery beat would pin whatever catalog it happened to fetch
+    # first and never notice a newer one. The refresh is single-flight,
+    # cooldown-guarded, and skips the download unless upstream actually moved.
+    if is_projection_stale(path, max_age_seconds):
+        request_background_refresh(path)
+
+    matched = search_curated(entries, search)
+    ordered = sort_curated(matched, sort_by, sort_desc)
+    return CatalogPage("iwc", len(ordered), ordered[offset : offset + limit])
 
 
 def clear_caches() -> None:
