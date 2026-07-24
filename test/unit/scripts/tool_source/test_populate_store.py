@@ -10,8 +10,10 @@ Following test guidelines:
 """
 
 import json
+import threading
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import (
     Any,
 )
@@ -22,6 +24,7 @@ import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token
 from galaxy.tools.source_store.populator import (
@@ -410,6 +413,67 @@ class TestIncrementalFastPath:
         assert entry.in_panel is True
         assert entry.panel_section_id == "test_section_multi"
         assert [(item.tool_id, item.section_id) for item in index.panel_items] == [(guid, "test_section_multi")]
+
+    def test_in_process_population_is_atomic_with_tool_removal(self, tmp_path, monkeypatch):
+        """A stale scan must commit before a concurrent uninstall can prune it."""
+        tools_dir = tmp_path / "tools"
+        _write_tool(tools_dir / "keep.xml", "keep")
+        _write_tool(tools_dir / "doomed.xml", "doomed")
+        conf = _write_tool_conf(
+            tmp_path / "tool_conf.xml",
+            tools_dir,
+            '<tool file="keep.xml"/><tool file="doomed.xml"/>',
+        )
+        cfg = _populate_config(tmp_path, conf)
+        _populate_default(cfg)
+
+        from galaxy.tools.source_store import populator
+
+        scan_complete = threading.Event()
+        allow_commit = threading.Event()
+
+        def pause_after_discovery(*args, **kwargs):
+            discovered = list(actual_discover_tools(*args, **kwargs))
+            scan_complete.set()
+            if not allow_commit.wait(timeout=5):
+                raise TimeoutError("test did not release the paused population")
+            return iter(discovered)
+
+        monkeypatch.setattr(populator, "discover_tools", pause_after_discovery)
+        app = SimpleNamespace(_toolbox_lock=threading.RLock())
+        errors: list[Exception] = []
+
+        def populate_from_stale_scan():
+            try:
+                _populate_default(cfg, app=app, incremental=False)
+            except Exception as exc:
+                errors.append(exc)
+
+        population = threading.Thread(target=populate_from_stale_scan)
+        population.start()
+        assert scan_complete.wait(timeout=5)
+
+        # With no population lock this succeeds: uninstall prunes the index,
+        # then the paused stale scan writes ``doomed`` straight back.
+        acquired_during_population = app._toolbox_lock.acquire(blocking=False)
+        if acquired_during_population:
+            _write_tool_conf(conf, tools_dir, '<tool file="keep.xml"/>')
+            _build_default_store(cfg).remove_index_entry("doomed")
+            app._toolbox_lock.release()
+
+        allow_commit.set()
+        population.join(timeout=10)
+        assert not population.is_alive()
+        assert not errors
+
+        if not acquired_during_population:
+            with app._toolbox_lock:
+                _write_tool_conf(conf, tools_dir, '<tool file="keep.xml"/>')
+                _build_default_store(cfg).remove_index_entry("doomed")
+
+        assert not acquired_during_population
+        _, index = _load_default_index(cfg)
+        assert "doomed" not in index.entries
 
     def test_manifest_is_opt_in_for_cli_callers(self, tmp_path):
         tools_dir = tmp_path / "tools"

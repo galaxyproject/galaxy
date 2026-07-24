@@ -846,7 +846,7 @@ class CachedToolBox(ToolBox):
         load instead of degrading silently.
         """
         log.info("CachedToolBox: running populator inline to backfill the index")
-        populate_store_inline(self.app.config)
+        populate_store_inline(self.app.config, app=self.app)
 
     def _index_versions_for(self, tool_id: str) -> list[str]:
         """Return every version present in the index for ``tool_id``.

@@ -607,7 +607,7 @@ def populate_store(
     )
 
 
-def populate_store_inline(
+def _populate_store_inline_unlocked(
     config: GalaxyAppConfiguration,
     *,
     paths: list[str] | None = None,
@@ -982,6 +982,54 @@ def populate_store_inline(
             _broadcast_reload(config, app)
 
     return stats
+
+
+def populate_store_inline(
+    config: GalaxyAppConfiguration,
+    *,
+    paths: list[str] | None = None,
+    pattern: str | None = None,
+    parallel: int = 1,
+    dry_run: bool = False,
+    incremental: bool = True,
+    verbose: bool = False,
+    broadcast: bool = False,
+    target: str | None = None,
+    prune: bool = False,
+    path_guids: dict[str, str | None] | None = None,
+    app=None,
+    write_manifests: bool = False,
+) -> dict[str, int]:
+    """Populate a store, serialized with toolbox mutations in this process.
+
+    Discovery and the eventual index write are one transaction with respect to
+    in-process installs, uninstalls, and toolbox replacement. Without this lock
+    a populator can discover a shed tool before its conf entry is removed, then
+    commit that stale snapshot after ``remove_index_entry`` and resurrect the
+    uninstalled tool.
+    """
+
+    def populate() -> dict[str, int]:
+        return _populate_store_inline_unlocked(
+            config,
+            paths=paths,
+            pattern=pattern,
+            parallel=parallel,
+            dry_run=dry_run,
+            incremental=incremental,
+            verbose=verbose,
+            broadcast=broadcast,
+            target=target,
+            prune=prune,
+            path_guids=path_guids,
+            app=app,
+            write_manifests=write_manifests,
+        )
+
+    if app is None:
+        return populate()
+    with app._toolbox_lock:
+        return populate()
 
 
 def populate_for_paths(
