@@ -90,7 +90,7 @@ class OSFFileSourceConfiguration(RDMFileSourceConfiguration):
 
 
 class OSFFilesSourceException(ABC, Exception):
-    """Abstract base for every exception raised by this plugin."""
+    """Abstract base for exceptions raised by this plugin."""
 
 
 class InvalidPath(galaxy_exceptions.MessageException, OSFFilesSourceException):
@@ -281,13 +281,9 @@ def galaxy_sort_to_osf(sort_by: Optional[str]) -> Optional[str]:
     order (e.g. ``name`` for A-Z, ``-name`` for Z-A). OSF's ``sort`` parameter
     uses the same convention, so we only rename the field.
 
-    Note: as of this writing ``client/src/components/FilesDialog/FilesDialog.vue``
-    does not send ``sort_by`` to the ``/api/remote_files`` endpoint, so clicking
-    the column headers in the file picker will not currently trigger this
-    mapping. The backend route and this plugin are ready for it as soon as the
-    frontend is wired up (compare ``client/src/components/SelectionDialog/
-    HistoryDatasetPicker.vue`` for a working example). Until then, sort can be
-    exercised by passing ``sort_by=`` directly on ``/api/remote_files`` calls.
+    Note: ``FilesDialog.vue`` does not currently send ``sort_by``, so clicking
+    the column headers in the file picker will not trigger this mapping. The
+    plugin is ready when the frontend is wired up.
     """
     if not sort_by:
         return None
@@ -309,10 +305,9 @@ def galaxy_sort_to_osf(sort_by: Optional[str]) -> Optional[str]:
 class OSFRepositoryInteractor(RDMRepositoryInteractor):
     """OSF flavor of the RDM repository contract.
 
-    A "container" is an OSF Project (GUID). Files inside a container are the
-    files in its osfstorage, addressed by WaterButler's internal path so that
-    descending into a subfolder or downloading a file is a single API call
-    regardless of nesting depth.
+    A "container" is an OSF Project (GUID). Files inside a container are
+    addressed by their WaterButler internal path, so descending or
+    downloading is one API call.
     """
 
     def to_plugin_uri(
@@ -434,9 +429,9 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
 
         ``subpath`` is the WaterButler internal path of a folder within the
         container (e.g. ``61a2b3c4/8d5e6f7g``), produced by a previous call
-        to this method. Fresh browses at the container root pass an empty
-        subpath. Returns folders as ``RemoteDirectory`` and files as
-        ``RemoteFile``; does not recurse.
+        to this method. An empty subpath means the container root. Returns
+        folders as ``RemoteDirectory`` and files as ``RemoteFile``; does
+        not recurse.
 
         When at the container root and the container is a project or
         registration, child components are included as ``RemoteDirectory``
@@ -653,7 +648,6 @@ class OSFFilesSource(RDMFilesSource):
     ) -> tuple[list[AnyRemoteEntry], int]:
         parts = [p for p in path.strip("/").split("/") if p]
 
-        # Root: return the three fake category folders.
         if not parts:
             entries: list[AnyRemoteEntry] = [
                 RemoteDirectory(
@@ -665,7 +659,6 @@ class OSFFilesSource(RDMFilesSource):
             ]
             return entries, len(entries)
 
-        # /<category>: list items in that category.
         if len(parts) == 1 and parts[0] in CATEGORY_FOLDERS:
             category = parts[0]
             if category == "projects":
@@ -681,9 +674,6 @@ class OSFFilesSource(RDMFilesSource):
                     context, query, limit, offset,
                 )
 
-        # /<category>/<container_id>/<optional-subpath>: list one level of
-        # that container's osfstorage. Old-shape paths (no category) are
-        # treated as projects.
         if parts[0] in CATEGORY_FOLDERS:
             category = parts[0]
             container_id = parts[1] if len(parts) > 1 else ""
