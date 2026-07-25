@@ -24,6 +24,10 @@ Turn every Galaxy history into a living scientific notebook.
 Galaxy Notebooks make it easy to capture, share, and reproduce the full story behind an analysis.
 [`#22361 <https://github.com/galaxyproject/galaxy/pull/22361>`__]
 
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/B7rQQ-4kjAk" title="Galaxy 26.1 - Galaxy Notebooks" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 Bulk Dataset Storage Migration
 ------------------------------
 
@@ -36,6 +40,10 @@ Managing storage at scale just got much easier.
 
 These improvements make large storage migrations safer, simpler, and more transparent.
 [`#22606 <https://github.com/galaxyproject/galaxy/pull/22606>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/1irTcAI4yW8" title="Galaxy 26.1 - Bulk Dataset Storage Migration" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Modern Workflow Extraction Interface
 ------------------------------------
@@ -67,6 +75,10 @@ Galaxy now includes an optional tool panel focused on faster access to the tools
 
 The result is faster, more personalized access to your everyday tools.
 [`#21600 <https://github.com/galaxyproject/galaxy/pull/21600>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/LWiEQpuNJFY" title="Galaxy 26.1 - Favorite and Recent Tools Panel" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 View Workflow Step Configuration During Execution
 -------------------------------------------------
