@@ -19,7 +19,7 @@ Galaxy URIs take the form ``osf://osf/category/container_id/file_path``, where:
 
 - ``category`` is one of ``projects``, ``registrations`` or ``files``
 - ``container_id`` is the OSF node GUID (a short alphanumeric identifier, e.g. ``q2anz``)
-- ``file_path`` is the slash-separated path to the file within the node's ``osfstorage``
+- ``file_path`` is the WaterButler internal path to the file within the node's ``osfstorage``
 
 The implementation is layered: ``OSFClient`` wraps the OSF REST API v2 [4] and the WaterButler API [6] using
 ``requests``; ``OSFRepositoryInteractor`` translates Galaxy's RDM interactor contract into OSF calls; and
@@ -101,14 +101,6 @@ class ResourceNotFound(galaxy_exceptions.ObjectNotFound, OSFFilesSourceException
     """A project, registration, or file does not exist in OSF."""
 
 
-class DirectoryExpected(galaxy_exceptions.MessageException, OSFFilesSourceException, ValueError):
-    """A file path was given where a directory was expected."""
-
-
-class FileExpected(galaxy_exceptions.MessageException, OSFFilesSourceException, ValueError):
-    """A directory path was given where a file was expected."""
-
-
 class ValidationError(galaxy_exceptions.MessageException, OSFFilesSourceException):
     """OSF returned an unexpected or malformed response."""
 
@@ -126,6 +118,8 @@ class OSFClient:
     def _request(self, method: str, endpoint: str, **kwargs) -> dict:
         url = urljoin(self.base_url, endpoint.lstrip("/"))
         response = self._session.request(method, url, **kwargs)
+        if response.status_code == 404:
+            raise ResourceNotFound(f"OSF did not find {method} {url}")
         response.raise_for_status()
         return response.json()
 
@@ -138,7 +132,11 @@ class OSFClient:
         sort: Optional[str] = None,
     ) -> dict:
         endpoint = "nodes/"
-        params: dict[str, Any] = {"page": page, "page[size]": page_size}
+        params: dict[str, Any] = {
+            "page": page,
+            "page[size]": page_size,
+            "filter[parent]": "null",
+        }
         if query:
             params["filter[title]"] = query
         if write_intent:
@@ -258,10 +256,6 @@ class OSFClient:
             raise
 
 
-def has_parent(node: dict) -> bool:
-    return node.get("relationships", {}).get("parent", {}).get("data") is not None
-
-
 def node_title(node: dict) -> str:
     return node.get("attributes", {}).get("title", node.get("id", "untitled"))
 
@@ -316,8 +310,9 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
     """OSF flavor of the RDM repository contract.
 
     A "container" is an OSF Project (GUID). Files inside a container are the
-    files in its osfstorage, flattened (subfolder paths are encoded in
-    ``file_identifier`` so downloads can find them again).
+    files in its osfstorage, addressed by WaterButler's internal path so that
+    descending into a subfolder or downloading a file is a single API call
+    regardless of nesting depth.
     """
 
     def to_plugin_uri(
@@ -351,7 +346,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
             write_intent=write_intent,
             sort=galaxy_sort_to_osf(sort_by),
         )
-        nodes = [n for n in payload.get("data", []) if not has_parent(n)]
+        nodes = payload.get("data", [])
         total = int(payload["links"]["meta"]["total"])
         containers = [
             RemoteDirectory(
@@ -360,7 +355,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
                 path=f"/projects/{node['id']}",
             )
             for node in nodes
-            ]
+        ]
         return containers, total
 
     def get_registration_containers(
@@ -437,25 +432,18 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
     ) -> tuple[list[AnyRemoteEntry], int]:
         """List one level of a container's osfstorage.
 
-        Returns folders as ``RemoteDirectory`` and files as ``RemoteFile``.
-        Does not recurse: descending into a subfolder is a separate call,
-        triggered by the user navigating into it. This preserves the actual
-        OSF folder hierarchy (REQ-1.6).
+        ``subpath`` is the WaterButler internal path of a folder within the
+        container (e.g. ``61a2b3c4/8d5e6f7g``), produced by a previous call
+        to this method. Fresh browses at the container root pass an empty
+        subpath. Returns folders as ``RemoteDirectory`` and files as
+        ``RemoteFile``; does not recurse.
 
-        When at the container root (no subpath) and the container is a project
-        or registration, child components are included as ``RemoteDirectory``
+        When at the container root and the container is a project or
+        registration, child components are included as ``RemoteDirectory``
         entries so the user can navigate into them like folders.
         """
         client = self._client(context)
-        if subpath:
-            leaf = self._walk_to(client, container_id, subpath.split("/"))
-            if leaf.get("attributes", {}).get("kind") != "folder":
-                raise DirectoryExpected(
-                    f"path {subpath!r} is not a folder"
-                )
-            wb_path = leaf["attributes"]["path"]
-        else:
-            wb_path = "/"
+        wb_path = f"/{subpath}/" if subpath else "/"
         entries: list[AnyRemoteEntry] = []
         if not subpath and category in ("projects", "registrations"):
             try:
@@ -471,18 +459,18 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
             attrs = item.get("attributes", {})
             name = attrs.get("name", "untitled")
             kind = attrs.get("kind")
-            rel_path = f"{subpath}/{name}" if subpath else name
+            wb_id = attrs.get("path", "").strip("/")
             if kind == "folder":
                 entries.append(RemoteDirectory(
                     name=name,
-                    uri=self.to_plugin_uri(container_id, rel_path, category=category),
-                    path=f"/{category}/{container_id}/{rel_path}",
+                    uri=self.to_plugin_uri(container_id, wb_id, category=category),
+                    path=f"/{category}/{container_id}/{wb_id}",
                 ))
             elif kind == "file":
                 entries.append(RemoteFile(
                     name=name,
-                    uri=self.to_plugin_uri(container_id, rel_path, category=category),
-                    path=f"/{category}/{container_id}/{rel_path}",
+                    uri=self.to_plugin_uri(container_id, wb_id, category=category),
+                    path=f"/{category}/{container_id}/{wb_id}",
                     size=attrs.get("size", 0),
                     ctime=attrs.get("modified_utc") or attrs.get("created_utc"),
                 ))
@@ -499,9 +487,9 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         category: str = "projects",
     ) -> list[RemoteFile]:
         client = self._client(context)
-        files = list(self._walk_files(client, container_id, wb_path="/", rel_prefix="", category=category))
+        files = list(self._walk_files(client, container_id, wb_path="/", category=category))
         if query:
-            files = [f for f in files if query in f.get("name", "")]
+            files = [f for f in files if query in f.name]
         return files
 
     def create_draft_file_container(
@@ -532,14 +520,9 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
     ) -> None:
         if not file_identifier:
-            raise FileExpected("cannot download without a file identifier")
+            raise InvalidPath("cannot download without a file identifier")
         client = self._client(context)
-        leaf = self._walk_to(client, container_id, file_identifier.split("/"))
-        if leaf.get("attributes", {}).get("kind") != "file":
-            raise FileExpected(
-                f"path {file_identifier!r} resolved to a folder, not a file"
-            )
-        client.download(container_id, leaf["attributes"]["path"], file_path)
+        client.download(container_id, f"/{file_identifier}", file_path)
 
     # private helpers
     def _client(self, context) -> OSFClient:
@@ -549,58 +532,30 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
             context.config.token,
         )
 
-    def _walk_to(
-        self, client: OSFClient, container_id: str, segments: list,
-    ) -> dict:
-        """Descend osfstorage segment-by-segment, matching on name.
-
-        osfstorage addresses children by internal WaterButler IDs, not names,
-        so we list each level, pick the named child, and descend using its
-        ``attributes.path``.
-        """
-        current_path = "/"
-        leaf: Optional[dict] = None
-        for segment in segments:
-            items = client.list_storage(container_id, current_path)
-            match = next(
-                (it for it in items if it.get("attributes", {}).get("name") == segment),
-                None,
-            )
-            if match is None:
-                raise ResourceNotFound(
-                    f"No entry named {segment!r} in osfstorage:{current_path}"
-                )
-            leaf = match
-            current_path = match["attributes"]["path"]
-        if leaf is None:
-            raise InvalidPath("walk called with empty segments")
-        return leaf
-
     def _walk_files(
         self,
         client: OSFClient,
         container_id: str,
         wb_path: str,
-        rel_prefix: str,
         category: str = "projects",
     ):
         for item in client.list_storage(container_id, wb_path):
             attrs = item.get("attributes", {})
             name = attrs.get("name", "untitled")
             kind = attrs.get("kind")
-            rel_path = name if not rel_prefix else f"{rel_prefix}/{name}"
+            wb_id = attrs.get("path", "").strip("/")
             if kind == "folder":
                 yield from self._walk_files(
-                    client, container_id, attrs["path"], rel_path, category=category,
+                    client, container_id, attrs["path"], category=category,
                 )
             elif kind == "file":
-                yield RemoteFile(**{
-                    "name": name,
-                    "uri": self.to_plugin_uri(container_id, rel_path, category=category),
-                    "path": f"/{category}/{container_id}/{rel_path}",
-                    "size": attrs.get("size", 0),
-                    "ctime": attrs.get("modified_utc") or attrs.get("created_utc"),
-                })
+                yield RemoteFile(
+                    name=name,
+                    uri=self.to_plugin_uri(container_id, wb_id, category=category),
+                    path=f"/{category}/{container_id}/{wb_id}",
+                    size=attrs.get("size", 0),
+                    ctime=attrs.get("modified_utc") or attrs.get("created_utc"),
+                )
 
 
 class OSFFilesSource(RDMFilesSource):
