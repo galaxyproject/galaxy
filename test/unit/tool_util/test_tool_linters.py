@@ -1270,8 +1270,7 @@ def test_citations_legacy_doi_prefix(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX)
     run_lint_module(lint_ctx, citations, tool_source)
     assert lint_ctx.warn_messages == [
-        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
-        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; use the bare DOI '10.1186/1471-2105-11-485' instead."
     ]
     assert not lint_ctx.error_messages
 
@@ -1288,8 +1287,7 @@ def test_citations_legacy_doi_prefix_error_on_modern_profile(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX_MODERN)
     run_lint_module(lint_ctx, citations, tool_source)
     assert lint_ctx.error_messages == [
-        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
-        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; use the bare DOI '10.1186/1471-2105-11-485' instead."
     ]
     assert not lint_ctx.warn_messages
 
