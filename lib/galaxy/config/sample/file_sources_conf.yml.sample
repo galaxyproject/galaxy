@@ -325,8 +325,12 @@
 
 - type: osf
   id: osf
+  doc: The Open Science Framework (OSF) is a free, open-source platform for managing and sharing research projects, data, and preprints developed by the Center for Open Science. Access is via your OSF Personal Access Token.
   label: Open Science Framework (OSF)
-  doc: Browse, import, and export files from your OSF projects and registrations.
-  url: "https://api.osf.io/v2/"
-  token: "PASTE_YOUR_PERSONAL_ACCESS_TOKEN_HERE"
+  url: https://api.osf.io/v2/
+  waterbutler_url: https://files.osf.io/v1/
+  token: ${user.user_vault.read_secret('preferences/osf/token')}
+  # token: ${user.preferences['osf|token']} # Alternatively use this for retrieving the token from user preferences instead of the Vault
+  public_name: ${user.preferences['osf|public_name']}
   writable: true
+  

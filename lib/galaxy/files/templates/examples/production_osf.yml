@@ -1,0 +1,58 @@
+- id: osf
+  version: 0
+  name: Open Science Framework (OSF)
+  description: |
+    The [Open Science Framework (OSF)](https://osf.io) is a free, open-source platform for managing and
+    sharing research projects, data, and preprints, developed by the [Center for Open Science](https://cos.io).
+    Each user connects with a personal access token, which grants Galaxy access to browse and download from
+    their own projects and registrations, and to create new draft projects to upload datasets into.
+  variables:
+    url:
+      label: OSF API endpoint
+      type: string
+      optional: true
+      default: https://api.osf.io/v2/
+      help: |
+        The endpoint of the OSF API v2 you are connecting to. For the public OSF instance leave the default.
+        For a self-hosted OSF instance, provide the full URL of its API root (protocol + domain + /v2/).
+    waterbutler_url:
+      label: WaterButler endpoint
+      type: string
+      optional: true
+      default: https://files.osf.io/v1/
+      help: |
+        The endpoint of the WaterButler service used to read and write file contents. For the public OSF
+        instance leave the default. For a self-hosted OSF instance, provide its WaterButler URL.
+    public_name:
+      label: Public name
+      type: string
+      optional: true
+      help: |
+        Your name as you would like it to appear in the description of projects created by Galaxy on your
+        behalf. Falls back to "Anonymous Galaxy User" when unset.
+    writable:
+      label: Allow Galaxy to export data to OSF?
+      type: boolean
+      optional: true
+      default: true
+      help: |
+        Allow Galaxy to write data to OSF (create new draft projects and upload files into them). Set it to
+        "No" if you only need to import data from OSF into Galaxy. Requires your personal access token to
+        include write scope (see below).
+  secrets:
+    token:
+      label: Personal Access Token
+      help: |
+        Your OSF personal access token. In OSF, go to _Account settings_, open the _Personal Access Tokens_
+        section, and create a new token with `osf.full_read` (to allow Galaxy to browse and download from
+        your projects, including private ones) or `osf.full_write` (to additionally allow Galaxy to create
+        new projects and upload files). See
+        https://help.osf.io/article/390-profile-and-account#Create-a-Personal-Access-Token-8Z7ta
+  configuration:
+    type: osf
+    url: "{{ variables.url }}"
+    waterbutler_url: "{{ variables.waterbutler_url }}"
+    token: "{{ secrets.token }}"
+    public_name: "{{ variables.public_name }}"
+    writable: "{{ variables.writable }}"
+    
