@@ -4688,3 +4688,26 @@ mapping:
         required: false
         desc: |
           Enable beta tool formats (yaml, cwl, ...) which is a prerequisite for user defined tools.
+
+      jaice_environment_key_path:
+        type: str
+        required: false
+        desc: |
+          Path to an Ed25519 private key file (PEM-encoded, PKCS#8) used as the
+          JAICE Computing Environment signing key (ESK). The corresponding public
+          key (EPK) must be pre-registered at the Repository. If neither this nor
+          ``jaice_environment_key_vault_path`` is set, JAICE authentication is
+          disabled. For production deployments, storing the key in the configured
+          vault (via ``jaice_environment_key_vault_path``) is preferred over a
+          plaintext file.
+
+      jaice_environment_key_vault_path:
+        type: str
+        required: false
+        default: jaice/environment_key
+        desc: |
+          Vault key path where the JAICE Computing Environment signing key (ESK)
+          is stored as a PEM-encoded Ed25519 private key. Takes precedence over
+          ``jaice_environment_key_path`` if both are set. A key can be generated
+          and stored with the ``generate_environment_keypair`` and
+          ``store_esk_to_vault`` helpers in ``lib/galaxy/security/jaice/env_key.py``.
