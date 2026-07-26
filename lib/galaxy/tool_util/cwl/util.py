@@ -629,7 +629,7 @@ def output_to_cwl_json(
 
     elif output_metadata["history_content_type"] == "dataset_collection":
         collection_type = output_metadata["collection_type"].split(":", 1)[0]
-        if collection_type in ["list", "paired"]:
+        if collection_type in ["list", "paired", "sample_sheet", "paired_or_unpaired"]:
             rval_l = []
             for element in output_metadata["elements"]:
                 rval_l.append(element_to_cwl_json(element))
@@ -639,7 +639,7 @@ def output_to_cwl_json(
             for element in output_metadata["elements"]:
                 rval_d[element["element_identifier"]] = element_to_cwl_json(element)
             return rval_d
-        return None
+        raise NotImplementedError(f"Unsupported collection type encountered ({collection_type})")
     else:
         raise NotImplementedError("Unknown history content type encountered")
 
