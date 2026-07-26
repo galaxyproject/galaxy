@@ -13,6 +13,7 @@ from galaxy.tool_util.data.bundles.lint import (
     LocRowShape,
     ManagerTableConfigured,
     MissingLocFixture,
+    OutputRefValid,
 )
 from galaxy.tool_util.data.bundles.repository import build_repository_data_tables
 from galaxy.tool_util.lint import (
@@ -31,6 +32,9 @@ SAMPLE_FALLBACK_REPO = os.path.join(REPOS, "sample_fallback")
 
 FETCH_TABLE_TEST_CONF = os.path.join(FETCH_REPO, "tool_data_table_conf.xml.test")
 FETCH_DM_CONF = os.path.join(FETCH_REPO, "data_manager_conf.xml")
+FETCH_DM_CONF_BAD_OUTPUT_REF = os.path.join(FETCH_REPO, "data_manager_conf_bad_output_ref.xml")
+FETCH_DM_CONF_MIXED_OUTPUT_REF = os.path.join(FETCH_REPO, "data_manager_conf_mixed_output_ref.xml")
+FETCH_DM_CONF_MISSING_WRAPPER = os.path.join(FETCH_REPO, "data_manager_conf_missing_wrapper.xml")
 FETCH_CONSUMER = os.path.join(FETCH_REPO, "tools", "consume_all_fasta.xml")
 FETCH_DYNAMIC_CONSUMER = os.path.join(FETCH_REPO, "tools", "consume_dynamic_table.xml")
 
@@ -170,6 +174,44 @@ def test_non_literal_consumer_table_is_not_checked():
     assert lint_ctx.warn_messages == []
     # Nothing literal was checked, so no green confirmation either.
     assert [v for v in lint_ctx.valid_messages if v.linter == ConsumerTableDefined.name()] == []
+
+
+def test_output_ref_names_real_output_is_clean():
+    model = build_repository_data_tables(FETCH_REPO, data_manager_conf=FETCH_DM_CONF)
+    lint_ctx = _lint(model)
+    assert [e for e in lint_ctx.error_messages if e.linter == OutputRefValid.name()] == []
+    assert any(v.linter == OutputRefValid.name() for v in lint_ctx.valid_messages)
+
+
+def test_output_ref_to_missing_output_is_an_error():
+    model = build_repository_data_tables(FETCH_REPO, data_manager_conf=FETCH_DM_CONF_BAD_OUTPUT_REF)
+    lint_ctx = _lint(model)
+    errors = [e for e in lint_ctx.error_messages if e.linter == OutputRefValid.name()]
+    assert len(errors) == 1
+    assert "no_such_output" in errors[0].message
+    assert "out_file" in errors[0].message  # names the real declared output for the fix
+
+
+def test_output_ref_flags_only_the_bad_ref_in_a_mixed_manager():
+    # One <data_table> has a valid output_ref, another a bad one; only the bad
+    # one is flagged (exercises per-table iteration within a single manager).
+    model = build_repository_data_tables(FETCH_REPO, data_manager_conf=FETCH_DM_CONF_MIXED_OUTPUT_REF)
+    errors = [e for e in _lint(model).error_messages if e.linter == OutputRefValid.name()]
+    assert len(errors) == 1
+    assert "no_such_output" in errors[0].message
+    assert "__dbkeys__" in errors[0].message
+
+
+def test_output_ref_not_checked_when_wrapper_unresolved():
+    # tool_file points at a wrapper that does not exist, so build resolves
+    # wrapper_resolved=False and the outputs are unknown; a bad-looking output_ref
+    # must not be reported as demonstrably missing.
+    model = build_repository_data_tables(FETCH_REPO, data_manager_conf=FETCH_DM_CONF_MISSING_WRAPPER)
+    # Precondition: the wrapper genuinely failed to resolve (guard is exercised).
+    assert model.managers and all(not m.wrapper_resolved for m in model.managers)
+    lint_ctx = _lint(model)
+    assert [e for e in lint_ctx.error_messages if e.linter == OutputRefValid.name()] == []
+    assert [v for v in lint_ctx.valid_messages if v.linter == OutputRefValid.name()] == []
 
 
 def test_linters_are_skippable_by_name():

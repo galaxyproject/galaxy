@@ -135,11 +135,49 @@ class ConsumerTableDefined(Linter):
             lint_ctx.valid("All literal from_data_table references resolve locally", linter=cls.name())
 
 
+class OutputRefValid(Linter):
+    """A data-manager ``output_ref`` names an output the expanded wrapper does not declare.
+
+    Only checked when the manager wrapper was actually resolved; an unresolved
+    wrapper leaves its outputs unknown, so the reference is not-checked rather
+    than reported as demonstrably missing.
+
+    Coverage note: ``output_ref_by_data_table`` keys columns by name, so two
+    columns in one ``<data_table>`` sharing a name collapse (last wins) -- the
+    same duplicate-column limitation deferred alongside conflicting-schema
+    detection also caps output_ref coverage.
+    """
+
+    @classmethod
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+        checked = False
+        clean = True
+        for manager in model.managers:
+            if not manager.wrapper_resolved:
+                continue
+            outputs = manager.tool_output_names
+            for table_name, refs in manager.processor.output_ref_by_data_table.items():
+                for column_name, output_ref in refs.items():
+                    checked = True
+                    if output_ref not in outputs:
+                        declared = ", ".join(sorted(outputs)) or "none"
+                        lint_ctx.error(
+                            f"Data manager '{manager.id}' table '{table_name}' column '{column_name}' has "
+                            f"output_ref '{output_ref}', which is not an output of the manager tool "
+                            f"(declared outputs: {declared})",
+                            linter=cls.name(),
+                        )
+                        clean = False
+        if checked and clean:
+            lint_ctx.valid("All data-manager output_ref values name real wrapper outputs", linter=cls.name())
+
+
 REPOSITORY_DATA_TABLE_LINTERS = (
     MissingLocFixture,
     LocRowShape,
     ManagerTableConfigured,
     ConsumerTableDefined,
+    OutputRefValid,
 )
 
 

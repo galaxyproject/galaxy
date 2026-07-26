@@ -111,6 +111,10 @@ class ManagerDecl:
     # Reused manager-side model: output_ref values, table names, column mappings.
     processor: DataTableBundleProcessorDescription
     source: SourceLoc
+    # Whether the wrapper was located and parsed. When False ``tool_output_names``
+    # is unknown (not "empty"), so output_ref checks must treat it as not-checked
+    # rather than reporting a demonstrably-missing output.
+    wrapper_resolved: bool = False
 
 
 @dataclass
@@ -188,11 +192,13 @@ def _build_managers(data_manager_conf: str) -> List[ManagerDecl]:
             tool_file = tool_elem.get("file") if tool_elem is not None else None
         tool_file = tool_file or ""
         output_names: FrozenSet[str] = frozenset()
+        wrapper_resolved = False
         if tool_file:
             tool_path = os.path.join(conf_dir, tool_file)
             if os.path.exists(tool_path):
                 tool_source = get_tool_source(config_file=tool_path)
                 output_names = _xml_output_names(getattr(tool_source, "root", None))
+                wrapper_resolved = True
         managers.append(
             ManagerDecl(
                 id=manager_id,
@@ -200,6 +206,7 @@ def _build_managers(data_manager_conf: str) -> List[ManagerDecl]:
                 tool_output_names=output_names,
                 processor=convert_data_tables_xml(dm_elem),
                 source=SourceLoc(path=data_manager_conf, line=getattr(dm_elem, "sourceline", None)),
+                wrapper_resolved=wrapper_resolved,
             )
         )
     return managers
