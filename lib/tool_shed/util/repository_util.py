@@ -45,8 +45,8 @@ from galaxy.tool_shed.util.repository_util import (
 )
 from tool_shed.util.common_util import generate_clone_url_for
 from tool_shed.util.hg_util import (
-    changeset2rev,
     create_hgrc_file,
+    get_changectx_for_changeset,
     get_hgrc_path,
     init_repository,
 )
@@ -307,8 +307,10 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
-    repo_path = repository.repo_path(app)
-    ctx_rev = str(changeset2rev(repo_path, changeset_revision))
+    ctx = get_changectx_for_changeset(repository.hg_repo, changeset_revision)
+    if ctx is None:
+        raise Exception(f"Error looking for changeset '{changeset_revision}'")
+    ctx_rev = str(ctx.rev())
     repo_info_dict = create_repo_info_dict(
         app=app,
         repository_clone_url=repository_clone_url,

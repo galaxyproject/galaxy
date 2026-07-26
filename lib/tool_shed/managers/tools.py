@@ -104,9 +104,7 @@ def parsed_tool_model_cached_for(
     return parsed_tool
 
 
-def parsed_tool_model_for(
-    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str
-) -> ShedParsedTool:
+def parsed_tool_model_for(trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str) -> ShedParsedTool:
     tool_source, repository_metadata = tool_source_for(trans, trs_tool_id, tool_version)
     parsed_tool = parse_tool_custom(tool_source, ShedParsedTool)
     if repository_metadata:
