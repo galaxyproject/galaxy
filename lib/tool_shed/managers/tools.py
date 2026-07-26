@@ -11,10 +11,6 @@ from galaxy.exceptions import (
 )
 from galaxy.tool_shed.metadata.metadata_generator import RepositoryMetadataToolDict
 from galaxy.tool_shed.util.basic_util import remove_dir
-from galaxy.tool_shed.util.hg_util import (
-    clone_repository,
-    get_changectx_for_changeset,
-)
 from galaxy.tool_util.model_factory import parse_tool_custom
 from galaxy.tool_util.parser import (
     get_tool_source,
@@ -27,7 +23,7 @@ from tool_shed.context import (
     ProvidesRepositoriesContext,
     SessionRequestContext,
 )
-from tool_shed.util.common_util import generate_clone_url_for
+from tool_shed.util.hg_util import archive_repository_revision
 from tool_shed.webapp.model import RepositoryMetadata
 from tool_shed.webapp.search.tool_search import ToolSearch
 from tool_shed_client.schema import ShedParsedTool
@@ -97,23 +93,21 @@ def get_repository_metadata_tool_dict(
 
 
 def parsed_tool_model_cached_for(
-    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: str | None = None
+    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str
 ) -> ShedParsedTool:
     model_cache = trans.app.model_cache
     parsed_tool = model_cache.get_cache_entry_for(ShedParsedTool, trs_tool_id, tool_version)
     if parsed_tool is not None:
         return parsed_tool
-    parsed_tool = parsed_tool_model_for(trans, trs_tool_id, tool_version, repository_clone_url=repository_clone_url)
+    parsed_tool = parsed_tool_model_for(trans, trs_tool_id, tool_version)
     model_cache.insert_cache_entry_for(parsed_tool, trs_tool_id, tool_version)
     return parsed_tool
 
 
 def parsed_tool_model_for(
-    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: str | None = None
+    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str
 ) -> ShedParsedTool:
-    tool_source, repository_metadata = tool_source_for(
-        trans, trs_tool_id, tool_version, repository_clone_url=repository_clone_url
-    )
+    tool_source, repository_metadata = tool_source_for(trans, trs_tool_id, tool_version)
     parsed_tool = parse_tool_custom(tool_source, ShedParsedTool)
     if repository_metadata:
         revision_model = get_repository_revision_metadata_model(
@@ -124,10 +118,10 @@ def parsed_tool_model_for(
 
 
 def tool_source_for(
-    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: str | None = None
+    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str
 ) -> tuple[ToolSource, RepositoryMetadata | None]:
     if "~" in trs_tool_id:
-        return _shed_tool_source_for(trans, trs_tool_id, tool_version, repository_clone_url)
+        return _shed_tool_source_for(trans, trs_tool_id, tool_version)
     else:
         tool_source = _stock_tool_source_for(trs_tool_id, tool_version)
         if tool_source is None:
@@ -136,20 +130,22 @@ def tool_source_for(
 
 
 def _shed_tool_source_for(
-    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: str | None = None
+    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str
 ) -> tuple[ToolSource, RepositoryMetadata]:
     rval = get_repository_metadata_tool_dict(trans, trs_tool_id, tool_version)
     repository_metadata, tool_version_metadata = rval
     tool_config = tool_version_metadata["tool_config"]
 
-    repo = repository_metadata.repository.hg_repo
-    ctx = get_changectx_for_changeset(repo, repository_metadata.changeset_revision)
     work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-tool_source")
-    if repository_clone_url is None:
-        repository_clone_url = generate_clone_url_for(trans, repository_metadata.repository)
     try:
-        cloned_ok, error_message = clone_repository(repository_clone_url, work_dir, str(ctx.rev()))
-        if error_message:
+        # Materialize the whole revision, not just the tool file - tool XML may import macros
+        # from sibling files in the repository.
+        archive_dir = os.path.join(work_dir, "repo")
+        try:
+            archive_repository_revision(
+                trans.app, repository_metadata.repository, archive_dir, repository_metadata.changeset_revision
+            )
+        except Exception:
             raise InternalServerError("Failed to materialize target repository revision")
         repo_files_dir = repository_metadata.repository.hg_repository_path(trans.app.config.file_path)
         if not repo_files_dir:
@@ -157,7 +153,7 @@ def _shed_tool_source_for(
                 f"Failed to resolve repository path from hgweb_config_manager for [{trs_tool_id}], inconsistent repository state or application configuration"
             )
         repo_rel_tool_path = relpath(tool_config, repo_files_dir)
-        path_to_tool = os.path.join(work_dir, repo_rel_tool_path)
+        path_to_tool = os.path.join(archive_dir, repo_rel_tool_path)
         if not os.path.exists(path_to_tool):
             raise InconsistentApplicationState(
                 f"Target tool expected at [{path_to_tool}] and not found, inconsistent repository state or application configuration"

@@ -1,0 +1,9 @@
+<macros>
+  <token name="@TOOL_VERSION@">1.2.0</token>
+  <xml name="round_param">
+    <param name="round" type="select" label="Round result?">
+      <option value="no">NO</option>
+      <option value="yes">YES</option>
+    </param>
+  </xml>
+</macros>
