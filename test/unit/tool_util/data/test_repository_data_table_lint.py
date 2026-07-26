@@ -8,8 +8,10 @@ assert on the emitted :class:`~galaxy.tool_util.lint.LintContext` messages.
 import os
 
 from galaxy.tool_util.data.bundles.lint import (
+    ConsumerTableDefined,
     lint_repository_data_tables,
     LocRowShape,
+    ManagerTableConfigured,
     MissingLocFixture,
 )
 from galaxy.tool_util.data.bundles.repository import build_repository_data_tables
@@ -17,6 +19,7 @@ from galaxy.tool_util.lint import (
     LintContext,
     LintLevel,
 )
+from galaxy.tool_util.parser.factory import get_tool_source
 
 REPOS = os.path.join(os.path.dirname(__file__), "repositories")
 FETCH_REPO = os.path.join(REPOS, "fetch_genome_dbkeys_all_fasta")
@@ -27,6 +30,13 @@ MISSING_AND_BROKEN_REPO = os.path.join(REPOS, "missing_and_broken")
 SAMPLE_FALLBACK_REPO = os.path.join(REPOS, "sample_fallback")
 
 FETCH_TABLE_TEST_CONF = os.path.join(FETCH_REPO, "tool_data_table_conf.xml.test")
+FETCH_DM_CONF = os.path.join(FETCH_REPO, "data_manager_conf.xml")
+FETCH_CONSUMER = os.path.join(FETCH_REPO, "tools", "consume_all_fasta.xml")
+FETCH_DYNAMIC_CONSUMER = os.path.join(FETCH_REPO, "tools", "consume_dynamic_table.xml")
+
+
+def _consumer_sources(*paths):
+    return [(path, get_tool_source(config_file=path)) for path in paths]
 
 
 def _lint(model):
@@ -95,6 +105,71 @@ def test_missing_and_broken_together_no_contradictory_valid():
     assert len(missing) == 1
     assert len(row) == 2
     assert lint_ctx.valid_messages == []
+
+
+def test_full_bundle_names_all_resolve():
+    # Manager tables + consumer reference are all locally configured -> no errors,
+    # no warnings; both name-relationship linters confirm valid.
+    model = build_repository_data_tables(
+        FETCH_REPO,
+        data_manager_conf=FETCH_DM_CONF,
+        tool_data_table_confs=[FETCH_TABLE_TEST_CONF],
+        consumer_tool_sources=_consumer_sources(FETCH_CONSUMER),
+    )
+    lint_ctx = _lint(model)
+    assert lint_ctx.error_messages == []
+    assert lint_ctx.warn_messages == []
+
+
+def test_manager_table_not_configured_is_an_error():
+    # Manager declares all_fasta + __dbkeys__ but no tool_data_table config is present.
+    model = build_repository_data_tables(FETCH_REPO, data_manager_conf=FETCH_DM_CONF)
+    lint_ctx = _lint(model)
+    errors = [e for e in lint_ctx.error_messages if e.linter == ManagerTableConfigured.name()]
+    assert len(errors) == 2
+    flagged = {name for name in ("all_fasta", "__dbkeys__") for e in errors if name in e.message}
+    assert flagged == {"all_fasta", "__dbkeys__"}
+
+
+def test_manager_table_supplied_externally_is_ok():
+    model = build_repository_data_tables(
+        FETCH_REPO,
+        data_manager_conf=FETCH_DM_CONF,
+        external_table_names=frozenset({"all_fasta", "__dbkeys__"}),
+    )
+    lint_ctx = _lint(model)
+    assert [e for e in lint_ctx.error_messages if e.linter == ManagerTableConfigured.name()] == []
+
+
+def test_consumer_of_unknown_table_warns():
+    model = build_repository_data_tables(FETCH_REPO, consumer_tool_sources=_consumer_sources(FETCH_CONSUMER))
+    lint_ctx = _lint(model)
+    warns = [w for w in lint_ctx.warn_messages if w.linter == ConsumerTableDefined.name()]
+    assert len(warns) == 1
+    assert "all_fasta" in warns[0].message
+
+
+def test_consumer_of_externally_supplied_table_does_not_warn():
+    model = build_repository_data_tables(
+        FETCH_REPO,
+        consumer_tool_sources=_consumer_sources(FETCH_CONSUMER),
+        external_table_names=frozenset({"all_fasta"}),
+    )
+    lint_ctx = _lint(model)
+    assert [w for w in lint_ctx.warn_messages if w.linter == ConsumerTableDefined.name()] == []
+
+
+def test_non_literal_consumer_table_is_not_checked():
+    # A from_data_table that stays non-literal after macro expansion must not be
+    # flagged as missing (galaxyproject/tools-iuc#5003 false-positive guard).
+    model = build_repository_data_tables(FETCH_REPO, consumer_tool_sources=_consumer_sources(FETCH_DYNAMIC_CONSUMER))
+    # Precondition: the consumer's table name really is non-literal (guard is exercised).
+    assert any("@" in c.table_name for c in model.consumers)
+    lint_ctx = _lint(model)
+    assert lint_ctx.error_messages == []
+    assert lint_ctx.warn_messages == []
+    # Nothing literal was checked, so no green confirmation either.
+    assert [v for v in lint_ctx.valid_messages if v.linter == ConsumerTableDefined.name()] == []
 
 
 def test_linters_are_skippable_by_name():
