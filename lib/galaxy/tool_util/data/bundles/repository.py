@@ -45,6 +45,7 @@ from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.util import (
     Element,
     parse_xml,
+    xml_text,
 )
 
 
@@ -73,6 +74,28 @@ class LocAsset:
     # resolved file), so "no errors" is not "clean" for an unfound reference.
     errors: Tuple[str, ...] = ()
     source: Optional[SourceLoc] = None
+
+
+@dataclass
+class RawTableDecl:
+    """A single ``<table>`` element as declared, before the loader merges same-named tables.
+
+    Kept separate from :class:`TableDecl` because the loader collapses duplicate
+    column names into a dict and *raises* when two same-named tables declare
+    different columns -- so conflicting/duplicate schemas are only observable in
+    this pre-merge view.
+    """
+
+    name: str
+    # Declared column names in order, keeping duplicates (the parsed ``columns``
+    # map collapses them) -- used to detect a table declaring one name twice.
+    column_names: Tuple[str, ...]
+    # The name->index map the loader would parse; this is what it compares when
+    # merging same-named tables, so schema-conflict detection keys on this.
+    columns: Dict[str, int]
+    separator: str
+    comment_char: str
+    source: SourceLoc
 
 
 @dataclass
@@ -124,6 +147,9 @@ class RepositoryDataTables:
     repo_root: str
     managers: List[ManagerDecl] = field(default_factory=list)
     configured_tables: List[TableDecl] = field(default_factory=list)
+    # Every ``<table>`` element as declared (pre-merge); may hold several entries
+    # for one name. Populated even when the loader is skipped over a conflict.
+    raw_table_decls: List[RawTableDecl] = field(default_factory=list)
     loc_assets: List[LocAsset] = field(default_factory=list)
     consumers: List[ConsumerRef] = field(default_factory=list)
     # Tables validly supplied by Galaxy core or another installed repository; a
@@ -132,7 +158,11 @@ class RepositoryDataTables:
 
     @property
     def configured_table_names(self) -> FrozenSet[str]:
-        return frozenset(t.name for t in self.configured_tables)
+        # Union of loader-enriched and raw declarations: names stay available for
+        # cross-component checks even when a schema conflict made the loader skip.
+        names = {t.name for t in self.configured_tables}
+        names |= {d.name for d in self.raw_table_decls}
+        return frozenset(names)
 
     def table(self, name: str) -> Optional[TableDecl]:
         for table in self.configured_tables:
@@ -212,7 +242,75 @@ def _build_managers(data_manager_conf: str) -> List[ManagerDecl]:
     return managers
 
 
-def _build_tables(repo_root: str, tool_data_table_confs: List[str]) -> Tuple[List[TableDecl], List[LocAsset]]:
+def _raw_column_spec(table_elem: Element) -> Tuple[Tuple[str, ...], Dict[str, int]]:
+    """Declared column names (with duplicates) and the parsed name->index map.
+
+    Mirrors ``TabularToolDataTable.parse_column_spec_element`` so the map matches
+    what the loader compares when merging same-named tables, while the ordered name
+    list preserves duplicates the map collapses.
+    """
+    columns: Dict[str, int] = {}
+    columns_elem = table_elem.find("columns")
+    if columns_elem is not None:
+        names = tuple(name.strip() for name in xml_text(columns_elem).split(","))
+        for index, name in enumerate(names):
+            columns[name] = index
+        return names, columns
+    names_list = []
+    for column_elem in table_elem.findall("column"):
+        name = column_elem.get("name")
+        index_attr = column_elem.get("index")
+        if name is None or index_attr is None:
+            continue
+        columns[name] = int(index_attr)
+        names_list.append(name)
+    return tuple(names_list), columns
+
+
+def _raw_table_decls(tool_data_table_confs: List[str]) -> List[RawTableDecl]:
+    """Parse every ``<table>`` element as declared, before the loader merges same names."""
+    decls = []
+    for conf in tool_data_table_confs:
+        root = parse_xml(conf).getroot()
+        for table_elem in root.findall("table"):
+            column_names, columns = _raw_column_spec(table_elem)
+            decls.append(
+                RawTableDecl(
+                    name=table_elem.get("name") or "",
+                    column_names=column_names,
+                    columns=columns,
+                    separator=table_elem.get("separator", "\t"),
+                    comment_char=table_elem.get("comment_char", "#"),
+                    source=SourceLoc(path=conf, line=getattr(table_elem, "sourceline", None)),
+                )
+            )
+    return decls
+
+
+def _has_column_conflict(raw_decls: List[RawTableDecl]) -> bool:
+    """Whether any table name is declared with differing columns (what the loader's merge rejects).
+
+    Keys on the parsed name->index map, not the raw name list, because that is
+    exactly what ``merge_tool_data_table`` asserts on -- two ``<column>`` forms
+    can share names yet differ by index.
+    """
+    by_name: Dict[str, List[Dict[str, int]]] = {}
+    for decl in raw_decls:
+        specs = by_name.setdefault(decl.name, [])
+        if decl.columns not in specs:
+            specs.append(decl.columns)
+    return any(len(specs) > 1 for specs in by_name.values())
+
+
+def _build_tables(
+    repo_root: str, tool_data_table_confs: List[str], raw_decls: List[RawTableDecl]
+) -> Tuple[List[TableDecl], List[LocAsset]]:
+    # A same-named table declared with conflicting columns makes the loader's merge
+    # raise; skip enrichment in that case and let the linter report the conflict from
+    # the raw declarations (table names still come from those). Loc diagnostics for
+    # sibling tables are suppressed until the conflict is fixed and the loader re-runs.
+    if _has_column_conflict(raw_decls):
+        return [], []
     # ToolDataTableManager loads the confs, resolving ${__HERE__} / .sample fallback and
     # recording per-file parse errors -- we read that resolved state back out.
     tdt_manager = ToolDataTableManager(repo_root, config_filename=tool_data_table_confs)
@@ -270,7 +368,10 @@ def build_repository_data_tables(
     if data_manager_conf:
         model.managers = _build_managers(data_manager_conf)
     if tool_data_table_confs:
-        model.configured_tables, model.loc_assets = _build_tables(repo_root, tool_data_table_confs)
+        model.raw_table_decls = _raw_table_decls(tool_data_table_confs)
+        model.configured_tables, model.loc_assets = _build_tables(
+            repo_root, tool_data_table_confs, model.raw_table_decls
+        )
     for path, tool_source in consumer_tool_sources or []:
         model.consumers.extend(_consumer_refs(tool_source, path))
     return model

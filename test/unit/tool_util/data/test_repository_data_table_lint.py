@@ -8,7 +8,9 @@ assert on the emitted :class:`~galaxy.tool_util.lint.LintContext` messages.
 import os
 
 from galaxy.tool_util.data.bundles.lint import (
+    ConflictingTableSchema,
     ConsumerTableDefined,
+    DuplicateColumnNames,
     lint_repository_data_tables,
     LocRowShape,
     ManagerTableConfigured,
@@ -29,6 +31,10 @@ MISSING_LOC_REPO = os.path.join(REPOS, "missing_loc")
 MISSING_TWO_REPO = os.path.join(REPOS, "missing_two")
 MISSING_AND_BROKEN_REPO = os.path.join(REPOS, "missing_and_broken")
 SAMPLE_FALLBACK_REPO = os.path.join(REPOS, "sample_fallback")
+DUP_COLUMNS_REPO = os.path.join(REPOS, "dup_columns")
+CONFLICT_COLUMNS_REPO = os.path.join(REPOS, "conflicting_columns")
+CONFLICT_SEPARATOR_REPO = os.path.join(REPOS, "conflicting_separator")
+CONFLICT_INDEXES_REPO = os.path.join(REPOS, "conflicting_indexes")
 
 FETCH_TABLE_TEST_CONF = os.path.join(FETCH_REPO, "tool_data_table_conf.xml.test")
 FETCH_DM_CONF = os.path.join(FETCH_REPO, "data_manager_conf.xml")
@@ -108,7 +114,9 @@ def test_missing_and_broken_together_no_contradictory_valid():
     row = [e for e in lint_ctx.error_messages if e.linter == LocRowShape.name()]
     assert len(missing) == 1
     assert len(row) == 2
-    assert lint_ctx.valid_messages == []
+    # The point of this case: LocRowShape must not emit a green "rows are fine"
+    # check off the back of the unparsed missing file.
+    assert [v for v in lint_ctx.valid_messages if v.linter == LocRowShape.name()] == []
 
 
 def test_full_bundle_names_all_resolve():
@@ -212,6 +220,54 @@ def test_output_ref_not_checked_when_wrapper_unresolved():
     lint_ctx = _lint(model)
     assert [e for e in lint_ctx.error_messages if e.linter == OutputRefValid.name()] == []
     assert [v for v in lint_ctx.valid_messages if v.linter == OutputRefValid.name()] == []
+
+
+def test_duplicate_column_names_is_an_error():
+    conf = os.path.join(DUP_COLUMNS_REPO, "tool_data_table_conf.xml.test")
+    model = build_repository_data_tables(DUP_COLUMNS_REPO, tool_data_table_confs=[conf])
+    errors = [e for e in _lint(model).error_messages if e.linter == DuplicateColumnNames.name()]
+    assert len(errors) == 1
+    assert "value" in errors[0].message
+
+
+def test_conflicting_columns_reported_without_crashing_assembly():
+    conf = os.path.join(CONFLICT_COLUMNS_REPO, "tool_data_table_conf.xml.test")
+    # Assembly must not raise even though the loader's merge would on this conflict.
+    model = build_repository_data_tables(CONFLICT_COLUMNS_REPO, tool_data_table_confs=[conf])
+    # Loader was skipped, but the name is still known from the raw declarations.
+    assert "conflict_tbl" in model.configured_table_names
+    errors = [e for e in _lint(model).error_messages if e.linter == ConflictingTableSchema.name()]
+    assert len(errors) == 1
+    assert "conflict_tbl" in errors[0].message
+
+
+def test_conflicting_indexes_reported_without_crashing_assembly():
+    # Same column names but different index attributes: the raw name tuples match,
+    # so only the parsed columns-map catches the conflict -- and the loader would
+    # crash on it, so assembly must skip the loader and still not raise.
+    conf = os.path.join(CONFLICT_INDEXES_REPO, "tool_data_table_conf.xml.test")
+    model = build_repository_data_tables(CONFLICT_INDEXES_REPO, tool_data_table_confs=[conf])
+    assert "idx_tbl" in model.configured_table_names
+    errors = [e for e in _lint(model).error_messages if e.linter == ConflictingTableSchema.name()]
+    assert len(errors) == 1
+    assert "idx_tbl" in errors[0].message
+
+
+def test_conflicting_separator_is_reported():
+    conf = os.path.join(CONFLICT_SEPARATOR_REPO, "tool_data_table_conf.xml.test")
+    model = build_repository_data_tables(CONFLICT_SEPARATOR_REPO, tool_data_table_confs=[conf])
+    errors = [e for e in _lint(model).error_messages if e.linter == ConflictingTableSchema.name()]
+    assert len(errors) == 1
+    assert "sep_tbl" in errors[0].message
+
+
+def test_clean_repo_has_no_schema_or_duplicate_errors():
+    model = build_repository_data_tables(FETCH_REPO, tool_data_table_confs=[FETCH_TABLE_TEST_CONF])
+    lint_ctx = _lint(model)
+    schema_linters = {DuplicateColumnNames.name(), ConflictingTableSchema.name()}
+    assert [e for e in lint_ctx.error_messages if e.linter in schema_linters] == []
+    linters_with_valid = {v.linter for v in lint_ctx.valid_messages}
+    assert schema_linters <= linters_with_valid
 
 
 def test_linters_are_skippable_by_name():

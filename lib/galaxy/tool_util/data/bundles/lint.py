@@ -17,7 +17,11 @@ Advisory / unresolved / externally-supplied conditions are handled elsewhere so
 they are never reported here as demonstrably missing.
 """
 
-from typing import TYPE_CHECKING
+from typing import (
+    Dict,
+    List,
+    TYPE_CHECKING,
+)
 
 from galaxy.tool_util.data.bundles.repository import RepositoryDataTables
 from galaxy.tool_util.lint import Linter
@@ -172,12 +176,69 @@ class OutputRefValid(Linter):
             lint_ctx.valid("All data-manager output_ref values name real wrapper outputs", linter=cls.name())
 
 
+class DuplicateColumnNames(Linter):
+    """A ``<table>`` declares the same column name more than once.
+
+    The parsed ``columns`` dict silently collapses duplicates, so this is checked
+    against the raw declared column list.
+    """
+
+    @classmethod
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+        clean = True
+        for decl in model.raw_table_decls:
+            seen = set()
+            duplicates = []
+            for name in decl.column_names:
+                if name in seen and name not in duplicates:
+                    duplicates.append(name)
+                seen.add(name)
+            if duplicates:
+                dupes = ", ".join(duplicates)
+                lint_ctx.error(
+                    f"Data table '{decl.name}' declares duplicate column name(s): {dupes}",
+                    linter=cls.name(),
+                )
+                clean = False
+        if model.raw_table_decls and clean:
+            lint_ctx.valid("No data table declares duplicate column names", linter=cls.name())
+
+
+class ConflictingTableSchema(Linter):
+    """The same table name is declared with different columns/separator/comment across the bundle.
+
+    A column conflict would make the loader raise, so this reads the pre-merge raw
+    declarations; a separator/comment-only conflict loads fine but is still
+    structurally ambiguous.
+    """
+
+    @classmethod
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+        by_name: Dict[str, List] = {}
+        for decl in model.raw_table_decls:
+            by_name.setdefault(decl.name, []).append(decl)
+        conflicted = False
+        for name, decls in by_name.items():
+            schemas = {(tuple(sorted(decl.columns.items())), decl.separator, decl.comment_char) for decl in decls}
+            if len(schemas) > 1:
+                lint_ctx.error(
+                    f"Data table '{name}' is declared with conflicting schemas across the bundle "
+                    f"({len(decls)} definitions do not agree on columns/separator/comment_char)",
+                    linter=cls.name(),
+                )
+                conflicted = True
+        if model.raw_table_decls and not conflicted:
+            lint_ctx.valid("Each data table is declared with a single consistent schema", linter=cls.name())
+
+
 REPOSITORY_DATA_TABLE_LINTERS = (
     MissingLocFixture,
     LocRowShape,
     ManagerTableConfigured,
     ConsumerTableDefined,
     OutputRefValid,
+    DuplicateColumnNames,
+    ConflictingTableSchema,
 )
 
 
