@@ -1,0 +1,13 @@
+<tables>
+    <!-- One table whose loc is absent and one whose loc has short / wrong-separator
+         rows. Both linters must fire, and LocRowShape must not emit a green "rows
+         are fine" check off the back of the unparsed missing file. -->
+    <table name="absent" comment_char="#">
+        <columns>value, name, path</columns>
+        <file path="${__HERE__}/test-data/absent.loc" />
+    </table>
+    <table name="broken" comment_char="#">
+        <columns>value, name, path</columns>
+        <file path="${__HERE__}/test-data/broken.loc" />
+    </table>
+</tables>
