@@ -68,9 +68,78 @@ class LocRowShape(Linter):
             lint_ctx.valid("All loc rows supply every declared column", linter=cls.name())
 
 
+# Markers that mean a table name did not fully resolve to a literal after macro /
+# token expansion (Cheetah ``$``/``${}``, an undefined ``@TOKEN@``). Such names are
+# reported as not-checked rather than demonstrably missing -- see galaxyproject/
+# tools-iuc#5003, where raw ``@IDX_DATA_TABLE@`` looks unconfigured but resolves.
+_DYNAMIC_MARKERS = ("$", "@", "{", "}")
+
+
+def _is_literal(name: str) -> bool:
+    return bool(name) and not any(marker in name for marker in _DYNAMIC_MARKERS)
+
+
+class ManagerTableConfigured(Linter):
+    """A data manager populates a table that nothing in the bundle configures.
+
+    The manager's ``<data_table name="...">`` entries must correspond to a
+    configured ``tool_data_table_conf`` table (or a known externally-supplied
+    one); an unconfigured target is a broken producer contract (Planemo #706).
+    """
+
+    @classmethod
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+        known = model.configured_table_names | model.external_table_names
+        clean = True
+        for manager in model.managers:
+            for table_name in manager.processor.data_table_names:
+                if not _is_literal(table_name):
+                    continue
+                if table_name not in known:
+                    lint_ctx.error(
+                        f"Data manager '{manager.id}' populates table '{table_name}' but no local "
+                        "tool_data_table configuration defines it",
+                        linter=cls.name(),
+                    )
+                    clean = False
+        if model.managers and clean:
+            lint_ctx.valid("All data-manager tables are locally configured", linter=cls.name())
+
+
+class ConsumerTableDefined(Linter):
+    """A tool references a data table that no local (or known-external) table defines.
+
+    Only literal, fully-expanded ``from_data_table`` names are checked. Because a
+    table may validly be supplied by Galaxy core or another installed repository,
+    an unknown reference is a warning, not an error.
+    """
+
+    @classmethod
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+        known = model.configured_table_names | model.external_table_names
+        checked = False
+        clean = True
+        for consumer in model.consumers:
+            name = consumer.table_name
+            if not _is_literal(name):
+                continue
+            checked = True
+            if name not in known:
+                lint_ctx.warn(
+                    f"Tool '{consumer.tool_id}' references data table '{name}' via {consumer.kind}, but no "
+                    "local configuration defines it (it may be supplied by Galaxy core or another repository)",
+                    linter=cls.name(),
+                )
+                clean = False
+        if checked and clean:
+            lint_ctx.valid("All literal from_data_table references resolve locally", linter=cls.name())
+
+
 REPOSITORY_DATA_TABLE_LINTERS = (
     MissingLocFixture,
     LocRowShape,
+    ManagerTableConfigured,
+    ConsumerTableDefined,
 )
 
 
