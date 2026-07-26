@@ -100,7 +100,11 @@ class RawTableDecl:
 
 @dataclass
 class TableDecl:
-    """A ``tool_data_table_conf.xml*`` ``<table>`` definition, plus its live instance."""
+    """A ``tool_data_table_conf.xml*`` ``<table>`` definition (name + parsed schema).
+
+    Only ``name`` is read today (via ``configured_table_names``); the parsed schema
+    fields are retained for the planned bundle-completeness check.
+    """
 
     name: str
     columns: Dict[str, int]
@@ -109,8 +113,6 @@ class TableDecl:
     comment_char: str
     allow_duplicate_entries: bool
     loc_paths: Tuple[str, ...]
-    # The configured runtime table -- reused by downstream row-shape / schema checks.
-    instance: TabularToolDataTable
     source: Optional[SourceLoc] = None
 
 
@@ -164,12 +166,6 @@ class RepositoryDataTables:
         names |= {d.name for d in self.raw_table_decls}
         return frozenset(names)
 
-    def table(self, name: str) -> Optional[TableDecl]:
-        for table in self.configured_tables:
-            if table.name == name:
-                return table
-        return None
-
 
 def _xml_output_names(root: Optional[Element]) -> FrozenSet[str]:
     """Names of ``<data>`` / ``<collection>`` outputs declared by a (macro-expanded) wrapper."""
@@ -187,9 +183,19 @@ def _xml_output_names(root: Optional[Element]) -> FrozenSet[str]:
     return frozenset(names)
 
 
+def _tool_source_root(tool_source: ToolSource) -> Optional[Element]:
+    """Root element of a (macro-expanded) XML wrapper, or None for a non-XML source.
+
+    Reads the ``xml_tree`` attribute the tool linters standardize on rather than the
+    equivalent ``root`` attribute.
+    """
+    xml_tree = getattr(tool_source, "xml_tree", None)
+    return xml_tree.getroot() if xml_tree is not None else None
+
+
 def _consumer_refs(tool_source: ToolSource, path: str) -> List[ConsumerRef]:
     """Scan a (macro-expanded) wrapper for ``from_data_table`` table references."""
-    root = getattr(tool_source, "root", None)
+    root = _tool_source_root(tool_source)
     if root is None:
         return []
     tool_id = tool_source.parse_id()
@@ -227,7 +233,7 @@ def _build_managers(data_manager_conf: str) -> List[ManagerDecl]:
             tool_path = os.path.join(conf_dir, tool_file)
             if os.path.exists(tool_path):
                 tool_source = get_tool_source(config_file=tool_path)
-                output_names = _xml_output_names(getattr(tool_source, "root", None))
+                output_names = _xml_output_names(_tool_source_root(tool_source))
                 wrapper_resolved = True
         managers.append(
             ManagerDecl(
@@ -245,26 +251,23 @@ def _build_managers(data_manager_conf: str) -> List[ManagerDecl]:
 def _raw_column_spec(table_elem: Element) -> Tuple[Tuple[str, ...], Dict[str, int]]:
     """Declared column names (with duplicates) and the parsed name->index map.
 
-    Mirrors ``TabularToolDataTable.parse_column_spec_element`` so the map matches
-    what the loader compares when merging same-named tables, while the ordered name
-    list preserves duplicates the map collapses.
+    The name->index map is produced by the canonical
+    ``TabularToolDataTable.parse_column_spec_element`` so it matches exactly what the
+    loader compares when merging same-named tables. Only the ordered name list (which
+    keeps the duplicates ``DuplicateColumnNames`` needs, but the canonical map
+    collapses) is derived here.
     """
-    columns: Dict[str, int] = {}
+    columns, _, _ = TabularToolDataTable.parse_column_spec_element(table_elem)
     columns_elem = table_elem.find("columns")
     if columns_elem is not None:
-        names = tuple(name.strip() for name in xml_text(columns_elem).split(","))
-        for index, name in enumerate(names):
-            columns[name] = index
-        return names, columns
-    names_list = []
-    for column_elem in table_elem.findall("column"):
-        name = column_elem.get("name")
-        index_attr = column_elem.get("index")
-        if name is None or index_attr is None:
-            continue
-        columns[name] = int(index_attr)
-        names_list.append(name)
-    return tuple(names_list), columns
+        column_names = tuple(name.strip() for name in xml_text(columns_elem).split(","))
+    else:
+        column_names = tuple(
+            column_elem.get("name")
+            for column_elem in table_elem.findall("column")
+            if column_elem.get("name") is not None and column_elem.get("index") is not None
+        )
+    return column_names, columns
 
 
 def _raw_table_decls(tool_data_table_confs: List[str]) -> List[RawTableDecl]:
@@ -290,9 +293,12 @@ def _raw_table_decls(tool_data_table_confs: List[str]) -> List[RawTableDecl]:
 def _has_column_conflict(raw_decls: List[RawTableDecl]) -> bool:
     """Whether any table name is declared with differing columns (what the loader's merge rejects).
 
-    Keys on the parsed name->index map, not the raw name list, because that is
-    exactly what ``merge_tool_data_table`` asserts on -- two ``<column>`` forms
-    can share names yet differ by index.
+    Keys on the parsed name->index map, not the raw name list, because that map is
+    exactly what the loader compares -- ``merge_tool_data_table`` /
+    ``ToolDataTableManager.assert_data_table_consistency`` reject same-named tables
+    whose ``columns`` maps differ (two ``<column>`` forms can share names yet differ
+    by index). This is the pre-load counterpart of that check: same columns-equality
+    rule, applied to the raw declarations before the loader is invoked.
     """
     by_name: Dict[str, List[Dict[str, int]]] = {}
     for decl in raw_decls:
@@ -342,7 +348,6 @@ def _build_tables(
                 comment_char=table.comment_char,
                 allow_duplicate_entries=table.allow_duplicate_entries,
                 loc_paths=tuple(loc_paths),
-                instance=table,
                 source=conf_source,
             )
         )

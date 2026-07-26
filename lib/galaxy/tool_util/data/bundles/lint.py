@@ -19,15 +19,24 @@ they are never reported here as demonstrably missing.
 
 from typing import (
     Dict,
+    FrozenSet,
+    Iterable,
     List,
+    Optional,
+    Tuple,
     TYPE_CHECKING,
 )
 
-from galaxy.tool_util.data.bundles.repository import RepositoryDataTables
+from galaxy.tool_util.data.bundles.repository import (
+    build_repository_data_tables,
+    RepositoryDataTables,
+)
 from galaxy.tool_util.lint import Linter
+from galaxy.util import unicodify
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
+    from galaxy.tool_util.parser.interface import ToolSource
 
 
 class MissingLocFixture(Linter):
@@ -250,3 +259,48 @@ def lint_repository_data_tables(model: RepositoryDataTables, lint_ctx: "LintCont
     """
     for linter in REPOSITORY_DATA_TABLE_LINTERS:
         lint_ctx.lint(linter.name(), linter.lint, model)
+
+
+def lint_repository_data_tables_bundle(
+    lint_ctx: "LintContext",
+    repo_root: str,
+    data_manager_conf: Optional[str] = None,
+    tool_data_table_confs: Optional[List[str]] = None,
+    consumer_tool_sources: Optional[Iterable[Tuple[str, "ToolSource"]]] = None,
+    external_table_names: FrozenSet[str] = frozenset(),
+) -> None:
+    """Assemble a repository data-table model from already-discovered paths and lint it.
+
+    The convenience entry point for repository linters (e.g. Planemo's ``shed_lint``):
+    the caller does discovery -- which ``data_manager_conf`` / ``tool_data_table_conf``
+    files, which consumer tool sources -- and this builds the
+    :class:`~galaxy.tool_util.data.bundles.repository.RepositoryDataTables` and runs the
+    linters over it.
+
+    Assembly (the discovery-result build) runs inside its own ``lint_ctx.lint`` so its
+    skip / assembly-failure diagnostics are actually emitted -- ``LintContext`` only
+    flushes messages appended during a dispatched ``lint`` call. The per-table linters
+    are then dispatched by :func:`lint_repository_data_tables`, so they must not nest
+    inside that same call (which would print them twice).
+    """
+    model: Optional[RepositoryDataTables] = None
+
+    def assemble(_unused_target, lint_ctx: "LintContext") -> None:
+        nonlocal model
+        if not data_manager_conf and not tool_data_table_confs:
+            lint_ctx.info("No data manager or tool data table configuration found, skipping data table linting.")
+            return
+        try:
+            model = build_repository_data_tables(
+                repo_root,
+                data_manager_conf=data_manager_conf,
+                tool_data_table_confs=tool_data_table_confs,
+                consumer_tool_sources=consumer_tool_sources,
+                external_table_names=external_table_names,
+            )
+        except Exception as e:
+            lint_ctx.error(f"Problem assembling repository data table model [{unicodify(e)}]")
+
+    lint_ctx.lint("lint_data_tables_bundle", assemble, None)
+    if model is not None:
+        lint_repository_data_tables(model, lint_ctx)

@@ -12,6 +12,7 @@ from galaxy.tool_util.data.bundles.lint import (
     ConsumerTableDefined,
     DuplicateColumnNames,
     lint_repository_data_tables,
+    lint_repository_data_tables_bundle,
     LocRowShape,
     ManagerTableConfigured,
     MissingLocFixture,
@@ -276,3 +277,41 @@ def test_linters_are_skippable_by_name():
     lint_ctx = LintContext(level=LintLevel.SILENT, skip_types=[MissingLocFixture.name()])
     lint_repository_data_tables(model, lint_ctx)
     assert lint_ctx.error_messages == []
+
+
+def _lint_bundle(repo_root, **kwargs):
+    lint_ctx = LintContext(level=LintLevel.SILENT)
+    lint_repository_data_tables_bundle(lint_ctx, repo_root, **kwargs)
+    return lint_ctx
+
+
+def test_bundle_clean_repository_has_no_errors():
+    lint_ctx = _lint_bundle(FETCH_REPO, data_manager_conf=FETCH_DM_CONF, tool_data_table_confs=[FETCH_TABLE_TEST_CONF])
+    assert lint_ctx.error_messages == []
+    # the per-table linters actually ran (not skipped)
+    assert lint_ctx.valid_messages
+
+
+def test_bundle_surfaces_linter_errors():
+    conf = os.path.join(MISSING_LOC_REPO, "tool_data_table_conf.xml.test")
+    lint_ctx = _lint_bundle(MISSING_LOC_REPO, tool_data_table_confs=[conf])
+    errors = lint_ctx.error_messages
+    assert len(errors) == 1
+    assert errors[0].linter == MissingLocFixture.name()
+
+
+def test_bundle_skips_when_no_configuration():
+    lint_ctx = _lint_bundle(FETCH_REPO)
+    assert lint_ctx.error_messages == []
+    assert any("skipping data table linting" in m.message for m in lint_ctx.info_messages)
+    # nothing was assembled, so no per-table linter ran
+    assert lint_ctx.valid_messages == []
+
+
+def test_bundle_reports_assembly_failure(tmp_path):
+    conf = tmp_path / "data_manager_conf.xml"
+    conf.write_text("<data_managers><data_manager id='x'\n")  # unclosed tag -> parse error
+    lint_ctx = _lint_bundle(str(tmp_path), data_manager_conf=str(conf))
+    errors = lint_ctx.error_messages
+    assert len(errors) == 1
+    assert "Problem assembling repository data table model" in errors[0].message
