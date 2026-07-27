@@ -17,6 +17,7 @@ Advisory / unresolved / externally-supplied conditions are handled elsewhere so
 they are never reported here as demonstrably missing.
 """
 
+import os
 from typing import (
     Dict,
     FrozenSet,
@@ -32,11 +33,15 @@ from galaxy.tool_util.data.bundles.repository import (
     RepositoryDataTables,
 )
 from galaxy.tool_util.lint import Linter
+from galaxy.tool_util.loader_directory import (
+    is_tool_load_error,
+    load_tool_sources_from_path,
+)
+from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.util import unicodify
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
-    from galaxy.tool_util.parser.interface import ToolSource
 
 
 class MissingLocFixture(Linter):
@@ -304,3 +309,70 @@ def lint_repository_data_tables_bundle(
     lint_ctx.lint("lint_data_tables_bundle", assemble, None)
     if model is not None:
         lint_repository_data_tables(model, lint_ctx)
+
+
+DATA_MANAGER_CONF = "data_manager_conf.xml"
+# tool_data_table_conf variants, most-preferred first: the test conf points loc files
+# at real test-data, then the shipped sample, then a plain checked-in conf.
+TOOL_DATA_TABLE_CONF_NAMES = (
+    "tool_data_table_conf.xml.test",
+    "tool_data_table_conf.xml.sample",
+    "tool_data_table_conf.xml",
+)
+
+
+def _find_data_manager_conf(repo_root: str) -> Optional[str]:
+    candidate = os.path.join(repo_root, DATA_MANAGER_CONF)
+    return candidate if os.path.exists(candidate) else None
+
+
+def _find_tool_data_table_conf(repo_root: str) -> Optional[str]:
+    for name in TOOL_DATA_TABLE_CONF_NAMES:
+        candidate = os.path.join(repo_root, name)
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
+def _discover_consumer_tool_sources(repo_root: str) -> List[Tuple[str, "ToolSource"]]:
+    """Walk ``repo_root`` for loadable tool wrappers that might consume a data table.
+
+    Uses the same directory loader Planemo's ``yield_tool_sources`` is built on;
+    tool files that fail to load or are not ordinary tool wrappers are skipped.
+    """
+    sources: List[Tuple[str, ToolSource]] = []
+    for tool_path, tool_source in load_tool_sources_from_path(repo_root, recursive=True, register_load_errors=True):
+        if is_tool_load_error(tool_source):
+            continue
+        if not isinstance(tool_source, ToolSource):
+            continue
+        sources.append((tool_path, tool_source))
+    return sources
+
+
+def find_and_lint_repository_data_tables(
+    lint_ctx: "LintContext",
+    repo_root: str,
+    external_table_names: FrozenSet[str] = frozenset(),
+) -> None:
+    """Discover a repository's data-table bundle from ``repo_root`` and lint it.
+
+    The one-call entry point for a repository linter (Planemo's ``shed_lint``, the
+    ``galaxy-tool-data-lint`` CLI): it locates the ``data_manager_conf`` /
+    ``tool_data_table_conf`` files and the consumer tool sources, then hands them to
+    :func:`lint_repository_data_tables_bundle`. Consumer tools are only walked when the
+    repository actually declares a data-table bundle.
+    """
+    data_manager_conf = _find_data_manager_conf(repo_root)
+    tool_data_table_conf = _find_tool_data_table_conf(repo_root)
+    consumer_tool_sources = None
+    if data_manager_conf or tool_data_table_conf:
+        consumer_tool_sources = _discover_consumer_tool_sources(repo_root)
+    lint_repository_data_tables_bundle(
+        lint_ctx,
+        repo_root,
+        data_manager_conf=data_manager_conf,
+        tool_data_table_confs=[tool_data_table_conf] if tool_data_table_conf else None,
+        consumer_tool_sources=consumer_tool_sources,
+        external_table_names=external_table_names,
+    )
