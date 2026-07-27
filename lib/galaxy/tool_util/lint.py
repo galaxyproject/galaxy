@@ -52,6 +52,7 @@ from abc import (
 from collections.abc import Callable
 from enum import IntEnum
 from typing import (
+    Generic,
     TYPE_CHECKING,
     TypeVar,
 )
@@ -67,8 +68,12 @@ from galaxy.util import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.tool_util.parser.interface import ToolSource
     from galaxy.tool_util_models import UserToolSource
+
+# The object a linter classifies -- a ToolSource for the tool linters, a
+# RepositoryDataTables for the repository data-table linters, etc. LintContext.lint
+# dispatches over this generically, and Linter is generic over it.
+LintTargetType = TypeVar("LintTargetType")
 
 
 class LintLevel(IntEnum):
@@ -80,15 +85,21 @@ class LintLevel(IntEnum):
     ALL = 0
 
 
-class Linter(ABC):
+class Linter(ABC, Generic[LintTargetType]):
     """
     a linter. needs to define a lint method and the code property.
     optionally a fix method can be given
+
+    Generic over the lint target so non-tool linters (e.g. the repository
+    data-table linters, which lint a ``RepositoryDataTables``) can subclass
+    ``Linter[SomeTarget]`` without violating the override contract. A bare
+    ``class Foo(Linter)`` is ``Linter[Any]`` -- the ordinary tool linters,
+    which annotate their own ``tool_source: ToolSource``.
     """
 
     @classmethod
     @abstractmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: LintTargetType, lint_ctx: "LintContext"):
         """
         should add at most one message to the lint context
         """
@@ -182,9 +193,6 @@ class XMLLintMessageXPath(LintMessage):
         if self.xpath is not None:
             rval += f" [{self.xpath}]"
         return rval
-
-
-LintTargetType = TypeVar("LintTargetType")
 
 
 # TODO: Nothing inherently tool-y about LintContext and in fact

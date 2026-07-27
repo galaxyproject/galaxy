@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
 
 
-class MissingLocFixture(Linter):
+class MissingLocFixture(Linter[RepositoryDataTables]):
     """A configured table references a loc file that resolves to no file on disk.
 
     ``LocAsset.found`` already accounts for the ``.sample`` fallback, so a
@@ -53,7 +53,7 @@ class MissingLocFixture(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
         missing = [asset for asset in model.loc_assets if not asset.found]
         for asset in missing:
             lint_ctx.error(
@@ -64,7 +64,7 @@ class MissingLocFixture(Linter):
             lint_ctx.valid("All referenced loc files resolve", linter=cls.name())
 
 
-class LocRowShape(Linter):
+class LocRowShape(Linter[RepositoryDataTables]):
     """A non-comment loc row cannot supply every declared column index.
 
     Reuses the row-shape errors captured by ``TabularToolDataTable`` at load
@@ -73,7 +73,7 @@ class LocRowShape(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
         found_error = False
         for asset in model.loc_assets:
             for message in asset.errors:
@@ -97,7 +97,7 @@ def _is_literal(name: str) -> bool:
     return bool(name) and not any(marker in name for marker in _DYNAMIC_MARKERS)
 
 
-class ManagerTableConfigured(Linter):
+class ManagerTableConfigured(Linter[RepositoryDataTables]):
     """A data manager populates a table that nothing in the bundle configures.
 
     The manager's ``<data_table name="...">`` entries must correspond to a
@@ -106,7 +106,7 @@ class ManagerTableConfigured(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
         known = model.configured_table_names | model.external_table_names
         clean = True
         for manager in model.managers:
@@ -124,7 +124,7 @@ class ManagerTableConfigured(Linter):
             lint_ctx.valid("All data-manager tables are locally configured", linter=cls.name())
 
 
-class ConsumerTableDefined(Linter):
+class ConsumerTableDefined(Linter[RepositoryDataTables]):
     """A tool references a data table that no local (or known-external) table defines.
 
     Only literal, fully-expanded ``from_data_table`` names are checked. Because a
@@ -133,7 +133,7 @@ class ConsumerTableDefined(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
         known = model.configured_table_names | model.external_table_names
         checked = False
         clean = True
@@ -153,7 +153,7 @@ class ConsumerTableDefined(Linter):
             lint_ctx.valid("All literal from_data_table references resolve locally", linter=cls.name())
 
 
-class OutputRefValid(Linter):
+class OutputRefValid(Linter[RepositoryDataTables]):
     """A data-manager ``output_ref`` names an output the expanded wrapper does not declare.
 
     Only checked when the manager wrapper was actually resolved; an unresolved
@@ -167,7 +167,7 @@ class OutputRefValid(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
         checked = False
         clean = True
         for manager in model.managers:
@@ -190,7 +190,7 @@ class OutputRefValid(Linter):
             lint_ctx.valid("All data-manager output_ref values name real wrapper outputs", linter=cls.name())
 
 
-class DuplicateColumnNames(Linter):
+class DuplicateColumnNames(Linter[RepositoryDataTables]):
     """A ``<table>`` declares the same column name more than once.
 
     The parsed ``columns`` dict silently collapses duplicates, so this is checked
@@ -198,7 +198,7 @@ class DuplicateColumnNames(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
         clean = True
         for decl in model.raw_table_decls:
             seen = set()
@@ -218,7 +218,7 @@ class DuplicateColumnNames(Linter):
             lint_ctx.valid("No data table declares duplicate column names", linter=cls.name())
 
 
-class ConflictingTableSchema(Linter):
+class ConflictingTableSchema(Linter[RepositoryDataTables]):
     """The same table name is declared with different columns/separator/comment across the bundle.
 
     A column conflict would make the loader raise, so this reads the pre-merge raw
@@ -227,7 +227,7 @@ class ConflictingTableSchema(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
         by_name: Dict[str, List] = {}
         for decl in model.raw_table_decls:
             by_name.setdefault(decl.name, []).append(decl)
