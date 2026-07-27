@@ -19,6 +19,7 @@ and emits comparison reports.
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
 """
 
+import json
 import os
 import re
 from types import SimpleNamespace
@@ -1829,6 +1830,97 @@ class TestAgentUnitMocked:
             )
 
         mock_exec.assert_awaited_once()
+        assert mock_exec.call_args[0][0] == "router"
+
+    def _enable_tutor_mode(self):
+        self.mock_user.preferences = {"learning_state": json.dumps({"tutor_mode_enabled": True})}
+
+    @pytest.mark.asyncio
+    async def test_route_and_execute_uses_teaching_assistant_when_tutor_mode_enabled(self):
+        """A user with learning mode persisted gets the tutor, even though the client sent 'auto'."""
+        self._enable_tutor_mode()
+        service = AgentService(
+            config=self.mock_config,
+            job_manager=self.mock_job_manager,
+            registry=build_default_registry(),
+        )
+
+        with mock.patch.object(service, "execute_agent", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = mock.Mock()
+            await service.route_and_execute(
+                "how do I run BWA?",
+                trans=self.mock_trans,
+                user=self.mock_user,
+                context={},
+                agent_type="auto",
+            )
+
+        assert mock_exec.call_args[0][0] == "teaching_assistant"
+
+    @pytest.mark.asyncio
+    async def test_page_context_wins_over_tutor_mode(self):
+        """Notebook page context keeps its own assistant; tutor mode must not hijack it."""
+        self._enable_tutor_mode()
+        service = AgentService(
+            config=self.mock_config,
+            job_manager=self.mock_job_manager,
+            registry=build_default_registry(),
+        )
+
+        with mock.patch.object(service, "execute_agent", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = mock.Mock()
+            await service.route_and_execute(
+                "help me edit this page",
+                trans=self.mock_trans,
+                user=self.mock_user,
+                context={"page_id": 42},
+                agent_type="auto",
+            )
+
+        assert mock_exec.call_args[0][0] == "page_assistant"
+
+    @pytest.mark.asyncio
+    async def test_explicit_agent_type_not_overridden_by_tutor_mode(self):
+        """An explicit agent request wins over the persisted learning mode."""
+        self._enable_tutor_mode()
+        service = AgentService(
+            config=self.mock_config,
+            job_manager=self.mock_job_manager,
+            registry=build_default_registry(),
+        )
+
+        with mock.patch.object(service, "execute_agent", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = mock.Mock()
+            await service.route_and_execute(
+                "why did my job fail?",
+                trans=self.mock_trans,
+                user=self.mock_user,
+                context={},
+                agent_type="error_analysis",
+            )
+
+        assert mock_exec.call_args[0][0] == "error_analysis"
+
+    @pytest.mark.asyncio
+    async def test_unreadable_learning_state_falls_through_to_router(self):
+        """A broken preference read must not break the query -- it routes normally."""
+        self.mock_user.preferences = mock.Mock()  # `in` raises TypeError
+        service = AgentService(
+            config=self.mock_config,
+            job_manager=self.mock_job_manager,
+            registry=build_default_registry(),
+        )
+
+        with mock.patch.object(service, "execute_agent", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = mock.Mock()
+            await service.route_and_execute(
+                "how do I run BWA?",
+                trans=self.mock_trans,
+                user=self.mock_user,
+                context={},
+                agent_type="auto",
+            )
+
         assert mock_exec.call_args[0][0] == "router"
 
     @pytest.mark.asyncio

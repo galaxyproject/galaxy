@@ -10,6 +10,7 @@ from galaxy.agents.registry import AgentRegistry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.learning_state import LearningStateManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
 from galaxy.work.context import SessionRequestContext
@@ -110,6 +111,9 @@ class AgentService:
         if agent_type == "auto" and isinstance(context, dict) and context.get("page_id"):
             log.info("Routing to page_assistant for notebook context")
             return await self.execute_agent("page_assistant", query, trans, user, context)
+        elif agent_type == "auto" and self._tutor_mode_enabled(trans):
+            log.info("Routing to teaching_assistant for a user with tutor mode enabled")
+            return await self.execute_agent("teaching_assistant", query, trans, user, context)
         elif agent_type == "auto":
             # Router handles everything via output functions:
             # - Answers general questions directly
@@ -121,6 +125,21 @@ class AgentService:
             # Explicit agent request - execute directly
             log.info(f"User explicitly requested agent: {agent_type}")
             return await self.execute_agent(agent_type, query, trans, user, context)
+
+    def _tutor_mode_enabled(self, trans: ProvidesUserContext) -> bool:
+        """Whether the user has persisted learning mode on.
+
+        A failed lookup falls through to normal routing rather than breaking the
+        query -- this is a preference, not a precondition.
+        """
+        if trans.user is None:
+            return False
+        try:
+            state = LearningStateManager().get_learning_state(trans)
+        except Exception as e:
+            log.warning(f"Could not read tutor learning state, routing normally: {e}")
+            return False
+        return bool(state.get("tutor_mode_enabled"))
 
     def list_agents(self) -> list[str]:
         return self.registry.list_agents()
