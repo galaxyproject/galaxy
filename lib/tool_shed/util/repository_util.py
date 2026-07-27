@@ -307,8 +307,11 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
-    repo_path = repository.repo_path(app)
-    ctx_rev = str(changeset2rev(repo_path, changeset_revision))
+    # Deliberately not read from repository_metadata.numeric_revision: when a push updates
+    # the metadata record in place its changeset_revision advances to the new tip while
+    # numeric_revision keeps pointing at the previous changeset, and Galaxy clones at
+    # whatever ctx_rev we hand it.
+    ctx_rev = str(changeset2rev(repository.hg_repo, changeset_revision))
     repo_info_dict = create_repo_info_dict(
         app=app,
         repository_clone_url=repository_clone_url,
