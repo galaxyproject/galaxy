@@ -2,7 +2,7 @@
 import { BAlert, BButtonGroup, BCol, BContainer, BDropdown, BDropdownItem, BRow } from "bootstrap-vue";
 import type { VisualizationSpec } from "vega-embed";
 import type { ComputedRef } from "vue";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 import type { WorkflowJobMetric } from "@/api/invocations";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -24,28 +24,17 @@ const invocationStore = useInvocationStore();
 
 const groupBy = ref<"tool_id" | "step_id">("tool_id");
 const timing = ref<"seconds" | "minutes" | "hours">("seconds");
+
+// `getInvocationMetricsById` fetches on first read, and self-refreshes whenever a step that was
+// previously non-terminal has since finished (tracked in the store, driven by the step job summary
+// that's already kept fresh by the parent's own polling in WorkflowInvocationState.vue) -- so no
+// manual fetch/watch is needed here.
 const jobMetrics = computed(() => invocationStore.getInvocationMetricsById(props.invocationId) ?? undefined);
 
 const attributeToLabel = {
     tool_id: "Tool ID",
     step_id: "Step",
 };
-
-watch(
-    () => props.invocationId,
-    (invocationId) => invocationStore.fetchInvocationMetricsForId({ id: invocationId }),
-    { immediate: true },
-);
-
-// Trigger a fetch of invocation metrics when the workflow transitions to a terminal state.
-watch(
-    () => props.notTerminal,
-    (notTerminal, wasNotTerminal) => {
-        if (wasNotTerminal && !notTerminal) {
-            invocationStore.fetchInvocationMetricsForId({ id: props.invocationId });
-        }
-    },
-);
 
 function itemToX(item: WorkflowJobMetric) {
     if (groupBy.value === "tool_id") {

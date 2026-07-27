@@ -33,12 +33,8 @@ const emit = defineEmits<{
 
 const invocationStore = useInvocationStore();
 
-watch(
-    () => props.invocationId,
-    (invocationId) => invocationStore.fetchInvocationMetricsForId({ id: invocationId }),
-    { immediate: true },
-);
-
+// `getInvocationJobRuntimeById` (via `getInvocationMetricsById`) fetches on first read and
+// self-refreshes as steps finish -- see invocationStore.ts for details.
 const runtimeByJobId = computed(() => invocationStore.getInvocationJobRuntimeById(props.invocationId));
 
 const showModal = ref(false);

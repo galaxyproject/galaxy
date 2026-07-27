@@ -10,6 +10,7 @@ import type {
     WorkflowInvocationRequest,
     WorkflowJobMetric,
 } from "@/api/invocations";
+import { numTerminal } from "@/components/WorkflowInvocationState/util";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
@@ -135,8 +136,71 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     const { getItemById: getInvocationStepJobsSummaryById, fetchItemById: fetchInvocationStepJobsSummaryForId } =
         useKeyedCache<StepJobSummary[]>(fetchInvocationStepJobsSummary);
 
-    const { getItemById: getInvocationMetricsById, fetchItemById: fetchInvocationMetricsForId } =
+    const { storedItems: storedInvocationMetrics, fetchItemById: fetchInvocationMetricsRawForId } =
         useKeyedCache<WorkflowJobMetric[]>(fetchInvocationMetrics);
+
+    /**
+     * For each invocation id, a `step/job id -> number of terminal jobs` mapping as of the last
+     * metrics fetch.
+     *
+     * A *count* (rather than a plain terminal/non-terminal flag) is needed because a single step
+     * can have multiple jobs and their metrics (e.g. `runtime_seconds`) wouldn't show up until
+     * the entire collection completed.
+     *
+     * `undefined` means metrics haven't been fetched for this invocation yet.
+     */
+    const terminalCountsByStepIdAtLastMetricsFetch: Record<string, Record<string, number>> = {};
+
+    function currentTerminalCountsByStepId(invocationId: string): Record<string, number> {
+        const stepsJobsSummary = getInvocationStepJobsSummaryById.value(invocationId);
+        const counts: Record<string, number> = {};
+        for (const step of stepsJobsSummary ?? []) {
+            counts[step.id] = numTerminal(step);
+        }
+        return counts;
+    }
+
+    /** Fetches invocation metrics and records the terminal-count mapping for the fetch. */
+    async function fetchInvocationMetricsForId(params: FetchParams) {
+        // Snapshot *before* fetching, so a job that goes terminal mid-fetch is still seen as new by
+        // the next staleness check, rather than being (incorrectly) folded into "already accounted for".
+        const snapshotAtFetchStart = currentTerminalCountsByStepId(params.id);
+        const result = await fetchInvocationMetricsRawForId(params);
+        terminalCountsByStepIdAtLastMetricsFetch[params.id] = snapshotAtFetchStart;
+        return result;
+    }
+
+    /**
+     * Returns the cached metrics for an invocation, fetching once if absent (like `useKeyedCache`'s
+     * own accessors) -- but additionally triggers a background refetch (returning the current,
+     * possibly-stale cached value immediately, same stale-while-revalidate behavior) whenever any
+     * step's terminal-job count has increased since the last fetch (see above for why a count, not a
+     * boolean, is needed). This keeps consumers (e.g. the Metrics tab, per-job runtime lookups) fresh
+     * as an invocation's jobs finish over time, without every consumer needing its own
+     * polling/diffing logic.
+     */
+    const getInvocationMetricsById = computed(() => {
+        return (invocationId: string) => {
+            const metrics = storedInvocationMetrics.value[invocationId];
+            const oldTerminalCountsByStepId = terminalCountsByStepIdAtLastMetricsFetch[invocationId];
+
+            if (oldTerminalCountsByStepId === undefined) {
+                // Never fetched for this invocation -- kick off the initial fetch (via the wrapper,
+                // so the terminal-count snapshot gets recorded once it lands).
+                fetchInvocationMetricsForId({ id: invocationId });
+                return metrics ?? null;
+            }
+
+            const newTerminalCountsByStepId = currentTerminalCountsByStepId(invocationId);
+            const hasNewlyTerminalJob = Object.entries(newTerminalCountsByStepId).some(
+                ([stepId, count]) => count > (oldTerminalCountsByStepId[stepId] ?? 0),
+            );
+            if (hasNewlyTerminalJob) {
+                fetchInvocationMetricsForId({ id: invocationId });
+            }
+            return metrics ?? null;
+        };
+    });
 
     const {
         getItemById: getInvocationStepById,
