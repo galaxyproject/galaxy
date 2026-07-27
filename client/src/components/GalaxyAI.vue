@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { faMagic, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faMagic, faPen, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
@@ -21,6 +22,8 @@ import { getAgentIcon } from "./GalaxyAI/agentTypes";
 import type { ChatHistoryItem, ChatMessage } from "./GalaxyAI/chatTypes";
 import { generateId, scrollToBottom } from "./GalaxyAI/chatUtils";
 
+import GButton from "./BaseComponents/GButton.vue";
+import RenameModal from "./Common/RenameModal.vue";
 import ChatActions from "./GalaxyAI/ChatActions.vue";
 import ChatInput from "./GalaxyAI/ChatInput.vue";
 import ChatMessageCell from "./GalaxyAI/ChatMessageCell.vue";
@@ -47,6 +50,8 @@ const { confirm } = useConfirmDialog();
 const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
+const { chatHistory } = storeToRefs(chatStore);
+const currentChatName = computed(() => chatHistory.value.find((h) => h.id === currentChatId.value)?.name ?? null);
 const Toast = useToast();
 
 const { activeContext, contextLabel, contextIcon } = useActiveContext();
@@ -112,6 +117,11 @@ const chatContainer = ref<HTMLElement>();
 const selectedAgentType = ref("auto");
 const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
+const showRename = ref(false);
+
+async function renameChat(_newName: string): Promise<void> {
+    // TODO: call API to persist the new name on the chat exchange
+}
 
 // Bumped whenever the displayed conversation changes so that responses still in
 // flight for a previous conversation can be recognized as stale and dropped.
@@ -547,12 +557,23 @@ watch(currentChatId, async (newId) => {
             :class="{ 'galaxyai-header-docked': docked }">
             <Heading :icon="faMagic" :size="docked ? 'sm' : 'lg'">
                 <span class="heading-label">GalaxyAI</span>
+                <span v-if="currentChatName" class="heading-chat-name">{{ currentChatName }}</span>
             </Heading>
+            <GButton v-if="currentChatId" inline transparent title="Rename this chat" @click="showRename = true">
+                <FontAwesomeIcon :icon="faPen" />
+            </GButton>
             <ChatActions
                 :source="docked ? 'docked' : 'center'"
                 :enable-delete="Boolean(currentChatId)"
                 @delete="deleteCurrentChat"
                 @dock-to="dockTo" />
+
+            <RenameModal
+                v-if="showRename"
+                item-type="chat"
+                :name="currentChatName ?? ''"
+                :rename-action="renameChat"
+                @close="showRename = false" />
         </div>
 
         <div v-if="(docked || panel) && effectiveContext" class="context-indicator">
@@ -691,8 +712,27 @@ watch(currentChatId, async (newId) => {
 
     :deep(.heading) {
         margin-bottom: 0;
+        display: flex;
+        align-items: baseline;
+        gap: 0.4em;
+        min-width: 0;
+        flex-shrink: 1;
+        overflow: hidden;
+    }
+
+    :deep(.heading-label) {
         white-space: nowrap;
         flex-shrink: 0;
+    }
+
+    :deep(.heading-chat-name) {
+        font-size: 0.75em;
+        font-weight: 400;
+        color: var(--gray-light, #888);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
     }
 
     :deep(.chat-panel-actions) {

@@ -4033,6 +4033,11 @@ class ChatHistoryItemResponse(BaseModel):
         title="Exchange ID",
         description="The encoded ID of the chat exchange.",
     )
+    name: str | None = Field(
+        default=None,
+        title="Name",
+        description="Initially AI generated or user assigned name for the chat exchange.",
+    )
     query: str = Field(
         ...,
         title="Query",
