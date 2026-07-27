@@ -73,6 +73,14 @@ galaxy.files.sources.onedata module
    :undoc-members:
    :show-inheritance:
 
+galaxy.files.sources.osf module
+-------------------------------
+
+.. automodule:: galaxy.files.sources.osf
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.files.sources.posix module
 ---------------------------------
 

@@ -427,6 +427,21 @@ configuration).
 
 ![](file_source_rspace_configuration.png)
 
+#### `osf`
+
+The `osf` file source plugin connects Galaxy to the Open Science Framework (OSF). Each user authenticates with their own OSF Personal Access Token. Both the API endpoint (`url`) and the WaterButler endpoint (`waterbutler_url`) are configurable, so self-hosted OSF deployments are supported.
+
+```yaml
+- type: osf
+  id: osf
+  label: Open Science Framework (OSF)
+  doc: Browse, import, and export files from OSF projects and registrations.
+  url: https://api.osf.io/v2/
+  waterbutler_url: https://files.osf.io/v1/
+  token: ${user.user_vault.read_secret('preferences/osf/token')}
+  writable: true
+```
+
 #### `ascp`
 
 The `ascp` file source plugin provides high-speed file downloads using the Aspera FASP protocol.
@@ -557,6 +572,12 @@ and you are comfortable with it storing your user's secrets.
 ```
 
 ![Screenshot](user_file_source_form_full_rspace.png)
+
+#### Allow Users to Define OSF Instances as File Sources
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_osf.yml
+:language: yaml
+```
 
 ### Production OAuth 2.0 File Source Templates
 
