@@ -2,7 +2,7 @@
 import { BAlert, BButtonGroup, BCol, BContainer, BDropdown, BDropdownItem, BRow } from "bootstrap-vue";
 import type { VisualizationSpec } from "vega-embed";
 import type { ComputedRef } from "vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { WorkflowJobMetric } from "@/api/invocations";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -25,11 +25,27 @@ const invocationStore = useInvocationStore();
 const groupBy = ref<"tool_id" | "step_id">("tool_id");
 const timing = ref<"seconds" | "minutes" | "hours">("seconds");
 
-// `getInvocationMetricsById` fetches on first read, and self-refreshes whenever a step that was
-// previously non-terminal has since finished (tracked in the store, driven by the step job summary
-// that's already kept fresh by the parent's own polling in WorkflowInvocationState.vue) -- so no
-// manual fetch/watch is needed here.
-const jobMetrics = computed(() => invocationStore.getInvocationMetricsById(props.invocationId) ?? undefined);
+// Fetch explicitly, once per `invocationId`, instead of relying on `jobMetrics`'s read to trigger it
+// via the store's fetch-if-absent accessor; that accessor only records "already fetching" state
+// after the fetch resolves, so a re-render before then (e.g. vue-router resolving async components)
+// could read it mid-flight and fire a real duplicate request.
+const hasLoadedMetricsForInvocationId = ref<string>();
+watch(
+    () => props.invocationId,
+    async (invocationId) => {
+        await invocationStore.fetchInvocationMetricsForId({ id: invocationId });
+        hasLoadedMetricsForInvocationId.value = invocationId;
+    },
+    { immediate: true },
+);
+
+// Only read the store's accessor (and let it self-refresh) once our own fetch above has resolved.
+const jobMetrics = computed(() => {
+    if (hasLoadedMetricsForInvocationId.value !== props.invocationId) {
+        return undefined;
+    }
+    return invocationStore.getInvocationMetricsById(props.invocationId) ?? undefined;
+});
 
 const attributeToLabel = {
     tool_id: "Tool ID",
