@@ -363,7 +363,7 @@ const removeTagsAction = computed(() => {
                     v-if="showCalloutActiveOutput"
                     v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
-                    :class="{ 'mark-terminal-active': workflowOutput }"
+                    :class="{ 'mark-terminal-active': workflowOutput, 'readonly-button': readonly }"
                     :title="activeOutputHint"
                     @click="onToggleActive">
                     <FontAwesomeIcon v-if="workflowOutput" fixed-width :icon="faCheckSquare" />
@@ -373,7 +373,11 @@ const removeTagsAction = computed(() => {
                     v-if="showCalloutVisible"
                     v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
-                    :class="{ 'mark-terminal-visible': isVisible, 'mark-terminal-hidden': !isVisible }"
+                    :class="{
+                        'mark-terminal-visible': isVisible,
+                        'mark-terminal-hidden': !isVisible,
+                        'readonly-button': readonly,
+                    }"
                     :title="visibleHint"
                     @click="onToggleVisible">
                     <FontAwesomeIcon v-if="isVisible" fixed-width :icon="faEye" />
@@ -461,6 +465,18 @@ const removeTagsAction = computed(() => {
     display: flex;
     flex-direction: row;
     margin-left: -0.2rem;
+
+    .readonly-button {
+        cursor: default !important;
+
+        &:hover,
+        &:focus,
+        &:active,
+        &:focus-visible {
+            background-color: unset !important;
+            color: $brand-primary !important;
+        }
+    }
 }
 
 .output-terminal {
