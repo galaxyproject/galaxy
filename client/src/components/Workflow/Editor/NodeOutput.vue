@@ -108,9 +108,17 @@ const isVisible = computed(() => {
 
 const visibleHint = computed(() => {
     if (isVisible.value) {
-        return `Output will be visible in history. Click to hide output.`;
+        return `Output will be visible in history.${!props.readonly ? " Click to hide output." : ""}`;
     } else {
-        return `Output will be hidden in history. Click to make output visible.`;
+        return `Output will be hidden in history.${!props.readonly ? " Click to make output visible." : ""}`;
+    }
+});
+
+const activeOutputHint = computed(() => {
+    if (!props.readonly) {
+        return "Checked outputs will become primary workflow outputs and are available as subworkflow outputs.";
+    } else {
+        return "Checked outputs are primary workflow outputs and are available as subworkflow outputs.";
     }
 });
 
@@ -356,7 +364,7 @@ const removeTagsAction = computed(() => {
                     v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
                     :class="{ 'mark-terminal-active': workflowOutput }"
-                    title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
+                    :title="activeOutputHint"
                     @click="onToggleActive">
                     <FontAwesomeIcon v-if="workflowOutput" fixed-width :icon="faCheckSquare" />
                     <FontAwesomeIcon v-else fixed-width :icon="faSquare" />
