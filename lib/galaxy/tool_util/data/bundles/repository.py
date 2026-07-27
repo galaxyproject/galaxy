@@ -24,12 +24,14 @@ from dataclasses import (
     field,
 )
 from typing import (
+    cast,
     Dict,
     FrozenSet,
     Iterable,
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 from galaxy.tool_util.data import (
@@ -165,6 +167,12 @@ class RepositoryDataTables:
         names = {t.name for t in self.configured_tables}
         names |= {d.name for d in self.raw_table_decls}
         return frozenset(names)
+
+    def table(self, name: str) -> Optional[TableDecl]:
+        for table in self.configured_tables:
+            if table.name == name:
+                return table
+        return None
 
 
 def _xml_output_names(root: Optional[Element]) -> FrozenSet[str]:
@@ -319,7 +327,11 @@ def _build_tables(
         return [], []
     # ToolDataTableManager loads the confs, resolving ${__HERE__} / .sample fallback and
     # recording per-file parse errors -- we read that resolved state back out.
-    tdt_manager = ToolDataTableManager(repo_root, config_filename=tool_data_table_confs)
+    # cast around list invariance: ToolDataTableManager takes list[str | PathLike]; our
+    # str paths are compatible element-wise, but List[str] is not List[str | PathLike].
+    tdt_manager = ToolDataTableManager(
+        repo_root, config_filename=cast("List[Union[str, os.PathLike[str]]]", tool_data_table_confs)
+    )
     conf_source = SourceLoc(path=tool_data_table_confs[0]) if len(tool_data_table_confs) == 1 else None
     tables = []
     loc_assets = []

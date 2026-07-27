@@ -48,7 +48,7 @@ class MissingLocFixture(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
         missing = [asset for asset in model.loc_assets if not asset.found]
         for asset in missing:
             lint_ctx.error(
@@ -68,7 +68,7 @@ class LocRowShape(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
         found_error = False
         for asset in model.loc_assets:
             for message in asset.errors:
@@ -101,7 +101,7 @@ class ManagerTableConfigured(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
         known = model.configured_table_names | model.external_table_names
         clean = True
         for manager in model.managers:
@@ -128,7 +128,7 @@ class ConsumerTableDefined(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
         known = model.configured_table_names | model.external_table_names
         checked = False
         clean = True
@@ -162,7 +162,7 @@ class OutputRefValid(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
         checked = False
         clean = True
         for manager in model.managers:
@@ -193,7 +193,7 @@ class DuplicateColumnNames(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
         clean = True
         for decl in model.raw_table_decls:
             seen = set()
@@ -222,7 +222,7 @@ class ConflictingTableSchema(Linter):
     """
 
     @classmethod
-    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):  # type: ignore[override]
         by_name: Dict[str, List] = {}
         for decl in model.raw_table_decls:
             by_name.setdefault(decl.name, []).append(decl)
