@@ -358,7 +358,7 @@ const removeTagsAction = computed(() => {
 <template>
     <div class="node-output" :class="rowClass" :data-output-name="output.name">
         <div v-if="!props.blank" class="d-flex flex-column w-100">
-            <div class="node-output-buttons">
+            <div class="node-output-buttons align-items-start">
                 <button
                     v-if="showCalloutActiveOutput"
                     v-g-tooltip
