@@ -346,8 +346,8 @@ def _clean_tree_fixture() -> TreeCleanReport:
                 category="catA",
                 total_removed=3,
                 step_results=[
-                    CleanStepResult(step="1", tool_id="tool_1", version="1.0.0", removed_keys=["old_key"]),
-                    CleanStepResult(step="2", tool_id="tool_2", removed_keys=["deprecated_a", "deprecated_b"]),
+                    CleanStepResult(step="1", tool_id="tool_1", version="1.0.0", removed_state_keys=["old_key"]),
+                    CleanStepResult(step="2", tool_id="tool_2", removed_state_keys=["deprecated_a", "deprecated_b"]),
                 ],
             ),
             WorkflowCleanResult(

@@ -2,8 +2,9 @@
   Tree-level report for ``gxwf-state-clean``.
 
   Three sections: affected-workflows table, clean-workflows banner, and
-  per-workflow detail bullets. Uses ``selectattr("removed_keys")`` and
-  ``selectattr("total_removed")`` for filtering, ``loop.first`` to gate
+  per-workflow detail bullets. Uses ``selectattr("removed_state_keys")``/
+  ``selectattr("removed_step_keys")`` and ``selectattr("total_removed")``
+  for filtering, ``loop.first`` to gate
   the Per-Workflow Details header, and the ``steps_affected`` +
   ``display_label`` computed fields landed in step 1.
 
@@ -25,7 +26,7 @@ Workflows: {{ report.workflows | length }} | {{ report.summary.total_keys }} sta
 {% if r.error %}
 | {{ r.path }} | - | - | ERROR: {{ r.error }} |
 {% elif r.total_removed > 0 %}
-| {{ r.path }} | {{ r.steps_affected }} | {{ r.total_removed }} | {% for sr in r.results | selectattr("removed_keys") %}Step {{ sr.step }} ({{ sr.tool_id }}): {{ sr.removed_keys | join(", ") }}{% if not loop.last %}; {% endif %}{% endfor %} |
+| {{ r.path }} | {{ r.steps_affected }} | {{ r.total_removed }} | {% for sr in r.results %}{% if sr.removed_step_keys or sr.removed_state_keys %}Step {{ sr.step }} ({{ sr.tool_id }}): {{ (sr.removed_step_keys + sr.removed_state_keys) | join(", ") }}{% if not loop.last %}; {% endif %}{% endif %}{% endfor %} |
 {% endif %}
 {% endfor %}
 
@@ -42,8 +43,8 @@ All other workflows have no stale keys.
 
 {% endif %}
 ### {{ r.path }}
-{% for sr in r.results | selectattr("removed_keys") %}
-- Step {{ sr.step }} ({{ sr.display_label }}): Removed `{{ sr.removed_keys | join("`, `") }}`
-{% endfor %}
+{% for sr in r.results %}{% if sr.removed_step_keys or sr.removed_state_keys %}
+- Step {{ sr.step }} ({{ sr.display_label }}): Removed `{{ (sr.removed_step_keys + sr.removed_state_keys) | join("`, `") }}`
+{% endif %}{% endfor %}
 
 {% endfor %}

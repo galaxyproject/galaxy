@@ -67,9 +67,9 @@ def test_steps_affected_counts_only_steps_with_removed_keys() -> None:
         relative_path="wf.ga",
         category="",
         step_results=[
-            CleanStepResult(step="1", tool_id="cat1", removed_keys=["a"]),
-            CleanStepResult(step="2", tool_id="cat2", removed_keys=[]),
-            CleanStepResult(step="3", tool_id="cat3", removed_keys=["b", "c"]),
+            CleanStepResult(step="1", tool_id="cat1", removed_state_keys=["a"]),
+            CleanStepResult(step="2", tool_id="cat2"),
+            CleanStepResult(step="3", tool_id="cat3", removed_state_keys=["b", "c"]),
             CleanStepResult(step="4", tool_id=None, skipped=True),
         ],
         total_removed=3,

@@ -26,6 +26,13 @@ def build_parser():
         "Specifiers: {path}, {dir}, {stem}, {ext}, {name}. "
         'E.g. "{path}" for in-place, "{dir}/{stem}.cleaned{ext}" for adjacent',
     )
+    parser.add_argument(
+        "--skip-uuid",
+        action="store_true",
+        default=False,
+        dest="skip_uuid",
+        help="Skip stripping uuid fields from steps (errors are always stripped)",
+    )
     add_report_args(parser)
     return parser
 
