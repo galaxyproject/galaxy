@@ -13,7 +13,6 @@ from typing import (
 from sqlalchemy import select
 
 from galaxy.agents import iwc
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import UserDynamicToolAssociation
@@ -40,6 +39,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.workflows import InvokeWorkflowPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ ID_FIELDS = {
 class AgentOperationsManager:
     """Shared operations for AI agents, delegating to Galaxy's service layer."""
 
-    def __init__(self, app: MinimalManagerApp, trans: ProvidesUserContext):
+    def __init__(self, app: MinimalManagerApp, trans: SessionRequestContext):
         self.app = app
         self.trans = trans
         self._tools_service: Any | None = None

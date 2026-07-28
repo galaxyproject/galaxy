@@ -246,7 +246,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
         try:
             panel_view = self.deps.config.default_panel_view or "default"
-            toolbox_search = self.deps.trans.app.toolbox_search  # type: ignore[attr-defined]
+            toolbox_search = self.deps.trans.app.toolbox_search
             tool_ids = toolbox_search.search(query, panel_view, self.deps.config)
 
             tools = []

@@ -65,7 +65,7 @@ from galaxy.structured_app import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.managers.context import ProvidesAppContext
+    from galaxy.managers.context import ProvidesUserContext
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ FunctionFilterParsersType = dict[str, Any]
 
 
 # ==== accessors from base/controller.py
-def security_check(trans, item, check_ownership=False, check_accessible=False):
+def security_check(trans: "ProvidesUserContext", item, check_ownership=False, check_accessible=False):
     """
     Security checks for an item: checks if (a) user owns item or (b) item
     is accessible to user. This is a generic method for dealing with objects
@@ -162,7 +162,7 @@ def encode_with_security(security: IdEncodingHelper, id: Any, kind: str | None =
 
 
 def get_object(
-    trans: "ProvidesAppContext",
+    trans: "ProvidesUserContext",
     id,
     class_name,
     check_ownership: bool = False,

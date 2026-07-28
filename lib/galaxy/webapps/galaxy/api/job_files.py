@@ -153,7 +153,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         return {"message": "ok"}
 
     @expose_api_anonymous_and_sessionless
-    def tus_patch(self, trans, **kwds):
+    def tus_patch(self, trans: ProvidesAppContext, **kwds):
         """
         Exposed as PATCH /api/job_files/resumable_upload.
 

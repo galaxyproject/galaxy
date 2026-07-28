@@ -55,7 +55,10 @@ from galaxy.tool_util_models.parameters import (
     ToolParameterBundleModel,
 )
 from galaxy.util import safe_str_cmp
-from .context import ProvidesUserContext
+from .context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from .headers_encryption import (
     decrypt_headers_in_data,
     encrypt_headers_in_data,
@@ -237,7 +240,7 @@ class LandingRequestManager:
         return self._tool_response(request)
 
     def claim_workflow_landing_request(
-        self, trans: ProvidesUserContext, uuid: UUID4, claim: ClaimLandingPayload | None
+        self, trans: ProvidesHistoryContext, uuid: UUID4, claim: ClaimLandingPayload | None
     ) -> WorkflowLandingRequest:
         request = self._get_workflow_landing_request(uuid)
         self._check_can_claim(trans, request, claim)
@@ -246,7 +249,7 @@ class LandingRequestManager:
         self._save(request)
         return self._workflow_response(request)
 
-    def _ensure_workflow(self, trans: ProvidesUserContext, request: WorkflowLandingRequestModel):
+    def _ensure_workflow(self, trans: ProvidesHistoryContext, request: WorkflowLandingRequestModel):
         if request.workflow_source_type == "trs_url" and isinstance(trans.app, StructuredApp):
             # trans is always structured app except for unit test
             assert request.workflow_source
@@ -266,7 +269,7 @@ class LandingRequestManager:
         request = self._get_claimed_tool_landing_request(trans, uuid)
         return self._tool_response(request)
 
-    def get_workflow_landing_request(self, trans: ProvidesUserContext, uuid: UUID4) -> WorkflowLandingRequest:
+    def get_workflow_landing_request(self, trans: ProvidesHistoryContext, uuid: UUID4) -> WorkflowLandingRequest:
         request = self._get_claimed_workflow_landing_request(trans, uuid)
         self._ensure_workflow(trans, request)
         return self._workflow_response(request)

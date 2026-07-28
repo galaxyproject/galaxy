@@ -19,18 +19,19 @@ from galaxy.util import (
 from galaxy.util.hash_util import hmac_new
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
 
 class ASync(BaseUIController):
     @web.expose
-    def default(self, trans, tool_id=None, data_id=None, data_secret=None, **kwd):
+    def default(self, trans: GalaxyWebTransaction, tool_id=None, data_id=None, data_secret=None, **kwd):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, data_id=data_id, data_secret=data_secret, **kwd)
 
     @web.expose
-    def index(self, trans, tool_id=None, data_secret=None, **kwd):
+    def index(self, trans: GalaxyWebTransaction, tool_id=None, data_secret=None, **kwd):
         """Manages ascynchronous connections"""
 
         if tool_id is None:
@@ -91,20 +92,18 @@ class ASync(BaseUIController):
                 for param in params:
                     if param in tool_declared_params or not tool.wants_params_cleaned:
                         params_dict[param] = params.get(param, None)
-            params = params_dict
-
-            if not params.get("URL"):
+            if not params_dict.get("URL"):
                 return f"No URL parameter was submitted for data {data_id}"
 
-            STATUS = params.get("STATUS")
+            STATUS = params_dict.get("STATUS")
 
             if STATUS == "OK":
                 key = hmac_new(trans.app.config.tool_secret, f"{data.id}:{data.history_id}")
                 if key != data_secret:
                     return f"You do not have permission to alter data {data_id}."
-                if not params.get("GALAXY_URL"):
+                if not params_dict.get("GALAXY_URL"):
                     # provide a fallback for GALAXY_URL
-                    params["GALAXY_URL"] = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
+                    params_dict["GALAXY_URL"] = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
                 # push the job into the queue
                 data.state = data.blurb = data.states.RUNNING
                 log.debug(f"executing tool {tool.id}")
@@ -115,7 +114,7 @@ class ASync(BaseUIController):
                 for key, obj in tool.outputs.items():
                     try:
                         TOOL_OUTPUT_TYPE = obj.format
-                        params[key] = data.id
+                        params_dict[key] = data.id
                         break
                     except Exception:
                         # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
@@ -124,7 +123,7 @@ class ASync(BaseUIController):
                     raise Exception("Error: ToolOutput object not found")
 
                 original_history = trans.sa_session.query(History).get(data.history_id)
-                job, *_ = tool.execute(trans, incoming=params, history=original_history)
+                job, *_ = tool.execute(trans, incoming=params_dict, history=original_history)
                 trans.app.job_manager.enqueue(job, tool=tool)
             else:
                 log.debug(f"async error -> {STATUS}")
@@ -202,6 +201,8 @@ class ASync(BaseUIController):
             trans.sa_session.add(trans.history)
             trans.sa_session.commit()
             # Need to explicitly create the file
+            assert data.dataset is not None
+            assert data.dataset.object_store is not None
             data.dataset.object_store.create(data.dataset)
             trans.log_event(f"Added dataset {data.id} to history {trans.history.id}", tool_id=tool_id)
 

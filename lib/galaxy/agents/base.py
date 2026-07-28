@@ -29,13 +29,13 @@ from typing import (
 import yaml
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import User
 from galaxy.schema.agents import (
     ActionSuggestion,
     ActionType,
     ConfidenceLevel,
 )
+from galaxy.work.context import SessionRequestContext
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
@@ -353,7 +353,7 @@ class AgentRunState:
 class GalaxyAgentDependencies:
     """Dependencies passed to Galaxy agents via dependency injection."""
 
-    trans: ProvidesUserContext
+    trans: SessionRequestContext
     user: User
     config: "GalaxyAppConfiguration"
     # Callable to get agent instances, avoids circular import in base.py

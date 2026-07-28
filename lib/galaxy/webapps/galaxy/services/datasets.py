@@ -27,7 +27,11 @@ from galaxy.celery.tasks import compute_dataset_hash
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.datasets import (
     DatasetAssociationManager,
     DatasetManager,
@@ -915,12 +919,14 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             raise galaxy_exceptions.InternalServerError(f"Could not get content for dataset: {util.unicodify(e)}")
         return content, headers
 
-    def update_object_store_id(self, trans, dataset_id: DecodedDatabaseIdField, payload: UpdateObjectStoreIdPayload):
+    def update_object_store_id(
+        self, trans: ProvidesUserContext, dataset_id: DecodedDatabaseIdField, payload: UpdateObjectStoreIdPayload
+    ):
         hda = self.hda_manager.get_accessible(dataset_id, trans.user)
         dataset = hda.dataset
         self.dataset_manager.update_object_store_id(trans, dataset, payload.object_store_id)
 
-    def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
+    def _get_or_create_converted(self, trans: ProvidesUserContext, original: model.DatasetInstance, target_ext: str):
         try:
             original.get_converted_dataset(trans, target_ext)
             converted = original.get_converted_files_by_type(target_ext)
@@ -950,7 +956,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _converted_datasets_state(
         self,
-        trans,
+        trans: ProvidesUserContext,
         dataset: model.DatasetInstance,
         chrom: str | None = None,
         retry: bool = False,
@@ -988,7 +994,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _search_features(
         self,
-        trans,
+        trans: ProvidesUserContext,
         dataset: model.DatasetInstance,
         query: str | None,
     ) -> list[list[str]]:
@@ -1116,7 +1122,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _raw_data(
         self,
-        trans,
+        trans: ProvidesAppContext,
         dataset,
         provider=None,
         **kwargs,
@@ -1155,7 +1161,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         return data
 
-    def _get_indexer(self, trans, dataset):
+    def _get_indexer(self, trans: ProvidesAppContext, dataset):
         indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
         if indexer is None:
             msg = f"No indexer available for dataset {self.encode_id(dataset.id)}"

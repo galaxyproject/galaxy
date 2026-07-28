@@ -199,7 +199,7 @@ class WebApplication(base.WebApplication):
                 directories=paths, module_directory=galaxy_app.config.template_cache_path, collection_size=500
             )
 
-    def handle_controller_exception(self, e, trans, method, kwargs):
+    def handle_controller_exception(self, e, trans: "GalaxyWebTransaction", method, kwargs):
         if not isinstance(e, HTTPException):
             # We're still logging too much here but at least it's not logging webob.exc.HTTPFound and friends
             log.debug(f"Encountered exception in controller method: {method}", exc_info=True)
@@ -221,7 +221,7 @@ class WebApplication(base.WebApplication):
             trans.response.status = e.status_code
             return trans.show_message(sanitize_html(e.err_msg), e.type)
 
-    def make_body_iterable(self, trans, body):
+    def make_body_iterable(self, trans: "base.DefaultWebTransaction", body):
         return base.WebApplication.make_body_iterable(self, trans, body)
 
     def transaction_chooser(self, environ, galaxy_app: BasicSharedApp, session_cookie: str):
@@ -1128,7 +1128,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         return url_for(path, qualified=True)
 
 
-def create_new_session(trans, prev_galaxy_session=None, user_for_new_session=None):
+def create_new_session(trans: "GalaxyWebTransaction", prev_galaxy_session=None, user_for_new_session=None):
     """
     Create a new GalaxySession for this request, possibly with a connection
     to a previous session (in `prev_galaxy_session`) and an existing user

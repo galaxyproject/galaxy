@@ -9,6 +9,7 @@ from typing import (
 
 from galaxy import web
 from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 class SanitizeAllowController(BaseAPIController):
     @web.require_admin
     @web.expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/sanitize_allow
         Return an object showing the current state of the toolbox and allow list.
@@ -25,7 +26,7 @@ class SanitizeAllowController(BaseAPIController):
 
     @web.require_admin
     @web.expose_api
-    def create(self, trans, tool_id, **kwd):
+    def create(self, trans: GalaxyWebTransaction, tool_id, **kwd):
         """
         PUT /api/sanitize_allow
         Add a new tool_id to the allowlist.
@@ -37,7 +38,7 @@ class SanitizeAllowController(BaseAPIController):
 
     @web.require_admin
     @web.expose_api
-    def delete(self, trans, tool_id, **kwd):
+    def delete(self, trans: GalaxyWebTransaction, tool_id, **kwd):
         """
         DELETE /api/sanitize_allow
         Remove tool_id from allowlist.
@@ -47,13 +48,13 @@ class SanitizeAllowController(BaseAPIController):
             self._save_allowlist(trans)
         return self._generate_allowlist(trans)
 
-    def _save_allowlist(self, trans):
+    def _save_allowlist(self, trans: GalaxyWebTransaction):
         trans.app.config.sanitize_allowlist = sorted(trans.app.config.sanitize_allowlist)
         with open(trans.app.config.sanitize_allowlist_file, "w") as f:
             f.write("\n".join(trans.app.config.sanitize_allowlist))
         trans.app.queue_worker.send_control_task("reload_sanitize_allowlist", noop_self=True)
 
-    def _generate_allowlist(self, trans):
+    def _generate_allowlist(self, trans: GalaxyWebTransaction):
         sanitize_dict: dict[str, Any] = dict(
             blocked_toolshed=[], allowed_toolshed=[], blocked_local=[], allowed_local=[]
         )

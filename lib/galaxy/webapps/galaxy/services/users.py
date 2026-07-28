@@ -255,7 +255,7 @@ class UsersService(ServiceBase):
                 rval.append(UserModel(**user_dict))
         return rval
 
-    def get_user_roles(self, trans, user_id):
+    def get_user_roles(self, trans: ProvidesUserContext, user_id):
         user = self.get_user(trans, user_id)
         roles = [ura.role for ura in user.roles]
         return RoleListResponse(root=[role_to_model(r) for r in roles])

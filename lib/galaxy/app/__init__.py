@@ -977,7 +977,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.proxy_manager = ProxyManager(self.config)
 
         # Must be initialized after job_config.
-        self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+        self.workflow_scheduling_manager = self._register_singleton(
+            scheduling_manager.WorkflowSchedulingManager, scheduling_manager.WorkflowSchedulingManager(self)
+        )
 
         # Initialize workflow completion monitoring (manager is always available,
         # but monitor only runs on workflow scheduler processes)

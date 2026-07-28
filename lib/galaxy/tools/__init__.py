@@ -267,7 +267,11 @@ if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
     from galaxy.jobs import JobToolConfiguration
     from galaxy.jobs.job_destination import JobDestination
-    from galaxy.managers.context import ProvidesUserContext
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesHistoryContext,
+        ProvidesUserContext,
+    )
     from galaxy.managers.jobs import JobSearch
     from galaxy.model import (
         DynamicTool,
@@ -760,7 +764,7 @@ class DefaultToolState:
         self.rerun_remap_job_id = None
         self.inputs = {}
 
-    def initialize(self, trans, tool):
+    def initialize(self, trans: "ProvidesHistoryContext", tool):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
         with default values for inputs. Grouping elements are filled in recursively.
@@ -2102,7 +2106,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         #       outputs?
         return True
 
-    def new_state(self, trans):
+    def new_state(self, trans: "ProvidesHistoryContext"):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
         with default values for inputs. Grouping elements are filled in recursively.
@@ -2333,7 +2337,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def completed_jobs(
         self,
-        trans,
+        trans: "ProvidesUserContext",
         use_cached_job: bool,
         all_params: list[ToolStateJobInstancePopulatedT],
     ) -> dict[int, Job | None]:
@@ -2391,7 +2395,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def handle_input(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         incoming: ToolRequestT,
         history: History | None = None,
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
@@ -2480,7 +2484,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def handle_single_execution(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         rerun_remap_job_id: int | None,
         execution_slice: ExecutionSlice,
         history: History,
@@ -2569,7 +2573,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                     params.append(input_param)
         return params
 
-    def get_static_param_values(self, trans):
+    def get_static_param_values(self, trans: "ProvidesHistoryContext"):
         """
         Returns a map of parameter names and values if the tool does not
         require any user input. Will raise an exception if any parameter
@@ -2589,7 +2593,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def execute(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         incoming: ToolStateJobInstancePopulatedT | None = None,
         history: History | None = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
@@ -2617,7 +2621,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def _execute(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         incoming: ToolStateJobInstancePopulatedT | None = None,
         validated_parameters: JobInternalToolState | None = None,
         history: History | None = None,
@@ -2678,7 +2682,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         return self.params_from_strings(param_dict, ignore_errors=ignore_errors)
 
     def check_and_update_param_values(
-        self, values, trans, update_values: bool = True, workflow_building_mode: bool = False
+        self, values, trans: "ProvidesHistoryContext", update_values: bool = True, workflow_building_mode: bool = False
     ):
         """
         Check that all parameters have values, and fill in with default
@@ -3000,7 +3004,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             os.remove(temp_file)
         return tarball_archive
 
-    def to_panel_entry(self, trans) -> dict[str, Any]:
+    def to_panel_entry(self, trans: "ProvidesUserContext") -> dict[str, Any]:
         """The complete per-tool panel/listing payload — see
         :class:`galaxy.tool_util.toolbox.entry.ToolPanelEntry` for the
         contract. ``to_dict`` layers io/help extras on top of this.
@@ -3041,7 +3045,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             kwargs["config_file"] = None if not self.config_file else os.path.abspath(self.config_file)
         return ToolPanelEntry(**kwargs).model_dump(exclude_unset=True)
 
-    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
+    def to_dict(self, trans: "ProvidesHistoryContext", link_details=False, io_details=False, tool_help=False):
         """Returns dict of tool.
 
         ``link_details`` is accepted for backwards compatibility and no
@@ -3072,7 +3076,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def to_json(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         kwd=None,
         job: Job | None = None,
         workflow_building_mode=False,
@@ -3093,7 +3097,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             or workflow_building_mode is workflow_building_modes.DISABLED
         ):
             # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
-            history = history or trans.get_history()
+            history = history or trans.history
             if history is None and job is not None:
                 assert job.history
                 history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
@@ -3319,7 +3323,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             raise exceptions.MessageException(unicodify(e))
         return message
 
-    def get_default_history_by_trans(self, trans, create=False):
+    def get_default_history_by_trans(self, trans: "ProvidesHistoryContext", create=False):
         return trans.get_history(create=create)
 
     @classmethod
@@ -3832,7 +3836,7 @@ class DataManagerTool(OutputParameterJSONTool):
         else:
             raise Exception("Unknown data manager mode encountered type...")
 
-    def get_default_history_by_trans(self, trans, create=False):
+    def get_default_history_by_trans(self, trans: "ProvidesHistoryContext", create=False):
         def _create_data_manager_history(user):
             history = History(name="Data Manager History (automatically created)", user=user)
             data_manager_association = model.DataManagerHistoryAssociation(user=user, history=history)
@@ -3967,7 +3971,7 @@ class UnzipCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -3993,7 +3997,7 @@ class ZipCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         forward_o = incoming["input_forward"]
         reverse_o = incoming["input_reverse"]
 
@@ -4015,7 +4019,7 @@ class CrossProductFlatCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
         join_identifier = incoming["join_identifier"]
@@ -4051,7 +4055,7 @@ class CrossProductNestedCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
 
@@ -4103,7 +4107,7 @@ class BuildListCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         new_elements = {}
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
@@ -4134,7 +4138,7 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -4218,7 +4222,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -4261,7 +4265,7 @@ class MergeCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         input_lists = []
 
         for incoming_repeat in incoming["inputs"]:
@@ -4370,7 +4374,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
         assert isinstance(element_object, model.DatasetInstance)
         return element_object.is_ok
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         collection = incoming["input"]
         replacement_dataset = incoming.get("replacement")
         if hasattr(collection, "element_object"):
@@ -4493,7 +4497,7 @@ class FlattenTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
         new_elements = {}
@@ -4531,7 +4535,7 @@ class NestTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         new_elements = {}
         copied_datasets = []
@@ -4563,7 +4567,7 @@ class SortTool(DatabaseOperationTool):
     require_terminal_states = True
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         sorttype = incoming["sort_type"]["sort_type"]
         new_elements = {}
@@ -4631,7 +4635,7 @@ class HarmonizeTool(DatabaseOperationTool):
         }
         super().check_inputs_ready(input_datasets, filtered_collections, security)
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca1 = incoming["input1"]
         hdca2 = incoming.get("input2")
         elements1 = hdca1.collection.elements
@@ -4690,7 +4694,9 @@ class HarmonizeTool(DatabaseOperationTool):
         output_with_selected_identifiers(old_elements1_dict, "output1")
         output_with_selected_identifiers(old_elements2_dict, "output2")
 
-    def _produce_outputs_with_optional_nulls(self, trans, output_collections, hdca1, elements1, history):
+    def _produce_outputs_with_optional_nulls(
+        self, trans: "ProvidesUserContext", output_collections, hdca1, elements1, history
+    ):
         """When input2 is not provided, output1 is a copy of input1 and output2
         mirrors input1's structure but with expression.json null datasets."""
         object_store_populator = ObjectStorePopulator(trans.app, trans.user)
@@ -4738,7 +4744,7 @@ class HarmonizeTool(DatabaseOperationTool):
             propagate_hda_tags=False,
         )
 
-    def _create_null_dataset(self, trans, history, object_store_populator):
+    def _create_null_dataset(self, trans: "ProvidesUserContext", history, object_store_populator):
         """Create a new HDA with expression.json null content (skipped marker)."""
         null_hda = HistoryDatasetAssociation(
             extension="expression.json",
@@ -4763,7 +4769,7 @@ class HarmonizeTool(DatabaseOperationTool):
 class RelabelFromFileTool(DatabaseOperationTool):
     tool_type = "relabel_from_file"
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how_type = incoming["how"]["how_select"]
         new_labels_dataset_assoc = incoming["how"]["labels"]
@@ -4846,7 +4852,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
 class ApplyRulesTool(DatabaseOperationTool):
     tool_type = "apply_rules"
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
@@ -4884,7 +4890,7 @@ class TagFromFileTool(DatabaseOperationTool):
     # require_terminal_states = True
     # require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how = incoming["how"]
         new_tags_dataset_assoc = incoming["tags"]
@@ -4961,7 +4967,7 @@ class TagFromFileTool(DatabaseOperationTool):
 class FilterFromFileTool(DatabaseOperationTool):
     tool_type = "filter_from_file"
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how_filter = incoming["how"]["how_filter"]
         filter_dataset_assoc = incoming["how"]["filter_source"]
@@ -5017,7 +5023,7 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hda = incoming["input"]
         number = int(incoming["number"])
         element_identifier = incoming["element_identifier"]
@@ -5042,7 +5048,7 @@ class ConvertSampleSheetTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -5117,7 +5123,7 @@ tool_types = {tool_class.tool_type: tool_class for tool_class in TOOL_CLASSES}
 # ---- Utility classes to be factored out -----------------------------------
 
 
-def _rerun_remap_job_id(trans, incoming, tool_id: str | None) -> int | None:
+def _rerun_remap_job_id(trans: "ProvidesAppContext", incoming, tool_id: str | None) -> int | None:
     rerun_remap_job_id = None
     if "rerun_remap_job_id" in incoming:
         try:

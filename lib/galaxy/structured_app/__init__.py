@@ -122,6 +122,7 @@ class MinimalApp(BasicSharedApp):
 class MinimalManagerApp(MinimalApp):
     # Minimal App that is sufficient to run Celery tasks
     amqp_internal_connection_obj: Connection | None
+    vault: Vault
     execution_timer_factory: "ExecutionTimerFactory"
     carbon_intensity: float
     file_sources: ConfiguredFileSources
@@ -174,7 +175,6 @@ class StructuredApp(MinimalManagerApp):
     tool_dependency_dir: str | None
     test_data_resolver: test_data.TestDataResolver
     trs_proxy: TrsProxy
-    vault: Vault
     webhooks_registry: WebhooksRegistry
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'

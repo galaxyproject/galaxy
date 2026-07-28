@@ -563,7 +563,7 @@ class FileSourceInstancesManager:
     def _save(self, user_file_source: UserFileSource) -> None:
         save_template_instance(self._sa_session, user_file_source)
 
-    def _to_model(self, trans, persisted_file_source: UserFileSource) -> UserFileSourceModel:
+    def _to_model(self, trans: ProvidesUserContext, persisted_file_source: UserFileSource) -> UserFileSourceModel:
         file_source_type = persisted_file_source.template.configuration.type
         secrets = persisted_file_source.template_secrets or []
         uuid = str(persisted_file_source.uuid)
