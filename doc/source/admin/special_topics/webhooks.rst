@@ -19,6 +19,38 @@ webhook folders as you like as a comma separated list.
 Webhooks supports one additional layer of activating/deactivating by changing the ``activate: true`` in each config of each webhook.
 
 
+Built-in center panel iframe
+----------------------------
+
+Galaxy ships with an ``iframe`` webhook (``config/plugins/webhooks/iframe/``) that displays a configurable web page
+in a panel below the standard job-submission confirmation message after a user runs a tool or workflow.
+
+The webhook is active by default whenever ``webhooks_dir`` includes ``config/plugins/webhooks`` (the default value).
+It renders nothing unless ``center_panel_url`` is set in ``galaxy.yml``, so there is no visible effect for
+installations that do not configure it.
+
+To enable the center panel, add the following to your ``galaxy.yml``:
+
+.. code-block:: yaml
+
+    galaxy:
+        center_panel_url: https://example.org/your-help-or-news-page
+        center_panel_title: Resources & Help   # optional — omit to hide the header bar
+        center_panel_height: 800               # optional — defaults to 1000 px
+
+Configuration options
+^^^^^^^^^^^^^^^^^^^^^
+
+``center_panel_url``
+    URL to embed in the iframe. Leave unset (the default) to disable the panel entirely.
+
+``center_panel_title``
+    Text shown in a dark header bar above the iframe. If omitted, no header bar is rendered.
+
+``center_panel_height``
+    Height of the iframe in pixels. Defaults to ``1000``.
+
+
 Entry points
 ------------
 

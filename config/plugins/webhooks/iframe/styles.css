@@ -1,0 +1,16 @@
+#iframe {
+    border: 1px solid #adb5bd;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+#iframe-header {
+    background: #343a40;
+    padding: 10px 15px;
+}
+
+#iframe-name {
+    color: #fff;
+    font-size: 14px;
+}
