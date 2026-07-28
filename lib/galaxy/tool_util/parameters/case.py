@@ -324,15 +324,16 @@ def test_case_state(
 
     for test_input in inputs:
         input_name = test_input["name"]
-        if input_name not in handled_inputs:
+        if input_name not in handled_inputs and not _input_name_was_handled_by_legacy_fallback(
+            input_name, handled_inputs, profile
+        ):
             unhandled_inputs.append(input_name)
 
     tool_state = TestCaseToolState(state)
     if validate:
         tool_state.validate(tool_parameter_bundle, name=name)
         for input_name in unhandled_inputs:
-            if not _input_name_was_handled_by_legacy_fallback(input_name, handled_inputs, profile):
-                raise Exception(f"Invalid parameter name found {input_name}")
+            raise Exception(f"Invalid parameter name found {input_name}")
     return TestCaseStateAndWarnings(tool_state, warnings, unhandled_inputs)
 
 
@@ -431,7 +432,7 @@ def _merge_into_state(
         if input_name not in state_at_level:
             state_at_level[input_name] = repeat_state_array
 
-        repeat_instance_inputs = _repeat_inputs_to_array(state_path, tool_input.parameters, context.inputs)
+        repeat_instance_inputs = _repeat_inputs_to_array(state_path, context.inputs)
         if tool_input.min is not None:
             while len(repeat_instance_inputs) < tool_input.min:
                 repeat_instance_inputs.append([])
@@ -504,9 +505,7 @@ def _merge_into_state(
     return handled_inputs
 
 
-def _repeat_inputs_to_array(
-    state_path: str, parameters: list[ToolParameterT], inputs: ToolSourceTestInputs
-) -> list[ToolSourceTestInputs]:
+def _repeat_inputs_to_array(state_path: str, inputs: ToolSourceTestInputs) -> list[ToolSourceTestInputs]:
     inputs_as_dict = _inputs_as_dict(inputs)
     repeat_instance_input_dicts = repeat_inputs_to_array(state_path, inputs_as_dict)
     if not repeat_instance_input_dicts and "|" in state_path:
@@ -520,21 +519,7 @@ def _repeat_inputs_to_array(
             repeat_instance_input_dicts = repeat_inputs_to_array(candidate_path, inputs_as_dict)
             if repeat_instance_input_dicts:
                 break
-    repeat_instance_inputs = [list(instance_inputs.values()) for instance_inputs in repeat_instance_input_dicts]
-    if repeat_instance_inputs:
-        return repeat_instance_inputs
-
-    legacy_repeat_inputs: list[ToolSourceTestInputs] = []
-    for parameter in parameters:
-        parameter_name = parameter.name
-        matching_inputs = [input for input in inputs if input["name"] == parameter_name]
-        for i, input in enumerate(matching_inputs):
-            while len(legacy_repeat_inputs) <= i:
-                legacy_repeat_inputs.append([])
-            synthetic_input = cast(ToolSourceTestInput, dict(input))
-            synthetic_input["name"] = f"{state_path}_{i}|{parameter_name}"
-            legacy_repeat_inputs[i].append(synthetic_input)
-    return legacy_repeat_inputs
+    return [list(instance_inputs.values()) for instance_inputs in repeat_instance_input_dicts]
 
 
 def _select_which_when(

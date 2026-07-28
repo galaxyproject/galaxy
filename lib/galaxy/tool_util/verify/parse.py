@@ -80,10 +80,17 @@ def parse_tool_test_descriptions(
                 tool_parameter_bundle = input_models_for_tool_source(tool_source)
                 parameters = tool_parameter_bundle.parameters
             validated_test_case = case_state(raw_test_dict, parameters, profile, validate=validate_on_load)
-            request_and_schema = TestRequestAndSchema(
-                validated_test_case.tool_state,
-                tool_parameter_bundle or ToolParameterBundleModel(parameters=parameters),
-            )
+            if validated_test_case.unhandled_inputs:
+                # Inputs that map to no parameter (e.g. legacy unqualified repeats) can't be
+                # represented in a modern request; fall back to the legacy API.
+                validation_skipped_reason = (
+                    f"could not build request: unhandled inputs {validated_test_case.unhandled_inputs}"
+                )
+            else:
+                request_and_schema = TestRequestAndSchema(
+                    validated_test_case.tool_state,
+                    tool_parameter_bundle or ToolParameterBundleModel(parameters=parameters),
+                )
         except Exception as e:
             if validate_on_load:
                 validation_exception = e

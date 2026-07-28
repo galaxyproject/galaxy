@@ -420,19 +420,22 @@ def test_legacy_partial_conditional_paths_are_resolved_for_request_state():
     dict_verify_each(tool_state.input_state, expectations)
 
 
-def test_legacy_unqualified_repeat_inputs_are_expanded_for_request_state():
+def test_legacy_unqualified_repeat_inputs_are_not_expanded():
+    # Unqualified repeat params (the multi_repeats anti-pattern) are no longer synthesized into
+    # repeat instances; use explicit <repeat> tags. The bare param is rejected on validation.
     tool_source = tool_source_for("multi_repeats")
     test_cases = tool_source.parse_tests_to_dict()["tests"]
+    with pytest.raises(Exception, match="Invalid parameter name found input2"):
+        case_state_for(tool_source, test_cases[2])
 
-    test_case_state = case_state_for(tool_source, test_cases[2]).tool_state
 
-    expectations = [
-        (["queries", 0, "input2", "path"], "simple_line.txt"),
-        (["queries", 1, "input2", "path"], "simple_line.txt"),
-        (["more_queries", 0, "more_queries_input", "path"], "simple_line.txt"),
-        (["more_queries", 1, "more_queries_input", "path"], "simple_line.txt"),
-    ]
-    dict_verify_each(test_case_state.input_state, expectations)
+def test_unrepresentable_test_case_falls_back_to_legacy_request():
+    # A test whose inputs can't be represented in a modern request (unqualified repeats) yields no
+    # request, so the interactor falls back to the legacy tool API rather than erroring.
+    tests = list(parse_tool_test_descriptions(tool_source_for("multi_repeats")))
+    description = tests[2].to_dict()
+    assert description["error"] is False
+    assert description["request"] is None
 
 
 def test_legacy_unqualified_repeat_inside_conditional_is_resolved():
