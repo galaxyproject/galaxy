@@ -65,7 +65,7 @@ Extracting a workflow from your history is now clearer and more intuitive.
 Favorite and Recent Tools Panel
 -------------------------------
 
-Galaxy now includes an optional tool panel focused on faster access to the tools you use most.
+Galaxy now includes an optional tool panel focused on faster access to the tools you use the most.
 
 - **Favorites at hand**. Highlight and quickly access your favorite tools.
 - **Automatic recents**. Recently executed tools are tracked on the client side.
