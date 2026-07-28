@@ -57,6 +57,13 @@ jobs:
       - name: Append doc/source/conf.versioning.py
         run: cat doc/source/conf.versioning.py >> doc/source/conf.py
       - name: Build docs
+        env:
+          # Parallelize Sphinx across the runner's cores.
+          SPHINXOPTS: '-j auto'
+          # sphinx.ext.viewcode dominates the build time. Pull request builds
+          # only need to verify that the documentation still builds, so skip it
+          # there and keep it for the builds that are actually deployed.
+          GALAXY_DOCS_SKIP_VIEW_CODE: ${{ github.event_name == 'pull_request' && '1' || '0' }}
         run: make docs
       - name: Deploy docs
         if: github.event_name == 'push' && github.repository_owner == 'galaxyproject'
