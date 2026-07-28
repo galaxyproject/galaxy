@@ -38,6 +38,7 @@
                     :prefix="prefix"
                     @insert="() => repeatInsert(input)"
                     @delete="(id) => repeatDelete(input, id)"
+                    @clone="(id) => repeatClone(input, id)"
                     @swap="(a, b) => repeatSwap(input, a, b)" />
             </div>
             <div v-else-if="input.type == 'section'">
@@ -211,6 +212,14 @@ export default {
         },
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);
+            this.onChangeForm();
+        },
+        repeatClone(input, cacheId) {
+            const clonedInputs = structuredClone(input.cache[cacheId]);
+
+            set(input, "cache", input.cache ?? []);
+            input.cache.splice(cacheId + 1, 0, clonedInputs);
+
             this.onChangeForm();
         },
         repeatSwap(input, a, b) {
