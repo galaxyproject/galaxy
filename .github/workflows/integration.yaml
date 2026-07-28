@@ -97,6 +97,9 @@ jobs:
       - if: github.event_name == 'schedule'
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          # --cov=lib line-traces a live Galaxy for the whole job, so integration
+          # coverage is collected on this weekly run only.
+          echo "GALAXY_TEST_COVERAGE=1" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
           # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Pull Docker Hub images through mirror.gcr.io
@@ -174,13 +177,14 @@ jobs:
         run: |
           if [ "${{ matrix.lane }}" = "host-services" ]; then
             . .ci/minikube-test-setup/start_services.sh
-            ./run_tests.sh --coverage -integration test/integration
+            ./run_tests.sh -integration test/integration
           else
             export GALAXY_TEST_DBURI='postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-            ./run_tests.sh --coverage -integration test/integration -- --num-shards=2 --shard-id=${{ matrix.chunk }} -n 3 --dist loadscope --no-loadscope-reorder
+            ./run_tests.sh -integration test/integration -- --num-shards=2 --shard-id=${{ matrix.chunk }} -n 3 --dist loadscope --no-loadscope-reorder
           fi
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v6
+        if: github.event_name == 'schedule'
         with:
           flags: integration
           working-directory: 'galaxy root'
