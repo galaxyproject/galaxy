@@ -33,15 +33,15 @@ Galaxy Notebooks make it easy to capture, share, and reproduce the full story be
 GalaxyAI: Specialized Agents and Context-Aware Help
 ---------------------------------------------------
 
-GalaxyAI now knows where you are and hands your question to the right specialist.
+GalaxyAI now knows where you are and routes your question to the right specialist.
 
-- **Context-aware panel**. A persistent, dockable assistant that knows which tool form, job, history, or notebook you are looking at.
-- **Specialized agents**. Questions are routed to purpose-built agents for job error analysis, tool recommendations, Galaxy Training Network tutorials, and community workflows from the IWC, and each answer is labeled with the agent that produced it.
-- **Asks instead of guessing**. When a request is ambiguous, GalaxyAI asks a clarifying question with quick replies rather than picking an interpretation for you.
-- **Report drafting**. Generate a first draft of a workflow invocation report directly from the run.
-- **Safer custom tools**. The custom tool agent resolves verified containers instead of inventing one, and validates the tool definition before you save it.
+- **Context-aware panel**. A dockable assistant that knows which tool form, job, history, or notebook you are viewing.
+- **Specialized agents**. Purpose-built agents for error analysis, tool recommendations, GTN tutorials, and IWC workflows.
+- **Asks instead of guessing**. Ambiguous requests get a clarifying question with quick replies.
+- **Report drafting**. Draft a workflow invocation report from the run itself.
+- **Safer custom tools**. The custom tool agent resolves verified containers rather than inventing one.
 
-Galaxy 26.0 introduced the assistant; 26.1 makes it context-aware, specialized, and honest about what it does not know.
+Each answer is labeled with the agent that produced it.
 [`#22096 <https://github.com/galaxyproject/galaxy/pull/22096>`__]
 [`#22097 <https://github.com/galaxyproject/galaxy/pull/22097>`__]
 [`#22791 <https://github.com/galaxyproject/galaxy/pull/22791>`__]
@@ -53,13 +53,13 @@ Connect Your Own AI Tools with MCP
 
 Galaxy now speaks the Model Context Protocol, so AI clients outside Galaxy can work with your data.
 
-- **Bring your own client**. Any MCP-compatible client, whether a desktop assistant, an IDE, or an agent you wrote yourself, can connect to a Galaxy server.
-- **Real Galaxy operations**. Search tools, inspect histories and datasets, run tools, import and invoke workflows, and monitor jobs.
+- **Bring your own client**. Any MCP-compatible client can connect to a Galaxy server.
+- **Real Galaxy operations**. Search and run tools, inspect histories and datasets, invoke workflows, and monitor jobs.
 - **Community workflows**. Find and import vetted Interactive Workflow Composer (IWC) workflows without leaving your client.
-- **The same rules as any client**. External agents route through Galaxy's existing service layer, inheriting the same authorization, validation, and operational limits as any other Galaxy client.
-- **Administrator opt-in**. The MCP server is disabled by default and enabled with ``enable_mcp_server``.
+- **Same rules as any client**. External agents route through Galaxy's service layer, inheriting the same authorization and validation.
+- **Administrator opt-in**. Disabled by default; enabled with ``enable_mcp_server``.
 
-The same operations layer powers GalaxyAI inside the application, so the in-app and external experiences stay in step.
+The same operations layer powers GalaxyAI in the application, so both surfaces stay in step.
 [`#21942 <https://github.com/galaxyproject/galaxy/pull/21942>`__]
 [`#22626 <https://github.com/galaxyproject/galaxy/pull/22626>`__]
 [`#22906 <https://github.com/galaxyproject/galaxy/pull/22906>`__]
