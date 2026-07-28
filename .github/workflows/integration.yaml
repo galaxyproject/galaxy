@@ -86,6 +86,9 @@ jobs:
       - if: github.event_name == 'schedule'
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          # --cov=lib line-traces a live Galaxy for the whole job, so integration
+          # coverage is collected on this weekly run only.
+          echo "GALAXY_TEST_COVERAGE=1" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
           # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
@@ -126,9 +129,10 @@ jobs:
           GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_LOCK_DIR: '${{ runner.temp }}/mulled-resolution-cache/locks'
         run: |
           . .ci/minikube-test-setup/start_services.sh
-          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
+          ./run_tests.sh -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.0.0
+        if: github.event_name == 'schedule'
         with:
           flags: integration
           working-directory: 'galaxy root'
