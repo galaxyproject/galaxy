@@ -68,7 +68,7 @@ Favorite and Recent Tools Panel
 Galaxy now includes an optional tool panel focused on faster access to the tools you use the most.
 
 - **Favorites at hand**. Highlight and quickly access your favorite tools.
-- **Automatic recents**. Recently executed tools are tracked on the client side.
+- **Automatic recents**. Recently executed tools are automatically tracked.
 - **Keyboard navigation**. Move through the panel without leaving the keyboard.
 - **Integrated search**. Search tools with quick favorite and unfavorite actions.
 - **Guided discovery**. When no favorites are configured, the panel helps you discover and organize tools through the redesigned tool discovery interface.
