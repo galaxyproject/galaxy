@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.10']
-        chunk: [0, 1]
+        chunk: [0, 1, 2, 3]
     services:
       postgres:
         image: postgres:18
@@ -59,7 +59,7 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Run tests
-        run: ./run_tests.sh --coverage --skip_flakey_fails -api lib/galaxy_test/api -- --num-shards=2 --shard-id=${{ matrix.chunk }}
+        run: ./run_tests.sh --coverage --skip_flakey_fails -api lib/galaxy_test/api -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.0.0
         with:
