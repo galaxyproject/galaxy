@@ -197,14 +197,14 @@
                         <b-button
                             :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
                             variant="secondary"
-                            :disabled="!undoRedoStore.hasUndo"
+                            :disabled="!undoRedoStore.hasUndo || loadingWorkflow"
                             @click="undoRedoStore.undo()">
                             <FontAwesomeIcon :icon="faUndo" />
                         </b-button>
                         <b-button
                             :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
                             variant="secondary"
-                            :disabled="!undoRedoStore.hasRedo"
+                            :disabled="!undoRedoStore.hasRedo || loadingWorkflow"
                             @click="undoRedoStore.redo()">
                             <FontAwesomeIcon :icon="faRedo" />
                         </b-button>
@@ -212,7 +212,7 @@
                             id="workflow-save-button"
                             class="py-1 px-2"
                             variant="link"
-                            :disabled="!hasChanges"
+                            :disabled="!hasChanges || loadingWorkflow"
                             :title="saveWorkflowTitle"
                             @click="saveOrCreate">
                             <FontAwesomeIcon :icon="faSave" />
@@ -398,8 +398,10 @@ export default {
         const undoKeys = logicOr(ctrl_z, meta_z);
         const redoKeys = logicOr(ctrl_shift_z, meta_shift_z);
 
-        whenever(logicAnd(undoKeys, logicNot(redoKeys)), undo);
-        whenever(redoKeys, redo);
+        const loadingWorkflow = ref(false);
+
+        whenever(logicAnd(undoKeys, logicNot(redoKeys)), () => !loadingWorkflow.value && undo());
+        whenever(redoKeys, () => !loadingWorkflow.value && redo());
 
         const activityBar = ref(null);
         const workflowGraph = ref(null);
@@ -763,13 +765,13 @@ export default {
             getWorkflowBoundingBox,
             captureTransformAndBounds,
             calculateAdjustedTransform,
+            loadingWorkflow,
         };
     },
     data() {
         return {
             versions: [],
             labels: {},
-            loadingWorkflow: false,
             services: null,
             stateMessages: [],
             insertedStateMessages: [],
@@ -851,6 +853,18 @@ export default {
         this.initialLoading = false;
     },
     methods: {
+        /**
+         * Blocks actions that would conflict with an in-progress workflow load, e.g. switching
+         * versions, saving, or editing steps while the graph is being reset and repopulated.
+         * @param action A string that will follow the prefix "Please wait for ... before `${action}`" in the warning message.
+         */
+        blockedWhileLoading(action = "making changes") {
+            if (this.loadingWorkflow) {
+                Toast.warning(`Please wait for the workflow to finish loading before ${action}.`);
+                return true;
+            }
+            return false;
+        },
         onUpdateStep(step) {
             this.stepStore.updateStep(step);
         },
@@ -861,6 +875,9 @@ export default {
             this.stepActions.setPosition(this.steps[stepId], position);
         },
         async onAttemptRefactor(actions) {
+            if (this.blockedWhileLoading()) {
+                return;
+            }
             if (this.hasChanges) {
                 const r = window.confirm(
                     "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?",
@@ -913,6 +930,9 @@ export default {
             this.stepActions.updateStep(nodeId, partialStep);
         },
         onRemove(nodeId) {
+            if (this.blockedWhileLoading("removing a step")) {
+                return;
+            }
             this.stepActions.removeStep(this.steps[nodeId]);
         },
         onEditSubworkflow(contentId) {
@@ -920,6 +940,9 @@ export default {
             this.onNavigate(editUrl);
         },
         async onClone(stepId) {
+            if (this.blockedWhileLoading("cloning a step")) {
+                return;
+            }
             const sourceStep = this.steps[parseInt(stepId)];
             this.stepActions.copyStep({
                 ...sourceStep,
@@ -929,12 +952,21 @@ export default {
             });
         },
         onInsertTool(tool_id, tool_name, toolUuid) {
+            if (this.blockedWhileLoading("inserting a step")) {
+                return;
+            }
             this._insertStep(tool_id, tool_name, "tool", undefined, toolUuid);
         },
         async onInsertModule(module_id, module_name, state) {
+            if (this.blockedWhileLoading("inserting a step")) {
+                return;
+            }
             this._insertStep(module_name, module_name, module_id, state);
         },
         onInsertWorkflow(workflow_id, workflow_name) {
+            if (this.blockedWhileLoading("inserting a subworkflow")) {
+                return;
+            }
             this._insertStep(workflow_id, workflow_name, "subworkflow");
         },
         copyIntoWorkflow(id) {
@@ -954,6 +986,9 @@ export default {
             });
         },
         async onInsertWorkflowSteps(workflowId, stepCount) {
+            if (this.blockedWhileLoading("inserting steps")) {
+                return;
+            }
             if (stepCount < 10) {
                 this.copyIntoWorkflow(workflowId);
             } else {
@@ -996,6 +1031,9 @@ export default {
             }
         },
         onSaveAs() {
+            if (this.blockedWhileLoading("saving the workflow")) {
+                return;
+            }
             this.showSaveAsModal = true;
         },
         resetSaveAs() {
@@ -1007,6 +1045,9 @@ export default {
             this.$router.push("/workflows/edit");
         },
         async saveOrCreate() {
+            if (this.blockedWhileLoading("saving the workflow")) {
+                return;
+            }
             if (this.hasErrors) {
                 const confirmed = await this.confirm(
                     `${this.errorText}. You can save the workflow, but it may not run correctly.`,
@@ -1124,6 +1165,10 @@ export default {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
         async generateAIReport() {
+            if (this.blockedWhileLoading("generating the AI report")) {
+                return;
+            }
+
             if (this.hasChanges) {
                 Toast.error("Please save your workflow before generating the AI report.");
                 return;
@@ -1228,6 +1273,9 @@ export default {
         },
         onVersion(version) {
             if (version != this.version) {
+                if (this.blockedWhileLoading("switching versions")) {
+                    return;
+                }
                 if (this.hasChanges) {
                     const r = window.confirm(
                         "There are unsaved changes to your workflow which will be lost. Continue ?",
