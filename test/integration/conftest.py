@@ -7,10 +7,20 @@ from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
 from galaxy.tool_util.deps.mulled.util import NAMESPACE_HAS_REPO_NAME_KEY
-from galaxy_test.conftest import (  # noqa: F401
-    pytest_configure,
-    pytest_plugins,
+from galaxy_test import shard
+from galaxy_test.conftest import pytest_plugins  # noqa: F401
+from galaxy_test.conftest import (
+    pytest_configure as _base_pytest_configure,
 )
+from galaxy_test.shard import (  # noqa: F401
+    pytest_collection_modifyitems,
+    pytest_report_collectionfinish,
+)
+
+
+def pytest_configure(config):
+    _base_pytest_configure(config)
+    shard.pytest_configure(config)
 
 
 @pytest.fixture(scope="session", autouse=True)
