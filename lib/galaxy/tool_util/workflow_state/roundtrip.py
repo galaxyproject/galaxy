@@ -1310,6 +1310,8 @@ class SingleRoundTripReport(BaseModel):
 
     workflow: str
     result: RoundTripValidationResult
+    before_content: Optional[str] = None
+    after_content: Optional[str] = None
 
 
 # -- Options model --
@@ -1353,11 +1355,17 @@ def roundtrip_single(
     strict_structure: bool = False,
     strict_encoding: bool = False,
     strict_state: bool = False,
+    include_content: bool = False,
 ) -> SingleRoundTripReport:
     """Run round-trip validation on a single workflow, return structured report.
 
     Library-level entry point with no CLI dependencies.
     Loads the workflow, validates it's native, runs the roundtrip, wraps the result.
+
+    When include_content=True, before_content is the original native workflow
+    as JSON and after_content is the re-imported native workflow as JSON.
+    RoundTripValidationResult.original_dict and .reimported_dict are populated
+    by roundtrip_validate and used here (both excluded from normal serialization).
     """
     workflow = load_workflow(workflow_path)
     workflow_name = os.path.basename(workflow_path)
@@ -1378,7 +1386,21 @@ def roundtrip_single(
         strict_encoding=strict_encoding,
         strict_state=strict_state,
     )
-    return SingleRoundTripReport(workflow=workflow_name, result=result)
+
+    before_content: Optional[str] = None
+    after_content: Optional[str] = None
+    if include_content:
+        if result.original_dict is not None:
+            before_content = json.dumps(result.original_dict, indent=2)
+        if result.reimported_dict is not None:
+            after_content = json.dumps(result.reimported_dict, indent=2)
+
+    return SingleRoundTripReport(
+        workflow=workflow_name,
+        result=result,
+        before_content=before_content,
+        after_content=after_content,
+    )
 
 
 # -- Formatters --

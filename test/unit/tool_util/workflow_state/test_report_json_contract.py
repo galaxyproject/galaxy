@@ -152,9 +152,9 @@ def _clean_fixture() -> TreeCleanReport:
                         step="1",
                         tool_id="cat1",
                         version="1.0.0",
-                        removed_keys=["legacy_param", "bookkeeping_key"],
+                        removed_state_keys=["legacy_param", "bookkeeping_key"],
                     ),
-                    CleanStepResult(step="2", tool_id="Grep1", removed_keys=[]),
+                    CleanStepResult(step="2", tool_id="Grep1"),
                     CleanStepResult(
                         step="3",
                         tool_id=None,

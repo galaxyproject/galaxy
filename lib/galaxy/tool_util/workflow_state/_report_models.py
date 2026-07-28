@@ -46,7 +46,8 @@ class ValidationStepResult(StepResultBase):
 
 
 class CleanStepResult(StepResultBase):
-    removed_keys: List[str] = []
+    removed_state_keys: List[str] = []
+    removed_step_keys: List[str] = []
     skipped: bool = False
     skip_reason: str = ""
 
@@ -119,7 +120,7 @@ class WorkflowCleanResult(WorkflowResultBase):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def steps_affected(self) -> int:
-        return sum(1 for sr in self.step_results if sr.removed_keys)
+        return sum(1 for sr in self.step_results if sr.removed_state_keys or sr.removed_step_keys)
 
 
 # -- Connection validation report models --
@@ -268,6 +269,25 @@ class TreeCleanReport(TreeReportBase):
 # -- Single-workflow wrappers (for JSON serialization of single-file runs) --
 
 
+class SingleCleanReport(BaseModel):
+    """JSON shape for single-file cleaning."""
+
+    workflow: str
+    results: List[CleanStepResult]
+    before_content: Optional[str] = None
+    after_content: Optional[str] = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def total_removed(self) -> int:
+        return sum(len(r.removed_state_keys) + len(r.removed_step_keys) for r in self.results)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def steps_with_removals(self) -> int:
+        return sum(1 for r in self.results if r.removed_state_keys or r.removed_step_keys)
+
+
 class SingleValidationReport(BaseModel):
     """JSON shape for single-file validation."""
 
@@ -277,6 +297,7 @@ class SingleValidationReport(BaseModel):
     skipped_reason: Optional[str] = None
     structure_errors: List[str] = Field(default_factory=list)
     encoding_errors: List[str] = Field(default_factory=list)
+    clean_report: Optional[SingleCleanReport] = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -286,23 +307,6 @@ class SingleValidationReport(BaseModel):
             "fail": sum(1 for r in self.results if r.status == "fail"),
             "skip": sum(1 for r in self.results if r.status in SKIP_STATUSES),
         }
-
-
-class SingleCleanReport(BaseModel):
-    """JSON shape for single-file cleaning."""
-
-    workflow: str
-    results: List[CleanStepResult]
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def total_removed(self) -> int:
-        return sum(len(r.removed_keys) for r in self.results)
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def steps_with_removals(self) -> int:
-        return sum(1 for r in self.results if r.removed_keys)
 
 
 # -- Helpers for wrapping single-file results into tree reports --
@@ -438,7 +442,7 @@ def wrap_single_lint(
 
 def wrap_single_clean(workflow_path: str, step_results: List[CleanStepResult]) -> TreeCleanReport:
     """Wrap single-file results into a TreeCleanReport for Markdown rendering."""
-    total = sum(len(r.removed_keys) for r in step_results)
+    total = sum(len(r.removed_state_keys) + len(r.removed_step_keys) for r in step_results)
     return TreeCleanReport(
         root=workflow_path,
         results=[

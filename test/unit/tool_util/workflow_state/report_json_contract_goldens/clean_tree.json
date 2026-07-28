@@ -11,10 +11,11 @@
           "results": [
             {
               "display_label": "cat1 1.0.0",
-              "removed_keys": [
+              "removed_state_keys": [
                 "legacy_param",
                 "bookkeeping_key"
               ],
+              "removed_step_keys": [],
               "skip_reason": "",
               "skipped": false,
               "step": "1",
@@ -23,7 +24,8 @@
             },
             {
               "display_label": "Grep1",
-              "removed_keys": [],
+              "removed_state_keys": [],
+              "removed_step_keys": [],
               "skip_reason": "",
               "skipped": false,
               "step": "2",
@@ -32,7 +34,8 @@
             },
             {
               "display_label": "unknown",
-              "removed_keys": [],
+              "removed_state_keys": [],
+              "removed_step_keys": [],
               "skip_reason": "non-tool step",
               "skipped": true,
               "step": "3",
@@ -79,10 +82,11 @@
       "results": [
         {
           "display_label": "cat1 1.0.0",
-          "removed_keys": [
+          "removed_state_keys": [
             "legacy_param",
             "bookkeeping_key"
           ],
+          "removed_step_keys": [],
           "skip_reason": "",
           "skipped": false,
           "step": "1",
@@ -91,7 +95,8 @@
         },
         {
           "display_label": "Grep1",
-          "removed_keys": [],
+          "removed_state_keys": [],
+          "removed_step_keys": [],
           "skip_reason": "",
           "skipped": false,
           "step": "2",
@@ -100,7 +105,8 @@
         },
         {
           "display_label": "unknown",
-          "removed_keys": [],
+          "removed_state_keys": [],
+          "removed_step_keys": [],
           "skip_reason": "non-tool step",
           "skipped": true,
           "step": "3",

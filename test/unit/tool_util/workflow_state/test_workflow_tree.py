@@ -511,8 +511,8 @@ class TestCleanTree:
         assert s["affected"] == 1
         assert s["clean"] == 1
 
-    def test_only_native_workflows_discovered(self, tmp_path):
-        """clean_tree should skip format2 workflows (stale state is native-only)."""
+    def test_native_and_format2_workflows_discovered(self, tmp_path):
+        """clean_tree includes both native and format2 workflows."""
         from galaxy.tool_util.workflow_state.clean import clean_tree
         from galaxy.workflow.gx_validator import GET_TOOL_INFO
 
@@ -524,8 +524,7 @@ class TestCleanTree:
             },
         )
         report = clean_tree(str(tmp_path), GET_TOOL_INFO)
-        # Should only have the native workflow
-        assert len(report.results) == 1
+        assert len(report.results) == 2
 
     def test_custom_output_template(self, tmp_path):
         """Custom output template writes to specified location."""
