@@ -7,6 +7,7 @@ from galaxy.datatypes.sniff import (
     convert_newlines,
     convert_newlines_sep2tabs,
     convert_sep2tabs,
+    FilePrefix,
     get_test_fname,
 )
 
@@ -109,3 +110,18 @@ def test_infer_from_filename():
     assert datatypes_registry.get_datatype_from_filename("mycool.fq").file_ext == "fastqsanger"
     assert datatypes_registry.get_datatype_from_filename("mycool.fq.gz").file_ext == "fastqsanger.gz"
     assert datatypes_registry.get_datatype_from_filename("mycool.fastq").file_ext == "fastqsanger"
+
+
+def test_file_prefix_tolerates_magic_unicode_error(monkeypatch):
+    import magic
+
+    def raise_unicode_error(_content):
+        raise UnicodeDecodeError("utf-8", b"\x80", 0, 1, "invalid start byte")
+
+    monkeypatch.setattr(magic, "detect_from_content", raise_unicode_error)
+    with tempfile.NamedTemporaryFile(delete=False, mode="wb") as tf:
+        tf.write(b"\x80\x81\x82\x83")
+    file_prefix = FilePrefix(tf.name)
+    assert file_prefix.binary
+    assert file_prefix.mime_type == "application/octet-stream"
+    assert file_prefix.encoding == "binary"

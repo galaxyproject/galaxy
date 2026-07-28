@@ -585,6 +585,14 @@ def guess_ext_from_file_name(fname, registry, requested_ext="auto"):
     return registry.get_datatype_from_filename(fname).file_ext
 
 
+def _detect_mime_and_encoding(detect, arg):
+    try:
+        file_magic = detect(arg)
+        return file_magic.mime_type, file_magic.encoding
+    except UnicodeDecodeError:
+        return "application/octet-stream", "binary"
+
+
 class FilePrefix:
     def __init__(self, filename, auto_decompress=True):
         non_utf8_error = None
@@ -612,15 +620,13 @@ class FilePrefix:
         self.truncated = truncated
         self.filename = filename
         self.non_utf8_error = non_utf8_error
-        file_magic = magic.detect_from_content(contents_header_bytes)
-        self.encoding = file_magic.encoding
-        self.mime_type = file_magic.mime_type
+        self.mime_type, self.encoding = _detect_mime_and_encoding(magic.detect_from_content, contents_header_bytes)
         self.compressed_mime_type = None
         self.compressed_encoding = None
         if compressed_format:
-            compressed_magic = magic.detect_from_filename(filename)
-            self.compressed_mime_type = compressed_magic.mime_type
-            self.compressed_encoding = compressed_magic.encoding
+            self.compressed_mime_type, self.compressed_encoding = _detect_mime_and_encoding(
+                magic.detect_from_filename, filename
+            )
         self.compressed_format = compressed_format
         self.contents_header = contents_header
         self.contents_header_bytes = contents_header_bytes
