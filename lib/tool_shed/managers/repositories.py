@@ -385,7 +385,13 @@ def get_install_info(trans: ProvidesRepositoriesContext, name, owner, changeset_
                 includes_tools_for_display_in_tool_panel,
                 has_repository_dependencies,
                 has_repository_dependencies_only_if_compiling_contained_td,
-            ) = get_repo_info_dict(trans, encoded_repository_id, changeset_revision)
+            ) = get_repo_info_dict(
+                trans,
+                encoded_repository_id,
+                changeset_revision,
+                repository=repository,
+                repository_metadata=repository_metadata,
+            )
             return repository_dict, repository_metadata_dict, repo_info_dict
         else:
             log.debug(
