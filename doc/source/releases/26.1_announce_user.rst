@@ -178,7 +178,7 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
-* first pass in unifying and clarifying collection operation interfaces…
+* First pass in unifying and clarifying collection operation interfaces and help sections
   (thanks to `@nekrut <https://github.com/nekrut>`__).
   `Pull Request 21939`_
 * Fix tool id handling for shed-installed tools
