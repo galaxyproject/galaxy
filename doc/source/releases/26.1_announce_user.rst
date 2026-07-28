@@ -55,7 +55,7 @@ Galaxy now speaks the Model Context Protocol, so AI clients outside Galaxy can w
 
 - **Bring your own client**. Any MCP-compatible client can connect to a Galaxy server.
 - **Real Galaxy operations**. Search and run tools, inspect histories and datasets, invoke workflows, and monitor jobs.
-- **Community workflows**. Find and import vetted Interactive Workflow Composer (IWC) workflows without leaving your client.
+- **Community workflows**. Find and import vetted Intergalactic Workflow Commission (IWC) workflows without leaving your client.
 - **Same rules as any client**. External agents route through Galaxy's service layer, inheriting the same authorization and validation.
 - **Administrator opt-in**. Disabled by default; enabled with ``enable_mcp_server``.
 
