@@ -8,6 +8,8 @@ from typing import (
     cast,
     get_args,
     Optional,
+    TYPE_CHECKING,
+    TypeAlias,
 )
 from uuid import UUID
 
@@ -70,6 +72,12 @@ from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
+    from galaxy.work.context import SessionRequestContext
+
+    PanelViewTrans: TypeAlias = "GalaxyWebTransaction | SessionRequestContext"
 
 log = logging.getLogger(__name__)
 
@@ -668,7 +676,7 @@ class ToolsService(ServiceBase):
 
     def list_tools(
         self,
-        trans: ProvidesUserContext,
+        trans: "PanelViewTrans",
         in_panel: bool,
         tool_help: bool,
         view: str | None,

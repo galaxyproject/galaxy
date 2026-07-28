@@ -91,8 +91,6 @@ if TYPE_CHECKING:
 
     # both web transactions and FastAPI/agents request contexts render tool panels
     PanelViewTrans: TypeAlias = "GalaxyWebTransaction | SessionRequestContext"
-    from galaxy.util import Element
-    from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
 

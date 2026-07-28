@@ -3,6 +3,7 @@ Controller to handle communication of tools of type data_source_async
 """
 
 import logging
+from typing import cast
 from urllib.parse import urlencode
 
 from galaxy import web
@@ -10,6 +11,8 @@ from galaxy.model import (
     History,
     HistoryDatasetAssociation,
 )
+from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tools import DataSourceTool
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     Params,
@@ -53,7 +56,7 @@ class ASync(BaseUIController):
         tool = toolbox.get_tool(tool_id)
         if not tool:
             return f"Tool with id {tool_id} not found"
-        tool = toolbox.materialize_tool(tool, reason="execution")
+        tool = cast(DataSourceTool, toolbox.materialize_tool(tool, reason="execution"))
 
         if data_id:
             #
@@ -113,13 +116,10 @@ class ASync(BaseUIController):
                 # Assume there is exactly one output file possible
                 TOOL_OUTPUT_TYPE = None
                 for key, obj in tool.outputs.items():
-                    try:
+                    if isinstance(obj, ToolOutput):
                         TOOL_OUTPUT_TYPE = obj.format
                         params_dict[key] = data.id
                         break
-                    except Exception:
-                        # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
-                        continue
                 if TOOL_OUTPUT_TYPE is None:
                     raise Exception("Error: ToolOutput object not found")
 
@@ -162,13 +162,9 @@ class ASync(BaseUIController):
                 # Assume there is exactly one output
                 outputs_count = 0
                 for obj in tool.outputs.values():
-                    try:
+                    if isinstance(obj, ToolOutput):
                         GALAXY_TYPE = obj.format
                         outputs_count += 1
-                    except Exception:
-                        # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
-                        # a collection object does not have the 'format' attribute, so it will throw an exception
-                        continue
                 if outputs_count > 1:
                     raise Exception("Error: the tool should have just one output")
 
