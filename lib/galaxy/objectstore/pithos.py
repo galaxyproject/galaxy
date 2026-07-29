@@ -150,7 +150,7 @@ class PithosObjectStore(CachingConcreteObjectStore):
         if project and c.get("x-container-policy-project") != project:
             self.pithos.reassign_container(project)
 
-    def _download(self, rel_path, object_id: ObjectId):
+    def _download(self, rel_path, *, object_id: ObjectId):
         local_destination = self._get_cache_path(rel_path, object_id)
         with self._atomic_download(local_destination) as tmp:
             self.pithos.download_object(rel_path, tmp)

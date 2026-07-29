@@ -322,7 +322,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 return False
             raise
 
-    def _download(self, rel_path: str, object_id: ObjectId) -> bool:
+    def _download(self, rel_path: str, *, object_id: ObjectId) -> bool:
         local_destination = self._get_cache_path(rel_path, object_id)
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)

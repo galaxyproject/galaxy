@@ -244,13 +244,13 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             return False
         return exists
 
-    def _download(self, rel_path, object_id: ObjectId):
+    def _download(self, rel_path, *, object_id: ObjectId):
         local_destination = self._get_cache_path(rel_path, object_id)
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
             key = self.bucket.objects.get(rel_path)
             remote_size = key.size
-            if not self._caching_allowed(rel_path, object_id, remote_size=remote_size):
+            if not self._caching_allowed(rel_path, object_id=object_id, remote_size=remote_size):
                 return False
             log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
             with self._atomic_download(local_destination) as tmp:

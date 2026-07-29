@@ -196,6 +196,8 @@ class StubCachingBackend(CachingConcreteObjectStore):
     def __init__(self, cache_shards):
         self._cache_shards = cache_shards
         self.config = MagicMock()
+        self.config.umask = 0o002
+        self.config.gid = -1
         self.cache_updated_data = True
         self.store_by = "id"
         self.extra_dirs = {}
@@ -209,7 +211,7 @@ class StubCachingBackend(CachingConcreteObjectStore):
     def _exists_remotely(self, rel_path):
         return False
 
-    def _download(self, rel_path, object_id):
+    def _download(self, rel_path, *, object_id):
         return False
 
     def _push_string_to_path(self, rel_path, from_string):
@@ -295,4 +297,36 @@ def test_backend_update_and_size(two_dir_cache, tmp_path):
         assert f.read() == "hello world"
     assert backend._size(obj) == len("hello world")
 
+    backend._delete(obj)
+
+
+def test_backend_pull_into_cache_writes_to_correct_shard(two_dir_cache):
+    """_pull_into_cache should download the file to the shard selected for that object_id."""
+    backend, cache_a, cache_b = two_dir_cache
+    obj_id = 42
+    obj = MagicMock()
+    obj.id = obj_id
+
+    # Determine which shard this object_id maps to
+    expected_path = backend._get_cache_path("000/dataset_42.dat", object_id=obj_id)
+    expected_shard = cache_a if _is_in_shard(expected_path, cache_a) else cache_b
+
+    # Patch _download to write a file instead of returning False
+    def fake_download(rel_path, *, object_id):
+        cache_path = backend._get_cache_path(rel_path, object_id)
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with open(cache_path, "w") as f:
+            f.write("downloaded content")
+        return True
+
+    backend._download = fake_download
+
+    result = backend._pull_into_cache("000/dataset_42.dat", object_id=obj_id)
+    assert result is True
+    assert os.path.exists(expected_path)
+    assert _is_in_shard(expected_path, expected_shard)
+    with open(expected_path) as f:
+        assert f.read() == "downloaded content"
+
+    # Cleanup
     backend._delete(obj)

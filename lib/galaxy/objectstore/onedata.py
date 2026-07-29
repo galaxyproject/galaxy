@@ -185,7 +185,7 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             log.exception("Trouble checking '%s' existence in Onedata", rel_path)
             return False
 
-    def _download(self, rel_path, object_id: ObjectId):
+    def _download(self, rel_path, *, object_id: ObjectId):
         try:
             dst_path = self._get_cache_path(rel_path, object_id)
 
@@ -195,7 +195,7 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             file_size = self._client.get_attributes(self.space_name, attributes=["size"], file_path=remote_path)["size"]
 
             # Test if cache is large enough to hold the new file
-            if not self._caching_allowed(rel_path, object_id, remote_size=file_size):
+            if not self._caching_allowed(rel_path, object_id=object_id, remote_size=file_size):
                 return False
 
             with self._atomic_download(dst_path) as tmp:

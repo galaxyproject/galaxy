@@ -236,7 +236,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
     def _blob_client(self, rel_path: str):
         return self.service.get_blob_client(self.container_name, rel_path)
 
-    def _download(self, rel_path, object_id: ObjectId):
+    def _download(self, rel_path, *, object_id: ObjectId):
         local_destination = self._get_cache_path(rel_path, object_id)
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)

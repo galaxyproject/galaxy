@@ -421,7 +421,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _exists_remotely: %s", ipt_timer)
 
-    def _download(self, rel_path, object_id: ObjectId):
+    def _download(self, rel_path, *, object_id: ObjectId):
         ipt_timer = ExecutionTimer()
         cache_path = self._get_cache_path(rel_path, object_id)
         log.debug("Pulling data object '%s' into cache to %s", rel_path, cache_path)

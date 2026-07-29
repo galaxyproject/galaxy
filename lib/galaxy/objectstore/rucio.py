@@ -352,17 +352,18 @@ class RucioObjectStore(CachingConcreteObjectStore):
             self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
 
-    def _pull_into_cache(self, rel_path, object_id: ObjectId, **kwargs) -> bool:
+    def _pull_into_cache(self, rel_path, *, object_id: ObjectId, **kwargs) -> bool:
         log.debug("rucio _pull_into_cache: %s", rel_path)
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
-        if not os.path.exists(self._get_cache_path(rel_path_dir, object_id)):
-            os.makedirs(self._get_cache_path(rel_path_dir, object_id), exist_ok=True)
+        cache_dir = self._get_cache_path(rel_path_dir, object_id)
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir, exist_ok=True)
         # Now pull in the file
         dest = self._get_cache_path(rel_path, object_id)
         auth_token = self._get_token(**kwargs)
         file_ok = self.rucio_broker.download(rel_path, dest, auth_token)
-        self._fix_permissions(self._get_cache_path(rel_path_dir, object_id))
+        self._fix_permissions(cache_dir)
         return file_ok
 
     def _fix_file_permissions(self, path):
@@ -525,7 +526,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
         in_cache = self._in_cache(rel_path, object_id)
         size_in_cache = 0
         if in_cache:
-            size_in_cache = os.path.getsize(self._get_cache_path(rel_path, object_id))
+            size_in_cache = os.path.getsize(cache_path)
 
         # return path if we do not need to update cache
         if in_cache and dir_only:
@@ -546,7 +547,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
                     return cache_path
         raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
 
-    def _register_file(self, rel_path, file_name, object_id: ObjectId):
+    def _register_file(self, rel_path, file_name, *, object_id: ObjectId):
         if file_name is None:
             file_name = self._get_cache_path(rel_path, object_id)
             if not os.path.islink(file_name):
