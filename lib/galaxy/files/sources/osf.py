@@ -8,18 +8,17 @@ open-source platform for managing and sharing research projects, data and prepri
 *components*, which are themselves projects and can be nested arbitrarily. Files attached to a node live in one of
 several storage providers; this implementation currently targets ``osfstorage``, OSF's default provider [3].
 
-The FilesSource exposes three top-level categories under the plugin root: Projects lists the user's own projects (or
-public projects when browsing anonymously), Registrations lists public registrations, and Files runs a search against
-OSF's public file index [4]. Descending into a project or registration reveals its ``osfstorage`` contents and its
-child components; components appear as subfolders and can be entered like any other folder. With a personal access
-token [5] the user gains access to their private projects and can create new draft projects to upload Galaxy datasets
-into.
+The FilesSource exposes three top-level categories under the plugin's root: "Projects" lists both public projects and
+the user's own projects, "Registrations" lists public registrations, and Files runs a search against OSF's public file
+index [4]. Descending into a project or registration reveals its ``osfstorage`` contents and its child components;
+components appear as subfolders and can be entered like any other folder. With a personal access token [5], the user
+not only gains access to their private projects, but can also create new draft projects to upload Galaxy datasets into.
 
 Galaxy URIs take the form ``osf://osf/category/container_id/file_path``, where:
 
 - ``category`` is one of ``projects``, ``registrations`` or ``files``
 - ``container_id`` is the OSF node GUID (a short alphanumeric identifier, e.g. ``q2anz``)
-- ``file_path`` is the WaterButler internal path to the file within the node's ``osfstorage``
+- ``file_path`` is WaterButler's internal path to the file within the node's ``osfstorage``
 
 The implementation is layered: ``OSFClient`` wraps the OSF REST API v2 [4] and the WaterButler API [6] using
 ``requests``; ``OSFRepositoryInteractor`` translates Galaxy's RDM interactor contract into OSF calls; and
