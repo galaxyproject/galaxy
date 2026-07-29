@@ -132,10 +132,12 @@
                     <GButton
                         tooltip
                         title="Generate AI GalaxyAI report based on the workflow and its expected results"
+                        disabled-title="Please wait for the workflow to finish loading"
                         variant="link"
                         color="blue"
                         transparent
                         size="large"
+                        :disabled="loadingWorkflow"
                         @click="generateAIReport">
                         <FontAwesomeIcon :icon="faMagic" />
                     </GButton>
@@ -969,10 +971,11 @@ export default {
             }
             this._insertStep(workflow_id, workflow_name, "subworkflow");
         },
-        copyIntoWorkflow(id) {
+        async copyIntoWorkflow(id) {
             // Load workflow definition
-            this.onWorkflowMessage("Importing workflow", "progress");
-            getWorkflowFull(id).then((data) => {
+            this.loadingWorkflow = true;
+            try {
+                const data = await getWorkflowFull(id);
                 const action = new CopyIntoWorkflowAction(
                     this.id,
                     data,
@@ -982,21 +985,23 @@ export default {
                 this.undoRedoStore.applyAction(action);
                 // Determine if any parameters were 'upgraded' and provide message
                 const insertedStateMessages = getStateUpgradeMessages(data);
-                this.onInsertedStateMessages(insertedStateMessages);
-            });
+                this.insertedStateMessages = insertedStateMessages;
+            } finally {
+                this.loadingWorkflow = false;
+            }
         },
         async onInsertWorkflowSteps(workflowId, stepCount) {
             if (this.blockedWhileLoading("inserting steps")) {
                 return;
             }
             if (stepCount < 10) {
-                this.copyIntoWorkflow(workflowId);
+                await this.copyIntoWorkflow(workflowId);
             } else {
                 const confirmed = await ConfirmDialog.confirm(
                     `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`,
                 );
                 if (confirmed) {
-                    this.copyIntoWorkflow(workflowId);
+                    await this.copyIntoWorkflow(workflowId);
                 }
             }
         },
@@ -1007,7 +1012,7 @@ export default {
             if (!this.saveAsName && !this.nameValidate()) {
                 return;
             }
-            this.onWorkflowMessage("Saving workflow", "progress");
+            this.loadingWorkflow = true;
 
             const rename_name = this.saveAsName ?? `SavedAs_${this.name}`;
             const rename_annotation = this.saveAsAnnotation ?? "";
@@ -1027,6 +1032,7 @@ export default {
                     },
                 });
             } finally {
+                this.loadingWorkflow = false;
                 this.resetSaveAs();
             }
         },
@@ -1205,7 +1211,7 @@ export default {
                 return;
             }
 
-            this.onWorkflowMessage("Generating AI Report", "progress");
+            this.loadingWorkflow = true;
             try {
                 const { model, report, total_tokens } = await generateAIReport(this.id, this.version);
                 this.onReportUpdate(report);
@@ -1213,7 +1219,6 @@ export default {
                     `Report generated using ${model}${total_tokens ? `, total tokens used: ${total_tokens}` : ""}.`,
                     "AI Report generated successfully.",
                 );
-                this.hideModal();
             } catch (e) {
                 this.onWorkflowError(
                     "Generating AI report failed",
@@ -1224,6 +1229,8 @@ export default {
                         },
                     },
                 );
+            } finally {
+                this.loadingWorkflow = false;
             }
         },
         onReportUpdate(markdown) {
@@ -1472,10 +1479,6 @@ export default {
                 this.hasChanges = true;
                 this.setDoi(doi);
             }
-        },
-        onInsertedStateMessages(insertedStateMessages) {
-            this.insertedStateMessages = insertedStateMessages;
-            this.hideModal();
         },
     },
 };
