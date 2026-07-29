@@ -64,8 +64,8 @@ const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
 
 const SELECTORS = {
-    INFO_ALERT: "balert-stub[variant='info']",
-    ERROR_ALERT: "balert-stub[variant='danger']",
+    INFO_ALERT: "galert-stub[variant='info']",
+    ERROR_ALERT: "galert-stub[variant='danger']",
 } as const;
 
 let pinia: Pinia;

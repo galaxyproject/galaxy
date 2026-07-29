@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faArrowLeft, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, toRef } from "vue";
 
 import type { HistoryPageSummary } from "@/api/pages";
@@ -13,6 +12,7 @@ import { useUserStore } from "@/stores/userStore.js";
 import BreadcrumbHeading from "../Common/BreadcrumbHeading.vue";
 import Heading from "../Common/Heading.vue";
 import PageCard from "./PageCard.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
@@ -67,11 +67,11 @@ const { breadcrumbItems } = useHistoryBreadCrumbsTo(toRef(props, "historyId"), l
             </GButton>
         </div>
 
-        <BAlert v-if="unownedHistory" show>
+        <GAlert v-if="unownedHistory" show>
             You do not own this history
             <span v-if="props.invocationId">(associated with the invocation)</span>
             so only {{ labels.entityNamePlural }} that you created against this history are shown.
-        </BAlert>
+        </GAlert>
 
         <div v-if="pages.length === 0" class="empty-state text-center p-4" data-description="page empty state">
             <p class="text-muted">{{ labels.emptyStateTitle }}</p>
