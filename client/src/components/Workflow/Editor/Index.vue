@@ -1044,8 +1044,7 @@ export default {
             this.saveAsAnnotation = null;
         },
         async createNewWorkflow() {
-            await this.saveOrCreate();
-            this.$router.push("/workflows/edit");
+            await this.onNavigate("/workflows/edit");
         },
         async saveOrCreate() {
             if (this.blockedWhileLoading("saving the workflow")) {
@@ -1142,7 +1141,7 @@ export default {
         },
         async onCreate() {
             if (!this.nameValidate()) {
-                return;
+                return false;
             }
             try {
                 const { id, name, number_of_steps } = await this.services.createWorkflow(this);
@@ -1156,7 +1155,9 @@ export default {
                     "Creating workflow failed",
                     errorMessageAsString(e) || "Please contact an administrator.",
                 );
+                return false;
             }
+            return true;
         },
         nameValidate() {
             if (!this.name) {
@@ -1229,17 +1230,15 @@ export default {
         },
         async onNavigate(url, forceSave = false, ignoreChanges = false, appendVersion = false) {
             let proceed = false;
-            if (this.isNewTempWorkflow) {
-                await this.onCreate();
-                proceed = true;
-            } else if (this.hasChanges && !forceSave && !ignoreChanges) {
+            if (this.hasChanges && !forceSave && !ignoreChanges) {
                 // if there are changes, prompt user to save or discard or cancel
                 this.navUrl = url;
                 this.saveChangesAppendVersion = appendVersion;
                 this.showSaveChangesModal = true;
             } else if (forceSave) {
-                // when forceSave is true, save the workflow before navigating
-                proceed = await this.onSave();
+                // when forceSave is true, save (or create, if this is a new unsaved workflow)
+                // the workflow before navigating
+                proceed = this.isNewTempWorkflow ? await this.onCreate() : await this.onSave();
             } else {
                 // no changes to save, proceed with navigation
                 proceed = true;
@@ -1253,7 +1252,12 @@ export default {
             }
             this.hasChanges = false;
             await nextTick();
-            this.$router.push(url);
+
+            if (this.$route.fullPath === url) {
+                this.$emit("forceReload");
+            } else {
+                this.$router.push(url);
+            }
         },
         /** Saves the workflow, and loads it onto the editor by calling `_loadCurrent`.
          * @returns true if save was successful, false otherwise
