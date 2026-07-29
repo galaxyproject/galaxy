@@ -10,20 +10,17 @@ import {
 } from "@/api/workflows";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
 interface Props {
     refactorActions: RefactorRequestAction[];
     versions: WorkflowVersion[];
     workflowId: string;
-    title?: string;
-    message?: string;
     version?: number;
     loading?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
-    title: "Issues reworking this workflow",
-    message: "Please review the following potential issues...",
     version: undefined,
     loading: false,
 });
@@ -59,8 +56,7 @@ watch(
 
 watch(show, (newShow) => {
     if (newShow) {
-        // emit that this is showing, so the workflow editor
-        // can hide modal.
+        // emit that this is showing, so the workflow editor hides error modal.
         emit("onShow");
     }
 });
@@ -96,11 +92,8 @@ function onError(response: string) {
 }
 
 async function onDryRunResponse(data: RefactorResponse) {
-    // TODO: type from schema
     const actionExecutions = data.action_executions;
-    const anyRequireConfirmation = actionExecutions.some(
-        (execution: RefactorResponseActionExecution) => execution.messages.length > 0,
-    );
+    const anyRequireConfirmation = actionExecutions.some((execution) => execution.messages.length > 0);
     if (anyRequireConfirmation) {
         confirmActionExecutions.value = actionExecutions;
         show.value = true;
@@ -124,18 +117,32 @@ async function executeRefactoring() {
 </script>
 
 <template>
-    <GModal confirm :show.sync="show" :title="title" fixed-height ok-text="Save" @ok="executeRefactoring">
+    <GModal
+        confirm
+        :show.sync="show"
+        title="Potential Issues Reworking Workflow"
+        fixed-height
+        ok-text="Proceed"
+        @ok="executeRefactoring">
         <div class="workflow-refactor-modal">
-            {{ message }}
-            <ul>
+            <GAlert>
+                <div>The following issues were detected when attempting to rework this workflow.</div>
+                <div>
+                    Please review the messages below and click "Proceed" to continue with the rework, or "Cancel" to
+                    abort.
+                </div>
+            </GAlert>
+            <ol>
                 <li v-for="(actionExecution, executionIndex) in confirmActionExecutions" :key="executionIndex">
+                    <code>{{ actionExecution.action.action_type }}</code>
+                    <span v-if="actionExecution.messages.length">:</span>
                     <ul>
                         <li v-for="(actionMessage, messageIndex) in actionExecution.messages" :key="messageIndex">
-                            - {{ actionMessage.message }}
+                            {{ actionMessage.message }}
                         </li>
                     </ul>
                 </li>
-            </ul>
+            </ol>
         </div>
     </GModal>
 </template>
