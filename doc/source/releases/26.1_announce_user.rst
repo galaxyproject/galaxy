@@ -203,7 +203,7 @@ Datatypes Updates
 * Add new datatypes for the tool vg
   (thanks to `@Maed0x <https://github.com/Maed0x>`__).
   `Pull Request 23111`_
-* Add PAGE XML, AbbyyXML, hOCR, mlmodel, Appache Arrow IPC datatype support in datatypes_conf.xml.sample
+* Add PAGE XML, AbbyyXML, hOCR, mlmodel, Apache Arrow IPC datatype support in datatypes_conf.xml.sample
   (thanks to `@IvoLeist <https://github.com/IvoLeist>`__).
   `Pull Request 23088`_
 * Hide generated headers for tabular previews
