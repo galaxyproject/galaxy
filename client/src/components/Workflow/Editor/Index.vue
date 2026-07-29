@@ -59,7 +59,7 @@
             options-search-placeholder="Search options"
             initial-activity="workflow-editor-attributes"
             :options-icon="faCog"
-            :hide-panel="reportActive"
+            :hide-panel="reportActive || initialLoading"
             :header-icon="faSitemap"
             header-title="Editor"
             @activityClicked="onActivityClicked">
@@ -167,8 +167,9 @@
                 <div class="editor-top-bar" unselectable="on">
                     <span>
                         <span class="sr-only">Workflow Editor</span>
-                        <span class="editor-title" :title="name"
-                            >{{ name }}
+                        <LoadingSpan v-if="initialLoading" message="Loading Editor" />
+                        <span v-else class="editor-title" :title="name">
+                            {{ name }}
                             <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
                         </span>
                     </span>
@@ -338,6 +339,7 @@ import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
 import SearchPanel from "@/components/Panels/SearchPanel.vue";
@@ -360,6 +362,7 @@ export default {
         WorkflowGraph,
         FontAwesomeIcon,
         UndoRedoStack,
+        LoadingSpan,
         WorkflowPanel,
         NodeInspector,
         InputPanel,
