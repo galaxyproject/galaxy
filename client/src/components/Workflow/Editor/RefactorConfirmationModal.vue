@@ -19,16 +19,18 @@ interface Props {
     title?: string;
     message?: string;
     version?: number;
+    loading?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
     title: "Issues reworking this workflow",
     message: "Please review the following potential issues...",
     version: undefined,
+    loading: false,
 });
 
 const emit = defineEmits<{
     (e: "onShow"): void;
-    (e: "onWorkflowMessage", message: string, type: string): void;
+    (e: "update:loading", loading: boolean): void;
     (e: "onWorkflowError", message: string, response: any): void;
     (e: "onRefactor", data: RefactorResponse): void;
 }>();
@@ -78,12 +80,14 @@ async function dryRun() {
         }
     }
 
-    emit("onWorkflowMessage", "Pre-checking requested workflow changes (dry run)...", "progress");
+    emit("update:loading", true);
     try {
         const data = await refactor(props.workflowId, props.refactorActions, "editor", true, props.version);
-        onDryRunResponse(data);
+        await onDryRunResponse(data);
     } catch (response) {
         onError(response as string);
+    } finally {
+        emit("update:loading", false);
     }
 }
 
@@ -91,7 +95,7 @@ function onError(response: string) {
     emit("onWorkflowError", "Reworking workflow failed...", response);
 }
 
-function onDryRunResponse(data: RefactorResponse) {
+async function onDryRunResponse(data: RefactorResponse) {
     // TODO: type from schema
     const actionExecutions = data.action_executions;
     const anyRequireConfirmation = actionExecutions.some(
@@ -101,18 +105,20 @@ function onDryRunResponse(data: RefactorResponse) {
         confirmActionExecutions.value = actionExecutions;
         show.value = true;
     } else {
-        executeRefactoring();
+        await executeRefactoring();
     }
 }
 
 async function executeRefactoring() {
     show.value = false;
-    emit("onWorkflowMessage", "Applying requested workflow changes...", "progress");
+    emit("update:loading", true);
     try {
         const data = await refactor(props.workflowId, props.refactorActions, "editor", false, props.version);
         emit("onRefactor", data);
     } catch (response) {
         onError(response as string);
+    } finally {
+        emit("update:loading", false);
     }
 }
 </script>

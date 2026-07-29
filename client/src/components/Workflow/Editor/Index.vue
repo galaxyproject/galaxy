@@ -10,11 +10,20 @@
             :version="version"
             :versions="versions"
             :refactor-actions="refactorActions"
+            :loading.sync="loadingWorkflow"
             @onWorkflowError="onWorkflowError"
-            @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
             @onShow="hideModal" />
-        <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="hideModal" />
+        <GModal
+            data-description="messages modal"
+            :show="Boolean(messageBody)"
+            size="small"
+            :title="messageTitle"
+            @close="hideModal">
+            <GAlert :variant="messageIsError ? 'danger' : 'info'">
+                {{ messageBody }}
+            </GAlert>
+        </GModal>
         <SaveChangesModal
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
@@ -317,7 +326,6 @@ import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
 import WorkflowLint from "./Lint.vue";
-import MessagesModal from "./MessagesModal.vue";
 import NodeInspector from "./NodeInspector.vue";
 import ReadmeEditor from "./ReadmeEditor.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
@@ -329,6 +337,7 @@ import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GForm from "@/components/BaseComponents/Form/GForm.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
@@ -350,7 +359,6 @@ export default {
         WorkflowAttributes,
         WorkflowLint,
         RefactorConfirmationModal,
-        MessagesModal,
         WorkflowGraph,
         FontAwesomeIcon,
         UndoRedoStack,
@@ -363,6 +371,7 @@ export default {
         BDropdown,
         BDropdownText,
         BDropdownDivider,
+        GAlert,
         GButton,
         GForm,
         GFormLabel,
@@ -902,11 +911,6 @@ export default {
             this.messageTitle = message;
             this.messageBody = response.toString();
             this.messageIsError = true;
-        },
-        onWorkflowMessage(title, body) {
-            this.messageTitle = title;
-            this.messageBody = body;
-            this.messageIsError = false;
         },
         hideModal() {
             this.messageTitle = null;

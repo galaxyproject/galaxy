@@ -16,8 +16,7 @@ import { getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
-import MessagesModal from "./MessagesModal.vue";
-import GModal from "@/components/BaseComponents/GModal.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -172,7 +171,7 @@ describe("Index", () => {
         };
         vi.spyOn(vm, "routeToWorkflow").mockResolvedValue(undefined);
 
-        wrapper.findComponent(GModal).vm.$emit("ok");
+        wrapper.find("[data-description='save-as-modal']").vm.$emit("ok");
         await flushPromises();
 
         expect(vm.services.createWorkflow).toHaveBeenCalledWith(
@@ -188,7 +187,7 @@ describe("Index", () => {
         };
         vi.spyOn(vm, "routeToWorkflow").mockResolvedValue(undefined);
 
-        wrapper.findComponent(GModal).vm.$emit("ok");
+        wrapper.find("[data-description='save-as-modal']").vm.$emit("ok");
         await flushPromises();
 
         // if fields were cleared before doSaveAs ran, name would be the "SavedAs_..." fallback
@@ -200,7 +199,7 @@ describe("Index", () => {
         vm.saveAsName = "My New Workflow";
         vm.saveAsAnnotation = "A description";
 
-        wrapper.findComponent(GModal).vm.$emit("cancel");
+        wrapper.find("[data-description='save-as-modal']").vm.$emit("cancel");
         await wrapper.vm.$nextTick();
 
         expect(vm.saveAsName).toBeNull();
@@ -220,7 +219,7 @@ describe("Index", () => {
         expect(confirmationRequired).toBeTruthy();
     });
 
-    describe("MessagesModal", () => {
+    describe("Messages modal", () => {
         it("shows an error when clicking Save fails, and clears it once the modal is dismissed", async () => {
             mockSaveWorkflow.mockRejectedValue(new Error("Test error message"));
 
@@ -241,15 +240,16 @@ describe("Index", () => {
             await saveButton.trigger("click");
             await flushPromises();
 
-            const modal = wrapper.findComponent(MessagesModal);
+            const modal = wrapper.find("[data-description='messages modal']");
+            expect(modal.props("show")).toBe(true);
             expect(modal.props("title")).toBe("Saving workflow failed...");
-            expect(modal.props("error")).toBe(true);
+            expect(modal.findComponent(GAlert).props("variant")).toBe("danger");
 
             // dismissing the modal (as a user closing it would) should clear the message
-            modal.vm.$emit("onHidden");
+            modal.vm.$emit("close");
             await wrapper.vm.$nextTick();
 
-            expect(wrapper.findComponent(MessagesModal).props("title")).toBeNull();
+            expect(wrapper.find("[data-description='messages modal']").props("show")).toBe(false);
         });
     });
 });
