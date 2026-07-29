@@ -1111,6 +1111,32 @@ export default {
                 this.$router.replace({ query: { id } });
             }
         },
+        /**
+         * Keeps the route's `version` query param in sync with the version currently loaded
+         * in the editor (e.g. after a save, or after manually switching versions), without
+         * triggering a reload of the editor.
+         * @param {boolean} onlyIfPresent If `true`, the route is left untouched unless it already has a
+         * `version` param (e.g. a save should not turn an implicit-latest URL into a pinned one).
+         */
+        syncVersionToRoute(version, onlyIfPresent = false) {
+            const currentVersionParam = this.$route?.query?.version;
+            if (onlyIfPresent && currentVersionParam === undefined) {
+                return;
+            }
+            const newVersionParam = version === undefined || version === null ? undefined : String(version);
+            if (currentVersionParam === newVersionParam) {
+                return;
+            }
+
+            const query = { ...this.$route.query };
+            if (newVersionParam === undefined) {
+                delete query.version;
+            } else {
+                query.version = newVersionParam;
+            }
+            this.$emit("skipNextReload");
+            this.$router.replace({ query });
+        },
         async onCreate() {
             if (!this.nameValidate()) {
                 return;
@@ -1258,6 +1284,7 @@ export default {
                 }
 
                 await this._loadCurrent(this.id, data.version);
+                this.syncVersionToRoute(data.version, true);
             } catch (response) {
                 this.onWorkflowError("Saving workflow failed...", response, {
                     Ok: () => {
@@ -1285,6 +1312,7 @@ export default {
                     }
                 }
                 this.version = version;
+                this.syncVersionToRoute(version);
                 this._loadCurrent(this.id, version);
             }
         },
