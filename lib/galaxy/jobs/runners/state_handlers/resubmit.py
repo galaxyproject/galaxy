@@ -84,18 +84,9 @@ def _handle_resubmit_definitions(
         )
 
         # Defer evaluation: do NOT call set_cached_job_destination here. The
-        # resubmit destination is persisted as the dynamic intent (e.g.
-        # "tpv_dispatcher", runner="dynamic") via set_job_destination below;
+        # resubmit destination is persisted via set_job_destination below;
         # __recover_job_wrapper(resubmit=True) will walk the chain afresh when
-        # the job is picked up from the queue. This is what enables multiple
-        # resubmits through chained dynamic destinations (refs galaxyproject/galaxy#7118,
-        # galaxyproject/galaxy#15208).
-        #
-        # Carry the prior attempt's destination_params forward so dynamic rules
-        # that branch on prior context (e.g. TPV reading job.destination_params
-        # to escalate memory across retries) keep working. The static
-        # dispatcher's params (function, rules_module, type, ...) take
-        # precedence on conflicts so the chain re-walk picks up the right rule.
+        # the job is picked up from the queue (refs #7118, #15208).
         prior_destination_params = (job_state.job_wrapper.get_job().destination_params or {}).copy()
         new_destination.params = {**prior_destination_params, **new_destination.params}
         # Handle delaying before resubmission if needed — must happen BEFORE
