@@ -240,7 +240,7 @@ describe("Index", () => {
             await saveButton.trigger("click");
             await flushPromises();
 
-            const modal = wrapper.find("[data-description='messages modal']");
+            const modal = wrapper.find("[data-description='workflow editor error modal']");
             expect(modal.props("show")).toBe(true);
             expect(modal.props("title")).toBe("Saving workflow failed...");
             expect(modal.findComponent(GAlert).props("variant")).toBe("danger");
@@ -249,7 +249,7 @@ describe("Index", () => {
             modal.vm.$emit("close");
             await wrapper.vm.$nextTick();
 
-            expect(wrapper.find("[data-description='messages modal']").props("show")).toBe(false);
+            expect(wrapper.find("[data-description='workflow editor error modal']").props("show")).toBe(false);
         });
     });
 });

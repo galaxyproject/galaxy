@@ -13,16 +13,14 @@
             :loading.sync="loadingWorkflow"
             @onWorkflowError="onWorkflowError"
             @onRefactor="onRefactor"
-            @onShow="hideModal" />
+            @onShow="hideErrorModal" />
         <GModal
-            data-description="messages modal"
-            :show="Boolean(messageBody)"
+            data-description="workflow editor error modal"
+            :show="Boolean(errorMessageBody)"
             size="small"
-            :title="messageTitle"
-            @close="hideModal">
-            <GAlert :variant="messageIsError ? 'danger' : 'info'">
-                {{ messageBody }}
-            </GAlert>
+            :title="errorMessageTitle"
+            @close="hideErrorModal">
+            <GAlert variant="danger">{{ errorMessageBody }}</GAlert>
         </GModal>
         <SaveChangesModal
             :append-version="saveChangesAppendVersion"
@@ -789,9 +787,8 @@ export default {
             insertedStateMessages: [],
             refactorActions: [],
             highlightAttribute: null,
-            messageTitle: null,
-            messageBody: null,
-            messageIsError: false,
+            errorMessageTitle: null,
+            errorMessageBody: null,
             version: this.initialVersion,
             saveAsName: null,
             saveAsAnnotation: null,
@@ -905,17 +902,13 @@ export default {
                 this.refactorActions = actions;
             }
         },
-        // synchronize modal handling through this object so we can convert it to be
-        // be reactive at some point.
         onWorkflowError(message, response) {
-            this.messageTitle = message;
-            this.messageBody = response.toString();
-            this.messageIsError = true;
+            this.errorMessageTitle = message;
+            this.errorMessageBody = response.toString();
         },
-        hideModal() {
-            this.messageTitle = null;
-            this.messageBody = null;
-            this.messageIsError = false;
+        hideErrorModal() {
+            this.errorMessageTitle = null;
+            this.errorMessageBody = null;
         },
         async onRefactor(response) {
             // Store transform and bounds before resetting to adjust for coordinate shifts
@@ -1031,11 +1024,7 @@ export default {
                 Toast.success(message);
             } catch (e) {
                 const errorHeading = `Saving workflow as '${rename_name}' failed`;
-                this.onWorkflowError(errorHeading, errorMessageAsString(e) || "Please contact an administrator.", {
-                    Ok: () => {
-                        this.hideModal();
-                    },
-                });
+                this.onWorkflowError(errorHeading, errorMessageAsString(e) || "Please contact an administrator.");
             } finally {
                 this.loadingWorkflow = false;
                 this.resetSaveAs();
@@ -1163,11 +1152,6 @@ export default {
                 this.onWorkflowError(
                     "Creating workflow failed",
                     errorMessageAsString(e) || "Please contact an administrator.",
-                    {
-                        Ok: () => {
-                            this.hideModal();
-                        },
-                    },
                 );
             }
         },
@@ -1228,11 +1212,6 @@ export default {
                 this.onWorkflowError(
                     "Generating AI report failed",
                     errorMessageAsString(e) || "Please contact an administrator.",
-                    {
-                        Ok: () => {
-                            this.hideModal();
-                        },
-                    },
                 );
             } finally {
                 this.loadingWorkflow = false;
@@ -1298,11 +1277,7 @@ export default {
                 await this._loadCurrent(this.id, data.version);
                 this.syncVersionToRoute(data.version, true);
             } catch (response) {
-                this.onWorkflowError("Saving workflow failed...", response, {
-                    Ok: () => {
-                        this.hideModal();
-                    },
-                });
+                this.onWorkflowError("Saving workflow failed...", errorMessageAsString(response));
                 return false;
             } finally {
                 this.stateStore.activeNodeId = lastActiveNodeId;
@@ -1396,7 +1371,7 @@ export default {
             const report = data.report || {};
             const markdown = report.markdown || reportDefault;
             this.report.markdown = markdown;
-            this.hideModal();
+            this.hideErrorModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;
             this.tags = data.tags;
