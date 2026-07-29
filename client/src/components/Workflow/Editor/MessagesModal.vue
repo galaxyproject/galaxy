@@ -1,65 +1,40 @@
+<script setup lang="ts">
+import { ref, watch } from "vue";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+
+const props = defineProps<{
+    title?: string;
+    message?: string;
+    error?: boolean;
+}>();
+
+const emit = defineEmits(["onHidden"]);
+
+const show = ref(!!props.title);
+
+watch(
+    () => props.message,
+    () => {
+        show.value = !!props.title;
+    },
+);
+</script>
+
 <template>
-    <b-modal
-        v-model="show"
-        :title="title"
-        scrollable
-        :hide-header-close="true"
-        :no-close-on-esc="!error"
-        :no-close-on-backdrop="!error"
-        :hide-footer="!error"
-        ok-only
-        @ok="onOk"
-        @hidden="onHidden">
+    <!-- TODO: Implement no close on no error; as in it's unclosable when no error
+     or, we remove the progress functionality entirely. -->
+    <GModal :show.sync="show" size="small" :title="props.title" @close="emit('onHidden')">
         <div class="workflow-message-modal">
-            <div v-if="message == 'progress'">
+            <div v-if="props.message == 'progress'">
                 <div class="progress progress-striped active">
                     <div class="progress-bar" style="width: 100%"></div>
                 </div>
             </div>
-            <div v-else>
-                {{ message }}
-            </div>
+            <GAlert v-else :variant="props.error ? 'danger' : 'info'">
+                {{ props.message }}
+            </GAlert>
         </div>
-    </b-modal>
+    </GModal>
 </template>
-
-<script>
-export default {
-    props: {
-        title: {
-            type: String,
-            required: false,
-            default: undefined,
-        },
-        message: {
-            type: String,
-            required: false,
-            default: undefined,
-        },
-        error: {
-            type: Boolean,
-            required: false,
-            default: undefined,
-        },
-    },
-    data() {
-        return {
-            show: !!this.title,
-        };
-    },
-    computed: {},
-    watch: {
-        message() {
-            this.show = !!this.title;
-        },
-    },
-    methods: {
-        onHidden() {
-            this.$emit("onHidden");
-        },
-        onOk() {
-            // no-op I suppose...
-        },
-    },
-};
-</script>

@@ -14,7 +14,7 @@
             @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
             @onShow="hideModal" />
-        <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
+        <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="hideModal" />
         <SaveChangesModal
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
@@ -1476,11 +1476,6 @@ export default {
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;
             this.hideModal();
-        },
-        resetMessage() {
-            this.messageTitle = null;
-            this.messageBody = null;
-            this.messageError = false;
         },
     },
 };
