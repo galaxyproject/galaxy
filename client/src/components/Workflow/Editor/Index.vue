@@ -1379,32 +1379,35 @@ export default {
             if (!this.isNewTempWorkflow) {
                 this.loadingWorkflow = true;
 
-                // Store the current transform and bounding box before loading; to adjust for coordinate shifts
-                const { transform: transformBefore, bounds: boundsBefore } = this.captureTransformAndBounds(
-                    this.transform,
-                );
                 try {
-                    // Load editor view workflow data
-                    const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
+                    // Store the current transform and bounding box before loading; to adjust for coordinate shifts
+                    const { transform: transformBefore, bounds: boundsBefore } = this.captureTransformAndBounds(
+                        this.transform,
+                    );
+                    try {
+                        // Load editor view workflow data
+                        const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
 
-                    // Reset stores and load new data onto editor
-                    await this.resetStores();
-                    await fromSimple(id, data);
-                    await this._loadEditorData(data);
-                } catch (e) {
-                    this.onWorkflowError("Loading workflow failed...", e);
+                        // Reset stores and load new data onto editor
+                        await this.resetStores();
+                        await fromSimple(id, data);
+                        await this._loadEditorData(data);
+                    } catch (e) {
+                        this.onWorkflowError("Loading workflow failed...", e);
+                    }
+
+                    await until(() => this.datatypesMapperLoading).toBe(false);
+                    await nextTick();
+
+                    if (fitGraph) {
+                        this.workflowGraph?.fitWorkflow();
+                    } else {
+                        // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
+                        this.adjustForCoordinateShift(transformBefore, boundsBefore);
+                    }
+                } finally {
+                    this.loadingWorkflow = false;
                 }
-
-                await until(() => this.datatypesMapperLoading).toBe(false);
-                await nextTick();
-
-                if (fitGraph) {
-                    this.workflowGraph.fitWorkflow();
-                } else {
-                    // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
-                    this.adjustForCoordinateShift(transformBefore, boundsBefore);
-                }
-                this.loadingWorkflow = false;
             }
         },
         /**
