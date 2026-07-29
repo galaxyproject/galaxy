@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from "@vueuse/core";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
@@ -13,6 +12,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import ContentItem from "./ContentItem.vue";
 import GenericElement from "./GenericElement.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{
@@ -107,7 +107,7 @@ function onViewCollection(collection: any) {
             v-slot="{ result: item, loading, error }"
             :view="view"
             auto-refresh>
-            <BAlert v-if="error" variant="danger" show>{{ errorMessageAsString(error) }}</BAlert>
+            <GAlert v-if="error" variant="danger" show>{{ errorMessageAsString(error) }}</GAlert>
             <LoadingSpan v-else-if="loading" message="Loading dataset" />
             <div v-else>
                 <ContentItem

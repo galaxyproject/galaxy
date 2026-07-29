@@ -40,7 +40,7 @@ describe("a visualization reporting unsaved work", () => {
             propsData: { visualization: "example", datasetId: "d1" },
             localVue,
             pinia,
-            stubs: { LoadingSpan: true, BAlert: true },
+            stubs: { LoadingSpan: true, GAlert: true },
             attachTo: document.body,
         });
         await flushPromises();
