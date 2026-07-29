@@ -1453,6 +1453,7 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         # Check that required directories exist; attempt to create otherwise
         paths_to_check = [
             self.data_dir,
+            self.file_path,
             self.ftp_upload_dir,
             self.library_import_dir,
             self.managed_config_dir,
