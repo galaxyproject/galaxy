@@ -75,10 +75,12 @@ class TestCleanupJwds:
     def mock_jwd_delete(self, mocker):
         """Patch ``JobWorkingDirectory.delete`` and return the mock.
 
-        The patched method is a no-op by default; individual tests can configure
-        side effects to simulate errors.
+        The patched method returns ``True`` by default (simulating a successful
+        deletion); individual tests can configure side effects to simulate errors.
         """
-        return mocker.patch("galaxy.celery.tasks.JobWorkingDirectory.delete")
+        mock = mocker.patch("galaxy.celery.tasks.JobWorkingDirectory.delete")
+        mock.return_value = True
+        return mock
 
     def test_no_failed_jobs_returns_zero(self, sa_session, mock_jwd_delete):
         object_store = MagicMock()
@@ -180,6 +182,18 @@ class TestCleanupJwds:
         result = _cleanup_jwds(sa_session, object_store, days=7)
         assert result == 0
 
+    def test_delete_returning_false_is_not_counted(self, sa_session, mock_jwd_delete):
+        """When JobWorkingDirectory.delete returns False (nothing deleted), the job is not counted."""
+        job = _make_job(state="error", age_days=10)
+        sa_session.add(job)
+        sa_session.commit()
+
+        mock_jwd_delete.return_value = False
+
+        object_store = MagicMock()
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+        assert result == 0
+
     def test_handles_os_error_on_delete(self, sa_session, mock_jwd_delete):
         """OSError from JobWorkingDirectory.delete is logged and the job is skipped."""
         job = _make_job(state="error", age_days=10)
@@ -200,7 +214,7 @@ class TestCleanupJwds:
         sa_session.commit()
 
         # The second job fails; the first and third should still be counted.
-        mock_jwd_delete.side_effect = [None, OSError("disk failure"), None]
+        mock_jwd_delete.side_effect = [True, OSError("disk failure"), True]
 
         object_store = MagicMock()
         result = _cleanup_jwds(sa_session, object_store, days=7)

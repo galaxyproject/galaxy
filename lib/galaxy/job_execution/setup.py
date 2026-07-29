@@ -421,8 +421,11 @@ class JobWorkingDirectory:
             obj_dir=True,
         )
 
-    def delete(self) -> None:
+    def delete(self) -> bool:
         """Recursively delete the working directory.
+
+        Returns ``True`` if something was deleted, ``False`` if the directory
+        did not exist or the object store reported a non-deletion.
 
         For custom paths, only the per-job subdirectory is removed; the
         admin-supplied base is preserved for other jobs.
@@ -432,8 +435,9 @@ class JobWorkingDirectory:
             resolved = self._per_job_path(custom_path)
             if os.path.exists(resolved):
                 shutil.rmtree(resolved)
-            return
-        self._object_store.delete(
+                return True
+            return False
+        return self._object_store.delete(
             self._job,
             base_dir=_JOB_WORK_BASE_DIR,
             entire_dir=True,

@@ -98,8 +98,7 @@ class TestJobWorkingDirectoryCustomPath:
         with open(os.path.join(path, "output.txt"), "w") as f:
             f.write("data")
 
-        jwd.delete()
-
+        assert jwd.delete() is True
         assert not os.path.exists(path)
         # The base must survive — other jobs may share it.
         assert os.path.isdir(base)
@@ -112,7 +111,7 @@ class TestJobWorkingDirectoryCustomPath:
         jwd = JobWorkingDirectory(job, object_store)
 
         # Should not raise even though the per-job dir was never created.
-        jwd.delete()
+        assert jwd.delete() is False
         assert os.path.isdir(base)
 
     def test_cleared_contents_base_returns_root_divergent_path(self, tmp_path, object_store):

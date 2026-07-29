@@ -810,8 +810,7 @@ def _cleanup_jwds(
 
     def _delete_jwd(job: model.Job) -> bool:
         try:
-            JobWorkingDirectory(job, object_store).delete()
-            return True
+            return JobWorkingDirectory(job, object_store).delete()
         except ObjectNotFound:
             return False
         except OSError as e:
