@@ -68,15 +68,17 @@ class TestJobWorkingDirectoryCustomPath:
         # The base must exist too (as parent of the per-job dir).
         assert os.path.isdir(base)
 
-    def test_create_raises_on_preexisting_per_job_dir(self, tmp_path, object_store):
+    def test_create_is_idempotent_on_preexisting_per_job_dir(self, tmp_path, object_store):
+        """create() returns the same path without error if the directory already exists."""
         base = str(tmp_path / "jobs")
         job = _make_job(100)
         job.working_directory = base
         jwd = JobWorkingDirectory(job, object_store)
 
-        jwd.create()
-        with pytest.raises(FileExistsError, match="already exists for job 100"):
-            jwd.create()
+        path1 = jwd.create()
+        path2 = jwd.create()
+        assert path1 == path2
+        assert os.path.isdir(path1)
 
     def test_exists_reflects_per_job_dir(self, tmp_path, object_store):
         base = str(tmp_path / "jobs")

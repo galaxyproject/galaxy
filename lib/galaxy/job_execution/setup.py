@@ -393,20 +393,13 @@ class JobWorkingDirectory:
     def create(self) -> str:
         """Create the working directory and return its path.
 
-        Raises ``FileExistsError`` if the per-job directory already exists
-        (job id collision or leftover from a crashed run).
+        Idempotent: if the per-job directory already exists (e.g. wrapper
+        reconstruction for a resubmitted job), it is returned without error.
         """
         if custom_path := self._custom_path:
             validate_working_directory_path(custom_path)
             path = self._per_job_path(custom_path)
-            try:
-                os.makedirs(path, exist_ok=False)
-            except FileExistsError as exc:
-                raise FileExistsError(
-                    f"Job working directory already exists for job {self._job.id} "
-                    f"at {path!r}; this indicates a job id collision or a leftover "
-                    f"directory from a previous run."
-                ) from exc
+            os.makedirs(path, exist_ok=True)
             return path
         self._object_store.create(
             self._job,
