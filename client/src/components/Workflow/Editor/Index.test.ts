@@ -12,10 +12,11 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
-import { getVersions } from "./modules/services";
+import { getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
+import MessagesModal from "./MessagesModal.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
 const localVue = getLocalVue();
@@ -35,6 +36,7 @@ const mockGetAppRoot = vi.mocked(getAppRoot);
 const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
 const mockLoadWorkflow = vi.mocked(getWorkflowFull);
 const MockGetVersions = vi.mocked(getVersions);
+const mockSaveWorkflow = vi.mocked(saveWorkflow);
 
 /** TODO: A potentially hacky type until we modernize the entire
  * component to Composition API and TypeScript */
@@ -216,5 +218,38 @@ describe("Index", () => {
         await wrapper.vm.$nextTick();
         const confirmationRequired = wrapper.emitted()["update:confirmation"]![0]![0];
         expect(confirmationRequired).toBeTruthy();
+    });
+
+    describe("MessagesModal", () => {
+        it("shows an error when clicking Save fails, and clears it once the modal is dismissed", async () => {
+            mockSaveWorkflow.mockRejectedValue(new Error("Test error message"));
+
+            // wait for workflow to load
+            await flushPromises();
+
+            // save button is disabled initially until a change is made
+            const saveButton = wrapper.find("#workflow-save-button");
+            expect(saveButton.attributes("disabled")).toBeTruthy();
+
+            // simulate WorkflowGraph making a change to enable the Save button
+            wrapper.findComponent({ ref: "workflowGraph" }).vm.$emit("onChange");
+            await wrapper.vm.$nextTick();
+
+            // save button is now enabled
+            expect(saveButton.attributes("disabled")).toBeFalsy();
+
+            await saveButton.trigger("click");
+            await flushPromises();
+
+            const modal = wrapper.findComponent(MessagesModal);
+            expect(modal.props("title")).toBe("Saving workflow failed...");
+            expect(modal.props("error")).toBe(true);
+
+            // dismissing the modal (as a user closing it would) should clear the message
+            modal.vm.$emit("onHidden");
+            await wrapper.vm.$nextTick();
+
+            expect(wrapper.findComponent(MessagesModal).props("title")).toBeNull();
+        });
     });
 });
