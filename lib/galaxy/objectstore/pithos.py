@@ -94,6 +94,9 @@ class PithosObjectStore(CachingConcreteObjectStore):
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
+        # Pithos ignores cache config and uses config.file_path as its cache.
+        # A single fixed shard satisfies the CacheShardManager interface required
+        # by CachingConcreteObjectStore without enabling multi-shard behavior.
         self._cache_shards = CacheShardManager([CacheShard(path=self.config.file_path, weight=1, size=-1)])
         log.info("Parse config_xml for pithos object store")
         self.config_dict = config_dict

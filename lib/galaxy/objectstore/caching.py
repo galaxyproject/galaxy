@@ -25,8 +25,8 @@ ONE_GIGA_BYTE = 1024 * 1024 * 1024
 FileListT = list[tuple[time.struct_time, str, int]]
 
 #: The type of an object identifier used for cache shard selection.
-#: Can be a numeric id (``store_by="id"``) or a UUID / string
-#: (``store_by="uuid"``).
+#: Can be a numeric id (``store_by="id"``) or a UUID object / its
+#: string representation (``store_by="uuid"``).
 ObjectId = int | UUID | str
 
 
@@ -90,13 +90,19 @@ class CacheShardManager:
             cumulative += shard.weight
             self._weighted_index.append((cumulative, shard))
         self._total_weight = total_weight
+        self._shard_cache: dict[str, CacheShard] = {}
 
     def _select_shard(self, object_id: ObjectId) -> CacheShard:
-        digest = hashlib.sha256(str(object_id).encode()).digest()
+        key = str(object_id)
+        shard = self._shard_cache.get(key)
+        if shard is not None:
+            return shard
+        digest = hashlib.sha256(key.encode()).digest()
         hash_value = int.from_bytes(digest, "big")
         point = hash_value % self._total_weight
         for cumulative, shard in self._weighted_index:
             if point < cumulative:
+                self._shard_cache[key] = shard
                 return shard
         return self.shards[-1]
 

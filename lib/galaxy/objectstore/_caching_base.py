@@ -109,15 +109,16 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         cache_path = self._get_cache_path(rel_path, object_id)
         return os.path.exists(cache_path)
 
-    def _pull_into_cache(self, rel_path, object_id: ObjectId, **kwargs) -> bool:
+    def _pull_into_cache(self, rel_path, *, object_id: ObjectId, **kwargs) -> bool:
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
-        if not os.path.exists(self._get_cache_path(rel_path_dir, object_id)):
-            os.makedirs(self._get_cache_path(rel_path_dir, object_id), exist_ok=True)
+        cache_dir = self._get_cache_path(rel_path_dir, object_id)
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir, exist_ok=True)
         # Now pull in the file
         file_ok = self._download(rel_path, object_id=object_id)
         if file_ok:
-            fix_permissions(self.config, self._get_cache_path(rel_path_dir, object_id))
+            fix_permissions(self.config, cache_dir)
         else:
             unlink(self._get_cache_path(rel_path, object_id), ignore_errors=True)
         return file_ok
@@ -129,7 +130,8 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         if not self._in_cache(rel_path, object_id):
             self._pull_into_cache(rel_path, object_id=object_id, **kwargs)
         # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path, object_id))
+        cache_path = self._get_cache_path(rel_path, object_id)
+        data_file = open(cache_path)
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()
@@ -197,7 +199,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 self._push_to_storage(rel_path, from_string="", object_id=object_id)
         return self
 
-    def _caching_allowed(self, rel_path: str, object_id: ObjectId, remote_size: int | None = None) -> bool:
+    def _caching_allowed(self, rel_path: str, *, object_id: ObjectId, remote_size: int | None = None) -> bool:
         if remote_size is None:
             remote_size = self._get_remote_size(rel_path)
         cache_target = self._cache_shards.get_cache_target(object_id)
@@ -254,7 +256,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
-    def _get_size_in_cache(self, rel_path, object_id: ObjectId):
+    def _get_size_in_cache(self, rel_path, *, object_id: ObjectId):
         return os.path.getsize(self._get_cache_path(rel_path, object_id))
 
     def _size(self, obj, **kwargs) -> int:
@@ -262,7 +264,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         object_id = self._get_object_id(obj)
         if self._in_cache(rel_path, object_id):
             try:
-                return self._get_size_in_cache(rel_path, object_id)
+                return self._get_size_in_cache(rel_path, object_id=object_id)
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try Azure. Error: %s", rel_path, ex)
         elif self._exists_remotely(rel_path):
@@ -287,11 +289,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             return cache_path
 
         # Check if the file exists in the cache first, always pull if file size in cache is zero
-        if (
-            not dir_only
-            and self._in_cache(rel_path, object_id)
-            and os.path.getsize(self._get_cache_path(rel_path, object_id)) > 0
-        ):
+        if not dir_only and self._in_cache(rel_path, object_id) and os.path.getsize(cache_path) > 0:
             return cache_path
 
         # For directories: trust cache if it has files. Individual file accesses
@@ -385,14 +383,17 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
 
     @property
     def staging_path(self) -> str:
+        """First shard's cache path. For shard-aware operations, use ``_cache_shards``."""
         return self._cache_shards.paths[0]
 
     @property
     def cache_size(self) -> float:
+        """First shard's cache size. For shard-aware operations, use ``_cache_shards``."""
         return self._cache_shards.cache_targets[0].size
 
     @property
     def cache_target(self) -> CacheTarget:
+        """First shard's cache target. For all targets, use ``cache_targets()``."""
         return self._cache_shards.cache_targets[0]
 
     def cache_targets(self) -> list[CacheTarget]:
@@ -439,7 +440,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 os.remove(tmp_path)
             raise
 
-    def _download(self, rel_path: str, object_id: ObjectId) -> bool:
+    def _download(self, rel_path: str, *, object_id: ObjectId) -> bool:
         raise NotImplementedError()
 
     # Do not need to override these if instead replacing _delete
