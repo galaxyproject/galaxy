@@ -137,6 +137,11 @@ function mapPlacement(p: string): Placement {
     return map[p] || (p as Placement);
 }
 
+// Bootstrap only defines .bs-popover-top/-right/-bottom/-left, and every arrow triangle rule
+// hangs off those four, so an aligned floating-ui placement has to collapse to its base side --
+// "bs-popover-bottom-start" matches no rule and leaves the arrow untriangled.
+const basePlacement = computed(() => actualPlacement.value.split("-")[0]);
+
 const popoverPosition = ref({ x: 0, y: 0 });
 const arrowPosition = ref<{ x?: number; y?: number }>({});
 let cleanupAutoUpdate: ReturnType<typeof autoUpdate> | null = null;
@@ -370,7 +375,7 @@ defineExpose({
             v-show="showState"
             ref="popoverEl"
             class="popover b-popover"
-            :class="[customClass, `bs-popover-${actualPlacement}`]"
+            :class="[customClass, `bs-popover-${basePlacement}`]"
             role="tooltip"
             :style="{ transform: `translate(${popoverPosition.x}px, ${popoverPosition.y}px)` }">
             <div
@@ -397,5 +402,11 @@ defineExpose({
     left: 0;
     z-index: 1060;
     max-width: 276px;
+
+    .arrow {
+        // The arrow middleware already centers this on the reference element, so Bootstrap's
+        // horizontal margin would just shift it back off-center.
+        margin: 0;
+    }
 }
 </style>
