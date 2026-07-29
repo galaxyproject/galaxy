@@ -125,6 +125,7 @@
                 mode="report"
                 :title="'Workflow Report Template: ' + name"
                 :labels="getLabels"
+                :loading="loadingWorkflow"
                 :steps="steps"
                 @insert="insertMarkdown"
                 @update="onReportUpdate">
