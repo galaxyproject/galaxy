@@ -44,17 +44,20 @@ const buttonTitles = {
 
 function closeModal() {
     emit("update:show-modal", false);
+    busy.value = false;
 }
 
 function dontSave() {
     busy.value = true;
     emit("on-proceed", props.navUrl, false, true, props.appendVersion);
+    closeModal();
 }
 
 function saveChanges() {
     busy.value = true;
     closeModal();
     emit("on-proceed", props.navUrl, true, false, props.appendVersion);
+    closeModal();
 }
 </script>
 
