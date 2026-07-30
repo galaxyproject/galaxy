@@ -17,14 +17,14 @@ Vue.directive("localize", {});
 const { server, http } = useServerMock();
 
 describe("MarkdownVitessce.vue", () => {
-    it("displays error on invalid JSON", async () => {
+    it("displays error on invalid content", async () => {
         const wrapper = mount(MarkdownVitessce, {
             propsData: {
                 content: "{invalid",
             },
             pinia: createTestingPinia({ createSpy: vi.fn }),
         });
-        expect(wrapper.text()).toContain("SyntaxError");
+        expect(wrapper.text()).toContain("Error");
     });
 
     it("shows info alert when invocation is missing", async () => {

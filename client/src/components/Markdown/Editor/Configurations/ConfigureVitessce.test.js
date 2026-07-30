@@ -2,6 +2,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parse } from "yaml";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
@@ -104,7 +105,7 @@ describe("ConfigureVitessce.vue", () => {
         expect(wrapper.emitted("cancel")).toBeTruthy();
     });
 
-    it("emits change with updated JSON when OK is clicked", async () => {
+    it("emits change with updated YAML when OK is clicked", async () => {
         const wrapper = mountComponent({
             datasets: [
                 {
@@ -116,9 +117,9 @@ describe("ConfigureVitessce.vue", () => {
         });
         wrapper.findComponent(ConfigureHeader).vm.$emit("ok");
         expect(wrapper.emitted("change")).toBeTruthy();
-        const emittedJson = wrapper.emitted("change")[0][0];
-        expect(typeof emittedJson).toBe("string");
-        expect(JSON.parse(emittedJson)).toMatchObject({
+        const emitted = wrapper.emitted("change")[0][0];
+        expect(typeof emitted).toBe("string");
+        expect(parse(emitted)).toMatchObject({
             datasets: [{ name: "Dataset 1", uid: "ds1" }],
         });
     });
