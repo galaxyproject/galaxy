@@ -221,6 +221,7 @@ class OSFFileSourceTemplateConfiguration(StrictModel):
     template_start: Optional[str] = None
     template_end: Optional[str] = None
 
+
 class OSFFileSourceConfiguration(StrictModel):
     type: Literal["osf"]
     url: str
@@ -228,6 +229,7 @@ class OSFFileSourceConfiguration(StrictModel):
     token: str
     public_name: Optional[str] = None
     writable: bool = True
+
 
 class AzureFileSourceTemplateConfiguration(StrictModel):
     type: Literal["azure"]
