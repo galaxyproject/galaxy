@@ -72,6 +72,13 @@ describe("WorkflowEditor", () => {
         expect(editor.props("workflowTags")).toEqual(["tag1"]);
     });
 
+    it("leaves initialVersion undefined when no version query parameter is present", async () => {
+        const wrapper = await mountWorkflowEditor("?id=stored123");
+
+        const editor = wrapper.findComponent(Index);
+        expect(editor.props("initialVersion")).toBeUndefined();
+    });
+
     it("parses the version query parameter as an integer and passes it to Editor", async () => {
         const wrapper = await mountWorkflowEditor("?id=stored123&version=3");
 
@@ -91,6 +98,23 @@ describe("WorkflowEditor", () => {
         const editorAfter = wrapper.findComponent(Index);
         expect(editorAfter.exists()).toBe(true);
         // A new Editor instance means the `:key` changed and it was remounted.
+        expect(editorAfter.vm).not.toBe(editorBefore.vm);
+    });
+
+    it("reloads the editor config when the query changes in place (switching workflows without remounting)", async () => {
+        const wrapper = await mountWorkflowEditor("?id=stored123");
+
+        const editorBefore = wrapper.findComponent(Index);
+        expect(editorBefore.props("workflowId")).toBe("stored123");
+
+        // Mutate the same route.query object in place, as vue-router does when
+        // navigating to a new workflow while already inside the editor.
+        mockRoute.query.id = "stored456";
+        await flushPromises();
+
+        const editorAfter = wrapper.findComponent(Index);
+        expect(editorAfter.props("workflowId")).toBe("stored456");
+        // The `:key` bump also means it's a fresh Editor instance.
         expect(editorAfter.vm).not.toBe(editorBefore.vm);
     });
 
