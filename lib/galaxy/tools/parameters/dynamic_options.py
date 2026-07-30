@@ -899,8 +899,11 @@ class DynamicOptions:
         path_headers = get_path_headers(None, table_name)
         table_entries = {}
         for value in hda._metadata["data_tables"][table_name]:
-            if dbkey := value.get("dbkey"):
-                table_entries[dbkey] = value
+            # Key entries by dbkey when the table has one; otherwise fall back to
+            # the ``value`` column so tables without a dbkey column (e.g. motus,
+            # dada2_species) are still consumable from a data-manager bundle.
+            if entry_key := (value.get("dbkey") or value.get("value")):
+                table_entries[entry_key] = value
             for header in path_headers:
                 if path := value.get(header):
                     # maybe a hack, should probably pass around dataset or src id combinations ?
