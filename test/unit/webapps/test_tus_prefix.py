@@ -1,10 +1,4 @@
 """Verify the TUS routers stay reachable when galaxy_url_prefix is set.
-
-initialize_fast_app mounts the Galaxy app underneath galaxy_url_prefix, so the TUS
-routers must be registered without it. Registering them with the prefix made the
-creation POST miss the router entirely and fall through to the legacy WSGI upload
-hooks endpoint, which answers 200 without a Location header, leaving TUS clients
-with no upload URL to PATCH to.
 """
 
 import pytest
