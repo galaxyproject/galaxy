@@ -50,6 +50,31 @@ backends:
      type: cloud
      provider: azure
 """
+OBJECT_STORE_TEMPLATES_CONFIG = """
+- id: azure_template
+  name: Azure Storage
+  description: Bring your own Azure container
+  configuration:
+    type: azure_blob
+    auth:
+      account_name: '{{ variables.account_name }}'
+      account_key: '{{ secrets.account_key }}'
+    container:
+      name: '{{ variables.container_name }}'
+- id: swift_template
+  name: Swift Storage
+  description: Bring your own Swift container
+  configuration:
+    type: cloud
+    provider: openstack
+    auth:
+      auth_url: https://keystone.example.org:5000/v3
+      username: '{{ variables.username }}'
+      password: '{{ secrets.password }}'
+      project_name: '{{ variables.project_name }}'
+    bucket:
+      name: '{{ variables.container }}'
+"""
 FILES_SOURCES_CONFIG = """
 - type: webdav
 - type: dropbox
@@ -167,6 +192,49 @@ def test_non_cloud_objectstore_needs_no_cloudbridge_extras():
         cds = cc.get_cond_deps(config)
         assert not cds.check_cloudbridge()
         assert cds.extras("cloudbridge") == []
+
+
+def test_object_store_templates_install_their_dependencies():
+    # Stores admins offer as templates need their dependencies too, even when
+    # no store of that type is configured in object_store_conf.
+    with _config_context() as cc:
+        templates_config = cc.write_config("object_store_templates.yml", OBJECT_STORE_TEMPLATES_CONFIG)
+        config = {
+            "object_store_templates_config_file": templates_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_azure_storage()
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == ["openstack"]
+
+
+def test_inline_object_store_templates_install_their_dependencies():
+    with _config_context() as cc:
+        config = {
+            "object_store_templates": [
+                {
+                    "id": "gcs_template",
+                    "name": "Google Storage",
+                    "description": "Bring your own bucket",
+                    "configuration": {
+                        "type": "cloud",
+                        "provider": "google",
+                        "auth": {"credentials_file": "/etc/galaxy/gcp.json"},
+                        "bucket": {"name": "{{ variables.bucket }}"},
+                    },
+                }
+            ],
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == ["gcp"]
+
+
+def test_object_store_templates_default_needs_no_dependencies():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps()
+        assert not cds.check_cloudbridge()
+        assert not cds.check_azure_storage()
 
 
 def test_optional_requirements_carry_cloudbridge_extras():

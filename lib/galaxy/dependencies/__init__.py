@@ -132,6 +132,19 @@ class ConditionalDependencies:
         except OSError:
             pass
 
+        # Parse object store templates config. Stores offered as templates need
+        # their dependencies as much as ones configured in object_store_conf.
+        object_store_templates_conf = self.config.get("object_store_templates")
+        if object_store_templates_conf is None:
+            object_store_templates_conf_yml = self.config_object.object_store_templates_config_file
+            if object_store_templates_conf_yml and exists(object_store_templates_conf_yml):
+                with open(object_store_templates_conf_yml) as f:
+                    object_store_templates_conf = yaml.safe_load(f)
+        for object_store_template in apply_syntactic_sugar(object_store_templates_conf or []):
+            configuration = object_store_template.get("configuration") or {}
+            if "type" in configuration:
+                self.collect_object_store(configuration)
+
         # Parse auth conf
         auth_conf_xml = self.config_object.auth_config_file
         try:
