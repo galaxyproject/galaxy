@@ -52,6 +52,7 @@ FileSourceTemplateType = Literal[
     "iiif",
     "omero",
     "ssh",
+    "osf",
 ]
 
 
@@ -209,6 +210,24 @@ class SshFileSourceConfiguration(StrictModel):
     path: str
     writable: bool = False
 
+
+class OSFFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["osf"]
+    url: Union[str, TemplateExpansion]
+    waterbutler_url: Union[str, TemplateExpansion]
+    token: Union[str, TemplateExpansion]
+    public_name: Optional[Union[str, TemplateExpansion]] = None
+    writable: Union[bool, TemplateExpansion] = True
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+class OSFFileSourceConfiguration(StrictModel):
+    type: Literal["osf"]
+    url: str
+    waterbutler_url: str
+    token: str
+    public_name: Optional[str] = None
+    writable: bool = True
 
 class AzureFileSourceTemplateConfiguration(StrictModel):
     type: Literal["azure"]
@@ -452,6 +471,7 @@ FileSourceTemplateConfiguration = Annotated[
         IIIFFileSourceTemplateConfiguration,
         OmeroFileSourceTemplateConfiguration,
         SshFileSourceTemplateConfiguration,
+        OSFFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -477,6 +497,7 @@ FileSourceConfiguration = Annotated[
         IIIFFileSourceConfiguration,
         OmeroFileSourceConfiguration,
         SshFileSourceConfiguration,
+        OSFFileSourceConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -560,6 +581,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "iiif": IIIFFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
+    "osf": OSFFileSourceConfiguration,
 }
 
 
