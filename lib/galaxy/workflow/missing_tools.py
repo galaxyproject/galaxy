@@ -47,8 +47,17 @@ def parse_shed_tool_id(tool_id: str) -> ToolShedRepositoryReference | None:
         # Not something we can turn back into an installable repository.
         log.debug(f"Cannot derive a tool shed repository from tool id [{tool_id}]")
         return None
-    tool_shed, _, owner, name, _tool, _version = parts
-    return ToolShedRepositoryReference(tool_shed=tool_shed, owner=owner, name=name, changeset_revision=None)
+    tool_shed, _, owner, name, tool, version = parts
+    # The version in the id is what the workflow asks for, and it is what decides which
+    # revision of the repository has to be installed.
+    return ToolShedRepositoryReference(
+        tool_shed=tool_shed,
+        owner=owner,
+        name=name,
+        changeset_revision=None,
+        tool_id=tool,
+        tool_version=version,
+    )
 
 
 def find_unavailable_tools(trans: "ProvidesUserContext", tools: list[dict[str, Any]]) -> list[UnavailableWorkflowTool]:
@@ -136,9 +145,13 @@ def install_workflow_tool_repository(
         raise exceptions.RequestParameterInvalidException(
             f"Tool shed '{repository.tool_shed}' is not one this Galaxy is configured to install from."
         )
-    changeset_revision = repository.changeset_revision or latest_installable_revision(
-        app, tool_shed_url, repository.name, repository.owner
-    )
+    changeset_revision = repository.changeset_revision
+    if not changeset_revision and repository.tool_id and repository.tool_version:
+        changeset_revision = revision_for_tool_version(
+            app, tool_shed_url, repository.name, repository.owner, repository.tool_id, repository.tool_version
+        )
+    if not changeset_revision:
+        changeset_revision = latest_installable_revision(app, tool_shed_url, repository.name, repository.owner)
     resolved = repository.model_copy(update={"changeset_revision": changeset_revision})
     installed = InstallRepositoryManager(app).install(
         tool_shed_url, repository.name, repository.owner, changeset_revision, install_options
@@ -154,6 +167,53 @@ def install_workflow_tool_repository(
         )
         for tool_shed_repository in installed
     ]
+
+
+def revision_for_tool_version(
+    app, tool_shed_url: str, name: str, owner: str, tool_id: str, tool_version: str
+) -> str | None:
+    """The newest revision of a repository that provides an exact tool version.
+
+    Installing the newest revision installs the newest tool, which is not what a workflow
+    pinned to an older version needs. The shed records which tools each revision contains, so
+    the version the workflow asks for can usually be installed as-is.
+
+    Returns None when the shed cannot be asked or has no revision with that version, leaving
+    the caller to fall back to the newest revision.
+    """
+    try:
+        repositories = _shed_get(app, tool_shed_url, ["api", "repositories"], {"name": name, "owner": owner})
+        if not repositories:
+            return None
+        metadata = _shed_get(
+            app,
+            tool_shed_url,
+            ["api", "repositories", repositories[0]["id"], "metadata"],
+            {"downloadable_only": "true"},
+        )
+    except Exception as e:
+        log.warning(f"Could not ask {tool_shed_url} which revision of {owner}/{name} has {tool_id} {tool_version}: {e}")
+        return None
+
+    best_revision = None
+    best_numeric = -1
+    for revision_metadata in (metadata or {}).values():
+        for tool in revision_metadata.get("tools") or []:
+            if tool.get("id") != tool_id or tool.get("version") != tool_version:
+                continue
+            # A version can appear in several revisions; the newest of them is the one to take.
+            numeric_revision = revision_metadata.get("numeric_revision") or -1
+            if numeric_revision > best_numeric:
+                best_numeric = numeric_revision
+                best_revision = revision_metadata.get("changeset_revision")
+    return best_revision
+
+
+def _shed_get(app, tool_shed_url: str, pathspec: list[str], params: dict[str, str]):
+    raw_text = util.url_get(
+        tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
+    )
+    return json.loads(util.unicodify(raw_text))
 
 
 def latest_installable_revision(app, tool_shed_url: str, name: str, owner: str) -> str:

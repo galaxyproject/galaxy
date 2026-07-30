@@ -44,3 +44,11 @@ def test_missing_repositories_dedupes_and_keeps_order():
 
 def test_missing_repositories_skips_tools_without_a_repository():
     assert missing_repositories([_unavailable("cat1")]) == []
+
+
+def test_parse_shed_tool_id_keeps_the_tool_and_version_wanted():
+    """The version in the id decides which revision has to be installed, so it must survive."""
+    repository = parse_shed_tool_id(SHED_TOOL_ID)
+    assert repository is not None
+    assert repository.tool_id == "compose_text_param"
+    assert repository.tool_version == "0.1.0"

@@ -61,8 +61,12 @@ const installableRepositories = computed(() => {
     }
     return repositories;
 });
-/** Tools an installed version could stand in for without a known change in behaviour. */
-const substitutableTools = computed(() => unavailableTools.value.filter((tool) => tool.substitute_version));
+/** Tools where some other version is installed, whether or not switching to it is vouched for. */
+const toolsWithAnotherVersion = computed(() =>
+    unavailableTools.value.filter((tool) => (tool.installed_versions ?? []).length > 0),
+);
+/** Switching to these would change behaviour in ways Galaxy cannot predict. */
+const unvouchedTools = computed(() => toolsWithAnotherVersion.value.filter((tool) => !tool.substitute_version));
 
 async function load() {
     loading.value = true;
@@ -92,11 +96,10 @@ function describe(tool: UnavailableWorkflowTool) {
     if (installedVersions.length === 0) {
         return "not installed";
     }
-    const installed = installedVersions.join(", ");
     if (tool.substitute_version) {
-        return `version ${tool.substitute_version} is installed and can be used instead`;
+        return `${tool.substitute_version} installed, a safe stand-in`;
     }
-    return `installed here as ${installed}, which Galaxy cannot vouch for as a replacement`;
+    return `only ${installedVersions.join(", ")} installed`;
 }
 
 /**
@@ -201,6 +204,21 @@ function onUseInstalledVersions() {
                         </li>
                     </ul>
 
+                    <BAlert v-if="toolsWithAnotherVersion.length > 0" variant="info" show>
+                        <span v-if="unvouchedTools.length === 0">
+                            Another version of some of these is installed and Galaxy considers it a safe stand-in, so
+                            you can switch to it instead of installing anything.
+                        </span>
+                        <span v-else>
+                            Another version of {{ toolsWithAnotherVersion.length }} of these is installed, but
+                            {{
+                                unvouchedTools.length === 1 ? "one of them is" : `${unvouchedTools.length} of them are`
+                            }}
+                            not a version Galaxy knows to behave the same. Installing gets the exact versions the
+                            workflow was built with; switching reuses what is here and may change results.
+                        </span>
+                    </BAlert>
+
                     <BAlert v-if="!canInstall && availability?.cannot_install_reason" variant="info" show>
                         {{ availability.cannot_install_reason }}
                     </BAlert>
@@ -209,8 +227,16 @@ function onUseInstalledVersions() {
         </div>
 
         <template v-slot:footer>
-            <GButton v-if="substitutableTools.length > 0" :disabled="working" @click="onUseInstalledVersions">
-                Use the installed versions
+            <GButton
+                v-if="toolsWithAnotherVersion.length > 0"
+                :disabled="working"
+                :title="
+                    unvouchedTools.length > 0
+                        ? 'Switch the workflow to the versions installed here. Results may differ from the versions it was built with.'
+                        : 'Switch the workflow to the installed versions, which Galaxy considers safe stand-ins.'
+                "
+                @click="onUseInstalledVersions">
+                Switch to the installed versions
             </GButton>
             <GButton
                 v-if="canInstall && installableRepositories.length > 0"
@@ -218,7 +244,13 @@ function onUseInstalledVersions() {
                 :disabled="working"
                 @click="onInstall">
                 <FontAwesomeIcon :icon="faDownload" fixed-width />
-                {{ working ? "Installing..." : `Install ${installableRepositories.length} missing tools` }}
+                {{
+                    working
+                        ? "Installing..."
+                        : `Install the ${installableRepositories.length} missing ${
+                              installableRepositories.length === 1 ? "repository" : "repositories"
+                          }`
+                }}
             </GButton>
             <GButton
                 v-if="!canInstall && unavailableTools.length > 0"

@@ -25149,7 +25149,7 @@ export interface components {
         ToolShedRepositoryReference: {
             /**
              * Changeset Revision
-             * @description Revision to install. When unset the newest installable revision is used.
+             * @description Revision to install. When unset, the revision providing tool_version is looked up, falling back to the newest installable revision.
              */
             changeset_revision?: string | null;
             /**
@@ -25163,10 +25163,20 @@ export interface components {
              */
             owner: string;
             /**
+             * Tool ID
+             * @description Unqualified id of the tool the workflow needs from this repository.
+             */
+            tool_id?: string | null;
+            /**
              * Tool Shed
              * @description Base URL of the tool shed hosting the repository.
              */
             tool_shed: string;
+            /**
+             * Tool Version
+             * @description Version of that tool the workflow asks for, used to pick the revision to install.
+             */
+            tool_version?: string | null;
         };
         /** ToolStep */
         ToolStep: {
