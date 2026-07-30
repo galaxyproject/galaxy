@@ -1,15 +1,15 @@
-import { stringify } from "./stringify";
+import { parse, stringify } from "yaml";
 
 /**
  * Parse and serialize the content of a fenced config block (```visualization,
  * ```vega, ...).
  *
- * This is the single seam for the block serialization format. Today it is JSON;
- * a YAML-superset parser will be swapped in here without touching every consumer.
- * Valid JSON is valid YAML, so pasted Vega/Vitessce specs keep parsing unchanged.
+ * Blocks are authored as YAML, which is a superset of JSON: pasted Vega or
+ * Vitessce specs (JSON) parse unchanged, while hand-written blocks get YAML's
+ * plain-text ergonomics. Serialization emits YAML and preserves author key order.
  */
 export function parseBlockContent(content: string): Record<string, unknown> {
-    return JSON.parse(content);
+    return (parse(content) ?? {}) as Record<string, unknown>;
 }
 
 export function serializeBlockContent(value: Record<string, unknown>): string {
