@@ -109,7 +109,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             k8s_extra_job_envs=dict(map=str, default=None),
             k8s_tolerations=dict(map=str, default=None),
             k8s_galaxy_instance_id=dict(map=str),
-            k8s_timeout_seconds_job_deletion=dict(map=int, valid=lambda x: int > 0, default=30),
+            k8s_timeout_seconds_job_deletion=dict(map=int, valid=lambda x: int(x) > 0, default=30),
             k8s_job_api_version=dict(map=str, default=DEFAULT_JOB_API_VERSION),
             k8s_job_ttl_secs_after_finished=dict(map=int, valid=lambda x: x is None or int(x) >= 0, default=None),
             k8s_job_metadata=dict(map=str, default=None),
