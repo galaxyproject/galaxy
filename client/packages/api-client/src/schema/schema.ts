@@ -26916,6 +26916,13 @@ export interface components {
              */
             name: string;
             /**
+             * Parameters Schema
+             * @description JSON Schema for validating an embed config against the plugin's settings and tracks.
+             */
+            parameters_schema?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Params
              * @description The parameters of the plugin.
              */

@@ -23,6 +23,7 @@ from re import Match
 from typing import Any
 
 import markdown
+import yaml
 
 try:
     import weasyprint
@@ -33,6 +34,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     MalformedContents,
     ObjectNotFound,
+    RequestParameterInvalidException,
     ServerNotConfiguredForRequest,
 )
 from galaxy.managers.context import (
@@ -61,6 +63,7 @@ from galaxy.util import now
 from galaxy.util.markdown import literal_via_fence
 from galaxy.util.resources import resource_string
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.visualization.parameters import VisualizationState
 from .markdown_parse import (
     EMBED_DIRECTIVE_REGEX,
     GALAXY_MARKDOWN_FUNCTION_CALL_LINE,
@@ -110,10 +113,45 @@ def process_invocation_ids(f, workflow_markdown: str) -> str:
     return re.sub(VISUALIZATION_FENCED_BLOCK, process_block, workflow_markdown)
 
 
+def validate_visualization_blocks(trans: ProvidesAppContext, galaxy_markdown: str) -> None:
+    """Validate visualization embed configs against plugin parameter schemas.
+
+    Warn-only: configuration problems are logged, never raised, so a semantic
+    mistake in a visualization block does not block saving a page or report.
+    """
+    registry = getattr(trans.app, "visualizations_registry", None)
+    if registry is None:
+        return
+    for match in VISUALIZATION_FENCED_BLOCK.finditer(galaxy_markdown):
+        try:
+            config = yaml.safe_load(match.group(1))
+        except yaml.YAMLError:
+            # Structural parse errors are surfaced by the client editor; skip here.
+            continue
+        if not isinstance(config, dict):
+            continue
+        name = config.get("visualization_name")
+        if not name:
+            continue
+        try:
+            plugin = registry.get_plugin(name)
+        except ObjectNotFound:
+            log.warning("Visualization block references unknown visualization '%s'.", name)
+            continue
+        bundle = getattr(plugin, "parameter_bundle", None)
+        if bundle is None:
+            continue
+        try:
+            VisualizationState(config).validate(bundle)
+        except RequestParameterInvalidException as e:
+            log.warning("Visualization block for '%s' has configuration issues: %s", name, e)
+
+
 def ready_galaxy_markdown_for_import(trans: ProvidesAppContext, external_galaxy_markdown):
     """Convert from encoded IDs to decoded numeric IDs for storing in the DB."""
 
     _validate(external_galaxy_markdown, internal=False)
+    validate_visualization_blocks(trans, external_galaxy_markdown)
 
     def _remap(container, line):
         object_id = None

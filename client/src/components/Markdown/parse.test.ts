@@ -48,7 +48,9 @@ describe("getArgs", () => {
 describe("splitMarkdown", () => {
     it("extracts galaxy directive sections with parsed args", () => {
         const { sections } = splitMarkdown("A\n```galaxy\njob_metrics(job_id=j1)\n```\nB");
-        const directive = sections.find((s) => "args" in s) as { name: string; args: Record<string, string> } | undefined;
+        const directive = sections.find((s) => "args" in s) as
+            | { name: string; args: Record<string, string> }
+            | undefined;
         expect(directive?.name).toBe("job_metrics");
         expect(directive?.args).toEqual({ job_id: "j1" });
     });
