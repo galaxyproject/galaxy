@@ -280,6 +280,7 @@ class RefactorActionExecutionMessageTypeEnum(str, Enum):
     tool_state_adjustment = "tool_state_adjustment"
     connection_drop_forced = "connection_drop_forced"
     workflow_output_drop_forced = "workflow_output_drop_forced"
+    tool_not_installed = "tool_not_installed"
     # Nothing was upgraded. Informational, unlike the message types above it does not
     # describe anything the workflow lost.
     subworkflow_up_to_date = "subworkflow_up_to_date"

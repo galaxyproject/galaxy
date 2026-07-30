@@ -548,3 +548,96 @@ class WorkflowExtractionResult(Model):
         title="Workflow ID",
         description="The encoded ID of the newly created workflow.",
     )
+
+
+class ToolShedRepositoryReference(Model):
+    tool_shed: str = Field(..., title="Tool Shed", description="Base URL of the tool shed hosting the repository.")
+    owner: str = Field(..., title="Owner", description="Owner of the repository in the tool shed.")
+    name: str = Field(..., title="Name", description="Name of the repository in the tool shed.")
+    changeset_revision: str | None = Field(
+        None,
+        title="Changeset Revision",
+        description="Revision to install. When unset the newest installable revision is used.",
+    )
+
+
+class UnavailableWorkflowTool(Model):
+    tool_id: str = Field(..., title="Tool ID", description="Id of the tool as recorded in the workflow.")
+    tool_version: str | None = Field(None, title="Tool Version", description="Version recorded in the workflow.")
+    tool_uuid: str | None = Field(None, title="Tool UUID", description="UUID of a dynamic tool, if any.")
+    installed_versions: list[str] = Field(
+        default_factory=list,
+        title="Installed Versions",
+        description="Versions of this tool that are installed. Empty if the tool is not installed at all.",
+    )
+    substitute_version: str | None = Field(
+        None,
+        title="Substitute Version",
+        description=(
+            "An installed version the workflow can be switched to without a known break in behaviour, "
+            "as declared by Galaxy's safe tool version updates. Null when no installed version is known to be safe."
+        ),
+    )
+    repository: ToolShedRepositoryReference | None = Field(
+        None,
+        title="Repository",
+        description="Tool shed repository the tool came from, when the tool id identifies one.",
+    )
+
+
+class WorkflowToolAvailability(Model):
+    unavailable_tools: list[UnavailableWorkflowTool] = Field(
+        default_factory=list,
+        title="Unavailable Tools",
+        description="Tools the workflow refers to that are not installed in the version the workflow asks for.",
+    )
+    can_install: bool = Field(
+        ...,
+        title="Can Install",
+        description="Whether the current user is allowed to install the missing tools from this Galaxy.",
+    )
+    cannot_install_reason: str | None = Field(
+        None,
+        title="Cannot Install Reason",
+        description="Why installation is not offered to the current user.",
+    )
+
+
+class InstallWorkflowToolsPayload(Model):
+    repositories: list[ToolShedRepositoryReference] | None = Field(
+        None,
+        title="Repositories",
+        description="Repositories to install. When unset every repository the workflow is missing is installed.",
+    )
+    tool_panel_section_id: str | None = Field(
+        None, title="Tool Panel Section ID", description="Existing tool panel section to install into."
+    )
+    new_tool_panel_section_label: str | None = Field(
+        None, title="New Tool Panel Section Label", description="Label of a new tool panel section to create."
+    )
+    install_resolver_dependencies: bool = Field(True, title="Install Resolver Dependencies")
+    install_repository_dependencies: bool = Field(True, title="Install Repository Dependencies")
+    install_tool_dependencies: bool = Field(False, title="Install Tool Dependencies")
+
+
+class InstalledWorkflowToolRepository(Model):
+    repository: ToolShedRepositoryReference
+    status: str | None = Field(None, title="Status", description="Installation status reported by the tool shed.")
+    error: str | None = Field(None, title="Error", description="Why this repository could not be installed.")
+
+
+class InstallWorkflowToolsResponse(Model):
+    installed: list[InstalledWorkflowToolRepository] = Field(default_factory=list, title="Installed")
+    failed: list[InstalledWorkflowToolRepository] = Field(default_factory=list, title="Failed")
+
+
+class RequestToolInstallationResponse(Model):
+    notified_admins: list[str] = Field(
+        default_factory=list,
+        title="Notified Admins",
+        description="Email addresses of the administrators that were asked to install the missing tools.",
+    )
+    shared: bool = Field(..., title="Shared", description="Whether the workflow was shared with those administrators.")
+    emailed: bool = Field(
+        ..., title="Emailed", description="Whether an email could be sent. False when this Galaxy has no mail set up."
+    )

@@ -15,6 +15,11 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
+        <WorkflowMissingTools
+            v-if="!isNewTempWorkflow"
+            :workflow-id="id"
+            :show.sync="showMissingTools"
+            @useInstalledVersions="onUpgrade" />
         <SaveChangesModal
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
@@ -348,6 +353,7 @@ import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
+import WorkflowMissingTools from "@/components/Workflow/WorkflowMissingTools.vue";
 
 export default {
     components: {
@@ -362,6 +368,7 @@ export default {
         RefactorConfirmationModal,
         MessagesModal,
         WorkflowGraph,
+        WorkflowMissingTools,
         FontAwesomeIcon,
         UndoRedoStack,
         WorkflowPanel,
@@ -817,6 +824,7 @@ export default {
             saveChangesAppendVersion: false,
             navUrl: "",
             parentWorkflowName: null,
+            showMissingTools: false,
             faArrowLeft,
             faTimes,
             faCog,
@@ -1396,6 +1404,7 @@ export default {
             });
             await Vue.nextTick();
             this.hasChanges = has_changes;
+            this.showMissingTools = (data.unavailable_tool_ids ?? []).length > 0;
         },
         /**
          * Fetches and loads the workflow data for the given id and version into the editor.

@@ -7,6 +7,11 @@ export type Creator = components["schemas"]["Person"] | components["schemas"]["C
 export type RefactorRequestAction = components["schemas"]["RefactorRequest"]["actions"][number];
 export type RefactorResponse = components["schemas"]["RefactorResponse"];
 export type RefactorResponseActionExecution = RefactorResponse["action_executions"][number];
+export type WorkflowToolAvailability = components["schemas"]["WorkflowToolAvailability"];
+export type UnavailableWorkflowTool = components["schemas"]["UnavailableWorkflowTool"];
+export type ToolShedRepositoryReference = components["schemas"]["ToolShedRepositoryReference"];
+export type InstallWorkflowToolsResponse = components["schemas"]["InstallWorkflowToolsResponse"];
+export type RequestToolInstallationResponse = components["schemas"]["RequestToolInstallationResponse"];
 export type RefactorResponseActionExecutionMessage = RefactorResponseActionExecution["messages"][number];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
 export type WorkflowStepTyped = StoredWorkflowDetailed["steps"][number];
@@ -141,6 +146,56 @@ export async function refactor(
     }
 
     return data as RefactorResponse;
+}
+
+/** Reports the tools this workflow needs that are not installed in the version it asks for. */
+export async function getWorkflowToolAvailability(id: string): Promise<WorkflowToolAvailability> {
+    const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/tool_availability", {
+        params: { path: { workflow_id: id } },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+/**
+ * Installs the tool shed repositories this workflow is missing. Administrators only.
+ *
+ * Without `repositories` every repository the workflow is missing is installed.
+ */
+export async function installWorkflowTools(
+    id: string,
+    repositories?: ToolShedRepositoryReference[],
+    installResolverDependencies = true,
+    installRepositoryDependencies = true,
+    installToolDependencies = false,
+): Promise<InstallWorkflowToolsResponse> {
+    const { data, error } = await GalaxyApi().POST("/api/workflows/{workflow_id}/tool_availability/install", {
+        params: { path: { workflow_id: id } },
+        body: {
+            repositories,
+            install_resolver_dependencies: installResolverDependencies,
+            install_repository_dependencies: installRepositoryDependencies,
+            install_tool_dependencies: installToolDependencies,
+        },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+/** Asks the administrators to install the tools this workflow is missing. */
+export async function requestWorkflowToolInstallation(id: string): Promise<RequestToolInstallationResponse> {
+    const { data, error } = await GalaxyApi().POST(
+        "/api/workflows/{workflow_id}/tool_availability/request_installation",
+        { params: { path: { workflow_id: id } } },
+    );
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
 }
 
 export async function undeleteWorkflow(id: string): Promise<WorkflowSummary> {

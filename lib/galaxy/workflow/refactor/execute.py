@@ -582,7 +582,20 @@ class WorkflowRefactorExecutor:
         trans = self.module_injector.trans
         tool_version = action.tool_version
         if tool_version is None:
-            latest_tool = trans.app.toolbox.get_tool(tool_id, get_all_versions=True)[-1]
+            installed_versions = trans.app.toolbox.get_tool(tool_id, get_all_versions=True)
+            if not installed_versions:
+                # Nothing of this tool is installed, so there is no version to upgrade to.
+                # Reported rather than raised, upgrading the rest of the workflow still works.
+                execution.messages.append(
+                    RefactorActionExecutionMessage(
+                        message=f"Tool '{tool_id}' is not installed, it cannot be upgraded.",
+                        message_type=RefactorActionExecutionMessageTypeEnum.tool_not_installed,
+                        step_label=step_def.get("label"),
+                        order_index=step_def["id"],
+                    )
+                )
+                return
+            latest_tool = installed_versions[-1]
             tool_version = latest_tool.version
             tool_id = latest_tool.id
         step = self.workflow.steps[step_def["id"]]

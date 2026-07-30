@@ -84,10 +84,14 @@ from galaxy.schema.schema import (
     WorkflowSortByEnum,
 )
 from galaxy.schema.workflows import (
+    InstallWorkflowToolsPayload,
+    InstallWorkflowToolsResponse,
     InvokeWorkflowPayload,
+    RequestToolInstallationResponse,
     StoredWorkflowDetailed,
     WorkflowExtractionByIdsPayload,
     WorkflowExtractionResult,
+    WorkflowToolAvailability,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -620,15 +624,18 @@ class WorkflowsAPIController(
         workflow, missing_tool_tups = self._workflow_from_dict(
             trans, raw_workflow_description, workflow_create_options, source=source
         )
-        return self.__api_import_response(workflow)
+        return self.__api_import_response(workflow, missing_tool_tups)
 
-    def __api_import_response(self, stored_workflow: model.StoredWorkflow):
+    def __api_import_response(self, stored_workflow: model.StoredWorkflow, missing_tool_tups=None):
         workflow = stored_workflow.latest_workflow
         assert workflow
         response = {
             "message": f"Workflow '{workflow.name}' imported successfully.",
             "status": "success",
             "id": self.app.security.encode_id(stored_workflow.id),
+            # So the importer can be offered the tools straight away rather than finding
+            # out the workflow cannot run when they try to run it.
+            "missing_tools": sorted({tool_id for tool_id, _name, _version, _step in missing_tool_tups or []}),
         }
         if workflow.has_errors:
             response["message"] = "Imported, but some steps in this workflow have validation errors."
@@ -659,6 +666,7 @@ class WorkflowsAPIController(
         item["url"] = url_for("workflow", id=encoded_id)
         item["owner"] = workflow.user.username
         item["number_of_steps"] = len(workflow.latest_workflow.steps)
+        item["missing_tools"] = sorted({tool_id for tool_id, _name, _version, _step in missing_tool_tups})
         return item
 
     def __normalize_workflow(self, trans: GalaxyWebTransaction, as_dict):
@@ -921,6 +929,15 @@ InvokeWorkflowBody = Annotated[
     ),
 ]
 
+InstallWorkflowToolsBody = Annotated[
+    InstallWorkflowToolsPayload,
+    Body(
+        default=...,
+        title="Install workflow tools",
+        description="Which repositories to install and how to install them.",
+    ),
+]
+
 RefactorWorkflowBody = Annotated[
     RefactorRequest,
     Body(
@@ -1010,6 +1027,43 @@ class FastAPIWorkflows:
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, workflow_id)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/tool_availability",
+        summary="Reports the tools this workflow needs that are not installed as asked for.",
+    )
+    def tool_availability(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        instance: InstanceQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> WorkflowToolAvailability:
+        return self.service.tool_availability(trans, workflow_id, instance or False)
+
+    @router.post(
+        "/api/workflows/{workflow_id}/tool_availability/install",
+        summary="Installs the tool shed repositories this workflow is missing.",
+    )
+    def install_missing_tools(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        payload: InstallWorkflowToolsBody,
+        instance: InstanceQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InstallWorkflowToolsResponse:
+        return self.service.install_missing_tools(trans, workflow_id, payload, instance or False)
+
+    @router.post(
+        "/api/workflows/{workflow_id}/tool_availability/request_installation",
+        summary="Asks the administrators to install the tools this workflow is missing.",
+    )
+    def request_tool_installation(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        instance: InstanceQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> RequestToolInstallationResponse:
+        return self.service.request_tool_installation(trans, workflow_id, instance or False)
 
     @router.put(
         "/api/workflows/{workflow_id}/refactor",

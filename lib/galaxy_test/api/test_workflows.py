@@ -2179,6 +2179,42 @@ steps:
         missing_tool_steps = [v for v in steps.values() if v["tool_id"] == "cat_missing_tool"]
         assert len(missing_tool_steps) == 1
 
+    def test_tool_availability_reports_missing_tool(self):
+        workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+
+        response = self._get(f"workflows/{workflow_id}/tool_availability")
+        self._assert_status_code_is(response, 200)
+        availability = response.json()
+        assert [tool["tool_id"] for tool in availability["unavailable_tools"]] == ["cat_missing_tool"]
+        missing_tool = availability["unavailable_tools"][0]
+        # nothing of it is installed, so there is no version to fall back to
+        assert missing_tool["installed_versions"] == []
+        assert missing_tool["substitute_version"] is None
+        # it is not a tool shed tool, so it cannot be installed from here either
+        assert missing_tool["repository"] is None
+        # a regular user is never offered the install
+        assert availability["can_install"] is False
+        assert availability["cannot_install_reason"]
+
+    def test_tool_availability_when_nothing_is_missing(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        response = self._get(f"workflows/{workflow_id}/tool_availability")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["unavailable_tools"] == []
+
+    def test_editor_reports_unavailable_tool_ids(self):
+        workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        assert downloaded_workflow["unavailable_tool_ids"] == ["cat_missing_tool"]
+
+    def test_install_missing_tools_requires_admin(self):
+        workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        response = self._post(f"workflows/{workflow_id}/tool_availability/install", data={}, json=True)
+        self._assert_status_code_is(response, 403)
+
     def test_import_no_tool_id(self):
         # Import works with missing tools, but not with absent content/tool id.
         workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")

@@ -7073,6 +7073,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflows/{workflow_id}/tool_availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reports the tools this workflow needs that are not installed as asked for. */
+        get: operations["tool_availability_api_workflows__workflow_id__tool_availability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/{workflow_id}/tool_availability/install": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Installs the tool shed repositories this workflow is missing. */
+        post: operations["install_missing_tools_api_workflows__workflow_id__tool_availability_install_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/{workflow_id}/tool_availability/request_installation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Asks the administrators to install the tools this workflow is missing. */
+        post: operations["request_tool_installation_api_workflows__workflow_id__tool_availability_request_installation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflows/{workflow_id}/undelete": {
         parameters: {
             query?: never;
@@ -16635,6 +16686,46 @@ export interface components {
              */
             step_output: string;
         };
+        /** InstallWorkflowToolsPayload */
+        InstallWorkflowToolsPayload: {
+            /**
+             * Install Repository Dependencies
+             * @default true
+             */
+            install_repository_dependencies: boolean;
+            /**
+             * Install Resolver Dependencies
+             * @default true
+             */
+            install_resolver_dependencies: boolean;
+            /**
+             * Install Tool Dependencies
+             * @default false
+             */
+            install_tool_dependencies: boolean;
+            /**
+             * New Tool Panel Section Label
+             * @description Label of a new tool panel section to create.
+             */
+            new_tool_panel_section_label?: string | null;
+            /**
+             * Repositories
+             * @description Repositories to install. When unset every repository the workflow is missing is installed.
+             */
+            repositories?: components["schemas"]["ToolShedRepositoryReference"][] | null;
+            /**
+             * Tool Panel Section ID
+             * @description Existing tool panel section to install into.
+             */
+            tool_panel_section_id?: string | null;
+        };
+        /** InstallWorkflowToolsResponse */
+        InstallWorkflowToolsResponse: {
+            /** Failed */
+            failed?: components["schemas"]["InstalledWorkflowToolRepository"][];
+            /** Installed */
+            installed?: components["schemas"]["InstalledWorkflowToolRepository"][];
+        };
         /** InstalledRepositoryToolShedStatus */
         InstalledRepositoryToolShedStatus: {
             /**
@@ -16711,6 +16802,20 @@ export interface components {
             tool_shed_status?: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
             /** Uninstalled */
             uninstalled: boolean;
+        };
+        /** InstalledWorkflowToolRepository */
+        InstalledWorkflowToolRepository: {
+            /**
+             * Error
+             * @description Why this repository could not be installed.
+             */
+            error?: string | null;
+            repository: components["schemas"]["ToolShedRepositoryReference"];
+            /**
+             * Status
+             * @description Installation status reported by the tool shed.
+             */
+            status?: string | null;
         };
         /** IntegerParameterModel */
         IntegerParameterModel: {
@@ -21378,6 +21483,7 @@ export interface components {
             | "tool_state_adjustment"
             | "connection_drop_forced"
             | "workflow_output_drop_forced"
+            | "tool_not_installed"
             | "subworkflow_up_to_date";
         /** RefactorRequest */
         RefactorRequest: {
@@ -21720,6 +21826,24 @@ export interface components {
             | "track_config"
             | "genome_data"
             | "in_use_state";
+        /** RequestToolInstallationResponse */
+        RequestToolInstallationResponse: {
+            /**
+             * Emailed
+             * @description Whether an email could be sent. False when this Galaxy has no mail set up.
+             */
+            emailed: boolean;
+            /**
+             * Notified Admins
+             * @description Email addresses of the administrators that were asked to install the missing tools.
+             */
+            notified_admins?: string[];
+            /**
+             * Shared
+             * @description Whether the workflow was shared with those administrators.
+             */
+            shared: boolean;
+        };
         /**
          * Requirement
          * @description Available types of job sources (model classes) that produce dataset collections.
@@ -25004,6 +25128,29 @@ export interface components {
             /** Err Msg */
             err_msg: string;
         };
+        /** ToolShedRepositoryReference */
+        ToolShedRepositoryReference: {
+            /**
+             * Changeset Revision
+             * @description Revision to install. When unset the newest installable revision is used.
+             */
+            changeset_revision?: string | null;
+            /**
+             * Name
+             * @description Name of the repository in the tool shed.
+             */
+            name: string;
+            /**
+             * Owner
+             * @description Owner of the repository in the tool shed.
+             */
+            owner: string;
+            /**
+             * Tool Shed
+             * @description Base URL of the tool shed hosting the repository.
+             */
+            tool_shed: string;
+        };
         /** ToolStep */
         ToolStep: {
             /**
@@ -25175,6 +25322,39 @@ export interface components {
             scope_type: "recent" | "seed_centered";
             /** Seed In Scope */
             seed_in_scope?: boolean | null;
+        };
+        /** UnavailableWorkflowTool */
+        UnavailableWorkflowTool: {
+            /**
+             * Installed Versions
+             * @description Versions of this tool that are installed. Empty if the tool is not installed at all.
+             */
+            installed_versions?: string[];
+            /**
+             * Repository
+             * @description Tool shed repository the tool came from, when the tool id identifies one.
+             */
+            repository?: components["schemas"]["ToolShedRepositoryReference"] | null;
+            /**
+             * Substitute Version
+             * @description An installed version the workflow can be switched to without a known break in behaviour, as declared by Galaxy's safe tool version updates. Null when no installed version is known to be safe.
+             */
+            substitute_version?: string | null;
+            /**
+             * Tool ID
+             * @description Id of the tool as recorded in the workflow.
+             */
+            tool_id: string;
+            /**
+             * Tool UUID
+             * @description UUID of a dynamic tool, if any.
+             */
+            tool_uuid?: string | null;
+            /**
+             * Tool Version
+             * @description Version recorded in the workflow.
+             */
+            tool_version?: string | null;
         };
         /** UndeleteHistoriesPayload */
         UndeleteHistoriesPayload: {
@@ -27600,6 +27780,24 @@ export interface components {
              * @description Total tokens consumed by the generation
              */
             total_tokens?: number | null;
+        };
+        /** WorkflowToolAvailability */
+        WorkflowToolAvailability: {
+            /**
+             * Can Install
+             * @description Whether the current user is allowed to install the missing tools from this Galaxy.
+             */
+            can_install: boolean;
+            /**
+             * Cannot Install Reason
+             * @description Why installation is not offered to the current user.
+             */
+            cannot_install_reason?: string | null;
+            /**
+             * Unavailable Tools
+             * @description Tools the workflow refers to that are not installed in the version the workflow asks for.
+             */
+            unavailable_tools?: components["schemas"]["UnavailableWorkflowTool"][];
         };
         /** WorkflowTypeVersion */
         WorkflowTypeVersion: {
@@ -53935,6 +54133,148 @@ export interface operations {
                 };
                 content: {
                     "application/json": boolean;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tool_availability_api_workflows__workflow_id__tool_availability_get: {
+        parameters: {
+            query?: {
+                instance?: boolean | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowToolAvailability"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    install_missing_tools_api_workflows__workflow_id__tool_availability_install_post: {
+        parameters: {
+            query?: {
+                instance?: boolean | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstallWorkflowToolsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstallWorkflowToolsResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    request_tool_installation_api_workflows__workflow_id__tool_availability_request_installation_post: {
+        parameters: {
+            query?: {
+                instance?: boolean | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestToolInstallationResponse"];
                 };
             };
             /** @description Request Error */

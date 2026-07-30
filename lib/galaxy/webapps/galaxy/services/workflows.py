@@ -8,6 +8,7 @@ from pydantic import UUID4
 
 from galaxy import (
     exceptions,
+    util,
     web,
 )
 from galaxy.managers.context import (
@@ -26,22 +27,39 @@ from galaxy.model import (
     ImplicitCollectionJobs,
     LandingRequestToWorkflowInvocationAssociation,
     StoredWorkflow,
+    User,
     WorkflowInvocation,
     WorkflowLandingRequest,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import WorkflowInvocationResponse
+from galaxy.schema.notifications import (
+    MessageNotificationContent,
+    NotificationCreateData,
+    NotificationCreateRequest,
+    NotificationRecipients,
+    NotificationVariant,
+    PersonalNotificationCategory,
+)
 from galaxy.schema.schema import (
     InvocationsStateCounts,
+    ShareWithPayload,
     WorkflowIndexPayload,
 )
 from galaxy.schema.workflows import (
+    InstalledWorkflowToolRepository,
+    InstallWorkflowToolsPayload,
+    InstallWorkflowToolsResponse,
     InvokeWorkflowPayload,
+    RequestToolInstallationResponse,
     StoredWorkflowDetailed,
+    UnavailableWorkflowTool,
     WorkflowExtractionByIdsPayload,
     WorkflowExtractionPayload,
     WorkflowExtractionResult,
+    WorkflowToolAvailability,
 )
+from galaxy.tool_shed.util.shed_util_common import have_shed_tool_conf_for_install
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
@@ -51,6 +69,11 @@ from galaxy.workflow.extract import (
     extract_workflow,
     extract_workflow_by_ids,
     normalize_output_label_key,
+)
+from galaxy.workflow.missing_tools import (
+    find_unavailable_tools,
+    install_workflow_tool_repository,
+    missing_repositories,
 )
 from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
@@ -110,8 +133,156 @@ class WorkflowsService(ServiceBase):
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
         self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
+        self._notification_service = notification_service
         self._tool_shed_registry = tool_shed_registry
         self._job_manager = job_manager
+
+    def tool_availability(
+        self, trans: ProvidesUserContext, workflow_id: DecodedDatabaseIdField, instance: bool
+    ) -> WorkflowToolAvailability:
+        """Report the tools this workflow refers to that Galaxy cannot use as asked for."""
+        workflow = self._get_workflow_for_tools(trans, workflow_id, instance)
+        unavailable_tools = find_unavailable_tools(trans, self._workflow_contents_manager.get_all_tools(workflow))
+        can_install, cannot_install_reason = self._can_install_tools(trans)
+        return WorkflowToolAvailability(
+            unavailable_tools=unavailable_tools,
+            can_install=can_install,
+            cannot_install_reason=cannot_install_reason,
+        )
+
+    def install_missing_tools(
+        self,
+        trans: ProvidesUserContext,
+        workflow_id: DecodedDatabaseIdField,
+        payload: InstallWorkflowToolsPayload,
+        instance: bool,
+    ) -> InstallWorkflowToolsResponse:
+        """Install the tool shed repositories this workflow is missing. Administrators only."""
+        can_install, cannot_install_reason = self._can_install_tools(trans)
+        if not can_install:
+            raise exceptions.AdminRequiredException(cannot_install_reason or "Cannot install tools from here.")
+
+        workflow = self._get_workflow_for_tools(trans, workflow_id, instance)
+        unavailable_tools = find_unavailable_tools(trans, self._workflow_contents_manager.get_all_tools(workflow))
+        repositories = payload.repositories or missing_repositories(unavailable_tools)
+        if not repositories:
+            raise exceptions.RequestParameterInvalidException(
+                "This workflow has no missing tools that can be installed from a tool shed."
+            )
+
+        # Drop unset options so the install manager applies its own defaults for them.
+        install_options = payload.model_dump(exclude={"repositories"}, exclude_none=True)
+        installed = []
+        failed = []
+        for repository in repositories:
+            try:
+                statuses = install_workflow_tool_repository(trans, repository, install_options)
+            except Exception as e:
+                log.exception(f"Failed to install repository {repository.owner}/{repository.name}")
+                failed.append(InstalledWorkflowToolRepository(repository=repository, error=util.unicodify(e)))
+                continue
+            installed.extend(statuses)
+        return InstallWorkflowToolsResponse(installed=installed, failed=failed)
+
+    def request_tool_installation(
+        self, trans: ProvidesUserContext, workflow_id: DecodedDatabaseIdField, instance: bool
+    ) -> RequestToolInstallationResponse:
+        """Ask the administrators to install the tools this workflow is missing.
+
+        Shares the workflow with them so they can see what needs installing, and tells them
+        about it through a notification and, where this Galaxy can send mail, by email.
+        """
+        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        workflow = stored_workflow.get_internal_version(None) if instance else stored_workflow.latest_workflow
+        unavailable_tools = find_unavailable_tools(trans, self._workflow_contents_manager.get_all_tools(workflow))
+        if not unavailable_tools:
+            raise exceptions.RequestParameterInvalidException("This workflow is not missing any tools.")
+
+        admins = [admin for admin in self._workflows_manager.user_manager.admins() if admin != trans.user]
+        if not admins:
+            raise exceptions.ObjectNotFound(
+                "This Galaxy has no administrator accounts to ask, please contact your administrator directly."
+            )
+
+        share_status = self.shareable_service.share_with_users(
+            trans, workflow_id, ShareWithPayload(user_ids=[admin.id for admin in admins])
+        )
+        shared = not share_status.errors
+        emailed = self._notify_admins_of_missing_tools(trans, stored_workflow, admins, unavailable_tools)
+        return RequestToolInstallationResponse(
+            notified_admins=[admin.email for admin in admins],
+            shared=shared,
+            emailed=emailed,
+        )
+
+    def _notify_admins_of_missing_tools(
+        self,
+        trans: ProvidesUserContext,
+        stored_workflow: StoredWorkflow,
+        admins: list[User],
+        unavailable_tools: list[UnavailableWorkflowTool],
+    ) -> bool:
+        subject = f"Workflow '{stored_workflow.name}' needs tools installed"
+        requester = trans.user.email if trans.user else "an anonymous user"
+        tool_lines = "\n".join(
+            f"- {tool.tool_id}" + (f" (version {tool.tool_version})" if tool.tool_version else "")
+            for tool in unavailable_tools
+        )
+        message = (
+            f"{requester} imported the workflow '{stored_workflow.name}', which needs tools that are not "
+            f"installed on this Galaxy. The workflow has been shared with you so you can install them.\n\n"
+            f"{tool_lines}"
+        )
+        if self._notification_service.notifications_enabled:
+            self._notification_service.send_internal_notification(
+                NotificationCreateRequest(
+                    recipients=NotificationRecipients.model_construct(user_ids=[admin.id for admin in admins]),
+                    notification=NotificationCreateData(
+                        source="galaxy_workflow_tool_installation",
+                        variant=NotificationVariant.urgent,
+                        category=PersonalNotificationCategory.message,
+                        content=MessageNotificationContent(
+                            category=PersonalNotificationCategory.message, subject=subject, message=message
+                        ),
+                    ),
+                    galaxy_url=self._galaxy_url(trans),
+                ),
+                force_sync=True,
+            )
+            # The notification system delivers the email itself, on its own schedule.
+            return bool(trans.app.config.smtp_server)
+        if not trans.app.config.smtp_server:
+            return False
+        util.send_mail(
+            trans.app.config.email_from,
+            [admin.email for admin in admins],
+            subject,
+            message,
+            trans.app.config,
+        )
+        return True
+
+    @staticmethod
+    def _galaxy_url(trans: ProvidesUserContext) -> str | None:
+        url_builder = getattr(trans, "url_builder", None)
+        if url_builder is None:
+            return None
+        return str(url_builder("/", qualified=True)).rstrip("/")
+
+    def _get_workflow_for_tools(self, trans: ProvidesUserContext, workflow_id: DecodedDatabaseIdField, instance: bool):
+        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        return stored_workflow.latest_workflow
+
+    @staticmethod
+    def _can_install_tools(trans: ProvidesUserContext) -> tuple[bool, str | None]:
+        if not trans.user_is_admin:
+            return False, "Only administrators can install tools, ask one of them to install the missing tools."
+        if not have_shed_tool_conf_for_install(trans.app):
+            return (
+                False,
+                "This Galaxy is not configured with a tool shed enabled tool config, tools cannot be installed.",
+            )
+        return True, None
 
     def index(
         self,

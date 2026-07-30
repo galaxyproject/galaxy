@@ -120,6 +120,7 @@ from galaxy.workflow.modules import (
     WorkflowModule,
     WorkflowModuleInjector,
 )
+from galaxy.workflow.missing_tools import find_unavailable_tools
 from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
 from galaxy.workflow.refactor.schema import (
     RefactorActionExecution,
@@ -1504,6 +1505,12 @@ class WorkflowContentsManager(UsesAnnotations):
             data["steps"][step.order_index] = step_dict
         if is_subworkflow:
             data["steps"] = self._resolve_collection_type(data["steps"])
+        else:
+            # Per step errors say a tool is missing, but not which of them can be installed,
+            # so name them here and let the editor offer to do something about it.
+            data["unavailable_tool_ids"] = [
+                tool.tool_id for tool in find_unavailable_tools(trans, self.get_all_tools(workflow))
+            ]
         return data
 
     @staticmethod
