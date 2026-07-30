@@ -889,8 +889,13 @@ class RuleImportContext:
 
     def select_dataset(self, row: int = 1) -> "RuleImportContext":
         self.wait_for_dataset_dialog()
+        # Wait for the initial loading spinner to disappear, indicating
+        # the table options are visible and rows have been rendered.
+        self.driver_wrapper.wait_for_selector_absent_or_hidden(
+            ".selection-dialog-modal [data-description='selection dialog spinner']"
+        )
         self.driver_wrapper.wait_for_and_click_selector(
-            f'.selection-dialog-modal table tbody tr[aria-rowindex="{row}"] td[aria-colindex="1"]'
+            f'.selection-dialog-modal table tbody tr[aria-rowindex="{row}"] td[id^="g-table-cell-label-"]'
         )
         self.driver_wrapper.wait_for_selector_absent_or_hidden(".selection-dialog-modal")
         wizard = self.components.file_set_wizard

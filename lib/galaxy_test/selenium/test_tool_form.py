@@ -535,7 +535,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         self.rule_builder_set_extension("txt")
 
         self.screenshot("rules_apply_rules_example_4_2_input_rules")
-        rule_builder.main_button_ok.wait_for_and_click()
+        self.components.file_set_wizard.wizard_submit_button.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(1)
         self.screenshot("rules_apply_rules_example_4_3_input_ready")
         self.history_multi_view_display_collection_contents(1, "list")

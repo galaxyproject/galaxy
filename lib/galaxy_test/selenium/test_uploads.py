@@ -372,7 +372,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_deferred_datasets_6_mapping_set")
         self.rule_builder_set_extension("fastqsanger.gz")
         self.screenshot("rules_deferred_datasets_7_extension_set")
-        rule_builder.main_button_ok.wait_for_and_click()
+        self.components.file_set_wizard.wizard_submit_button.wait_for_and_click()
         self.history_panel_wait_for_hid_deferred(6)
         self.screenshot("rules_deferred_datasets_8_download_complete")
 
@@ -405,7 +405,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_deferred_list_6_multiple_identifiers")
         self.rule_builder_set_collection_name("PRJNA355367")
         self.screenshot("rules_deferred_list_7_named")
-        rule_builder.main_button_ok.wait_for_and_click()
+        self.components.file_set_wizard.wizard_submit_button.wait_for_and_click()
         hid = 2
         self.history_panel_wait_for_hid_state(hid, state="deferred", allowed_force_refreshes=1)
         self.screenshot("rules_deferred_list_7_download_complete")
