@@ -118,6 +118,11 @@ class Linter(ABC, Generic[LintTargetType]):
         list the names of all linter derived from Linter
         """
         submodules.import_submodules(galaxy.tool_util.linters)
+        # Repository data-table linters subclass Linter but live outside the
+        # tool_util.linters package; import here so they are always registered
+        # (function-level to avoid a circular import with this module).
+        from galaxy.tool_util.data.bundles import lint as _repo_lint  # noqa: F401
+
         return [s.__name__ for s in cls.__subclasses__()]
 
     list_listers: Callable[[], list[str]]  # deprecated alias
