@@ -8,19 +8,17 @@ open-source platform for managing and sharing research projects, data and prepri
 *components*, which are themselves projects and can be nested arbitrarily. Files attached to a node live in one of
 several storage providers; this implementation currently targets ``osfstorage``, OSF's default provider [3].
 
-The FilesSource exposes three top-level categories under the plugin root: Projects lists the user's own projects (or
-public projects when browsing anonymously), Registrations lists public registrations, and Files searches file names
-across the user's own OSF nodes. OSF's public API v2 [4] does not expose a cross-node file search endpoint, so the
-Files category walks the user's nodes and filters client-side; it stays empty until the user types a query.
-Descending into a project or registration reveals its ``osfstorage`` contents and its child components; components
-appear as subfolders and can be entered like any other folder. With a personal access token [5] the user gains
-access to their private projects and can create new draft projects to upload Galaxy datasets into.
+The FilesSource exposes three top-level categories under the plugin's root: "Projects" lists both public projects and
+the user's own projects, "Registrations" lists public registrations, and Files runs a search against OSF's public file
+index [4]. Descending into a project or registration reveals its ``osfstorage`` contents and its child components;
+components appear as subfolders and can be entered like any other folder. With a personal access token [5], the user
+not only gains access to their private projects, but can also create new draft projects to upload Galaxy datasets into.
 
 Galaxy URIs take the form ``osf://osf/category/container_id/file_path``, where:
 
 - ``category`` is one of ``projects``, ``registrations`` or ``files``
 - ``container_id`` is the OSF node GUID (a short alphanumeric identifier, e.g. ``q2anz``)
-- ``file_path`` is the WaterButler internal path to the file within the node's ``osfstorage``
+- ``file_path`` is WaterButler's internal path to the file within the node's ``osfstorage``
 
 The implementation is layered: ``OSFClient`` wraps the OSF REST API v2 [4] and the WaterButler API [6] using
 ``requests``; ``OSFRepositoryInteractor`` translates Galaxy's RDM interactor contract into OSF calls; and
@@ -168,19 +166,26 @@ class OSFClient:
             params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
 
-    def list_user_nodes(
+    def list_files(
         self,
         page: int = 1,
         page_size: int = OSF_MAX_PAGE_SIZE,
+        query: Optional[str] = None,
     ) -> dict:
-        """List every node the current user has access to.
-
-        Used by the Files category's search.
-        """
+        # TODO: add sorting support to this method
+        params: dict[str, Any] = {"page": page, "page[size]": page_size}
+        if query:
+            params["q"] = query
+        # TODO: "search/files/" was a legacy endpoint removed on July 7, 2026;
+        #  this view will have to be reimplemented to use the API available at
+        #  https://share.osf.io/trove/index-card-serch (or a valid
+        #  alternative).
+        #  ᠎
+        #  @padinaalmai: This task is out of the scope of your student
+        #  project.
         return self._request(
-            "GET", "users/me/nodes/",
-            params={"page": page, "page[size]": page_size},
-            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            "GET", "search/files/",
+            params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
 
     def list_children(
@@ -189,6 +194,7 @@ class OSFClient:
         page: int = 1,
         page_size: int = OSF_MAX_PAGE_SIZE,
     ) -> list[dict]:
+        # TODO: add sorting support to this method
         payload = self._request(
             "GET", f"nodes/{node_id}/children/",
             params={"page": page, "page[size]": page_size},
@@ -223,6 +229,7 @@ class OSFClient:
         )
 
     def list_storage(self, container_id: str, wb_path: str = "/") -> list[dict]:
+        # TODO: add sorting support to this method
         url = self.waterbutler_url(container_id, wb_path)
         response = self._session.get(
             url, params={"meta": ""}, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -293,10 +300,10 @@ def galaxy_sort_to_osf(sort_by: Optional[str]) -> Optional[str]:
     descending = sort_by.startswith("-")
     field = sort_by.lstrip("-")
     mapping = {
+        # NOTE: the proposed keys are based on `RemoteEntry` and `RemoteFile`, although the expected values for
+        # `sort_by` are nowhere to be found in the codebase. Take the proposed keys just as an example.
         "name": "title",
-        "update_time": "date_modified",
-        "create_time": "date_created",
-        "ctime": "date_modified",
+        "ctime": "date_created",
         "size": "size",
     }
     osf_field = mapping.get(field)
@@ -391,46 +398,35 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> tuple[list[RemoteFile], int]:
-        """Search for files by name across the user's OSF nodes.
-
-        OSF's public API v2 does not expose a cross-node file search
-        endpoint. This method walks every node the
-        current user has access to via ``/v2/users/me/nodes/`` and matches
-        file names client side. An empty query returns no results.
-
-        Note: only the current user's own nodes are searched; files
-        in other users' public projects are out of reach without a
-        server side search endpoint from OSF.
-        """
-        if not query:
-            return [], 0
+        # TODO: add sorting support to this method
         client = self._client(context)
-        query_lower = query.lower()
-        matches: list[RemoteFile] = []
-        page = 1
-        while True:
-            payload = client.list_user_nodes(page=page, page_size=OSF_MAX_PAGE_SIZE)
-            nodes = payload.get("data", [])
-            if not nodes:
-                break
-            for node in nodes:
-                pid = node["id"]
-                try:
-                    for file_entry in self._walk_files(client, pid, "/"):
-                        if query_lower in file_entry.name.lower():
-                            matches.append(file_entry)
-                except Exception:
-                    continue
-            meta = payload.get("links", {}).get("meta", {})
-            total = meta.get("total", 0)
-            total_pages = (total + OSF_MAX_PAGE_SIZE - 1) // OSF_MAX_PAGE_SIZE if total else 1
-            if page >= total_pages:
-                break
-            page += 1
-        total_matches = len(matches)
-        start = offset or 0
-        end = start + limit if limit else total_matches
-        return matches[start:end], total_matches
+        page, page_size = galaxy_pagination_to_osf(limit, offset)
+        payload = client.list_files(
+            page=page, page_size=page_size, query=query,
+        )
+        hits = payload.get("data", [])
+        total = int(payload["links"]["meta"]["total"])
+        files: list[RemoteFile] = []
+        for hit in hits:
+            attrs = hit.get("attributes", {})
+            name = attrs.get("name", "untitled")
+            node_data = hit.get("relationships", {}).get("node", {}).get("data") or {}
+            parent_pid = node_data.get("id", "")
+            rel_path = attrs.get("materialized_path", name).lstrip("/")
+            if parent_pid:
+                uri = self.to_plugin_uri(parent_pid, rel_path)
+                path = f"/projects/{parent_pid}/{rel_path}"
+            else:
+                uri = f"{self.plugin.get_scheme()}://{self.plugin.get_prefix()}/files/{name}"
+                path = f"/files/{name}"
+            files.append(RemoteFile(
+                name=name,
+                uri=uri,
+                path=path,
+                size=attrs.get("size", 0),
+                ctime=attrs.get("date_modified") or attrs.get("date_created"),
+            ))
+        return files, total
 
     def list_folder(
         self,
@@ -452,6 +448,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         registration, child components are included as ``RemoteDirectory``
         entries so the user can navigate into them like folders.
         """
+        # TODO: add sorting support to this method
         client = self._client(context)
         wb_path = f"/{subpath}/" if subpath else "/"
         entries: list[AnyRemoteEntry] = []
@@ -496,6 +493,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         query: Optional[str] = None,
         category: str = "projects",
     ) -> list[RemoteFile]:
+        # TODO: add sorting support to this method
         client = self._client(context)
         files = list(self._walk_files(client, container_id, wb_path="/", category=category))
         if query:
@@ -549,6 +547,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         wb_path: str,
         category: str = "projects",
     ):
+        # TODO: add sorting support to this method
         for item in client.list_storage(container_id, wb_path):
             attrs = item.get("attributes", {})
             name = attrs.get("name", "untitled")
@@ -661,6 +660,7 @@ class OSFFilesSource(RDMFilesSource):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
+        # TODO: add sorting support to this method
         parts = [p for p in path.strip("/").split("/") if p]
 
         if not parts:
