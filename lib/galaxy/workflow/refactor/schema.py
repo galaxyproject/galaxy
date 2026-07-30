@@ -207,12 +207,19 @@ class FileDefaultsAction(BaseAction):
     action_type: Literal["fill_defaults"]
 
 
+SUBWORKFLOW_TOOLS_DESCRIPTION = """If set, the tools used by the subworkflow itself are upgraded as
+well, recursively through any further nesting. This creates a new version of the subworkflow, so it
+only applies to subworkflows the current user owns. Without this, only the pointer to the subworkflow
+is moved to a newer revision - a tool that became outdated inside the subworkflow stays outdated."""
+
+
 class UpgradeSubworkflowAction(BaseAction):
     action_type: Literal["upgrade_subworkflow"]
     step: step_reference_union = step_target_field
     # Once we start storing these actions in the database, this needs to be decoded
     # before adding it into the database.
     content_id: str | None = None
+    include_tools: bool = Field(False, description=SUBWORKFLOW_TOOLS_DESCRIPTION)
 
 
 class UpgradeToolAction(BaseAction):
@@ -223,6 +230,7 @@ class UpgradeToolAction(BaseAction):
 
 class UpgradeAllStepsAction(BaseAction):
     action_type: Literal["upgrade_all_steps"]
+    include_subworkflow_tools: bool = Field(False, description=SUBWORKFLOW_TOOLS_DESCRIPTION)
 
 
 union_action_classes = (
@@ -272,6 +280,9 @@ class RefactorActionExecutionMessageTypeEnum(str, Enum):
     tool_state_adjustment = "tool_state_adjustment"
     connection_drop_forced = "connection_drop_forced"
     workflow_output_drop_forced = "workflow_output_drop_forced"
+    # Nothing was upgraded. Informational, unlike the message types above it does not
+    # describe anything the workflow lost.
+    subworkflow_up_to_date = "subworkflow_up_to_date"
 
 
 INPUT_REFERENCE = """

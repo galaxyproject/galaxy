@@ -43,7 +43,9 @@ from .schema import (
     UpgradeToolAction,
 )
 from ..modules import (
+    find_outdated_steps,
     InputParameterModule,
+    SubWorkflowModule,
     WorkflowModuleInjector,
 )
 
@@ -69,8 +71,12 @@ class WorkflowRefactorExecutor:
         )
         # Track positions of newly created input steps during refactoring
         self._new_input_positions: list[Position] = []
+        # Set from the request in refactor(), actions that build new database objects
+        # need to know whether this is only a preview.
+        self.dry_run = False
 
     def refactor(self, refactor_request: RefactorActions):
+        self.dry_run = refactor_request.dry_run
         action_executions = []
         for action in refactor_request.actions:
             # TODO: we need to regenerate a detached workflow from as_dict after
@@ -438,22 +444,137 @@ class WorkflowRefactorExecutor:
                 new_outputs.append(workflow_output)
             step["workflow_outputs"] = new_outputs
 
-    def _apply_upgrade_subworkflow(self, action: UpgradeSubworkflowAction, execution: RefactorActionExecution):
+    def _apply_upgrade_subworkflow(
+        self,
+        action: UpgradeSubworkflowAction,
+        execution: RefactorActionExecution,
+        report_up_to_date: bool = True,
+    ):
         step_def = self._find_step(action.step)
         assert step_def["content_id"] is not None
         trans = self.module_injector.trans
-        content_id = action.content_id
-        if content_id is None:
-            old_workflow = trans.app.workflow_manager.get_owned_workflow(trans, step_def["content_id"])
-            stored_workflow = old_workflow.stored_workflow
-            content_id = trans.security.encode_id(stored_workflow.latest_workflow.id)
-        step_def["content_id"] = content_id
         step = self.workflow.steps[step_def["id"]]
-        new_workflow = trans.app.workflow_manager.get_owned_workflow(trans, content_id)
-        step.subworkflow = new_workflow
-        self._inject_for_updated_step(step, execution)
+        current_workflow = trans.app.workflow_manager.get_owned_workflow(trans, step_def["content_id"])
 
-        self._patch_step(execution, step, step_def)
+        target = self._subworkflow_upgrade_target(action, current_workflow, step_def, execution)
+        if target is None:
+            if report_up_to_date:
+                execution.messages.append(
+                    RefactorActionExecutionMessage(
+                        message=f"Subworkflow '{current_workflow.name}' is already up to date, nothing to upgrade.",
+                        message_type=RefactorActionExecutionMessageTypeEnum.subworkflow_up_to_date,
+                        step_label=step_def.get("label"),
+                        order_index=step_def["id"],
+                    )
+                )
+            return
+
+        if target.id is not None:
+            step_def["content_id"] = trans.security.encode_id(target.id)
+            step.subworkflow = target
+            module = self._inject_for_updated_step(step, execution).module
+        else:
+            # A recursive upgrade during a dry run builds the new subworkflow detached, so it has
+            # no id to point the step at. Leave the step where it is and describe what would change.
+            module = SubWorkflowModule(trans)
+            module.subworkflow = target
+
+        self._patch_step(execution, step, step_def, module=module)
+
+    def _subworkflow_upgrade_target(
+        self,
+        action: UpgradeSubworkflowAction,
+        current_workflow,
+        step_def,
+        execution: RefactorActionExecution,
+    ):
+        """Work out which workflow revision a subworkflow step should be moved to.
+
+        Returns None when there is nothing to upgrade. The returned workflow is detached (and so
+        has no id) when a recursive upgrade had to be computed during a dry run.
+        """
+        trans = self.module_injector.trans
+        workflow_manager = trans.app.workflow_manager
+        if action.content_id is not None:
+            return workflow_manager.get_owned_workflow(trans, action.content_id)
+
+        stored_workflow = current_workflow.stored_workflow
+        if stored_workflow is None and not self.dry_run:
+            # Subworkflows imported before 20.09 have no stored workflow, and so nothing
+            # recording their revisions. Give them one so they can be upgraded from here on.
+            stored_workflow = workflow_manager.attach_stored_workflow(trans, current_workflow)
+        if stored_workflow is None:
+            execution.messages.append(
+                RefactorActionExecutionMessage(
+                    message=(
+                        f"Subworkflow '{current_workflow.name}' has no version history to upgrade against. "
+                        "Save this workflow once to give it one."
+                    ),
+                    message_type=RefactorActionExecutionMessageTypeEnum.subworkflow_up_to_date,
+                    step_label=step_def.get("label"),
+                    order_index=step_def["id"],
+                )
+            )
+            return None
+
+        if action.include_tools:
+            upgraded = self._upgrade_subworkflow_contents(stored_workflow, step_def, execution)
+            if upgraded is not None:
+                return upgraded
+
+        latest_workflow = stored_workflow.latest_workflow
+        if latest_workflow.id == current_workflow.id:
+            return None
+        return latest_workflow
+
+    def _upgrade_subworkflow_contents(self, stored_workflow, step_def, execution: RefactorActionExecution):
+        """Upgrade the tools used inside a subworkflow, producing a new subworkflow revision.
+
+        Moving a step to the newest revision of its subworkflow does nothing about a tool that
+        went out of date *within* that subworkflow, which is the common case when a workflow is
+        shipped as a single unit. This recurses into the subworkflow to upgrade those too.
+
+        Returns None when everything inside the subworkflow is already current, so that clicking
+        upgrade repeatedly does not pile up identical revisions.
+        """
+        from galaxy.managers.workflows import RefactorRequest
+
+        trans = self.module_injector.trans
+        latest_workflow = stored_workflow.latest_workflow
+        if not find_outdated_steps(trans, latest_workflow):
+            return None
+
+        nested_request = RefactorRequest(
+            actions=[UpgradeAllStepsAction(action_type="upgrade_all_steps", include_subworkflow_tools=True)],
+            dry_run=self.dry_run,
+        )
+        upgraded_workflow, nested_executions = trans.app.workflow_contents_manager.do_refactor(
+            trans, stored_workflow, nested_request
+        )
+        subworkflow_name = stored_workflow.name
+        for nested_execution in nested_executions:
+            for message in nested_execution.messages:
+                execution.messages.append(self._message_from_subworkflow(message, step_def, subworkflow_name))
+        return upgraded_workflow
+
+    @staticmethod
+    def _message_from_subworkflow(
+        message: RefactorActionExecutionMessage, step_def, subworkflow_name: str
+    ) -> RefactorActionExecutionMessage:
+        """Re-point a message raised inside a subworkflow at the step that embeds it."""
+        inner_step = message.step_label
+        if not inner_step and message.order_index is not None:
+            inner_step = f"step {message.order_index + 1}"
+        prefix = f"Inside subworkflow '{subworkflow_name}'"
+        if inner_step:
+            prefix = f"{prefix} ({inner_step})"
+        return message.model_copy(
+            update={
+                "message": f"{prefix}: {message.message}",
+                "step_label": step_def.get("label"),
+                "order_index": step_def["id"],
+            }
+        )
 
     def _apply_upgrade_tool(self, action: UpgradeToolAction, execution: RefactorActionExecution):
         step_def = self._find_step(action.step)
@@ -480,9 +601,13 @@ class WorkflowRefactorExecutor:
         for step_order_index, step in self._as_dict["steps"].items():
             if step.get("type") == "subworkflow":
                 step_action_s = UpgradeSubworkflowAction(
-                    action_type="upgrade_subworkflow", step={"order_index": step_order_index}
+                    action_type="upgrade_subworkflow",
+                    step={"order_index": step_order_index},
+                    include_tools=action.include_subworkflow_tools,
                 )
-                self._apply_upgrade_subworkflow(step_action_s, execution)
+                # Upgrading everything at once should stay quiet about the steps that had
+                # nothing to do, only the per step action reports that back.
+                self._apply_upgrade_subworkflow(step_action_s, execution, report_up_to_date=False)
             elif step.get("type") == "tool":
                 step_action_t = UpgradeToolAction(action_type="upgrade_tool", step={"order_index": step_order_index})
                 self._apply_upgrade_tool(step_action_t, execution)
@@ -599,13 +724,17 @@ class WorkflowRefactorExecutor:
         output_name = output_reference.output_name
         return input_step_dict, input_name, output_step_dict, output_name
 
-    def _patch_step(self, execution, step, step_def):
+    def _patch_step(self, execution, step, step_def, module=None):
         """
         patch a workflow step after upgrading the tool / subworkflow
+
+        ``module`` defaults to the module of the upgraded step. It is supplied explicitly when
+        the upgraded content could not be attached to the step, as happens for a dry run of a
+        recursive subworkflow upgrade.
         """
-        # TODO: find workflow outputs that need to be dropped and report them
-        upgrade_inputs = step.module.get_all_inputs()
-        upgrade_outputs = step.module.get_all_outputs()
+        module = module or step.module
+        upgrade_inputs = module.get_all_inputs()
+        upgrade_outputs = module.get_all_outputs()
         upgrade_output_names = {u["name"] for u in upgrade_outputs}
         upgrade_order_index = step_def["id"]
         upgrade_label = step_def.get("label")
@@ -646,8 +775,8 @@ class WorkflowRefactorExecutor:
         for input_name in inputs_to_delete:
             del all_input_connections[input_name]
 
-        for _, step in self._as_dict["steps"].items():
-            all_input_connections = step.get("input_connections")
+        for _, other_step_def in self._as_dict["steps"].items():
+            all_input_connections = other_step_def.get("input_connections")
             for input_name, input_connections in all_input_connections.items():
                 rebuilt_valid_connections = []
                 for input_connection in _listify_connections(input_connections):
@@ -665,8 +794,8 @@ class WorkflowRefactorExecutor:
                                 message=message_text,
                                 message_type=RefactorActionExecutionMessageTypeEnum.connection_drop_forced,
                                 input_name=input_name,
-                                step_label=step.get("label"),
-                                order_index=step["id"],
+                                step_label=other_step_def.get("label"),
+                                order_index=other_step_def["id"],
                                 output_name=output_name,
                                 from_step_label=upgrade_label,
                                 from_order_index=upgrade_order_index,
@@ -695,6 +824,9 @@ class WorkflowRefactorExecutor:
                     output_label=output_label,
                 )
                 execution.messages.append(message)
+
+        for workflow_output in workflow_outputs_to_delete:
+            step_def["workflow_outputs"].remove(workflow_output)
 
     @staticmethod
     def normalize_input_connections_to_list(all_input_connections, input_name, add_if_missing=False):

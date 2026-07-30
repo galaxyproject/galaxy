@@ -21377,7 +21377,8 @@ export interface components {
             | "tool_version_change"
             | "tool_state_adjustment"
             | "connection_drop_forced"
-            | "workflow_output_drop_forced";
+            | "workflow_output_drop_forced"
+            | "subworkflow_up_to_date";
         /** RefactorRequest */
         RefactorRequest: {
             /** Actions */
@@ -25665,6 +25666,15 @@ export interface components {
              * @enum {string}
              */
             action_type: "upgrade_all_steps";
+            /**
+             * Include Subworkflow Tools
+             * @description If set, the tools used by the subworkflow itself are upgraded as
+             *     well, recursively through any further nesting. This creates a new version of the subworkflow, so it
+             *     only applies to subworkflows the current user owns. Without this, only the pointer to the subworkflow
+             *     is moved to a newer revision - a tool that became outdated inside the subworkflow stays outdated.
+             * @default false
+             */
+            include_subworkflow_tools: boolean;
         };
         /** UpgradeInstancePayload */
         UpgradeInstancePayload: {
@@ -25688,6 +25698,15 @@ export interface components {
             action_type: "upgrade_subworkflow";
             /** Content Id */
             content_id?: string | null;
+            /**
+             * Include Tools
+             * @description If set, the tools used by the subworkflow itself are upgraded as
+             *     well, recursively through any further nesting. This creates a new version of the subworkflow, so it
+             *     only applies to subworkflows the current user owns. Without this, only the pointer to the subworkflow
+             *     is moved to a newer revision - a tool that became outdated inside the subworkflow stays outdated.
+             * @default false
+             */
+            include_tools: boolean;
             /**
              * Step
              * @description The target step for this action.

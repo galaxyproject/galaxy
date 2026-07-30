@@ -7,6 +7,7 @@ export type Creator = components["schemas"]["Person"] | components["schemas"]["C
 export type RefactorRequestAction = components["schemas"]["RefactorRequest"]["actions"][number];
 export type RefactorResponse = components["schemas"]["RefactorResponse"];
 export type RefactorResponseActionExecution = RefactorResponse["action_executions"][number];
+export type RefactorResponseActionExecutionMessage = RefactorResponseActionExecution["messages"][number];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
 export type WorkflowStepTyped = StoredWorkflowDetailed["steps"][number];
 

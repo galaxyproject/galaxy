@@ -1121,7 +1121,7 @@ export default {
             this.stepActions.setLabel(this.steps[nodeId], newLabel);
         },
         onUpgrade() {
-            this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
+            this.onAttemptRefactor([{ action_type: "upgrade_all_steps", include_subworkflow_tools: true }]);
         },
         async generateAIReport() {
             if (this.hasChanges) {

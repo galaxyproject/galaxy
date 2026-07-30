@@ -146,7 +146,7 @@ export function useWorkflowActivities(
         {
             title: "Upgrade",
             id: "workflow-upgrade",
-            description: "Update all tools used in this workflow.",
+            description: "Update all tools used in this workflow, including those inside subworkflows.",
             tooltip: "Update all tools",
             icon: faRecycle,
             visible: true,

@@ -16,7 +16,7 @@
                 v-if="isSubworkflow"
                 v-g-tooltip.hover
                 role="button"
-                title="Upgrade this Workflow Step to latest Subworkflow version."
+                title="Upgrade this Workflow Step to the latest Subworkflow version, including the tools used inside it."
                 variant="link"
                 size="sm"
                 class="float-right py-0 px-1"
@@ -136,7 +136,9 @@ function onEditSubworkflow() {
     emit("onEditSubworkflow", contentId!.value);
 }
 function onUpgradeSubworkflow() {
-    emit("onAttemptRefactor", [{ action_type: "upgrade_subworkflow", step: { order_index: stepId.value } }]);
+    emit("onAttemptRefactor", [
+        { action_type: "upgrade_subworkflow", step: { order_index: stepId.value }, include_tools: true },
+    ]);
 }
 function onChangePostJobActions(postJobActions: unknown) {
     emit("onChangePostJobActions", stepId.value, postJobActions);

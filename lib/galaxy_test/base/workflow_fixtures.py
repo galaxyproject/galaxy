@@ -541,6 +541,32 @@ steps:
     label: compose_text_param
 """
 
+WORKFLOW_NESTED_WITH_OUTDATED_TOOL_IN_SUBWORKFLOW = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: nested_workflow/workflow_output
+steps:
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: tool_update_step/out_file1
+      steps:
+        tool_update_step:
+          tool_id: multiple_versions
+          tool_version: '0.1'
+          in:
+            input1: inner_input
+    in:
+      inner_input: outer_input
+"""
+
 WORKFLOW_WITH_OUTPUT_ACTIONS = """
 class: GalaxyWorkflow
 inputs:

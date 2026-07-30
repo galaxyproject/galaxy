@@ -6,11 +6,15 @@ import {
     type RefactorRequestAction,
     type RefactorResponse,
     type RefactorResponseActionExecution,
+    type RefactorResponseActionExecutionMessage,
     type WorkflowVersion,
 } from "@/api/workflows";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
+
+/** Messages that only report what happened, rather than something the workflow would lose. */
+const INFORMATIONAL_MESSAGE_TYPES = ["subworkflow_up_to_date"];
 
 interface Props {
     refactorActions: RefactorRequestAction[];
@@ -35,6 +39,8 @@ const emit = defineEmits<{
 
 const show = ref(props.refactorActions.length > 0);
 const confirmActionExecutions = ref<RefactorResponseActionExecution[]>([]);
+/** True while reporting a refactoring that would not change anything, so there is nothing to confirm. */
+const nothingToApply = ref(false);
 
 const { confirm } = useConfirmDialog();
 
@@ -91,13 +97,22 @@ function onError(response: string) {
     emit("onWorkflowError", "Reworking workflow failed...", response);
 }
 
+function isInformational(message: RefactorResponseActionExecutionMessage) {
+    return INFORMATIONAL_MESSAGE_TYPES.includes(message.message_type);
+}
+
 function onDryRunResponse(data: RefactorResponse) {
-    // TODO: type from schema
     const actionExecutions = data.action_executions;
-    const anyRequireConfirmation = actionExecutions.some(
-        (execution: RefactorResponseActionExecution) => execution.messages.length > 0,
-    );
-    if (anyRequireConfirmation) {
+    const messages = actionExecutions.flatMap((execution: RefactorResponseActionExecution) => execution.messages);
+    if (messages.some((message) => !isInformational(message))) {
+        nothingToApply.value = false;
+        confirmActionExecutions.value = actionExecutions;
+        show.value = true;
+    } else if (messages.length > 0) {
+        // Everything the dry run reported is informational, so applying the refactoring would only
+        // create an identical new workflow version. Say so rather than leaving the user with a
+        // button that appears to do nothing.
+        nothingToApply.value = true;
         confirmActionExecutions.value = actionExecutions;
         show.value = true;
     } else {
@@ -118,9 +133,15 @@ async function executeRefactoring() {
 </script>
 
 <template>
-    <GModal confirm :show.sync="show" :title="title" fixed-height ok-text="Save" @ok="executeRefactoring">
+    <GModal
+        :confirm="!nothingToApply"
+        :show.sync="show"
+        :title="nothingToApply ? 'Nothing to change' : title"
+        :fixed-height="!nothingToApply"
+        ok-text="Save"
+        @ok="executeRefactoring">
         <div class="workflow-refactor-modal">
-            {{ message }}
+            {{ nothingToApply ? "This workflow is already up to date." : message }}
             <ul>
                 <li v-for="(actionExecution, executionIndex) in confirmActionExecutions" :key="executionIndex">
                     <ul>

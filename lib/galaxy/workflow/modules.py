@@ -733,6 +733,97 @@ class WorkflowModule:
         return collections_to_match
 
 
+# Subworkflow nesting is finite in practice, this only stops a workflow that somehow
+# references itself from looping forever while being serialized.
+MAX_SUBWORKFLOW_NESTING_DEPTH = 10
+
+
+class OutdatedStep(TypedDict):
+    """Describes a step a newer tool or subworkflow version is available for."""
+
+    order_index: int
+    label: str | None
+    name: str
+    type: str
+    current_version: str | None
+    latest_version: str | None
+    # order_index of each enclosing subworkflow step, outermost first. Empty for
+    # steps of the workflow that was passed to ``find_outdated_steps``.
+    subworkflow_path: list[int]
+
+
+def _latest_tool_for_step(trans: "ProvidesHistoryContext", step: WorkflowStep):
+    tool_id = step.tool_id
+    if not tool_id:
+        return None
+    try:
+        all_versions = trans.app.toolbox.get_tool(tool_id, get_all_versions=True)
+    except Exception:
+        # Missing tools are reported separately, they cannot be upgraded.
+        return None
+    if not all_versions:
+        return None
+    return all_versions[-1]
+
+
+def _version_label(stored_workflow: "model.StoredWorkflow", workflow: Workflow) -> str | None:
+    try:
+        return str(stored_workflow.version_of(workflow))
+    except KeyError:
+        return None
+
+
+def find_outdated_steps(
+    trans: "ProvidesHistoryContext", workflow: Workflow, _path: list[int] | None = None
+) -> list[OutdatedStep]:
+    """Find steps of ``workflow`` a newer tool or subworkflow version is available for.
+
+    Recurses into subworkflow steps, so a tool buried in a nested subworkflow is
+    reported as well - that is the case ``upgrade_all_steps`` used to miss.
+    """
+    path = _path or []
+    outdated: list[OutdatedStep] = []
+    if len(path) >= MAX_SUBWORKFLOW_NESTING_DEPTH:
+        log.warning(f"Stopped looking for outdated steps below {MAX_SUBWORKFLOW_NESTING_DEPTH} levels of subworkflows")
+        return outdated
+    for step in workflow.steps:
+        if step.type == "tool":
+            latest_tool = _latest_tool_for_step(trans, step)
+            if latest_tool is None:
+                continue
+            if latest_tool.id == step.tool_id and latest_tool.version == step.tool_version:
+                continue
+            outdated.append(
+                OutdatedStep(
+                    order_index=step.order_index,
+                    label=step.label,
+                    name=latest_tool.name,
+                    type="tool",
+                    current_version=step.tool_version,
+                    latest_version=latest_tool.version,
+                    subworkflow_path=path,
+                )
+            )
+        elif step.type == "subworkflow" and step.subworkflow is not None:
+            subworkflow = step.subworkflow
+            stored_workflow = subworkflow.stored_workflow
+            if stored_workflow is not None and stored_workflow.latest_workflow_id != subworkflow.id:
+                latest = stored_workflow.latest_workflow
+                outdated.append(
+                    OutdatedStep(
+                        order_index=step.order_index,
+                        label=step.label,
+                        name=subworkflow.name,
+                        type="subworkflow",
+                        current_version=_version_label(stored_workflow, subworkflow),
+                        latest_version=_version_label(stored_workflow, latest),
+                        subworkflow_path=path,
+                    )
+                )
+            outdated.extend(find_outdated_steps(trans, subworkflow, _path=path + [step.order_index]))
+    return outdated
+
+
 class SubWorkflowModule(WorkflowModule):
     # Two step improvements to build runtime inputs for subworkflow modules
     # - First pass verify nested workflow doesn't have an RuntimeInputs
@@ -814,6 +905,24 @@ class SubWorkflowModule(WorkflowModule):
             if hasattr(m, "version_changes"):
                 version_changes.extend(m.version_changes)
         return version_changes
+
+    @property
+    def outdated_steps(self) -> list[OutdatedStep]:
+        """Steps within this subworkflow a newer tool or subworkflow version is available for."""
+        return find_outdated_steps(self.trans, self.subworkflow)
+
+    @property
+    def latest_content_id(self) -> str | None:
+        """Encoded id of the newest revision of this step's subworkflow.
+
+        None when the subworkflow has no revision history to upgrade against, which is
+        the case for subworkflows imported before Galaxy started attaching a stored
+        workflow to every embedded subworkflow.
+        """
+        stored_workflow = self.subworkflow.stored_workflow
+        if stored_workflow is None or stored_workflow.latest_workflow_id is None:
+            return None
+        return self.trans.security.encode_id(stored_workflow.latest_workflow_id)
 
     def check_and_update_state(self):
         states = (m.check_and_update_state() for m in self.get_modules())

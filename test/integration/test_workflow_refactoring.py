@@ -27,6 +27,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL,
+    WORKFLOW_NESTED_WITH_OUTDATED_TOOL_IN_SUBWORKFLOW,
 )
 from galaxy_test.driver import integration_util
 
@@ -756,6 +757,69 @@ steps:
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "2")
 
+    def test_subworkflow_upgrade_reports_nothing_to_do(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        actions: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
+        ]
+        action_executions = self._refactor(actions).action_executions
+        assert len(action_executions) == 1
+        messages = action_executions[0].messages
+        assert len(messages) == 1
+        assert messages[0].message_type == RefactorActionExecutionMessageTypeEnum.subworkflow_up_to_date
+        assert messages[0].step_label == "nested_workflow"
+
+    def test_subworkflow_upgrade_includes_nested_tools(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_WITH_OUTDATED_TOOL_IN_SUBWORKFLOW)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        assert len(nested_stored_workflow.workflows) == 1
+        assert self._nested_step("tool_update_step").tool_version == "0.1"
+
+        # Without include_tools the step just moves to the newest revision of the subworkflow,
+        # which is the one it already points at, so the outdated tool inside stays outdated.
+        actions: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
+        ]
+        self._refactor(actions)
+        assert self._nested_step("tool_update_step").tool_version == "0.1"
+
+        actions = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "include_tools": True},
+        ]
+        self._refactor(actions)
+        assert self._nested_step("tool_update_step").tool_version == "0.2"
+
+        # A second upgrade has nothing to do and must not pile up another subworkflow revision.
+        nested_stored_workflow = self._latest_workflow.step_by_label("nested_workflow").subworkflow.stored_workflow
+        revisions_after_upgrade = len(nested_stored_workflow.workflows)
+        action_executions = self._refactor(actions).action_executions
+        assert self._nested_step("tool_update_step").tool_version == "0.2"
+        assert len(nested_stored_workflow.workflows) == revisions_after_upgrade
+        assert self._message_types(action_executions[0]) == [
+            RefactorActionExecutionMessageTypeEnum.subworkflow_up_to_date
+        ]
+
+    def test_subworkflow_upgrade_includes_nested_tools_dry_run(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_WITH_OUTDATED_TOOL_IN_SUBWORKFLOW)
+        assert self._nested_step("tool_update_step").tool_version == "0.1"
+        actions: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "include_tools": True},
+        ]
+        self._dry_run(actions)
+        assert self._nested_step("tool_update_step").tool_version == "0.1"
+
+    def test_upgrade_all_steps_includes_nested_tools(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_WITH_OUTDATED_TOOL_IN_SUBWORKFLOW)
+        assert self._nested_step("tool_update_step").tool_version == "0.1"
+
+        # The plain upgrade_all_steps only re-points subworkflow steps, it does not reach
+        # tools nested inside them.
+        self._refactor([{"action_type": "upgrade_all_steps"}])
+        assert self._nested_step("tool_update_step").tool_version == "0.1"
+
+        self._refactor([{"action_type": "upgrade_all_steps", "include_subworkflow_tools": True}])
+        assert self._nested_step("tool_update_step").tool_version == "0.2"
+
     def test_subworkflow_upgrade_specified(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
         # second oldest workflow will be the nested workflow, grab it and update...
@@ -875,6 +939,10 @@ steps:
         assert message.step_label == "nested_workflow"
         assert message.output_name == "workflow_output"
         assert message.output_label == "outer_output"
+
+        # the reported output really is gone, it used to only be reported
+        upgraded_step = self._latest_workflow.step_by_label("nested_workflow")
+        assert [output.label for output in upgraded_step.workflow_outputs] == []
 
     def test_upgrade_all_steps(self):
         self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
@@ -1000,6 +1068,14 @@ steps:
     @property
     def _latest_workflow(self):
         return self._most_recent_stored_workflow.latest_workflow
+
+    def _nested_step(self, label, nested_workflow_label="nested_workflow"):
+        subworkflow = self._latest_workflow.step_by_label(nested_workflow_label).subworkflow
+        return subworkflow.step_by_label(label)
+
+    @staticmethod
+    def _message_types(action_execution):
+        return [message.message_type for message in action_execution.messages]
 
     def _increment_nested_workflow_version(self, nested_stored_workflow, num_lines_from="1", num_lines_to="2"):
         # increment nested workflow from WORKFLOW_NESTED_SIMPLE with
