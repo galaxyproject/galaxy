@@ -171,6 +171,7 @@ class OSFClient:
         page_size: int = OSF_MAX_PAGE_SIZE,
         query: Optional[str] = None,
     ) -> dict:
+        # TODO: add sorting support to this method
         params: dict[str, Any] = {"page": page, "page[size]": page_size}
         if query:
             params["q"] = query
@@ -192,6 +193,7 @@ class OSFClient:
         page: int = 1,
         page_size: int = OSF_MAX_PAGE_SIZE,
     ) -> list[dict]:
+        # TODO: add sorting support to this method
         payload = self._request(
             "GET", f"nodes/{node_id}/children/",
             params={"page": page, "page[size]": page_size},
@@ -226,6 +228,7 @@ class OSFClient:
         )
 
     def list_storage(self, container_id: str, wb_path: str = "/") -> list[dict]:
+        # TODO: add sorting support to this method
         url = self.waterbutler_url(container_id, wb_path)
         response = self._session.get(
             url, params={"meta": ""}, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
@@ -394,6 +397,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> tuple[list[RemoteFile], int]:
+        # TODO: add sorting support to this method
         client = self._client(context)
         page, page_size = galaxy_pagination_to_osf(limit, offset)
         payload = client.list_files(
@@ -443,6 +447,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         registration, child components are included as ``RemoteDirectory``
         entries so the user can navigate into them like folders.
         """
+        # TODO: add sorting support to this method
         client = self._client(context)
         wb_path = f"/{subpath}/" if subpath else "/"
         entries: list[AnyRemoteEntry] = []
@@ -487,6 +492,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         query: Optional[str] = None,
         category: str = "projects",
     ) -> list[RemoteFile]:
+        # TODO: add sorting support to this method
         client = self._client(context)
         files = list(self._walk_files(client, container_id, wb_path="/", category=category))
         if query:
@@ -540,6 +546,7 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         wb_path: str,
         category: str = "projects",
     ):
+        # TODO: add sorting support to this method
         for item in client.list_storage(container_id, wb_path):
             attrs = item.get("attributes", {})
             name = attrs.get("name", "untitled")
@@ -652,6 +659,7 @@ class OSFFilesSource(RDMFilesSource):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
+        # TODO: add sorting support to this method
         parts = [p for p in path.strip("/").split("/") if p]
 
         if not parts:
