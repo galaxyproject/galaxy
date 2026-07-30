@@ -135,6 +135,13 @@
                 :readonly="readonly"
                 @onChange="onChange" />
             <div v-if="!isInvocation && showRule" class="rule" />
+            <NodeSubworkflow
+                v-if="subworkflowInfo && !isInvocation"
+                :subworkflow-info="subworkflowInfo"
+                :expanded.sync="subworkflowExpanded"
+                :readonly="readonly"
+                @edit="onEditSubworkflow"
+                @upgrade="onUpgradeSubworkflow" />
             <NodeInvocationText v-if="isInvocation || isPopulatedInput" :invocation-step="invocationStep" />
             <NodeOutput
                 v-for="(output, index) in outputs"
@@ -193,6 +200,7 @@ import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
 import NodeInvocationText from "@/components/Workflow/Editor/NodeInvocationText.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
+import NodeSubworkflow from "@/components/Workflow/Editor/NodeSubworkflow.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
 Vue.use(BootstrapVue);
@@ -228,11 +236,26 @@ const emit = defineEmits([
     "pan-by",
     "onDragConnector",
     "stopDragging",
+    "editSubworkflow",
+    "attemptRefactor",
 ]);
 
 const popoverShow = ref(false);
 const popoverId = computed(() => `popover-${props.id}`);
 const scrolledTo = ref(false);
+
+const subworkflowExpanded = ref(false);
+const subworkflowInfo = computed(() => props.step.subworkflow_info);
+
+function onEditSubworkflow() {
+    emit("editSubworkflow", props.contentId, props.id);
+}
+
+function onUpgradeSubworkflow() {
+    emit("attemptRefactor", [
+        { action_type: "upgrade_subworkflow", step: { order_index: props.id }, include_tools: true },
+    ]);
+}
 
 function remove() {
     emit("onRemove", props.id);

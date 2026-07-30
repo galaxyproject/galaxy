@@ -133,7 +133,7 @@ function onLabel(newLabel: string) {
     emit("onLabel", stepId.value, newLabel);
 }
 function onEditSubworkflow() {
-    emit("onEditSubworkflow", contentId!.value);
+    emit("onEditSubworkflow", contentId!.value, stepId.value);
 }
 function onUpgradeSubworkflow() {
     emit("onAttemptRefactor", [

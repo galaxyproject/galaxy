@@ -2159,6 +2159,18 @@ steps:
         assert steps["1"]["type"] == "subworkflow"
         assert steps["1"]["outputs"][0]["collection_type"] == "list:paired"
 
+    def test_export_editor_subworkflow_info(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        subworkflow_steps = [step for step in downloaded_workflow["steps"].values() if step["type"] == "subworkflow"]
+        assert len(subworkflow_steps) == 1
+        subworkflow_info = subworkflow_steps[0]["subworkflow_info"]
+        # the editor needs to be able to show what is inside the subworkflow without opening it
+        assert [step["label"] for step in subworkflow_info["steps"]] == ["inner_input", "random_lines"]
+        assert subworkflow_info["version"] == 0
+        assert subworkflow_info["latest_version"] == 0
+        assert subworkflow_info["latest_content_id"]
+
     def test_import_missing_tool(self):
         workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")
         workflow_id = self.workflow_populator.create_workflow(workflow)

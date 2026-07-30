@@ -26,7 +26,7 @@ const emit = defineEmits<{
     (e: "labelChanged", id: string, label: string): void;
     (e: "dataChanged", id: string, data: unknown): void;
     (e: "stepUpdated", id: string, step: Step): void;
-    (e: "editSubworkflow", id: string): void;
+    (e: "editSubworkflow", id: string, stepId: number): void;
     (e: "attemptRefactor", ...args: any[]): void;
     (e: "close"): void;
 }>();
@@ -132,7 +132,7 @@ function updateStored(v: boolean) {
                     @onChangePostJobActions="(id, a) => emit('postJobActionsChanged', id, a)"
                     @onAnnotation="(id, a) => emit('annotationChanged', id, a)"
                     @onLabel="(id, l) => emit('labelChanged', id, l)"
-                    @onEditSubworkflow="(id) => emit('editSubworkflow', id)"
+                    @onEditSubworkflow="(id, stepId) => emit('editSubworkflow', id, stepId)"
                     @onAttemptRefactor="(...args) => emit('attemptRefactor', ...args)" />
             </IdleLoad>
         </div>

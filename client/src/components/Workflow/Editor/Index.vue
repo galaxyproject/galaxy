@@ -154,6 +154,15 @@
         </template>
         <template v-else>
             <div id="center" class="workflow-center">
+                <div v-if="parentWorkflowId" class="editor-subworkflow-bar" unselectable="on">
+                    <b-button variant="link" size="sm" class="p-0" @click="backToParentWorkflow">
+                        <FontAwesomeIcon :icon="faArrowLeft" />
+                        Back to {{ parentWorkflowName || "the parent workflow" }}
+                    </b-button>
+                    <span class="text-muted">
+                        Editing this as a subworkflow. Going back upgrades the step that uses it.
+                    </span>
+                </div>
                 <div class="editor-top-bar" unselectable="on">
                     <span>
                         <span class="sr-only">Workflow Editor</span>
@@ -245,7 +254,9 @@
                     @onCreate="onInsertTool"
                     @onChange="onChange"
                     @onRemove="onRemove"
-                    @onUpdateStepPosition="onUpdateStepPosition">
+                    @onUpdateStepPosition="onUpdateStepPosition"
+                    @editSubworkflow="onEditSubworkflow"
+                    @attemptRefactor="onAttemptRefactor">
                     <NodeInspector
                         v-if="activeStep"
                         :step="activeStep"
@@ -266,6 +277,7 @@
 
 <script>
 import {
+    faArrowLeft,
     faCog,
     faKey,
     faMagic,
@@ -284,6 +296,7 @@ import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
 import { generateAIReport } from "@/api/chat";
+import { getWorkflowInfo } from "@/api/workflows";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
@@ -378,6 +391,21 @@ export default {
         workflowTags: {
             type: Array,
             default: () => [],
+        },
+        /** Set when this editor was opened by drilling into a subworkflow, so it can offer a way back. */
+        parentWorkflowId: {
+            type: String,
+            default: undefined,
+        },
+        /** order_index of the step in the parent workflow that embeds the workflow being edited. */
+        parentStepOrderIndex: {
+            type: Number,
+            default: undefined,
+        },
+        /** Set when returning from a subworkflow, names the step to upgrade to what was just saved. */
+        upgradeStepOrderIndex: {
+            type: Number,
+            default: undefined,
         },
     },
     setup(props, { emit }) {
@@ -788,6 +816,8 @@ export default {
             showSaveChangesModal: false,
             saveChangesAppendVersion: false,
             navUrl: "",
+            parentWorkflowName: null,
+            faArrowLeft,
             faTimes,
             faCog,
             faMagic,
@@ -849,6 +879,8 @@ export default {
         this.lastQueue = new LastQueue();
         await this._loadCurrent(this.id, this.version, true);
         this.initialLoading = false;
+        await this.loadParentWorkflowName();
+        await this.upgradeStepAfterReturn();
     },
     methods: {
         onUpdateStep(step) {
@@ -915,9 +947,53 @@ export default {
         onRemove(nodeId) {
             this.stepActions.removeStep(this.steps[nodeId]);
         },
-        onEditSubworkflow(contentId) {
-            const editUrl = `/workflows/edit?workflow_id=${contentId}`;
-            this.onNavigate(editUrl);
+        onEditSubworkflow(contentId, stepId) {
+            const query = { workflow_id: contentId };
+            if (!this.isNewTempWorkflow) {
+                // Remember where we came from so the subworkflow editor can offer a way back
+                // and the step can pick up whatever gets saved there.
+                query.from_workflow = this.id;
+                if (stepId !== undefined && stepId !== null) {
+                    query.from_step = String(stepId);
+                }
+            }
+            this.onNavigate(`/workflows/edit?${new URLSearchParams(query)}`);
+        },
+        /** Returns to the workflow this subworkflow was opened from, upgrading the step we came through. */
+        backToParentWorkflow() {
+            const query = { id: this.parentWorkflowId };
+            if (this.parentStepOrderIndex !== undefined) {
+                query.upgrade_step = String(this.parentStepOrderIndex);
+            }
+            this.onNavigate(`/workflows/edit?${new URLSearchParams(query)}`);
+        },
+        async loadParentWorkflowName() {
+            if (!this.parentWorkflowId) {
+                return;
+            }
+            try {
+                const { name } = await getWorkflowInfo(this.parentWorkflowId);
+                this.parentWorkflowName = name;
+            } catch (e) {
+                // The breadcrumb falls back to a generic label, this is not worth failing the editor over.
+                this.parentWorkflowName = null;
+            }
+        },
+        /** Applies the edits made in a subworkflow we just came back from to the step that embeds it. */
+        async upgradeStepAfterReturn() {
+            if (this.upgradeStepOrderIndex === undefined) {
+                return;
+            }
+            // Drop the parameter first, so reloading the page does not upgrade a second time.
+            this.$emit("skipNextReload");
+            this.$router.replace({ query: { id: this.id } });
+            await this.onAttemptRefactor([
+                {
+                    action_type: "upgrade_subworkflow",
+                    step: { order_index: this.upgradeStepOrderIndex },
+                    include_tools: true,
+                },
+            ]);
         },
         async onClone(stepId) {
             const sourceStep = this.steps[parseInt(stepId)];
@@ -1430,6 +1506,20 @@ export default {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
+    }
+}
+
+.editor-subworkflow-bar {
+    background: $brand-info;
+    color: $white;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.25rem 1rem;
+
+    .btn-link,
+    .text-muted {
+        color: $white !important;
     }
 }
 

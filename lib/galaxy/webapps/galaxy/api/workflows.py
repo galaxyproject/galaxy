@@ -130,7 +130,10 @@ from galaxy.webapps.galaxy.services.invocations import (
 from galaxy.webapps.galaxy.services.workflows import WorkflowsService
 from galaxy.work.context import SessionRequestContext
 from galaxy.workflow.extract import extract_workflow
-from galaxy.workflow.modules import module_factory
+from galaxy.workflow.modules import (
+    module_factory,
+    SubWorkflowModule,
+)
 
 log = logging.getLogger(__name__)
 
@@ -572,6 +575,10 @@ class WorkflowsAPIController(
         }
         if module_type == "tool":
             step_dict["tool_version"] = module.get_version()
+        if isinstance(module, SubWorkflowModule):
+            # so a subworkflow node can be expanded right after it is dropped on the canvas,
+            # rather than only after the workflow has been saved and reloaded
+            step_dict["subworkflow_info"] = module.get_subworkflow_info()
         return step_dict
 
     @expose_api

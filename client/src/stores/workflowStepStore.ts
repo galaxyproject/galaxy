@@ -95,6 +95,36 @@ interface WorkflowOutput {
     uuid?: string | null;
 }
 
+/** A step a newer tool or subworkflow version is available for. */
+export interface OutdatedStep {
+    order_index: number;
+    label?: string | null;
+    name: string;
+    type: string;
+    current_version?: string | null;
+    latest_version?: string | null;
+    /** order_index of each enclosing subworkflow step, outermost first. */
+    subworkflow_path: number[];
+}
+
+export interface SubworkflowStepSummary {
+    order_index: number;
+    type?: string | null;
+    label?: string | null;
+    name: string;
+    tool_version?: string | null;
+    errors?: unknown;
+}
+
+/** Everything needed to expand a subworkflow node without loading the subworkflow itself. */
+export interface SubworkflowInfo {
+    steps: SubworkflowStepSummary[];
+    outdated_steps: OutdatedStep[];
+    latest_content_id?: string | null;
+    version?: number | null;
+    latest_version?: number | null;
+}
+
 export interface NewStep {
     annotation?: string;
     config_form?: { [index: string]: any };
@@ -108,6 +138,7 @@ export interface NewStep {
     outputs: Array<OutputTerminalSource>;
     position?: StepPosition;
     post_job_actions?: PostJobActions;
+    subworkflow_info?: SubworkflowInfo;
     tool_id?: string;
     tool_uuid?: string;
     tool_state: Record<string, unknown>;

@@ -752,6 +752,28 @@ class OutdatedStep(TypedDict):
     subworkflow_path: list[int]
 
 
+class SubWorkflowStepSummary(TypedDict):
+    """One step of a subworkflow, as shown when a subworkflow node is expanded."""
+
+    order_index: int
+    type: str | None
+    label: str | None
+    name: str
+    tool_version: str | None
+    errors: Any
+
+
+class SubWorkflowInfo(TypedDict):
+    """What the editor needs to show and act on a subworkflow without opening it."""
+
+    steps: list[SubWorkflowStepSummary]
+    outdated_steps: list[OutdatedStep]
+    # None when the subworkflow has no stored workflow, and so no revisions to move between.
+    latest_content_id: str | None
+    version: int | None
+    latest_version: int | None
+
+
 def _latest_tool_for_step(trans: "ProvidesHistoryContext", step: WorkflowStep):
     tool_id = step.tool_id
     if not tool_id:
@@ -766,11 +788,16 @@ def _latest_tool_for_step(trans: "ProvidesHistoryContext", step: WorkflowStep):
     return all_versions[-1]
 
 
-def _version_label(stored_workflow: "model.StoredWorkflow", workflow: Workflow) -> str | None:
+def _version_of(stored_workflow: "model.StoredWorkflow", workflow: Workflow) -> int | None:
     try:
-        return str(stored_workflow.version_of(workflow))
+        return stored_workflow.version_of(workflow)
     except KeyError:
         return None
+
+
+def _version_label(stored_workflow: "model.StoredWorkflow", workflow: Workflow) -> str | None:
+    version = _version_of(stored_workflow, workflow)
+    return None if version is None else str(version)
 
 
 def find_outdated_steps(
@@ -907,11 +934,6 @@ class SubWorkflowModule(WorkflowModule):
         return version_changes
 
     @property
-    def outdated_steps(self) -> list[OutdatedStep]:
-        """Steps within this subworkflow a newer tool or subworkflow version is available for."""
-        return find_outdated_steps(self.trans, self.subworkflow)
-
-    @property
     def latest_content_id(self) -> str | None:
         """Encoded id of the newest revision of this step's subworkflow.
 
@@ -923,6 +945,37 @@ class SubWorkflowModule(WorkflowModule):
         if stored_workflow is None or stored_workflow.latest_workflow_id is None:
             return None
         return self.trans.security.encode_id(stored_workflow.latest_workflow_id)
+
+    def get_subworkflow_info(self) -> SubWorkflowInfo:
+        """Summarize the subworkflow so the editor can expand the node without loading it.
+
+        Deliberately a summary rather than the nested workflow itself: it is enough to show
+        what a subworkflow contains and whether anything in it is out of date, which is what
+        a collapsed node hides today.
+        """
+        subworkflow = self.subworkflow
+        steps: list[SubWorkflowStepSummary] = []
+        for step, step_module in zip(subworkflow.steps, self.get_modules()):
+            steps.append(
+                SubWorkflowStepSummary(
+                    order_index=step.order_index,
+                    type=step.type,
+                    label=step.label,
+                    name=step_module.get_name(),
+                    tool_version=step.tool_version,
+                    errors=step_module.get_errors(),
+                )
+            )
+        stored_workflow = subworkflow.stored_workflow
+        version = None if stored_workflow is None else _version_of(stored_workflow, subworkflow)
+        latest_version = None if stored_workflow is None else len(stored_workflow.workflows) - 1
+        return SubWorkflowInfo(
+            steps=steps,
+            outdated_steps=find_outdated_steps(self.trans, subworkflow),
+            latest_content_id=self.latest_content_id,
+            version=version,
+            latest_version=latest_version,
+        )
 
     def check_and_update_state(self):
         states = (m.check_and_update_state() for m in self.get_modules())

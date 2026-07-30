@@ -1426,6 +1426,11 @@ class WorkflowContentsManager(UsesAnnotations):
             }
             if tooltip:
                 step_dict["tooltip"] = module.get_tooltip(static_path="/static")
+            if isinstance(module, SubWorkflowModule) and not is_subworkflow:
+                # Lets the editor expand the node in place instead of sending the user off to
+                # the subworkflow to find out what is in it. Only the workflow being edited is
+                # rendered as nodes, so nested serializations do not need this.
+                step_dict["subworkflow_info"] = module.get_subworkflow_info()
             # Connections
             input_connections = step.input_connections
             input_connections_type = {}
