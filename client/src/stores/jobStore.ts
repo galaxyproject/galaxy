@@ -15,8 +15,26 @@ export const useJobStore = defineStore("jobStore", () => {
     const latestResponse = ref<ResponseVal | null>(null);
     const allJobs = ref<JobBaseModel[]>([]);
 
-    async function fetchAllJobs(){
-        allJobs.value =  await fetchJobs();
+    /**
+     * Fetch a page of jobs and store them.
+     * @param offset Return jobs starting from this position
+     * @param limit Maximum number of jobs to return
+     * @param extraProps Additional filters
+     * @returns The fetched page of jobs
+     */
+    async function fetchAllJobs(offset = 0, limit = 20, extraProps?: Record<string, unknown>) {
+        const jobs = await fetchJobs(offset, limit, extraProps);
+        jobs.forEach(storeJob);
+        return jobs;
+    }
+
+    function storeJob(job: JobBaseModel) {
+        const index = allJobs.value.findIndex((storedJob) => storedJob.id === job.id);
+        if (index >= 0) {
+            allJobs.value.splice(index, 1, job);
+        } else {
+            allJobs.value.push(job);
+        }
     }
 
     async function fetchJobById(params: FetchParams): Promise<ShowFullJobResponse> {
@@ -70,6 +88,6 @@ export const useJobStore = defineStore("jobStore", () => {
         isLoadingJob,
         latestResponse,
         pollJobUntilTerminal,
+        storeJob,
     };
 });
-
