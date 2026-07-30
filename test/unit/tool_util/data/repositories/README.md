@@ -49,6 +49,13 @@ repo can drive the error cases without a repo-per-case:
 - `broken_rows/` — `broken.loc` with a too-short row and a wrong-separator row → two errors
 - `missing_and_broken/` — one missing loc **and** one broken loc; both linters fire and no false "rows are fine" green is emitted off the unparsed missing file
 
+### Empty-loc fixture — `EmptyLocFile`
+
+- `empty_loc/` — ships an empty, comment-less `tool-data/undocumented.loc.sample`
+  (the Planemo #869 case → one warning) alongside a header-only
+  `tool-data/documented.loc.sample` that must **not** be flagged (a dataless file
+  with a format comment is the accepted convention).
+
 ### Schema-conflict / duplicate fixtures — `DuplicateColumnNames`, `ConflictingTableSchema`
 
 Each declares the same table twice (or with a repeated column) in a way that would

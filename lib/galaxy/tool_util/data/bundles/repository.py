@@ -86,6 +86,25 @@ class LocAsset:
 
 
 @dataclass
+class LocFile:
+    """A ``.loc`` / ``.loc.sample`` file present in the repository tree.
+
+    Distinct from :class:`LocAsset`, which is a *configured-table reference* the
+    loader resolved: many ``.loc.sample`` files ship without ever appearing as a
+    resolved asset (the loader's ``.sample`` fallback misses the shed ``tool-data``
+    layout -- see ``LocAsset.found``), so the empty-file check must look at the files
+    on disk, not the resolved references. Records only facts; the policy (an empty,
+    undocumented file wants a format comment) lives in the linter.
+    """
+
+    path: str
+    # A non-blank, non-comment line -- i.e. an actual data row.
+    has_data: bool
+    # A ``#`` comment line documenting the expected column format.
+    has_comment: bool
+
+
+@dataclass
 class RawTableDecl:
     """A single ``<table>`` element as declared, before the loader merges same-named tables.
 
@@ -162,6 +181,9 @@ class RepositoryDataTables:
     # for one name. Populated even when the loader is skipped over a conflict.
     raw_table_decls: List[RawTableDecl] = field(default_factory=list)
     loc_assets: List[LocAsset] = field(default_factory=list)
+    # Every ``.loc`` / ``.loc.sample`` file found in the repo tree (independent of
+    # whether a configured table resolves to it), for the empty-file check.
+    loc_files: List[LocFile] = field(default_factory=list)
     consumers: List[ConsumerRef] = field(default_factory=list)
     # Tables validly supplied by Galaxy core or another installed repository; a
     # consumer of one of these is not a demonstrably-missing definition (req #2).
@@ -340,6 +362,34 @@ def _sample_backed(repo_root: str, filename: str) -> bool:
     return os.path.exists(tool_data_sample)
 
 
+def _classify_loc_file(path: str) -> LocFile:
+    """Record whether a loc file carries any data row and any format comment."""
+    has_data = False
+    has_comment = False
+    # utf-8-sig so a leading BOM is stripped rather than surviving str.strip() and
+    # masking an otherwise-empty file as a data row.
+    with open(path, encoding="utf-8-sig", errors="replace") as handle:
+        for line in handle:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("#"):
+                has_comment = True
+            else:
+                has_data = True
+    return LocFile(path=path, has_data=has_data, has_comment=has_comment)
+
+
+def _discover_loc_files(repo_root: str) -> List[LocFile]:
+    """Every ``.loc`` / ``.loc.sample`` file under ``repo_root`` (data rows / comments recorded)."""
+    loc_files = []
+    for dirpath, _, filenames in os.walk(repo_root):
+        for filename in filenames:
+            if filename.endswith(".loc") or filename.endswith(".loc.sample"):
+                loc_files.append(_classify_loc_file(os.path.join(dirpath, filename)))
+    return loc_files
+
+
 def _build_tables(
     repo_root: str, tool_data_table_confs: List[str], raw_decls: List[RawTableDecl]
 ) -> Tuple[List[TableDecl], List[LocAsset]]:
@@ -407,6 +457,7 @@ def build_repository_data_tables(
     (non data-manager) tools that may reference the repository's tables.
     """
     model = RepositoryDataTables(repo_root=repo_root, external_table_names=external_table_names)
+    model.loc_files = _discover_loc_files(repo_root)
     if data_manager_conf:
         model.managers = _build_managers(data_manager_conf)
     if tool_data_table_confs:
