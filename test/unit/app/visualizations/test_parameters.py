@@ -17,6 +17,7 @@ from galaxy.visualization.parameters import (
     IntegerParameterModel,
     SelectParameterModel,
     TextParameterModel,
+    visualization_request_json_schema,
     VisualizationState,
 )
 from galaxy.visualization.parameters.factory import VisualizationParameterParsingException
@@ -229,3 +230,29 @@ def test_create_request_model_is_stable():
     bundle = bundle_from(settings="<input><name>a</name><type>text</type></input>")
     model = create_request_model(bundle)
     assert set(model.model_fields) == {"settings", "tracks"}
+
+
+def test_json_schema_export():
+    bundle = bundle_from(settings="""
+        <input><name>mode</name><type>select</type>
+            <data><data><label>A</label><value>a</value></data>
+                  <data><label>B</label><value>b</value></data></data>
+        </input>
+        """)
+    schema = visualization_request_json_schema(bundle)
+    assert schema["type"] == "object"
+    assert set(schema["properties"]) == {"settings", "tracks"}
+    settings_def = schema["$defs"]["VisualizationRequestSettings"]
+    # the select's choices surface as an enum for client-side validation
+    mode = settings_def["properties"]["mode"]
+    enums = [branch["enum"] for branch in mode["anyOf"] if "enum" in branch]
+    assert enums == [["a", "b"]]
+
+
+def test_json_schema_export_igv_conditional():
+    bundle = input_models_for_visualization_path(IGV_XML)
+    schema = visualization_request_json_schema(bundle)
+    source = schema["$defs"]["VisualizationRequestSettings"]["properties"]["source"]
+    discriminated = next(branch for branch in source["anyOf"] if "discriminator" in branch)
+    assert discriminated["discriminator"]["propertyName"] == "origin"
+    assert set(discriminated["discriminator"]["mapping"]) == {"igv", "builtin", "history"}

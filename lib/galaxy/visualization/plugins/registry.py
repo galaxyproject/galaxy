@@ -15,6 +15,10 @@ from typing import (
 import galaxy.model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import config_directories_from_setting
+from galaxy.visualization.parameters import (
+    input_models_for_visualization_path,
+    visualization_request_json_schema,
+)
 from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins.datasource_testing import is_object_applicable
 from galaxy.visualization.plugins.plugin import VisualizationPlugin
@@ -139,8 +143,22 @@ class VisualizationsRegistry:
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
-                return VisualizationPlugin(plugin_path, plugin_name, config)
+                parameters_schema = self._build_parameters_schema(config_file, plugin_name)
+                return VisualizationPlugin(plugin_path, plugin_name, config, parameters_schema)
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
+
+    def _build_parameters_schema(self, config_file, plugin_name):
+        """Return a JSON Schema for the plugin's settings/tracks, or None if unavailable.
+
+        A malformed input declaration should not prevent the plugin from loading, so
+        parsing failures are logged and the schema is simply omitted.
+        """
+        try:
+            bundle = input_models_for_visualization_path(config_file)
+            return visualization_request_json_schema(bundle)
+        except Exception as e:
+            log.warning("Could not build parameters schema for visualization '%s': %s", plugin_name, e)
+            return None
 
     def get_plugin(self, key):
         """
