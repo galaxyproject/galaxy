@@ -7,6 +7,7 @@ from galaxy.objectstore.templates.manager import raw_config_to_catalog
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
     AzureObjectStoreConfiguration,
+    CloudObjectStoreConfiguration,
     DiskObjectStoreConfiguration,
     GenericS3ObjectStoreConfiguration,
     ObjectStoreTemplateCatalog,
@@ -314,6 +315,92 @@ def test_minio_example_boolean():
     assert not configuration_obj.connection.is_secure
 
 
+LIBRARY_CLOUD = """
+- id: cloudbridge_bucket
+  name: CloudBridge Bucket
+  description: An S3 bucket connected through the provider-agnostic cloud object store.
+  variables:
+    bucket_name:
+      type: string
+      help: Name of the bucket.
+    max_concurrency:
+      type: integer
+      help: Number of parts to transfer in parallel.
+  secrets:
+    access_key:
+      help: AWS access key to use when connecting to AWS resources.
+    secret_key:
+      help: AWS secret key to use when connecting to AWS resources.
+  configuration:
+    type: cloud
+    provider: aws
+    auth:
+        access_key: '{{ secrets.access_key}}'
+        secret_key: '{{ secrets.secret_key}}'
+    bucket:
+        name: '{{ variables.bucket_name}}'
+    transfer:
+        max_concurrency: '{{ variables.max_concurrency}}'
+    badges:
+      - type: less_stable
+- id: cloudbridge_swift_container
+  name: Swift Container
+  description: A native Swift container connected through the cloud object store.
+  secrets:
+    password:
+      help: OpenStack password.
+  configuration:
+    type: cloud
+    provider: openstack
+    auth:
+        username: an_os_user
+        password: '{{ secrets.password}}'
+        project_name: os_project
+        auth_url: https://keystone.example.org:5000/v3
+        region: RegionOne
+    bucket:
+        name: os_container
+"""
+
+
+def test_parsing_cloud():
+    template_library = _parse_template_library(LIBRARY_CLOUD)
+    assert len(template_library.root) == 2
+
+    aws_template = template_library.root[0]
+    assert aws_template.type == "cloud"
+    configuration_obj = template_to_configuration(
+        aws_template,
+        {"bucket_name": "mybucket", "max_concurrency": 4},
+        {"access_key": "sec1", "secret_key": "sec2"},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, CloudObjectStoreConfiguration)
+    configuration = configuration_obj.model_dump()
+    assert configuration["type"] == "cloud"
+    assert configuration["provider"] == "aws"
+    assert configuration["auth"]["access_key"] == "sec1"
+    assert configuration["auth"]["secret_key"] == "sec2"
+    assert configuration["bucket"]["name"] == "mybucket"
+    assert configuration["transfer"]["max_concurrency"] == 4
+
+    swift_template = template_library.root[1]
+    configuration_obj = template_to_configuration(
+        swift_template,
+        {},
+        {"password": "sec3"},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, CloudObjectStoreConfiguration)
+    assert configuration_obj.provider == "openstack"
+    assert configuration_obj.auth.username == "an_os_user"
+    assert configuration_obj.auth.password == "sec3"
+    assert configuration_obj.auth.auth_url == "https://keystone.example.org:5000/v3"
+    assert configuration_obj.bucket.name == "os_container"
+
+
 def test_examples_parse():
     assert_example_parses("simple_example.yml")
     assert_example_parses("minio_example.yml")
@@ -328,6 +415,7 @@ def test_examples_parse():
     assert_example_parses("minio_just_buckets_legacy.yml")
     assert_example_parses("azure_just_container.yml")
     assert_example_parses("production_gcp_s3.yml")
+    assert_example_parses("production_cloud_aws.yml")
     assert_example_parses("irods.yml")
     assert_example_parses("irods_ssl.yml")
 

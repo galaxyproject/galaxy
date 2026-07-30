@@ -1,3 +1,4 @@
+import hashlib
 import os
 import shutil
 import time
@@ -965,6 +966,572 @@ def test_config_parse_cloud_no_cache_for_aws():
             assert object_store.cache_size == -1
 
 
+CLOUD_AWS_REGION_TEST_CONFIG = get_example("cloud_aws_region.xml")
+CLOUD_AWS_REGION_TEST_CONFIG_YAML = get_example("cloud_aws_region.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_aws_region():
+    for config_str in [CLOUD_AWS_REGION_TEST_CONFIG, CLOUD_AWS_REGION_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.credentials["region"] == "us-east-2"
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict["auth"], "region", "us-east-2")
+
+
+CLOUD_GOOGLE_MISSING_CREDENTIALS_FILE_CONFIG = """<object_store type="cloud" provider="google">
+    <auth />
+    <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+    <cache path="database/object_store_cache" size="1000" />
+    <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+    <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_google_missing_credentials_file():
+    # A missing credentials_file must produce the missing-configuration error,
+    # not a TypeError from checking a None path on disk.
+    with pytest.raises(Exception, match="credentials_file"):
+        with TestConfig(CLOUD_GOOGLE_MISSING_CREDENTIALS_FILE_CONFIG):
+            pass
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_is_cloud():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        assert object_store.cloud is True
+
+
+CLOUD_TRANSFER_TEST_CONFIG = get_example("cloud_transfer.xml")
+CLOUD_TRANSFER_TEST_CONFIG_YAML = get_example("cloud_transfer.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_transfer_options():
+    for config_str in [CLOUD_TRANSFER_TEST_CONFIG, CLOUD_TRANSFER_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.transfer_dict == {
+                "multipart_threshold": 5242880,
+                "multipart_chunksize": 5242880,
+                "max_concurrency": 2,
+            }
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(
+                as_dict,
+                "transfer",
+                {
+                    "multipart_threshold": 5242880,
+                    "multipart_chunksize": 5242880,
+                    "max_concurrency": 2,
+                },
+            )
+
+            # Bare keys apply to both directions.
+            for direction in ("upload", "download"):
+                transfer_config = object_store._transfer_config(direction)
+                assert transfer_config is not None
+                assert transfer_config.threshold == 5242880
+                assert transfer_config.part_size == 5242880
+                assert transfer_config.max_concurrency == 2
+
+
+CLOUD_SEPARATED_TRANSFER_TEST_CONFIG_YAML = CLOUD_TRANSFER_TEST_CONFIG_YAML.replace(
+    """transfer:
+  multipart_threshold: 5242880
+  multipart_chunksize: 5242880
+  max_concurrency: 2""",
+    """transfer:
+  multipart_threshold: 10485760
+  upload_multipart_threshold: 20971520
+  download_multipart_threshold: 31457280
+  multipart_chunksize: 5242880
+  download_multipart_chunksize: 1048576
+  max_concurrency: 2
+  upload_max_concurrency: 4""",
+)
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_separated_transfer_options():
+    with TestConfig(CLOUD_SEPARATED_TRANSFER_TEST_CONFIG_YAML) as (directory, object_store):
+        # Direction-prefixed keys override the bare key for that direction.
+        upload_config = object_store._transfer_config("upload")
+        assert upload_config.threshold == 20971520
+        assert upload_config.part_size == 5242880
+        assert upload_config.max_concurrency == 4
+
+        download_config = object_store._transfer_config("download")
+        assert download_config.threshold == 31457280
+        assert download_config.part_size == 1048576
+        assert download_config.max_concurrency == 2
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_no_transfer_options():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        assert object_store.transfer_dict == {}
+        # With nothing configured, transfers fall back to cloudbridge's own
+        # defaults rather than passing a hollow config.
+        assert object_store._transfer_config("upload") is None
+        assert object_store._transfer_config("download") is None
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_transfer_chunksize_below_provider_minimum():
+    config_str = CLOUD_TRANSFER_TEST_CONFIG.replace('multipart_chunksize="5242880"', 'multipart_chunksize="1048576"')
+    with pytest.raises(Exception, match="multipart_chunksize"):
+        with TestConfig(config_str):
+            pass
+
+    # The 5 MiB floor is an upload constraint (non-final part minimum);
+    # ranged downloads have no minimum part size.
+    config_str = CLOUD_TRANSFER_TEST_CONFIG.replace(
+        'multipart_chunksize="5242880"', 'download_multipart_chunksize="1048576"'
+    )
+    with TestConfig(config_str) as (directory, object_store):
+        assert object_store._transfer_config("download").part_size == 1048576
+
+    config_str = CLOUD_TRANSFER_TEST_CONFIG.replace(
+        'multipart_chunksize="5242880"', 'upload_multipart_chunksize="1048576"'
+    )
+    with pytest.raises(Exception, match="multipart_chunksize"):
+        with TestConfig(config_str):
+            pass
+
+
+class _FakePagedObjectContainer:
+    """A bucket.objects fake speaking cloudbridge's real paging protocol.
+
+    list() returns one page at a time (via ClientPagedResultList, the same
+    class the AWS provider uses), so code that only consumes the first page
+    misses objects; cloudbridge's BasePageableObjectMixin.iter() yields all.
+    """
+
+    def __init__(self, keys, page_size=1):
+        from types import SimpleNamespace
+        from typing import (
+            Any,
+            cast,
+        )
+
+        from cloudbridge.base.resources import BasePageableObjectMixin
+
+        self._keys = keys
+        # Duck-typed stand-in for a cloudbridge provider; only the result-limit
+        # config is consulted by ClientPagedResultList.
+        provider = cast(Any, SimpleNamespace(config=SimpleNamespace(default_result_limit=page_size)))
+
+        class _Container(BasePageableObjectMixin):
+            def list(self, limit=None, marker=None, prefix=None):
+                from cloudbridge.base.resources import ClientPagedResultList
+
+                return ClientPagedResultList(provider, keys, limit=limit, marker=marker)
+
+        self._container = _Container()
+
+    def __getattr__(self, item):
+        return getattr(self._container, item)
+
+
+def _fake_remote_key(name):
+    key = MagicMock()
+    key.id = name
+    key.name = name
+    return key
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_delete_all_paginates():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        keys = [_fake_remote_key(f"files/dir/dataset_{i}.dat") for i in range(3)]
+        bucket = MagicMock()
+        bucket.objects = _FakePagedObjectContainer(keys, page_size=1)
+        object_store.bucket = bucket
+
+        assert object_store._delete_remote_all("files/dir")
+        for key in keys:
+            key.delete.assert_called_once()
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_download_directory_paginates(tmp_path):
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        keys = [_fake_remote_key(f"files/dir/part_{i}.dat") for i in range(3)]
+        bucket = MagicMock()
+        bucket.objects = _FakePagedObjectContainer(keys, page_size=1)
+        object_store.bucket = bucket
+
+        downloaded = []
+
+        def fake_download_to(key, destination):
+            downloaded.append(key.name)
+            open(destination, "wb").close()
+
+        object_store._download_to = fake_download_to
+        object_store._download_directory_into_cache("files/dir", str(tmp_path / "cache"))
+        assert downloaded == [key.name for key in keys]
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_download_passes_transfer_config():
+    with TestConfig(CLOUD_TRANSFER_TEST_CONFIG) as (directory, object_store):
+        key = MagicMock()
+        object_store._download_to(key, "/tmp/dataset_1.dat")
+        assert key.download_to_file.call_count == 1
+        assert key.download_to_file.call_args.args == ("/tmp/dataset_1.dat",)
+        transfer_config = key.download_to_file.call_args.kwargs["config"]
+        assert transfer_config.threshold == 5242880
+        assert transfer_config.part_size == 5242880
+        assert transfer_config.max_concurrency == 2
+
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        key = MagicMock()
+        object_store._download_to(key, "/tmp/dataset_1.dat")
+        assert key.download_to_file.call_args.kwargs["config"] is None
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_push_file_single_remote_lookup():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        # An existing remote object is uploaded in place - no create and
+        # exactly one remote lookup.
+        existing = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = existing
+        object_store.bucket = bucket
+        assert object_store._push_file_to_path("files/dataset_1.dat", "/tmp/dataset_1.dat")
+        bucket.objects.get.assert_called_once_with("files/dataset_1.dat")
+        bucket.objects.create.assert_not_called()
+        assert existing.upload_from_file.call_count == 1
+        assert existing.upload_from_file.call_args.args == ("/tmp/dataset_1.dat",)
+
+        # A missing remote object is created first, then uploaded.
+        created = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = None
+        bucket.objects.create.return_value = created
+        object_store.bucket = bucket
+        assert object_store._push_file_to_path("files/dataset_2.dat", "/tmp/dataset_2.dat")
+        bucket.objects.get.assert_called_once_with("files/dataset_2.dat")
+        bucket.objects.create.assert_called_once_with("files/dataset_2.dat")
+        assert created.upload_from_file.call_count == 1
+        assert created.upload_from_file.call_args.args == ("/tmp/dataset_2.dat",)
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_push_string_single_remote_lookup():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        existing = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = existing
+        object_store.bucket = bucket
+        assert object_store._push_string_to_path("files/dataset_1.dat", "some content")
+        bucket.objects.get.assert_called_once_with("files/dataset_1.dat")
+        bucket.objects.create.assert_not_called()
+        assert existing.upload.call_count == 1
+        assert existing.upload.call_args.args == ("some content",)
+
+        created = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = None
+        bucket.objects.create.return_value = created
+        object_store.bucket = bucket
+        assert object_store._push_string_to_path("files/dataset_2.dat", "other content")
+        bucket.objects.get.assert_called_once_with("files/dataset_2.dat")
+        bucket.objects.create.assert_called_once_with("files/dataset_2.dat")
+        assert created.upload.call_count == 1
+        assert created.upload.call_args.args == ("other content",)
+
+
+CLOUD_AWS_CUSTOM_CONNECTION_CONFIG = get_example("cloud_aws_custom_connection.xml")
+CLOUD_AWS_CUSTOM_CONNECTION_CONFIG_YAML = get_example("cloud_aws_custom_connection.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_aws_custom_connection():
+    for config_str in [CLOUD_AWS_CUSTOM_CONNECTION_CONFIG, CLOUD_AWS_CUSTOM_CONNECTION_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.credentials["session_token"] == "session_token_moo"
+            assert object_store.credentials["region"] == "us-east-2"
+            assert object_store.connection_dict == {
+                "endpoint_url": "https://s3.example.org/",
+                "validate_certs": False,
+                "signature_version": "s3v4",
+            }
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict["auth"], "session_token", "session_token_moo")
+            _assert_key_has_value(as_dict["connection"], "endpoint_url", "https://s3.example.org/")
+            _assert_key_has_value(as_dict["connection"], "validate_certs", False)
+            _assert_key_has_value(as_dict["connection"], "signature_version", "s3v4")
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_connection_aws_maps_full_options():
+    with TestConfig(CLOUD_AWS_CUSTOM_CONNECTION_CONFIG_YAML) as (directory, object_store):
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "aws_access_key": "access_moo",
+            "aws_secret_key": "secret_cow",
+            "aws_session_token": "session_token_moo",
+            "aws_region_name": "us-east-2",
+            "s3_endpoint_url": "https://s3.example.org/",
+            "s3_validate_certs": False,
+            "s3_signature_version": "s3v4",
+        }
+
+
+CLOUD_AZURE_FULL_CONFIG = get_example("cloud_azure_full.xml")
+CLOUD_AZURE_FULL_CONFIG_YAML = get_example("cloud_azure_full.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_azure_full():
+    for config_str in [CLOUD_AZURE_FULL_CONFIG, CLOUD_AZURE_FULL_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.credentials["storage_account"] == "galaxystorage"
+            assert object_store.credentials["resource_group"] == "galaxy_rg"
+            assert object_store.credentials["region"] == "eastus2"
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict["auth"], "storage_account", "galaxystorage")
+            _assert_key_has_value(as_dict["auth"], "resource_group", "galaxy_rg")
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_connection_azure_maps_full_options():
+    with TestConfig(CLOUD_AZURE_FULL_CONFIG_YAML) as (directory, object_store):
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "azure_subscription_id": "a_sub_id",
+            "azure_client_id": "and_a_client_id",
+            "azure_secret": "and_a_secret_key",
+            "azure_tenant": "and_some_tenant_info",
+            "azure_storage_account": "galaxystorage",
+            "azure_resource_group": "galaxy_rg",
+            "azure_region_name": "eastus2",
+        }
+
+
+CLOUD_AZURE_ACCESS_TOKEN_ONLY_CONFIG = """<object_store type="cloud" provider="azure">
+    <auth access_token="a_token" storage_account="galaxystorage" resource_group="galaxy_rg" />
+    <bucket name="unique_container_name" use_reduced_redundancy="False" />
+    <cache path="database/object_store_cache" size="1000" />
+    <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+    <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_azure_access_token_only():
+    # With an access token the service-principal quartet is optional.
+    with TestConfig(CLOUD_AZURE_ACCESS_TOKEN_ONLY_CONFIG) as (directory, object_store):
+        assert object_store.credentials["access_token"] == "a_token"
+        assert "subscription_id" not in object_store.credentials
+
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "azure_access_token": "a_token",
+            "azure_storage_account": "galaxystorage",
+            "azure_resource_group": "galaxy_rg",
+        }
+
+
+CLOUD_GCP_INLINE_CREDS_CONFIG_YAML = get_example("cloud_gcp_inline_creds.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_gcp_inline_credentials():
+    with TestConfig(CLOUD_GCP_INLINE_CREDS_CONFIG_YAML) as (directory, object_store):
+        assert object_store.credentials["credentials_dict"]["project_id"] == "my_project"
+
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config["gcp_service_creds_dict"]["project_id"] == "my_project"
+        assert provider_config["gcp_region_name"] == "us-central1"
+        assert "gcp_service_creds_file" not in provider_config
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_gcp_requires_exactly_one_credential_source():
+    no_creds = CLOUD_GCP_INLINE_CREDS_CONFIG_YAML.replace("credentials_dict:", "ignored_dict:")
+    with pytest.raises(Exception, match="exactly one"):
+        with TestConfig(no_creds):
+            pass
+
+    both_creds = CLOUD_GCP_INLINE_CREDS_CONFIG_YAML.replace(
+        "  credentials_dict:", "  credentials_file: gcp.config\n  credentials_dict:"
+    )
+    with pytest.raises(Exception, match="exactly one"):
+        with TestConfig(both_creds):
+            pass
+
+
+CLOUD_OPENSTACK_TEST_CONFIG = get_example("cloud_openstack_simple.xml")
+CLOUD_OPENSTACK_TEST_CONFIG_YAML = get_example("cloud_openstack_simple.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_openstack():
+    for config_str in [CLOUD_OPENSTACK_TEST_CONFIG, CLOUD_OPENSTACK_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.provider == "openstack"
+            assert object_store.credentials["username"] == "os_user"
+            assert object_store.credentials["password"] == "os_pass"
+            assert object_store.credentials["project_name"] == "os_project"
+            assert object_store.credentials["auth_url"] == "https://keystone.example.org:5000/v3"
+            assert object_store.credentials["region"] == "RegionOne"
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict, "provider", "openstack")
+            _assert_key_has_value(as_dict["auth"], "auth_url", "https://keystone.example.org:5000/v3")
+            _assert_key_has_value(as_dict["bucket"], "name", "unique_container_name")
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_connection_openstack_maps_options():
+    with TestConfig(CLOUD_OPENSTACK_TEST_CONFIG_YAML) as (directory, object_store):
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "os_username": "os_user",
+            "os_password": "os_pass",
+            "os_project_name": "os_project",
+            "os_auth_url": "https://keystone.example.org:5000/v3",
+            "os_region_name": "RegionOne",
+            "os_user_domain_name": "Default",
+            "os_project_domain_name": "Default",
+        }
+
+
+CLOUD_OPENSTACK_APP_CREDENTIAL_CONFIG = """<object_store type="cloud" provider="openstack">
+    <auth auth_url="https://keystone.example.org:5000/v3" application_credential_id="an_app_cred_id" application_credential_secret="an_app_cred_secret" />
+    <bucket name="unique_container_name" use_reduced_redundancy="False" />
+    <cache path="database/object_store_cache" size="1000" />
+    <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+    <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_openstack_app_credentials():
+    # With an application credential, username/password/project_name are optional.
+    with TestConfig(CLOUD_OPENSTACK_APP_CREDENTIAL_CONFIG) as (directory, object_store):
+        assert object_store.credentials["application_credential_id"] == "an_app_cred_id"
+        assert "username" not in object_store.credentials
+
+        with patch("galaxy.objectstore.cloud.CloudProviderFactory") as factory_class:
+            object_store._get_connection(object_store.provider, object_store.credentials, object_store.connection_dict)
+        _, provider_config = factory_class.return_value.create_provider.call_args.args
+        assert provider_config == {
+            "os_auth_url": "https://keystone.example.org:5000/v3",
+            "os_application_credential_id": "an_app_cred_id",
+            "os_application_credential_secret": "an_app_cred_secret",
+        }
+
+
+CLOUD_DIRECT_DOWNLOAD_CONFIG = get_example("cloud_direct_download.xml")
+CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML = get_example("cloud_direct_download.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_direct_download():
+    for config_str in [CLOUD_DIRECT_DOWNLOAD_CONFIG, CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.enable_direct_download is True
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict, "enable_direct_download", True)
+
+            model = object_store.to_model("the_object_store_id")
+            assert model.enable_direct_download is True
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_get_direct_download_url_forwards_response_headers():
+    with TestConfig(CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
+        key = MagicMock()
+        key.generate_url.return_value = "https://cloud.example.org/signed"
+        bucket = MagicMock()
+        bucket.objects.get.return_value = key
+        object_store.bucket = bucket
+        with patch.object(object_store, "_exists", return_value=True):
+            url = object_store.get_direct_download_url(
+                MockDataset(1),
+                content_disposition='attachment; filename="Galaxy1-[data].txt"',
+                content_type="application/octet-stream",
+            )
+        assert url == "https://cloud.example.org/signed"
+        key.generate_url.assert_called_once_with(
+            expires_in=86400,
+            content_disposition='attachment; filename="Galaxy1-[data].txt"',
+            content_type="application/octet-stream",
+        )
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_get_direct_download_url_returns_none_when_disabled():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        key = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = key
+        object_store.bucket = bucket
+        with patch.object(object_store, "_exists", return_value=True):
+            url = object_store.get_direct_download_url(MockDataset(1))
+        assert url is None
+        key.generate_url.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_uploads_pass_transfer_config():
+    with TestConfig(CLOUD_TRANSFER_TEST_CONFIG) as (directory, object_store):
+        obj = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = obj
+        object_store.bucket = bucket
+
+        assert object_store._push_file_to_path("files/dataset_1.dat", "/tmp/dataset_1.dat")
+        upload_config = obj.upload_from_file.call_args.kwargs["config"]
+        assert upload_config.threshold == 5242880
+        assert upload_config.part_size == 5242880
+        assert upload_config.max_concurrency == 2
+
+        assert object_store._push_string_to_path("files/dataset_1.dat", "some content")
+        upload_config = obj.upload.call_args.kwargs["config"]
+        assert upload_config.threshold == 5242880
+        assert upload_config.part_size == 5242880
+        assert upload_config.max_concurrency == 2
+
+
+@patch_object_stores_to_skip_initialize
+def test_cloud_store_uploads_pass_no_config_when_unconfigured():
+    with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
+        obj = MagicMock()
+        bucket = MagicMock()
+        bucket.objects.get.return_value = obj
+        object_store.bucket = bucket
+
+        assert object_store._push_file_to_path("files/dataset_1.dat", "/tmp/dataset_1.dat")
+        assert obj.upload_from_file.call_args.kwargs["config"] is None
+
+        assert object_store._push_string_to_path("files/dataset_1.dat", "some content")
+        assert obj.upload.call_args.kwargs["config"] is None
+
+
 AZURE_BLOB_TEST_CONFIG = get_example("azure_simple.xml")
 AZURE_BLOB_TEST_CONFIG_YAML = get_example("azure_simple.yml")
 
@@ -1161,7 +1728,9 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
     path = tmp_path / "big_file.bytes"
     with path.open("wb") as f:
         f.write(os.urandom(size))
-    object_store.update_from_file(big_file_dataset, file_name=hello_path, create=True)
+    object_store.update_from_file(big_file_dataset, file_name=path, create=True)
+    assert object_store.exists(big_file_dataset)
+    assert object_store.size(big_file_dataset) == size
 
     extra_files_dataset = MockDataset(7)
     object_store.create(extra_files_dataset)
@@ -1207,6 +1776,29 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
         response = get(url)
         response.raise_for_status()
         assert response.text == "Hello World!"
+
+
+def verify_big_file_storage_roundtrip(tmp_path, object_store, size_bytes):
+    # Store a file large enough to cross the configured multipart threshold
+    # and verify it round-trips bit-for-bit through the remote store.
+    big_file_dataset = MockDataset(11)
+    path = tmp_path / "big_file_roundtrip.bytes"
+    content = os.urandom(size_bytes)
+    with path.open("wb") as f:
+        f.write(content)
+    expected_sha256 = hashlib.sha256(content).hexdigest()
+
+    object_store.update_from_file(big_file_dataset, file_name=path, create=True)
+    reset_cache(object_store.cache_target)
+    assert object_store.exists(big_file_dataset)
+    reset_cache(object_store.cache_target)
+    assert object_store.size(big_file_dataset) == size_bytes
+
+    reset_cache(object_store.cache_target)
+    stored_path = object_store.get_filename(big_file_dataset)
+    with open(stored_path, "rb") as f:
+        stored_sha256 = hashlib.sha256(f.read()).hexdigest()
+    assert stored_sha256 == expected_sha256
 
 
 def _extra_file_path(object_store, dataset):
@@ -1353,6 +1945,32 @@ def test_aws_via_cloudbridge_store(tmp_path):
 def test_aws_via_cloudbridge_store_with_region(tmp_path):
     with integration_test_config("cloud_integration_test_aws_with_region.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
+def test_aws_via_cloudbridge_store_multipart(tmp_path):
+    # 12 MiB crosses the configured 5 MiB threshold -> 3 parts, exercising
+    # cloudbridge's multipart upload path end to end.
+    with integration_test_config("cloud_integration_test_aws_multipart.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+        verify_big_file_storage_roundtrip(tmp_path, object_store, 12 * 1024 * 1024)
+
+
+@skip_unless_environ("GALAXY_TEST_OS_USERNAME")
+@skip_unless_environ("GALAXY_TEST_OS_PASSWORD")
+@skip_unless_environ("GALAXY_TEST_OS_PROJECT_NAME")
+@skip_unless_environ("GALAXY_TEST_OS_AUTH_URL")
+@skip_unless_environ("GALAXY_TEST_OS_REGION_NAME")
+@skip_unless_environ("GALAXY_TEST_OS_CONTAINER")
+def test_openstack_via_cloudbridge_store(tmp_path):
+    # Exercises cloudbridge's generic clone-pool multipart driver on Swift
+    # (static large objects) with the big-file roundtrip.
+    with integration_test_config("cloud_integration_test_openstack.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+        verify_big_file_storage_roundtrip(tmp_path, object_store, 12 * 1024 * 1024)
 
 
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")

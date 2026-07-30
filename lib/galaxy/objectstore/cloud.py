@@ -6,8 +6,8 @@ import logging
 import os
 import os.path
 
+from galaxy.util import string_as_bool
 from ._caching_base import CachingConcreteObjectStore
-from ._util import UsesAxel
 from .caching import enable_cache_monitor
 from .s3 import parse_config_xml
 
@@ -17,9 +17,11 @@ try:
         ProviderList,
     )
     from cloudbridge.interfaces.exceptions import InvalidNameException
+    from cloudbridge.interfaces.resources import TransferConfig
 except ImportError:
     CloudProviderFactory = None  # type: ignore[assignment,misc,unused-ignore]
     ProviderList = None  # type: ignore[assignment,misc,unused-ignore]
+    TransferConfig = None  # type: ignore[assignment,misc,unused-ignore]
 
 log = logging.getLogger(__name__)
 
@@ -28,8 +30,18 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
+TRANSFER_OPTION_KEYS = ("multipart_threshold", "multipart_chunksize", "max_concurrency")
+# Each option may be given bare (applies to both directions) or prefixed with
+# upload_/download_ to tune one direction, mirroring the boto3 store.
+ALL_TRANSFER_OPTION_KEYS = tuple(
+    prefix + key for key in TRANSFER_OPTION_KEYS for prefix in ("", "upload_", "download_")
+)
+# Providers reject multipart upload parts smaller than 5 MiB (except the final
+# part); ranged downloads have no minimum.
+MIN_MULTIPART_CHUNKSIZE = 5 * 1024 * 1024
 
-class Cloud(CachingConcreteObjectStore, UsesAxel):
+
+class Cloud(CachingConcreteObjectStore):
     """
     Object store that stores objects as items in an cloud storage. A local
     cache exists that is used as an intermediate location for files between
@@ -37,6 +49,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
     """
 
     store_type = "cloud"
+    cloud = True
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
@@ -51,6 +64,38 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         self.use_rr = bucket_dict.get("use_reduced_redundancy", False)
         self.max_chunk_size = bucket_dict.get("max_chunk_size", 250)
 
+        transfer_dict = config_dict.get("transfer") or {}
+        self.transfer_dict = {
+            key: int(transfer_dict[key]) for key in ALL_TRANSFER_OPTION_KEYS if transfer_dict.get(key) is not None
+        }
+        upload_chunksize = self.transfer_dict.get(
+            "upload_multipart_chunksize", self.transfer_dict.get("multipart_chunksize")
+        )
+        if upload_chunksize is not None and upload_chunksize < MIN_MULTIPART_CHUNKSIZE:
+            raise Exception(
+                f"Invalid multipart_chunksize {upload_chunksize}: cloud storage providers require "
+                f"multipart upload parts of at least {MIN_MULTIPART_CHUNKSIZE} bytes (5 MiB)."
+            )
+
+        # The endpoint scheme conveys http/https, so no is_secure here (matching
+        # the boto3 store); the legacy host/port/... keys the s3 parser emits are
+        # not used by this store.
+        connection_dict = config_dict.get("connection") or {}
+        self.connection_dict = {}
+        for key in ("endpoint_url", "signature_version"):
+            value = connection_dict.get(key)
+            if value:
+                self.connection_dict[key] = value
+        validate_certs = connection_dict.get("validate_certs")
+        if validate_certs is not None:
+            self.connection_dict["validate_certs"] = string_as_bool(validate_certs)
+
+        if self.provider == "google":
+            has_file = bool(self.credentials.get("credentials_file"))
+            has_dict = bool(self.credentials.get("credentials_dict"))
+            if has_file == has_dict:
+                raise Exception("The google provider requires exactly one of credentials_file or credentials_dict.")
+
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
@@ -61,60 +106,93 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
-        self.conn = self._get_connection(self.provider, self.credentials)
+        self.conn = self._get_connection(self.provider, self.credentials, self.connection_dict)
         self.bucket = self._get_bucket(self.bucket_name)
         self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
-        self._init_axel()
 
     @staticmethod
-    def _get_connection(provider, credentials):
+    def _map_config_values(source, key_map):
+        return {mapped_key: source[key] for key, mapped_key in key_map if source.get(key) is not None}
+
+    @staticmethod
+    def _get_connection(provider, credentials, connection_config=None):
         log.debug(f"Configuring `{provider}` Connection")
+        connection_config = connection_config or {}
         if provider == "aws":
-            config = {"aws_access_key": credentials["access_key"], "aws_secret_key": credentials["secret_key"]}
-            if "region" in credentials:
-                config["aws_region_name"] = credentials["region"]
+            config = {"aws_access_key": credentials.get("access_key"), "aws_secret_key": credentials.get("secret_key")}
+            config.update(
+                Cloud._map_config_values(
+                    credentials,
+                    (
+                        ("session_token", "aws_session_token"),
+                        ("region", "aws_region_name"),
+                    ),
+                )
+            )
+            config.update(
+                Cloud._map_config_values(
+                    connection_config,
+                    (
+                        ("endpoint_url", "s3_endpoint_url"),
+                        ("validate_certs", "s3_validate_certs"),
+                        ("signature_version", "s3_signature_version"),
+                    ),
+                )
+            )
             connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
         elif provider == "azure":
-            config = {
-                "azure_subscription_id": credentials["subscription_id"],
-                "azure_client_id": credentials["client_id"],
-                "azure_secret": credentials["secret"],
-                "azure_tenant": credentials["tenant"],
-            }
+            config = Cloud._map_config_values(
+                credentials,
+                (
+                    ("subscription_id", "azure_subscription_id"),
+                    ("client_id", "azure_client_id"),
+                    ("secret", "azure_secret"),
+                    ("tenant", "azure_tenant"),
+                    ("access_token", "azure_access_token"),
+                    ("storage_account", "azure_storage_account"),
+                    ("resource_group", "azure_resource_group"),
+                    ("region", "azure_region_name"),
+                ),
+            )
             connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
         elif provider == "google":
-            config = {"gcp_service_creds_file": credentials["credentials_file"]}
+            config = Cloud._map_config_values(
+                credentials,
+                (
+                    ("credentials_file", "gcp_service_creds_file"),
+                    ("credentials_dict", "gcp_service_creds_dict"),
+                    ("region", "gcp_region_name"),
+                ),
+            )
             connection = CloudProviderFactory().create_provider(ProviderList.GCP, config)
+        elif provider == "openstack":
+            config = Cloud._map_config_values(
+                credentials,
+                (
+                    ("username", "os_username"),
+                    ("password", "os_password"),
+                    ("project_name", "os_project_name"),
+                    ("auth_url", "os_auth_url"),
+                    ("region", "os_region_name"),
+                    ("user_domain_name", "os_user_domain_name"),
+                    ("project_domain_name", "os_project_domain_name"),
+                    ("application_credential_id", "os_application_credential_id"),
+                    ("application_credential_secret", "os_application_credential_secret"),
+                ),
+            )
+            connection = CloudProviderFactory().create_provider(ProviderList.OPENSTACK, config)
         else:
             raise Exception(f"Unsupported provider `{provider}`.")
 
-        # Ideally it would be better to assert if the connection is
-        # authorized to perform operations required by ObjectStore
-        # before returning it (and initializing ObjectStore); hence
-        # any related issues can be handled properly here, and ObjectStore
-        # can "trust" the connection is established.
-        #
-        # However, the mechanism implemented in Cloudbridge to assert if
-        # a user/service is authorized to perform an operation, assumes
-        # the user/service is granted with an elevated privileges, such
-        # as admin/owner-level access to all resources. For a detailed
-        # discussion see:
-        #
-        # https://github.com/CloudVE/cloudbridge/issues/135
-        #
-        # Hence, if a resource owner wants to only authorize Galaxy to r/w
-        # a bucket/container on the provider, but does not allow it to access
-        # other resources, Cloudbridge may fail asserting credentials.
-        # For instance, to r/w an Amazon S3 bucket, the resource owner
-        # also needs to authorize full access to Amazon EC2, because Cloudbridge
-        # leverages EC2-specific functions to assert the credentials.
-        #
-        # Therefore, to adhere with principle of least privilege, we do not
-        # assert credentials; instead, we handle exceptions raised as a
-        # result of signing API calls to cloud provider (e.g., GCP) using
-        # incorrect, invalid, or unauthorized credentials.
-
+        # Deliberately no connection.authenticate() here: cloudbridge's
+        # credential check is compute-scoped (e.g. listing EC2 key pairs on
+        # AWS), so a least-privilege credential authorized only for bucket
+        # access would fail it even though it can fully serve the object
+        # store (https://github.com/CloudVE/cloudbridge/issues/120).
+        # Credentials are exercised by the storage-scoped bucket lookup in
+        # _initialize instead, and errors from real API calls are handled
+        # where they occur.
         return connection
 
     @classmethod
@@ -125,6 +203,21 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         # such provider-specific configuration is overwritten in the
         # following.
         config = parse_config_xml(config_xml)
+
+        transfer_element = config_xml.find("transfer")
+        if transfer_element is not None:
+            config["transfer"] = {
+                key: transfer_element.get(key)
+                for key in ALL_TRANSFER_OPTION_KEYS
+                if transfer_element.get(key) is not None
+            }
+
+        connection_element = config_xml.find("connection")
+        if connection_element is not None:
+            for key in ("endpoint_url", "validate_certs", "signature_version"):
+                value = connection_element.get(key)
+                if value is not None:
+                    config["connection"][key] = value
 
         try:
             provider = config_xml.attrib.get("provider")
@@ -142,31 +235,67 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 akey = auth_element.get("access_key")
                 skey = auth_element.get("secret_key")
                 config["auth"] = {"access_key": akey, "secret_key": skey}
-                if "region" in auth_element:
-                    config["auth"]["region"] = auth_element["region"]
+                for key in ("session_token", "region"):
+                    value = auth_element.get(key)
+                    if value:
+                        config["auth"][key] = value
             elif provider == "azure":
-                sid = auth_element.get("subscription_id")
-                if sid is None:
-                    missing_config.append("subscription_id")
-                cid = auth_element.get("client_id")
-                if cid is None:
-                    missing_config.append("client_id")
-                sec = auth_element.get("secret")
-                if sec is None:
-                    missing_config.append("secret")
-                ten = auth_element.get("tenant")
-                if ten is None:
-                    missing_config.append("tenant")
-                config["auth"] = {"subscription_id": sid, "client_id": cid, "secret": sec, "tenant": ten}
+                auth = {}
+                for key in (
+                    "subscription_id",
+                    "client_id",
+                    "secret",
+                    "tenant",
+                    "access_token",
+                    "storage_account",
+                    "resource_group",
+                    "region",
+                ):
+                    value = auth_element.get(key)
+                    if value is not None:
+                        auth[key] = value
+                if "access_token" not in auth:
+                    # Without an access token the service-principal quartet is required.
+                    for key in ("subscription_id", "client_id", "secret", "tenant"):
+                        if key not in auth:
+                            missing_config.append(key)
+                config["auth"] = auth
             elif provider == "google":
                 cre = auth_element.get("credentials_file")
-                if not os.path.isfile(cre):
+                if cre is None:
+                    missing_config.append("credentials_file")
+                elif not os.path.isfile(cre):
                     msg = f"The following file specified for GCP credentials not found: {cre}"
                     log.error(msg)
                     raise OSError(msg)
-                if cre is None:
-                    missing_config.append("credentials_file")
                 config["auth"] = {"credentials_file": cre}
+                region = auth_element.get("region")
+                if region:
+                    config["auth"]["region"] = region
+            elif provider == "openstack":
+                auth = {}
+                for key in (
+                    "username",
+                    "password",
+                    "project_name",
+                    "auth_url",
+                    "region",
+                    "user_domain_name",
+                    "project_domain_name",
+                    "application_credential_id",
+                    "application_credential_secret",
+                ):
+                    value = auth_element.get(key)
+                    if value is not None:
+                        auth[key] = value
+                if "auth_url" not in auth:
+                    missing_config.append("auth_url")
+                if "application_credential_id" not in auth and "application_credential_secret" not in auth:
+                    # Without an application credential, password authentication is required.
+                    for key in ("username", "password", "project_name"):
+                        if key not in auth:
+                            missing_config.append(key)
+                config["auth"] = auth
             else:
                 msg = f"Unsupported provider `{provider}`."
                 log.error(msg)
@@ -195,12 +324,31 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 "name": self.bucket_name,
                 "use_reduced_redundancy": self.use_rr,
             },
+            "connection": self.connection_dict,
+            "transfer": self.transfer_dict,
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
                 "cache_updated_data": self.cache_updated_data,
             },
         }
+
+    def _transfer_config(self, direction):
+        # A direction-prefixed key overrides the bare key; any value left
+        # unset falls back to cloudbridge's own defaults (the CB_MULTIPART_*
+        # settings). With nothing configured pass no config at all.
+        values = {}
+        for key in TRANSFER_OPTION_KEYS:
+            value = self.transfer_dict.get(f"{direction}_{key}", self.transfer_dict.get(key))
+            if value is not None:
+                values[key] = value
+        if not values:
+            return None
+        return TransferConfig(
+            threshold=values.get("multipart_threshold"),
+            part_size=values.get("multipart_chunksize"),
+            max_concurrency=values.get("max_concurrency"),
+        )
 
     def _get_bucket(self, bucket_name):
         try:
@@ -233,6 +381,8 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             # A hackish way of testing if the rel_path is a folder vs a file
             is_dir = rel_path[-1] == "/"
             if is_dir:
+                # One page suffices here: any match at all puts at least one
+                # object on the first page.
                 keyresult = self.bucket.objects.list(prefix=rel_path)
                 if len(keyresult) > 0:
                     exists = True
@@ -262,8 +412,8 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         return False
 
     def _download_directory_into_cache(self, rel_path, cache_path):
-        objects = self.bucket.objects.list(prefix=rel_path)
-        for obj in objects:
+        # iter() (unlike list()) pages through the full result set.
+        for obj in self.bucket.objects.iter(prefix=rel_path):
             remote_file_path = obj.name
             local_file_path = os.path.join(cache_path, os.path.relpath(remote_file_path, rel_path))
             os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
@@ -271,20 +421,17 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 self._download_to(obj, tmp)
 
     def _download_to(self, key, local_destination):
-        if self.use_axel:
-            url = key.generate_url(7200)
-            return self._axel_download(url, local_destination)
-        else:
-            with open(local_destination, "wb+") as downloaded_file_handle:
-                key.save_content(downloaded_file_handle)
+        # cloudbridge fetches objects above the transfer threshold as parallel
+        # ranged reads, so no external downloader (axel) is needed.
+        key.download_to_file(local_destination, config=self._transfer_config("download"))
+
+    def _get_or_create_object(self, rel_path: str):
+        return self.bucket.objects.get(rel_path) or self.bucket.objects.create(rel_path)
 
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
-            if not self.bucket.objects.get(rel_path):
-                created_obj = self.bucket.objects.create(rel_path)
-                created_obj.upload(from_string)
-            else:
-                self.bucket.objects.get(rel_path).upload(from_string)
+            obj = self._get_or_create_object(rel_path)
+            obj.upload(from_string, config=self._transfer_config("upload"))
             return True
         except Exception:
             log.exception("Trouble pushing to cloud '%s' from string", rel_path)
@@ -292,11 +439,8 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
 
     def _push_file_to_path(self, rel_path: str, source_file: str) -> bool:
         try:
-            if not self.bucket.objects.get(rel_path):
-                created_obj = self.bucket.objects.create(rel_path)
-                created_obj.upload_from_file(source_file)
-            else:
-                self.bucket.objects.get(rel_path).upload_from_file(source_file)
+            obj = self._get_or_create_object(rel_path)
+            obj.upload_from_file(source_file, config=self._transfer_config("upload"))
             return True
         except Exception:
             log.exception("Trouble pushing to cloud '%s' from file '%s'", rel_path, source_file)
@@ -304,8 +448,8 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
 
     def _delete_remote_all(self, rel_path: str) -> bool:
         try:
-            results = self.bucket.objects.list(prefix=rel_path)
-            for key in results:
+            # iter() (unlike list()) pages through the full result set.
+            for key in self.bucket.objects.iter(prefix=rel_path):
                 log.debug("Deleting key %s", key.name)
                 key.delete()
             return True
@@ -328,7 +472,11 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             rel_path = self._construct_path(obj, **kwargs)
             try:
                 key = self.bucket.objects.get(rel_path)
-                return key.generate_url(expires_in=86400)  # 24hrs
+                return key.generate_url(
+                    expires_in=86400,  # 24hrs
+                    content_disposition=content_disposition,
+                    content_type=content_type,
+                )
             except Exception:
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None

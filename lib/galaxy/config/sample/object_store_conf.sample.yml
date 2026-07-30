@@ -156,21 +156,23 @@ backends:
     files_dir: /old-fs/galaxy/files
 
 
-# There are now four ways to access S3 related services. Two are
-# suitable just for AWS services (aws_s3 & cloud), one is
-# more suited for non-AWS S3 compatible services (generic_s3),
-# and finally boto3 gracefully handles either scenario.
+# There are now four ways to access S3 related services: aws_s3 is
+# suitable just for AWS services, generic_s3 is more suited for
+# non-AWS S3 compatible services, and boto3 and cloud gracefully
+# handle either scenario (cloud via its aws provider with an
+# endpoint_url).
 #
 # boto3 is built on the newest and most widely used Python client
-# outside of Galaxy. It has advanced transfer options and is likely
-# the client you should use for new setup. generic_s3 and aws_s3
-# have existed in Galaxy for longer and could perhaps be considered
-# more battle tested. Both boto3 and generic_s3 have been tested
-# with multiple non-AWS APIs including minio and GCP. The cloud
-# implementation is based on CloudBridge and is still supported
-# and has been recently tested - the downside is mostly the advanced
-# multi-threaded processing options of boto3 are not available
-# and it has not been battle tested like aws_s3.
+# outside of Galaxy and has advanced transfer options. generic_s3
+# and aws_s3 have existed in Galaxy for longer and could perhaps be
+# considered more battle tested. Both boto3 and generic_s3 have been
+# tested with multiple non-AWS APIs including minio and GCP. The
+# cloud implementation is based on CloudBridge and supports parallel
+# multipart uploads and downloads with per-direction tuning like
+# boto3; its distinguishing feature is that the same store type also
+# speaks Azure Blob, Google Cloud Storage, and OpenStack Swift
+# natively. For a pure S3 setup boto3 remains the most battle-tested
+# choice; choose cloud for multi-cloud deployments or native Swift.
 
 #
 # Sample AWS S3 Object Store configuration (newest boto3 client)
@@ -395,18 +397,45 @@ extra_dirs:
 #
 
 # The Cloud Object Store uses the cloud-provider-agnostic CloudBridge (http://cloudbridge.cloudve.org/) library to
-# interface with cloud storage rather than the cloud-native libraries directly.
+# interface with cloud storage rather than the cloud-native libraries directly. Each provider's SDK is an optional
+# CloudBridge extra; Galaxy's dependency installer (run.sh or common_startup.sh) installs the extras matching the
+# providers configured here, so switching a store to a new provider needs a dependency reinstall.
 
 # Sample Cloud Object Store with Amazon Simple Storage Service (S3) configuration
 
 type: cloud
 provider: aws
+# Redirect dataset downloads to a short-lived presigned URL instead of streaming
+# through Galaxy's cache. See the boto3 example above for the tradeoffs. Defaults to false.
+# enable_direct_download: true
 auth:
   access_key: ...
   secret_key: ...
+  # Optional: session token for temporary (STS) credentials, and bucket region.
+  # session_token: ...
+  # region: us-east-2
 bucket:
   name: unique_bucket_name
   use_reduced_redundancy: false
+# Optional: S3-compatible endpoints (MinIO, Ceph RGW, ...); the endpoint
+# scheme conveys http/https.
+# connection:
+#   endpoint_url: https://s3.example.org/
+#   validate_certs: true
+#   signature_version: s3v4
+# Optional transfer tuning, all sizes in bytes. Files larger than
+# multipart_threshold transfer in multipart_chunksize parts (at least 5 MiB
+# for uploads; downloads have no minimum), up to max_concurrency parts in
+# parallel. Unset values use cloudbridge's defaults. Each option may also be
+# prefixed with upload_/download_ to tune one direction only. Note: google
+# and openstack upload large files through their SDKs' native mechanisms,
+# which manage their own chunking; downloads honor these values on every
+# provider.
+# transfer:
+#   multipart_threshold: 104857600
+#   multipart_chunksize: 52428800
+#   upload_max_concurrency: 5
+#   download_max_concurrency: 10
 cache:
   path: database/object_store_cache_cloud
   size: 1000
@@ -424,6 +453,14 @@ auth:
   client_id: ...
   secret: ...
   tenant: ...
+  # Name the existing storage account and its resource group; without these
+  # cloudbridge synthesizes a storage-account name.
+  storage_account: ...
+  resource_group: ...
+  # region: eastus
+  # Alternatively authenticate with an access token instead of the service
+  # principal above:
+  # access_token: ...
 bucket:
   name: unique_bucket_name
   use_reduced_redundancy: false
@@ -441,8 +478,43 @@ type: cloud
 provider: google
 auth:
   credentials_file: ...
+  # Alternatively inline the service-account credentials (exactly one of
+  # credentials_file or credentials_dict must be set):
+  # credentials_dict:
+  #   type: service_account
+  #   project_id: ...
+  #   client_email: ...
+  # region: us-central1
 bucket:
   name: unique_bucket_name
+  use_reduced_redundancy: false
+cache:
+  path: database/object_store_cache_cloud
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_cloud
+
+# Sample Cloud Object Store with OpenStack Swift configuration (native Swift
+# via Keystone v3).
+
+type: cloud
+provider: openstack
+auth:
+  username: ...
+  password: ...
+  project_name: ...
+  auth_url: https://keystone.example.org:5000/v3
+  region: RegionOne
+  user_domain_name: Default
+  project_domain_name: Default
+  # Alternatively authenticate with a Keystone application credential
+  # instead of username/password/project_name:
+  # application_credential_id: ...
+  # application_credential_secret: ...
+bucket:
+  name: unique_container_name
   use_reduced_redundancy: false
 cache:
   path: database/object_store_cache_cloud
