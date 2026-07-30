@@ -858,6 +858,31 @@ def find_outdated_steps(
     return outdated
 
 
+class StepCounts(TypedDict):
+    """How big a workflow is, with and without its subworkflows folded out."""
+
+    # Steps of this workflow, which is what the step count everywhere else means.
+    steps: int
+    # How many of those are subworkflows, so the difference is explained rather than surprising.
+    subworkflow_steps: int
+    # What the count would be if every subworkflow were inlined, however deeply nested.
+    expanded_steps: int
+
+
+def count_steps(workflow: Workflow, _depth: int = 0) -> StepCounts:
+    steps = list(workflow.steps)
+    subworkflow_steps = 0
+    expanded_steps = 0
+    for step in steps:
+        if step.type == "subworkflow" and step.subworkflow is not None:
+            subworkflow_steps += 1
+            if _depth < MAX_SUBWORKFLOW_NESTING_DEPTH:
+                expanded_steps += count_steps(step.subworkflow, _depth=_depth + 1)["expanded_steps"]
+                continue
+        expanded_steps += 1
+    return StepCounts(steps=len(steps), subworkflow_steps=subworkflow_steps, expanded_steps=expanded_steps)
+
+
 def find_shared_workflows(workflow: Workflow, _depth: int = 0) -> list[str]:
     """Names of the workflows in this subtree that exist in the user's workflow list.
 

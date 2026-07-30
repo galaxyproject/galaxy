@@ -7036,6 +7036,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflows/{workflow_id}/steps/{order_index}/subworkflow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Saves edits made to a subworkflow and points the step at the result. */
+        put: operations["update_subworkflow_api_workflows__workflow_id__steps__order_index__subworkflow_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflows/{workflow_id}/tags": {
         parameters: {
             query?: never;
@@ -25800,6 +25817,36 @@ export interface components {
              * @description The target step for this action.
              */
             step: components["schemas"]["StepReferenceByOrderIndex"] | components["schemas"]["StepReferenceByLabel"];
+        };
+        /** UpdateSubworkflowPayload */
+        UpdateSubworkflowPayload: {
+            /**
+             * Detach
+             * @description Save into a copy embedded in the parent workflow instead of into the workflow the step points at, so a subworkflow that is a workflow in its own right is left unchanged.
+             * @default false
+             */
+            detach: boolean;
+            /**
+             * Workflow
+             * @description The new contents of the subworkflow, in the same shape the editor loads it in.
+             */
+            workflow: {
+                [key: string]: unknown;
+            };
+        };
+        /** UpdateSubworkflowResponse */
+        UpdateSubworkflowResponse: {
+            /**
+             * Content ID
+             * @description The subworkflow revision the step now points at.
+             * @example 0123456789ABCDEF
+             */
+            content_id: string;
+            /**
+             * Detached
+             * @description Whether the edit went into a copy private to the parent workflow.
+             */
+            detached: boolean;
         };
         /**
          * UpdateUserNotificationPreferencesRequest
@@ -53927,6 +53974,55 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_subworkflow_api_workflows__workflow_id__steps__order_index__subworkflow_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
+                workflow_id: string;
+                order_index: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSubworkflowPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateSubworkflowResponse"];
+                };
             };
             /** @description Request Error */
             "4XX": {

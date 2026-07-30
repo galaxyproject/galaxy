@@ -28,6 +28,19 @@
                 :versions="versions"
                 @onVersion="onVersion" />
         </div>
+        <div v-if="stepCounts" id="workflow-steps-area" class="mt-2">
+            <b>Steps</b>
+            <div>
+                {{ stepCounts.steps }} {{ stepCounts.steps === 1 ? "step" : "steps" }}
+                <span v-if="stepCounts.subworkflow_steps > 0" class="text-muted">
+                    ({{ stepCounts.subworkflow_steps }}
+                    {{ stepCounts.subworkflow_steps === 1 ? "subworkflow" : "subworkflows" }})
+                </span>
+            </div>
+            <div v-if="stepCounts.expanded_steps !== stepCounts.steps" class="form-text text-muted">
+                {{ stepCounts.expanded_steps }} in total with the subworkflows folded out.
+            </div>
+        </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>
             <b-list-group>
@@ -196,6 +209,11 @@ export default {
         },
         highlight: {
             type: String,
+            default: null,
+        },
+        /** Step totals with and without subworkflows folded out, see count_steps on the server. */
+        stepCounts: {
+            type: Object,
             default: null,
         },
         tags: {

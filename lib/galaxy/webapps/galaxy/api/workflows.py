@@ -89,6 +89,8 @@ from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
     RequestToolInstallationResponse,
     StoredWorkflowDetailed,
+    UpdateSubworkflowPayload,
+    UpdateSubworkflowResponse,
     WorkflowExtractionByIdsPayload,
     WorkflowExtractionResult,
     WorkflowToolAvailability,
@@ -938,6 +940,15 @@ InstallWorkflowToolsBody = Annotated[
     ),
 ]
 
+UpdateSubworkflowBody = Annotated[
+    UpdateSubworkflowPayload,
+    Body(
+        default=...,
+        title="Update subworkflow",
+        description="The new subworkflow contents and where they should be saved.",
+    ),
+]
+
 RefactorWorkflowBody = Annotated[
     RefactorRequest,
     Body(
@@ -1064,6 +1075,19 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> RequestToolInstallationResponse:
         return self.service.request_tool_installation(trans, workflow_id, instance or False)
+
+    @router.put(
+        "/api/workflows/{workflow_id}/steps/{order_index}/subworkflow",
+        summary="Saves edits made to a subworkflow and points the step at the result.",
+    )
+    def update_subworkflow(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        order_index: int,
+        payload: UpdateSubworkflowBody,
+        trans: SessionRequestContext = DependsOnTrans,
+    ) -> UpdateSubworkflowResponse:
+        return self.service.update_subworkflow(trans, workflow_id, order_index, payload)
 
     @router.put(
         "/api/workflows/{workflow_id}/refactor",

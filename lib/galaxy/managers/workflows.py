@@ -113,6 +113,7 @@ from galaxy.util.search import (
 )
 from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.modules import (
+    count_steps,
     module_factory,
     PickValueModule,
     SubWorkflowModule,
@@ -1511,6 +1512,9 @@ class WorkflowContentsManager(UsesAnnotations):
             data["unavailable_tool_ids"] = [
                 tool.tool_id for tool in find_unavailable_tools(trans, self.get_all_tools(workflow))
             ]
+            # A step count that stops at a subworkflow says little about how big a workflow
+            # really is, so report what it would be with them folded out as well.
+            data["step_counts"] = count_steps(workflow)
         return data
 
     @staticmethod

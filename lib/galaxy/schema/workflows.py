@@ -641,3 +641,28 @@ class RequestToolInstallationResponse(Model):
     emailed: bool = Field(
         ..., title="Emailed", description="Whether an email could be sent. False when this Galaxy has no mail set up."
     )
+
+
+class UpdateSubworkflowPayload(Model):
+    workflow: dict[str, Any] = Field(
+        ...,
+        title="Workflow",
+        description="The new contents of the subworkflow, in the same shape the editor loads it in.",
+    )
+    detach: bool = Field(
+        False,
+        title="Detach",
+        description=(
+            "Save into a copy embedded in the parent workflow instead of into the workflow the step "
+            "points at, so a subworkflow that is a workflow in its own right is left unchanged."
+        ),
+    )
+
+
+class UpdateSubworkflowResponse(Model):
+    content_id: EncodedDatabaseIdField = Field(
+        ..., title="Content ID", description="The subworkflow revision the step now points at."
+    )
+    detached: bool = Field(
+        ..., title="Detached", description="Whether the edit went into a copy private to the parent workflow."
+    )

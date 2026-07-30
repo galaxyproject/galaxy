@@ -12,6 +12,7 @@ export type UnavailableWorkflowTool = components["schemas"]["UnavailableWorkflow
 export type ToolShedRepositoryReference = components["schemas"]["ToolShedRepositoryReference"];
 export type InstallWorkflowToolsResponse = components["schemas"]["InstallWorkflowToolsResponse"];
 export type RequestToolInstallationResponse = components["schemas"]["RequestToolInstallationResponse"];
+export type UpdateSubworkflowResponse = components["schemas"]["UpdateSubworkflowResponse"];
 export type RefactorResponseActionExecutionMessage = RefactorResponseActionExecution["messages"][number];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
 export type WorkflowStepTyped = StoredWorkflowDetailed["steps"][number];
@@ -192,6 +193,23 @@ export async function requestWorkflowToolInstallation(id: string): Promise<Reque
         "/api/workflows/{workflow_id}/tool_availability/request_installation",
         { params: { path: { workflow_id: id } } },
     );
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+/** Saves edits made to a subworkflow from inside the workflow that uses it. */
+export async function updateSubworkflow(
+    workflowId: string,
+    orderIndex: number,
+    workflow: Record<string, unknown>,
+    detach: boolean,
+): Promise<UpdateSubworkflowResponse> {
+    const { data, error } = await GalaxyApi().PUT("/api/workflows/{workflow_id}/steps/{order_index}/subworkflow", {
+        params: { path: { workflow_id: workflowId, order_index: orderIndex } },
+        body: { workflow, detach },
+    });
     if (error) {
         rethrowSimple(error);
     }

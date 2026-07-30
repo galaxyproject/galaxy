@@ -20,8 +20,10 @@ from galaxy.managers.workflows import (
     RefactorRequest,
     RefactorResponse,
     WorkflowContentsManager,
+    WorkflowCreateOptions,
     WorkflowSerializer,
     WorkflowsManager,
+    WorkflowUpdateOptions,
 )
 from galaxy.model import (
     ImplicitCollectionJobs,
@@ -54,6 +56,8 @@ from galaxy.schema.workflows import (
     RequestToolInstallationResponse,
     StoredWorkflowDetailed,
     UnavailableWorkflowTool,
+    UpdateSubworkflowPayload,
+    UpdateSubworkflowResponse,
     WorkflowExtractionByIdsPayload,
     WorkflowExtractionPayload,
     WorkflowExtractionResult,
@@ -74,6 +78,10 @@ from galaxy.workflow.missing_tools import (
     find_unavailable_tools,
     install_workflow_tool_repository,
     missing_repositories,
+)
+from galaxy.workflow.refactor.schema import (
+    StepReferenceByOrderIndex,
+    UpgradeSubworkflowAction,
 )
 from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
@@ -183,6 +191,69 @@ class WorkflowsService(ServiceBase):
                 continue
             installed.extend(statuses)
         return InstallWorkflowToolsResponse(installed=installed, failed=failed)
+
+    def update_subworkflow(
+        self,
+        trans: ProvidesHistoryContext,
+        workflow_id: DecodedDatabaseIdField,
+        order_index: int,
+        payload: UpdateSubworkflowPayload,
+    ) -> UpdateSubworkflowResponse:
+        """Save edits made to a subworkflow from inside the workflow that uses it.
+
+        Saving the contents and repointing the step are one operation on purpose: a saved
+        subworkflow the parent still points past would look to the user like the edit was lost.
+        """
+        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id)
+        step = self._subworkflow_step(stored_workflow, order_index)
+        subworkflow = step.subworkflow
+        assert subworkflow is not None
+
+        contents_manager = self._workflow_contents_manager
+        raw_description = contents_manager.normalize_workflow_format(trans, payload.workflow)
+        if payload.detach or subworkflow.stored_workflow is None:
+            created = contents_manager.build_workflow_from_raw_description(
+                trans,
+                raw_description,
+                WorkflowCreateOptions(),
+                hidden=True,
+                is_subworkflow=True,
+            )
+            updated_workflow = created.workflow
+        else:
+            updated_workflow, _errors = contents_manager.update_workflow_from_raw_description(
+                trans,
+                subworkflow.stored_workflow,
+                raw_description,
+                WorkflowUpdateOptions(allow_missing_tools=True),
+            )
+
+        content_id = trans.security.encode_id(updated_workflow.id)
+        contents_manager.refactor(
+            trans,
+            stored_workflow,
+            RefactorRequest(
+                actions=[
+                    UpgradeSubworkflowAction(
+                        action_type="upgrade_subworkflow",
+                        step=StepReferenceByOrderIndex(order_index=order_index),
+                        content_id=content_id,
+                    )
+                ],
+                style="editor",
+            ),
+        )
+        return UpdateSubworkflowResponse(content_id=updated_workflow.id, detached=bool(payload.detach))
+
+    @staticmethod
+    def _subworkflow_step(stored_workflow: StoredWorkflow, order_index: int):
+        steps = stored_workflow.latest_workflow.steps
+        if order_index < 0 or order_index >= len(steps):
+            raise exceptions.RequestParameterInvalidException(f"This workflow has no step {order_index}.")
+        step = steps[order_index]
+        if step.type != "subworkflow":
+            raise exceptions.RequestParameterInvalidException(f"Step {order_index} is not a subworkflow.")
+        return step
 
     def request_tool_installation(
         self, trans: ProvidesUserContext, workflow_id: DecodedDatabaseIdField, instance: bool
