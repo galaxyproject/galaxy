@@ -1,5 +1,4 @@
-"""Verify the TUS routers stay reachable when galaxy_url_prefix is set.
-"""
+"""Verify the TUS routers stay reachable when galaxy_url_prefix is set."""
 
 import pytest
 from fastapi import FastAPI
