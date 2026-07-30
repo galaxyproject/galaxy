@@ -174,6 +174,13 @@ class OSFClient:
         params: dict[str, Any] = {"page": page, "page[size]": page_size}
         if query:
             params["q"] = query
+        # TODO: "search/files/" was a legacy endpoint removed on July 7, 2026;
+        #  this view will have to be reimplemented to use the API available at
+        #  https://share.osf.io/trove/index-card-serch (or a valid
+        #  alternative).
+        #  ᠎
+        #  @padinaalmai: This task is out of the scope of your student
+        #  project.
         return self._request(
             "GET", "search/files/",
             params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
