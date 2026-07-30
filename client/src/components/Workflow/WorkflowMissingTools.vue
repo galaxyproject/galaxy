@@ -129,12 +129,14 @@ async function onInstall() {
             }
         }
         installProgress.value = { done: repositories.length, total: repositories.length, current: "" };
+        // Reload first: it clears the error area, so a failure reported before it would be wiped
+        // and the user would be left without a reason.
+        await load();
         if (failures.length > 0) {
             errorMessage.value = failures.join("\n");
         } else {
             Toast.success("Installed the tools this workflow was missing.");
         }
-        await load();
     } finally {
         working.value = false;
         installProgress.value = null;
