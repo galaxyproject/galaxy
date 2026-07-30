@@ -22,6 +22,25 @@ export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting", "paus
 export const ERROR_STATES = ["error", "deleted", "deleting", "failed"];
 export const TERMINAL_STATES = ["ok", "skipped", "stop", "stopping"].concat(ERROR_STATES);
 
+/** All the states a job can be in, ordered from "just created" to "done", for display in filters. */
+export const JOB_STATES: JobState[] = [
+    "new",
+    "resubmitted",
+    "upload",
+    "waiting",
+    "queued",
+    "running",
+    "paused",
+    "stop",
+    "stopped",
+    "ok",
+    "skipped",
+    "error",
+    "failed",
+    "deleting",
+    "deleted",
+];
+
 interface JobDef {
     tool_id: string;
 }
@@ -64,11 +83,22 @@ export async function deleteJob(jobId: string, message?: string): Promise<boolea
 }
 
 /**
- * Fetch running jobs
- * @returns List of running jobs
+ * Fetch a page of jobs.
+ *
+ * @param offset Return jobs starting from this position
+ * @param limit Maximum number of jobs to return
+ * @param extraProps Additional query params, e.g. `user_id` or the filters built by `jobsFilterParams`
+ * @returns List of jobs
  */
-export async function fetchJobs(){
-    const { data, error } = await GalaxyApi().GET("/api/jobs");
+export async function fetchJobs(offset = 0, limit = 20, extraProps?: Record<string, unknown>) {
+    const params = {
+        limit,
+        offset,
+        order_by: "update_time",
+        ...extraProps,
+    } as Record<string, unknown>;
+
+    const { data, error } = await GalaxyApi().GET("/api/jobs", { params: { query: params } });
 
     if (error) {
         rethrowSimple(error);
