@@ -84,6 +84,7 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutput,
     ToolOutputCollection,
 )
+from galaxy.tool_util.toolbox.base import ToolLike
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicToolCreatePayload,
     DynamicUnprivilegedToolCreatePayload,
@@ -153,8 +154,13 @@ from galaxy.workflow.workflow_parameter_input_definitions import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.managers.context import ProvidesUserContext
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesHistoryContext,
+    )
     from galaxy.schema.invocation import InvocationMessageUnion
+    from galaxy.structured_app import StructuredApp
+    from galaxy.work.context import WorkRequestContext
     from galaxy.workflow.run import WorkflowProgress
 
 log = logging.getLogger(__name__)
@@ -336,7 +342,7 @@ class WorkflowModule:
     type: str
     name: str
 
-    def __init__(self, trans, content_id=None, **kwds):
+    def __init__(self, trans: "ProvidesHistoryContext", content_id=None, **kwds):
         self.trans = trans
         self.content_id = content_id
         self.state = DefaultToolState()
@@ -344,7 +350,7 @@ class WorkflowModule:
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans, d, **kwds):
+    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
         module = Class(trans, **kwds)
         input_connections = d.get("input_connections", {})
         module.recover_state(d.get("tool_state"), input_connections=input_connections, **kwds)
@@ -352,7 +358,7 @@ class WorkflowModule:
         return module
 
     @classmethod
-    def from_workflow_step(Class, trans, step, **kwds):
+    def from_workflow_step(Class, trans: "ProvidesHistoryContext", step, **kwds):
         module = Class(trans, **kwds)
         module.recover_state(step.tool_inputs, from_tool_form=False)
         module.label = step.label
@@ -490,7 +496,9 @@ class WorkflowModule:
         """
         return {}
 
-    def compute_runtime_state(self, trans, step=None, step_updates=None, replace_default_values=False):
+    def compute_runtime_state(
+        self, trans: "ProvidesHistoryContext", step=None, step_updates=None, replace_default_values=False
+    ):
         """Determine the runtime state (potentially different from self.state
         which describes configuration state). This (again unlike self.state) is
         currently always a `DefaultToolState` object.
@@ -517,6 +525,7 @@ class WorkflowModule:
                 if replace_default_values and step_input.default_value_set:
                     input_value = step_input.default_value
                     if isinstance(input, BaseDataToolParameter):
+                        assert trans.history is not None
                         input_value = raw_to_galaxy(trans.app, trans.history, input_value)
                     return input_value
 
@@ -558,7 +567,11 @@ class WorkflowModule:
         return state
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self,
+        trans: "WorkRequestContext",
+        progress: "WorkflowProgress",
+        invocation_step,
+        use_cached_job: bool = False,
     ) -> bool | None:
         """Execute the given workflow invocation step.
 
@@ -730,12 +743,12 @@ class SubWorkflowModule(WorkflowModule):
     _modules: list[Any] | None = None
     subworkflow: Workflow
 
-    def __init__(self, trans, content_id=None, **kwds):
+    def __init__(self, trans: "ProvidesHistoryContext", content_id=None, **kwds):
         super().__init__(trans, content_id, **kwds)
         self.post_job_actions: dict[str, Any] | None = None
 
     @classmethod
-    def from_dict(Class, trans, d, **kwds):
+    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
         module = super().from_dict(trans, d, **kwds)
         if "subworkflow" in d:
             detached = kwds.get("detached", False)
@@ -748,7 +761,7 @@ class SubWorkflowModule(WorkflowModule):
         return module
 
     @classmethod
-    def from_workflow_step(Class, trans, step, **kwds):
+    def from_workflow_step(Class, trans: "ProvidesHistoryContext", step, **kwds):
         module = super().from_workflow_step(trans, step, **kwds)
         module.subworkflow = step.subworkflow
         return module
@@ -821,7 +834,8 @@ class SubWorkflowModule(WorkflowModule):
         if hasattr(self.subworkflow, "workflow_outputs"):
             from galaxy.managers.workflows import WorkflowContentsManager
 
-            workflow_contents_manager = WorkflowContentsManager(self.trans.app, self.trans.app.trs_proxy)
+            app = cast("StructuredApp", self.trans.app)
+            workflow_contents_manager = WorkflowContentsManager(app, app.trs_proxy)
             subworkflow_dict = workflow_contents_manager._workflow_to_dict_editor(
                 trans=self.trans,
                 stored=self.subworkflow.stored_workflow,
@@ -871,7 +885,11 @@ class SubWorkflowModule(WorkflowModule):
         return self.trans.security.encode_id(self.subworkflow.id)
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step: WorkflowInvocationStep, use_cached_job: bool = False
+        self,
+        trans: "WorkRequestContext",
+        progress: "WorkflowProgress",
+        invocation_step: WorkflowInvocationStep,
+        use_cached_job: bool = False,
     ) -> bool | None:
         """Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
@@ -1022,7 +1040,7 @@ def optional_param(optional=None):
     return optional_value
 
 
-def format_param(trans, formats):
+def format_param(trans: "ProvidesAppContext", formats):
     formats_val = "" if not formats else ",".join(formats)
     source = dict(
         type="text",
@@ -1056,7 +1074,11 @@ class InputModule(WorkflowModule):
         return []
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self,
+        trans: "WorkRequestContext",
+        progress: "WorkflowProgress",
+        invocation_step,
+        use_cached_job: bool = False,
     ) -> bool | None:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
@@ -1064,6 +1086,7 @@ class InputModule(WorkflowModule):
         if input_value is NO_REPLACEMENT:
             default_value = step.get_input_default_value(NO_REPLACEMENT)
             if default_value is not NO_REPLACEMENT:
+                assert trans.history is not None
                 input_value = raw_to_galaxy(trans.app, trans.history, default_value)
 
         step_outputs = dict(output=input_value)
@@ -1698,7 +1721,7 @@ class InputParameterModule(WorkflowModule):
 
     def execute(
         self,
-        trans,
+        trans: "WorkRequestContext",
         progress: "WorkflowProgress",
         invocation_step: "WorkflowInvocationStep",
         use_cached_job: bool = False,
@@ -1933,7 +1956,11 @@ class PauseModule(WorkflowModule):
         return state
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self,
+        trans: "WorkRequestContext",
+        progress: "WorkflowProgress",
+        invocation_step,
+        use_cached_job: bool = False,
     ) -> bool | None:
         step = invocation_step.workflow_step
         progress.mark_step_outputs_delayed(step, why="executing pause step")
@@ -1980,18 +2007,18 @@ class PickValueModule(WorkflowModule):
 
     MODES = ("first_non_null", "first_or_skip", "the_only_non_null", "all_non_null")
 
-    def __init__(self, trans, content_id=None, **kwds):
+    def __init__(self, trans: "ProvidesHistoryContext", content_id=None, **kwds):
         super().__init__(trans, content_id=content_id, **kwds)
         self.post_job_actions: dict[str, Any] = {}
 
     @classmethod
-    def from_dict(Class, trans, d, **kwds):
+    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
         module = super().from_dict(trans, d, **kwds)
         module.post_job_actions = d.get("post_job_actions", {})
         return module
 
     @classmethod
-    def from_workflow_step(Class, trans, step, **kwds):
+    def from_workflow_step(Class, trans: "ProvidesHistoryContext", step, **kwds):
         module = super().from_workflow_step(trans, step, **kwds)
         module.post_job_actions = {}
         for pja in step.post_job_actions:
@@ -2086,7 +2113,7 @@ class PickValueModule(WorkflowModule):
                 return True
         return False
 
-    def _pick_from_replacements(self, trans, invocation_step, mode, replacements):
+    def _pick_from_replacements(self, trans: "ProvidesHistoryContext", invocation_step, mode, replacements):
         """Apply pick logic to a list of replacement values. Returns the picked output."""
         step = invocation_step.workflow_step
         non_null = [r for r in replacements if not self._is_null_or_skipped(r)]
@@ -2123,7 +2150,11 @@ class PickValueModule(WorkflowModule):
             raise ValueError(f"Unknown pick_value mode: {mode}")
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self,
+        trans: "WorkRequestContext",
+        progress: "WorkflowProgress",
+        invocation_step,
+        use_cached_job: bool = False,
     ) -> bool | None:
         step = invocation_step.workflow_step
         mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
@@ -2146,7 +2177,7 @@ class PickValueModule(WorkflowModule):
         self._apply_post_job_actions(trans, step, output, progress.effective_replacement_dict())
         return None
 
-    def _execute_mapped(self, trans, invocation_step, mode, all_inputs, collection_info):
+    def _execute_mapped(self, trans: "ProvidesHistoryContext", invocation_step, mode, all_inputs, collection_info):
         """Execute pick_value mapped over collection inputs."""
         invocation = invocation_step.workflow_invocation
         history = invocation.history
@@ -2185,7 +2216,7 @@ class PickValueModule(WorkflowModule):
         # Build the output collection from per-element outputs
         return self._create_mapped_output_collection(trans, history, mode, per_element_outputs)
 
-    def _create_skipped_output(self, trans, invocation_step):
+    def _create_skipped_output(self, trans: "ProvidesHistoryContext", invocation_step):
         """Create a skipped HDA for first_or_skip when all inputs are null."""
         invocation = invocation_step.workflow_invocation
         history = invocation.history
@@ -2201,7 +2232,7 @@ class PickValueModule(WorkflowModule):
         trans.sa_session.add(hda)
         return hda
 
-    def _create_collection_from_list(self, trans, invocation_step, hdas):
+    def _create_collection_from_list(self, trans: "ProvidesHistoryContext", invocation_step, hdas):
         """Create an HDCA from a list of non-null HDAs for all_non_null mode."""
         invocation = invocation_step.workflow_invocation
         history = invocation.history
@@ -2224,7 +2255,7 @@ class PickValueModule(WorkflowModule):
         )
         return hdca
 
-    def _create_mapped_output_collection(self, trans, history, mode, per_element_outputs):
+    def _create_mapped_output_collection(self, trans: "ProvidesHistoryContext", history, mode, per_element_outputs):
         """Create an implicit output collection from per-element pick results.
 
         For single-value modes (first_non_null, etc.), creates a flat list of HDAs.
@@ -2268,7 +2299,7 @@ class PickValueModule(WorkflowModule):
                 element_identifiers=elements,
             )
 
-    def _apply_post_job_actions(self, trans, step, output, replacement_dict):
+    def _apply_post_job_actions(self, trans: "ProvidesAppContext", step, output, replacement_dict):
         """Apply post job actions directly to module output via ActionBox.
 
         Uses execute_on_mapped_over which operates on step_outputs dict
@@ -2332,7 +2363,7 @@ def _mapped_inputs_from_collection_info(collection_info) -> dict[str, MappedColl
 
 
 def _capture_workflow_tool_request_state(
-    trans,
+    trans: "ProvidesAppContext",
     tool,
     step,
     collection_info,
@@ -2461,7 +2492,7 @@ def _capture_workflow_tool_request_state(
 
 
 def _log_workflow_tool_request_state(
-    trans, tool, step, collection_info, request_state: WorkflowToolRequestState
+    trans: "ProvidesAppContext", tool, step, collection_info, request_state: WorkflowToolRequestState
 ) -> None:
     mapped_over = bool(getattr(collection_info, "collections", None))
     log.info(
@@ -2482,28 +2513,36 @@ class ToolModule(WorkflowModule):
     name = "Tool"
 
     def __init__(
-        self, trans: "ProvidesUserContext", tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds
+        self, trans: "ProvidesHistoryContext", tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds
     ):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
         self.tool: Tool | None = None
-        if getattr(trans.app, "toolbox", None):
+        # ``toolbox_or_none`` because Celery workers run without a toolbox
+        # (they build a toolbox-less ``GalaxyManagerApplication``); the plain
+        # ``toolbox`` property asserts and would abort store export there.
+        if trans.app.toolbox_or_none:
+            tool_like: ToolLike | None = None
             if trans.user and tool_uuid:
-                self.tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
-            if not self.tool:
-                self.tool = trans.app.toolbox.get_tool(
+                tool_like = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
+            if not tool_like:
+                tool_like = trans.app.toolbox.get_tool(
                     tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
                 )
+            if tool_like:
+                self.tool = trans.app.toolbox.materialize_tool(tool_like, reason="validation")
         if self.tool:
             current_tool_version = str(self.tool.version)
             if exact_tools and self.tool_version and self.tool_version != current_tool_version:
                 safe_version = get_safe_version(self.tool, self.tool_version)
                 if safe_version:
-                    self.tool = trans.app.toolbox.get_tool(
+                    tool_like = trans.app.toolbox.get_tool(
                         tool_id, tool_version=safe_version, exact=True, tool_uuid=tool_uuid
                     )
+                    assert tool_like is not None
+                    self.tool = trans.app.toolbox.materialize_tool(tool_like, reason="validation")
                 else:
                     log.info(
                         f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}]."
@@ -2517,7 +2556,7 @@ class ToolModule(WorkflowModule):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans: "ProvidesUserContext", d, **kwds):
+    def from_dict(Class, trans: "ProvidesHistoryContext", d, **kwds):
         tool_id = d.get("content_id") or d.get("tool_id")
         tool_version = d.get("tool_version")
         if tool_version:
@@ -2569,7 +2608,7 @@ class ToolModule(WorkflowModule):
         return module
 
     @classmethod
-    def from_workflow_step(Class, trans, step, **kwds):
+    def from_workflow_step(Class, trans: "ProvidesHistoryContext", step, **kwds):
         tool_version = step.tool_version
         tool_uuid = step.tool_uuid
         kwds["exact_tools"] = False
@@ -2625,7 +2664,9 @@ class ToolModule(WorkflowModule):
         if tool_uuid := getattr(self, "tool_uuid", None):
             tool = self.trans.app.toolbox.get_tool(tool_uuid=tool_uuid, user=self.trans.user)
             if tool:
-                step.dynamic_tool_id = tool.dynamic_tool.id
+                tool = self.trans.app.toolbox.materialize_tool(tool, reason="serialization")
+                if tool.dynamic_tool:
+                    step.dynamic_tool_id = tool.dynamic_tool.id
         if not detached:
             for k, v in self.post_job_actions.items():
                 pja = self.__to_pja(k, v, step)
@@ -2644,6 +2685,7 @@ class ToolModule(WorkflowModule):
 
     def get_tooltip(self, static_path=None):
         if self.tool and self.tool.raw_help and self.tool.raw_help.format == "restructuredtext":
+            assert self.trans.url_builder is not None
             host_url = self.trans.url_builder("/")
             static_path = self.trans.url_builder(static_path) if static_path else ""
             return self.tool.render_help(host_url=host_url, static_path=static_path)
@@ -2903,7 +2945,9 @@ class ToolModule(WorkflowModule):
     def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         return self.get_inputs()
 
-    def compute_runtime_state(self, trans, step=None, step_updates=None, replace_default_values=False):
+    def compute_runtime_state(
+        self, trans: "ProvidesHistoryContext", step=None, step_updates=None, replace_default_values=False
+    ):
         # Warning: This method destructively modifies existing step state.
         if self.tool:
             step_errors = {}
@@ -2938,7 +2982,7 @@ class ToolModule(WorkflowModule):
 
     def execute(
         self,
-        trans,
+        trans: "WorkRequestContext",
         progress: "WorkflowProgress",
         invocation_step: "WorkflowInvocationStep",
         use_cached_job: bool = False,
@@ -2948,6 +2992,11 @@ class ToolModule(WorkflowModule):
         tool = trans.app.toolbox.get_tool(
             step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
         )
+        if tool is None:
+            raise ToolMissingException(
+                f"Tool {step.tool_id} missing. Cannot execute workflow step.", tool_id=step.tool_id
+            )
+        tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         if not tool.is_workflow_compatible:
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
@@ -3144,7 +3193,7 @@ class ToolModule(WorkflowModule):
 
             credentials_context = self._resolve_credentials_context(tool)
             execution_tracker = execute(
-                trans=self.trans,
+                trans=trans,
                 tool=tool,
                 mapping_params=mapping_params,
                 history=invocation.history,
@@ -3210,7 +3259,7 @@ class ToolModule(WorkflowModule):
         return complete
 
     @staticmethod
-    def _build_step_error_failure(trans, step, step_errors, progress):
+    def _build_step_error_failure(trans: "ProvidesHistoryContext", step, step_errors, progress):
         """Build the appropriate invocation failure message for step parameter errors.
 
         Inspects the ParameterValueError objects to determine whether the error
@@ -3341,7 +3390,7 @@ class WorkflowModuleFactory:
     def __init__(self, module_types: dict[str, type[WorkflowModule]]):
         self.module_types = module_types
 
-    def from_dict(self, trans, d, **kwargs) -> WorkflowModule:
+    def from_dict(self, trans: "ProvidesHistoryContext", d, **kwargs) -> WorkflowModule:
         """
         Return module initialized from the data in dictionary `d`.
         """
@@ -3351,7 +3400,7 @@ class WorkflowModuleFactory:
         ), f"Unexpected workflow step type [{type}] not found in [{self.module_types.keys()}]"
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
-    def from_workflow_step(self, trans, step: WorkflowStep, **kwargs) -> WorkflowModule:
+    def from_workflow_step(self, trans: "ProvidesHistoryContext", step: WorkflowStep, **kwargs) -> WorkflowModule:
         """
         Return module initialized from the WorkflowStep object `step`.
         """
@@ -3395,7 +3444,7 @@ class WorkflowModuleInjector:
     """Injects workflow step objects from the ORM with appropriate module and
     module generated/influenced state."""
 
-    def __init__(self, trans, allow_tool_state_corrections=False):
+    def __init__(self, trans: "ProvidesHistoryContext", allow_tool_state_corrections=False):
         self.trans = trans
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
@@ -3461,7 +3510,11 @@ class WorkflowModuleInjector:
 
 
 def populate_module_and_state(
-    trans, workflow: Workflow, param_map, allow_tool_state_corrections=False, module_injector=None
+    trans: "ProvidesHistoryContext",
+    workflow: Workflow,
+    param_map,
+    allow_tool_state_corrections=False,
+    module_injector=None,
 ):
     """Used by API but not web controller, walks through a workflow's steps
     and populates transient module and state attributes on each.

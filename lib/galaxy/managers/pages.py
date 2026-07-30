@@ -34,6 +34,7 @@ from galaxy.managers import (
     sharable,
 )
 from galaxy.managers.context import (
+    ProvidesAppContext,
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
@@ -269,7 +270,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
             stmt = stmt.offset(payload.offset)
         return trans.sa_session.scalars(stmt), total_matches
 
-    def create_page(self, trans, payload: CreatePagePayload):
+    def create_page(self, trans: ProvidesUserContext, payload: CreatePagePayload):
         user = trans.get_user()
         if not user:
             raise exceptions.AuthenticationRequired("You must be logged in to create pages.")
@@ -341,7 +342,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         session.commit()
         return page
 
-    def update_page(self, trans, id: int, payload: UpdatePagePayload):
+    def update_page(self, trans: ProvidesUserContext, id: int, payload: UpdatePagePayload):
         user = trans.get_user()
         if not user:
             raise exceptions.AuthenticationRequired("You must be logged in to update pages.")
@@ -386,7 +387,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         session.commit()
         return page
 
-    def save_new_revision(self, trans, page, payload):
+    def save_new_revision(self, trans: ProvidesAppContext, page, payload):
         # Assumes security has already been checked by caller.
         content = payload.get("content", None)
         content_format = payload.get("content_format", None)
@@ -420,18 +421,18 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         session.commit()
         return page_revision
 
-    def list_revisions(self, trans, page, sort_desc: bool = False):
+    def list_revisions(self, trans: ProvidesUserContext, page, sort_desc: bool = False):
         page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
         return sorted(page.revisions, key=lambda r: r.create_time, reverse=sort_desc)
 
-    def get_revision(self, trans, page, revision_id):
+    def get_revision(self, trans: ProvidesUserContext, page, revision_id):
         page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
         revision = trans.sa_session.get(model.PageRevision, revision_id)
         if not revision or revision.page_id != page.id:
             raise exceptions.ObjectNotFound("Page revision not found")
         return revision
 
-    def restore_revision(self, trans, page, revision_id):
+    def restore_revision(self, trans: ProvidesUserContext, page, revision_id):
         page = base.security_check(trans, page, check_ownership=True, check_accessible=True)
         old_revision = self.get_revision(trans, page, revision_id)
         # Build revision directly — content is already in internal format
@@ -446,7 +447,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         trans.sa_session.commit()
         return page_revision
 
-    def rewrite_content_for_import(self, trans, content, content_format: str):
+    def rewrite_content_for_import(self, trans: ProvidesAppContext, content, content_format: str):
         if content_format == PageContentFormat.html.value:
             try:
                 content = sanitize_html(content)
@@ -466,7 +467,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
             )
         return content
 
-    def rewrite_content_for_export(self, trans, as_dict):
+    def rewrite_content_for_export(self, trans: ProvidesHistoryContext, as_dict):
         content = as_dict["content"]
         content_format = as_dict.get("content_format", PageContentFormat.html.value)
         if content_format == PageContentFormat.html.value:
@@ -554,7 +555,7 @@ class PageContentProcessor(HTMLParser):
         "wbr",
     }
 
-    def __init__(self, trans, render_embed_html_fn: Callable):
+    def __init__(self, trans: ProvidesAppContext, render_embed_html_fn: Callable):
         HTMLParser.__init__(self)
         self.trans = trans
         self.ignore_content = False

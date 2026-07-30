@@ -17,6 +17,7 @@ import string
 from collections.abc import (
     Callable,
     Iterator,
+    Mapping,
 )
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -325,6 +326,12 @@ class ToolDataTable(Dictifiable):
 
     def is_current_version(self, other_version):
         return self._loaded_content_version == other_version
+
+    def get_fields(self) -> list[list[str]]:
+        raise NotImplementedError("Abstract method")
+
+    def get_named_fields_list(self) -> list[dict[str | int, str]]:
+        raise NotImplementedError("Abstract method")
 
     def merge_tool_data_table(
         self,
@@ -1341,6 +1348,7 @@ class ToolDataTableManager(Dictifiable):
         out_data: dict[str, OutputDataset],
         bundle_description: DataTableBundleProcessorDescription,
         repo_info: RepoInfo | None,
+        source_extra_files_paths: Mapping[str, str] | None = None,
     ) -> dict[str, OutputDataset]:
         """Writes bundle and returns bundle path."""
         data_manager_dict = _data_manager_dict(out_data, ensure_single_output=True)
@@ -1350,8 +1358,9 @@ class ToolDataTableManager(Dictifiable):
                 continue
 
             extra_files_path = dataset.extra_files_path
+            source_extra_files_path = (source_extra_files_paths or {}).get(output_name, extra_files_path)
             _relativize_bundle_data_table_paths(
-                data_manager_dict.get("data_tables", {}), extra_files_path, bundle_description
+                data_manager_dict.get("data_tables", {}), source_extra_files_path, bundle_description
             )
             bundle = DataTableBundle(
                 data_tables=data_manager_dict.get("data_tables", {}),
@@ -1398,13 +1407,13 @@ def _relativize_bundle_data_table_paths(
     extra_files_path: str,
     bundle_description: DataTableBundleProcessorDescription,
 ) -> None:
-    """Rewrite absolute path values under ``extra_files_path`` to be relative to it.
+    """Rewrite absolute path values under the compute-side extra-files dir.
 
     Some data managers record the absolute path inside the (transient) job
     directory (e.g. MetaPhlAn's ``$out_file.extra_files_path/$index``) rather
     than the expected relative path; that absolute path no longer resolves once
     the bundle is staged elsewhere, so imports and chained data managers fail.
-    Paths already relative, or outside ``extra_files_path``, are left untouched.
+    Paths already relative, or outside that directory, are left untouched.
     """
     for data_table_name, data_table_values in data_tables.items():
         path_headers = get_path_headers(bundle_description, data_table_name)
@@ -1439,9 +1448,6 @@ def _data_manager_dict(out_data: dict[str, OutputDataset], ensure_single_output:
             data_manager_dict[key].update(value)
         data_manager_dict.update(output_dict)
     return data_manager_dict
-
-
-from collections.abc import Mapping
 
 
 def _process_bundle(

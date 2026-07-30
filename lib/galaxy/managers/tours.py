@@ -9,7 +9,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.schema import GenerateTourResponse
 from galaxy.schema.tours import (
     TourDetails,
@@ -27,7 +27,7 @@ class ToursManager:
         self._app = app
 
     def generate_tour(
-        self, tool_id: str, tool_version: str, trans: ProvidesAppContext, performs_upload=True
+        self, tool_id: str, tool_version: str, trans: ProvidesHistoryContext, performs_upload=True
     ) -> GenerateTourResponse:
         """
         Generate a tour designed for the given tool.
@@ -51,7 +51,7 @@ class ToursManager:
 
 
 class TourGenerator:
-    def __init__(self, trans: ProvidesAppContext, tool_id: str, tool_version: str, performs_upload=True) -> None:
+    def __init__(self, trans: ProvidesHistoryContext, tool_id: str, tool_version: str, performs_upload=True) -> None:
         self._trans = trans
         self._tool: Tool = self._get_and_ensure_tool(tool_id, tool_version)
         self._use_datasets = True
@@ -67,7 +67,7 @@ class TourGenerator:
         tool = self._trans.app.toolbox.get_tool(tool_id, tool_version)
         if not tool:
             raise ObjectNotFound(f'Tool "{tool_id}" version "{tool_version}" does not exist.')
-        return tool
+        return self._trans.app.toolbox.materialize_tool(tool, reason="detail")
 
     def _upload_test_data(self, performs_upload=True):
         """

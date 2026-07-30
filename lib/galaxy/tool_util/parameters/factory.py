@@ -198,11 +198,16 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             )
         elif param_type == "color":
             optional = input_source.parse_optional()
+            color_value: str | None = get_color_value(input_source)
+            # A color default must be a valid color or None. The legacy ``value=""``
+            # on an optional color means "unset".
+            if optional and color_value == "":
+                color_value = None
             return ColorParameterModel(
                 type="color",
                 name=input_source.parse_name(),
                 optional=optional,
-                value=get_color_value(input_source),
+                value=color_value,
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "rules":

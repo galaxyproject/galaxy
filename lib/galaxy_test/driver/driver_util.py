@@ -15,10 +15,7 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import (
-    Any,
-    NamedTuple,
-)
+from typing import Any
 from urllib.parse import urlparse
 
 from a2wsgi import WSGIMiddleware
@@ -815,8 +812,13 @@ def _rebind_tus_routes(app: FastAPI, gx_app, original_lifespan_context) -> None:
 
 
 def _is_tus_route(route) -> bool:
-    path = getattr(route, "path", None)
-    return bool(path and any(path.startswith(p) for p in _TUS_PREFIXES))
+    """Recognize the routes ``include_tus`` contributed, however FastAPI stored them.
+
+    An included router may appear as one ``_IncludedRouter`` entry carrying no ``path``
+    of its own, in which case its prefix identifies it.
+    """
+    prefix = getattr(route, "path", None) or getattr(getattr(route, "original_router", None), "prefix", None)
+    return bool(prefix and prefix.startswith(_TUS_PREFIXES))
 
 
 def _rebind_galaxy_middleware(app: FastAPI, gx_app) -> None:
@@ -881,12 +883,6 @@ def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app, original_l
     app.openapi = _lazy_openapi  # type: ignore[method-assign]
 
 
-class TusState(NamedTuple):
-    upload_files_dir: str
-    job_files_dir: str
-    maximum_upload_file_size: int | None
-
-
 def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
     """Drop-in replacement for ``init_galaxy_fast_app`` that reuses the
     FastAPI app across repeated embedded-server launches in the same
@@ -897,39 +893,25 @@ def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
     callers (outside the test driver) keep using the default
     uncached ``init_galaxy_fast_app``.
 
-    Falls back to a fresh build when the topology differs from the
-    cached shell (non-default ``galaxy_url_prefix`` or MCP enabled),
-    because those paths produce a parent wrapper / lifespan-bound
-    app that is awkward to re-bind.
+    Builds a fresh app for shapes ``_rebind_fast_app_for_launch`` cannot produce:
+    a non-default ``galaxy_url_prefix`` or MCP (parent wrapper / lifespan-bound
+    app), and ``use_access_logging_middleware`` (middleware chosen at build time).
     """
 
-    def _build_and_cache_app() -> FastAPI:
-        app = init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
-        slot["app"] = app
-        slot["lifespan_context"] = app.router.lifespan_context
-        slot["tus_state"] = tus_state
-        return app
-
-    topology_differs = gx_app.config.galaxy_url_prefix != "/" or gx_app.config.enable_mcp_server
+    config = gx_app.config
+    topology_differs = (
+        config.galaxy_url_prefix != "/" or config.enable_mcp_server or config.use_access_logging_middleware
+    )
     if topology_differs:
         return init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
     slot = _test_fast_app_slot()
     existing = slot.get("app")
-    tus_state = TusState(
-        upload_files_dir=gx_app.config.tus_upload_store or gx_app.config.new_file_path,
-        job_files_dir=gx_app.config.tus_upload_store_job_files
-        or gx_app.config.tus_upload_store
-        or gx_app.config.new_file_path,
-        maximum_upload_file_size=gx_app.config.maximum_upload_file_size,
-    )
     if existing is None:
         log.debug("Creating cached FastAPI app")
-        return _build_and_cache_app()
-    if slot.get("tus_state") != tus_state:
-        log.debug(
-            "Rebuilding cached FastAPI app because TUS state changed from %s to %s", slot.get("tus_state"), tus_state
-        )
-        return _build_and_cache_app()
+        app = init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
+        slot["app"] = app
+        slot["lifespan_context"] = app.router.lifespan_context
+        return app
     _rebind_fast_app_for_launch(existing, gx_wsgi_webapp, gx_app, slot["lifespan_context"])
     return existing
 

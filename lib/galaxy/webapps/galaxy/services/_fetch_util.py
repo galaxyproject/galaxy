@@ -7,6 +7,7 @@ from galaxy.actions.library import (
 )
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.files.uris import validate_non_local
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.store.discover import (
     get_required_item,
     replace_request_syntax_sugar,
@@ -22,7 +23,7 @@ VALID_DESTINATION_TYPES = ["library", "library_folder", "hdca", "hdas"]
 ELEMENTS_FROM_TRANSIENT_TYPES = ["archive", "bagit_archive"]
 
 
-def validate_and_normalize_targets(trans, payload, set_internal_fields=True):
+def validate_and_normalize_targets(trans: ProvidesUserContext, payload, set_internal_fields=True):
     """Validate and normalize all src references in fetch targets.
 
     - Normalize ftp_import and server_dir src entries into simple path entries
@@ -106,6 +107,10 @@ def validate_and_normalize_targets(trans, payload, set_internal_fields=True):
 
             # It'd be nice if this can be de-duplicated with what is in parameters/grouping.py.
             user_ftp_dir = trans.user_ftp_dir
+            if user_ftp_dir is None:
+                raise RequestParameterInvalidException(
+                    "FTP import not permitted or FTP upload directory not configured"
+                )
             is_directory = False
 
             assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"

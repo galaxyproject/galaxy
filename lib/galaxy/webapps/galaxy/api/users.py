@@ -27,6 +27,7 @@ from galaxy import (
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import users
 from galaxy.managers.context import (
+    ProvidesAppContext,
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
@@ -83,6 +84,7 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesTagsMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
@@ -742,20 +744,20 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
     service: UsersService = depends(UsersService)
     user_manager: users.UserManager = depends(users.UserManager)
 
-    def _get_user_full(self, trans, user_id, **kwd):
+    def _get_user_full(self, trans: ProvidesUserContext, user_id, **kwd):
         """Return referenced user or None if anonymous user is referenced."""
         deleted = kwd.get("deleted", "False")
         deleted = util.string_as_bool(deleted)
         return self.service.get_user_full(trans, user_id, deleted)
 
-    def _get_extra_user_preferences(self, trans):
+    def _get_extra_user_preferences(self, trans: ProvidesAppContext):
         """
         Reads the file user_preferences_extra_conf.yml to display
         admin defined user informations
         """
         return trans.app.config.user_preferences_extra["preferences"]
 
-    def _build_extra_user_pref_inputs(self, trans, preferences, user):
+    def _build_extra_user_pref_inputs(self, trans: ProvidesAppContext, preferences, user):
         """
         Build extra user preferences inputs list.
         Add values to the fields if present
@@ -800,7 +802,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return extra_pref_inputs
 
     @expose_api
-    def get_information(self, trans, id, **kwd):
+    def get_information(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/users/{id}/information/inputs
         Return user details such as username, email, addresses etc.
@@ -854,7 +856,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             )
             if info_form_models:
                 info_form_id = trans.security.encode_id(user.values.form_definition.id) if user.values else None
-                info_field = {
+                info_field: dict[str, Any] = {
                     "type": "conditional",
                     "name": "info",
                     "cases": [],
@@ -880,7 +882,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 address_inputs = [{"type": "hidden", "name": "id", "hidden": True}]
                 for field in AddressField.fields():
                     address_inputs.append({"type": "text", "name": field[0], "label": field[1], "help": field[2]})
-                address_repeat = {
+                address_repeat: dict[str, Any] = {
                     "title": "Address",
                     "name": "address",
                     "type": "repeat",
@@ -929,7 +931,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return user_info
 
     @expose_api
-    def set_information(self, trans, id, payload=None, **kwd):
+    def set_information(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         PUT /api/users/{id}/information/inputs
         Save a user's email, username, addresses etc.
@@ -1004,7 +1006,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
 
         # Update user addresses
-        address_dicts = {}
+        address_dicts: dict[int, dict[str, Any]] = {}
         address_count = 0
         for item in payload:
             match = re.match(r"^address_(?P<index>\d+)\|(?P<attribute>\S+)", item)
@@ -1041,7 +1043,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return {"message": "User information has been saved."}
 
     @expose_api
-    def get_password(self, trans, id, payload=None, **kwd):
+    def get_password(self, trans: ProvidesAppContext, id, payload=None, **kwd):
         """
         Return available password inputs.
         """
@@ -1055,7 +1057,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         }
 
     @expose_api
-    def set_password(self, trans, id, payload=None, **kwd):
+    def set_password(self, trans: ProvidesAppContext, id, payload=None, **kwd):
         """
         Allows to the logged-in user to change own password.
         """
@@ -1066,7 +1068,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return {"message": "Password has been changed."}
 
     @expose_api
-    def get_permissions(self, trans, id, payload=None, **kwd):
+    def get_permissions(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         Get the user's default permissions for the new histories
         """
@@ -1101,7 +1103,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return {"inputs": inputs}
 
     @expose_api
-    def set_permissions(self, trans, id, payload=None, **kwd):
+    def set_permissions(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         Set the user's default permissions for the new histories
         """
@@ -1109,13 +1111,15 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
         permissions = {}
         for index, action in Dataset.permitted_actions.items():
-            action_id = trans.app.security_agent.get_action(action.action).action
+            security_action = trans.app.security_agent.get_action(action.action)
+            assert security_action is not None
+            action_id = security_action.action
             permissions[action_id] = [trans.sa_session.get(Role, x) for x in (payload.get(index) or [])]
         trans.app.security_agent.user_set_default_permissions(user, permissions)
         return {"message": "Permissions have been saved."}
 
     @expose_api
-    def get_toolbox_filters(self, trans, id, payload=None, **kwd):
+    def get_toolbox_filters(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
         The user can activate them and the choice is stored in user_preferences.
@@ -1134,14 +1138,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 "label": "In this section you may enable or disable Toolbox filters. Please contact your admin to configure filters as necessary.",
             }
         ]
-        errors = {}
+        errors: dict[str, str] = {}
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
             self._add_filter_inputs(factory, filter_types, inputs, errors, filter_type, saved_values)
         return {"inputs": inputs, "errors": errors}
 
     @expose_api
-    def set_toolbox_filters(self, trans, id, payload=None, **kwd):
+    def set_toolbox_filters(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         API call to update toolbox filters data.
         """
@@ -1205,14 +1209,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 }
             )
 
-    def _get_filter_types(self, trans):
+    def _get_filter_types(self, trans: ProvidesAppContext):
         return {
             "toolbox_tool_filters": {"title": "Tools", "config": trans.app.config.user_tool_filters},
             "toolbox_section_filters": {"title": "Sections", "config": trans.app.config.user_tool_section_filters},
             "toolbox_label_filters": {"title": "Labels", "config": trans.app.config.user_tool_label_filters},
         }
 
-    def _get_user(self, trans, id):
+    def _get_user(self, trans: ProvidesUserContext, id):
         user = self.get_user(trans, id)
         if not user:
             raise exceptions.RequestParameterInvalidException("Invalid user id specified.")

@@ -9,8 +9,10 @@ from typing import (
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import DetachedInstanceError
 
+from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.sniff import (
     convert_function,
+    guess_ext,
     stream_url_to_file,
 )
 from galaxy.exceptions import ObjectAttributeInvalidException
@@ -76,6 +78,7 @@ class DatasetInstanceMaterializer:
     def __init__(
         self,
         attached: bool,
+        datatypes_registry: Registry,
         object_store_populator: ObjectStorePopulator | None = None,
         transient_path_mapper: TransientPathMapper | None = None,
         file_sources: ConfiguredFileSources | None = None,
@@ -91,6 +94,9 @@ class DatasetInstanceMaterializer:
         ``user_context`` is forwarded to file source operations so that access
         controls (``requires_roles`` / ``requires_groups``) are enforced when
         materializing from ``gxfiles://`` URIs.
+
+        ``datatypes_registry`` enables content sniffing for deferred datasets whose
+        extension is ``"auto"``.
         """
         self._attached = attached
         self._transient_path_mapper = transient_path_mapper
@@ -98,6 +104,7 @@ class DatasetInstanceMaterializer:
         self._file_sources = file_sources
         self._sa_session = sa_session
         self._user_context = user_context
+        self._datatypes_registry = datatypes_registry
         self._previously_materialized: dict[int, HistoryDatasetAssociation] = {}
 
     def ensure_materialized(
@@ -189,6 +196,7 @@ class DatasetInstanceMaterializer:
             if not replacement_dataset:
                 try:
                     path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                    self._sniff_deferred_extension(path, dataset_instance)
                     object_store.update_from_file(materialized_dataset, file_name=path)
                     materialized_dataset.set_size()
                 except Exception as e:
@@ -201,6 +209,7 @@ class DatasetInstanceMaterializer:
             # TODO: take into account transform and ensure we are and are not modifying the file as appropriate.
             try:
                 path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                self._sniff_deferred_extension(path, dataset_instance)
                 shutil.move(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
@@ -255,6 +264,23 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance.metadata_deferred = False
         self._previously_materialized[dataset_instance.id] = materialized_dataset_instance
         return materialized_dataset_instance
+
+    def _sniff_deferred_extension(
+        self,
+        path: str,
+        dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation,
+    ) -> None:
+        """Resolve ``extension="auto"`` once the deferred source is streamed to ``path``.
+
+        A deferred fetch/upload with no explicit ``ext`` is registered as ``auto`` because
+        the content is not available to sniff at request time. ``path`` is the first point
+        the bytes exist locally, so we sniff here while materializing.
+        """
+        if dataset_instance.extension != "auto":
+            return
+        sniffed = guess_ext(path, self._datatypes_registry.sniff_order)
+        if sniffed and sniffed != "auto":
+            dataset_instance.extension = sniffed
 
     def _stream_source(self, target_source: DatasetSource, datatype, dataset: Dataset) -> str:
         source_uri = target_source.source_uri
@@ -387,6 +413,7 @@ def _materialize_collection_element(
 
 def materializer_factory(
     attached: bool,
+    datatypes_registry: Registry,
     object_store: ObjectStore | None = None,
     object_store_populator: ObjectStorePopulator | None = None,
     transient_path_mapper: TransientPathMapper | None = None,
@@ -401,6 +428,7 @@ def materializer_factory(
         transient_path_mapper = SimpleTransientPathMapper(transient_directory)
     return DatasetInstanceMaterializer(
         attached,
+        datatypes_registry,
         object_store_populator=object_store_populator,
         transient_path_mapper=transient_path_mapper,
         file_sources=file_sources,

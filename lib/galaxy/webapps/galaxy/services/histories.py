@@ -31,8 +31,12 @@ from galaxy.celery.tasks import (
 )
 from galaxy.files.uris import validate_uri_access
 from galaxy.managers.citations import CitationsManager
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.histories import (
+    CurrentHistoryContext,
     HistoryDeserializer,
     HistoryExportManager,
     HistoryFilters,
@@ -99,6 +103,7 @@ from galaxy.schema.workflows import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.util import restore_text
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.services.base import (
     ConsumesModelStores,
     model_store_storage_target,
@@ -121,7 +126,9 @@ DEFAULT_ORDER_BY = "create_time-dsc"
 class ShareableHistoryService(ShareableService):
     share_with_status_cls = ShareHistoryWithStatus
 
-    def share_with_users(self, trans, id: DecodedDatabaseIdField, payload: ShareWithPayload) -> ShareHistoryWithStatus:
+    def share_with_users(
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: ShareWithPayload
+    ) -> ShareHistoryWithStatus:
         return cast(ShareHistoryWithStatus, super().share_with_users(trans, id, payload))
 
 
@@ -160,7 +167,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def index(
         self,
-        trans: ProvidesHistoryContext,
+        trans: CurrentHistoryContext,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
         deleted_only: bool | None = False,
@@ -238,7 +245,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def index_query(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         payload: HistoryIndexQueryPayload,
         serialization_params: SerializationParams,
         include_total_count: bool = False,
@@ -256,7 +263,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def create(
         self,
-        trans: ProvidesHistoryContext,
+        trans: CurrentHistoryContext,
         payload: CreateHistoryPayload,
         serialization_params: SerializationParams,
     ):
@@ -264,8 +271,15 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         from URL or File depending on the provided parameters in the payload.
         """
         copy_this_history_id = payload.history_id
-        if trans.anonymous and not copy_this_history_id:  # Copying/Importing histories is allowed for anonymous users
-            raise glx_exceptions.AuthenticationRequired("You need to be logged in to create histories.")
+        if trans.anonymous:
+            # Copying/Importing histories is allowed for anonymous users, but only when there is a
+            # galaxy_session to own the result. A request with neither an API key nor a galaxysession
+            # cookie (e.g. a raw API call) has nowhere to put the new history, so reject it instead of
+            # doing the (potentially expensive) copy and creating an unreachable, orphaned history.
+            if not copy_this_history_id:
+                raise glx_exceptions.AuthenticationRequired("You need to be logged in to create histories.")
+            if not trans.galaxy_session:
+                raise glx_exceptions.AuthenticationRequired("You need an active session to copy histories.")
         if trans.user and trans.user.bootstrap_admin_user:
             raise glx_exceptions.RealUserRequiredException("Only real users can create histories.")
         hist_name = None
@@ -329,7 +343,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def create_from_store(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         payload: CreateHistoryFromStore,
         serialization_params: SerializationParams,
     ) -> AnyHistoryView:
@@ -342,7 +356,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def create_from_store_async(
         self,
-        trans,
+        trans: ProvidesUserContext,
         payload: CreateHistoryFromStore,
     ) -> AsyncTaskResultSummary:
         self._ensure_can_create_history(trans)
@@ -356,7 +370,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         result = import_model_store.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return async_task_summary(result)
 
-    def _ensure_can_create_history(self, trans):
+    def _ensure_can_create_history(self, trans: ProvidesUserContext):
         if trans.anonymous:
             raise glx_exceptions.AuthenticationRequired("You need to be logged in to create histories.")
         if trans.user and trans.user.bootstrap_admin_user:
@@ -580,7 +594,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def count(
         self,
-        trans: ProvidesHistoryContext,
+        trans: CurrentHistoryContext,
     ):
         """
         Returns number of histories for the current user.
@@ -653,7 +667,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def archive_export(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         history_id: DecodedDatabaseIdField,
         payload: ExportHistoryArchivePayload | None = None,
     ) -> tuple[HistoryArchiveExportResult, bool]:
@@ -738,7 +752,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
     # removing the legacy HistoriesController
     def legacy_archive_download(
         self,
-        trans: ProvidesHistoryContext,
+        trans: GalaxyWebTransaction,
         history_id: DecodedDatabaseIdField,
         jeha_id: DecodedDatabaseIdField,
     ):

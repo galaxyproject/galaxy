@@ -18,9 +18,9 @@ time:
 2. A lightweight index over the stored tools supports fast tool listings and
    search without touching tool files
 
-A toolbox that consumes this store to load tools on demand is planned as
-follow-up work; this document covers the store, the populator, and the index
-that it will build on.
+The ``CachedToolBox`` consumes this store to load full ``Tool`` objects on
+demand with LRU caching. It is opt-in via ``use_cached_toolbox``; this document
+covers the store, the populator, the index, and the toolbox configuration.
 
 Configuration
 -------------
@@ -52,6 +52,34 @@ filesystem:
 
 Any other SQLAlchemy-supported database (e.g. PostgreSQL) works as well.
 
+Toolbox Selection
+^^^^^^^^^^^^^^^^^
+
+.. code-block:: yaml
+
+    galaxy:
+      # Opt in to the CachedToolBox. Off by default; setting this to true is
+      # required to activate per-conf store="..." routing.
+      use_cached_toolbox: true
+
+The CachedToolBox is opt-in: leave ``use_cached_toolbox`` unset (or false) and
+Galaxy uses the traditional eager ToolBox even when the store is populated
+or when a tool_conf carries a ``store="..."`` attribute. The store is only
+initialized when the CachedToolBox is enabled.
+
+Cache Configuration
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: yaml
+
+    galaxy:
+      # Maximum Tool objects in the CachedToolBox LRU cache (default: 500)
+      cached_toolbox_cache_size: 500
+
+The ``cached_toolbox_cache_size`` determines how many fully-loaded Tool objects
+are kept in memory by the CachedToolBox. If your users frequently work with
+many different tools, increase this value.
+
 Per-conf Store Routing (CVMFS Recipe)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -62,9 +90,10 @@ processes can resolve every tool in that conf with local-cached lookups
 instead of one network round-trip per JSON file.
 
 Declare the named stores under the top-level ``tool_source_stores`` key in
-``galaxy.yml``. Each entry takes a SQLAlchemy ``url`` and optional
-``read_only`` flag. SQLite is the typical choice for CVMFS bundles (single
-self-contained file), but any SQLAlchemy-supported database works:
+``galaxy.yml``. Each entry takes either a normal SQLAlchemy ``url`` or a
+published ``external_store_directory``. Manifests are ignored for normal URL
+stores. SQLite is the typical choice for CVMFS bundles (single self-contained
+file), but any SQLAlchemy-supported database works for an explicit URL:
 
 .. code-block:: yaml
 
@@ -105,6 +134,12 @@ Build the SQLite file from a writable host before shipping it:
 
     $ python scripts/tool_source/populate_store.py -c galaxy.yml --target cvmfs_main
 
+For a file-backed SQLite target, the standalone populator also writes a
+sidecar named after the database, for example
+``sources.sqlite.manifest.json``. External-store consumers use it to select a
+compatible bundle. Failure to write the sidecar fails the command. ``--dry-run``
+and in-process Galaxy population do not produce manifests.
+
 Use ``--target`` to restrict population to a single named store; without
 it, ``populate_store.py`` populates **every writable store** referenced
 from a tool_conf in the same run.
@@ -113,6 +148,23 @@ Once the bundle is in place on CVMFS (or any read-only mount), restart
 Galaxy. The ``read_only: true`` flag prevents Galaxy from writing through that
 store. For SQLite connection-level read-only, use ``mode=ro&uri=true`` in the
 SQLite URI as shown above.
+
+Cross-version CVMFS bundles
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use ``external_store_directory`` to let Galaxy select a compatible bundle from
+a published cohort directory:
+
+.. code-block:: yaml
+
+    galaxy:
+      tool_source_stores:
+        cvmfs_main:
+          external_store_directory: /cvmfs/example.org/config/tool_source_store
+
+External stores are read-only. If no compatible bundle is available, Galaxy
+logs a warning and parses the tools normally. Galaxy versions predating
+automatic selection should configure a specific bundle with ``url`` instead.
 
 Populating the Tool Source Store
 --------------------------------
@@ -164,6 +216,10 @@ Command Line Options
       --verbose, -v          Verbose output
       --watch, -w            Watch tool directories and send reload notifications
       --watch-polling        Use polling observer (for NFS/CVMFS/network FS)
+
+Every non-dry-run invocation of the standalone command, including watch mode,
+refreshes the manifest beside each writable file-backed SQLite store it
+updates. Non-SQLite and in-memory stores have no sidecar and are skipped.
 
 Examples
 ^^^^^^^^
@@ -253,6 +309,12 @@ Tools not appearing in the index
 
 2. Check for parsing errors in the Galaxy log
 
+High memory usage
+^^^^^^^^^^^^^^^^^
+
+1. Reduce ``cached_toolbox_cache_size`` to cache fewer Tool objects
+2. Ensure ``use_cached_toolbox: true`` is set in ``galaxy.yml``
+
 Populating an existing installation
 -----------------------------------
 
@@ -263,6 +325,7 @@ To set up tool source storage on an existing Galaxy installation:
    .. code-block:: yaml
 
        galaxy:
+         use_cached_toolbox: true
          tool_source_database_connection: sqlite:////srv/galaxy/tool_sources.sqlite
 
 2. Run the population script:
@@ -272,3 +335,7 @@ To set up tool source storage on an existing Galaxy installation:
        $ python scripts/tool_source/populate_store.py -c /path/to/galaxy.yml
 
 3. Restart Galaxy
+
+If the store is not populated, or a specific tool is missing from it, the
+CachedToolBox self-heals by populating the missing entries in-process, so the
+traditional toolbox behavior is preserved as a fallback.

@@ -1,8 +1,8 @@
 ---
 myst:
-    substitutions:
-        GA4GH_DRS: GA4GH Data Repository Service (DRS)
-        GA4GH_WES: GA4GH Workflow Execution Service (WES)
+  substitutions:
+    GA4GH_DRS: GA4GH Data Repository Service (DRS)
+    GA4GH_WES: GA4GH Workflow Execution Service (WES)
 ---
 
 # GA4GH API Support
@@ -73,6 +73,7 @@ You should see output like:
 ```
 
 Verify that:
+
 - `organization.name` and `organization.url` match your configured values
 - `environment` is set appropriately for your deployment
 - `id` reflects your `ga4gh_service_id` setting (or sensible defaults if not configured)
@@ -82,6 +83,8 @@ Verify that:
 The {{ GA4GH_WES }} enables external systems to submit and monitor Galaxy workflow executions.
 
 For detailed API specifications, see the [GA4GH WES specification](https://ga4gh.github.io/workflow-execution-service-schemas/).
+For a client/developer walkthrough of submitting and monitoring runs against this API, see
+[Developing Against the GA4GH WES API](../dev/ga4gh_wes.md).
 
 ### Workflow Types
 
@@ -140,6 +143,7 @@ You should see output like:
 ```
 
 Verify that:
+
 - `organization.name` and `organization.url` match your configured values
 - `environment` is set appropriately for your deployment
 - `id` reflects your `ga4gh_service_id` setting (or sensible defaults if not configured)
@@ -150,12 +154,12 @@ All GA4GH configuration is optional and falls back to sensible defaults based on
 
 ### Settings
 
-| Setting | Default | Purpose |
-|---------|---------|---------|
-| `organization_name` | Reversed hostname | Organization name in service responses |
-| `organization_url` | Scheme + hostname from request | Organization website URL |
-| `ga4gh_service_id` | Reversed hostname | Service ID in reverse domain format (e.g., `org.example`) |
-| `ga4gh_service_environment` | (none) | Environment classifier (e.g., "test", "staging", "production") |
+| Setting                     | Default                        | Purpose                                                        |
+| --------------------------- | ------------------------------ | -------------------------------------------------------------- |
+| `organization_name`         | Reversed hostname              | Organization name in service responses                         |
+| `organization_url`          | Scheme + hostname from request | Organization website URL                                       |
+| `ga4gh_service_id`          | Reversed hostname              | Service ID in reverse domain format (e.g., `org.example`)      |
+| `ga4gh_service_environment` | (none)                         | Environment classifier (e.g., "test", "staging", "production") |
 
 ### Complete Configuration Example
 

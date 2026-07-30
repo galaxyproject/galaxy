@@ -160,12 +160,11 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
         metadata_revisions = repository.downloadable_revisions
     else:
         metadata_revisions = repository.metadata_revisions
-    repo_path = repository.repo_path(app)
     changeset_tups = []
     for repository_metadata in metadata_revisions:
         if repository_metadata.numeric_revision == -1 or repository_metadata.numeric_revision is None:
             try:
-                rev = changeset2rev(repo_path, repository_metadata.changeset_revision)
+                rev = changeset2rev(repository.hg_repo, repository_metadata.changeset_revision)
                 repository_metadata.numeric_revision = rev
                 sa_session.add(repository_metadata)
                 session = sa_session()

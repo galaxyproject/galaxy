@@ -15,6 +15,7 @@ on:
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
+  workflow_dispatch:
 env:
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
@@ -43,6 +44,11 @@ jobs:
         with:
           path: 'galaxy cache source'
           persist-credentials: false
+      - name: Install uv
+        if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
+        uses: astral-sh/setup-uv@v8.3.2
+        with:
+          python-version: '3.10'
       - name: Fetch Biocontainers repository index
         id: fetch-mulled-cache
         if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
@@ -50,7 +56,7 @@ jobs:
         env:
           SEED_DIRECTORY: '${{ runner.temp }}/mulled-resolution-seed'
         run: |
-          python3 'galaxy cache source/lib/galaxy/tool_util/deps/mulled/mulled_cache.py' \
+          uv tool run --from './galaxy cache source/packages/tool_util' mulled-cache \
               --namespace biocontainers \
               --output "$SEED_DIRECTORY/biocontainers.json"
       - name: Save Biocontainers repository index
@@ -64,6 +70,7 @@ jobs:
         env:
           SEED_DIRECTORY: '${{ runner.temp }}/mulled-resolution-seed'
         run: |
+          echo '::warning::Could not index the biocontainers namespace, integration tests run without a seeded mulled resolution cache'
           mkdir -p "$SEED_DIRECTORY"
           echo '{"namespace":"biocontainers","repositories":[]}' > "$SEED_DIRECTORY/biocontainers.json"
       - name: Upload mulled resolution cache seed
@@ -86,6 +93,9 @@ jobs:
       - if: github.event_name == 'schedule'
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          # --cov=lib line-traces a live Galaxy for the whole job, so integration
+          # coverage is collected on this weekly run only.
+          echo "GALAXY_TEST_COVERAGE=1" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
           # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
@@ -126,9 +136,10 @@ jobs:
           GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_LOCK_DIR: '${{ runner.temp }}/mulled-resolution-cache/locks'
         run: |
           . .ci/minikube-test-setup/start_services.sh
-          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
+          ./run_tests.sh -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.0.0
+        if: github.event_name == 'schedule'
         with:
           flags: integration
           working-directory: 'galaxy root'

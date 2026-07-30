@@ -40,6 +40,7 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import PageIdPathParam
 from galaxy.webapps.galaxy.services.pages import PagesService
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -160,7 +161,7 @@ class FastAPIPages:
     )
     def create(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: CreatePagePayload = Body(...),
     ) -> PageDetails:
         """Creates a new Page."""
@@ -209,7 +210,7 @@ class FastAPIPages:
     def show_pdf(
         self,
         id: PageIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ):
         """Return a PDF document of the last revision of the Page.
 
@@ -231,7 +232,7 @@ class FastAPIPages:
     def prepare_pdf(
         self,
         id: PageIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> AsyncFile:
         """Return a STS download link for this page to be downloaded as a PDF.
 
@@ -247,7 +248,7 @@ class FastAPIPages:
     def show(
         self,
         id: PageIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> PageDetails:
         """Return summary information about a specific Page and the content of the last revision."""
         return self.service.show(trans, id)
@@ -348,7 +349,7 @@ class FastAPIPages:
     def update(
         self,
         id: PageIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: UpdatePagePayload = Body(...),
     ) -> PageDetails:
         """Updates an existing Page."""
@@ -379,7 +380,7 @@ class FastAPIPages:
         self,
         id: PageIdPathParam,
         revision_id: PageIdRevisionPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> PageRevisionDetails:
         """Return the details of a specific page revision."""
         return self.service.show_revision(trans, id, revision_id)
@@ -392,7 +393,7 @@ class FastAPIPages:
         self,
         id: PageIdPathParam,
         revision_id: PageIdRevisionPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> PageRevisionDetails:
         """Restore a page to the content of a specific revision."""
         return self.service.revert_revision(trans, id, revision_id)

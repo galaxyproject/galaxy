@@ -28,6 +28,7 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
@@ -69,6 +70,7 @@ from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
+from galaxy.tools.source_store import ToolSourceStore
 from galaxy.util import (
     galaxy_directory,
     StructuredExecutionTimer,
@@ -112,7 +114,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     config: "MockAppConfig"
     amqp_type: str
     job_search: JobSearch | None = None
-    _toolbox: ToolBox
+    _toolbox: ToolBox | None
     tool_cache: ToolCache
     install_model: ModelMapping
     watchers: ConfigWatchers
@@ -125,9 +127,11 @@ class MockApp(di.Container, GalaxyDataTestApp):
     execution_timer_factory: Any
     stop: bool
     is_webapp: bool = True
+    tool_source_store: ToolSourceStore | None = None
 
     def __init__(self, config=None, **kwargs) -> None:
         super().__init__()
+        self._toolbox = None
         config = config or MockAppConfig(**kwargs)
         GalaxyDataTestApp.__init__(self, config=config, **kwargs)
         self.install_model = self.model
@@ -177,11 +181,16 @@ class MockApp(di.Container, GalaxyDataTestApp):
 
     @property
     def toolbox(self) -> ToolBox:
+        assert self._toolbox is not None
         return self._toolbox
 
     @toolbox.setter
     def toolbox(self, toolbox: ToolBox):
         self._toolbox = toolbox
+
+    @property
+    def toolbox_or_none(self) -> ToolBox | None:
+        return self._toolbox
 
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really
@@ -292,6 +301,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.tool_configs = []
         self.tool_source_database_connection = f"sqlite:///{os.path.join(self.data_dir, 'tool_sources.sqlite')}"
         self.tool_source_stores = None
+        self.use_cached_toolbox = False
         self.manage_dependency_relationships = False
         self.enable_tool_shed_check = False
         self.monitor_thread_join_timeout = 1
@@ -430,7 +440,7 @@ class MockTrans:
 
 
 class MockVisualizationsRegistry:
-    def get_visualizations(self, trans, target):
+    def get_visualizations(self, trans: ProvidesAppContext, target):
         return []
 
 

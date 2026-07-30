@@ -332,7 +332,9 @@ class ObjectStoreInstancesManager:
         template = catalog.find_template_by(persisted_object_store.template_id, target_template_version)
         return template
 
-    def _to_model(self, trans, persisted_object_store: UserObjectStore) -> UserConcreteObjectStoreModel:
+    def _to_model(
+        self, trans: ProvidesUserContext, persisted_object_store: UserObjectStore
+    ) -> UserConcreteObjectStoreModel:
         quota = QuotaModel(source=None, enabled=False)
         object_store_type = persisted_object_store.template.configuration.type
         admin_badges = persisted_object_store.template.configuration.badges or []

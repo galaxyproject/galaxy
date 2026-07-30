@@ -5,6 +5,7 @@ import os
 import unittest
 from typing import Any
 
+from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
 from galaxy.util.commands import which
 from galaxy_test.base.populators import (
     CredentialsPopulator,
@@ -27,6 +28,10 @@ DOCKERIZED_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "dockerized_job_conf
 SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_conf.yml")
 
 EXTENDED_TIMEOUT = 120
+
+MULLED_EXAMPLE_MULTI_1_HASH = (
+    "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
+)
 
 CREDENTIALS_TEST_TOOL = "secret_tool"
 CONTAINER_TEST_VARIABLES = [{"name": "server", "value": "http://test-server:8080"}]
@@ -214,35 +219,16 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         }
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
-        create_response = self._get(
-            "dependency_resolvers/toolbox",
-            data={
-                "tool_ids": tool_ids,
-                "container_type": self.container_type,
-                "include_containers": True,
-                "index_by": "tools",
-            },
-            admin=True,
-        )
-        response = create_response.json()
-        assert len(response) == 1
-        status = response[0]["status"]
-        assert status[0]["model_class"] == "ContainerDependency"
-        assert status[0]["dependency_type"] == self.container_type
-        self._assert_container_description_identifier(
-            status[0]["container_description"]["identifier"],
-            "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
-        )
+        self._assert_mulled_image_built(MULLED_EXAMPLE_MULTI_1_HASH)
 
-    def _assert_container_description_identifier(self, identifier: str, expected_hash: str):
+    def _assert_mulled_image_built(self, expected_hash: str) -> None:
         """
-        function to check the identifier of container against a mulled hash
-        here we assert that locally built containers are cached in the "local"
-        namespace as if they were from quay.io
+        check that the build cached an image in the "local" namespace, as if it came from quay.io
 
         may need to be overwritten in derived classes.
         """
-        assert identifier == f"quay.io/local/{expected_hash}"
+        identifiers = [image.image_identifier for image in list_docker_cached_mulled_images(namespace="local")]
+        assert f"quay.io/local/{expected_hash}" in identifiers
 
     @skip_without_tool("secret_tool")
     def test_credentials_passed_to_container(self) -> None:
@@ -502,6 +488,6 @@ class TestSingularityJobsIntegration(TestDockerizedJobsIntegration):
     build_mulled_resolver = "build_mulled_singularity"
     container_type = "singularity"
 
-    def _assert_container_description_identifier(self, identifier, expected_hash):
-        assert os.path.exists(identifier)
-        assert identifier.endswith(f"singularity/mulled/{expected_hash}")
+    def _assert_mulled_image_built(self, expected_hash: str) -> None:
+        cache_directory = os.path.join(self._app.config.container_image_cache_path, "singularity", "mulled")
+        assert os.path.exists(os.path.join(cache_directory, expected_hash))

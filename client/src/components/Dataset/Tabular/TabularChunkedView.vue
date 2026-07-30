@@ -200,6 +200,7 @@ onMounted(() => {
             striped
             head-variant="dark"
             :fields="fields"
+            :hide-header="props.options.file_ext === 'tabular'"
             :items="tableRows"
             :load-more-loading="loading" />
     </div>

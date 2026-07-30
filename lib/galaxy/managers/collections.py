@@ -177,6 +177,54 @@ class DatasetCollectionManager:
 
         return dataset_collection
 
+    @overload
+    def create(
+        self,
+        trans: ProvidesHistoryContext,
+        parent: model.History,
+        name,
+        collection_type,
+        element_identifiers=None,
+        elements=None,
+        implicit_collection_info=None,
+        trusted_identifiers=None,
+        hide_source_items: bool = False,
+        tags=None,
+        copy_elements: bool = False,
+        history=None,
+        set_hid: bool = True,
+        flush=True,
+        completed_job=None,
+        output_name=None,
+        fields: str | list["FieldDict"] | None = None,
+        column_definitions=None,
+        rows=None,
+    ) -> model.HistoryDatasetCollectionAssociation: ...
+
+    @overload
+    def create(
+        self,
+        trans: ProvidesHistoryContext,
+        parent: model.LibraryFolder,
+        name,
+        collection_type,
+        element_identifiers=None,
+        elements=None,
+        implicit_collection_info=None,
+        trusted_identifiers=None,
+        hide_source_items: bool = False,
+        tags=None,
+        copy_elements: bool = False,
+        history=None,
+        set_hid: bool = True,
+        flush=True,
+        completed_job=None,
+        output_name=None,
+        fields: str | list["FieldDict"] | None = None,
+        column_definitions=None,
+        rows=None,
+    ) -> model.LibraryDatasetCollectionAssociation: ...
+
     def create(
         self,
         trans: ProvidesHistoryContext,
@@ -603,7 +651,12 @@ class DatasetCollectionManager:
             )
 
     def __recursively_create_collections_for_identifiers(
-        self, trans, element_identifiers, hide_source_items: bool, copy_elements: bool, history=None
+        self,
+        trans: ProvidesHistoryContext,
+        element_identifiers,
+        hide_source_items: bool,
+        copy_elements: bool,
+        history=None,
     ):
         for element_identifier in element_identifiers:
             try:
@@ -629,7 +682,7 @@ class DatasetCollectionManager:
         return element_identifiers
 
     def __recursively_create_collections_for_elements(
-        self, trans, elements, hide_source_items: bool, copy_elements: bool, history=None
+        self, trans: ProvidesHistoryContext, elements, hide_source_items: bool, copy_elements: bool, history=None
     ) -> None:
         if elements is self.ELEMENTS_UNINITIALIZED:
             return
@@ -655,7 +708,12 @@ class DatasetCollectionManager:
         elements.update(new_elements)
 
     def __load_elements(
-        self, trans, element_identifiers, hide_source_items: bool = False, copy_elements: bool = False, history=None
+        self,
+        trans: ProvidesHistoryContext,
+        element_identifiers,
+        hide_source_items: bool = False,
+        copy_elements: bool = False,
+        history=None,
     ) -> dict[str, HDCAElementObjectType]:
         elements: dict[str, HDCAElementObjectType] = {}
         for element_identifier in element_identifiers:
@@ -669,7 +727,12 @@ class DatasetCollectionManager:
         return elements
 
     def __load_element(
-        self, trans, element_identifier, hide_source_items: bool, copy_elements: bool, history=None
+        self,
+        trans: ProvidesHistoryContext,
+        element_identifier,
+        hide_source_items: bool,
+        copy_elements: bool,
+        history=None,
     ) -> HDCAElementObjectType:
         # if not isinstance( element_identifier, dict ):
         #    # Is allowing this to just be the id of an hda too clever? Somewhat
@@ -752,7 +815,7 @@ class DatasetCollectionManager:
             return self.__get_library_collection_instance(trans, id, **kwds)
         raise NotImplementedError()
 
-    def get_dataset_collection(self, trans, encoded_id):
+    def get_dataset_collection(self, trans: ProvidesAppContext, encoded_id):
         collection_id = int(trans.app.security.decode_id(encoded_id))
         collection = trans.sa_session.get(DatasetCollection, collection_id)
         return collection

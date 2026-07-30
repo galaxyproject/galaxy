@@ -167,3 +167,36 @@ def test_only_confs_skips_unlisted_conf_walk(tmp_path):
         if d.tool_conf in conf_bodies.values()
     }
     assert walked == {conf_bodies["a"]}
+
+
+def test_bundled_compatibility_alias_is_not_a_second_panel_placement(tmp_path):
+    tools_dir = tmp_path / "tools"
+    bundled_dir = tmp_path / "lib" / "galaxy" / "tools" / "bundled"
+    tools_dir.mkdir()
+    bundled_dir.mkdir(parents=True)
+    tool_source = "<tool id='alpha' version='1.0'><description/></tool>"
+    (tools_dir / "alpha.xml").write_text(tool_source)
+    (bundled_dir / "alpha.xml").write_text(tool_source)
+    conf = tmp_path / "tool_conf.xml"
+    conf.write_text(
+        f'<toolbox tool_path="{tools_dir}"><section id="section"><tool file="alpha.xml"/></section></toolbox>'
+    )
+
+    class _Cfg:
+        root = str(tmp_path)
+        tool_path = str(tools_dir)
+        enable_beta_tool_formats = False
+        data_manager_config_file = None
+        shed_data_manager_config_file = None
+
+        def all_tool_config_files(self):
+            return [str(conf)]
+
+    discoveries = [
+        discovered
+        for discovered in discover_tools(_Cfg(), include_converters=False)  # type: ignore[arg-type]
+        if Path(discovered.path).name == "alpha.xml"
+    ]
+
+    assert len(discoveries) == 1
+    assert discoveries[0].section_id == "section"

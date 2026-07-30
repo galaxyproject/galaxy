@@ -750,9 +750,16 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             pass
                         if not self.import_options.allow_edit:
                             # external import, metadata files need to be regenerated (as opposed to extended metadata dataset import)
-                            if self.app.datatypes_registry.set_external_metadata_tool:
-                                self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
-                                    dataset_instance, history, **regenerate_kwds
+                            set_metadata_tool = self.app.datatypes_registry.set_external_metadata_tool
+                            if (
+                                set_metadata_tool
+                                and isinstance(dataset_instance, model.HistoryDatasetAssociation)
+                                and history is not None
+                            ):
+                                set_metadata_tool.regenerate_imported_metadata_if_needed(
+                                    dataset_instance,
+                                    history,
+                                    **regenerate_kwds,
                                 )
                             else:
                                 # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
