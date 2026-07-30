@@ -40,10 +40,18 @@ export async function createWorkflow(workflowName: string, workflowAnnotation: s
     return data;
 }
 
-export async function getWorkflowFull(workflowId: string, version?: number) {
-    const params: { style: string; version?: number } = { style: "editor" };
+/**
+ * @param instance set when workflowId identifies a workflow revision rather than a stored
+ *   workflow, which is what a subworkflow step's content_id is. Without it the id is looked
+ *   up as a stored workflow and the request 404s.
+ */
+export async function getWorkflowFull(workflowId: string, version?: number, instance?: boolean) {
+    const params: { style: string; version?: number; instance?: boolean } = { style: "editor" };
     if (Number.isInteger(version)) {
         params.version = version;
+    }
+    if (instance) {
+        params.instance = true;
     }
     const { data } = await axios.get(withPrefix(`/api/workflows/${workflowId}/download`), { params });
     return data;

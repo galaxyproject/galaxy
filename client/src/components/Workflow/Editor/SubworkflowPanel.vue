@@ -65,7 +65,8 @@ async function load() {
     errorMessage.value = null;
     dirty.value = false;
     try {
-        const data = await getWorkflowFull(props.contentId);
+        // contentId is a workflow revision, not a stored workflow
+        const data = await getWorkflowFull(props.contentId, undefined, true);
         stepStore.$reset();
         stateStore.$reset();
         connectionStore.$reset();
@@ -150,7 +151,8 @@ function onApply() {
                 :datatypes-mapper="datatypesMapper"
                 :show-minimap="false"
                 :initial-position="{ x: 40, y: 40 }"
-                @onChange="dirty = true">
+                @onChange="dirty = true"
+                @editSubworkflow="onOpenNested">
                 <NodeInspector
                     v-if="activeStep"
                     :step="activeStep"
