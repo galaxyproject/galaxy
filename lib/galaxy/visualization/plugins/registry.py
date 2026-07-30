@@ -143,22 +143,22 @@ class VisualizationsRegistry:
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
-                parameters_schema = self._build_parameters_schema(config_file, plugin_name)
-                return VisualizationPlugin(plugin_path, plugin_name, config, parameters_schema)
+                bundle, schema = self._build_parameters(config_file, plugin_name)
+                return VisualizationPlugin(plugin_path, plugin_name, config, schema, bundle)
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
 
-    def _build_parameters_schema(self, config_file, plugin_name):
-        """Return a JSON Schema for the plugin's settings/tracks, or None if unavailable.
+    def _build_parameters(self, config_file, plugin_name):
+        """Return (bundle, json_schema) for the plugin's settings/tracks, or (None, None).
 
         A malformed input declaration should not prevent the plugin from loading, so
-        parsing failures are logged and the schema is simply omitted.
+        parsing failures are logged and the parameters are simply omitted.
         """
         try:
             bundle = input_models_for_visualization_path(config_file)
-            return visualization_request_json_schema(bundle)
+            return bundle, visualization_request_json_schema(bundle)
         except Exception as e:
             log.warning("Could not build parameters schema for visualization '%s': %s", plugin_name, e)
-            return None
+            return None, None
 
     def get_plugin(self, key):
         """
