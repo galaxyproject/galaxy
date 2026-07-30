@@ -138,8 +138,11 @@ def install_workflow_tool_repository(
     open for as long as it takes to install.
     """
     from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+    from galaxy.tool_shed.util.repository_util import is_tool_shed_client
 
     app = trans.app
+    if not is_tool_shed_client(app):
+        raise exceptions.ConfigDoesNotAllowException("This Galaxy is not able to install tools from a tool shed.")
     tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, repository.tool_shed)
     if not tool_shed_url:
         raise exceptions.RequestParameterInvalidException(

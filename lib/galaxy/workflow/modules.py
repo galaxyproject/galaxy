@@ -743,7 +743,8 @@ class OutdatedStep(TypedDict):
 
     order_index: int
     label: str | None
-    name: str
+    # A workflow name is nullable in the model, so a subworkflow may not have one.
+    name: str | None
     type: str
     current_version: str | None
     latest_version: str | None

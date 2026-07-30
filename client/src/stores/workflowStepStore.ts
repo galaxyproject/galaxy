@@ -99,7 +99,8 @@ interface WorkflowOutput {
 export interface OutdatedStep {
     order_index: number;
     label?: string | null;
-    name: string;
+    /** A workflow name is nullable, so a nested subworkflow may not have one. */
+    name?: string | null;
     type: string;
     current_version?: string | null;
     latest_version?: string | null;

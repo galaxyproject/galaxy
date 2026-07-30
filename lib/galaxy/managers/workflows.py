@@ -112,6 +112,7 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 from galaxy.work.context import WorkRequestContext
+from galaxy.workflow.missing_tools import find_unavailable_tools
 from galaxy.workflow.modules import (
     count_steps,
     module_factory,
@@ -121,7 +122,6 @@ from galaxy.workflow.modules import (
     WorkflowModule,
     WorkflowModuleInjector,
 )
-from galaxy.workflow.missing_tools import find_unavailable_tools
 from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
 from galaxy.workflow.refactor.schema import (
     RefactorActionExecution,
