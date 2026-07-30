@@ -1,3 +1,0 @@
-./scripts/common_startup_functions.sh: line 257: python: command not found
-Activating virtualenv at .venv
-.venv/bin/activate: line 1: ./scripts/common_startup_functions.sh:: No such file or directory
