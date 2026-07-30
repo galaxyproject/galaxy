@@ -47,6 +47,8 @@ TOOLS_THAT_USE_UNQUALIFIED_PARAMETER_ACCESS = [
     "disambiguate_cond.xml",
     "multi_repeats.xml",
     "implicit_default_conds.xml",
+    "async_min_repeat_unqualified.xml",
+    "async_repeat_unqualified_no_min.xml",
 ]
 
 TOOLS_THAT_USE_SELECT_BY_VALUE = [

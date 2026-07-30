@@ -433,6 +433,7 @@ def _merge_into_state(
             state_at_level[input_name] = repeat_state_array
 
         repeat_instance_inputs = _repeat_inputs_to_array(state_path, context.inputs)
+        supplied_instances = len(repeat_instance_inputs)
         if tool_input.min is not None:
             while len(repeat_instance_inputs) < tool_input.min:
                 repeat_instance_inputs.append([])
@@ -441,14 +442,18 @@ def _merge_into_state(
                 repeat_state_array.append({})
 
             repeat_instance_prefix = f"{state_path}_{i}"
-            handled_inputs.update(
-                _merge_level_into_state(
-                    tool_input.parameters,
-                    context.for_inputs(repeat_instance_inputs[i]),
-                    repeat_state_array[i],
-                    repeat_instance_prefix,
-                )
+            instance_handled_inputs = _merge_level_into_state(
+                tool_input.parameters,
+                context.for_inputs(repeat_instance_inputs[i]),
+                repeat_state_array[i],
+                repeat_instance_prefix,
             )
+            # Instances past the ones the test actually supplied exist only to satisfy min.
+            # Nothing resolved into them, so their paths must not count as handling a raw
+            # input - the legacy suffix match would otherwise read queries_0|input2 as
+            # covering a bare input2 that was in fact dropped.
+            if i < supplied_instances:
+                handled_inputs.update(instance_handled_inputs)
     elif isinstance(tool_input, (SectionParameterModel,)):
         section_state = state_at_level.get(input_name, {})
         if input_name not in state_at_level:

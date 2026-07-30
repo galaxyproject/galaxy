@@ -1,0 +1,38 @@
+<tool id="async_min_repeat_unqualified" name="async_min_repeat_unqualified" version="1.0.0" profile="22.01">
+    <description>async regression: unqualified repeat param on a repeat with min set</description>
+    <!--
+      The multi_repeats anti-pattern (a param inside a <repeat> supplied at the top
+      level of the test by its bare name), with one addition: the repeat sets min="1".
+
+      Sync (POST /api/tools, the default GALAXY_TEST_USE_LEGACY_TOOL_API=always): the
+      legacy path maps the bare name into the repeat; job runs.
+
+      Async (GALAXY_TEST_USE_LEGACY_TOOL_API=if_needed): min="1" pads an empty repeat
+      instance, whose visited-but-unresolved path `queries_0|input2` is then read as
+      proof the bare `input2` was handled. unhandled_inputs comes back empty, so no
+      fallback to the legacy API happens and the request is built and submitted as
+      {"queries": [{}]} - the value is silently dropped and the job request fails:
+        queries.0.input2 - Field required
+
+      Drop min="1" and the same tool degrades correctly: the input is reported
+      unhandled, no request is built, and the test falls back to the legacy API.
+      See async_repeat_unqualified_no_min.xml for that control case.
+    -->
+    <command><![CDATA[
+cat #for $q in $queries# '${q.input2}' #end for# > '$out_file1'
+    ]]></command>
+    <inputs>
+        <repeat name="queries" title="Query" min="1">
+            <param name="input2" type="data" format="txt" label="Select" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input2" value="simple_line.txt" />
+            <output name="out_file1" file="simple_line.txt" />
+        </test>
+    </tests>
+</tool>
