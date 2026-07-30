@@ -1,9 +1,9 @@
-import axios from "axios";
 import { defineStore } from "pinia";
-import Vue, { computed, ref } from "vue";
+import { computed, ref, set } from "vue";
 
+import { GalaxyApi } from "@/api/client";
 import type { JobMetric } from "@/api/jobs";
-import { prependPath } from "@/utils/redirect";
+import { rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
     const jobMetricsByHdaId = ref<Record<string, JobMetric[]>>({});
@@ -23,16 +23,20 @@ export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
         };
     });
 
-    async function fetchJobMetricsForDatasetId(datasetId: string, datasetType = "hda") {
+    async function fetchJobMetricsForDatasetId(datasetId: string, datasetType: "hda" | "ldda" = "hda") {
         if (jobMetricsByHdaId.value[datasetId] || jobMetricsByLddaId.value[datasetId]) {
             return;
         }
 
-        const path = prependPath(`api/datasets/${datasetId}/metrics?hda_ldda=${datasetType}`);
-        const jobMetrics = (await axios.get<JobMetric[]>(path)).data;
-        const jobMetricsObject = datasetType == "hda" ? jobMetricsByHdaId : jobMetricsByLddaId;
+        const { data, error, response } = await GalaxyApi().GET("/api/datasets/{dataset_id}/metrics", {
+            params: { path: { dataset_id: datasetId }, query: { hda_ldda: datasetType } },
+        });
+        if (error) {
+            rethrowSimpleWithStatus(error, response);
+        }
+        const jobMetricsObject = datasetType === "hda" ? jobMetricsByHdaId : jobMetricsByLddaId;
 
-        Vue.set(jobMetricsObject.value, datasetId, jobMetrics);
+        set(jobMetricsObject.value, datasetId, data);
     }
 
     async function fetchJobMetricsForJobId(jobId: string) {
@@ -40,10 +44,14 @@ export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
             return;
         }
 
-        const path = prependPath(`api/jobs/${jobId}/metrics`);
-        const jobMetrics = (await axios.get<JobMetric[]>(path)).data;
+        const { data, error, response } = await GalaxyApi().GET("/api/jobs/{job_id}/metrics", {
+            params: { path: { job_id: jobId } },
+        });
+        if (error) {
+            rethrowSimpleWithStatus(error, response);
+        }
 
-        Vue.set(jobMetricsByJobId.value, jobId, jobMetrics);
+        set(jobMetricsByJobId.value, jobId, data);
     }
 
     return {

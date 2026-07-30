@@ -7,7 +7,6 @@ import { JobConsoleOutputProvider, JobDetailsProvider } from "@/components/provi
 import { rethrowSimple } from "@/utils/simple-error";
 
 import type { JobMessage } from "../../api/jobs";
-import { getJobDuration } from "./utilities";
 
 import Heading from "../Common/Heading.vue";
 import DecodedId from "../DecodedId.vue";
@@ -50,7 +49,6 @@ function jobStateIsRunning(jobState: string) {
     return jobState == "running";
 }
 
-const jobIsTerminal = computed(() => (job.value?.state ? jobStateIsTerminal(job.value?.state) : false));
 const jobIsRunning = computed(() => (job.value?.state ? jobStateIsRunning(job.value.state) : false));
 const routeToInvocation = computed(() => `/workflows/invocations/${fetchedInvocationId.value}`);
 
@@ -199,12 +197,6 @@ watch(
                     <td>Updated</td>
                     <td v-if="job.update_time" id="updated">
                         <UtcDate :date="job.update_time" mode="pretty" />
-                    </td>
-                </tr>
-                <tr v-if="job && props.includeTimes && jobIsTerminal">
-                    <td>Time To Finish</td>
-                    <td id="runtime">
-                        {{ getJobDuration(job) }}
                     </td>
                 </tr>
                 <CodeRow
