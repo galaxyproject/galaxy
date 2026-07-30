@@ -268,6 +268,7 @@
                         :datatypes-mapper="datatypesMapper"
                         @close="closeSubworkflowPanel"
                         @openNested="onOpenNestedSubworkflow"
+                        @upgradeStep="onUpgradeStepInPanel"
                         @apply="onApplySubworkflow" />
                     <NodeInspector
                         v-else-if="activeStep"
@@ -1039,6 +1040,65 @@ export default {
                 Toast.success("Subworkflow updated.");
             } catch (e) {
                 this.onWorkflowError("Saving the subworkflow failed...", errorMessageAsString(e), {
+                    Ok: () => this.hideModal(),
+                });
+            } finally {
+                this.loadingWorkflow = false;
+            }
+        },
+        /**
+         * Upgrades a subworkflow step of the subworkflow open in the panel. The upgrade runs on
+         * the server against what is saved, so unsaved panel edits have to be dealt with first,
+         * and the result is pulled back up to this workflow the same way applying does.
+         */
+        async onUpgradeStepInPanel(contentId, stepId, panelIsDirty) {
+            if (panelIsDirty) {
+                Toast.warning("Apply or discard your changes before upgrading, the upgrade runs on the saved version.");
+                return;
+            }
+            const rootStepId = this.subworkflowStack[0]?.rootStepId;
+            const sharedNames = rootStepId === undefined ? [] : this.sharedWorkflowNamesFor(rootStepId);
+            const detach = sharedNames.length > 0 ? await this.askSubworkflowScope(sharedNames) : false;
+            if (detach === null) {
+                return;
+            }
+            this.loadingWorkflow = true;
+            try {
+                const storedId = (await getWorkflowInfo(contentId, undefined, true)).id;
+                await refactor(
+                    storedId,
+                    [
+                        {
+                            action_type: "upgrade_subworkflow",
+                            step: { order_index: stepId },
+                            include_tools: true,
+                            detach_subworkflow: detach,
+                        },
+                    ],
+                    "editor",
+                    false,
+                );
+                if (rootStepId !== undefined) {
+                    // The panel's workflow moved on, walk that back up to this workflow's step.
+                    await refactor(
+                        this.id,
+                        [
+                            {
+                                action_type: "upgrade_subworkflow",
+                                step: { order_index: rootStepId },
+                                include_tools: true,
+                                detach_subworkflow: detach,
+                            },
+                        ],
+                        "editor",
+                        false,
+                    );
+                }
+                this.subworkflowStack = [];
+                await this._loadCurrent(this.id, this.version);
+                Toast.success("Subworkflow upgraded.");
+            } catch (e) {
+                this.onWorkflowError("Upgrading the subworkflow failed...", errorMessageAsString(e), {
                     Ok: () => this.hideModal(),
                 });
             } finally {

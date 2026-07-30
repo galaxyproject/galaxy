@@ -23,8 +23,10 @@ const workflowList = computed(() => props.sharedWorkflowNames.join(", "));
 const plural = computed(() => props.sharedWorkflowNames.length > 1);
 
 function choose(detach: boolean) {
-    emit("update:show", false);
+    // confirm first: closing is also what a dismissal looks like, and the caller treats a
+    // dismissal as "do nothing", so it has to see the answer before it sees the close.
     emit("confirm", detach);
+    emit("update:show", false);
 }
 </script>
 

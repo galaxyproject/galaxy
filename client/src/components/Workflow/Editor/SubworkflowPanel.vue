@@ -41,6 +41,8 @@ const emit = defineEmits<{
     (e: "openNested", contentId: string, name: string, stepOrderIndex: number): void;
     /** The user applied their edits, the caller saves them and refreshes the step. */
     (e: "apply", contentId: string, workflow: unknown): void;
+    /** Upgrade a subworkflow step of the subworkflow being shown. */
+    (e: "upgradeStep", contentId: string, stepId: number, dirty: boolean): void;
 }>();
 
 // Scoped to the subworkflow, so the graph and inspector below resolve to its steps and not
@@ -117,6 +119,10 @@ function onOpenNested(contentId: string, stepId: number) {
     emit("openNested", contentId, step?.label || step?.name || "subworkflow", stepId);
 }
 
+function onUpgradeStep(stepId: number) {
+    emit("upgradeStep", props.contentId, stepId, dirty.value);
+}
+
 function onApply() {
     if (!loadedWorkflow.value) {
         return;
@@ -152,7 +158,8 @@ function onApply() {
                 :show-minimap="false"
                 :initial-position="{ x: 40, y: 40 }"
                 @onChange="dirty = true"
-                @editSubworkflow="onOpenNested">
+                @editSubworkflow="onOpenNested"
+                @upgradeSubworkflow="onUpgradeStep">
                 <NodeInspector
                     v-if="activeStep"
                     :step="activeStep"
@@ -163,6 +170,7 @@ function onApply() {
                     @annotationChanged="onAnnotation"
                     @postJobActionsChanged="onPostJobActions"
                     @editSubworkflow="onOpenNested"
+                    @upgradeSubworkflow="onUpgradeStep"
                     @close="stateStore.activeNodeId = null" />
             </WorkflowGraph>
         </div>
