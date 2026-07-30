@@ -9,11 +9,12 @@ open-source platform for managing and sharing research projects, data and prepri
 several storage providers; this implementation currently targets ``osfstorage``, OSF's default provider [3].
 
 The FilesSource exposes three top-level categories under the plugin root: Projects lists the user's own projects (or
-public projects when browsing anonymously), Registrations lists public registrations, and Files runs a search against
-OSF's public file index [4]. Descending into a project or registration reveals its ``osfstorage`` contents and its
-child components; components appear as subfolders and can be entered like any other folder. With a personal access
-token [5] the user gains access to their private projects and can create new draft projects to upload Galaxy datasets
-into.
+public projects when browsing anonymously), Registrations lists public registrations, and Files searches file names
+across the user's own OSF nodes. OSF's public API v2 [4] does not expose a cross-node file search endpoint, so the
+Files category walks the user's nodes and filters client-side; it stays empty until the user types a query.
+Descending into a project or registration reveals its ``osfstorage`` contents and its child components; components
+appear as subfolders and can be entered like any other folder. With a personal access token [5] the user gains
+access to their private projects and can create new draft projects to upload Galaxy datasets into.
 
 Galaxy URIs take the form ``osf://osf/category/container_id/file_path``, where:
 
@@ -167,18 +168,19 @@ class OSFClient:
             params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
 
-    def list_files(
+    def list_user_nodes(
         self,
         page: int = 1,
         page_size: int = OSF_MAX_PAGE_SIZE,
-        query: Optional[str] = None,
     ) -> dict:
-        params: dict[str, Any] = {"page": page, "page[size]": page_size}
-        if query:
-            params["q"] = query
+        """List every node the current user has access to.
+
+        Used by the Files category's search.
+        """
         return self._request(
-            "GET", "search/files/",
-            params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            "GET", "users/me/nodes/",
+            params={"page": page, "page[size]": page_size},
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
         )
 
     def list_children(
@@ -389,34 +391,46 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> tuple[list[RemoteFile], int]:
+        """Search for files by name across the user's OSF nodes.
+
+        OSF's public API v2 does not expose a cross-node file search
+        endpoint. This method walks every node the
+        current user has access to via ``/v2/users/me/nodes/`` and matches
+        file names client side. An empty query returns no results.
+
+        Note: only the current user's own nodes are searched; files
+        in other users' public projects are out of reach without a
+        server side search endpoint from OSF.
+        """
+        if not query:
+            return [], 0
         client = self._client(context)
-        page, page_size = galaxy_pagination_to_osf(limit, offset)
-        payload = client.list_files(
-            page=page, page_size=page_size, query=query,
-        )
-        hits = payload.get("data", [])
-        total = int(payload["links"]["meta"]["total"])
-        files: list[RemoteFile] = []
-        for hit in hits:
-            attrs = hit.get("attributes", {})
-            name = attrs.get("name", "untitled")
-            node_data = hit.get("relationships", {}).get("node", {}).get("data") or {}
-            parent_pid = node_data.get("id", "")
-            rel_path = attrs.get("materialized_path", name).lstrip("/")
-            if parent_pid:
-                uri = self.to_plugin_uri(parent_pid, rel_path)
-                path = f"/projects/{parent_pid}/{rel_path}"
-            else:
-                uri = f"{self.plugin.get_scheme()}://{self.plugin.get_prefix()}/files/{name}"
-                path = f"/files/{name}"
-            files.append(RemoteFile(
-                name=name,
-                uri=uri,
-                path=path,
-                size=attrs.get("size", 0),
-                ctime=attrs.get("date_modified") or attrs.get("date_created"),
-            ))
-        return files, total
+        query_lower = query.lower()
+        matches: list[RemoteFile] = []
+        page = 1
+        while True:
+            payload = client.list_user_nodes(page=page, page_size=OSF_MAX_PAGE_SIZE)
+            nodes = payload.get("data", [])
+            if not nodes:
+                break
+            for node in nodes:
+                pid = node["id"]
+                try:
+                    for file_entry in self._walk_files(client, pid, "/"):
+                        if query_lower in file_entry.name.lower():
+                            matches.append(file_entry)
+                except Exception:
+                    continue
+            meta = payload.get("links", {}).get("meta", {})
+            total = meta.get("total", 0)
+            total_pages = (total + OSF_MAX_PAGE_SIZE - 1) // OSF_MAX_PAGE_SIZE if total else 1
+            if page >= total_pages:
+                break
+            page += 1
+        total_matches = len(matches)
+        start = offset or 0
+        end = start + limit if limit else total_matches
+        return matches[start:end], total_matches
 
     def list_folder(
         self,
