@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { faDownload, faEnvelope, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BProgress } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import {
     getWorkflowToolAvailability,
     installWorkflowTools,
     requestWorkflowToolInstallation,
+    type ToolShedRepositoryReference,
     type UnavailableWorkflowTool,
     type WorkflowToolAvailability,
 } from "@/api/workflows";
@@ -35,10 +36,31 @@ const loading = ref(false);
 const working = ref(false);
 const errorMessage = ref<string | null>(null);
 const requestOutcome = ref<string | null>(null);
+/** Set while installing, so the dialog can say which repository it is on. */
+const installProgress = ref<{ done: number; total: number; current: string } | null>(null);
 
 const unavailableTools = computed(() => availability.value?.unavailable_tools ?? []);
 const canInstall = computed(() => availability.value?.can_install ?? false);
-const installableRepositories = computed(() => unavailableTools.value.filter((tool) => tool.repository));
+/** The distinct repositories to install, since several tools often come from one repository. */
+const installableRepositories = computed(() => {
+    const repositories: ToolShedRepositoryReference[] = [];
+    for (const tool of unavailableTools.value) {
+        const repository = tool.repository;
+        if (!repository) {
+            continue;
+        }
+        const seen = repositories.some(
+            (other) =>
+                other.tool_shed === repository.tool_shed &&
+                other.owner === repository.owner &&
+                other.name === repository.name,
+        );
+        if (!seen) {
+            repositories.push(repository);
+        }
+    }
+    return repositories;
+});
 /** Tools an installed version could stand in for without a known change in behaviour. */
 const substitutableTools = computed(() => unavailableTools.value.filter((tool) => tool.substitute_version));
 
@@ -77,24 +99,42 @@ function describe(tool: UnavailableWorkflowTool) {
     return `installed here as ${installed}, which Galaxy cannot vouch for as a replacement`;
 }
 
+/**
+ * Installs one repository at a time. Installing them in a single request gives no sign of
+ * progress for minutes and loses everything if one of them fails, and a tool shed install is
+ * slow enough that both matter.
+ */
 async function onInstall() {
+    const repositories = installableRepositories.value;
     working.value = true;
     errorMessage.value = null;
+    const failures: string[] = [];
     try {
-        const response = await installWorkflowTools(props.workflowId);
-        const failed = (response.failed ?? []).filter((entry) => entry.error);
-        if (failed.length > 0) {
-            errorMessage.value = failed
-                .map((entry) => `${entry.repository.owner}/${entry.repository.name}: ${entry.error}`)
-                .join("\n");
+        for (const [index, repository] of repositories.entries()) {
+            installProgress.value = {
+                done: index,
+                total: repositories.length,
+                current: `${repository.owner}/${repository.name}`,
+            };
+            try {
+                const response = await installWorkflowTools(props.workflowId, [repository]);
+                for (const entry of response.failed ?? []) {
+                    failures.push(`${entry.repository.owner}/${entry.repository.name}: ${entry.error}`);
+                }
+            } catch (error) {
+                failures.push(`${repository.owner}/${repository.name}: ${errorMessageAsString(error)}`);
+            }
+        }
+        installProgress.value = { done: repositories.length, total: repositories.length, current: "" };
+        if (failures.length > 0) {
+            errorMessage.value = failures.join("\n");
         } else {
             Toast.success("Installed the tools this workflow was missing.");
         }
         await load();
-    } catch (error) {
-        errorMessage.value = errorMessageAsString(error);
     } finally {
         working.value = false;
+        installProgress.value = null;
     }
 }
 
@@ -132,6 +172,16 @@ function onUseInstalledVersions() {
             <LoadingSpan v-if="loading" message="Checking which tools this workflow needs" />
 
             <template v-else>
+                <div v-if="installProgress" class="install-progress">
+                    <BProgress :value="installProgress.done" :max="installProgress.total" animated show-progress />
+                    <span>
+                        Installing {{ Math.min(installProgress.done + 1, installProgress.total) }} of
+                        {{ installProgress.total
+                        }}<span v-if="installProgress.current"> : {{ installProgress.current }}</span
+                        >. This can take a few minutes per tool.
+                    </span>
+                </div>
+
                 <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
                 <BAlert v-if="requestOutcome" variant="success" show>{{ requestOutcome }}</BAlert>
 
@@ -168,7 +218,7 @@ function onUseInstalledVersions() {
                 :disabled="working"
                 @click="onInstall">
                 <FontAwesomeIcon :icon="faDownload" fixed-width />
-                Install missing tools
+                {{ working ? "Installing..." : `Install ${installableRepositories.length} missing tools` }}
             </GButton>
             <GButton
                 v-if="!canInstall && unavailableTools.length > 0"
@@ -185,6 +235,14 @@ function onUseInstalledVersions() {
 
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
+
+.install-progress {
+    margin-bottom: 0.5rem;
+
+    span {
+        color: $text-muted;
+    }
+}
 
 .missing-tool-list {
     list-style: none;

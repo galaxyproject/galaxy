@@ -2209,6 +2209,21 @@ steps:
         downloaded_workflow = self._download_workflow(workflow_id, style="editor")
         assert downloaded_workflow["unavailable_tool_ids"] == ["cat_missing_tool"]
 
+    def test_editor_keeps_connections_of_a_missing_tool(self):
+        workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+
+        missing_tool_step = next(
+            step for step in downloaded_workflow["steps"].values() if step.get("tool_id") == "cat_missing_tool"
+        )
+        # a module without its tool cannot describe its terminals, but the connections are still
+        # recorded, so the editor needs something to attach them to or the wiring is lost
+        connected_inputs = set(missing_tool_step["input_connections"])
+        assert connected_inputs == {"input1", "queries_0|input2"}
+        assert {input["name"] for input in missing_tool_step["inputs"]} >= connected_inputs
+        assert all(input["valid"] is False for input in missing_tool_step["inputs"])
+
     def test_install_missing_tools_requires_admin(self):
         workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")
         workflow_id = self.workflow_populator.create_workflow(workflow)

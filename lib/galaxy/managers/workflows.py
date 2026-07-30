@@ -1504,6 +1504,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict["position"] = step.position
             # Add to return value
             data["steps"][step.order_index] = step_dict
+        self._restore_terminals_of_broken_steps(data["steps"])
         if is_subworkflow:
             data["steps"] = self._resolve_collection_type(data["steps"])
         else:
@@ -1516,6 +1517,55 @@ class WorkflowContentsManager(UsesAnnotations):
             # really is, so report what it would be with them folded out as well.
             data["step_counts"] = count_steps(workflow)
         return data
+
+    @staticmethod
+    def _restore_terminals_of_broken_steps(steps: dict[int, dict[str, Any]]) -> None:
+        """Give a step whose tool is missing a terminal for every connection that refers to it.
+
+        A module that cannot find its tool cannot say what its inputs and outputs are, and a
+        subworkflow cannot expose an output produced by a tool it is missing. The connections are
+        still recorded, but the editor has nothing to attach them to and drops them, so importing
+        a workflow before installing its tools loses the wiring and it has to be drawn again.
+        Marking the terminals invalid keeps the connections attached and shows them as broken,
+        which is what the editor already renders for a terminal it cannot make sense of.
+        """
+        wanted_outputs: dict[int, set[str]] = {}
+        for step in steps.values():
+            for input_connections in (step.get("input_connections") or {}).values():
+                connections = input_connections if isinstance(input_connections, list) else [input_connections]
+                for connection in connections:
+                    wanted_outputs.setdefault(connection["id"], set()).add(connection["output_name"])
+
+        for order_index, step in steps.items():
+            if not step.get("errors"):
+                # Only a step that could not be built is missing terminals it should have. A tool
+                # that simply dropped an output on upgrade is a different problem, reported as such.
+                continue
+            known_inputs = {input["name"] for input in step.get("inputs") or []}
+            for input_name in step.get("input_connections") or {}:
+                if input_name not in known_inputs:
+                    step["inputs"].append(
+                        {
+                            "name": input_name,
+                            "label": input_name,
+                            "multiple": False,
+                            "extensions": [],
+                            "optional": False,
+                            "input_type": "dataset",
+                            "valid": False,
+                        }
+                    )
+            known_outputs = {output["name"] for output in step.get("outputs") or []}
+            for output_name in sorted(wanted_outputs.get(order_index, set())):
+                if output_name not in known_outputs:
+                    step["outputs"].append(
+                        {
+                            "name": output_name,
+                            "extensions": ["input"],
+                            "optional": False,
+                            "valid": False,
+                        }
+                    )
 
     @staticmethod
     def get_step_map_over(current_step, steps):

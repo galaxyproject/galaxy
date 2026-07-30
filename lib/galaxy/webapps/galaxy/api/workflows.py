@@ -639,7 +639,20 @@ class WorkflowsAPIController(
             # out the workflow cannot run when they try to run it.
             "missing_tools": sorted({tool_id for tool_id, _name, _version, _step in missing_tool_tups or []}),
         }
-        if workflow.has_errors:
+        missing_tools = response["missing_tools"]
+        if missing_tools:
+            # "validation errors" is what a missing tool used to be reported as, which said
+            # nothing about what to do next. Name the cause and how much of it there is.
+            count = len(missing_tools)
+            names = ", ".join(missing_tools[:3])
+            if count > 3:
+                names = f"{names} and {count - 3} more"
+            response["message"] = (
+                f"Imported, but {count} tool{'' if count == 1 else 's'} used by this workflow "
+                f"{'is' if count == 1 else 'are'} not installed: {names}."
+            )
+            response["status"] = "error"
+        elif workflow.has_errors:
             response["message"] = "Imported, but some steps in this workflow have validation errors."
             response["status"] = "error"
         elif len(workflow.steps) == 0:

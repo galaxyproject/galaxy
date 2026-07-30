@@ -189,7 +189,13 @@ class WorkflowsService(ServiceBase):
                 log.exception(f"Failed to install repository {repository.owner}/{repository.name}")
                 failed.append(InstalledWorkflowToolRepository(repository=repository, error=util.unicodify(e)))
                 continue
-            installed.extend(statuses)
+            # Galaxy reports a repository it could not clone or build by flipping its status
+            # rather than raising, so a returned repository is not necessarily an installed one.
+            for status in statuses:
+                if status.error or (status.status or "").lower() == "error":
+                    failed.append(status)
+                else:
+                    installed.append(status)
         return InstallWorkflowToolsResponse(installed=installed, failed=failed)
 
     def update_subworkflow(
