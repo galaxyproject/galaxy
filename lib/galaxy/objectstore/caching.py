@@ -168,6 +168,11 @@ def check_caches(targets: list[CacheTarget]):
 
 def check_cache(cache_target: CacheTarget):
     """Run a step of the cache monitor."""
+    if not (cache_target.size > 0):
+        # Matches CacheTarget.fits_in_cache - a non-positive size is an unbounded
+        # cache, not a zero-byte budget. Without this the limit below goes negative,
+        # every directory looks over budget, and the whole path gets reaped.
+        return
     total_size, file_list = _get_cache_size_files(cache_target.path)
     # Sort the file list (based on access time)
     file_list.sort()

@@ -1055,6 +1055,21 @@ def test_check_cache_sanity(tmp_path):
     assert not path.exists()
 
 
+def test_check_cache_treats_non_positive_size_as_unbounded(tmp_path):
+    # A non-positive cache size means "unbounded" everywhere else in this module
+    # (see CacheTarget.fits_in_cache), so the monitor must not treat it as a
+    # zero-byte budget and reap the whole directory.
+    cache_dir = tmp_path
+    path = cache_dir / "a_file_0"
+    path.write_text("this is an example file")
+
+    check_cache(CacheTarget(cache_dir, -1, 0.2))
+    assert path.exists()
+
+    check_cache(CacheTarget(cache_dir, 0, 0.2))
+    assert path.exists()
+
+
 def test_fits_in_cache_check(tmp_path):
     cache_dir = tmp_path
     big_cache_target = CacheTarget(cache_dir, 1, 0.2)
