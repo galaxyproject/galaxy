@@ -247,6 +247,30 @@ class ConflictingTableSchema(Linter[RepositoryDataTables]):
             lint_ctx.valid("Each data table is declared with a single consistent schema", linter=cls.name())
 
 
+class EmptyLocFile(Linter[RepositoryDataTables]):
+    """A ``.loc`` / ``.loc.sample`` file is empty and carries no format comment.
+
+    An empty loc file with a leading ``#`` comment documenting the column format is
+    the accepted convention (a data manager fills the real rows on install), so a
+    documented-but-dataless file is fine; only an empty *and* undocumented file is
+    flagged. A warning, not an error: the file is present, just undocumented
+    (Planemo #869).
+    """
+
+    @classmethod
+    def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
+        undocumented = [loc for loc in model.loc_files if not loc.has_data and not loc.has_comment]
+        for loc in undocumented:
+            rel = os.path.relpath(loc.path, model.repo_root)
+            lint_ctx.warn(
+                f"Location file [{rel}] is empty and has no comment describing the expected "
+                "column format; add a comment documenting the format",
+                linter=cls.name(),
+            )
+        if model.loc_files and not undocumented:
+            lint_ctx.valid("All loc files carry data or a documenting comment", linter=cls.name())
+
+
 REPOSITORY_DATA_TABLE_LINTERS = (
     MissingLocFixture,
     LocRowShape,
@@ -255,6 +279,7 @@ REPOSITORY_DATA_TABLE_LINTERS = (
     OutputRefValid,
     DuplicateColumnNames,
     ConflictingTableSchema,
+    EmptyLocFile,
 )
 
 # Tables that Galaxy core ships (config/tool_data_table_conf.xml.sample) or that a

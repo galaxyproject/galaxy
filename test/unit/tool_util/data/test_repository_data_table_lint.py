@@ -11,6 +11,7 @@ from galaxy.tool_util.data.bundles.lint import (
     ConflictingTableSchema,
     ConsumerTableDefined,
     DuplicateColumnNames,
+    EmptyLocFile,
     lint_repository_data_tables,
     lint_repository_data_tables_bundle,
     LocRowShape,
@@ -18,7 +19,10 @@ from galaxy.tool_util.data.bundles.lint import (
     MissingLocFixture,
     OutputRefValid,
 )
-from galaxy.tool_util.data.bundles.repository import build_repository_data_tables
+from galaxy.tool_util.data.bundles.repository import (
+    _classify_loc_file,
+    build_repository_data_tables,
+)
 from galaxy.tool_util.lint import (
     LintContext,
     LintLevel,
@@ -37,6 +41,7 @@ DUP_COLUMNS_REPO = os.path.join(REPOS, "dup_columns")
 CONFLICT_COLUMNS_REPO = os.path.join(REPOS, "conflicting_columns")
 CONFLICT_SEPARATOR_REPO = os.path.join(REPOS, "conflicting_separator")
 CONFLICT_INDEXES_REPO = os.path.join(REPOS, "conflicting_indexes")
+EMPTY_LOC_REPO = os.path.join(REPOS, "empty_loc")
 
 FETCH_TABLE_TEST_CONF = os.path.join(FETCH_REPO, "tool_data_table_conf.xml.test")
 FETCH_DM_CONF = os.path.join(FETCH_REPO, "data_manager_conf.xml")
@@ -283,6 +288,47 @@ def test_clean_repo_has_no_schema_or_duplicate_errors():
     assert [e for e in lint_ctx.error_messages if e.linter in schema_linters] == []
     linters_with_valid = {v.linter for v in lint_ctx.valid_messages}
     assert schema_linters <= linters_with_valid
+
+
+def test_empty_undocumented_loc_files_warn():
+    # Empty, comment-less loc files are flagged (Planemo #869), whether a shipped
+    # .loc.sample or a plain test-data *.loc; a sibling empty-but-documented
+    # (header-only) sample must NOT be flagged.
+    conf = os.path.join(EMPTY_LOC_REPO, "tool_data_table_conf.xml.sample")
+    model = build_repository_data_tables(EMPTY_LOC_REPO, tool_data_table_confs=[conf])
+    # Guard against a vacuous pass: bare loc files are present, and a documented
+    # (header-only) one is too.
+    assert any(not f.has_data and not f.has_comment for f in model.loc_files)
+    assert any(not f.has_data and f.has_comment for f in model.loc_files)
+    warns = [w for w in _lint(model).warn_messages if w.linter == EmptyLocFile.name()]
+    flagged = {os.path.basename(w.message.split("[", 1)[1].split("]", 1)[0]) for w in warns}
+    assert flagged == {"undocumented.loc.sample", "empty.loc"}
+
+
+def test_loc_file_classification(tmp_path):
+    # The empty/documented distinction the linter keys on: whitespace-only and a
+    # lone UTF-8 BOM both count as empty-and-undocumented; a comment (even behind a
+    # BOM) documents the file; a data row is data.
+    def classify(name, data, *, binary=False):
+        p = tmp_path / name
+        p.write_bytes(data) if binary else p.write_text(data)
+        loc = _classify_loc_file(str(p))
+        return loc.has_data, loc.has_comment
+
+    assert classify("blank.loc", "  \n\n\t\n") == (False, False)
+    assert classify("bom_only.loc", b"\xef\xbb\xbf", binary=True) == (False, False)
+    assert classify("bom_comment.loc", b"\xef\xbb\xbf# value\tpath\n", binary=True) == (False, True)
+    assert classify("comment.loc", "# value\tpath\n\n") == (False, True)
+    assert classify("data.loc", "# value\tpath\nv1\t/data/x\n") == (True, True)
+
+
+def test_documented_loc_files_do_not_warn():
+    # The clean fixture ships data rows and header-only samples only; the empty-loc
+    # linter must stay green and confirm valid (no false positive on documented files).
+    model = build_repository_data_tables(FETCH_REPO, tool_data_table_confs=[FETCH_TABLE_TEST_CONF])
+    lint_ctx = _lint(model)
+    assert [w for w in lint_ctx.warn_messages if w.linter == EmptyLocFile.name()] == []
+    assert any(v.linter == EmptyLocFile.name() for v in lint_ctx.valid_messages)
 
 
 def test_linters_are_skippable_by_name():
