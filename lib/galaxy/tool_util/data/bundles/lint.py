@@ -257,6 +257,13 @@ REPOSITORY_DATA_TABLE_LINTERS = (
     ConflictingTableSchema,
 )
 
+# Tables that Galaxy core ships (config/tool_data_table_conf.xml.sample) or that a
+# stock data manager provides on essentially every deployment. A repository may consume
+# these via from_data_table without defining them locally, so they are treated as
+# externally supplied by default; callers extend this set through the
+# external_table_names argument (e.g. from a Tool Shed supplier index).
+DEFAULT_EXTERNAL_TABLE_NAMES: FrozenSet[str] = frozenset({"all_fasta", "fasta_indexes", "__dbkeys__"})
+
 
 def lint_repository_data_tables(model: RepositoryDataTables, lint_ctx: "LintContext") -> None:
     """Run the repository data-table linters over ``model``.
@@ -364,7 +371,12 @@ def find_and_lint_repository_data_tables(
     ``tool_data_table_conf`` files and the consumer tool sources, then hands them to
     :func:`lint_repository_data_tables_bundle`. Consumer tools are only walked when the
     repository actually declares a data-table bundle.
+
+    The common Galaxy-core tables (:data:`DEFAULT_EXTERNAL_TABLE_NAMES`) are always
+    treated as externally supplied so a bare invocation does not warn on every stock
+    ``from_data_table`` reference; ``external_table_names`` adds to that set.
     """
+    external_table_names = DEFAULT_EXTERNAL_TABLE_NAMES | external_table_names
     data_manager_conf = _find_data_manager_conf(repo_root)
     tool_data_table_conf = _find_tool_data_table_conf(repo_root)
     consumer_tool_sources = None
