@@ -28,6 +28,10 @@ import {
     shift,
 } from "@floating-ui/dom";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+// Vue 2.7 has no built-in Teleport -- a bare <Teleport> silently renders as an unknown element
+// and the popover stays put, trapped by whatever ancestor clipping it was meant to escape.
+// @ts-ignore missing types
+import Vue2Teleport from "vue2-teleport";
 
 type TriggerType = "hover" | "click" | "click blur" | "hover focus" | "manual" | "manual hover" | "focus";
 
@@ -370,7 +374,7 @@ defineExpose({
 </script>
 
 <template>
-    <Teleport to="body">
+    <Vue2Teleport to="body">
         <div
             v-show="showState"
             ref="popoverEl"
@@ -392,7 +396,7 @@ defineExpose({
                 <slot>{{ content }}</slot>
             </div>
         </div>
-    </Teleport>
+    </Vue2Teleport>
 </template>
 
 <style scoped lang="scss">
