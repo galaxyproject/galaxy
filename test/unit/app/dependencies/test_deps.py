@@ -5,7 +5,10 @@ from tempfile import mkdtemp
 
 import pytest
 
-from galaxy.dependencies import ConditionalDependencies
+from galaxy.dependencies import (
+    ConditionalDependencies,
+    optional,
+)
 
 AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
     blah...
@@ -20,6 +23,32 @@ type: distributed
 backends:
    - id: files1
      type: azure_blob
+"""
+CLOUD_AWS_TEST_CONFIG = """<object_store type="cloud" provider="aws">
+    blah...
+</object_store>
+"""
+CLOUD_GOOGLE_TEST_CONFIG_YAML = """
+type: cloud
+provider: google
+other_attributes: blah
+"""
+CLOUD_NO_PROVIDER_TEST_CONFIG_YAML = """
+type: cloud
+other_attributes: blah
+"""
+DISTRIBUTED_WITH_CLOUD_PROVIDERS_CONFIG_YAML = """
+type: distributed
+backends:
+   - id: files1
+     type: cloud
+     provider: azure
+   - id: files2
+     type: cloud
+     provider: openstack
+   - id: files3
+     type: cloud
+     provider: azure
 """
 FILES_SOURCES_CONFIG = """
 - type: webdav
@@ -76,6 +105,78 @@ def test_azure_objectstore_nested_yaml():
         }
         cds = cc.get_cond_deps(config)
         assert cds.check_azure_storage()
+
+
+def test_default_objectstore_needs_no_cloudbridge():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps()
+        assert not cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == []
+
+
+def test_cloud_objectstore_xml_installs_provider_extra():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.xml", CLOUD_AWS_TEST_CONFIG)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == ["aws"]
+
+
+def test_cloud_objectstore_google_provider_uses_gcp_extra():
+    # Galaxy's provider name and cloudbridge's extra differ for Google.
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", CLOUD_GOOGLE_TEST_CONFIG_YAML)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.extras("cloudbridge") == ["gcp"]
+
+
+def test_cloud_objectstore_nested_yaml_collects_every_provider():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", DISTRIBUTED_WITH_CLOUD_PROVIDERS_CONFIG_YAML)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == ["azure", "openstack"]
+
+
+def test_cloud_objectstore_without_provider_installs_base_cloudbridge():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", CLOUD_NO_PROVIDER_TEST_CONFIG_YAML)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == []
+
+
+def test_non_cloud_objectstore_needs_no_cloudbridge_extras():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", AZURE_BLOB_TEST_CONFIG_YAML)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert not cds.check_cloudbridge()
+        assert cds.extras("cloudbridge") == []
+
+
+def test_optional_requirements_carry_cloudbridge_extras():
+    # The line handed to pip must request the provider's extra.
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", DISTRIBUTED_WITH_CLOUD_PROVIDERS_CONFIG_YAML)
+        galaxy_config = cc.write_config("galaxy.yml", f"galaxy:\n  object_store_config_file: {object_store_config}\n")
+        requirements = optional(galaxy_config)
+        assert "cloudbridge[azure,openstack]" in requirements
+        assert "cloudbridge" not in requirements
 
 
 def test_fs_default():

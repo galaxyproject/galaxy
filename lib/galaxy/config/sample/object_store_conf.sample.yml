@@ -397,7 +397,9 @@ extra_dirs:
 #
 
 # The Cloud Object Store uses the cloud-provider-agnostic CloudBridge (http://cloudbridge.cloudve.org/) library to
-# interface with cloud storage rather than the cloud-native libraries directly.
+# interface with cloud storage rather than the cloud-native libraries directly. Each provider's SDK is an optional
+# CloudBridge extra; Galaxy's dependency installer (run.sh or common_startup.sh) installs the extras matching the
+# providers configured here, so switching a store to a new provider needs a dependency reinstall.
 
 # Sample Cloud Object Store with Amazon Simple Storage Service (S3) configuration
 
@@ -495,8 +497,7 @@ extra_dirs:
     path: database/job_working_directory_cloud
 
 # Sample Cloud Object Store with OpenStack Swift configuration (native Swift
-# via Keystone v3; requires the cloudbridge openstack extras installed in
-# Galaxy's environment).
+# via Keystone v3).
 
 type: cloud
 provider: openstack

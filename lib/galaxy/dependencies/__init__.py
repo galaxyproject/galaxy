@@ -27,6 +27,16 @@ from galaxy.util.properties import (
     load_app_properties,
 )
 
+# The cloud object store's provider SDKs are cloudbridge extras, so only the
+# ones backing a configured provider need installing. Galaxy's provider name
+# matches the extra except for Google.
+CLOUDBRIDGE_EXTRAS = {
+    "aws": "aws",
+    "azure": "azure",
+    "google": "gcp",
+    "openstack": "openstack",
+}
+
 
 class ConditionalDependencies:
     def __init__(self, config_file, config=None):
@@ -34,6 +44,7 @@ class ConditionalDependencies:
         self.job_runners = []
         self.authenticators = []
         self.object_stores = []
+        self.cloud_object_store_providers = []
         self.file_sources = []
         self.conditional_reqs = []
         self.container_interface_types = []
@@ -97,7 +108,7 @@ class ConditionalDependencies:
             if ".xml" in object_store_conf_path:
                 for store in parse_xml(object_store_conf_path).iter("object_store"):
                     if "type" in store.attrib:
-                        self.object_stores.append(store.attrib["type"])
+                        self.collect_object_store(store.attrib)
             else:
                 with open(object_store_conf_path) as f:
                     job_conf_dict = yaml.safe_load(f)
@@ -107,7 +118,7 @@ class ConditionalDependencies:
                         return
 
                     if "type" in from_dict:
-                        self.object_stores.append(from_dict["type"])
+                        self.collect_object_store(from_dict)
 
                     for value in from_dict.values():
                         if isinstance(value, list):
@@ -176,6 +187,12 @@ class ConditionalDependencies:
             vault_conf = {}
         self.vault_type = vault_conf.get("type", "").lower()
 
+    def collect_object_store(self, store):
+        """Record a configured object store, given its XML attributes or config dict."""
+        self.object_stores.append(store["type"])
+        if store["type"] == "cloud" and store.get("provider"):
+            self.cloud_object_store_providers.append(str(store["provider"]).lower())
+
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), "conditional-requirements.txt")
         with open(crfile) as fh:
@@ -189,6 +206,23 @@ class ConditionalDependencies:
             return getattr(self, f"check_{name}")()
         except Exception:
             return False
+
+    def extras(self, name):
+        """Extras of the named package that this configuration requires."""
+        try:
+            name = name.replace("-", "_").replace(".", "_")
+            return getattr(self, f"extras_{name}")()
+        except Exception:
+            return []
+
+    def extras_cloudbridge(self):
+        return sorted(
+            {
+                CLOUDBRIDGE_EXTRAS[provider]
+                for provider in self.cloud_object_store_providers
+                if provider in CLOUDBRIDGE_EXTRAS
+            }
+        )
 
     def check_psycopg2_binary(self):
         return self.config["database_connection"].startswith(("postgresql://", "postgresql+psycopg2://"))
@@ -383,5 +417,11 @@ def optional(config_file=None):
     conditional = ConditionalDependencies(config_file)
     for dependency in conditional.conditional_reqs:
         if conditional.check(dependency.name):
-            rval.append(strip_comment(dependency.line))
+            line = strip_comment(dependency.line)
+            extras = conditional.extras(dependency.name)
+            if extras:
+                # Request the extras this configuration needs, keeping any
+                # version specifier that follows the package name.
+                line = f"{dependency.name}[{','.join(extras)}]{line[len(dependency.name):]}"
+            rval.append(line)
     return rval
