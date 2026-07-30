@@ -211,6 +211,11 @@ class VisualizationPluginResponse(Model):
         title="Tests",
         description="The tests of the plugin.",
     )
+    parameters_schema: dict | None = Field(
+        None,
+        title="Parameters Schema",
+        description="JSON Schema for validating an embed config against the plugin's settings and tracks.",
+    )
     href: str = Field(
         ...,
         title="Href",
