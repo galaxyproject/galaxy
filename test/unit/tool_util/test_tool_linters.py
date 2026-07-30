@@ -4,7 +4,6 @@ import tempfile
 
 import pytest
 
-import galaxy.tool_util.data.bundles.lint  # noqa: F401  (registers repository data-table linters)
 import galaxy.tool_util.linters
 from galaxy.tool_util.lint import (
     lint_tool_source_with,
@@ -2677,7 +2676,7 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    # (155 = 148 tool linters + 7 repository data-table linters)
+    # (155 = 148 tool linters + 7 repository data-table linters registered via list_linters)
     assert len(linter_names) == 155
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
