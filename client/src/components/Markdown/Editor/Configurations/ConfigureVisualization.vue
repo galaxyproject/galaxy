@@ -16,6 +16,12 @@
                 type="integer"
                 @input="onHeight" />
         </FormElementLabel>
+        <BAlert v-if="warnings.length" variant="warning" show class="mt-2">
+            <div>This visualization configuration may have issues:</div>
+            <ul class="mb-0">
+                <li v-for="(warning, index) in warnings" :key="index">{{ warning }}</li>
+            </ul>
+        </BAlert>
     </div>
 </template>
 
@@ -23,8 +29,10 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
+import { fetchPlugin } from "@/api/plugins";
 import type { VisualizationEmbedConfig, WorkflowLabel } from "@/components/Markdown/Editor/types";
 import { parseBlockContent, serializeBlockContent } from "@/components/Markdown/Utilities/blockContent";
+import { validateConfig } from "@/components/Markdown/Utilities/validateConfig";
 import type { OptionType } from "@/components/SelectionField/types";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
@@ -48,6 +56,8 @@ const contentObject: Ref<VisualizationEmbedConfig> = ref({});
 const errorMessage = ref("");
 const hasChanged = ref(false);
 const height = ref();
+const parametersSchema: Ref<Record<string, unknown> | undefined> = ref();
+const warnings: Ref<Array<string>> = ref([]);
 
 const hasLabels = computed(() => props.labels !== undefined);
 const objectName = computed(() => contentObject.value.dataset_name || "...");
@@ -65,16 +75,37 @@ function onChange(option: OptionType) {
         }
         contentObject.value.dataset_name = option.name;
         hasChanged.value = true;
+        revalidate();
     }
 }
 
 function onHeight(newHeight: number) {
     contentObject.value.height = newHeight;
     hasChanged.value = true;
+    revalidate();
 }
 
 function onOk() {
     emit("change", serializeBlockContent(contentObject.value));
+}
+
+function revalidate() {
+    warnings.value = parametersSchema.value ? validateConfig(parametersSchema.value, contentObject.value) : [];
+}
+
+async function loadSchema() {
+    const name = contentObject.value.visualization_name;
+    if (!name) {
+        parametersSchema.value = undefined;
+    } else {
+        try {
+            const plugin = await fetchPlugin(name);
+            parametersSchema.value = plugin.parameters_schema;
+        } catch {
+            parametersSchema.value = undefined;
+        }
+    }
+    revalidate();
 }
 
 function parseContent() {
@@ -82,6 +113,7 @@ function parseContent() {
         contentObject.value = parseBlockContent(props.content) as VisualizationEmbedConfig;
         height.value = contentObject.value.height || DEFAULT_HEIGHT;
         errorMessage.value = "";
+        loadSchema();
     } catch (e) {
         errorMessage.value = `Failed to parse: ${e}`;
     }
