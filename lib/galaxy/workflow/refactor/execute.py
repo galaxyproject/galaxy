@@ -3,6 +3,7 @@ from typing import (
     Any,
 )
 
+from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import contains_workflow_parameter
@@ -518,7 +519,9 @@ class WorkflowRefactorExecutor:
             return None
 
         if action.include_tools:
-            upgraded = self._upgrade_subworkflow_contents(stored_workflow, step_def, execution)
+            upgraded = self._upgrade_subworkflow_contents(
+                stored_workflow, step_def, execution, detach=action.detach_subworkflow
+            )
             if upgraded is not None:
                 return upgraded
 
@@ -527,12 +530,19 @@ class WorkflowRefactorExecutor:
             return None
         return latest_workflow
 
-    def _upgrade_subworkflow_contents(self, stored_workflow, step_def, execution: RefactorActionExecution):
+    def _upgrade_subworkflow_contents(
+        self, stored_workflow, step_def, execution: RefactorActionExecution, detach: bool = False
+    ):
         """Upgrade the tools used inside a subworkflow, producing a new subworkflow revision.
 
         Moving a step to the newest revision of its subworkflow does nothing about a tool that
         went out of date *within* that subworkflow, which is the common case when a workflow is
         shipped as a single unit. This recurses into the subworkflow to upgrade those too.
+
+        With ``detach`` the upgrade is applied to a private copy embedded in the workflow being
+        refactored, so a subworkflow that is also a workflow in its own right is left alone. That
+        choice propagates down, otherwise upgrading a deeply nested tool would still write to
+        whichever shared workflow happens to sit between here and it.
 
         Returns None when everything inside the subworkflow is already current, so that clicking
         upgrade repeatedly does not pile up identical revisions.
@@ -540,22 +550,45 @@ class WorkflowRefactorExecutor:
         from galaxy.managers.workflows import RefactorRequest
 
         trans = self.module_injector.trans
-        latest_workflow = stored_workflow.latest_workflow
-        if not find_outdated_steps(trans, latest_workflow):
+        if not find_outdated_steps(trans, stored_workflow.latest_workflow):
             return None
 
+        target_stored_workflow = stored_workflow
+        if detach and not self.dry_run:
+            # A dry run persists nothing, so it can preview against the original.
+            target_stored_workflow = self._embedded_copy_of(stored_workflow)
+
         nested_request = RefactorRequest(
-            actions=[UpgradeAllStepsAction(action_type="upgrade_all_steps", include_subworkflow_tools=True)],
+            actions=[
+                UpgradeAllStepsAction(
+                    action_type="upgrade_all_steps",
+                    include_subworkflow_tools=True,
+                    detach_subworkflows=detach,
+                )
+            ],
             dry_run=self.dry_run,
         )
         upgraded_workflow, nested_executions = trans.app.workflow_contents_manager.do_refactor(
-            trans, stored_workflow, nested_request
+            trans, target_stored_workflow, nested_request
         )
         subworkflow_name = stored_workflow.name
         for nested_execution in nested_executions:
             for message in nested_execution.messages:
                 execution.messages.append(self._message_from_subworkflow(message, step_def, subworkflow_name))
         return upgraded_workflow
+
+    def _embedded_copy_of(self, stored_workflow):
+        """Copy a subworkflow into a hidden workflow owned by this workflow, so upgrading it here
+        cannot change the workflow it was taken from."""
+        trans = self.module_injector.trans
+        copied_workflow = stored_workflow.latest_workflow.copy(user=trans.user)
+        copied_stored_workflow = model.StoredWorkflow(
+            user=trans.user, name=copied_workflow.name, workflow=copied_workflow, hidden=True
+        )
+        copied_workflow.stored_workflow = copied_stored_workflow
+        trans.sa_session.add(copied_stored_workflow)
+        trans.sa_session.commit()
+        return copied_stored_workflow
 
     @staticmethod
     def _message_from_subworkflow(
@@ -617,6 +650,7 @@ class WorkflowRefactorExecutor:
                     action_type="upgrade_subworkflow",
                     step={"order_index": step_order_index},
                     include_tools=action.include_subworkflow_tools,
+                    detach_subworkflow=action.detach_subworkflows,
                 )
                 # Upgrading everything at once should stay quiet about the steps that had
                 # nothing to do, only the per step action reports that back.

@@ -15,6 +15,10 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
+        <SubworkflowUpgradeScopeModal
+            :show.sync="showUpgradeScope"
+            :shared-workflow-names="upgradeScopeSharedNames"
+            @confirm="onUpgradeScopeChosen" />
         <WorkflowMissingTools
             v-if="!isNewTempWorkflow"
             :workflow-id="id"
@@ -159,13 +163,29 @@
         </template>
         <template v-else>
             <div id="center" class="workflow-center">
-                <div v-if="parentWorkflowId" class="editor-subworkflow-bar" unselectable="on">
-                    <b-button variant="link" size="sm" class="p-0" @click="backToParentWorkflow">
-                        <FontAwesomeIcon :icon="faArrowLeft" />
-                        Back to {{ parentWorkflowName || "the parent workflow" }}
-                    </b-button>
+                <div v-if="subworkflowTrail.length > 0" class="editor-subworkflow-bar" unselectable="on">
+                    <FontAwesomeIcon :icon="faArrowLeft" />
+                    <nav class="editor-subworkflow-crumbs" aria-label="subworkflow path">
+                        <span
+                            v-for="(entry, trailIndex) in subworkflowTrail"
+                            :key="`${entry.workflowId}-${trailIndex}`">
+                            <b-button
+                                variant="link"
+                                size="sm"
+                                class="p-0"
+                                :title="
+                                    trailIndex === 0
+                                        ? 'Go back up to the outermost workflow, applying the changes on the way'
+                                        : 'Go back up to this workflow, applying the changes on the way'
+                                "
+                                @click="backToTrailEntry(trailIndex)">
+                                {{ trailWorkflowNames[entry.workflowId] || "workflow" }}
+                            </b-button>
+                        </span>
+                        <span class="editor-subworkflow-current">{{ name }}</span>
+                    </nav>
                     <span class="text-muted">
-                        Editing this as a subworkflow. Going back upgrades the step that uses it.
+                        Editing a subworkflow. Going back to any of these applies what you changed here.
                     </span>
                 </div>
                 <div class="editor-top-bar" unselectable="on">
@@ -261,7 +281,7 @@
                     @onRemove="onRemove"
                     @onUpdateStepPosition="onUpdateStepPosition"
                     @editSubworkflow="onEditSubworkflow"
-                    @attemptRefactor="onAttemptRefactor">
+                    @upgradeSubworkflow="requestSubworkflowUpgrade">
                     <NodeInspector
                         v-if="activeStep"
                         :step="activeStep"
@@ -272,7 +292,7 @@
                         @dataChanged="onSetData"
                         @stepUpdated="updateStep"
                         @editSubworkflow="onEditSubworkflow"
-                        @attemptRefactor="onAttemptRefactor"
+                        @upgradeSubworkflow="requestSubworkflowUpgrade"
                         @close="activeNodeId = null"></NodeInspector>
                 </WorkflowGraph>
             </div>
@@ -327,6 +347,7 @@ import { getWorkflowInputs } from "./modules/inputs";
 import { fromSteps } from "./modules/labels";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow } from "./modules/services";
+import { encodeSubworkflowTrail } from "./modules/subworkflowTrail";
 import { useLintData } from "./modules/useLinting";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
@@ -338,6 +359,7 @@ import ReadmeEditor from "./ReadmeEditor.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
+import SubworkflowUpgradeScopeModal from "./SubworkflowUpgradeScopeModal.vue";
 import WorkflowAttributes from "./WorkflowAttributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
@@ -369,6 +391,7 @@ export default {
         MessagesModal,
         WorkflowGraph,
         WorkflowMissingTools,
+        SubworkflowUpgradeScopeModal,
         FontAwesomeIcon,
         UndoRedoStack,
         WorkflowPanel,
@@ -399,15 +422,13 @@ export default {
             type: Array,
             default: () => [],
         },
-        /** Set when this editor was opened by drilling into a subworkflow, so it can offer a way back. */
-        parentWorkflowId: {
-            type: String,
-            default: undefined,
-        },
-        /** order_index of the step in the parent workflow that embeds the workflow being edited. */
-        parentStepOrderIndex: {
-            type: Number,
-            default: undefined,
+        /**
+         * The path taken to drill into this subworkflow, outermost first. Empty when this editor
+         * was opened directly. See modules/subworkflowTrail.
+         */
+        subworkflowTrail: {
+            type: Array,
+            default: () => [],
         },
         /** Set when returning from a subworkflow, names the step to upgrade to what was just saved. */
         upgradeStepOrderIndex: {
@@ -823,8 +844,11 @@ export default {
             showSaveChangesModal: false,
             saveChangesAppendVersion: false,
             navUrl: "",
-            parentWorkflowName: null,
+            trailWorkflowNames: {},
             showMissingTools: false,
+            showUpgradeScope: false,
+            upgradeScopeSharedNames: [],
+            pendingUpgradeStepId: null,
             faArrowLeft,
             faTimes,
             faCog,
@@ -887,7 +911,7 @@ export default {
         this.lastQueue = new LastQueue();
         await this._loadCurrent(this.id, this.version, true);
         this.initialLoading = false;
-        await this.loadParentWorkflowName();
+        await this.loadTrailWorkflowNames();
         await this.upgradeStepAfterReturn();
     },
     methods: {
@@ -957,35 +981,46 @@ export default {
         },
         onEditSubworkflow(contentId, stepId) {
             const query = { workflow_id: contentId };
-            if (!this.isNewTempWorkflow) {
-                // Remember where we came from so the subworkflow editor can offer a way back
-                // and the step can pick up whatever gets saved there.
-                query.from_workflow = this.id;
-                if (stepId !== undefined && stepId !== null) {
-                    query.from_step = String(stepId);
-                }
+            if (!this.isNewTempWorkflow && stepId !== undefined && stepId !== null) {
+                // Append ourselves to the path, so the subworkflow editor can offer a way back to
+                // any level above it and not just to us.
+                query.from_trail = encodeSubworkflowTrail([
+                    ...this.subworkflowTrail,
+                    { workflowId: this.id, stepOrderIndex: stepId },
+                ]);
             }
             this.onNavigate(`/workflows/edit?${new URLSearchParams(query)}`);
         },
-        /** Returns to the workflow this subworkflow was opened from, upgrading the step we came through. */
-        backToParentWorkflow() {
-            const query = { id: this.parentWorkflowId };
-            if (this.parentStepOrderIndex !== undefined) {
-                query.upgrade_step = String(this.parentStepOrderIndex);
-            }
-            this.onNavigate(`/workflows/edit?${new URLSearchParams(query)}`);
-        },
-        async loadParentWorkflowName() {
-            if (!this.parentWorkflowId) {
+        /**
+         * Returns to one of the workflows this subworkflow was opened from, upgrading the step we
+         * came through so the edits made down here land there. Upgrading that one step is enough
+         * however deep we are: it pulls in the newest version of everything below it.
+         */
+        backToTrailEntry(trailIndex) {
+            const entry = this.subworkflowTrail[trailIndex];
+            if (!entry) {
                 return;
             }
-            try {
-                const { name } = await getWorkflowInfo(this.parentWorkflowId);
-                this.parentWorkflowName = name;
-            } catch (e) {
-                // The breadcrumb falls back to a generic label, this is not worth failing the editor over.
-                this.parentWorkflowName = null;
+            const query = { id: entry.workflowId, upgrade_step: String(entry.stepOrderIndex) };
+            const remaining = this.subworkflowTrail.slice(0, trailIndex);
+            if (remaining.length > 0) {
+                query.from_trail = encodeSubworkflowTrail(remaining);
             }
+            this.onNavigate(`/workflows/edit?${new URLSearchParams(query)}`);
+        },
+        async loadTrailWorkflowNames() {
+            const names = {};
+            await Promise.all(
+                this.subworkflowTrail.map(async (entry) => {
+                    try {
+                        const { name } = await getWorkflowInfo(entry.workflowId);
+                        names[entry.workflowId] = name;
+                    } catch (e) {
+                        // The breadcrumb falls back to a generic label, not worth failing the editor over.
+                    }
+                }),
+            );
+            this.trailWorkflowNames = names;
         },
         /** Applies the edits made in a subworkflow we just came back from to the step that embeds it. */
         async upgradeStepAfterReturn() {
@@ -993,15 +1028,14 @@ export default {
                 return;
             }
             // Drop the parameter first, so reloading the page does not upgrade a second time.
+            // The trail has to survive, it is what the breadcrumb above is built from.
+            const query = { id: this.id };
+            if (this.subworkflowTrail.length > 0) {
+                query.from_trail = encodeSubworkflowTrail(this.subworkflowTrail);
+            }
             this.$emit("skipNextReload");
-            this.$router.replace({ query: { id: this.id } });
-            await this.onAttemptRefactor([
-                {
-                    action_type: "upgrade_subworkflow",
-                    step: { order_index: this.upgradeStepOrderIndex },
-                    include_tools: true,
-                },
-            ]);
+            this.$router.replace({ query });
+            this.requestUpgrade(this.upgradeStepOrderIndex);
         },
         async onClone(stepId) {
             const sourceStep = this.steps[parseInt(stepId)];
@@ -1205,7 +1239,58 @@ export default {
             this.stepActions.setLabel(this.steps[nodeId], newLabel);
         },
         onUpgrade() {
-            this.onAttemptRefactor([{ action_type: "upgrade_all_steps", include_subworkflow_tools: true }]);
+            this.requestUpgrade(null);
+        },
+        /**
+         * Upgrades one subworkflow step, asking first when doing so would change a workflow that
+         * exists in the user's own list rather than only this one.
+         */
+        requestSubworkflowUpgrade(stepId) {
+            this.requestUpgrade(stepId);
+        },
+        requestUpgrade(stepId) {
+            const sharedNames = this.sharedWorkflowNamesFor(stepId);
+            if (sharedNames.length === 0) {
+                this.applyUpgrade(stepId, false);
+                return;
+            }
+            this.pendingUpgradeStepId = stepId;
+            this.upgradeScopeSharedNames = sharedNames;
+            this.showUpgradeScope = true;
+        },
+        /** Workflows a recursive upgrade would give a new version to, for one step or all of them. */
+        sharedWorkflowNamesFor(stepId) {
+            const steps = stepId === null ? Object.values(this.steps) : [this.steps[stepId]];
+            const names = [];
+            for (const step of steps) {
+                for (const name of step?.subworkflow_info?.shared_workflow_names ?? []) {
+                    if (!names.includes(name)) {
+                        names.push(name);
+                    }
+                }
+            }
+            return names;
+        },
+        onUpgradeScopeChosen(detach) {
+            const stepId = this.pendingUpgradeStepId;
+            this.pendingUpgradeStepId = null;
+            this.applyUpgrade(stepId, detach);
+        },
+        applyUpgrade(stepId, detach) {
+            const action =
+                stepId === null
+                    ? {
+                          action_type: "upgrade_all_steps",
+                          include_subworkflow_tools: true,
+                          detach_subworkflows: detach,
+                      }
+                    : {
+                          action_type: "upgrade_subworkflow",
+                          step: { order_index: stepId },
+                          include_tools: true,
+                          detach_subworkflow: detach,
+                      };
+            this.onAttemptRefactor([action]);
         },
         async generateAIReport() {
             if (this.hasChanges) {
@@ -1523,13 +1608,36 @@ export default {
     color: $white;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
     padding: 0.25rem 1rem;
 
     .btn-link,
     .text-muted {
         color: $white !important;
     }
+
+    .text-muted {
+        margin-left: auto;
+    }
+}
+
+.editor-subworkflow-crumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    overflow: hidden;
+
+    span + span::before {
+        content: "\203a";
+        margin-right: 0.4rem;
+    }
+}
+
+.editor-subworkflow-current {
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .reset-wheel {

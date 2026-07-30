@@ -123,6 +123,11 @@ export interface SubworkflowInfo {
     latest_content_id?: string | null;
     version?: number | null;
     latest_version?: number | null;
+    /** Set when the subworkflow is a workflow in its own right, not a copy private to its parent. */
+    standalone_workflow_id?: string | null;
+    standalone_workflow_name?: string | null;
+    /** Workflows in this subtree that upgrading the contents would give a new version to. */
+    shared_workflow_names: string[];
 }
 
 export interface NewStep {

@@ -772,6 +772,13 @@ class SubWorkflowInfo(TypedDict):
     latest_content_id: str | None
     version: int | None
     latest_version: int | None
+    # Set when this subworkflow is a workflow in its own right rather than a copy embedded in
+    # its parent, which means editing or upgrading it here is visible everywhere it is used.
+    standalone_workflow_id: str | None
+    standalone_workflow_name: str | None
+    # Names of the workflows in this subtree, this one included, that upgrading the contents
+    # would create a new version of. Empty when everything here is private to its parent.
+    shared_workflow_names: list[str]
 
 
 def _latest_tool_for_step(trans: "ProvidesHistoryContext", step: WorkflowStep):
@@ -849,6 +856,28 @@ def find_outdated_steps(
                 )
             outdated.extend(find_outdated_steps(trans, subworkflow, _path=path + [step.order_index]))
     return outdated
+
+
+def find_shared_workflows(workflow: Workflow, _depth: int = 0) -> list[str]:
+    """Names of the workflows in this subtree that exist in the user's workflow list.
+
+    Galaxy hides the stored workflow it creates for a subworkflow that only lives inside its
+    parent, so a visible one is a workflow in its own right. Upgrading the contents of one of
+    those gives it a new version that every workflow using it will see, which is a decision the
+    user should get to make rather than a side effect.
+    """
+    if _depth >= MAX_SUBWORKFLOW_NESTING_DEPTH:
+        return []
+    names = []
+    stored_workflow = workflow.stored_workflow
+    if stored_workflow is not None and not stored_workflow.hidden:
+        names.append(stored_workflow.name)
+    for step in workflow.steps:
+        if step.type == "subworkflow" and step.subworkflow is not None:
+            for name in find_shared_workflows(step.subworkflow, _depth=_depth + 1):
+                if name not in names:
+                    names.append(name)
+    return names
 
 
 class SubWorkflowModule(WorkflowModule):
@@ -969,12 +998,20 @@ class SubWorkflowModule(WorkflowModule):
         stored_workflow = subworkflow.stored_workflow
         version = None if stored_workflow is None else _version_of(stored_workflow, subworkflow)
         latest_version = None if stored_workflow is None else len(stored_workflow.workflows) - 1
+        # Galaxy hides the stored workflow it creates for a subworkflow that only exists inside
+        # its parent, so a visible one is a workflow the user has in their own list.
+        is_standalone = stored_workflow is not None and not stored_workflow.hidden
         return SubWorkflowInfo(
             steps=steps,
             outdated_steps=find_outdated_steps(self.trans, subworkflow),
             latest_content_id=self.latest_content_id,
             version=version,
             latest_version=latest_version,
+            standalone_workflow_id=(
+                self.trans.security.encode_id(stored_workflow.id) if is_standalone and stored_workflow else None
+            ),
+            standalone_workflow_name=stored_workflow.name if is_standalone and stored_workflow else None,
+            shared_workflow_names=find_shared_workflows(subworkflow),
         )
 
     def check_and_update_state(self):

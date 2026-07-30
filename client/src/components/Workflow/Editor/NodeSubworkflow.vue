@@ -37,6 +37,12 @@ const outdatedByOrderIndex = computed(() => {
 });
 
 const outdatedCount = computed(() => (props.subworkflowInfo.outdated_steps ?? []).length);
+/** Outdated steps that sit further down, so they get counted in the badge but match no row here. */
+const nestedOutdatedCount = computed(
+    () =>
+        (props.subworkflowInfo.outdated_steps ?? []).filter((outdated) => outdated.subworkflow_path.length > 0).length,
+);
+const sharedWorkflowNames = computed(() => props.subworkflowInfo.shared_workflow_names ?? []);
 
 const outdatedTitle = computed(() => {
     const count = outdatedCount.value;
@@ -91,7 +97,15 @@ function stepTitle(step: { label?: string | null; name: string }) {
                 <li v-if="unlistedStepCount > 0" class="node-subworkflow-step text-muted">
                     and {{ unlistedStepCount }} more
                 </li>
+                <li v-if="nestedOutdatedCount > 0" class="node-subworkflow-step text-muted">
+                    {{ nestedOutdatedCount }} outdated further down
+                </li>
             </ol>
+
+            <p v-if="sharedWorkflowNames.length > 0" class="node-subworkflow-shared">
+                Shares {{ sharedWorkflowNames.join(", ") }}, so editing or upgrading here changes
+                {{ sharedWorkflowNames.length > 1 ? "those workflows" : "that workflow" }} everywhere.
+            </p>
 
             <div v-if="!readonly" class="node-subworkflow-actions">
                 <button
@@ -171,6 +185,12 @@ function stepTitle(step: { label?: string | null; name: string }) {
 
 .node-subworkflow-step-version {
     margin-left: auto;
+    color: $text-muted;
+}
+
+.node-subworkflow-shared {
+    margin: 0.25rem 0;
+    padding-left: 0.25rem;
     color: $text-muted;
 }
 

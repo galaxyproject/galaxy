@@ -104,7 +104,7 @@ const props = defineProps<{
 const emit = defineEmits([
     "onAnnotation",
     "onLabel",
-    "onAttemptRefactor",
+    "onUpgradeSubworkflow",
     "onEditSubworkflow",
     "onSetData",
     "onUpdateStep",
@@ -136,9 +136,7 @@ function onEditSubworkflow() {
     emit("onEditSubworkflow", contentId!.value, stepId.value);
 }
 function onUpgradeSubworkflow() {
-    emit("onAttemptRefactor", [
-        { action_type: "upgrade_subworkflow", step: { order_index: stepId.value }, include_tools: true },
-    ]);
+    emit("onUpgradeSubworkflow", stepId.value);
 }
 function onChangePostJobActions(postJobActions: unknown) {
     emit("onChangePostJobActions", stepId.value, postJobActions);

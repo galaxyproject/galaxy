@@ -212,6 +212,12 @@ well, recursively through any further nesting. This creates a new version of the
 only applies to subworkflows the current user owns. Without this, only the pointer to the subworkflow
 is moved to a newer revision - a tool that became outdated inside the subworkflow stays outdated."""
 
+DETACH_SUBWORKFLOW_DESCRIPTION = """If set, upgrading the contents of a subworkflow puts the result in
+a private copy embedded in this workflow, leaving the workflow it came from untouched. Without this a
+subworkflow that is a workflow in its own right gets a new version, which every workflow using it
+sees. Only meaningful together with the tool upgrade flag, since moving a step to an existing revision
+never changes the subworkflow."""
+
 
 class UpgradeSubworkflowAction(BaseAction):
     action_type: Literal["upgrade_subworkflow"]
@@ -220,6 +226,7 @@ class UpgradeSubworkflowAction(BaseAction):
     # before adding it into the database.
     content_id: str | None = None
     include_tools: bool = Field(False, description=SUBWORKFLOW_TOOLS_DESCRIPTION)
+    detach_subworkflow: bool = Field(False, description=DETACH_SUBWORKFLOW_DESCRIPTION)
 
 
 class UpgradeToolAction(BaseAction):
@@ -231,6 +238,7 @@ class UpgradeToolAction(BaseAction):
 class UpgradeAllStepsAction(BaseAction):
     action_type: Literal["upgrade_all_steps"]
     include_subworkflow_tools: bool = Field(False, description=SUBWORKFLOW_TOOLS_DESCRIPTION)
+    detach_subworkflows: bool = Field(False, description=DETACH_SUBWORKFLOW_DESCRIPTION)
 
 
 union_action_classes = (

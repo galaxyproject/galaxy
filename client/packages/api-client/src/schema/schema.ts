@@ -25847,6 +25847,16 @@ export interface components {
              */
             action_type: "upgrade_all_steps";
             /**
+             * Detach Subworkflows
+             * @description If set, upgrading the contents of a subworkflow puts the result in
+             *     a private copy embedded in this workflow, leaving the workflow it came from untouched. Without this a
+             *     subworkflow that is a workflow in its own right gets a new version, which every workflow using it
+             *     sees. Only meaningful together with the tool upgrade flag, since moving a step to an existing revision
+             *     never changes the subworkflow.
+             * @default false
+             */
+            detach_subworkflows: boolean;
+            /**
              * Include Subworkflow Tools
              * @description If set, the tools used by the subworkflow itself are upgraded as
              *     well, recursively through any further nesting. This creates a new version of the subworkflow, so it
@@ -25878,6 +25888,16 @@ export interface components {
             action_type: "upgrade_subworkflow";
             /** Content Id */
             content_id?: string | null;
+            /**
+             * Detach Subworkflow
+             * @description If set, upgrading the contents of a subworkflow puts the result in
+             *     a private copy embedded in this workflow, leaving the workflow it came from untouched. Without this a
+             *     subworkflow that is a workflow in its own right gets a new version, which every workflow using it
+             *     sees. Only meaningful together with the tool upgrade flag, since moving a step to an existing revision
+             *     never changes the subworkflow.
+             * @default false
+             */
+            detach_subworkflow: boolean;
             /**
              * Include Tools
              * @description If set, the tools used by the subworkflow itself are upgraded as

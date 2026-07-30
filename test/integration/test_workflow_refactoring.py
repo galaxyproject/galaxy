@@ -799,6 +799,33 @@ steps:
             RefactorActionExecutionMessageTypeEnum.subworkflow_up_to_date
         ]
 
+    def test_subworkflow_upgrade_detached_leaves_the_shared_workflow_alone(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_WITH_OUTDATED_TOOL_IN_SUBWORKFLOW)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        nested_stored_workflow_id = nested_stored_workflow.id
+        assert self._nested_step("tool_update_step").tool_version == "0.1"
+
+        actions: ActionsJson = [
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": "nested_workflow"},
+                "include_tools": True,
+                "detach_subworkflow": True,
+            },
+        ]
+        self._refactor(actions)
+
+        # the step uses an upgraded copy...
+        assert self._nested_step("tool_update_step").tool_version == "0.2"
+        upgraded_stored_workflow = self._latest_workflow.step_by_label("nested_workflow").subworkflow.stored_workflow
+        assert upgraded_stored_workflow.id != nested_stored_workflow_id
+        assert upgraded_stored_workflow.hidden
+
+        # ...and the workflow it was copied from is untouched
+        nested_stored_workflow = self._app.model.session.get(StoredWorkflow, nested_stored_workflow_id)
+        assert len(nested_stored_workflow.workflows) == 1
+        assert nested_stored_workflow.latest_workflow.step_by_label("tool_update_step").tool_version == "0.1"
+
     def test_subworkflow_upgrade_includes_nested_tools_dry_run(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_WITH_OUTDATED_TOOL_IN_SUBWORKFLOW)
         assert self._nested_step("tool_update_step").tool_version == "0.1"

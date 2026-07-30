@@ -237,7 +237,7 @@ const emit = defineEmits([
     "onDragConnector",
     "stopDragging",
     "editSubworkflow",
-    "attemptRefactor",
+    "upgradeSubworkflow",
 ]);
 
 const popoverShow = ref(false);
@@ -252,9 +252,7 @@ function onEditSubworkflow() {
 }
 
 function onUpgradeSubworkflow() {
-    emit("attemptRefactor", [
-        { action_type: "upgrade_subworkflow", step: { order_index: props.id }, include_tools: true },
-    ]);
+    emit("upgradeSubworkflow", props.id);
 }
 
 function remove() {

@@ -4,14 +4,14 @@
         :key="editorReloadKey"
         :workflow-id="storedWorkflowId"
         :initial-version="version"
-        :parent-workflow-id="parentWorkflowId"
-        :parent-step-order-index="parentStepOrderIndex"
+        :subworkflow-trail="subworkflowTrail"
         :upgrade-step-order-index="upgradeStepOrderIndex"
         @update:confirmation="$emit('update:confirmation', $event)"
         @skipNextReload="() => (skipNextReload = true)" />
 </template>
 <script>
 import { getWorkflowInfo } from "@/api/workflows";
+import { parseSubworkflowTrail } from "@/components/Workflow/Editor/modules/subworkflowTrail";
 import Query from "@/utils/query-string-parsing";
 
 import Editor from "@/components/Workflow/Editor/Index.vue";
@@ -37,8 +37,7 @@ export default {
             editorReloadKey: 0,
             skipNextReload: false,
             newWorkflow: false,
-            parentWorkflowId: undefined,
-            parentStepOrderIndex: undefined,
+            subworkflowTrail: [],
             upgradeStepOrderIndex: undefined,
         };
     },
@@ -62,8 +61,7 @@ export default {
             this.version = versionParam !== undefined ? parseInt(versionParam, 10) : undefined;
             // Set when drilling into or coming back out of a subworkflow. These names must not
             // end in an existing parameter name, Query.get matches unanchored substrings.
-            this.parentWorkflowId = Query.get("from_workflow");
-            this.parentStepOrderIndex = parseOrderIndex(Query.get("from_step"));
+            this.subworkflowTrail = parseSubworkflowTrail(Query.get("from_trail"));
             this.upgradeStepOrderIndex = parseOrderIndex(Query.get("upgrade_step"));
             this.storedWorkflowId = Query.get("id");
             this.workflowId = Query.get("workflow_id");
