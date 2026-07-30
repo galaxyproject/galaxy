@@ -70,7 +70,7 @@ def get_tool_from_toolbox(toolbox: AbstractToolBox, tool_ref: ToolRunReference, 
     if not tool:
         log.debug(f"Not found tool with kwds [{tool_ref}]")
         raise exceptions.ToolMissingException("Tool not found.")
-    return tool
+    return toolbox.materialize_tool(tool, reason="execution")
 
 
 class DynamicToolManager(ModelManager[DynamicTool]):

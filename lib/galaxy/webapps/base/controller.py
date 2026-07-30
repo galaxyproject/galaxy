@@ -6,6 +6,7 @@ import logging
 from collections.abc import Callable
 from typing import (
     Any,
+    Protocol,
     TYPE_CHECKING,
 )
 
@@ -26,6 +27,10 @@ from galaxy.managers import (
     base as managers_base,
     users,
     workflows,
+)
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
 )
 from galaxy.managers.forms import (
     get_filtered_form_definitions_current,
@@ -48,6 +53,7 @@ from galaxy.model import (
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import BasicSharedApp
+from galaxy.tool_util.toolbox.base import AbstractToolBox
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
     error,
@@ -62,6 +68,7 @@ from galaxy.workflow.modules import WorkflowModuleInjector
 
 if TYPE_CHECKING:
     from galaxy.structured_app import StructuredApp
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +87,7 @@ class BaseController:
         self.sa_session = app.model.context
         self.user_manager = users.UserManager(app)
 
-    def get_toolbox(self):
+    def get_toolbox(self) -> AbstractToolBox:
         """Returns the application toolbox"""
         return self.app.toolbox
 
@@ -88,7 +95,9 @@ class BaseController:
         """Returns the class object that a string denotes. Without this method, we'd have to do eval(<class_name>)."""
         return managers_base.get_class(class_name)
 
-    def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+    def get_object(
+        self, trans: ProvidesUserContext, id, class_name, check_ownership=False, check_accessible=False, deleted=None
+    ):
         """
         Convenience method to get a model object with the specified checks.
         """
@@ -103,20 +112,20 @@ class BaseController:
     #    # meant to be overridden in SharableSecurityMixin
     #    return item
 
-    def get_user(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
+    def get_user(self, trans: ProvidesUserContext, id, check_ownership=False, check_accessible=False, deleted=None):
         return self.get_object(trans, id, "User", check_ownership=False, check_accessible=False, deleted=deleted)
 
-    def get_group(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
+    def get_group(self, trans: ProvidesUserContext, id, check_ownership=False, check_accessible=False, deleted=None):
         return self.get_object(trans, id, "Group", check_ownership=False, check_accessible=False, deleted=deleted)
 
-    def get_role(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
+    def get_role(self, trans: ProvidesUserContext, id, check_ownership=False, check_accessible=False, deleted=None):
         return self.get_object(trans, id, "Role", check_ownership=False, check_accessible=False, deleted=deleted)
 
     # ---- parsing query params
     def decode_id(self, id):
         return managers_base.decode_id(self.app, id)
 
-    def encode_all_ids(self, trans, rval, recursive=False):
+    def encode_all_ids(self, trans: ProvidesUserContext, rval, recursive=False):
         """
         Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
 
@@ -176,7 +185,9 @@ Root = BaseController
 
 
 class BaseUIController(BaseController):
-    def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+    def get_object(
+        self, trans: ProvidesUserContext, id, class_name, check_ownership=False, check_accessible=False, deleted=None
+    ):
         try:
             return BaseController.get_object(
                 self,
@@ -193,13 +204,15 @@ class BaseUIController(BaseController):
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
             raise Exception(f"Server error retrieving {class_name} id ( {str(id)} ).")
 
-    def message_exception(self, trans, message, sanitize=True):
+    def message_exception(self, trans: "GalaxyWebTransaction", message, sanitize=True):
         trans.response.status = 400
         return {"err_msg": util.sanitize_text(message) if sanitize else message}
 
 
 class BaseAPIController(BaseController):
-    def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+    def get_object(
+        self, trans: ProvidesUserContext, id, class_name, check_ownership=False, check_accessible=False, deleted=None
+    ):
         try:
             return BaseController.get_object(
                 self,
@@ -217,7 +230,7 @@ class BaseAPIController(BaseController):
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
             raise HTTPInternalServerError(comment=util.unicodify(e))
 
-    def not_implemented(self, trans, **kwd):
+    def not_implemented(self, trans: ProvidesUserContext, **kwd):
         raise HTTPNotImplemented()
 
     def _parse_serialization_params(self, kwd, default_view):
@@ -253,7 +266,7 @@ class Datatype:
 class SharableItemSecurityMixin:
     """Mixin for handling security for sharable items."""
 
-    def security_check(self, trans, item, check_ownership=False, check_accessible=False):
+    def security_check(self, trans: ProvidesUserContext, item, check_ownership=False, check_accessible=False):
         """Security checks for an item: checks if (a) user owns item or (b) item is accessible to user."""
         return managers_base.security_check(
             trans, item, check_ownership=check_ownership, check_accessible=check_accessible
@@ -263,10 +276,12 @@ class SharableItemSecurityMixin:
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
     get_object: Callable
 
-    def get_library_folder(self, trans, id: int, check_ownership=False, check_accessible=True):
+    def get_library_folder(self, trans: ProvidesUserContext, id: int, check_ownership=False, check_accessible=True):
         return self.get_object(trans, id, "LibraryFolder", check_ownership=False, check_accessible=check_accessible)
 
-    def get_library_dataset_dataset_association(self, trans, id, check_ownership=False, check_accessible=True):
+    def get_library_dataset_dataset_association(
+        self, trans: ProvidesUserContext, id, check_ownership=False, check_accessible=True
+    ):
         # Deprecated in lieu to galaxy.managers.lddas.LDDAManager.get() but not
         # reusing that exactly because of subtle differences in exception handling
         # logic (API controller override get_object to be slightly different).
@@ -274,7 +289,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             trans, id, "LibraryDatasetDatasetAssociation", check_ownership=False, check_accessible=check_accessible
         )
 
-    def get_library_dataset(self, trans, id, check_ownership=False, check_accessible=True):
+    def get_library_dataset(self, trans: ProvidesUserContext, id, check_ownership=False, check_accessible=True):
         return self.get_object(trans, id, "LibraryDataset", check_ownership=False, check_accessible=check_accessible)
 
     # TODO: it makes no sense that I can get roles from a user but not user.is_admin()
@@ -283,14 +298,14 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
     #    return (  ( user.is_admin() )
     #           or ( trans.app.security_agent.can_add_library_item( user.all_roles(), item ) ) )
 
-    def can_current_user_add_to_library_item(self, trans, item):
+    def can_current_user_add_to_library_item(self, trans: ProvidesUserContext, item):
         if not trans.user:
             return False
         return trans.user_is_admin or trans.app.security_agent.can_add_library_item(
             trans.get_current_user_roles(), item
         )
 
-    def check_user_can_add_to_library_item(self, trans, item, check_accessible=True):
+    def check_user_can_add_to_library_item(self, trans: ProvidesUserContext, item, check_accessible=True):
         """
         Raise exception if user cannot add to the specified library item (i.e.
         Folder). Can set check_accessible to False if folder was loaded with
@@ -311,7 +326,9 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             # Slight misuse of ItemOwnershipException?
             raise exceptions.ItemOwnershipException("User cannot add to library item.")
 
-    def _copy_hdca_to_library_folder(self, trans, hda_manager, from_hdca_id: int, folder_id: int, ldda_message=""):
+    def _copy_hdca_to_library_folder(
+        self, trans: ProvidesHistoryContext, hda_manager, from_hdca_id: int, folder_id: int, ldda_message=""
+    ):
         """
         Fetches the collection identified by `from_hcda_id` and dispatches individual collection elements to
         _copy_hda_to_library_folder
@@ -337,7 +354,13 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         ]
 
     def _copy_hda_to_library_folder(
-        self, trans, hda_manager, from_hda_id: int, folder_id: int, ldda_message="", element_identifier=None
+        self,
+        trans: ProvidesHistoryContext,
+        hda_manager,
+        from_hda_id: int,
+        folder_id: int,
+        ldda_message="",
+        element_identifier=None,
     ):
         """
         Copies hda ``from_hda_id`` to library folder ``folder_id``, optionally
@@ -383,7 +406,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         return rval
 
     def copy_hda_to_library_folder(
-        self, trans, hda, library_folder, roles=None, ldda_message="", element_identifier=None
+        self, trans: ProvidesUserContext, hda, library_folder, roles=None, ldda_message="", element_identifier=None
     ):
         # PRECONDITION: permissions for this action on hda and library_folder have been checked
         roles = roles or []
@@ -407,7 +430,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         #   then finally, re-applies hda -> ldda for missing actions in _apply_hda_permissions_to_ldda??
         return ldda
 
-    def _apply_library_folder_permissions_to_ldda(self, trans, library_folder, ldda):
+    def _apply_library_folder_permissions_to_ldda(self, trans: ProvidesUserContext, library_folder, ldda):
         """
         Copy actions/roles from library folder to an ldda (and its library_dataset).
         """
@@ -417,7 +440,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         security_agent.copy_library_permissions(trans, library_folder, ldda.library_dataset)
         return security_agent.get_permissions(ldda)
 
-    def _apply_hda_permissions_to_ldda(self, trans, hda, ldda):
+    def _apply_hda_permissions_to_ldda(self, trans: ProvidesUserContext, hda, ldda):
         """
         Copy actions/roles from hda to ldda.library_dataset (and then ldda) if ldda
         doesn't already have roles for the given action.
@@ -432,8 +455,11 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
 
         # except that: if DATASET_MANAGE_PERMISSIONS exists in the hda.dataset permissions,
         #   we need to instead apply those roles to the LIBRARY_MANAGE permission to the library dataset
-        dataset_manage_permissions_action = security_agent.get_action("DATASET_MANAGE_PERMISSIONS").action
-        library_manage_permissions_action = security_agent.get_action("LIBRARY_MANAGE").action
+        dataset_manage_permissions = security_agent.get_action("DATASET_MANAGE_PERMISSIONS")
+        library_manage_permissions = security_agent.get_action("LIBRARY_MANAGE")
+        assert dataset_manage_permissions is not None and library_manage_permissions is not None
+        dataset_manage_permissions_action = dataset_manage_permissions.action
+        library_manage_permissions_action = library_manage_permissions.action
         # TODO: test this and remove if in loop below
         # TODO: doesn't handle action.action
         # if dataset_manage_permissions_action in dataset_permissions_dict:
@@ -454,11 +480,9 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             # NOTE: only apply an hda perm if it's NOT set in the library_dataset perms (don't overwrite)
             if action not in library_dataset_actions:
                 for role in dataset_permissions_roles:
-                    ldps = LibraryDatasetPermissions(action, library_dataset, role)
-                    ldps = [ldps] if not isinstance(ldps, list) else ldps
-                    for ldp in ldps:
-                        trans.sa_session.add(ldp)
-                        flush_needed = True
+                    ldp = LibraryDatasetPermissions(action, library_dataset, role)
+                    trans.sa_session.add(ldp)
+                    flush_needed = True
 
         if flush_needed:
             trans.sa_session.commit()
@@ -473,22 +497,25 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
     Mixin for controllers that use Visualization objects.
     """
 
+    app: "StructuredApp"
     slug_builder = SlugBuilder()
 
-    def get_visualization_config(self, trans, visualization):
+    def get_visualization_config(self, trans: ProvidesUserContext, visualization):
         """Returns a visualization's configuration."""
         latest_revision = visualization.latest_revision
         config = latest_revision.config
         return config
 
-    def get_hda_or_ldda(self, trans, hda_ldda, dataset_id):
+    def get_hda_or_ldda(self, trans: "GalaxyWebTransaction", hda_ldda, dataset_id):
         """Returns either HDA or LDDA for hda/ldda and id combination."""
         if hda_ldda == "hda":
             return self.get_hda(trans, dataset_id, check_ownership=False, check_accessible=True)
         else:
             return self.get_library_dataset_dataset_association(trans, dataset_id)
 
-    def get_hda(self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True):
+    def get_hda(
+        self, trans: "GalaxyWebTransaction", dataset_id, check_ownership=True, check_accessible=False, check_state=True
+    ):
         """
         Get an HDA object by id performing security checks using
         the current transaction.
@@ -528,7 +555,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 )
         return data
 
-    def _get_genome_data(self, trans, dataset, dbkey=None):
+    def _get_genome_data(self, trans: ProvidesHistoryContext, dataset, dbkey=None):
         """
         Returns genome-wide data for dataset if available; if not, message is returned.
         """
@@ -551,7 +578,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if isinstance(dataset.datatype, ChromatinInteractions):
                 source = "data"
 
-            data_provider = trans.app.data_provider_registry.get_data_provider(
+            data_provider = self.app.data_provider_registry.get_data_provider(
                 trans, original_dataset=dataset, source=source
             )
             # HACK: pass in additional params which are used for only some
@@ -589,7 +616,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
     app: "StructuredApp"
     slug_builder = SlugBuilder()
 
-    def get_stored_workflow(self, trans, id, check_ownership=True, check_accessible=False):
+    def get_stored_workflow(self, trans: ProvidesUserContext, id, check_ownership=True, check_accessible=False):
         """Get a StoredWorkflow from the database by id, verifying ownership."""
         # Load workflow from database
         workflow_contents_manager = workflows.WorkflowsManager(self.app)
@@ -607,7 +634,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
         return workflow
 
-    def get_stored_workflow_steps(self, trans, stored_workflow: StoredWorkflow):
+    def get_stored_workflow_steps(self, trans: ProvidesHistoryContext, stored_workflow: StoredWorkflow):
         """Restores states for a stored workflow's steps."""
         module_injector = WorkflowModuleInjector(trans)
         workflow = stored_workflow.latest_workflow
@@ -618,7 +645,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             except exceptions.ToolMissingException:
                 pass
 
-    def _import_shared_workflow(self, trans, stored: StoredWorkflow):
+    def _import_shared_workflow(self, trans: ProvidesUserContext, stored: StoredWorkflow):
         """Imports a shared workflow"""
         # Copy workflow.
         imported_stored = StoredWorkflow()
@@ -642,7 +669,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.commit()
         return imported_stored
 
-    def _workflow_to_dict(self, trans, stored: StoredWorkflow) -> dict[str, Any]:
+    def _workflow_to_dict(self, trans: ProvidesHistoryContext, stored: StoredWorkflow) -> dict[str, Any]:
         """
         Converts a workflow to a dict of attributes suitable for exporting.
         """
@@ -656,7 +683,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 class UsesFormDefinitionsMixin:
     """Mixin for controllers that use Galaxy form objects."""
 
-    def get_all_forms(self, trans, all_versions=False, filter=None, form_type="All"):
+    def get_all_forms(self, trans: ProvidesUserContext, all_versions=False, filter=None, form_type="All"):
         """
         Return all the latest forms from the form_definition_current table
         if all_versions is set to True. Otherwise return all the versions
@@ -673,7 +700,7 @@ class UsesFormDefinitionsMixin:
         else:
             return [fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type]
 
-    def save_widget_field(self, trans, field_obj, widget_name, **kwd):
+    def save_widget_field(self, trans: ProvidesUserContext, field_obj, widget_name, **kwd):
         # Save a form_builder field object
         params = util.Params(kwd)
         if isinstance(field_obj, trans.model.UserAddress):
@@ -689,7 +716,7 @@ class UsesFormDefinitionsMixin:
             trans.sa_session.add(field_obj)
             trans.sa_session.commit()
 
-    def get_form_values(self, trans, user, form_definition, **kwd):
+    def get_form_values(self, trans: ProvidesUserContext, user, form_definition, **kwd):
         """
         Returns the name:value dictionary containing all the form values
         """
@@ -699,6 +726,7 @@ class UsesFormDefinitionsMixin:
             field_type = field["type"]
             field_name = field["name"]
             input_value = params.get(field_name, "")
+            field_value: int | str | bool
             if field_type == AddressField.__name__:
                 input_text_value = util.restore_text(input_value)
                 if input_text_value == "new":
@@ -736,7 +764,7 @@ class SharableMixin:
 
     @web.expose
     @web.require_login("modify Galaxy items")
-    def set_slug_async(self, trans, id, new_slug):
+    def set_slug_async(self, trans: "GalaxyWebTransaction", id, new_slug):
         item = self.get_item(trans, id)
         if item:
             # Only update slug if slug is not already in use.
@@ -757,38 +785,60 @@ class SharableMixin:
 
     @web.expose
     @web.require_login("share Galaxy items")
-    def share(self, trans, id=None, email="", **kwd):
+    def share(self, trans: "GalaxyWebTransaction", id=None, email="", **kwd):
         """Handle sharing an item with a particular user."""
         raise NotImplementedError()
 
     @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def display_by_username_and_slug(self, trans: "GalaxyWebTransaction", username, slug, **kwargs):
         """Display item by username and slug."""
         # Ensure slug is in the correct format.
         slug = slug.encode("latin1").decode("utf-8")
         self._display_by_username_and_slug(trans, username, slug, **kwargs)
 
-    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def _display_by_username_and_slug(self, trans: "GalaxyWebTransaction", username, slug, **kwargs):
         raise NotImplementedError()
 
-    def get_item(self, trans, id):
+    def get_item(self, trans: "GalaxyWebTransaction", id):
         """Return item based on id."""
         raise NotImplementedError()
 
 
+class LooksUpTaggedItems(Protocol):
+    """What the tag helpers need from the object they run on.
+
+    get_object comes from the BaseController subclass UsesTagsMixin is combined
+    with, _get_tagged_item from the mixin itself.
+    """
+
+    def get_object(
+        self,
+        trans: ProvidesUserContext,
+        id,
+        class_name,
+        check_ownership=False,
+        check_accessible=False,
+        deleted=None,
+    ): ...
+
+    def _get_tagged_item(self, trans: ProvidesUserContext, item_class_name, id, check_ownership=True): ...
+
+
 class UsesTagsMixin(SharableItemSecurityMixin):
-    def _get_user_tags(self, trans, item_class_name, id):
+    def _get_user_tags(self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         return [tag for tag in tagged_item.tags if tag.user == user]
 
-    def _get_tagged_item(self, trans, item_class_name, id, check_ownership=True):
+    def _get_tagged_item(
+        self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id, check_ownership=True
+    ):
         tagged_item = self.get_object(
             trans, id, item_class_name, check_ownership=check_ownership, check_accessible=True
         )
         return tagged_item
 
-    def _remove_items_tag(self, trans, item_class_name, id, tag_name):
+    def _remove_items_tag(self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id, tag_name):
         """Remove a tag from an item."""
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
@@ -796,27 +846,29 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         trans.sa_session.commit()
         return deleted
 
-    def _apply_item_tag(self, trans, item_class_name, id, tag_name, tag_value=None):
+    def _apply_item_tag(
+        self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id, tag_name, tag_value=None
+    ):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         tag_assoc = trans.tag_handler.apply_item_tag(user, tagged_item, tag_name, tag_value)
         trans.sa_session.commit()
         return tag_assoc
 
-    def _get_item_tag_assoc(self, trans, item_class_name, id, tag_name):
+    def _get_item_tag_assoc(self: LooksUpTaggedItems, trans: ProvidesUserContext, item_class_name, id, tag_name):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         log.debug(f"In get_item_tag_assoc with tagged_item {tagged_item}")
         return trans.tag_handler._get_item_tag_assoc(user, tagged_item, tag_name)
 
-    def set_tags_from_list(self, trans, item, new_tags_list, user=None):
+    def set_tags_from_list(self, trans: ProvidesUserContext, item, new_tags_list, user=None):
         return trans.tag_handler.set_tags_from_list(user, item, new_tags_list)
 
 
 class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
     """Mixin for getting and setting item extended metadata."""
 
-    def get_item_extended_metadata_obj(self, trans, item):
+    def get_item_extended_metadata_obj(self, trans: ProvidesUserContext, item):
         """
         Given an item object (such as a LibraryDatasetDatasetAssociation), find the object
         of the associated extended metadata
@@ -825,10 +877,10 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
             return item.extended_metadata
         return None
 
-    def set_item_extended_metadata_obj(self, trans, item, extmeta_obj, check_writable=False):
+    def set_item_extended_metadata_obj(self, trans: ProvidesUserContext, item, extmeta_obj, check_writable=False):
         if item.__class__ == LibraryDatasetDatasetAssociation:
             if not check_writable or trans.app.security_agent.can_modify_library_item(
-                trans.get_current_user_roles(), item, trans.user
+                trans.get_current_user_roles(), item
             ):
                 item.extended_metadata = extmeta_obj
                 trans.sa_session.commit()
@@ -842,10 +894,10 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 item.extended_metadata = extmeta_obj
                 trans.sa_session.commit()
 
-    def unset_item_extended_metadata_obj(self, trans, item, check_writable=False):
+    def unset_item_extended_metadata_obj(self, trans: ProvidesUserContext, item, check_writable=False):
         if item.__class__ == LibraryDatasetDatasetAssociation:
             if not check_writable or trans.app.security_agent.can_modify_library_item(
-                trans.get_current_user_roles(), item, trans.user
+                trans.get_current_user_roles(), item
             ):
                 item.extended_metadata = None
                 trans.sa_session.commit()
@@ -859,7 +911,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 item.extended_metadata = None
                 trans.sa_session.commit()
 
-    def create_extended_metadata(self, trans, extmeta):
+    def create_extended_metadata(self, trans: ProvidesUserContext, extmeta):
         """
         Create/index an extended metadata object. The returned object is
         not associated with any items
@@ -873,7 +925,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         trans.sa_session.commit()
         return ex_meta
 
-    def delete_extended_metadata(self, trans, item):
+    def delete_extended_metadata(self, trans: ProvidesUserContext, item):
         if item.__class__ == ExtendedMetadata:
             trans.sa_session.delete(item)
             trans.sa_session.commit()

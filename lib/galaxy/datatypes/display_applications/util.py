@@ -1,11 +1,16 @@
+from typing import TYPE_CHECKING
+
 from galaxy.model import (
     HistoryDatasetAssociation,
     User,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesAppContext
 
-def encode_dataset_user(trans, dataset, user):
+
+def encode_dataset_user(trans: "ProvidesAppContext", dataset, user):
     # encode dataset id as usual
     # encode user id using the dataset create time as the key
     dataset_hash = trans.security.encode_id(dataset.id)
@@ -17,7 +22,7 @@ def encode_dataset_user(trans, dataset, user):
     return dataset_hash, user_hash
 
 
-def decode_dataset_user(trans, dataset_hash, user_hash):
+def decode_dataset_user(trans: "ProvidesAppContext", dataset_hash, user_hash):
     # decode dataset id as usual
     # decode user id using the dataset create time as the key
     dataset_id = trans.security.decode_id(dataset_hash)

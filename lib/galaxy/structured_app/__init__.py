@@ -92,6 +92,11 @@ class BasicSharedApp(Container):
     def toolbox(self) -> "ToolBox":
         raise NotImplementedError()
 
+    @property
+    def toolbox_or_none(self) -> "ToolBox | None":
+        """The registered toolbox, or None before one has been configured."""
+        raise NotImplementedError()
+
 
 class MinimalToolApp(Protocol):
     is_webapp: bool
@@ -122,6 +127,7 @@ class MinimalApp(BasicSharedApp):
 class MinimalManagerApp(MinimalApp):
     # Minimal App that is sufficient to run Celery tasks
     amqp_internal_connection_obj: Connection | None
+    vault: Vault
     execution_timer_factory: "ExecutionTimerFactory"
     carbon_intensity: float
     file_sources: ConfiguredFileSources
@@ -154,6 +160,8 @@ class MinimalManagerApp(MinimalApp):
 
     def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None: ...
 
+    def reindex_tool_search(self) -> None: ...
+
 
 class StructuredApp(MinimalManagerApp):
     """Interface defining typed description of the Galaxy UniverseApplication.
@@ -174,7 +182,6 @@ class StructuredApp(MinimalManagerApp):
     tool_dependency_dir: str | None
     test_data_resolver: test_data.TestDataResolver
     trs_proxy: TrsProxy
-    vault: Vault
     webhooks_registry: WebhooksRegistry
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'

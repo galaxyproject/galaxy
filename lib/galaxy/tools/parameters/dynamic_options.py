@@ -18,6 +18,7 @@ from typing import (
     Literal,
 )
 
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
@@ -39,7 +40,6 @@ from galaxy.util import (
     string_as_bool,
 )
 from galaxy.util.template import fill_template
-from galaxy.work.context import WorkRequestContext
 from . import validation
 from .cancelable_request import request
 
@@ -66,7 +66,7 @@ class Filter:
         """Returns the name of any dependencies, otherwise None"""
         return None
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
         """Returns a list of options after the filter is applied"""
         raise TypeError("Abstract Method")
 
@@ -94,7 +94,7 @@ class StaticValueFilter(Filter):
         self.column = d_option.column_spec_to_index(column)
         self.keep = string_as_bool(elem.get("keep", "True"))
 
-    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
         rval = []
         filter_value = self.value
         try:
@@ -130,7 +130,7 @@ class RegexpFilter(Filter):
         self.column = d_option.column_spec_to_index(column)
         self.keep = string_as_bool(elem.get("keep", "True"))
 
-    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
         rval = []
         filter_value = self.value
         try:
@@ -186,7 +186,7 @@ class DataMetaFilter(Filter):
     def get_dependency_name(self):
         return self.ref_name
 
-    def filter_options(self, options: Sequence[ParameterOption], trans: WorkRequestContext | None, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
         options = list(options)
         if trans and trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
             # We're in the run form, can't possibly apply a data_meta filter.
@@ -295,7 +295,7 @@ class ParamValueFilter(Filter):
     def get_dependency_name(self):
         return self.ref_name
 
-    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
         ref = other_values.get(self.ref_name, None)
         if ref is None:
             ref = []
@@ -348,7 +348,7 @@ class UniqueValueFilter(Filter):
     def get_dependency_name(self):
         return self.dynamic_option.dataset_ref_name
 
-    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
         rval = []
         seen = set()
         for fields in options:
@@ -377,7 +377,7 @@ class MultipleSplitterFilter(Filter):
         assert columns is not None, "Required 'column' attribute missing from filter"
         self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
 
-    def filter_options(self, options: Sequence[ParameterOption], trans, other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans: ProvidesHistoryContext, other_values):
         rval = []
         for fields in options:
             for column in self.columns:
@@ -412,7 +412,7 @@ class AttributeValueSplitterFilter(Filter):
         assert columns is not None, "Required 'column' attribute missing from filter"
         self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
         attr_names = set()
         rval = []
         for fields in options:
@@ -451,7 +451,7 @@ class AdditionalValueFilter(Filter):
         if self.index is not None:
             self.index = int(self.index)
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
         rval = list(options)
         add_value = []
         for _ in range(self.dynamic_option.largest_index + 1):
@@ -499,7 +499,7 @@ class RemoveValueFilter(Filter):
         self.multiple = string_as_bool(elem.get("multiple", "False"))
         self.separator = elem.get("separator", ",")
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
         from galaxy.tools.wrappers import DatasetFilenameWrapper
 
         if trans is not None and trans.workflow_building_mode:
@@ -551,7 +551,7 @@ class SortByColumnFilter(Filter):
         self.column = d_option.column_spec_to_index(column)
         self.reverse = string_as_bool(elem.get("reverse_sort_order", "False"))
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
         return sorted(options, key=lambda x: x[self.column], reverse=self.reverse)
 
 
@@ -586,7 +586,7 @@ class DataTableFilter(Filter):
         assert self.data_table_column is not None, "Required 'data_table_column' attribute missing from filter"
         self.keep = string_as_bool(elem.get("keep", "True"))
 
-    def filter_options(self, options, trans, other_values):
+    def filter_options(self, options, trans: ProvidesHistoryContext, other_values):
         # get column from data table, by index or column name
         entries = None
         try:
@@ -786,7 +786,7 @@ class DynamicOptions:
                 rval.append(depend)
         return rval
 
-    def get_fields(self, trans, other_values):
+    def get_fields(self, trans: ProvidesHistoryContext, other_values):
         if self.dataset_ref_name:
             try:
                 datasets = _get_ref_data(other_values, self.dataset_ref_name)
@@ -899,8 +899,11 @@ class DynamicOptions:
         path_headers = get_path_headers(None, table_name)
         table_entries = {}
         for value in hda._metadata["data_tables"][table_name]:
-            if dbkey := value.get("dbkey"):
-                table_entries[dbkey] = value
+            # Key entries by dbkey when the table has one; otherwise fall back to
+            # the ``value`` column so tables without a dbkey column (e.g. motus,
+            # dada2_species) are still consumable from a data-manager bundle.
+            if entry_key := (value.get("dbkey") or value.get("value")):
+                table_entries[entry_key] = value
             for header in path_headers:
                 if path := value.get(header):
                     # maybe a hack, should probably pass around dataset or src id combinations ?
@@ -914,7 +917,7 @@ class DynamicOptions:
         assert len(entries) == 1, "Cannot pass tool data bundle with more than 1 data entry per table"
         return next(iter(entries.values()))
 
-    def get_fields_by_value(self, value, trans, other_values):
+    def get_fields_by_value(self, value, trans: ProvidesHistoryContext, other_values):
         """
         Return a list of fields with column 'value' matching provided value.
         """
@@ -925,7 +928,7 @@ class DynamicOptions:
                 rval.append(fields)
         return rval
 
-    def get_field_by_name_for_value(self, field_name, value, trans, other_values):
+    def get_field_by_name_for_value(self, field_name, value, trans: ProvidesHistoryContext, other_values):
         """
         Get contents of field by name for specified value.
         """
@@ -942,7 +945,7 @@ class DynamicOptions:
                 rval.append(fields[field_index])
         return rval
 
-    def get_options(self, trans, other_values) -> Sequence[ParameterOption]:
+    def get_options(self, trans: ProvidesHistoryContext, other_values) -> Sequence[ParameterOption]:
 
         rval: list[ParameterOption] = []
 

@@ -30,7 +30,7 @@ class OIDC(BaseUIController):
     @web.json
     @web.expose
     @web.require_login("list third-party identities")
-    def index(self, trans, **kwargs):
+    def index(self, trans: "GalaxyWebTransaction", **kwargs):
         """
         GET /authnz/
             returns a list of third-party identities associated with the user.
@@ -81,7 +81,7 @@ class OIDC(BaseUIController):
 
     @web.json
     @web.expose
-    def login(self, trans, provider, idphint=None, next=None, redirect=None):
+    def login(self, trans: "GalaxyWebTransaction", provider, idphint=None, next=None, redirect=None):
         if not trans.app.config.enable_oidc:
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
@@ -101,7 +101,7 @@ class OIDC(BaseUIController):
             raise exceptions.AuthenticationFailed(message)
 
     @web.expose
-    def callback(self, trans, provider, idphint=None, **kwargs):
+    def callback(self, trans: "GalaxyWebTransaction", provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else "anonymous"
         login_next_cookie = trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME)
         if login_next_cookie and login_next_cookie != "None":
@@ -197,7 +197,7 @@ class OIDC(BaseUIController):
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
-    def disconnect(self, trans, provider, email=None, **kwargs):
+    def disconnect(self, trans: "GalaxyWebTransaction", provider, email=None, **kwargs):
         if trans.user is None:
             # Only logged in users are allowed here.
             return
@@ -212,7 +212,7 @@ class OIDC(BaseUIController):
 
     @web.json
     @web.expose
-    def logout(self, trans, provider, **kwargs):
+    def logout(self, trans: "GalaxyWebTransaction", provider, **kwargs):
         post_user_logout_href = trans.app.config.post_user_logout_href
         if post_user_logout_href is not None:
             post_user_logout_href = trans.request.base + url_for(post_user_logout_href)
@@ -226,14 +226,14 @@ class OIDC(BaseUIController):
             return {"message": message}
 
     @web.expose
-    def get_logout_url(self, trans, provider=None, **kwargs):
+    def get_logout_url(self, trans: "GalaxyWebTransaction", provider=None, **kwargs):
         idp_provider = provider if provider else trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
             return trans.response.send_redirect(url_for(controller="authnz", action="logout", provider=idp_provider))
 
     @web.expose
     @web.json
-    def get_cilogon_idps(self, trans, **kwargs):
+    def get_cilogon_idps(self, trans: "GalaxyWebTransaction", **kwargs):
         try:
             cilogon_idps = json.loads(url_get("https://cilogon.org/idplist/", params=dict(kwargs)))
         except Exception as e:

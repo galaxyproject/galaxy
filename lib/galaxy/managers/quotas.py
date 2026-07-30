@@ -20,6 +20,7 @@ from galaxy import (
 )
 from galaxy.exceptions import ActionInputError
 from galaxy.managers import base
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     Group,
     Quota,
@@ -275,5 +276,5 @@ class QuotaManager:
         message += ", ".join(names)
         return message
 
-    def get_quota(self, trans, id: int, deleted: bool | None = None) -> model.Quota:
+    def get_quota(self, trans: ProvidesUserContext, id: int, deleted: bool | None = None) -> model.Quota:
         return base.get_object(trans, id, "Quota", check_ownership=False, check_accessible=False, deleted=deleted)

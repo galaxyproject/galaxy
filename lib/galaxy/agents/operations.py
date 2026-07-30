@@ -13,7 +13,6 @@ from typing import (
 from sqlalchemy import select
 
 from galaxy.agents import iwc
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import UserDynamicToolAssociation
@@ -39,7 +38,12 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.workflows import InvokeWorkflowPayload
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util.toolbox.base import (
+    MaterializationReasonName,
+    ToolLike,
+)
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +65,7 @@ ID_FIELDS = {
 class AgentOperationsManager:
     """Shared operations for AI agents, delegating to Galaxy's service layer."""
 
-    def __init__(self, app: MinimalManagerApp, trans: ProvidesUserContext):
+    def __init__(self, app: MinimalManagerApp, trans: SessionRequestContext):
         self.app = app
         self.trans = trans
         self._tools_service: Any | None = None
@@ -83,8 +87,12 @@ class AgentOperationsManager:
         panel_view = self.app.config.default_panel_view
         return self.app.toolbox_search.search(q=query, panel_view=panel_view, config=self.app.config)  # type: ignore[attr-defined]
 
-    def _get_toolbox_tool(self, tool_id: str):
+    def _get_toolbox_tool(self, tool_id: str) -> ToolLike | None:
         return self.app.toolbox.get_tool(tool_id)
+
+    def _get_materialized_tool(self, tool_id: str, reason: MaterializationReasonName):
+        tool = self._get_toolbox_tool(tool_id)
+        return self.app.toolbox.materialize_tool(tool, reason=reason) if tool else None
 
     def _encode_ids_in_response(self, data: Any) -> Any:
         if isinstance(data, dict):
@@ -228,7 +236,7 @@ class AgentOperationsManager:
         return {"query": query, "tools": tools, "count": len(tools)}
 
     def get_tool_details(self, tool_id: str, io_details: bool = False) -> dict[str, Any]:
-        tool = self._get_toolbox_tool(tool_id)
+        tool = self._get_materialized_tool(tool_id, "detail")
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -642,11 +650,11 @@ class AgentOperationsManager:
         return {"tool_panel": tool_panel, "view": view}
 
     def get_tool_run_examples(self, tool_id: str, tool_version: str | None = None) -> dict[str, Any]:
-        tool = self._get_toolbox_tool(tool_id)
+        tool = self._get_materialized_tool(tool_id, "tests")
         if tool and tool_version:
             versioned = self.app.toolbox.get_tool(tool_id, tool_version=tool_version)
             if versioned:
-                tool = versioned
+                tool = self.app.toolbox.materialize_tool(versioned, reason="tests")
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -678,7 +686,7 @@ class AgentOperationsManager:
         }
 
     def get_tool_citations(self, tool_id: str) -> dict[str, Any]:
-        tool = self._get_toolbox_tool(tool_id)
+        tool = self._get_materialized_tool(tool_id, "serialization")
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -707,7 +715,7 @@ class AgentOperationsManager:
 
     def search_tools_by_keywords(self, keywords: list[str]) -> dict[str, Any]:
         keywords_lower = [k.lower() for k in keywords]
-        matching_tools = []
+        matching_tools: list[dict[str, Any]] = []
         seen_tool_ids = set()
 
         for keyword in keywords:

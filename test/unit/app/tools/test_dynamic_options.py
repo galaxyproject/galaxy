@@ -62,6 +62,57 @@ def test_dynamic_option_cache():
     assert from_url_option.get_options(trans, {}) == [ParameterOption("chr2L", "23513712", False)]
 
 
+def test_hda_to_table_entries_without_dbkey():
+    """A data-manager bundle whose table has no dbkey column (e.g. motus,
+    dada2_species) must still yield a table entry - keyed by its ``value``
+    column - so it can be consumed by a downstream tool in a workflow (the
+    data-manager bundle chain). Previously such entries were dropped, leaving
+    the downstream select param with "no legal values defined"."""
+    hda = Bunch(
+        extra_files_path="/bundle/extra",
+        _metadata={
+            "data_tables": {
+                "motus_db_versioned": [
+                    {
+                        "value": "db_from_2026-04-27T094930Z",
+                        "version": "3.1.0",
+                        "name": "mOTUs DB version 3.1.0",
+                        "path": "db_from_2026-04-27T094930Z",
+                    }
+                ]
+            }
+        },
+    )
+    entries = DynamicOptions.hda_to_table_entries(hda, "motus_db_versioned")
+    assert list(entries) == ["db_from_2026-04-27T094930Z"]
+    entry = entries["db_from_2026-04-27T094930Z"]
+    # the path column is relocated under the bundle's extra_files_path
+    assert entry["path"] == "/bundle/extra/db_from_2026-04-27T094930Z"
+    assert entry["__hda__"] is hda
+
+
+def test_hda_to_table_entries_prefers_dbkey():
+    """When the table has a dbkey column it is still used as the entry key."""
+    hda = Bunch(
+        extra_files_path="/bundle/extra",
+        _metadata={
+            "data_tables": {
+                "metaphlan_database_versioned": [
+                    {
+                        "value": "mpa_vJan21_CHOCOPhlAnSGB_202103-04042023",
+                        "name": "MetaPhlAn clade-specific marker genes",
+                        "dbkey": "mpa_vJan21_CHOCOPhlAnSGB_202103",
+                        "path": "mpa_vJan21_CHOCOPhlAnSGB_202103",
+                        "db_version": "SGB",
+                    }
+                ]
+            }
+        },
+    )
+    entries = DynamicOptions.hda_to_table_entries(hda, "metaphlan_database_versioned")
+    assert list(entries) == ["mpa_vJan21_CHOCOPhlAnSGB_202103"]
+
+
 def test_get_options_handles_missing_name_column():
     """Must fall back to value column if display name is missing."""
     tool_param = Bunch(tool=Bunch(app=Bunch()))

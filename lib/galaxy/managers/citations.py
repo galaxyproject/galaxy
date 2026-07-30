@@ -53,7 +53,7 @@ class CitationsManager:
 
     def _get_tool(self, tool_id):
         tool = self.app.toolbox.get_tool(tool_id)
-        return tool
+        return self.app.toolbox.materialize_tool(tool, reason="serialization") if tool else None
 
 
 class DoiCache:

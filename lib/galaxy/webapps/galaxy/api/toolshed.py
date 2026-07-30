@@ -8,6 +8,7 @@ from galaxy.web import (
     expose_api,
     require_admin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class ToolShedController(BaseGalaxyAPIController):
     """RESTful controller for interactions with Toolsheds."""
 
     @expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/tool_shed
         Interact with the Toolshed registry of this instance.
@@ -29,7 +30,7 @@ class ToolShedController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def request(self, trans, **params):
+    def request(self, trans: GalaxyWebTransaction, **params):
         """
         GET /api/tool_shed/request
         """

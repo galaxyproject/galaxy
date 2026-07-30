@@ -1,0 +1,246 @@
+
+===========================================================
+26.1 Galaxy Release (July 2026)
+===========================================================
+
+.. include:: _header.rst
+
+Please see the full `release notes <https://github.com/galaxyproject/galaxy/releases/tag/v26.1.0>`__ for more details.
+
+Highlights
+===========================================================
+
+Discover some of the exciting new features, enhancements, and improvements in Galaxy 26.1.
+
+Galaxy Notebooks
+----------------
+
+Turn every Galaxy history into a living scientific notebook.
+
+- **Unified workspace**. Combine narrative, datasets, visualizations, and AI-assisted writing in a single collaborative space.
+- **Document as you go**. Capture the reasoning behind your analysis and record results while you work.
+- **Reproducible reports**. Create rich reports that stay connected to the data they describe.
+- **Assistant on hand**. GalaxyAI works inside a notebook with that notebook's own context, drafting and proposing content in place.
+
+Galaxy Notebooks make it easy to capture, share, and reproduce the full story behind an analysis.
+[`#22361 <https://github.com/galaxyproject/galaxy/pull/22361>`__]
+[`#22807 <https://github.com/galaxyproject/galaxy/pull/22807>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/B7rQQ-4kjAk" title="Galaxy 26.1 - Galaxy Notebooks" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+GalaxyAI: Specialized Agents and Context-Aware Help
+---------------------------------------------------
+
+GalaxyAI now knows where you are and routes your question to the right specialist.
+
+- **Context-aware panel**. A dockable assistant that knows which tool form, job, history, or notebook you are viewing.
+- **Specialized agents**. Purpose-built agents for error analysis, tool recommendations, GTN tutorials, and IWC workflows.
+- **Asks instead of guessing**. Ambiguous requests get a clarifying question with quick replies.
+- **Report drafting**. Draft a workflow invocation report from the run itself.
+- **Safer custom tools**. The custom tool agent resolves verified containers rather than inventing one.
+
+Each answer is labeled with the agent that produced it.
+[`#22096 <https://github.com/galaxyproject/galaxy/pull/22096>`__]
+[`#22097 <https://github.com/galaxyproject/galaxy/pull/22097>`__]
+[`#22791 <https://github.com/galaxyproject/galaxy/pull/22791>`__]
+[`#21934 <https://github.com/galaxyproject/galaxy/pull/21934>`__]
+[`#22981 <https://github.com/galaxyproject/galaxy/pull/22981>`__]
+
+Connect Your Own AI Tools with MCP
+----------------------------------
+
+Galaxy now speaks the Model Context Protocol, so AI clients outside Galaxy can work with your data.
+
+- **Bring your own client**. Any MCP-compatible client can connect to a Galaxy server.
+- **Real Galaxy operations**. Search and run tools, inspect histories and datasets, invoke workflows, and monitor jobs.
+- **Community workflows**. Find and import vetted Intergalactic Workflow Commission (IWC) workflows without leaving your client.
+- **Same rules as any client**. External agents route through Galaxy's service layer, inheriting the same authorization and validation.
+- **Administrator opt-in**. Disabled by default; enabled with ``enable_mcp_server``.
+
+The same operations layer powers GalaxyAI in the application, so both surfaces stay in step.
+[`#21942 <https://github.com/galaxyproject/galaxy/pull/21942>`__]
+[`#22626 <https://github.com/galaxyproject/galaxy/pull/22626>`__]
+[`#22906 <https://github.com/galaxyproject/galaxy/pull/22906>`__]
+
+Bulk Dataset Storage Migration
+------------------------------
+
+Managing storage at scale just got much easier.
+
+- **Bulk moves**. Move multiple datasets and collections between storage locations in a single operation.
+- **Preview the impact**. Review what will change before you begin.
+- **Progress tracking**. Follow migrations from start to finish with detailed status updates.
+- **Optional notifications**. Get notified when large migrations complete.
+
+These improvements make large storage migrations safer, simpler, and more transparent.
+[`#22606 <https://github.com/galaxyproject/galaxy/pull/22606>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/1irTcAI4yW8" title="Galaxy 26.1 - Bulk Dataset Storage Migration" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Modern Workflow Extraction Interface
+------------------------------------
+
+The history-to-workflow extraction interface has been rebuilt in Vue with a modern card-based design.
+
+- **Clear step distinction**. Tool steps and workflow inputs are clearly separated.
+- **Rename before extraction**. Give inputs meaningful names before the workflow is created.
+- **Direct job access**. Open related jobs directly from the extraction view.
+- **Immediate results**. The newly created workflow is displayed as soon as extraction finishes.
+
+Extracting a workflow from your history is now clearer and more intuitive.
+[`#21935 <https://github.com/galaxyproject/galaxy/pull/21935>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/NFUxEZeBnlw" title="Galaxy 26.1 - Modern Workflow Extraction Interface" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Favorite and Recent Tools Panel
+-------------------------------
+
+Galaxy now includes an optional tool panel focused on faster access to the tools you use the most.
+
+- **Favorites at hand**. Highlight and quickly access your favorite tools.
+- **Automatic recents**. Recently executed tools are automatically tracked.
+- **Keyboard navigation**. Move through the panel without leaving the keyboard.
+- **Integrated search**. Search tools with quick favorite and unfavorite actions.
+- **Guided discovery**. When no favorites are configured, the panel helps you discover and organize tools through the redesigned tool discovery interface.
+
+The result is faster, more personalized access to your everyday tools.
+[`#21600 <https://github.com/galaxyproject/galaxy/pull/21600>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/LWiEQpuNJFY" title="Galaxy 26.1 - Favorite and Recent Tools Panel" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+View Workflow Step Configuration During Execution
+-------------------------------------------------
+
+No more switching back to the workflow editor to inspect a running workflow.
+
+- **In-context inspection**. View the full configuration of any workflow step directly from the invocation graph.
+- **Understand settings at a glance**. See tool settings, inputs, and parameters while an analysis runs.
+- **Stay in the monitor**. Review step details without interrupting execution.
+
+Monitoring a running workflow is now more transparent and informative.
+[`#22144 <https://github.com/galaxyproject/galaxy/pull/22144>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/k8O4JAbmB50" title="Galaxy 26.1 - View Workflow Step Configuration During Execution" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+----
+
+Visualizations Updates
+===========================================================
+
+.. visualizations
+* Update locuszoom package version to 0.0.9
+  (thanks to `@elmedjadjirayane <https://github.com/elmedjadjirayane>`__).
+  `Pull Request 21658`_
+* Update Vintent
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 22660`_
+* Update tiffviewer to v0.0.5
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 22866`_
+* Fix table header column handling in plotly and tabulator
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 22893`_
+
+Datatypes Updates
+===========================================================
+
+.. datatypes
+* Add bwa_index datatype
+  (thanks to `@Delphine-L <https://github.com/Delphine-L>`__).
+  `Pull Request 22310`_
+* adding egapx_local_cache, a subclass of Directory
+  (thanks to `@richard-burhans <https://github.com/richard-burhans>`__).
+  `Pull Request 22268`_
+* Show file size for CRAM datasets and in download tooltip
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 22273`_
+* Merge 26.0 into dev
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 22368`_
+* Added file type ascii raster .asc
+  (thanks to `@tStehling <https://github.com/tStehling>`__).
+  `Pull Request 21937`_
+* Fix display of BAMs with large headers
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 22516`_
+* Speed up integration tests
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 22538`_
+* add TEI XML datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 22718`_
+* Harden access control for user-defined tools
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 22704`_
+* Add sheet_names metadata to XLSX datatype
+  (thanks to `@Anthony96pi <https://github.com/Anthony96pi>`__).
+  `Pull Request 22327`_
+* update the binary.py for spatialdata so it also works if the file has…
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 22802`_
+* Migrate Python packages to \`src\` layout and pure namespace packages
+  (thanks to `@mr-c <https://github.com/mr-c>`__).
+  `Pull Request 21977`_
+* Add new datatypes for the tool vg giraffe
+  (thanks to `@Maed0x <https://github.com/Maed0x>`__).
+  `Pull Request 22935`_
+* update spatialdata datatype
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 23087`_
+* Bound memory use in h5grove structured content endpoint
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 23089`_
+* Add new datatypes for the tool vg
+  (thanks to `@Maed0x <https://github.com/Maed0x>`__).
+  `Pull Request 23111`_
+* Add PAGE XML, AbbyyXML, hOCR, mlmodel, Apache Arrow IPC datatype support in datatypes_conf.xml.sample
+  (thanks to `@IvoLeist <https://github.com/IvoLeist>`__).
+  `Pull Request 23088`_
+* Hide generated headers for tabular previews
+  (thanks to `@qchiujunhao <https://github.com/qchiujunhao>`__).
+  `Pull Request 22947`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* First pass in unifying and clarifying collection operation interfaces and help sections
+  (thanks to `@nekrut <https://github.com/nekrut>`__).
+  `Pull Request 21939`_
+* Fix tool id handling for shed-installed tools
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 22553`_
+* Update label for invert parameter in grep.xml for clarity
+  (thanks to `@Sch-Da <https://github.com/Sch-Da>`__).
+  `Pull Request 22550`_
+* patch bar_chart
+  (thanks to `@gsaudade99 <https://github.com/gsaudade99>`__).
+  `Pull Request 22597`_
+* Fix recent tools for My Tools default panel
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 23075`_
+* Fix discover tool count fallback for My Tools default panels
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 23074`_
+* Fix Markdown help rendering in tools list
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 23106`_
+
+Please see the full `release notes <https://github.com/galaxyproject/galaxy/releases/tag/v26.1.0>`__ for more details.
+The admin-facing release notes are available :doc:`here <26.1_announce>`.
+
+.. include:: 26.1_prs.rst
+
+----
+
+.. include:: _thanks.rst

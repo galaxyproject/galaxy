@@ -5,7 +5,6 @@ Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 import abc
 import datetime
 import os
-import time
 from collections import defaultdict
 from queue import (
     Empty,
@@ -1099,7 +1098,8 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
         Continually iterate and stop appropriate jobs.
         """
         # HACK: Delay until after forking, we need a way to do post fork notification!!!
-        time.sleep(10)
+        # Sleeping through the Sleeper lets shutdown_monitor's wake() cut this short.
+        self._monitor_sleep(10)
         while self.monitor_running:
             try:
                 self.__monitor_step()

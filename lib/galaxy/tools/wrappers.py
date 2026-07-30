@@ -49,6 +49,7 @@ from galaxy.util import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.datatypes.data import Data
     from galaxy.datatypes.registry import Registry
     from galaxy.job_execution.compute_environment import ComputeEnvironment
     from galaxy.model.metadata import MetadataCollection
@@ -359,7 +360,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         compute_environment: Optional["ComputeEnvironment"] = None,
         identifier: str | None = None,
         io_type: str = "input",
-        formats: list[str] | None = None,
+        formats: Sequence[Union[str, "Data"]] | None = None,
         tool_evaluator: Optional["ToolEvaluator"] = None,
     ) -> None:
         dataset_instance: DatasetInstance | None = None

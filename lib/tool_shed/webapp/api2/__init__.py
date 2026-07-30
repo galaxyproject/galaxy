@@ -353,7 +353,10 @@ def ensure_valid_session(trans: SessionRequestContext) -> None:
         galaxy_session = None
     # No relevant cookies, or couldn't find, or invalid, so create a new session
     if galaxy_session is None:
-        galaxy_session = create_new_session(trans, prev_galaxy_session, user_for_new_session)
+        # tool_shed.context.SessionRequestContext structurally satisfies everything
+        # create_new_session uses (.security, .app, .request) but is a distinct
+        # hierarchy from galaxy.webapps.base.webapp.GalaxyWebTransaction.
+        galaxy_session = create_new_session(trans, prev_galaxy_session, user_for_new_session)  # type: ignore[arg-type]
         galaxy_session_requires_flush = True
         trans.set_galaxy_session(galaxy_session)
         set_auth_cookie(trans, galaxy_session)

@@ -577,7 +577,6 @@ async function onCancel() {
     // progress bar shrinks to fit divs on either side
     flex-grow: 1;
     flex-shrink: 1;
-    max-width: 50%;
 
     .steps-progress,
     .jobs-progress {

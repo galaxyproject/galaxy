@@ -85,6 +85,20 @@ class TestCommandFactory(TestCase):
         self.job_wrapper.prepare_input_files_cmds = ["/opt/split1", "/opt/split2"]
         self._assert_command_is(self._surround_command(f"/opt/split1; /opt/split2; {MOCK_COMMAND_LINE}"))
 
+    def test_remote_tool_eval_uses_galaxy_python_when_remote_command_line_is_enabled(self):
+        self.include_work_dir_outputs = False
+        self.job_wrapper.remote_command_line = True
+
+        command = self.__command()
+
+        assert (
+            'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" '
+            '"${GALAXY_PYTHON:-python}" "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
+        ) in command
+        assert (
+            'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py' not in command
+        )
+
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo", "bar")]

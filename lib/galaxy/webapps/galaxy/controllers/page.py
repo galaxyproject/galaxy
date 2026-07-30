@@ -7,17 +7,20 @@ from galaxy.webapps.base.controller import (
     SharableItemSecurityMixin,
     SharableMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 
 class PageController(BaseUIController, SharableMixin, SharableItemSecurityMixin):
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
-    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def _display_by_username_and_slug(self, trans: GalaxyWebTransaction, username, slug, **kwargs):
         """Display page based on a username and slug."""
 
         # Get page.
         user = get_user_by_username(trans.sa_session, username)
+        if user is None:
+            raise web.httpexceptions.HTTPNotFound()
         page = get_page(trans.sa_session, user, slug)
         if page is None:
             raise web.httpexceptions.HTTPNotFound()

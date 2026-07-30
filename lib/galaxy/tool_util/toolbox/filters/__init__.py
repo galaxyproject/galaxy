@@ -4,9 +4,13 @@ from copy import deepcopy
 from typing import (
     Protocol,
     runtime_checkable,
+    TYPE_CHECKING,
 )
 
 from galaxy.util import listify
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +67,7 @@ class FilterFactory:
         self.__init_filters("section", getattr(config, "tool_section_filters", ""), self.default_filters)
         self.__init_filters("label", getattr(config, "tool_label_filters", ""), self.default_filters)
 
-    def build_filters(self, trans, **kwds):
+    def build_filters(self, trans: "ProvidesUserContext", **kwds):
         """
         Build list of filters to check tools against given current context.
         """

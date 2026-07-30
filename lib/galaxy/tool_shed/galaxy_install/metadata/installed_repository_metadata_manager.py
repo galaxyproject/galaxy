@@ -110,6 +110,11 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
                         tool = self.app.toolbox.load_tool(
                             os.path.abspath(load_relative_path), guid=guid, use_cached=False
                         )
+                        # Install-time bookkeeping downstream inspects parsed
+                        # parameter state (``params_with_missing_data_table_entry``,
+                        # ``params_with_missing_index_file``), so hand consumers a
+                        # fully parsed tool like the eager toolbox always did.
+                        tool = self.app.toolbox.materialize_tool(tool, reason="installation")
                     except Exception:
                         log.exception("Error while loading tool at path '%s'", load_relative_path)
                         tool = None

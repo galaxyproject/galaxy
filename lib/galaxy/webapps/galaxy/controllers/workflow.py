@@ -18,6 +18,7 @@ from galaxy.webapps.base.controller import (
     SharableMixin,
     UsesStoredWorkflowMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
-    def _display_by_username_and_slug(self, trans, username, slug, format="html", **kwargs):
+    def _display_by_username_and_slug(self, trans: GalaxyWebTransaction, username, slug, format="html", **kwargs):
         """
         Display workflow based on a username and slug. Format can be html, json, or json-download.
         """
@@ -56,7 +57,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         elif format == "json-download":
             return self.export_to_file(trans, encoded_id)
 
-    def _display(self, trans, stored_workflow):
+    def _display(self, trans: GalaxyWebTransaction, stored_workflow):
         """Diplay workflow in client."""
         if stored_workflow is None:
             raise web.httpexceptions.HTTPNotFound()
@@ -88,7 +89,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("to import a workflow", use_panels=True)
-    def imp(self, trans, id, **kwargs):
+    def imp(self, trans: GalaxyWebTransaction, id, **kwargs):
         """Imports a workflow shared by other users."""
         # Set referer message.
         referer = trans.request.referer
@@ -120,7 +121,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("use Galaxy workflows")
-    def gen_image(self, trans, id, embed="false", version="", **kwargs):
+    def gen_image(self, trans: GalaxyWebTransaction, id, embed="false", version="", **kwargs):
         embed = util.asbool(embed)
         if version:
             version_int_or_none = int(version)
@@ -138,7 +139,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return trans.show_error_message(error_message)
 
     @web.json_pretty
-    def for_direct_import(self, trans, id, **kwargs):
+    def for_direct_import(self, trans: GalaxyWebTransaction, id, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
@@ -151,7 +152,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return self._workflow_to_dict(trans, stored)
 
     @web.json_pretty
-    def export_to_file(self, trans, id, **kwds):
+    def export_to_file(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         export it to a JSON file that can be imported back into Galaxy.

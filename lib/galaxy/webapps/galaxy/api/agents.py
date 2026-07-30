@@ -30,6 +30,7 @@ from galaxy.webapps.galaxy.api import (
     DependsOnUser,
     Router,
 )
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -90,7 +91,7 @@ class AgentAPI:
     async def query_agent(
         self,
         request: AgentQueryRequest,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentQueryResponse:
         """Query an AI agent. Use agent_type='auto' for automatic routing.
@@ -129,7 +130,7 @@ class AgentAPI:
         job_id: DecodedDatabaseIdField | None = Body(None, description="Job ID for context"),
         error_details: dict[str, Any] | None = Body(None, description="Additional error details"),
         save_exchange: bool | None = Body(None, description="Save exchange for feedback tracking. Defaults to false."),
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
         """Analyze job errors and provide debugging assistance.
@@ -181,7 +182,7 @@ class AgentAPI:
         query: str = Body(..., description="Description of the tool to create"),
         context: dict[str, Any] | None = Body(None, description="Additional context for tool creation"),
         save_exchange: bool | None = Body(None, description="Save exchange for feedback tracking. Defaults to false."),
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
         """Create a custom Galaxy tool.
@@ -216,7 +217,7 @@ class AgentAPI:
     async def history_summary(
         self,
         history_id: str = Body(..., embed=True, description="Encoded id of the history to summarize."),
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
         """Produce a comprehensive markdown report for a history's analysis.

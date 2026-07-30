@@ -22,6 +22,7 @@ dependencies = [
     "packaging",
     "pydantic>=2.7.4",
     "PyYAML",
+    "regex",
     "requests",
     "sortedcontainers",
     "typing-extensions",

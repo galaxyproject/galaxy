@@ -112,7 +112,9 @@ except ModuleNotFoundError:
     pass
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
     from galaxy.util.compression_utils import FileObjType
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
@@ -777,7 +779,9 @@ class BamNative(CompressedArchive, _BamOrSam):
         # Remove temp file and empty temporary directory
         os.rmdir(tmp_dir)
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
+    def get_chunk(
+        self, trans: "ProvidesUserContext | None", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
+    ) -> str:
         if not offset == -1:
             try:
                 with pysam.AlignmentFile(
@@ -830,7 +834,7 @@ class BamNative(CompressedArchive, _BamOrSam):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -2537,7 +2541,7 @@ class H5MLM(H5):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,

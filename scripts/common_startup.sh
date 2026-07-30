@@ -187,6 +187,9 @@ fi
 
 : "${GALAXY_WHEELS_INDEX_URL:=https://wheels.galaxyproject.org/simple}"
 : "${GALAXY_DEV_REQUIREMENTS:=./lib/galaxy/dependencies/dev-requirements.txt}"
+# Which app's config decides the conditional dependencies to install. Set by the
+# launcher (run_tool_shed.sh exports tool_shed) since this script is shared.
+: "${GALAXY_CONDITIONAL_DEPENDENCIES_APP:=galaxy}"
 
 requirement_args="-r requirements.txt"
 if [ $DEV_WHEELS -eq 1 ]; then
@@ -204,8 +207,14 @@ if [ $FETCH_WHEELS -eq 1 ]; then
     fi
     # shellcheck disable=SC2086
     ${PIP_CMD} install $requirement_args --extra-index-url "${GALAXY_WHEELS_INDEX_URL}"
-    set_galaxy_config_file_var
-    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
+    if [ "$GALAXY_CONDITIONAL_DEPENDENCIES_APP" = "tool_shed" ]; then
+        set_tool_shed_config_file_var
+        conditional_dependencies_config_file="$TOOL_SHED_CONFIG_FILE"
+    else
+        set_galaxy_config_file_var
+        conditional_dependencies_config_file="$GALAXY_CONFIG_FILE"
+    fi
+    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
         if ${PIP_CMD} list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
