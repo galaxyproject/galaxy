@@ -10,7 +10,7 @@
     url:
       label: OSF API endpoint
       type: string
-      optional: true
+      optional: false
       default: https://api.osf.io/v2/
       help: |
         The endpoint of the OSF API v2 you are connecting to. For the public OSF instance leave the default.
@@ -18,7 +18,7 @@
     waterbutler_url:
       label: WaterButler endpoint
       type: string
-      optional: true
+      optional: false
       default: https://files.osf.io/v1/
       help: |
         The endpoint of the WaterButler service used to read and write file contents. For the public OSF
@@ -33,7 +33,7 @@
     writable:
       label: Allow Galaxy to export data to OSF?
       type: boolean
-      optional: true
+      optional: false
       default: true
       help: |
         Allow Galaxy to write data to OSF (create new draft projects and upload files into them). Set it to
