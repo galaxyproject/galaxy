@@ -23,23 +23,14 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { DatasetLabel, WorkflowLabel } from "@/components/Markdown/Editor/types";
-import { stringify } from "@/components/Markdown/Utilities/stringify";
+import type { VisualizationEmbedConfig, WorkflowLabel } from "@/components/Markdown/Editor/types";
+import { parseBlockContent, serializeBlockContent } from "@/components/Markdown/Utilities/blockContent";
 import type { OptionType } from "@/components/SelectionField/types";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
 import FormNumber from "@/components/Form/Elements/FormNumber.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
-
-interface contentType {
-    dataset_id?: string;
-    dataset_label?: DatasetLabel;
-    dataset_name?: string;
-    dataset_url?: string;
-    height?: number;
-    [key: string]: unknown;
-}
 
 const DEFAULT_HEIGHT = 400;
 
@@ -53,7 +44,7 @@ const emit = defineEmits<{
     (e: "change", content: string): void;
 }>();
 
-const contentObject: Ref<contentType> = ref({});
+const contentObject: Ref<VisualizationEmbedConfig> = ref({});
 const errorMessage = ref("");
 const hasChanged = ref(false);
 const height = ref();
@@ -83,12 +74,12 @@ function onHeight(newHeight: number) {
 }
 
 function onOk() {
-    emit("change", stringify(contentObject.value));
+    emit("change", serializeBlockContent(contentObject.value));
 }
 
 function parseContent() {
     try {
-        contentObject.value = JSON.parse(props.content);
+        contentObject.value = parseBlockContent(props.content) as VisualizationEmbedConfig;
         height.value = contentObject.value.height || DEFAULT_HEIGHT;
         errorMessage.value = "";
     } catch (e) {

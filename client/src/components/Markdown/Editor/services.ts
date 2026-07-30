@@ -3,6 +3,7 @@ import axios from "axios";
 import { getAppRoot } from "@/onload";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import { serializeBlockContent } from "../Utilities/blockContent";
 import type { TemplateEntry } from "./types";
 
 export interface VisualizationType {
@@ -22,7 +23,7 @@ export async function getVisualizations(): Promise<Array<TemplateEntry>> {
             cell: {
                 name: "visualization",
                 configure: true,
-                content: `{ "visualization_name": "${v.name}", "visualization_title": "${v.html}" }`,
+                content: serializeBlockContent({ visualization_name: v.name, visualization_title: v.html }),
             },
         }));
     } catch (e) {

@@ -11,6 +11,22 @@ export interface DatasetLabel {
     output?: string;
 }
 
+/** Shared shape of a `visualization` embed block, read by the renderer and
+ * written by the configure dialog. The index signature carries plugin-specific
+ * config through unchanged. */
+export interface VisualizationEmbedConfig {
+    visualization_name?: string;
+    visualization_title?: string;
+    dataset_id?: string;
+    dataset_url?: string;
+    dataset_label?: DatasetLabel;
+    dataset_name?: string;
+    settings?: Record<string, unknown>;
+    tracks?: unknown[];
+    height?: number;
+    [key: string]: unknown;
+}
+
 export interface Invocation {
     history_id: string;
     inputs: Record<string, { label?: string; id?: string; src?: string }>;
