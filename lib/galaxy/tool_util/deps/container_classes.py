@@ -1,4 +1,5 @@
 import os
+import shlex
 import string
 from abc import (
     ABCMeta,
@@ -39,6 +40,15 @@ log = getLogger(__name__)
 DOCKER_CONTAINER_TYPE = "docker"
 SINGULARITY_CONTAINER_TYPE = "singularity"
 TRAP_KILL_CONTAINER = "trap _on_exit EXIT"
+
+SET_USER_GROUPS_TEMPLATE = r"""
+USERGROUPS=`id -G ${username}`
+GROUPADD=""
+for i in $(echo $USERGROUPS | tr "," "\n")
+do
+    GROUPADD="$GROUPADD --group-add $i"
+done
+"""
 
 LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = r"""
 python << EOF
@@ -455,6 +465,26 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             cache_command = docker_util.build_docker_cache_command(self.container_id, **docker_host_props)
         else:
             cache_command = self.__cache_from_file_command(cached_image_file, docker_host_props)
+
+        run_extra_arguments = self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS)
+        group_command = ""
+        oidc_username = self.prop("username_from_token", None)
+        oidc_username_config = self.prop("username_from_oidc_token_claim", None) or {}
+        should_set_user_from_token = bool(oidc_username and oidc_username_config.get("set_user", False))
+        if should_set_user_from_token:
+            group_command = string.Template(SET_USER_GROUPS_TEMPLATE).safe_substitute(
+                username=shlex.quote(oidc_username)
+            )
+        if group_command:
+            run_extra_arguments = f"{run_extra_arguments} $GROUPADD" if run_extra_arguments else "$GROUPADD"
+        expose_as_env = oidc_username_config.get("expose_as_env")
+        if oidc_username and expose_as_env:
+            env_directives.append(f"{expose_as_env}={oidc_username}")
+
+        set_user = self.prop("set_user", docker_util.DEFAULT_SET_USER)
+        if should_set_user_from_token:
+            set_user = oidc_username
+
         run_command = docker_util.build_docker_run_command(
             command,
             self.container_id,
@@ -464,8 +494,9 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             working_directory=working_directory,
             net=self.prop("net", None),  # By default, docker instance has networking disabled
             auto_rm=asbool(self.prop("auto_rm", docker_util.DEFAULT_AUTO_REMOVE)),
-            set_user=self.prop("set_user", docker_util.DEFAULT_SET_USER),
-            run_extra_arguments=self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            set_user=set_user,
+            set_user_from_host=should_set_user_from_token,
+            run_extra_arguments=run_extra_arguments,
             guest_ports=self.tool_info.guest_ports,
             host_port_cmd=self.prop("host_port_cmd", None),
             container_name=self.container_name,
@@ -486,6 +517,7 @@ _on_exit() {{
 }}
 {TRAP_KILL_CONTAINER}
 {cache_command}
+{group_command}
 {run_command}"""
 
     def __cache_from_file_command(self, cached_image_file: str, docker_host_props: dict[str, Any]) -> str:
