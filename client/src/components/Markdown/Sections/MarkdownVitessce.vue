@@ -3,6 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import type { DatasetLabel, Invocation } from "@/components/Markdown/Editor/types";
+import { parseBlockContent } from "@/components/Markdown/Utilities/blockContent";
 import { parseInput, parseOutput } from "@/components/Markdown/Utilities/parseInvocation";
 import { getAppRoot } from "@/onload";
 import { useInvocationStore } from "@/stores/invocationStore";
@@ -32,7 +33,7 @@ const currentContent = ref(props.content);
 async function processContent() {
     try {
         errorMessage.value = "";
-        const parsedContent = { ...JSON.parse(props.content) };
+        const parsedContent = { ...parseBlockContent(props.content) };
 
         // Evaluate __gx_dataset entries before rendering vitessce
         missingInvocation.value = false;

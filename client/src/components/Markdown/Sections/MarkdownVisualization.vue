@@ -2,9 +2,9 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { DatasetLabel, Invocation } from "@/components/Markdown/Editor/types";
+import type { DatasetLabel, Invocation, VisualizationEmbedConfig } from "@/components/Markdown/Editor/types";
+import { parseBlockContent, serializeBlockContent } from "@/components/Markdown/Utilities/blockContent";
 import { parseInput, parseOutput } from "@/components/Markdown/Utilities/parseInvocation";
-import { stringify } from "@/components/Markdown/Utilities/stringify";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import VisualizationWrapper from "./VisualizationWrapper.vue";
@@ -46,14 +46,14 @@ function onChange(incomingData: Record<string, any>) {
         height: visualizationHeight.value,
         ...incomingData.visualization_config,
     };
-    currentContent.value = stringify(newContent);
+    currentContent.value = serializeBlockContent(newContent);
     emit("change", currentContent.value);
 }
 
 function processContent() {
     try {
         errorMessage.value = "";
-        const parsedContent = { ...JSON.parse(props.content) };
+        const parsedContent = parseBlockContent(props.content) as VisualizationEmbedConfig;
         datasetLabel.value = parsedContent.dataset_label;
         datasetName.value = parsedContent.dataset_name;
         visualizationConfig.value = {
@@ -66,7 +66,7 @@ function processContent() {
         visualizationTitle.value = parsedContent.visualization_title || "";
         visualizationName.value = props.name || parsedContent.visualization_name;
         if (!visualizationName.value) {
-            throw new Error("Please add a 'visualization_name` to the dictionary.");
+            throw new Error("Missing 'visualization_name' in the visualization block.");
         }
         processInvocation();
         if (currentContent.value !== props.content) {
