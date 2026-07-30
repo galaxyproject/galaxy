@@ -612,17 +612,19 @@ class OSFFilesSource(RDMFilesSource):
     ) -> ContainerAndFileIdentifier:
         """Split a plugin path into (container_id, file_identifier).
 
-        Paths follow /<category>/<container_id>/<optional-subpath>, where
+        Paths follow /<category>/<container_id>/<optional-wb-path>, where
         <category> is one of "projects", "registrations", or "files". The
         leading category segment is stripped; callers that only care about
         the container do not need to know which category the container came
-        from. Paths that omit the category (older URIs) are still accepted.
+        from. The file identifier is a WaterButler internal path within
+        the container's ``osfstorage``. Paths that omit the category
+        (older URIs) are still accepted.
 
-        "/"                                    -> ("", "")
-        "/projects"                            -> ("", "")
-        "/projects/abc12"                      -> ("abc12", "")
-        "/projects/abc12/data.csv"             -> ("abc12", "data.csv")
-        "/projects/abc12/folder/sub/a.csv"     -> ("abc12", "folder/sub/a.csv")
+        "/"                                          -> ("", "")
+        "/projects"                                  -> ("", "")
+        "/projects/abc12"                            -> ("abc12", "")
+        "/projects/abc12/61a2b3c4"                   -> ("abc12", "61a2b3c4")
+        "/projects/abc12/61a2b3c4/8d5e6f7g"          -> ("abc12", "61a2b3c4/8d5e6f7g")
         """
         path_obj = Path(source_path)
         if not path_obj.is_absolute():

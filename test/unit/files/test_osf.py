@@ -21,10 +21,10 @@ from galaxy.files.sources.osf import (
         ("", None),
         ("name", "title"),
         ("-name", "-title"),
-        ("update_time", "date_modified"),
-        ("-update_time", "-date_modified"),
-        ("create_time", "date_created"),
+        ("ctime", "date_created"),
+        ("-ctime", "-date_created"),
         ("size", "size"),
+        ("-size", "-size"),
         ("unknown", None),
         ("-unknown", None),
     ],
@@ -59,10 +59,10 @@ def test_galaxy_pagination_to_osf(limit, offset, expected_page, expected_size):
         ("/files", "", ""),
         ("/projects/proj1", "proj1", ""),
         ("/registrations/reg1", "reg1", ""),
-        ("/projects/proj1/data.csv", "proj1", "data.csv"),
-        ("/projects/proj1/folder/sub/a.csv", "proj1", "folder/sub/a.csv"),
+        ("/projects/proj1/61a2b3c4", "proj1", "61a2b3c4"),
+        ("/projects/proj1/61a2b3c4/8d5e6f7g", "proj1", "61a2b3c4/8d5e6f7g"),
         ("/proj1", "proj1", ""),
-        ("/proj1/data.csv", "proj1", "data.csv"),
+        ("/proj1/61a2b3c4", "proj1", "61a2b3c4"),
     ],
 )
 def test_parse_path(path, container_id, file_identifier):
@@ -77,7 +77,7 @@ def test_parse_path_rejects_non_absolute():
 
 
 def test_parse_path_container_id_only():
-    result = OSFFilesSource.parse_path(None, "/projects/proj1/data.csv", container_id_only=True)
+    result = OSFFilesSource.parse_path(None, "/projects/proj1/61a2b3c4/8d5e6f7g", container_id_only=True)
     assert result.container_id == "proj1"
     assert result.file_identifier == ""
 
