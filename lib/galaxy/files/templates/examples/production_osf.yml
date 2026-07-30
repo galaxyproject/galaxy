@@ -30,6 +30,7 @@
       help: |
         Your name as you would like it to appear in the description of projects created by Galaxy on your
         behalf. Falls back to "Anonymous Galaxy User" when unset.
+      # TODO: even if optional, the files source often fails the diagnostic test when it is not set (bug)
     writable:
       label: Allow Galaxy to export data to OSF?
       type: boolean
