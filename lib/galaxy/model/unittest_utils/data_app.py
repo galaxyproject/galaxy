@@ -10,6 +10,10 @@ import os
 import shutil
 import tempfile
 from types import SimpleNamespace
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 from galaxy import (
     model,
@@ -28,6 +32,9 @@ from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.bunch import Bunch
+
+if TYPE_CHECKING:
+    from galaxy.tools import SetMetadataTool
 
 GALAXY_TEST_UNITTEST_SECRET = "6e46ed6483a833c100e68cc3f1d0dd76"
 GALAXY_TEST_IN_MEMORY_DB_CONNECTION = "sqlite:///:memory:"
@@ -116,7 +123,7 @@ class GalaxyDataTestApp:
         datatypes_registry = registry.Registry()
         datatypes_registry.load_datatypes()
         model.set_datatypes_registry(datatypes_registry)
-        datatypes_registry.set_external_metadata_tool = MockSetExternalTool()
+        datatypes_registry.set_external_metadata_tool = cast("SetMetadataTool", MockSetExternalTool())
         self.datatypes_registry = datatypes_registry
 
 

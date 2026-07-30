@@ -129,6 +129,7 @@ class LibraryActions:
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ToolMissingException(f"Tool '{tool_id}' is missing from the toolbox")
+        tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         state = tool.new_state(trans)
         populate_state(trans, tool.inputs, payload.model_dump(), state.inputs)
         tool_params = state.inputs

@@ -191,13 +191,12 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
     def get_or_create_section(
         self, sec_id: str, sec_nm: str, description: str | None = None, links: dict[str, str] | None = None
     ) -> ToolSection:
-        if sec_id not in self:
+        section = self.get(sec_id)
+        if not isinstance(section, ToolSection):
             section = ToolSection(
                 {"id": sec_id, "name": sec_nm, "description": description, "version": "", "links": links}
             )
             self[sec_id] = section
-        else:
-            section = self[sec_id]
         return section
 
     def remove_tool(self, tool_id: str) -> None:
@@ -210,6 +209,14 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
                 if tool_key in val.elems:
                     del self[key].elems[tool_key]
                     break
+
+    def remove_unresolved_tools(self) -> None:
+        """Discard tool placeholders that no configuration walk resolved."""
+        for key, item in list(self.items()):
+            if isinstance(item, ToolSection):
+                item.elems.remove_unresolved_tools()
+            elif key.startswith("tool_") and item is None:
+                del self[key]
 
     def update_or_append(self, index: int, key: str, value) -> None:
         if key in self or index is None:

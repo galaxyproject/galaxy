@@ -15,6 +15,7 @@ on:
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
+  workflow_dispatch:
 env:
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
