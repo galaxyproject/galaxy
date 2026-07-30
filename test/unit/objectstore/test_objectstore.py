@@ -579,6 +579,16 @@ PITHOS_TEST_CONFIG_YAML = get_example("pithos_simple.yml")
 
 
 @patch_object_stores_to_skip_initialize
+def test_pithos_caches_outside_the_dataset_directory():
+    # Pithos used to stage into config.file_path - the primary dataset directory -
+    # which puts cache files among datasets and points the cache monitor at them.
+    for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.staging_path == directory.global_config.object_store_cache_path
+            assert object_store.staging_path != directory.global_config.file_path
+
+
+@patch_object_stores_to_skip_initialize
 def test_config_parse_pithos():
     for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
         with TestConfig(config_str) as (directory, object_store):

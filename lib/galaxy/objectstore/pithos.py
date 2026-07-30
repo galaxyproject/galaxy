@@ -19,7 +19,6 @@ except ImportError:
 from galaxy.util import directory_hash_id
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
-    CacheShard,
     CacheShardManager,
     ObjectId,
 )
@@ -87,17 +86,13 @@ def parse_config_xml(config_xml):
 class PithosObjectStore(CachingConcreteObjectStore):
     """
     Object store that stores objects as items in a Pithos+ container.
-    Cache is ignored for the time being.
     """
 
     store_type = "pithos"
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
-        # Pithos ignores cache config and uses config.file_path as its cache.
-        # A single fixed shard satisfies the CacheShardManager interface required
-        # by CachingConcreteObjectStore without enabling multi-shard behavior.
-        self._cache_shards = CacheShardManager([CacheShard(path=self.config.file_path, weight=1, size=-1)])
+        self._cache_shards = CacheShardManager.from_config(config_dict.get("cache") or {}, config)
         log.info("Parse config_xml for pithos object store")
         self.config_dict = config_dict
 
