@@ -65,15 +65,22 @@ class LocAsset:
 
     table_name: str
     path: str
-    # ``found`` means the loader resolved *some* file for this reference. Note a table's
-    # ``<file path="tool-data/x.loc">`` whose real ``.loc`` is absent resolves to the
-    # ``x.loc.sample`` fallback with ``found=True`` -- so a check that a production loc
-    # exists must consider ``found and not is_sample``, not ``found`` alone.
+    # ``found`` means the *loader* resolved and parsed a real file for this reference.
+    # The loader's ``.sample`` fallback (data/__init__.py) strips the ``tool-data/``
+    # subdir and only looks in ``tool_data_path`` root, so it does *not* match a shed
+    # repo's ``tool-data/x.loc.sample`` -- those come back ``found=False``. Use
+    # ``sample_backed`` for "the repo ships a sample for this reference"; a reference is
+    # unresolved only when ``not found and not sample_backed``.
     found: bool
     is_sample: bool
+    # Whether the repo ships a ``.sample`` backing this reference (a sibling
+    # ``<ref>.sample`` or the conventional ``tool-data/<basename>.sample``). On install
+    # Galaxy materializes the real ``.loc`` from it, so a sample-backed reference is not
+    # a missing loc even though the loader reports ``found=False``.
+    sample_backed: bool = False
     # Row-shape errors captured by ``parse_file_fields`` at load time (too-few-fields /
     # wrong-separator lines). Only populated when ``found`` (parsing only runs on a
-    # resolved file), so "no errors" is not "clean" for an unfound reference.
+    # loader-resolved file), so "no errors" is not "clean" for an unfound reference.
     errors: Tuple[str, ...] = ()
     source: Optional[SourceLoc] = None
 
@@ -316,6 +323,23 @@ def _has_column_conflict(raw_decls: List[RawTableDecl]) -> bool:
     return any(len(specs) > 1 for specs in by_name.values())
 
 
+def _sample_backed(repo_root: str, filename: str) -> bool:
+    """Whether the repo ships a ``.sample`` that backs a loc ``filename``.
+
+    The loader's own ``.sample`` fallback does not match the shed layout (see
+    ``LocAsset.found``), so resolve it the way the shed does: a reference is
+    sample-backed if a sibling ``<filename>.sample`` exists, or the conventional
+    ``tool-data/<basename>.sample`` does (samples ship there and the real ``.loc`` is
+    materialized on install). Basename matching mirrors that a table is keyed by name,
+    so ``test-data/x.loc`` in a ``.test`` conf is still backed by ``tool-data/x.loc.sample``.
+    """
+    sibling = filename if os.path.isabs(filename) else os.path.join(repo_root, filename)
+    if os.path.exists(f"{sibling}.sample"):
+        return True
+    tool_data_sample = os.path.join(repo_root, "tool-data", f"{os.path.basename(filename)}.sample")
+    return os.path.exists(tool_data_sample)
+
+
 def _build_tables(
     repo_root: str, tool_data_table_confs: List[str], raw_decls: List[RawTableDecl]
 ) -> Tuple[List[TableDecl], List[LocAsset]]:
@@ -347,6 +371,7 @@ def _build_tables(
                     path=str(filename),
                     found=bool(info.get("found")),
                     is_sample=str(filename).endswith(".sample"),
+                    sample_backed=_sample_backed(repo_root, str(filename)),
                     errors=tuple(info.get("errors") or ()),
                     source=SourceLoc(path=str(filename)),
                 )

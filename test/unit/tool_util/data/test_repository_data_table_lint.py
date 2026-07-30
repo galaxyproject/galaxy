@@ -32,6 +32,7 @@ MISSING_LOC_REPO = os.path.join(REPOS, "missing_loc")
 MISSING_TWO_REPO = os.path.join(REPOS, "missing_two")
 MISSING_AND_BROKEN_REPO = os.path.join(REPOS, "missing_and_broken")
 SAMPLE_FALLBACK_REPO = os.path.join(REPOS, "sample_fallback")
+TOOL_DATA_SAMPLE_REPO = os.path.join(REPOS, "tool_data_sample")
 DUP_COLUMNS_REPO = os.path.join(REPOS, "dup_columns")
 CONFLICT_COLUMNS_REPO = os.path.join(REPOS, "conflicting_columns")
 CONFLICT_SEPARATOR_REPO = os.path.join(REPOS, "conflicting_separator")
@@ -91,6 +92,19 @@ def test_sample_fallback_is_not_a_missing_fixture():
     model = build_repository_data_tables(SAMPLE_FALLBACK_REPO, tool_data_table_confs=[conf])
     # Guard against the test passing vacuously: the asset must actually resolve via .sample.
     assert any(asset.found and asset.is_sample for asset in model.loc_assets)
+    lint_ctx = _lint(model)
+    assert [e for e in lint_ctx.error_messages if e.linter == MissingLocFixture.name()] == []
+
+
+def test_tool_data_sample_backed_loc_is_not_a_missing_fixture():
+    # The real Tool Shed layout: conf references tool-data/bar.loc, the sample ships at
+    # tool-data/bar.loc.sample. The loader's own .sample fallback does NOT resolve this
+    # (found=False), so without sample_backed every reference-data repo would wrongly
+    # report a missing loc. sample_backed must recognize the shipped sample.
+    conf = os.path.join(TOOL_DATA_SAMPLE_REPO, "tool_data_table_conf.xml.sample")
+    model = build_repository_data_tables(TOOL_DATA_SAMPLE_REPO, tool_data_table_confs=[conf])
+    # Guard against a vacuous pass: the loader must genuinely miss it, and sample_backed catch it.
+    assert any(not asset.found and asset.sample_backed for asset in model.loc_assets)
     lint_ctx = _lint(model)
     assert [e for e in lint_ctx.error_messages if e.linter == MissingLocFixture.name()] == []
 

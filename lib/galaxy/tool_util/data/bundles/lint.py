@@ -47,14 +47,16 @@ if TYPE_CHECKING:
 class MissingLocFixture(Linter[RepositoryDataTables]):
     """A configured table references a loc file that resolves to no file on disk.
 
-    ``LocAsset.found`` already accounts for the ``.sample`` fallback, so a
-    sample-backed production loc does not trip this error (only that the
-    reference resolves to *something*).
+    A reference backed by a shipped ``.sample`` (``LocAsset.sample_backed``) is not
+    reported: on install Galaxy materializes the real ``.loc`` from the sample, so
+    only a reference the loader could not resolve *and* that no sample backs is a
+    demonstrably missing loc. (The loader's own ``found`` misses ``tool-data`` samples,
+    hence ``sample_backed`` is resolved separately -- see ``LocAsset.found``.)
     """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
-        missing = [asset for asset in model.loc_assets if not asset.found]
+        missing = [asset for asset in model.loc_assets if not asset.found and not asset.sample_backed]
         for asset in missing:
             lint_ctx.error(
                 f"Data table '{asset.table_name}' references loc file [{asset.path}] which does not exist",
