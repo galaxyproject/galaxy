@@ -289,10 +289,10 @@ def galaxy_sort_to_osf(sort_by: Optional[str]) -> Optional[str]:
     descending = sort_by.startswith("-")
     field = sort_by.lstrip("-")
     mapping = {
+        # NOTE: the proposed keys are based on `RemoteEntry` and `RemoteFile`, although the expected values for
+        # `sort_by` are nowhere to be found in the codebase. Take the proposed keys just as an example.
         "name": "title",
-        "update_time": "date_modified",
-        "create_time": "date_created",
-        "ctime": "date_modified",
+        "ctime": "date_created",
         "size": "size",
     }
     osf_field = mapping.get(field)
