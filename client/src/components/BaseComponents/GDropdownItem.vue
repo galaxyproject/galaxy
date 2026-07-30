@@ -57,8 +57,10 @@ function onClick(event: MouseEvent) {
         event.preventDefault();
         return;
     }
-    // Prevent href="#" anchor navigation for action items
-    if (!props.to) {
+    // Cancel navigation only for action items, whose href is "#" (passed explicitly or defaulted).
+    // A real href has to navigate -- cancelling it also kills target="_blank", so external links
+    // would never open. Matches BLink, which BDropdownItem rendered through.
+    if (!props.to && (!props.href || props.href === "#")) {
         event.preventDefault();
     }
     emit("click", event);
