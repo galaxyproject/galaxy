@@ -30,6 +30,7 @@ export interface Plugin {
     logo?: string;
     name: string;
     params?: Record<string, ParamType>;
+    parameters_schema?: Record<string, unknown>;
     target?: string;
     tags?: Array<string>;
     tests?: Array<TestType>;
