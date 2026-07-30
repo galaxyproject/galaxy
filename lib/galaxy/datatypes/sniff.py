@@ -60,6 +60,18 @@ BINARY_MIMETYPES = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 }
 
+# A libmagic cookie builds its description in a buffer it owns and returns a pointer
+# to it, so it cannot be used from more than one thread at a time or the description
+# comes back torn. Datasets are sniffed concurrently (celery runs a thread pool), so
+# go through `magic.Magic`, which locks around every libmagic call.
+_MAGIC = magic.Magic(mime=True, mime_encoding=True)
+
+
+def _split_magic_description(description: str) -> tuple[str, str]:
+    """Split a libmagic ``<mime type>; charset=<encoding>`` description in two."""
+    mime_type, _, encoding = description.partition("; ")
+    return mime_type, encoding.removeprefix("charset=")
+
 
 def get_test_fname(fname):
     """Returns test data filename"""
@@ -612,15 +624,11 @@ class FilePrefix:
         self.truncated = truncated
         self.filename = filename
         self.non_utf8_error = non_utf8_error
-        file_magic = magic.detect_from_content(contents_header_bytes)
-        self.encoding = file_magic.encoding
-        self.mime_type = file_magic.mime_type
+        self.mime_type, self.encoding = _split_magic_description(_MAGIC.from_buffer(contents_header_bytes))
         self.compressed_mime_type = None
         self.compressed_encoding = None
         if compressed_format:
-            compressed_magic = magic.detect_from_filename(filename)
-            self.compressed_mime_type = compressed_magic.mime_type
-            self.compressed_encoding = compressed_magic.encoding
+            self.compressed_mime_type, self.compressed_encoding = _split_magic_description(_MAGIC.from_file(filename))
         self.compressed_format = compressed_format
         self.contents_header = contents_header
         self.contents_header_bytes = contents_header_bytes
