@@ -121,6 +121,13 @@ static files
 - script.js - all JavaScript code (with all third-party dependencies) must be here
 - styles.css - all CSS styles, used by the plugin
 
+script.js must be self-contained, modern vanilla JavaScript. The client no longer
+exposes Backbone, underscore or jQuery as globals, so webhook scripts cannot rely
+on them; use standard DOM APIs (``document.getElementById``, ``fetch``, etc.). Each
+script is wrapped in an IIFE and injected only after its ``#<webhook-id>`` mount
+point has rendered, so it may query that element immediately. The *phdcomics* and
+*xkcd* example plugins in ``test/functional/webhooks/`` show the expected style.
+
 
 Plugin dependencies
 -------------------
