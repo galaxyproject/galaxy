@@ -325,7 +325,7 @@
 
 - type: osf
   id: osf
-  doc: The Open Science Framework (OSF) is a free, open-source platform for managing and sharing research projects, data, and preprints developed by the Center for Open Science. Access is via your OSF Personal Access Token.
+  doc: Browse, import and export files from your OSF projects and registrations.
   label: Open Science Framework (OSF)
   url: https://api.osf.io/v2/
   waterbutler_url: https://files.osf.io/v1/

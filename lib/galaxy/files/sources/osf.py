@@ -39,6 +39,7 @@ from abc import ABC
 from pathlib import Path
 from typing import Any, Optional, Union
 from urllib.parse import urljoin, urlparse
+import html
 
 from galaxy import exceptions as galaxy_exceptions
 from galaxy.files.models import (
@@ -257,7 +258,7 @@ class OSFClient:
 
 
 def node_title(node: dict) -> str:
-    return node.get("attributes", {}).get("title", node.get("id", "untitled"))
+    return html.unescape(node.get("attributes", {}).get("title", node.get("id", "untitled")))
 
 
 def galaxy_pagination_to_osf(
