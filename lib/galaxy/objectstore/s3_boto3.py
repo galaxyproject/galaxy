@@ -33,8 +33,8 @@ from galaxy.util.s3_checksum import s3_checksum_config_kwargs
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     CacheShardManager,
+    CacheTarget,
     enable_cache_monitor,
-    ObjectId,
     parse_caching_config_dict_from_xml,
 )
 
@@ -322,11 +322,11 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 return False
             raise
 
-    def _download(self, rel_path: str, *, object_id: ObjectId) -> bool:
-        local_destination = self._get_cache_path(rel_path, object_id)
+    def _download(self, rel_path: str, *, cache_path: str, cache_target: CacheTarget) -> bool:
+        local_destination = cache_path
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
-            if not self._caching_allowed(rel_path, object_id=object_id):
+            if not self._caching_allowed(rel_path, cache_target=cache_target):
                 return False
             config = self._transfer_config("download")
             with self._atomic_download(local_destination) as tmp:

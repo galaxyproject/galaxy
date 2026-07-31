@@ -20,7 +20,7 @@ from galaxy.util import directory_hash_id
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     CacheShardManager,
-    ObjectId,
+    CacheTarget,
 )
 
 NO_KAMAKI_ERROR_MESSAGE = (
@@ -145,8 +145,8 @@ class PithosObjectStore(CachingConcreteObjectStore):
         if project and c.get("x-container-policy-project") != project:
             self.pithos.reassign_container(project)
 
-    def _download(self, rel_path, *, object_id: ObjectId):
-        local_destination = self._get_cache_path(rel_path, object_id)
+    def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
+        local_destination = cache_path
         with self._atomic_download(local_destination) as tmp:
             self.pithos.download_object(rel_path, tmp)
 
@@ -158,6 +158,7 @@ class PithosObjectStore(CachingConcreteObjectStore):
         """
         path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(path, object_id)
         try:
             self.pithos.get_object_info(path)
             return True
@@ -165,7 +166,7 @@ class PithosObjectStore(CachingConcreteObjectStore):
             if ce.status not in (404,):
                 raise
 
-        in_cache = self._in_cache(path, object_id)
+        in_cache = self._in_cache(cache_path)
         dir_only = kwargs.get("dir_only", False)
         if dir_only:
             base_dir = kwargs.get("base_dir", None)
@@ -178,7 +179,6 @@ class PithosObjectStore(CachingConcreteObjectStore):
             return False
 
         if in_cache:
-            cache_path = self._get_cache_path(path, object_id)
             # Maybe the upload should have happened in some thread elsewhere?
             with open(cache_path) as f:
                 self.pithos.upload_object(path, f)

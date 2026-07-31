@@ -20,8 +20,8 @@ from galaxy.util import now
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     CacheShardManager,
+    CacheTarget,
     enable_cache_monitor,
-    ObjectId,
     parse_caching_config_dict_from_xml,
 )
 
@@ -236,11 +236,11 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
     def _blob_client(self, rel_path: str):
         return self.service.get_blob_client(self.container_name, rel_path)
 
-    def _download(self, rel_path, *, object_id: ObjectId):
-        local_destination = self._get_cache_path(rel_path, object_id)
+    def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
+        local_destination = cache_path
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
-            if not self._caching_allowed(rel_path, object_id=object_id):
+            if not self._caching_allowed(rel_path, cache_target=cache_target):
                 return False
             else:
                 with self._atomic_download(local_destination) as tmp:

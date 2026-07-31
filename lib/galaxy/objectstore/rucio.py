@@ -385,13 +385,14 @@ class RucioObjectStore(CachingConcreteObjectStore):
     def _exists(self, obj, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
         log.debug("rucio _exists: %s", rel_path)
 
         dir_only = kwargs.get("dir_only", False)
         base_dir = kwargs.get("base_dir", None)
 
         # Check cache and rucio
-        if self._in_cache(rel_path, object_id) or (not dir_only and self.rucio_broker.data_object_exists(rel_path)):
+        if self._in_cache(cache_path) or (not dir_only and self.rucio_broker.data_object_exists(rel_path)):
             return True
 
         # dir_only does not get synced so shortcut the decision
@@ -441,12 +442,13 @@ class RucioObjectStore(CachingConcreteObjectStore):
     def _size(self, obj, **kwargs) -> int:
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
         log.debug("rucio _size: %s", rel_path)
 
-        if self._in_cache(rel_path, object_id):
+        if self._in_cache(cache_path):
             size: int | None = None
             try:
-                size = os.path.getsize(self._get_cache_path(rel_path, object_id))
+                size = os.path.getsize(cache_path)
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try iRODS. Error: %s", rel_path, ex)
             if size is not None:
@@ -462,6 +464,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
         extra_dir = kwargs.get("extra_dir", None)
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
@@ -477,9 +480,9 @@ class RucioObjectStore(CachingConcreteObjectStore):
 
             # Delete from cache first
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path, object_id), ignore_errors=True)
+                shutil.rmtree(cache_path, ignore_errors=True)
             else:
-                unlink(self._get_cache_path(rel_path, object_id), ignore_errors=True)
+                unlink(cache_path, ignore_errors=True)
 
             # Delete from rucio as well
             if self.rucio_broker.data_object_exists(rel_path):
@@ -523,7 +526,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
         if not sync_cache:
             return cache_path
 
-        in_cache = self._in_cache(rel_path, object_id)
+        in_cache = self._in_cache(cache_path)
         size_in_cache = 0
         if in_cache:
             size_in_cache = os.path.getsize(cache_path)
@@ -547,9 +550,9 @@ class RucioObjectStore(CachingConcreteObjectStore):
                     return cache_path
         raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
 
-    def _register_file(self, rel_path, file_name, *, object_id: ObjectId):
+    def _register_file(self, rel_path, file_name, *, cache_path: str):
         if file_name is None:
-            file_name = self._get_cache_path(rel_path, object_id)
+            file_name = cache_path
             if not os.path.islink(file_name):
                 raise ObjectInvalid(
                     "rucio objectstore._register_file, rucio_register_only is set, but file in cache is not a link "
@@ -573,7 +576,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
             )
 
         if self.rucio_config["register_only"]:
-            self._register_file(rel_path, file_name, object_id=object_id)
+            self._register_file(rel_path, file_name, cache_path=self._get_cache_path(rel_path, object_id))
             return
 
         # Choose whether to use the dataset file itself or an alternate file

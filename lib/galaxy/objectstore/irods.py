@@ -29,7 +29,7 @@ from galaxy.util import (
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     CacheShardManager,
-    ObjectId,
+    CacheTarget,
     parse_cache_dirs_from_xml,
 )
 
@@ -421,9 +421,8 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _exists_remotely: %s", ipt_timer)
 
-    def _download(self, rel_path, *, object_id: ObjectId):
+    def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
         ipt_timer = ExecutionTimer()
-        cache_path = self._get_cache_path(rel_path, object_id)
         log.debug("Pulling data object '%s' into cache to %s", rel_path, cache_path)
 
         p = Path(rel_path)
@@ -448,7 +447,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
 
-    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, object_id: ObjectId):
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
         """
         Push the file pointed to by ``rel_path`` to the iRODS. Extract folder name
         from rel_path as iRODS collection name, and extract file name from rel_path
@@ -462,7 +461,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        source_file = source_file if source_file else self._get_cache_path(rel_path, object_id)
+        source_file = source_file if source_file else cache_path
         options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         if not os.path.exists(source_file):
@@ -531,6 +530,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
         extra_dir = kwargs.get("extra_dir", None)
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
@@ -549,7 +549,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in irods and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path, object_id), ignore_errors=True)
+                shutil.rmtree(cache_path, ignore_errors=True)
 
                 col_path = f"{self.logical_path}/{rel_path}"
                 col = None
@@ -573,7 +573,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
 
             else:
                 # Delete from cache first
-                unlink(self._get_cache_path(rel_path, object_id), ignore_errors=True)
+                unlink(cache_path, ignore_errors=True)
                 # Delete from irods as well
                 p = Path(rel_path)
                 data_object_name = p.stem + p.suffix

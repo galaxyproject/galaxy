@@ -238,7 +238,7 @@ class StubCachingBackend(CachingConcreteObjectStore):
     def _exists_remotely(self, rel_path):
         return False
 
-    def _download(self, rel_path, *, object_id):
+    def _download(self, rel_path, *, cache_path, cache_target):
         return False
 
     def _push_string_to_path(self, rel_path, from_string):
@@ -339,8 +339,7 @@ def test_backend_pull_into_cache_writes_to_correct_shard(two_dir_cache):
     expected_shard = cache_a if _is_in_shard(expected_path, cache_a) else cache_b
 
     # Patch _download to write a file instead of returning False
-    def fake_download(rel_path, *, object_id):
-        cache_path = backend._get_cache_path(rel_path, object_id)
+    def fake_download(rel_path, *, cache_path, cache_target):
         os.makedirs(os.path.dirname(cache_path), exist_ok=True)
         with open(cache_path, "w") as f:
             f.write("downloaded content")

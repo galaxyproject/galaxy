@@ -22,8 +22,8 @@ from galaxy.util import (
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     CacheShardManager,
+    CacheTarget,
     enable_cache_monitor,
-    ObjectId,
     parse_caching_config_dict_from_xml,
 )
 
@@ -185,9 +185,9 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             log.exception("Trouble checking '%s' existence in Onedata", rel_path)
             return False
 
-    def _download(self, rel_path, *, object_id: ObjectId):
+    def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
         try:
-            dst_path = self._get_cache_path(rel_path, object_id)
+            dst_path = cache_path
 
             log.debug("Pulling file '%s' into cache to %s", rel_path, dst_path)
 
@@ -195,7 +195,7 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             file_size = self._client.get_attributes(self.space_name, attributes=["size"], file_path=remote_path)["size"]
 
             # Test if cache is large enough to hold the new file
-            if not self._caching_allowed(rel_path, object_id=object_id, remote_size=file_size):
+            if not self._caching_allowed(rel_path, cache_target=cache_target, remote_size=file_size):
                 return False
 
             with self._atomic_download(dst_path) as tmp:
@@ -212,14 +212,14 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             log.exception("Problem downloading file '%s'", rel_path)
             return False
 
-    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, object_id: ObjectId):
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
         """
         Push the file pointed to by ``rel_path`` to the object store under ``rel_path``.
         If ``source_file`` is provided, push that file instead while still using
         ``rel_path`` as the path.
         """
         try:
-            source_file = source_file or self._get_cache_path(rel_path, object_id)
+            source_file = source_file or cache_path
             if os.path.exists(source_file):
                 if os.path.getsize(source_file) == 0 and self._exists_remotely(rel_path):
                     log.debug(

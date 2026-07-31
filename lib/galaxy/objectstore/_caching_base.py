@@ -97,16 +97,15 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{object_id}.dat")
 
         if in_cache:
-            return self._get_cache_path(rel_path, object_id)
+            return self._cache_shards.get_cache_path(object_id, rel_path)
 
         return rel_path
 
     def _get_cache_path(self, rel_path: str, object_id: ObjectId) -> str:
         return self._cache_shards.get_cache_path(object_id, rel_path)
 
-    def _in_cache(self, rel_path: str, object_id: ObjectId) -> bool:
+    def _in_cache(self, cache_path: str) -> bool:
         """Check if the given dataset is in the local cache and return True if so."""
-        cache_path = self._get_cache_path(rel_path, object_id)
         return os.path.exists(cache_path)
 
     def _pull_into_cache(self, rel_path, *, object_id: ObjectId, **kwargs) -> bool:
@@ -116,21 +115,23 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir, exist_ok=True)
         # Now pull in the file
-        file_ok = self._download(rel_path, object_id=object_id)
+        cache_path = self._get_cache_path(rel_path, object_id)
+        cache_target = self._cache_shards.get_cache_target(object_id)
+        file_ok = self._download(rel_path, cache_path=cache_path, cache_target=cache_target)
         if file_ok:
             fix_permissions(self.config, cache_dir)
         else:
-            unlink(self._get_cache_path(rel_path, object_id), ignore_errors=True)
+            unlink(cache_path, ignore_errors=True)
         return file_ok
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
         # Check cache first and get file if not there
-        if not self._in_cache(rel_path, object_id):
+        if not self._in_cache(cache_path):
             self._pull_into_cache(rel_path, object_id=object_id, **kwargs)
         # Read the file content from cache
-        cache_path = self._get_cache_path(rel_path, object_id)
         data_file = open(cache_path)
         data_file.seek(start)
         content = data_file.read(count)
@@ -141,6 +142,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         in_cache = exists_remotely = False
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
         dir_only = kwargs.get("dir_only", False)
         base_dir = kwargs.get("base_dir", None)
 
@@ -150,7 +152,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 os.makedirs(rel_path, exist_ok=True)
             return True
 
-        in_cache = self._in_cache(rel_path, object_id)
+        in_cache = self._in_cache(cache_path)
         exists_remotely = self._exists_remotely(rel_path)
         if dir_only:
             if in_cache or exists_remotely:
@@ -160,7 +162,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
 
         # TODO: Sync should probably not be done here. Add this to an async upload stack?
         if in_cache and not exists_remotely:
-            self._push_to_storage(rel_path, source_file=self._get_cache_path(rel_path, object_id), object_id=object_id)
+            self._push_to_storage(rel_path, cache_path=cache_path)
             return True
         elif exists_remotely:
             return True
@@ -195,14 +197,14 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             # If instructed, create the dataset in cache & in S3
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{object_id}.dat")
-                open(self._get_cache_path(rel_path, object_id), "w").close()
-                self._push_to_storage(rel_path, from_string="", object_id=object_id)
+                cache_path = self._get_cache_path(rel_path, object_id)
+                open(cache_path, "w").close()
+                self._push_to_storage(rel_path, from_string="", cache_path=cache_path)
         return self
 
-    def _caching_allowed(self, rel_path: str, *, object_id: ObjectId, remote_size: int | None = None) -> bool:
+    def _caching_allowed(self, rel_path: str, *, cache_target: CacheTarget, remote_size: int | None = None) -> bool:
         if remote_size is None:
             remote_size = self._get_remote_size(rel_path)
-        cache_target = self._cache_shards.get_cache_target(object_id)
         if not cache_target.fits_in_cache(remote_size):
             log.critical(
                 "File %s is larger (%s bytes) than the configured cache allows (%s). Cannot download.",
@@ -213,8 +215,8 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             return False
         return True
 
-    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, object_id: ObjectId):
-        source_file = source_file or self._get_cache_path(rel_path, object_id)
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
+        source_file = source_file or cache_path
         if from_string is None and not os.path.exists(source_file):
             log.error(
                 "Tried updating remote path '%s' from source file '%s', but source file does not exist.",
@@ -256,15 +258,16 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
-    def _get_size_in_cache(self, rel_path, *, object_id: ObjectId):
-        return os.path.getsize(self._get_cache_path(rel_path, object_id))
+    def _get_size_in_cache(self, cache_path: str):
+        return os.path.getsize(cache_path)
 
     def _size(self, obj, **kwargs) -> int:
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
-        if self._in_cache(rel_path, object_id):
+        cache_path = self._get_cache_path(rel_path, object_id)
+        if self._in_cache(cache_path):
             try:
-                return self._get_size_in_cache(rel_path, object_id=object_id)
+                return self._get_size_in_cache(cache_path)
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try Azure. Error: %s", rel_path, ex)
         elif self._exists_remotely(rel_path):
@@ -289,7 +292,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             return cache_path
 
         # Check if the file exists in the cache first, always pull if file size in cache is zero
-        if not dir_only and self._in_cache(rel_path, object_id) and os.path.getsize(cache_path) > 0:
+        if not dir_only and self._in_cache(cache_path) and os.path.getsize(cache_path) > 0:
             return cache_path
 
         # For directories: trust cache if it has files. Individual file accesses
@@ -323,6 +326,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
         extra_dir = kwargs.get("extra_dir", None)
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
@@ -338,11 +342,11 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path, object_id), ignore_errors=True)
+                shutil.rmtree(cache_path, ignore_errors=True)
                 return self._delete_remote_all(rel_path)
             else:
                 # Delete from cache first
-                unlink(self._get_cache_path(rel_path, object_id), ignore_errors=True)
+                unlink(cache_path, ignore_errors=True)
                 # Delete from S3 as well
                 if self._exists_remotely(rel_path):
                     return self._delete_existing_remote(rel_path)
@@ -359,22 +363,22 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             object_id = self._get_object_id(obj)
+            cache_path = self._get_cache_path(rel_path, object_id)
             # Chose whether to use the dataset file itself or an alternate file
             if file_name:
                 source_file = os.path.abspath(file_name)
                 # Copy into cache
-                cache_file = self._get_cache_path(rel_path, object_id)
                 try:
-                    if source_file != cache_file and self.cache_updated_data:
+                    if source_file != cache_path and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
-                        shutil.copy(source_file, cache_file)
-                    fix_permissions(self.config, cache_file)
+                        shutil.copy(source_file, cache_path)
+                    fix_permissions(self.config, cache_path)
                 except OSError:
-                    log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
+                    log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_path)
             else:
-                source_file = self._get_cache_path(rel_path, object_id)
+                source_file = cache_path
 
-            self._push_to_storage(rel_path, source_file, object_id=object_id)
+            self._push_to_storage(rel_path, source_file, cache_path=cache_path)
 
         else:
             raise ObjectNotFound(
@@ -440,7 +444,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 os.remove(tmp_path)
             raise
 
-    def _download(self, rel_path: str, *, object_id: ObjectId) -> bool:
+    def _download(self, rel_path: str, *, cache_path: str, cache_target: CacheTarget) -> bool:
         raise NotImplementedError()
 
     # Do not need to override these if instead replacing _delete
