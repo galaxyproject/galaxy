@@ -96,10 +96,20 @@ const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
  * click to select without opening the item, and shift for a range. */
 const showCollectionCreator = ref(false);
 
-/** Stable key for an element, used for selection and refs. */
-function elementKey(item: DCESummary) {
-    return String(item.element_identifier ?? item.element_index);
+/** Selection is keyed on the dataset an element points at, not on the element.
+ * ContentItem hands its own `item` to the click handler, and that item is the
+ * dataset, so keying on anything else makes every click resolve to the same
+ * key and selection stops behaving like the history panel's. */
+function datasetKey(item: HistoryItemSummary) {
+    return String(item?.id);
 }
+
+/** The datasets behind this collection's elements, in listing order. */
+const selectableDatasets = computed(() =>
+    collectionElements.value
+        .filter((element): element is DCESummary => "element_type" in element && element.element_type === "hda")
+        .map((element) => element.object as HistoryItemSummary),
+);
 
 const {
     selectedItems,
@@ -114,28 +124,26 @@ const {
     itemRefs,
     onClick: onSelectClick,
     onKeyDown: onSelectKeyDown,
-} = useSelectedItems<DCESummary, typeof ContentItem>({
+} = useSelectedItems<HistoryItemSummary, typeof ContentItem>({
     scopeKey: computed(() => String(dsc.value?.id ?? "")),
-    getItemKey: elementKey,
-    allItems: collectionElements as never,
+    getItemKey: datasetKey,
+    allItems: selectableDatasets as never,
     selectable: computed(() => canEdit.value),
     expectedKeyDownClass: "content-item",
+    // Matches the history panel so keyboard navigation behaves the same.
+    disallowedKeyDownClasses: ["sub-item"],
     // A collection listing has no filtering and no query selection, so these
     // are inert; they exist because the composable is shared with the history
     // panel, where filtering drives select-all-in-query.
     filterText: ref(""),
-    totalItemsInQuery: computed(() => collectionElements.value.length),
+    totalItemsInQuery: computed(() => selectableDatasets.value.length),
     filterClass: HistoryFilters,
     // Deleting an element from a collection is not offered here.
     onDelete: () => {},
 });
 
 /** The datasets behind the selected elements, for the collection creator. */
-const selectedDatasets = computed(() =>
-    Array.from(selectedItems.value.values())
-        .filter((element) => element.element_type === "hda")
-        .map((element) => element.object as HistoryItemSummary),
-);
+const selectedDatasets = computed(() => Array.from(selectedItems.value.values()));
 
 async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
     if (!isHDCA(collection)) {
@@ -239,20 +247,22 @@ watch(
                             <ContentItem
                                 v-else
                                 :id="item.element_index + 1"
-                                :ref="itemRefs[elementKey(item)]"
+                                :ref="itemRefs[datasetKey(item.object)]"
                                 :item="item.object"
                                 :name="item.element_identifier"
                                 :expand-dataset="isExpanded(item)"
                                 :is-dataset="item.element_type == 'hda'"
                                 :taggable="item.element_type == 'hda'"
+                                :writable="canEdit"
+                                :get-item-key="datasetKey"
                                 :selectable="showSelection && item.element_type == 'hda'"
-                                :selected="isSelected(item)"
-                                :is-range-select-anchor="isRangeSelectAnchor(item)"
+                                :selected="isSelected(item.object)"
+                                :is-range-select-anchor="isRangeSelectAnchor(item.object)"
                                 :select-click-handler="onSelectClick"
                                 :filterable="filterable"
-                                @update:selected="setSelected(item, $event)"
+                                @update:selected="setSelected(item.object, $event)"
                                 @init-key-selection="initKeySelection"
-                                @on-key-down="onSelectKeyDown(item, $event)"
+                                @on-key-down="onSelectKeyDown(item.object, $event)"
                                 @drag-start="setItemDragstart(item, $event)"
                                 @update:expand-dataset="setExpanded(item, $event)"
                                 @view-collection="onViewDatasetCollectionElement(item)" />
