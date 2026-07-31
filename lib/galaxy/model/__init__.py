@@ -729,6 +729,37 @@ WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
 """
 
 
+def _sum_file_sizes(path: str) -> int:
+    """Return the total size of every file under ``path``, 0 if it is unreadable.
+
+    Uses the stat that ``scandir`` already performs for the walk rather than a
+    separate ``exists`` plus ``getsize`` per file, which halves the syscalls.
+    On a network filesystem those are round trips, and this runs for every
+    output of every job.
+    """
+    total = 0
+    try:
+        entries = list(os.scandir(path))
+    except OSError:
+        return 0
+    for entry in entries:
+        try:
+            if entry.is_dir(follow_symlinks=False):
+                total += _sum_file_sizes(entry.path)
+            elif entry.is_dir():
+                # A symlink to a directory: os.walk lists it but does not
+                # descend into it, so it contributes nothing.
+                continue
+            else:
+                # Follows symlinks, as os.path.getsize did. A broken one
+                # raises here and is skipped, as the os.path.exists guard did.
+                total += entry.stat().st_size
+        except OSError:
+            # Vanished between listing and stat, or otherwise unreadable.
+            continue
+    return total
+
+
 def calculate_user_disk_usage_statements(user_id: int, quota_source_map: "QuotaSourceMap", for_sqlite: bool = False):
     """Standalone function so can be reused for postgres directly in pgcleanup.py."""
     statements: list[tuple[str, dict[str, Any]]] = []
@@ -5009,12 +5040,7 @@ class Dataset(Base, StorableObject, Serializable):
         self.total_size = self.file_size or 0
         if (rel_path := self._extra_files_rel_path) is not None:
             if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
-                for root, _, files in os.walk(self.extra_files_path):
-                    self.total_size += sum(
-                        os.path.getsize(os.path.join(root, file))
-                        for file in files
-                        if os.path.exists(os.path.join(root, file))
-                    )
+                self.total_size += _sum_file_sizes(self.extra_files_path)
         return self.total_size
 
     def has_data(self):

@@ -1110,25 +1110,44 @@ class DiskObjectStore(ConcreteObjectStore):
         """Override `ObjectStore`'s stub by checking file size on disk."""
         return self._size(obj, **kwargs) == 0
 
+    def _stat_size(self, obj, **kwargs) -> int | None:
+        """Return the size of the first candidate path that exists, else None.
+
+        A single ``getsize`` answers both "does this exist" and "how big is
+        it", so the caller does not have to stat the same path again.
+        """
+        paths = []
+        if self.check_old_style:
+            # For backward compatibility: check root path first; otherwise
+            # construct and check hashed path.
+            paths.append(self._construct_path(obj, old_style=True, **kwargs))
+        paths.append(self._construct_path(obj, **kwargs))
+        for path in paths:
+            try:
+                return os.path.getsize(path)
+            except OSError:
+                continue
+        return None
+
     def _size(self, obj, **kwargs) -> int:
         """Override `ObjectStore`'s stub by return file size on disk.
 
         Returns 0 if the object doesn't exist yet or other error.
         """
-        if self._exists(obj, **kwargs):
-            try:
-                filepath = self._get_filename(obj, **kwargs)
-                for _ in range(0, 2):
-                    size = os.path.getsize(filepath)
-                    if size != 0:
-                        break
-                    # May be legitimately 0, or there may be an issue with the FS / kernel, so we try again
-                    time.sleep(0.01)
-                return size
-            except OSError:
+        # Resolving through _exists() and then _get_filename() would stat the
+        # same path twice more before getsize() stats it a third time. On a
+        # network filesystem each of those is a round trip, and this is paid
+        # for every output of every job, so do it with one stat instead.
+        for _ in range(0, 2):
+            size = self._stat_size(obj, **kwargs)
+            if size is None:
+                # Doesn't exist; no point waiting for it to grow.
                 return 0
-        else:
-            return 0
+            if size != 0:
+                return size
+            # May be legitimately 0, or there may be an issue with the FS / kernel, so we try again
+            time.sleep(0.01)
+        return 0
 
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         """Override `ObjectStore`'s stub; delete the file or folder on disk."""
