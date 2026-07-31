@@ -290,9 +290,20 @@ class Registry:
                             self.available_tracks.append(extension)
                         if display_in_upload and extension not in self.upload_file_formats:
                             self.upload_file_formats.append(extension)
-                        # Max file size cut off for setting optional metadata.
-                        self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get(
-                            "max_optional_metadata_filesize", None
+                        # Max file size cut off for setting optional metadata. A value on the
+                        # datatype wins; otherwise fall back to the global config option.
+                        max_optional_metadata_filesize = elem.get("max_optional_metadata_filesize", None)
+                        if max_optional_metadata_filesize is None:
+                            max_optional_metadata_filesize = getattr(
+                                self.config, "max_optional_metadata_filesize", None
+                            )
+                            if max_optional_metadata_filesize is not None:
+                                # Make sure this is set in the elems we write out so the config option
+                                # reaches the metadata and upload processes, which build a registry
+                                # from that XML and have no config object.
+                                elem.set("max_optional_metadata_filesize", str(max_optional_metadata_filesize))
+                        self.datatypes_by_extension[extension].max_optional_metadata_filesize = (
+                            max_optional_metadata_filesize
                         )
                         infer_from_suffixes = []
                         # read from element instead of attribute so we can customize references to

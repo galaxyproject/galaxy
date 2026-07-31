@@ -1213,6 +1213,31 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``max_optional_metadata_filesize``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum size, in bytes, of a dataset for which optional metadata
+    is computed. Setting optional metadata means reading the dataset
+    from end to end: for FASTQ and FASTA this is what produces the
+    sequence and line counts shown in the history. On installations
+    where datasets are large or live on shared storage, that read is
+    often the slowest part of finishing a job, and it happens once per
+    output dataset.
+    Datasets larger than this are given the non-optional metadata
+    only, and their history entry shows the file size instead of a
+    sequence count. Nothing else about the dataset changes and tools
+    are unaffected.
+    Set to 0 to never read datasets for optional metadata. The default
+    of -1 means no limit, which is the historical behaviour.
+    This can be configured/overridden on a per-datatype basis in the
+    datatypes_conf.xml file, where a max_optional_metadata_filesize
+    attribute on a datatype takes precedence over this value.
+:Default: ``-1``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``datatypes_disable_auto``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -94,6 +94,7 @@ class GalaxyAppConfigurationAttributes:
     len_file_path: str
     datatypes_config_file: str
     sniff_compressed_dynamic_datatypes_default: bool
+    max_optional_metadata_filesize: int
     datatypes_disable_auto: bool
     visualization_plugins_directory: str
     tour_config_dir: str
