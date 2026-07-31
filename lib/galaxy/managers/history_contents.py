@@ -10,6 +10,7 @@ from typing import (
 )
 
 from sqlalchemy import (
+    and_,
     asc,
     cast,
     desc,
@@ -55,6 +56,7 @@ from galaxy.schema.tasks import (
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import listify
+from galaxy.util.search import split_name_search_terms
 from .base import (
     parse_bool,
     raise_filter_err,
@@ -711,6 +713,25 @@ class HistoryContentsFilters(
                     return sql.column("object_store_id").in_(object_store_ids)
 
                 raise_filter_err(attr, op, val, "bad op in filter")
+
+        if attr == "name" and op == "contains":
+            # Match each word of the query independently instead of the value as
+            # a whole, so the separators a user types don't have to match the
+            # ones in the name (``umi-tools`` finds ``umi tools``). A truncated
+            # word still matches because each term is itself a substring match.
+            terms = split_name_search_terms(val)
+            # A value that splits into itself (no separators) is left to the base
+            # parser: the expression would be identical, and that keeps the common
+            # case on the well-trodden path. A value that splits into nothing
+            # (only separators) is left there too, so it keeps matching literally.
+            if terms and terms != [val.lower()]:
+                # Built as an ``orm_function`` rather than an ``orm`` filter
+                # because ``_apply_orm_filter`` only rewrites a lone
+                # BinaryExpression and would silently drop a conjunction.
+                def name_filter(component_class):
+                    return and_(*(func.lower(component_class.name).contains(term, autoescape=True) for term in terms))
+
+                return self.parsed_filter(filter_type="orm_function", filter=name_filter)
 
         if attr == "extension" and op in ("eq", "in"):
             # Apply different filter expressions to the HDA and HDCA branches

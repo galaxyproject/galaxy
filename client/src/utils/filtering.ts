@@ -216,6 +216,56 @@ export function contains<T>(attribute: string, query?: string, converter?: Conve
     };
 }
 
+/** Characters that separate words in a name but that a user should not have to
+ * reproduce exactly to get a hit. Keep in sync with `NAME_TERM_SEPARATORS` in
+ * `lib/galaxy/util/search.py`, which the backend applies to the same filter.
+ */
+const NAME_TERM_SEPARATORS = /[\s\-_.,:;/\\|()[\]{}'"]+/;
+/** Each term becomes its own comparison, so cap them as the backend does. */
+const MAX_NAME_TERMS = 8;
+
+/** Splits a search value into lowercased, separator-insensitive terms.
+ * @param value the raw search value
+ * @returns the distinct terms to match independently
+ */
+export function splitNameSearchTerms(value: string): string[] {
+    const terms: string[] = [];
+    for (const part of toLower(value).split(NAME_TERM_SEPARATORS)) {
+        if (!part || terms.includes(part)) {
+            continue;
+        }
+        terms.push(part);
+        if (terms.length >= MAX_NAME_TERMS) {
+            break;
+        }
+    }
+    return terms;
+}
+
+/**
+ * Checks if every word of the query appears in the item value, independently of
+ * the separators used. Searching `umi-tools` finds `umi tools`, and a truncated
+ * word still matches because each term is itself a substring check.
+ * @param attribute of the content item
+ * @param query parameter if the attribute does not match the server query key
+ */
+export function containsTerms<T>(attribute: string, query?: string): HandlerReturn<T> {
+    return {
+        attribute,
+        query: query || `${attribute}-contains`,
+        handler: (v: T, q: T) => {
+            const value = toLower(v);
+            const terms = splitNameSearchTerms(String(q));
+            if (!terms.length) {
+                // Nothing but separators: match it literally, as the backend does,
+                // rather than letting an empty term list match every item.
+                return value.includes(toLower(q));
+            }
+            return terms.every((term) => value.includes(term));
+        },
+    };
+}
+
 /**
  * Checks if a value is greater or smaller than the item value
  * @param attribute of the content item

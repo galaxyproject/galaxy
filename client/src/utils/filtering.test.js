@@ -235,6 +235,30 @@ describe("filtering", () => {
             expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(parsedFilters);
         });
     });
+    test("name filter matches words in any separator", () => {
+        const item = { name: "UMI tools dedup", deleted: false, visible: true };
+        // Whichever separator the user types, the item still matches.
+        ["umi-tools", "umi tools", "umi_tools", "UMI-Tools", "umi.tools"].forEach((filterText) => {
+            const filters = HistoryFilters.getFiltersForText(filterText);
+            expect(HistoryFilters.testFilters(filters, { ...item })).toBe(true);
+        });
+        // Each word only has to appear somewhere, so a truncated word still hits.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("um-tool"), { ...item })).toBe(true);
+        // Every word has to appear though, so the search still narrows.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("umi bowtie"), { ...item })).toBe(false);
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("umi dedup"), { ...item })).toBe(true);
+        // A trailing separator is a normal state while typing, and behaves as if
+        // it were not there rather than falling back to a literal match.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("umi-"), { ...item })).toBe(true);
+        // A query of nothing but separators matches literally, so it matches
+        // nothing here, rather than an empty term list matching every item.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("___"), { ...item })).toBe(false);
+    });
+    test("name filter still sends the raw value to the backend", () => {
+        // The terms are split server-side too, so the query key is unchanged.
+        const queryDict = HistoryFilters.getQueryDict("umi-tools");
+        expect(queryDict["name-contains"]).toBe("umi-tools");
+    });
     test("named tag (hash) conversion", () => {
         const filters = HistoryFilters.getFiltersForText("tag:#test");
         expect(filters[0][0]).toBe("tag");
