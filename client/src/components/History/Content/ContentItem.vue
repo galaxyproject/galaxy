@@ -9,7 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
@@ -155,8 +155,19 @@ const dataState = computed(() => {
     }
 });
 
+/** Tags set here since the item was last supplied, so an edit shows at once.
+ * Cleared when the item changes, at which point the incoming value is
+ * authoritative again. */
+const locallyEditedTags = ref<string[] | null>(null);
+watch(
+    () => props.item?.id,
+    () => {
+        locallyEditedTags.value = null;
+    },
+);
+
 const tags = computed(() => {
-    return props.item.tags;
+    return locallyEditedTags.value ?? props.item.tags;
 });
 
 const tagsDisabled = computed(() => {
@@ -281,6 +292,10 @@ function onShowCollectionInfo() {
 
 function onTags(newTags: string[]) {
     emit("tag-change", props.item, newTags);
+    // Reflect the change straight away. A history item gets refreshed through
+    // the history store, but a collection element has nothing watching it, so
+    // without this the tag saves and then disappears from the display.
+    locallyEditedTags.value = newTags;
     // A collection element carries the underlying dataset, which has a
     // history_id but no history_content_type, so fill it in from what the item
     // is. Without it the update would be addressed to "undefineds".
