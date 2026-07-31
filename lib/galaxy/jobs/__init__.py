@@ -19,6 +19,7 @@ from collections.abc import (
     Callable,
     Iterable,
 )
+from contextlib import contextmanager
 from dataclasses import (
     dataclass,
     field,
@@ -161,6 +162,22 @@ class JobToolConfiguration(Bunch):
 
     def get_resource_group(self):
         return self.get("resources", None)
+
+
+@contextmanager
+def _timed_phase(timings: dict[str, float], name: str):
+    """Accumulate the wall time spent in one phase of finalizing a job.
+
+    The phases are logged together at the end of ``finish``. Which one
+    dominates is not obvious from the outside: it depends on the tool, the
+    metadata strategy and, on a network filesystem, on how many round trips
+    each phase makes.
+    """
+    begin = time.time()
+    try:
+        yield
+    finally:
+        timings[name] = timings.get(name, 0.0) + (time.time() - begin)
 
 
 def config_exception(e, file):
@@ -2056,6 +2073,7 @@ class MinimalJobWrapper(HasResourceParameters):
         finish_timer = self.app.execution_timer_factory.get_timer(
             "internals.galaxy.jobs.job_wrapper_finish", "job_wrapper.finish for job ${job_id} executed"
         )
+        finish_timings: dict[str, float] = {}
 
         # default post job setup
         job = self.get_job()
@@ -2149,7 +2167,8 @@ class MinimalJobWrapper(HasResourceParameters):
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
-                import_model_store.perform_import(history=job.history, job=job)
+                with _timed_phase(finish_timings, "import_metadata"):
+                    import_model_store.perform_import(history=job.history, job=job)
                 if job.state == job.states.ERROR:
                     final_job_state = job.state
             except store.FileTracebackException as e:
@@ -2161,8 +2180,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 return fail(str(e), exception=e)
         else:
             if self.tool.version_string_cmd:
-                version_filename = self.get_version_string_path()
-                self.version_string = collect_shrinked_content_from_path(version_filename)
+                with _timed_phase(finish_timings, "version_string"):
+                    version_filename = self.get_version_string_path()
+                    self.version_string = collect_shrinked_content_from_path(version_filename)
 
         output_dataset_associations = job.output_datasets + job.output_library_datasets
         inp_data, out_data, out_collections = job.io_dicts()
@@ -2170,7 +2190,8 @@ class MinimalJobWrapper(HasResourceParameters):
         if not extended_metadata:
             # importing metadata will discover outputs if extended metadata
             try:
-                self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
+                with _timed_phase(finish_timings, "discover_outputs"):
+                    self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
             except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError) as e:
                 log.warning("Job %s failed during output discovery: %s", job.id, e)
                 final_job_state = job.states.ERROR
@@ -2201,7 +2222,10 @@ class MinimalJobWrapper(HasResourceParameters):
                     output_name = dataset_assoc.name
 
                     # Handles retry internally on error for instance...
-                    self._finish_dataset(output_name, dataset, job, context, final_job_state, remote_metadata_directory)
+                    with _timed_phase(finish_timings, "finish_datasets"):
+                        self._finish_dataset(
+                            output_name, dataset, job, context, final_job_state, remote_metadata_directory
+                        )
                 if (
                     not final_job_state == job.states.ERROR
                     and not dataset_assoc.dataset.dataset.state == job.states.ERROR
@@ -2240,7 +2264,8 @@ class MinimalJobWrapper(HasResourceParameters):
             dataset = dataset_assoc.dataset.dataset
             # assume all datasets in a job get written to the same objectstore
             quota_source_info = dataset.quota_source_info
-            collected_bytes += dataset.set_total_size()
+            with _timed_phase(finish_timings, "set_total_size"):
+                collected_bytes += dataset.set_total_size()
             if dataset.purged:
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
@@ -2277,9 +2302,10 @@ class MinimalJobWrapper(HasResourceParameters):
         param_dict = self.get_param_dict(job)
         task_wrapper = None
         try:
-            task_wrapper = self.tool.exec_after_process(
-                self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state
-            )
+            with _timed_phase(finish_timings, "exec_after_process"):
+                task_wrapper = self.tool.exec_after_process(
+                    self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state
+                )
         except Exception as e:
             log.exception(f"exec_after_process hook failed for job {self.job_id}")
             return fail("exec_after_process hook failed", exception=e)
@@ -2325,6 +2351,12 @@ class MinimalJobWrapper(HasResourceParameters):
         delete_files = cleanup_job == "always" or (job.state == job.states.OK and cleanup_job == "onsuccess")
         self.cleanup(delete_files=delete_files)
         log.debug(finish_timer.to_str(job_id=self.job_id, tool_id=job.tool_id))
+        if finish_timings:
+            log.debug(
+                "(%s) finish() spent (ms): %s",
+                job.id,
+                ", ".join(f"{phase}={seconds * 1000:0.1f}" for phase, seconds in finish_timings.items()),
+            )
 
     def discover_outputs(self, job, inp_data, out_data, out_collections, final_job_state):
         # Try to just recover input_ext and dbkey from job parameters (used and set in
