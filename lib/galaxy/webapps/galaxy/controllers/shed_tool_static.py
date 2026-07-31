@@ -40,6 +40,7 @@ class ShedToolStatic(BaseUIController):
         tool = trans.app.toolbox.get_tool(guid)
         if tool is None:
             raise ObjectNotFound(f"Could not find tool with guid '{guid}'.")
+        tool = trans.app.toolbox.materialize_tool(tool, reason="packaging")
         repo_path = os.path.abspath(tool._repository_dir)
         found_path = None
 

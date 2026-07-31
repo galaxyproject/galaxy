@@ -5,7 +5,7 @@ import { computed, ref, watch } from "vue";
 
 import type { JobBaseModel } from "@/api/jobs";
 import type { TableField } from "@/components/Common/GTable.types";
-import { getJobDuration } from "@/components/JobInformation/utilities";
+import { useInvocationStore } from "@/stores/invocationStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
@@ -31,13 +31,18 @@ const emit = defineEmits<{
     (e: "update:sort-desc", value: boolean): void;
 }>();
 
+const invocationStore = useInvocationStore();
+
+// `getInvocationJobRuntimeById` (via `getInvocationMetricsById`) fetches on first read and
+// self-refreshes as steps finish -- see invocationStore.ts for details.
+const runtimeByJobId = computed(() => invocationStore.getInvocationJobRuntimeById(props.invocationId));
+
 const showModal = ref(false);
 
 const fields: TableField[] = [
     { key: "id", label: "Job ID" },
-    { key: "tool_id", label: "Tool" },
     { key: "update_time", label: "Updated", sortable: true },
-    { key: "duration", label: "Time To Finish" },
+    { key: "duration", label: "Runtime (Wall Clock)" },
     { key: "state", label: "State" },
 ];
 
@@ -147,7 +152,7 @@ watch(
             </template>
 
             <template v-slot:cell(update_time)="data">
-                <UtcDate :date="data.item.update_time" mode="timeonly" />
+                <UtcDate :date="data.item.update_time" mode="elapsed" />
             </template>
 
             <template v-slot:cell(state)="data">
@@ -155,7 +160,7 @@ watch(
             </template>
 
             <template v-slot:cell(duration)="data">
-                {{ getJobDuration(data.item) }}
+                {{ runtimeByJobId[data.item.id] ?? "N/A" }}
             </template>
         </GTable>
 

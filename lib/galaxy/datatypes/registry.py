@@ -21,6 +21,10 @@ import yaml
 import galaxy.util
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.tool_util.edam_util import load_edam_tree
+from galaxy.tool_util.toolbox.base import (
+    AbstractToolBox,
+    ToolLike,
+)
 from galaxy.util import (
     Element,
     RW_R__R__,
@@ -44,8 +48,10 @@ from .display_applications.application import DisplayApplication
 
 if TYPE_CHECKING:
     from galaxy.datatypes.data import Data
-    from galaxy.tool_util.toolbox.base import AbstractToolBox
-    from galaxy.tools import SetMetadataTool
+    from galaxy.tools import (
+        SetMetadataTool,
+        Tool,
+    )
 
 
 class ConfigurationError(Exception):
@@ -85,13 +91,13 @@ class Registry:
         self.datatypes_by_extension: dict[str, Data] = {}
         self.datatypes_by_suffix_inferences = {}
         self.mimetypes_by_extension = {}
-        self.datatype_converters = {}
+        self.datatype_converters: dict[str, dict[str, Tool]] = {}
         # Converters defined in local datatypes_conf.xml
         self.converters = []
-        self.converter_tools = set()
+        self.converter_tools: set[Tool] = set()
         self.converter_deps = {}
         self.available_tracks = []
-        self.set_external_metadata_tool = None
+        self.set_external_metadata_tool: SetMetadataTool | None = None
         self.sniff_order: list[Data] = []
         self.upload_file_formats = []
         # Datatype elements defined in local datatypes_conf.xml that contain display applications.
@@ -671,7 +677,7 @@ class Registry:
                 data.init_meta(copy_from=data)
         return data
 
-    def load_datatype_converters(self, toolbox: "AbstractToolBox", use_cached: bool = False):
+    def load_datatype_converters(self, toolbox: AbstractToolBox, use_cached: bool = False) -> None:
         """
         Add datatype converters from self.converters to the calling app's toolbox.
         """
@@ -684,7 +690,8 @@ class Registry:
             converter_path = self.converters_path
             try:
                 config_path = os.path.join(converter_path, tool_config)
-                converter = toolbox.load_tool(config_path, use_cached=use_cached)
+                converter_like: ToolLike = toolbox.load_tool(config_path, use_cached=use_cached)
+                converter = toolbox.materialize_tool(converter_like, reason="execution")
                 toolbox.register_tool(converter)
                 self._register_converter_tool(converter, source_datatype, target_datatype)
                 if not hasattr(toolbox.app, "tool_cache") or converter.id in toolbox.app.tool_cache._new_tool_ids:
@@ -720,7 +727,7 @@ class Registry:
         # Drop any cached (empty) converter lookups computed before registration.
         self._converters_by_datatype = {}
 
-    def _register_converter_tool(self, converter, source_datatype, target_datatype) -> None:
+    def _register_converter_tool(self, converter: "Tool", source_datatype: str, target_datatype: str) -> None:
         self.converter_tools.add(converter)
         self.datatype_converters.setdefault(source_datatype, {})[target_datatype] = converter
 
@@ -788,14 +795,15 @@ class Registry:
                 failed.append(display_application_id)
         return (reloaded, failed)
 
-    def load_external_metadata_tool(self, toolbox: "AbstractToolBox") -> None:
+    def load_external_metadata_tool(self, toolbox: AbstractToolBox) -> None:
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        set_meta_tool = toolbox.load_hidden_lib_tool(
+        set_meta_tool_like: ToolLike = toolbox.load_hidden_lib_tool(
             os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml"))
         )
+        set_meta_tool = toolbox.materialize_tool(set_meta_tool_like, reason="execution")
         self.set_external_metadata_tool = cast("SetMetadataTool", set_meta_tool)
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
 

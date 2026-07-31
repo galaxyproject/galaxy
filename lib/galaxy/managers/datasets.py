@@ -574,13 +574,15 @@ class DatasetAssociationManager(
         if overwrite:
             self.overwrite_metadata(dataset_assoc)
 
-        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_trans(
-            self.app.datatypes_registry.set_external_metadata_tool,
+        set_metadata_tool = self.app.datatypes_registry.set_external_metadata_tool
+        assert set_metadata_tool is not None
+        job, *_ = set_metadata_tool.tool_action.execute_via_trans(
+            set_metadata_tool,
             trans,
             incoming={"input1": dataset_assoc, "validate": validate},
             overwrite=overwrite,
         )
-        self.app.job_manager.enqueue(job, tool=self.app.datatypes_registry.set_external_metadata_tool)
+        self.app.job_manager.enqueue(job, tool=set_metadata_tool)
 
     def overwrite_metadata(self, data):
         for name, spec in data.metadata.spec.items():

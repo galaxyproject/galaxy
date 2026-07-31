@@ -110,3 +110,11 @@ def test_add_entry_invalidates_derived_metadata(index_entry, tool_index):
 
     assert [requirement["name"] for requirement in index.get_all_requirements()] == ["one", "two"]
     assert set(index.get_tests_summary()) == {"one", "two"}
+
+
+def test_tests_summary_excludes_datatype_converters(index_entry, tool_index):
+    index = tool_index(
+        index_entry("real_tool", version="1.0", test_count=2),
+        index_entry("convert_fasta", version="1.0", test_count=1, is_datatype_converter=True),
+    )
+    assert set(index.get_tests_summary()) == {"real_tool"}

@@ -3,6 +3,7 @@ Controller handles external tool related requests
 """
 
 import logging
+from typing import cast
 
 from markupsafe import escape
 
@@ -11,6 +12,7 @@ from galaxy import web
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.tool_util.identifiers import uri_safe_tool_id
+from galaxy.tool_util.toolbox.base import ToolLike
 from galaxy.tools import DataSourceTool
 from galaxy.web import (
     error,
@@ -40,7 +42,7 @@ class ToolRunner(BaseUIController):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
 
-    def __get_tool(self, tool_id, tool_version=None):
+    def __get_tool(self, tool_id, tool_version=None) -> ToolLike | None:
         # webob's params.mixed() returns a list when a form/query key is repeated
         # (some data sources redirect back with tool_id duplicated); accept that
         # case only when every value agrees.
@@ -64,6 +66,7 @@ class ToolRunner(BaseUIController):
         # tool id not available, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect(url_for("/"))
+        toolbox = self.get_toolbox()
         tool = self.__get_tool(tool_id)
         # tool id is not matching, display an error
         if not tool:
@@ -86,6 +89,8 @@ class ToolRunner(BaseUIController):
         if tool.tool_type in ["default", "interactivetool"]:
             return trans.response.send_redirect(url_for(f"/?tool_id={uri_safe_tool_id(tool_id)}"))
 
+        tool = toolbox.materialize_tool(tool, reason="execution")
+
         # execute tool without displaying form
         # (used for datasource tools, but note that data_source_async tools
         # are handled separately by the async controller)
@@ -99,14 +104,18 @@ class ToolRunner(BaseUIController):
         else:
             test_params = params
         if tool.tool_type == "data_source":
+            data_source_tool = cast(DataSourceTool, tool)
             if "URL" not in test_params:
                 error("Execution of `data_source` tools requires a `URL` parameter")
             # preserve original params sent by the remote server as extra dict
             # before in-place translation happens, then clean the incoming params
             params.update({"incoming_request_params": params.copy()})
-            if tool.input_translator and tool.wants_params_cleaned:
+            if data_source_tool.input_translator and data_source_tool.wants_params_cleaned:
                 for k in list(params.keys()):
-                    if k not in tool.input_translator.vocabulary and k not in ("URL", "incoming_request_params"):
+                    if k not in data_source_tool.input_translator.vocabulary and k not in (
+                        "URL",
+                        "incoming_request_params",
+                    ):
                         # the remote server has sent a param
                         # that the tool is not expecting -> drop it
                         del params[k]

@@ -575,6 +575,7 @@ class FastAPIJobs:
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
+        tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         inputs = payload.inputs
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.__annotations__.items():

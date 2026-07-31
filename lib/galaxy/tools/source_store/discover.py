@@ -55,6 +55,9 @@ log = logging.getLogger(__name__)
 # Sentinel ``tool_conf`` for datatype-converter discoveries — they have no
 # panel conf; the registry loads them after boot via ``load_tool``.
 CONVERTER_TOOL_CONF = "<converter>"
+BUNDLED_TOOL_CONF = "<bundled>"
+HIDDEN_LIB_TOOL_CONF = "<hidden-lib>"
+ADHOC_TOOL_CONF = "<adhoc>"
 
 
 @dataclass
@@ -92,6 +95,8 @@ class DiscoveredTool:
     # populator stamps these onto ``ToolIndexEntry``.
     section_id: str | None = None
     section_name: str | None = None
+    # False for storage-only discoveries loaded outside the tool panel.
+    in_panel: bool = True
 
 
 def _iter_tool_items(
@@ -157,7 +162,7 @@ def conf_tool_directories(config: "GalaxyAppConfiguration") -> list[tuple[str, b
 
 def _walk_tool_dir(directory: str, recursive: bool) -> Iterator[str]:
     """Yield candidate tool file paths under ``directory`` via the same
-    ``walk_tool_directories`` walk that ``ToolBox.__watch_directory`` uses.
+    ``walk_tool_directories`` walk that ``ToolBox._watch_directory`` uses.
     Filtering against ``looks_like_a_tool`` is the caller's responsibility.
     """
     if not os.path.isdir(directory):
@@ -340,6 +345,7 @@ def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[Disco
                 path=resolved,
                 tool_conf=conf,
                 tool_path=tool_path,
+                in_panel=False,
                 guid=guid,
                 is_shed_tool=guid is not None,
                 data_manager_id=data_manager_id,
@@ -401,13 +407,19 @@ def discover_tools(
         if bundled_dir.exists():
             for xml_file in bundled_dir.rglob("*.xml"):
                 path_str = str(xml_file)
-                if path_str in seen_paths or not looks_like_a_tool_xml(path_str):
+                relative_path = xml_file.relative_to(bundled_dir)
+                configured_aliases = {
+                    os.path.normpath(os.path.join(config.tool_path, relative_path)),
+                    os.path.normpath(os.path.join(MODEL_TOOLS_PATH, relative_path)),
+                }
+                if seen_paths.intersection(configured_aliases) or not looks_like_a_tool_xml(path_str):
                     continue
                 seen_paths.add(path_str)
                 yield DiscoveredTool(
                     path=path_str,
-                    tool_conf="bundled",
+                    tool_conf=BUNDLED_TOOL_CONF,
                     tool_path=str(bundled_dir),
+                    in_panel=False,
                     is_shed_tool=False,
                 )
 
@@ -421,8 +433,9 @@ def discover_tools(
         seen_paths.add(path)
         yield DiscoveredTool(
             path=path,
-            tool_conf="<hidden-lib>",
+            tool_conf=HIDDEN_LIB_TOOL_CONF,
             tool_path=os.path.dirname(path),
+            in_panel=False,
             is_shed_tool=False,
         )
 
@@ -454,6 +467,7 @@ def discover_tools(
                         path=path,
                         tool_conf=CONVERTER_TOOL_CONF,
                         tool_path=registry.converters_path,
+                        in_panel=False,
                         is_shed_tool=False,
                     )
         except Exception as e:
