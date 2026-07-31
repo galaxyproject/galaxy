@@ -1290,6 +1290,7 @@ watch(
 
         <ActivityBar
             ref="activityBar"
+            data-description="workflow editor activity bar"
             :default-activities="workflowActivities"
             :special-activities="specialWorkflowActivities"
             :exit-activity="exitWorkflowActivity"
@@ -1495,6 +1496,7 @@ watch(
                     v-if="!datatypesMapperLoading && datatypesMapper"
                     v-show="!readmeActive"
                     ref="workflowGraph"
+                    data-description="workflow graph in editor"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
                     :scroll-to-id="scrollToId"
