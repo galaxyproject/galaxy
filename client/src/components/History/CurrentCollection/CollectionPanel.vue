@@ -204,13 +204,6 @@ watch(
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>
-                    <b-alert
-                        v-if="collectionElements.length === 0"
-                        class="m-2"
-                        :variant="populatedStateMsg ? 'danger' : 'info'"
-                        show>
-                        {{ populatedStateMsg || "This is an empty collection." }}
-                    </b-alert>
                     <div v-if="canEdit" class="d-flex align-items-center p-2">
                         <GButton size="small" transparent @click="setShowSelection(!showSelection)">
                             {{ showSelection ? "Cancel" : "Select" }}
@@ -223,6 +216,13 @@ watch(
                         </template>
                     </div>
 
+                    <b-alert
+                        v-if="collectionElements.length === 0"
+                        class="m-2"
+                        :variant="populatedStateMsg ? 'danger' : 'info'"
+                        show>
+                        {{ populatedStateMsg || "This is an empty collection." }}
+                    </b-alert>
                     <ListingLayout
                         v-else
                         data-key="element_index"
