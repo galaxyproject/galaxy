@@ -104,9 +104,30 @@ function datasetKey(item: HistoryItemSummary) {
 }
 
 /** Enriched dataset for an element, so selecting stores the same object the
- * list holds (with a name) rather than the bare one on the element. */
+ * list holds (with a name) rather than the bare one on the element.
+ *
+ * Cached per element: the template asks for this several times per row on
+ * every render, and rebuilding the object each time churns through a large
+ * collection for nothing.
+ */
+const datasetCache = new WeakMap<object, HistoryItemSummary>();
+
 function datasetFor(element: DCESummary) {
-    return { ...element.object, name: element.element_identifier } as HistoryItemSummary;
+    const cached = datasetCache.get(element);
+    if (cached) {
+        return cached;
+    }
+    const dataset = {
+        ...element.object,
+        name: element.element_identifier,
+        // The element's dataset carries no history_content_type. Without it the
+        // collection creator treats the item as a collection and looks its id
+        // up as an HDCA, which fails with "History dataset collection
+        // association not found".
+        history_content_type: "dataset",
+    } as HistoryItemSummary;
+    datasetCache.set(element, dataset);
+    return dataset;
 }
 
 /** The datasets behind this collection's elements, in listing order. */
@@ -281,7 +302,6 @@ watch(
                         :selected-items="selectedDatasets"
                         :show.sync="showCollectionCreator"
                         hide-on-create
-                        default-hide-source-items
                         @created-collection="onCreatedCollection" />
                 </div>
             </section>
