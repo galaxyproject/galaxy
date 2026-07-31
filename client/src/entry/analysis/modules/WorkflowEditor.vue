@@ -5,7 +5,8 @@
         :workflow-id="storedWorkflowId"
         :initial-version="version"
         @update:confirmation="$emit('update:confirmation', $event)"
-        @skipNextReload="() => (skipNextReload = true)" />
+        @skipNextReload="() => (skipNextReload = true)"
+        @forceReload="editorReloadKey += 1" />
 </template>
 <script>
 import { getWorkflowInfo } from "@/api/workflows";

@@ -53,6 +53,15 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "vault_conf.yml")
 
 
+class CachedToolBoxIntegrationMixin:
+    """Run an existing integration-test configuration with lazy tools."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)  # type: ignore[misc]
+        config["use_cached_toolbox"] = True
+
+
 def docker_run(image, name, *args, detach=True, remove=True, ports=None, env_vars: dict[str, str] | None = None):
     cmd = ["docker", "run"]
 

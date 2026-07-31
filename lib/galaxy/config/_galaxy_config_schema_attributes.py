@@ -37,6 +37,8 @@ class GalaxyAppConfigurationAttributes:
     migrated_tools_config: str
     integrated_tool_panel_config: str
     tool_path: str
+    use_cached_toolbox: bool
+    cached_toolbox_cache_size: int
     tool_source_database_connection: str | None
     tool_source_stores: Any
     tool_dependency_dir: str | None

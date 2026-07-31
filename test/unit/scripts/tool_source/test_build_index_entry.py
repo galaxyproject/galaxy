@@ -101,6 +101,9 @@ class _ToolSourceStub:
     def parse_requirements(self):
         return self._requirements, self._containers, [], [], []
 
+    def parse_action_module(self):
+        return None
+
     def parse_tests_to_dict(self):
         return {"tests": [{} for _ in range(self._test_count)]}
 
@@ -259,3 +262,8 @@ def test_data_manager_tool_type_preserved():
         _ToolSourceStub(tool_type="data_manager"),
     )
     assert entry.tool_type == "data_manager"
+
+
+def test_model_operation_action_policy_is_indexed():
+    entry = _entry(_discovered(), _StoredStub(), _ToolSourceStub(tool_type="unzip_collection"))
+    assert entry.produces_real_jobs is False

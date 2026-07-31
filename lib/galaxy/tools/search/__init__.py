@@ -27,46 +27,36 @@ Filters - various filters are available for processing content as the index is
 
 import logging
 import os
-import re
 import shutil
+import threading
 from typing import (
+    Protocol,
+    runtime_checkable,
     TYPE_CHECKING,
 )
 
-from whoosh import (
-    analysis,
-    index,
-)
-from whoosh.fields import (
-    ID,
-    KEYWORD,
-    NGRAMWORDS,
-    Schema,
-    TEXT,
-)
-from whoosh.qparser import (
-    MultifieldParser,
-    OrGroup,
-)
-from whoosh.scoring import (
-    BM25F,
-    Frequency,
-    MultiWeighting,
-)
+from whoosh import index
+from whoosh.fields import Schema
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.util import (
-    ExecutionTimer,
-    unicodify,
+from galaxy.tools.source_store.search import (
+    build_search_document,
+    build_search_schema,
+    search_whoosh_index,
+    ToolSearchTuning,
+    ToolWhooshIndex,
 )
+from galaxy.util import ExecutionTimer
 
 if TYPE_CHECKING:
+    from galaxy.tool_util.toolbox.views.interface import ToolPanelViewModel
     from galaxy.tools import (
         Tool,
         ToolBox,
     )
     from galaxy.tools.cache import ToolCache
+    from galaxy.tools.source_store.index import ToolIndex
     from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
@@ -126,6 +116,80 @@ class ToolBoxSearch:
         return panel_search.search(q, config)
 
 
+@runtime_checkable
+class SupportsCachedSearch(Protocol):
+    """The toolbox surface :class:`CachedToolboxSearch` consumes."""
+
+    @property
+    def tool_index(self) -> "ToolIndex | None": ...
+
+    def panel_views(self) -> "list[ToolPanelViewModel]": ...
+
+    def panel_view_tool_ids(self, panel_view_id: str) -> set[str]: ...
+
+
+class CachedToolboxSearch(ToolBoxSearch):
+    """Build one metadata-only Whoosh corpus per rendered panel view."""
+
+    def __init__(self, config: GalaxyAppConfiguration, toolbox: SupportsCachedSearch | None = None) -> None:
+        self.config = config
+        self._toolbox: SupportsCachedSearch | None = None
+        self.cached_panel_searches: dict[str, ToolWhooshIndex] = {}
+        self._panel_view_ids: set[str] = set()
+        self.index_count = -1
+        # ``reindex_tool_search`` reaches ``build_index`` concurrently from
+        # boot, the ``rebuild_toolbox_search_index`` control task, and
+        # ``remove_tool_by_id`` — all writing the same on-disk Whoosh dirs.
+        # Two builds racing there corrupt each other: one thread's
+        # ``ToolWhooshIndex._open`` can ``create_in``/``rmtree`` a dir another
+        # thread is mid-write on, surfacing as ``whoosh.index.LockError`` or a
+        # fatal ``FileNotFoundError`` on the segment TOC (observed killing
+        # TestCachedDataManagerIntegration setup in CI). Serialize the whole
+        # build so only one rebuild touches the index dirs at a time.
+        self._build_lock = threading.RLock()
+        if toolbox is not None:
+            self._sync_panel_searches(toolbox)
+
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
+        cached_toolbox = self._require_search_toolbox(toolbox)
+        with self._build_lock:
+            self._sync_panel_searches(cached_toolbox)
+            tool_index = cached_toolbox.tool_index
+            if tool_index is not None:
+                for panel_view_id, searcher in self.cached_panel_searches.items():
+                    searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
+            self.index_count += 1
+
+    def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
+        if panel_view not in self._panel_view_ids:
+            raise KeyError(f"Unknown panel_view specified {panel_view}")
+        if not config.tool_search_index_dir:
+            return []
+        return self.cached_panel_searches[panel_view].search(q, limit=None)
+
+    def _sync_panel_searches(self, toolbox: SupportsCachedSearch) -> None:
+        self._toolbox = toolbox
+        panel_view_ids = {panel_view.id for panel_view in toolbox.panel_views()}
+        self._panel_view_ids = panel_view_ids
+        if not self.config.tool_search_index_dir:
+            self.cached_panel_searches = {}
+            return
+        tuning = ToolSearchTuning.from_config(self.config)
+        self.cached_panel_searches = {
+            panel_view_id: ToolWhooshIndex(
+                index_dir=os.path.join(self.config.tool_search_index_dir, panel_view_id),
+                tuning=tuning,
+            )
+            for panel_view_id in panel_view_ids
+        }
+
+    @staticmethod
+    def _require_search_toolbox(toolbox: "ToolBox") -> SupportsCachedSearch:
+        if not isinstance(toolbox, SupportsCachedSearch):
+            raise TypeError("CachedToolboxSearch requires a toolbox with a tool index, e.g. CachedToolBox")
+        return toolbox
+
+
 class ToolPanelViewSearch:
     """
     Support searching tools in a toolbox. This implementation uses
@@ -140,69 +204,12 @@ class ToolPanelViewSearch:
         index_help: bool = True,
     ) -> None:
         """Build the schema and validate against the index."""
-        schema_conf = {
-            # The stored ID field is not searchable
-            "id": ID(stored=True, unique=True),
-            # This exact field is searchable by exact matches only
-            "id_exact": NGRAMWORDS(
-                minsize=config.tool_ngram_minsize,
-                maxsize=config.tool_ngram_maxsize,
-                field_boost=(config.tool_id_boost * config.tool_name_exact_multiplier),
-            ),
-            # The primary name field is searchable by exact match only, and is
-            # eligible for massive score boosting. A secondary ngram or text
-            # field for name is added below
-            "name_exact": TEXT(
-                field_boost=(config.tool_name_boost * config.tool_name_exact_multiplier),
-                analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
-            ),
-            # The owner/repo/tool_id parsed from the GUID
-            "stub": KEYWORD(field_boost=float(config.tool_stub_boost)),
-            # The section where the tool is listed in the tool panel
-            "section": TEXT(field_boost=float(config.tool_section_boost)),
-            # The edam operations section where the tool is listed in the tool panel
-            "edam_operations": TEXT(field_boost=float(config.tool_section_boost)),
-            # The edam topics section where the tool is listed in the tool panel
-            "edam_topics": TEXT(field_boost=float(config.tool_section_boost)),
-            # The name of the repository the tool belongs to
-            "repository": TEXT(field_boost=float(config.tool_section_boost)),
-            # The owner id of the repository the tool belongs to
-            "owner": TEXT(field_boost=float(config.tool_section_boost)),
-            # Short description defined in the tool XML
-            "description": TEXT(
-                field_boost=config.tool_description_boost,
-                analyzer=analysis.StemmingAnalyzer(),
-            ),
-            # Help text parsed from the tool XML
-            "help": TEXT(field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()),
-            "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
-            "tool_tags": TEXT(
-                field_boost=float(config.tool_label_boost),
-                analyzer=analysis.KeywordAnalyzer(lowercase=True, commas=True),
-            ),
-        }
-
-        if config.tool_enable_ngram_search:
-            schema_conf.update(
-                {
-                    "name": NGRAMWORDS(
-                        minsize=config.tool_ngram_minsize,
-                        maxsize=config.tool_ngram_maxsize,
-                        field_boost=(float(config.tool_name_boost) * config.tool_ngram_factor),
-                    ),
-                }
-            )
-        else:
-            schema_conf.update(
-                {
-                    "name": TEXT(
-                        field_boost=float(config.tool_name_boost),
-                    ),
-                }
-            )
-
-        self.schema = Schema(**schema_conf)
-        self.rex = analysis.RegexTokenizer()
+        tuning = ToolSearchTuning.from_config(config)
+        self.schema = build_search_schema(
+            tuning,
+            help_boost=tuning.help_boost if index_help else None,
+        )
+        self.tuning = tuning
         self.index_dir = index_dir
         self.panel_view_id = panel_view_id
         self.index = self._index_setup()
@@ -266,7 +273,8 @@ class ToolPanelViewSearch:
         tools_to_index: list[Tool] = []
 
         for tool_id in tool_cache._new_tool_ids - self.indexed_tool_ids:
-            tool = toolbox.get_tool(tool_id)
+            tool_like = toolbox.get_tool(tool_id)
+            tool = toolbox.materialize_tool(tool_like, reason="detail") if tool_like else None
             if tool and tool.is_latest_version and toolbox.panel_has_tool(tool, self.panel_view_id):
                 if tool.hidden:
                     # Check if there is an older tool we can return
@@ -289,51 +297,24 @@ class ToolPanelViewSearch:
         tool: "Tool",
         index_help: bool = True,
     ) -> dict[str, str | list[str]]:
-        def clean(s: str) -> str:
-            """Remove hyphens as they are Whoosh wildcards."""
-            if "-" in s:
-                return " ".join(token.text for token in self.rex(s))
-            else:
-                return s
-
-        if tool.tool_type == "manage_data":
-            #  Do not add data managers to the public index
+        if tool.id is None:
             return {}
-        add_doc_kwds: dict[str, str | list[str]] = {
-            "id": unicodify(tool.id),
-            "id_exact": unicodify(tool.id),
-            "name": clean(tool.name),
-            "description": unicodify(tool.description),
-            "section": tool.get_panel_section()[1] or "",
-            "edam_operations": [clean(_) for _ in tool.edam_operations or []],
-            "edam_topics": [clean(_) for _ in tool.edam_topics or []],
-            "repository": unicodify(tool.repository_name),
-            "owner": unicodify(tool.repository_owner),
-            "help": unicodify(""),
-        }
-        if tool.guid:
-            # Create a stub consisting of owner, repo, and tool from guid
-            slash_indexes = [m.start() for m in re.finditer("/", tool.guid)]
-            id_stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
-            add_doc_kwds["stub"] = clean(id_stub)
-        else:
-            add_doc_kwds["stub"] = unicodify(tool.id)
-        if tool.labels:
-            add_doc_kwds["labels"] = unicodify(" ".join(tool.labels))
-        if tool.tool_tags:
-            add_doc_kwds["tool_tags"] = unicodify(",".join(tool.tool_tags))
-        if index_help:
-            raw_help = tool.raw_help
-            if raw_help:
-                try:
-                    add_doc_kwds["help"] = unicodify(raw_help)
-                except Exception:
-                    # Don't fail to build index when help fails to parse
-                    pass
-
-        add_doc_kwds["name_exact"] = add_doc_kwds["name"]
-
-        return add_doc_kwds
+        document = build_search_document(
+            tool_id=tool.id,
+            guid=tool.guid,
+            name=tool.name,
+            description=tool.description,
+            section=tool.get_panel_section()[1],
+            edam_operations=tool.edam_operations,
+            edam_topics=tool.edam_topics,
+            repository=tool.repository_name,
+            owner=tool.repository_owner,
+            labels=tool.labels,
+            tool_tags=tool.tool_tags,
+            help_text=tool.raw_help if index_help else None,
+            tool_type=tool.tool_type,
+        )
+        return document or {}
 
     def search(
         self,
@@ -341,40 +322,5 @@ class ToolPanelViewSearch:
         config: GalaxyAppConfiguration,
     ) -> list[str]:
         """Perform search on the in-memory index."""
-        # Change field boosts for searcher
-        self.searcher = self.index.searcher(
-            weighting=MultiWeighting(
-                Frequency(),
-                help=BM25F(K1=config.tool_help_bm25f_k1),
-            )
-        )
-        fields = [
-            "id",
-            "id_exact",
-            "name",
-            "name_exact",
-            "description",
-            "section",
-            "edam_operations",
-            "edam_topics",
-            "repository",
-            "owner",
-            "help",
-            "labels",
-            "tool_tags",
-            "stub",
-        ]
-        self.parser = MultifieldParser(
-            fields,
-            schema=self.schema,
-            group=OrGroup,
-        )
-        parsed_query = self.parser.parse(q)
-        hits = self.searcher.search(
-            parsed_query,
-            limit=None,
-            sortedby="",
-            terms=True,
-        )
-
-        return [hit["id"] for hit in hits]
+        tuning = ToolSearchTuning.from_config(config)
+        return [tool_id for tool_id, _score in search_whoosh_index(self.index, q, tuning, limit=None)]

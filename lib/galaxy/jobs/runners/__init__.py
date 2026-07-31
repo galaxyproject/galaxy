@@ -483,10 +483,10 @@ class BaseJobRunner:
                 venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
                 external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
                 if resolve_requirements:
-                    dependency_shell_commands = (
-                        self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(
-                            job_directory=job_wrapper.working_directory
-                        )
+                    set_metadata_tool = self.app.datatypes_registry.set_external_metadata_tool
+                    assert set_metadata_tool is not None
+                    dependency_shell_commands = set_metadata_tool.build_dependency_shell_commands(
+                        job_directory=job_wrapper.working_directory
                     )
                     if dependency_shell_commands:
                         if isinstance(dependency_shell_commands, list):

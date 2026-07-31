@@ -13,8 +13,10 @@ SPECIAL_TOOLS = {
 }
 
 # ``set_metadata_tool`` is loaded separately by
-# ``datatypes_registry.load_external_metadata_tool``; listed here so
-# ``hidden_lib_tool_paths`` covers every Galaxy-internal tool.
+# ``datatypes_registry.load_external_metadata_tool``. Listed here so the
+# populator (via ``hidden_lib_tool_paths``) indexes it alongside the
+# config-discovered tools — without it, ``CachedToolBox.create_tool`` would
+# raise on the post-boot ``load_hidden_lib_tool`` call.
 _EXTRA_HIDDEN_LIB_TOOLS = {
     "set metadata": "../datatypes/set_metadata_tool.xml",
 }
@@ -24,7 +26,10 @@ def hidden_lib_tool_paths() -> list[str]:
     """Absolute paths of every Galaxy-internal "hidden lib" tool.
 
     Used by :func:`galaxy.tools.source_store.discover.discover_tools` so the
-    populator indexes these tools alongside the conf-discovered ones.
+    populator indexes these tools alongside the conf-discovered ones. The
+    eager ``load_hidden_lib_tool`` calls that run after boot then resolve
+    through ``CachedToolBox.create_tool``'s index lookup — the seam stays
+    strict (raise on miss).
     """
     base = os.path.dirname(__file__)
     return [

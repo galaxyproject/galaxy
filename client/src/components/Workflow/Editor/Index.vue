@@ -10,11 +10,18 @@
             :version="version"
             :versions="versions"
             :refactor-actions="refactorActions"
+            :loading.sync="loadingWorkflow"
             @onWorkflowError="onWorkflowError"
-            @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
-            @onShow="hideModal" />
-        <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
+            @onShow="hideErrorModal" />
+        <GModal
+            data-description="workflow editor error modal"
+            :show="Boolean(errorMessageBody)"
+            size="small"
+            :title="errorMessageTitle"
+            @close="hideErrorModal">
+            <GAlert variant="danger">{{ errorMessageBody }}</GAlert>
+        </GModal>
         <SaveChangesModal
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
@@ -52,7 +59,7 @@
             options-search-placeholder="Search options"
             initial-activity="workflow-editor-attributes"
             :options-icon="faCog"
-            :hide-panel="reportActive"
+            :hide-panel="reportActive || initialLoading"
             :header-icon="faSitemap"
             header-title="Editor"
             @activityClicked="onActivityClicked">
@@ -125,6 +132,7 @@
                 mode="report"
                 :title="'Workflow Report Template: ' + name"
                 :labels="getLabels"
+                :loading="loadingWorkflow"
                 :steps="steps"
                 @insert="insertMarkdown"
                 @update="onReportUpdate">
@@ -132,10 +140,12 @@
                     <GButton
                         tooltip
                         title="Generate AI GalaxyAI report based on the workflow and its expected results"
+                        disabled-title="Please wait for the workflow to finish loading"
                         variant="link"
                         color="blue"
                         transparent
                         size="large"
+                        :disabled="loadingWorkflow"
                         @click="generateAIReport">
                         <FontAwesomeIcon :icon="faMagic" />
                     </GButton>
@@ -157,8 +167,9 @@
                 <div class="editor-top-bar" unselectable="on">
                     <span>
                         <span class="sr-only">Workflow Editor</span>
-                        <span class="editor-title" :title="name"
-                            >{{ name }}
+                        <LoadingSpan v-if="initialLoading" message="Loading Editor" />
+                        <span v-else class="editor-title" :title="name">
+                            {{ name }}
                             <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
                         </span>
                     </span>
@@ -197,14 +208,14 @@
                         <b-button
                             :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
                             variant="secondary"
-                            :disabled="!undoRedoStore.hasUndo"
+                            :disabled="!undoRedoStore.hasUndo || loadingWorkflow"
                             @click="undoRedoStore.undo()">
                             <FontAwesomeIcon :icon="faUndo" />
                         </b-button>
                         <b-button
                             :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
                             variant="secondary"
-                            :disabled="!undoRedoStore.hasRedo"
+                            :disabled="!undoRedoStore.hasRedo || loadingWorkflow"
                             @click="undoRedoStore.redo()">
                             <FontAwesomeIcon :icon="faRedo" />
                         </b-button>
@@ -212,7 +223,7 @@
                             id="workflow-save-button"
                             class="py-1 px-2"
                             variant="link"
-                            :disabled="!hasChanges"
+                            :disabled="!hasChanges || loadingWorkflow"
                             :title="saveWorkflowTitle"
                             @click="saveOrCreate">
                             <FontAwesomeIcon :icon="faSave" />
@@ -314,7 +325,6 @@ import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
 import WorkflowLint from "./Lint.vue";
-import MessagesModal from "./MessagesModal.vue";
 import NodeInspector from "./NodeInspector.vue";
 import ReadmeEditor from "./ReadmeEditor.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
@@ -326,8 +336,10 @@ import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GForm from "@/components/BaseComponents/Form/GForm.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
 import SearchPanel from "@/components/Panels/SearchPanel.vue";
@@ -347,10 +359,10 @@ export default {
         WorkflowAttributes,
         WorkflowLint,
         RefactorConfirmationModal,
-        MessagesModal,
         WorkflowGraph,
         FontAwesomeIcon,
         UndoRedoStack,
+        LoadingSpan,
         WorkflowPanel,
         NodeInspector,
         InputPanel,
@@ -360,6 +372,7 @@ export default {
         BDropdown,
         BDropdownText,
         BDropdownDivider,
+        GAlert,
         GButton,
         GForm,
         GFormLabel,
@@ -398,8 +411,10 @@ export default {
         const undoKeys = logicOr(ctrl_z, meta_z);
         const redoKeys = logicOr(ctrl_shift_z, meta_shift_z);
 
-        whenever(logicAnd(undoKeys, logicNot(redoKeys)), undo);
-        whenever(redoKeys, redo);
+        const loadingWorkflow = ref(false);
+
+        whenever(logicAnd(undoKeys, logicNot(redoKeys)), () => !loadingWorkflow.value && undo());
+        whenever(redoKeys, () => !loadingWorkflow.value && redo());
 
         const activityBar = ref(null);
         const workflowGraph = ref(null);
@@ -763,21 +778,20 @@ export default {
             getWorkflowBoundingBox,
             captureTransformAndBounds,
             calculateAdjustedTransform,
+            loadingWorkflow,
         };
     },
     data() {
         return {
             versions: [],
             labels: {},
-            loadingWorkflow: false,
             services: null,
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
             highlightAttribute: null,
-            messageTitle: null,
-            messageBody: null,
-            messageIsError: false,
+            errorMessageTitle: null,
+            errorMessageBody: null,
             version: this.initialVersion,
             saveAsName: null,
             saveAsAnnotation: null,
@@ -851,6 +865,18 @@ export default {
         this.initialLoading = false;
     },
     methods: {
+        /**
+         * Blocks actions that would conflict with an in-progress workflow load, e.g. switching
+         * versions, saving, or editing steps while the graph is being reset and repopulated.
+         * @param action A string that will follow the prefix "Please wait for ... before `${action}`" in the warning message.
+         */
+        blockedWhileLoading(action = "making changes") {
+            if (this.loadingWorkflow) {
+                Toast.warning(`Please wait for the workflow to finish loading before ${action}.`);
+                return true;
+            }
+            return false;
+        },
         onUpdateStep(step) {
             this.stepStore.updateStep(step);
         },
@@ -861,6 +887,9 @@ export default {
             this.stepActions.setPosition(this.steps[stepId], position);
         },
         async onAttemptRefactor(actions) {
+            if (this.blockedWhileLoading()) {
+                return;
+            }
             if (this.hasChanges) {
                 const r = window.confirm(
                     "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?",
@@ -876,22 +905,13 @@ export default {
                 this.refactorActions = actions;
             }
         },
-        // synchronize modal handling through this object so we can convert it to be
-        // be reactive at some point.
         onWorkflowError(message, response) {
-            this.messageTitle = message;
-            this.messageBody = response.toString();
-            this.messageIsError = true;
+            this.errorMessageTitle = message;
+            this.errorMessageBody = response.toString();
         },
-        onWorkflowMessage(title, body) {
-            this.messageTitle = title;
-            this.messageBody = body;
-            this.messageIsError = false;
-        },
-        hideModal() {
-            this.messageTitle = null;
-            this.messageBody = null;
-            this.messageIsError = false;
+        hideErrorModal() {
+            this.errorMessageTitle = null;
+            this.errorMessageBody = null;
         },
         async onRefactor(response) {
             // Store transform and bounds before resetting to adjust for coordinate shifts
@@ -913,6 +933,9 @@ export default {
             this.stepActions.updateStep(nodeId, partialStep);
         },
         onRemove(nodeId) {
+            if (this.blockedWhileLoading("removing a step")) {
+                return;
+            }
             this.stepActions.removeStep(this.steps[nodeId]);
         },
         onEditSubworkflow(contentId) {
@@ -920,6 +943,9 @@ export default {
             this.onNavigate(editUrl);
         },
         async onClone(stepId) {
+            if (this.blockedWhileLoading("cloning a step")) {
+                return;
+            }
             const sourceStep = this.steps[parseInt(stepId)];
             this.stepActions.copyStep({
                 ...sourceStep,
@@ -929,18 +955,28 @@ export default {
             });
         },
         onInsertTool(tool_id, tool_name, toolUuid) {
+            if (this.blockedWhileLoading("inserting a step")) {
+                return;
+            }
             this._insertStep(tool_id, tool_name, "tool", undefined, toolUuid);
         },
         async onInsertModule(module_id, module_name, state) {
+            if (this.blockedWhileLoading("inserting a step")) {
+                return;
+            }
             this._insertStep(module_name, module_name, module_id, state);
         },
         onInsertWorkflow(workflow_id, workflow_name) {
+            if (this.blockedWhileLoading("inserting a subworkflow")) {
+                return;
+            }
             this._insertStep(workflow_id, workflow_name, "subworkflow");
         },
-        copyIntoWorkflow(id) {
+        async copyIntoWorkflow(id) {
             // Load workflow definition
-            this.onWorkflowMessage("Importing workflow", "progress");
-            getWorkflowFull(id).then((data) => {
+            this.loadingWorkflow = true;
+            try {
+                const data = await getWorkflowFull(id);
                 const action = new CopyIntoWorkflowAction(
                     this.id,
                     data,
@@ -950,18 +986,23 @@ export default {
                 this.undoRedoStore.applyAction(action);
                 // Determine if any parameters were 'upgraded' and provide message
                 const insertedStateMessages = getStateUpgradeMessages(data);
-                this.onInsertedStateMessages(insertedStateMessages);
-            });
+                this.insertedStateMessages = insertedStateMessages;
+            } finally {
+                this.loadingWorkflow = false;
+            }
         },
         async onInsertWorkflowSteps(workflowId, stepCount) {
+            if (this.blockedWhileLoading("inserting steps")) {
+                return;
+            }
             if (stepCount < 10) {
-                this.copyIntoWorkflow(workflowId);
+                await this.copyIntoWorkflow(workflowId);
             } else {
                 const confirmed = await ConfirmDialog.confirm(
                     `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`,
                 );
                 if (confirmed) {
-                    this.copyIntoWorkflow(workflowId);
+                    await this.copyIntoWorkflow(workflowId);
                 }
             }
         },
@@ -972,7 +1013,7 @@ export default {
             if (!this.saveAsName && !this.nameValidate()) {
                 return;
             }
-            this.onWorkflowMessage("Saving workflow", "progress");
+            this.loadingWorkflow = true;
 
             const rename_name = this.saveAsName ?? `SavedAs_${this.name}`;
             const rename_annotation = this.saveAsAnnotation ?? "";
@@ -986,16 +1027,16 @@ export default {
                 Toast.success(message);
             } catch (e) {
                 const errorHeading = `Saving workflow as '${rename_name}' failed`;
-                this.onWorkflowError(errorHeading, errorMessageAsString(e) || "Please contact an administrator.", {
-                    Ok: () => {
-                        this.hideModal();
-                    },
-                });
+                this.onWorkflowError(errorHeading, errorMessageAsString(e) || "Please contact an administrator.");
             } finally {
+                this.loadingWorkflow = false;
                 this.resetSaveAs();
             }
         },
         onSaveAs() {
+            if (this.blockedWhileLoading("saving the workflow")) {
+                return;
+            }
             this.showSaveAsModal = true;
         },
         resetSaveAs() {
@@ -1003,10 +1044,12 @@ export default {
             this.saveAsAnnotation = null;
         },
         async createNewWorkflow() {
-            await this.saveOrCreate();
-            this.$router.push("/workflows/edit");
+            await this.onNavigate("/workflows/edit");
         },
         async saveOrCreate() {
+            if (this.blockedWhileLoading("saving the workflow")) {
+                return;
+            }
             if (this.hasErrors) {
                 const confirmed = await this.confirm(
                     `${this.errorText}. You can save the workflow, but it may not run correctly.`,
@@ -1070,9 +1113,35 @@ export default {
                 this.$router.replace({ query: { id } });
             }
         },
+        /**
+         * Keeps the route's `version` query param in sync with the version currently loaded
+         * in the editor (e.g. after a save, or after manually switching versions), without
+         * triggering a reload of the editor.
+         * @param {boolean} onlyIfPresent If `true`, the route is left untouched unless it already has a
+         * `version` param (e.g. a save should not turn an implicit-latest URL into a pinned one).
+         */
+        syncVersionToRoute(version, onlyIfPresent = false) {
+            const currentVersionParam = this.$route?.query?.version;
+            if (onlyIfPresent && currentVersionParam === undefined) {
+                return;
+            }
+            const newVersionParam = version === undefined || version === null ? undefined : String(version);
+            if (currentVersionParam === newVersionParam) {
+                return;
+            }
+
+            const query = { ...this.$route.query };
+            if (newVersionParam === undefined) {
+                delete query.version;
+            } else {
+                query.version = newVersionParam;
+            }
+            this.$emit("skipNextReload");
+            this.$router.replace({ query });
+        },
         async onCreate() {
             if (!this.nameValidate()) {
-                return;
+                return false;
             }
             try {
                 const { id, name, number_of_steps } = await this.services.createWorkflow(this);
@@ -1085,13 +1154,10 @@ export default {
                 this.onWorkflowError(
                     "Creating workflow failed",
                     errorMessageAsString(e) || "Please contact an administrator.",
-                    {
-                        Ok: () => {
-                            this.hideModal();
-                        },
-                    },
                 );
+                return false;
             }
+            return true;
         },
         nameValidate() {
             if (!this.name) {
@@ -1124,6 +1190,10 @@ export default {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
         async generateAIReport() {
+            if (this.blockedWhileLoading("generating the AI report")) {
+                return;
+            }
+
             if (this.hasChanges) {
                 Toast.error("Please save your workflow before generating the AI report.");
                 return;
@@ -1134,7 +1204,7 @@ export default {
                 return;
             }
 
-            this.onWorkflowMessage("Generating AI Report", "progress");
+            this.loadingWorkflow = true;
             try {
                 const { model, report, total_tokens } = await generateAIReport(this.id, this.version);
                 this.onReportUpdate(report);
@@ -1142,17 +1212,13 @@ export default {
                     `Report generated using ${model}${total_tokens ? `, total tokens used: ${total_tokens}` : ""}.`,
                     "AI Report generated successfully.",
                 );
-                this.hideModal();
             } catch (e) {
                 this.onWorkflowError(
                     "Generating AI report failed",
                     errorMessageAsString(e) || "Please contact an administrator.",
-                    {
-                        Ok: () => {
-                            this.hideModal();
-                        },
-                    },
                 );
+            } finally {
+                this.loadingWorkflow = false;
             }
         },
         onReportUpdate(markdown) {
@@ -1164,17 +1230,15 @@ export default {
         },
         async onNavigate(url, forceSave = false, ignoreChanges = false, appendVersion = false) {
             let proceed = false;
-            if (this.isNewTempWorkflow) {
-                await this.onCreate();
-                proceed = true;
-            } else if (this.hasChanges && !forceSave && !ignoreChanges) {
+            if (this.hasChanges && !forceSave && !ignoreChanges) {
                 // if there are changes, prompt user to save or discard or cancel
                 this.navUrl = url;
                 this.saveChangesAppendVersion = appendVersion;
                 this.showSaveChangesModal = true;
             } else if (forceSave) {
-                // when forceSave is true, save the workflow before navigating
-                proceed = await this.onSave();
+                // when forceSave is true, save (or create, if this is a new unsaved workflow)
+                // the workflow before navigating
+                proceed = this.isNewTempWorkflow ? await this.onCreate() : await this.onSave();
             } else {
                 // no changes to save, proceed with navigation
                 proceed = true;
@@ -1188,7 +1252,12 @@ export default {
             }
             this.hasChanges = false;
             await nextTick();
-            this.$router.push(url);
+
+            if (this.$route.fullPath === url) {
+                this.$emit("forceReload");
+            } else {
+                this.$router.push(url);
+            }
         },
         /** Saves the workflow, and loads it onto the editor by calling `_loadCurrent`.
          * @returns true if save was successful, false otherwise
@@ -1213,12 +1282,9 @@ export default {
                 }
 
                 await this._loadCurrent(this.id, data.version);
+                this.syncVersionToRoute(data.version, true);
             } catch (response) {
-                this.onWorkflowError("Saving workflow failed...", response, {
-                    Ok: () => {
-                        this.hideModal();
-                    },
-                });
+                this.onWorkflowError("Saving workflow failed...", errorMessageAsString(response));
                 return false;
             } finally {
                 this.stateStore.activeNodeId = lastActiveNodeId;
@@ -1228,6 +1294,9 @@ export default {
         },
         onVersion(version) {
             if (version != this.version) {
+                if (this.blockedWhileLoading("switching versions")) {
+                    return;
+                }
                 if (this.hasChanges) {
                     const r = window.confirm(
                         "There are unsaved changes to your workflow which will be lost. Continue ?",
@@ -1237,6 +1306,7 @@ export default {
                     }
                 }
                 this.version = version;
+                this.syncVersionToRoute(version);
                 this._loadCurrent(this.id, version);
             }
         },
@@ -1308,7 +1378,7 @@ export default {
             const report = data.report || {};
             const markdown = report.markdown || reportDefault;
             this.report.markdown = markdown;
-            this.hideModal();
+            this.hideErrorModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;
             this.tags = data.tags;
@@ -1331,32 +1401,35 @@ export default {
             if (!this.isNewTempWorkflow) {
                 this.loadingWorkflow = true;
 
-                // Store the current transform and bounding box before loading; to adjust for coordinate shifts
-                const { transform: transformBefore, bounds: boundsBefore } = this.captureTransformAndBounds(
-                    this.transform,
-                );
                 try {
-                    // Load editor view workflow data
-                    const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
+                    // Store the current transform and bounding box before loading; to adjust for coordinate shifts
+                    const { transform: transformBefore, bounds: boundsBefore } = this.captureTransformAndBounds(
+                        this.transform,
+                    );
+                    try {
+                        // Load editor view workflow data
+                        const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
 
-                    // Reset stores and load new data onto editor
-                    await this.resetStores();
-                    await fromSimple(id, data);
-                    await this._loadEditorData(data);
-                } catch (e) {
-                    this.onWorkflowError("Loading workflow failed...", e);
+                        // Reset stores and load new data onto editor
+                        await this.resetStores();
+                        await fromSimple(id, data);
+                        await this._loadEditorData(data);
+                    } catch (e) {
+                        this.onWorkflowError("Loading workflow failed...", e);
+                    }
+
+                    await until(() => this.datatypesMapperLoading).toBe(false);
+                    await nextTick();
+
+                    if (fitGraph) {
+                        this.workflowGraph?.fitWorkflow();
+                    } else {
+                        // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
+                        this.adjustForCoordinateShift(transformBefore, boundsBefore);
+                    }
+                } finally {
+                    this.loadingWorkflow = false;
                 }
-
-                await until(() => this.datatypesMapperLoading).toBe(false);
-                await nextTick();
-
-                if (fitGraph) {
-                    this.workflowGraph.fitWorkflow();
-                } else {
-                    // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
-                    this.adjustForCoordinateShift(transformBefore, boundsBefore);
-                }
-                this.loadingWorkflow = false;
             }
         },
         /**
@@ -1393,15 +1466,6 @@ export default {
                 this.hasChanges = true;
                 this.setDoi(doi);
             }
-        },
-        onInsertedStateMessages(insertedStateMessages) {
-            this.insertedStateMessages = insertedStateMessages;
-            this.hideModal();
-        },
-        resetMessage() {
-            this.messageTitle = null;
-            this.messageBody = null;
-            this.messageError = false;
         },
     },
 };

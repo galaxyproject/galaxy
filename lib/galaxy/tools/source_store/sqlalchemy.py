@@ -109,6 +109,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         freshness_probe: Callable[[], str] | None = None,
     ) -> None:
         self.url = url
+        self.manifest_url = url
         self.read_only = read_only
         self._freshness_probe = freshness_probe
         self._cached_index: ToolIndex | None = None
