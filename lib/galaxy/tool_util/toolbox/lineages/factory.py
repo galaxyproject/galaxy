@@ -11,14 +11,15 @@ from .interface import ToolLineage
 
 if TYPE_CHECKING:
     from galaxy.tools import Tool
+    from ..base import AbstractToolBox
 
 
 class LineageMap:
     """Map each unique tool id to a lineage object."""
 
-    def __init__(self, app):
+    def __init__(self, toolbox: "AbstractToolBox"):
         self.lineage_map: dict[str, ToolLineage] = {}
-        self.app = app
+        self.toolbox = toolbox
 
     def register(self, tool: "Tool") -> ToolLineage:
         tool_id = tool.id
@@ -62,18 +63,12 @@ class LineageMap:
         if lineage:
             return lineage
         if tool_id not in self.lineage_map:
-            toolbox = None
-            try:
-                toolbox = self.app.toolbox
-            except AttributeError:
-                # We're building the lineage map while building the toolbox,
-                # so app.toolbox may not be available.
-                # TODO: is the fallback really needed / can it be fixed by improving _get_versionless ?
-                pass
-            tool = toolbox and toolbox._tools_by_id.get(tool_id)
-            if tool:
-                lineage = ToolLineage.from_tool(tool)
-                self.lineage_map[tool_id] = lineage
+            # Not every tool reaches the toolbox through `__add_tool`, which is
+            # what registers a lineage: built-in converters, hidden tools and
+            # single-tool reloads all go straight to `register_tool`. Derive the
+            # lineage for those on first lookup.
+            if tool := self.toolbox._tools_by_id.get(tool_id):
+                return self.register(tool)
         return self.lineage_map.get(tool_id)
 
     def _get_versionless(self, tool_id: str) -> ToolLineage | None:
@@ -94,8 +89,8 @@ class CachedLineageMap(LineageMap):
     on demand.
     """
 
-    def __init__(self, app, versions_for: Callable[[str], Iterable[str]] | None = None):
-        super().__init__(app)
+    def __init__(self, toolbox: "AbstractToolBox", versions_for: Callable[[str], Iterable[str]] | None = None):
+        super().__init__(toolbox)
         self._versions_for = versions_for
 
     def get(self, tool_id: str) -> ToolLineage | None:
