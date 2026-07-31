@@ -1,23 +1,37 @@
 """Warn-only validation of visualization blocks in Galaxy markdown (save path)."""
 
 import logging
-import os
+from types import SimpleNamespace
 from typing import cast
+from xml.etree.ElementTree import fromstring
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.markdown_util import validate_visualization_blocks
-from galaxy.visualization.plugins import config_parser
-from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from galaxy.visualization.parameters import input_models_for_visualization
 
-GALAXY_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), *([os.pardir] * 4)))
-IGV_DIR = os.path.join(GALAXY_ROOT, "config", "plugins", "visualizations", "igv")
+# An IGV-shaped plugin declaration, inlined so the test does not depend on the
+# shipped igv plugin (installed at build time, absent from the unit-test checkout).
+IGV_XML = """
+<visualization name="igv">
+    <settings>
+        <input><name>locus</name><type>text</type><value>all</value></input>
+    </settings>
+    <tracks>
+        <input><name>type</name><type>select</type><value>auto</value>
+            <data>
+                <data><label>Auto</label><value>auto</value></data>
+                <data><label>Annotation</label><value>annotation</value></data>
+            </data>
+        </input>
+    </tracks>
+</visualization>
+"""
 
 
 def _igv_plugin():
-    registry = VisualizationsRegistry.__new__(VisualizationsRegistry)
-    registry.config_parser = config_parser.PluginConfigParser()
-    return registry._load_plugin(IGV_DIR)
+    bundle = input_models_for_visualization(fromstring(IGV_XML))
+    return SimpleNamespace(parameter_bundle=bundle)
 
 
 class _Registry:
