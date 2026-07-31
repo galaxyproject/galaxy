@@ -15,7 +15,9 @@ import {
     type SubCollection,
 } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { updateContentFields } from "@/components/History/model/queries";
+import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { setItemDragstart } from "@/utils/setDrag";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -42,43 +44,9 @@ const props = withDefaults(defineProps<Props>(), {
     filterable: false,
 });
 
-/** Datasets picked out of this collection, to build a new collection from.
- *
- * Selecting inside a collection previously was not possible at all: the only
- * route to a new collection was unhiding the elements in the history and
- * working with them there.
- */
-const selectedElements = ref(new Map<string, HistoryItemSummary>());
-const showCollectionCreator = ref(false);
-
-const selectedCount = computed(() => selectedElements.value.size);
-const selectedDatasets = computed(() => Array.from(selectedElements.value.values()));
-
-function isElementSelected(element: { object?: { id?: string } }) {
-    return element.object?.id !== undefined && selectedElements.value.has(element.object.id);
-}
-
-function setElementSelected(element: { element_type?: string; object?: HistoryItemSummary }, selected: boolean) {
-    const id = element.object?.id;
-    // Only datasets can go into a new list; nested collections are skipped.
-    if (!id || element.element_type !== "hda") {
-        return;
-    }
-    const next = new Map(selectedElements.value);
-    if (selected) {
-        next.set(id, element.object as HistoryItemSummary);
-    } else {
-        next.delete(id);
-    }
-    selectedElements.value = next;
-}
-
-function clearElementSelection() {
-    selectedElements.value = new Map();
-}
-
 function onCreatedCollection() {
-    clearElementSelection();
+    resetSelection();
+    setShowSelection(false);
     showCollectionCreator.value = false;
 }
 
@@ -122,6 +90,53 @@ const rootCollection = computed(() => {
 });
 const isRoot = computed(() => dsc.value == rootCollection.value);
 const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
+
+/** Selection inside a collection uses the same composable as the history
+ * panel, so selecting behaves identically in both places: a select toggle,
+ * click to select without opening the item, and shift for a range. */
+const showCollectionCreator = ref(false);
+
+/** Stable key for an element, used for selection and refs. */
+function elementKey(item: DCESummary) {
+    return String(item.element_identifier ?? item.element_index);
+}
+
+const {
+    selectedItems,
+    showSelection,
+    selectionSize,
+    setShowSelection,
+    isRangeSelectAnchor,
+    isSelected,
+    setSelected,
+    initKeySelection,
+    resetSelection,
+    itemRefs,
+    onClick: onSelectClick,
+    onKeyDown: onSelectKeyDown,
+} = useSelectedItems<DCESummary, typeof ContentItem>({
+    scopeKey: computed(() => String(dsc.value?.id ?? "")),
+    getItemKey: elementKey,
+    allItems: collectionElements as never,
+    selectable: computed(() => canEdit.value),
+    expectedKeyDownClass: "content-item",
+    // A collection listing has no filtering and no query selection, so these
+    // are inert; they exist because the composable is shared with the history
+    // panel, where filtering drives select-all-in-query.
+    filterText: ref(""),
+    totalItemsInQuery: computed(() => collectionElements.value.length),
+    filterClass: HistoryFilters,
+    // Deleting an element from a collection is not offered here.
+    onDelete: () => {},
+});
+
+/** The datasets behind the selected elements, for the collection creator. */
+const selectedDatasets = computed(() =>
+    Array.from(selectedItems.value.values())
+        .filter((element) => element.element_type === "hda")
+        .map((element) => element.object as HistoryItemSummary),
+);
+
 async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
     if (!isHDCA(collection)) {
         return;
@@ -196,13 +211,16 @@ watch(
                         show>
                         {{ populatedStateMsg || "This is an empty collection." }}
                     </b-alert>
-                    <div v-if="selectedCount" class="d-flex align-items-center p-2 border-bottom">
-                        <GButton size="small" transparent class="mr-2" @click="clearElementSelection">
-                            {{ selectedCount }} selected
+                    <div v-if="canEdit" class="d-flex align-items-center p-2">
+                        <GButton size="small" transparent @click="setShowSelection(!showSelection)">
+                            {{ showSelection ? "Cancel" : "Select" }}
                         </GButton>
-                        <GButton size="small" color="blue" @click="showCollectionCreator = true">
-                            Build Dataset List
-                        </GButton>
+                        <template v-if="showSelection && selectionSize">
+                            <span class="mx-2">{{ selectionSize }} selected</span>
+                            <GButton size="small" color="blue" @click="showCollectionCreator = true">
+                                Build Dataset List
+                            </GButton>
+                        </template>
                     </div>
 
                     <ListingLayout
@@ -221,15 +239,20 @@ watch(
                             <ContentItem
                                 v-else
                                 :id="item.element_index + 1"
+                                :ref="itemRefs[elementKey(item)]"
                                 :item="item.object"
                                 :name="item.element_identifier"
                                 :expand-dataset="isExpanded(item)"
                                 :is-dataset="item.element_type == 'hda'"
                                 :taggable="item.element_type == 'hda'"
-                                :selectable="canEdit && item.element_type == 'hda'"
-                                :selected="isElementSelected(item)"
+                                :selectable="showSelection && item.element_type == 'hda'"
+                                :selected="isSelected(item)"
+                                :is-range-select-anchor="isRangeSelectAnchor(item)"
+                                :select-click-handler="onSelectClick"
                                 :filterable="filterable"
-                                @update:selected="setElementSelected(item, $event)"
+                                @update:selected="setSelected(item, $event)"
+                                @init-key-selection="initKeySelection"
+                                @on-key-down="onSelectKeyDown(item, $event)"
                                 @drag-start="setItemDragstart(item, $event)"
                                 @update:expand-dataset="setExpanded(item, $event)"
                                 @view-collection="onViewDatasetCollectionElement(item)" />
