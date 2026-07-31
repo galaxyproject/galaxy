@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArchive, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { BAlert, BBadge } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -57,7 +57,8 @@ const emit = defineEmits<{
 const busy = ref(false);
 
 const historyStore = useHistoryStore();
-const { currentHistoryId, histories, totalHistoryCount, pinnedHistories } = storeToRefs(historyStore);
+const { currentHistoryId, histories, totalHistoryCount, pinnedHistories, allHistoriesLoaded } =
+    storeToRefs(historyStore);
 const { currentUser } = storeToRefs(useUserStore());
 
 const effectiveCurrentId = computed(() =>
@@ -65,21 +66,23 @@ const effectiveCurrentId = computed(() =>
 );
 
 const hasNoResults = computed(() => props.filter && filtered.value.length == 0);
-const validFilter = computed(() => props.filter && props.filter.length > 2);
-const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
+const allLoaded = computed(() => allHistoriesLoaded.value || totalHistoryCount.value <= filtered.value.length);
 
 onMounted(async () => {
-    // if mounted with a filter, load histories for filter
-    if (props.filter !== "" && validFilter.value) {
-        await loadMore(true);
+    // if mounted with a filter, the whole list is needed to search it
+    if (props.filter !== "") {
+        await historyStore.loadAllHistories();
     }
 });
 
 watch(
     () => props.filter,
     async (newVal: string, oldVal: string) => {
-        if (newVal !== "" && validFilter.value && newVal !== oldVal) {
-            await loadMore(true);
+        // Searching happens against the locally held list, so the list only has
+        // to be fetched once rather than queried again on every change of the
+        // text. Matching a few thousand names in the browser is immediate.
+        if (newVal !== "" && newVal !== oldVal) {
+            await historyStore.loadAllHistories();
         }
     },
 );
@@ -105,7 +108,7 @@ watch(
 
 const filtered = computed<HistorySummary[]>(() => {
     let filteredHistories: HistorySummary[] = [];
-    if (!validFilter.value) {
+    if (!props.filter) {
         filteredHistories = historiesProxy.value;
     } else {
         const filters = HistoriesFilters.getFiltersForText(props.filter);
@@ -187,29 +190,18 @@ function openInMulti(history: HistorySummary) {
 /** Loads (paginates) for more histories
  * @param noScroll If true, we are not scrolling and will load _all_ items for current filter
  */
-async function loadMore(noScroll = false) {
-    if (busy.value) {
-        // A load is already running. Don't drop this request: the running loop
-        // re-reads the filter after each round trip, so it picks up whatever
-        // has been typed since. Returning here without that would leave the
-        // list showing results for a filter the user has already moved on from,
-        // and since the list is filtered client-side by the current text, that
-        // renders as an empty list with nothing to select.
-        return;
-    }
-    if (!(noScroll || (!props.filter && !allLoaded.value))) {
+/** Loads (paginates) the next page of histories as the list is scrolled.
+ *
+ * Searching no longer goes through here: the whole list is pulled in once and
+ * matched locally, so there is no per-search request to supersede or cancel.
+ */
+async function loadMore() {
+    if (busy.value || props.filter || allLoaded.value) {
         return;
     }
     busy.value = true;
     try {
-        let loadedFilter = props.filter;
-        await historyStore.loadHistories(true, loadedFilter && HistoriesFilters.getQueryString(loadedFilter));
-        // Catch up with anything typed while that request was in flight, so the
-        // results end up matching the text actually in the box.
-        while (props.filter !== loadedFilter && validFilter.value) {
-            loadedFilter = props.filter;
-            await historyStore.loadHistories(true, HistoriesFilters.getQueryString(loadedFilter));
-        }
+        await historyStore.loadHistories(true);
     } finally {
         busy.value = false;
     }
@@ -316,10 +308,7 @@ function getHistoryTitleBadges(history: HistorySummary) {
         :load-disabled="Boolean(props.filter)"
         @load-more="loadMore">
         <template v-slot:search>
-            <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
-                Search term is too short
-            </BBadge>
-            <BAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
+            <BAlert v-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
         </template>
 
         <template v-slot:item="{ item: history }">
