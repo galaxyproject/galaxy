@@ -188,10 +188,29 @@ function openInMulti(history: HistorySummary) {
  * @param noScroll If true, we are not scrolling and will load _all_ items for current filter
  */
 async function loadMore(noScroll = false) {
-    if (!busy.value && (noScroll || (!noScroll && !props.filter && !allLoaded.value))) {
-        busy.value = true;
-        const queryString = props.filter && HistoriesFilters.getQueryString(props.filter);
-        await historyStore.loadHistories(true, queryString);
+    if (busy.value) {
+        // A load is already running. Don't drop this request: the running loop
+        // re-reads the filter after each round trip, so it picks up whatever
+        // has been typed since. Returning here without that would leave the
+        // list showing results for a filter the user has already moved on from,
+        // and since the list is filtered client-side by the current text, that
+        // renders as an empty list with nothing to select.
+        return;
+    }
+    if (!(noScroll || (!props.filter && !allLoaded.value))) {
+        return;
+    }
+    busy.value = true;
+    try {
+        let loadedFilter = props.filter;
+        await historyStore.loadHistories(true, loadedFilter && HistoriesFilters.getQueryString(loadedFilter));
+        // Catch up with anything typed while that request was in flight, so the
+        // results end up matching the text actually in the box.
+        while (props.filter !== loadedFilter && validFilter.value) {
+            loadedFilter = props.filter;
+            await historyStore.loadHistories(true, HistoriesFilters.getQueryString(loadedFilter));
+        }
+    } finally {
         busy.value = false;
     }
 }
