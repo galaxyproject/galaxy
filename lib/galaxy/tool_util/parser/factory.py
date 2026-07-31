@@ -2,6 +2,7 @@
 
 import logging
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from yaml import safe_load
 
@@ -12,10 +13,6 @@ from galaxy.util import (
 )
 from galaxy.util.path import StrPath
 from galaxy.util.yaml_util import ordered_load
-from .cwl import (
-    CwlToolSource,
-    tool_proxy,
-)
 from .interface import (
     InputSource,
     ToolSource,
@@ -30,6 +27,9 @@ from .yaml import (
 )
 from ..fetcher import ToolLocationFetcher
 
+if TYPE_CHECKING:
+    from .cwl import CwlToolSource
+
 log = logging.getLogger(__name__)
 
 
@@ -42,7 +42,15 @@ def build_xml_tool_source(xml_string: str) -> XmlToolSource:
     return XmlToolSource(parse_xml_string_to_etree(xml_string, strip_whitespace=False))
 
 
-def build_cwl_tool_source(yaml_string: str) -> CwlToolSource:
+def build_cwl_tool_source(yaml_string: str) -> "CwlToolSource":
+    # Imported lazily: the CWL parser pulls in a large dependency tree that only
+    # CWL tools need, and this module is imported (via parser.stdio) by
+    # set_metadata, which runs as a fresh process for every finished job.
+    from .cwl import (
+        CwlToolSource,
+        tool_proxy,
+    )
+
     proxy = tool_proxy(tool_object=safe_load(yaml_string))
     # regular CwlToolSource sets basename as tool id, but that's not going to cut it in production
     return CwlToolSource(tool_proxy=proxy)
@@ -101,6 +109,8 @@ def get_tool_source(
         log.info(
             "Loading CWL tool - this is experimental - tool likely will not function in future at least in same way."
         )
+        from .cwl import CwlToolSource
+
         return CwlToolSource(config_file)
     else:
         tree, macro_paths = load_tool_with_refereces(config_file)

@@ -20,11 +20,15 @@ import traceback
 from functools import partial
 from pathlib import Path
 
-try:
-    from pulsar.client.staging import COMMAND_VERSION_FILENAME
-except ImportError:
-    # Package unit tests
-    COMMAND_VERSION_FILENAME = "COMMAND_VERSION"
+# Importing this constant from pulsar.client.staging costs roughly a thousand
+# extra modules, because it first executes pulsar.client, which reaches back
+# into galaxy.jobs.runners and from there pulls in the whole tool framework
+# (galaxy.tools, the CWL parser, tool_shed.util.repository_util). None of that
+# is used while setting metadata, but this module runs as a fresh process for
+# every job, so on a shared filesystem the import alone dominates the script.
+# The value is part of the Galaxy/Pulsar wire contract and is asserted against
+# pulsar in test_set_metadata_constants.py.
+COMMAND_VERSION_FILENAME = "COMMAND_VERSION"
 
 import galaxy.datatypes.registry
 import galaxy.model.mapping
