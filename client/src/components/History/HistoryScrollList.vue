@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
-import { faArchive, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArchive,
+    faBurn,
+    faColumns,
+    faFolder,
+    faFolderOpen,
+    faSignInAlt,
+    faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
@@ -60,7 +68,21 @@ const busy = ref(false);
 
 const historyStore = useHistoryStore();
 const projectFolderStore = useProjectFolderStore();
-const { currentFolderId } = storeToRefs(projectFolderStore);
+const { currentFolderId, folders } = storeToRefs(projectFolderStore);
+
+/** Files a history into a folder (or unfiles it) and reflects it locally. */
+function onFiled(historyId: string, folderId: string) {
+    const history = historiesProxy.value.find((h) => h.id === historyId);
+    if (history) {
+        historyStore.setHistory({ ...history, project_folder_id: folderId } as never);
+    }
+}
+
+async function moveToFolder(history: HistorySummary, folderId: string | null) {
+    await projectFolderStore.setHistoryFolder(history.id, folderId);
+    // Update the copy in the store so the list re-filters without a refetch.
+    historyStore.setHistory({ ...history, project_folder_id: folderId } as never);
+}
 const { currentHistoryId, histories, totalHistoryCount, pinnedHistories } = storeToRefs(historyStore);
 const { currentUser } = storeToRefs(useUserStore());
 
@@ -218,6 +240,30 @@ function getHistoryBadges(history: HistorySummary) {
 
 function getHistorySecondaryActions(history: HistorySummary) {
     const actions: CardAction[] = [];
+    // Filing into a project folder. Offered as one action per folder rather
+    // than a dialog, since a user typically has a handful of projects.
+    const filedIn = (history as { project_folder_id?: string | null }).project_folder_id ?? null;
+    for (const folder of folders.value) {
+        if (folder.id === filedIn) {
+            continue;
+        }
+        actions.push({
+            id: `project-folder-${folder.id}`,
+            label: `Move to ${folder.name}`,
+            icon: faFolder,
+            title: `File this history under ${folder.name}`,
+            handler: () => moveToFolder(history, folder.id),
+        });
+    }
+    if (filedIn) {
+        actions.push({
+            id: "project-folder-none",
+            label: "Remove from project",
+            icon: faFolderOpen,
+            title: "Leave this history unfiled",
+            handler: () => moveToFolder(history, null),
+        });
+    }
     if (props.additionalOptions.includes("set-current")) {
         actions.push({
             id: "set-current",
@@ -307,7 +353,12 @@ function getHistoryTitleBadges(history: HistorySummary) {
         :load-disabled="Boolean(props.filter)"
         @load-more="loadMore">
         <template v-slot:search>
-            <ProjectFolderBar class="mb-2" :total-count="historiesProxy.length" />
+            <ProjectFolderBar
+                class="mb-2"
+                :total-count="historiesProxy.length"
+                :matching="filtered"
+                :search-text="props.filter"
+                @filed="onFiled" />
             <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
                 Search term is too short
             </BBadge>

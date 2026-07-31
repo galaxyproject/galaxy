@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFolder, faFolderOpen, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faFolder, faFolderOpen, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -13,11 +13,16 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 interface Props {
     /** Total histories the user can see, for the "all histories" count. */
     totalCount?: number;
+    /** Histories currently matching the search, offered for bulk filing. */
+    matching?: { id: string; name: string }[];
+    /** The search text those matches came from, for the button label. */
+    searchText?: string;
 }
-const props = withDefaults(defineProps<Props>(), { totalCount: 0 });
+const props = withDefaults(defineProps<Props>(), { totalCount: 0, matching: () => [], searchText: "" });
 
 const emit = defineEmits<{
     (e: "change", folderId: string | null): void;
+    (e: "filed", historyId: string, folderId: string): void;
 }>();
 
 const store = useProjectFolderStore();
@@ -25,6 +30,27 @@ const { folders, currentFolderId, loading } = storeToRefs(store);
 
 const creating = ref(false);
 const newName = ref("");
+const filing = ref(false);
+const filingTarget = ref<string | null>(null);
+
+/** Bulk filing only makes sense once a search has narrowed the list. */
+const canBulkFile = computed(() => props.searchText.trim().length > 0 && props.matching.length > 0);
+
+async function fileMatching(folderId: string) {
+    filing.value = true;
+    filingTarget.value = folderId;
+    try {
+        // Sequential rather than parallel: this can be thousands of histories
+        // and firing them all at once would bury the server.
+        for (const history of props.matching) {
+            await store.setHistoryFolder(history.id, folderId);
+            emit("filed", history.id, folderId);
+        }
+    } finally {
+        filing.value = false;
+        filingTarget.value = null;
+    }
+}
 
 /** Folders are opt-in: with none created the bar stays out of the way. */
 const hasFolders = computed(() => folders.value.length > 0);
@@ -96,6 +122,26 @@ async function create() {
                     {{ localize("Create") }}
                 </GButton>
             </span>
+        </div>
+
+        <div v-if="canBulkFile && hasFolders" class="mt-1 d-flex flex-wrap align-items-center gap-1">
+            <span class="text-muted small mr-1">
+                {{ localize("File all") }} {{ props.matching.length }} {{ localize("matching into") }}
+            </span>
+            <GButton
+                v-for="folder in folders"
+                :key="`bulk-${folder.id}`"
+                size="small"
+                transparent
+                :disabled="filing"
+                :data-bulk-folder-id="folder.id"
+                @click="fileMatching(folder.id)">
+                <FontAwesomeIcon
+                    :icon="filing && filingTarget === folder.id ? faSpinner : faFolder"
+                    :spin="filing && filingTarget === folder.id"
+                    class="mr-1" />
+                {{ folder.name }}
+            </GButton>
         </div>
 
         <div v-if="!hasFolders && !loading" class="text-muted small mt-1">
