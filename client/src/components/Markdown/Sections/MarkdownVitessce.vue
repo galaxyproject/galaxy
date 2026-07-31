@@ -73,7 +73,7 @@ async function processContent() {
 
         // Determine height
         if ("__gx_height" in parsedContent) {
-            visualizationHeight.value = parsedContent.__gx_height;
+            visualizationHeight.value = Number(parsedContent.__gx_height) || DEFAULT_HEIGHT;
             delete parsedContent.__gx_height;
         } else {
             visualizationHeight.value = DEFAULT_HEIGHT;
