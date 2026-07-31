@@ -13,15 +13,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, useMagicKeys, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
-import {
-    BButton,
-    BButtonGroup,
-    BDropdown,
-    BDropdownDivider,
-    BDropdownItem,
-    BDropdownText,
-    BFormTextarea,
-} from "bootstrap-vue";
+import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormTextarea } from "bootstrap-vue";
 import type { ZoomTransform } from "d3-zoom";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, onUnmounted, ref, unref, watch } from "vue";
@@ -67,6 +59,7 @@ import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
@@ -382,7 +375,11 @@ const { specialWorkflowActivities, exitWorkflowActivity, runWorkflowActivity } =
 const getLabels = computed(() => fromSteps(steps.value));
 
 const saveWorkflowTitle = computed(() =>
-    hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow",
+    hasInvalidConnections.value
+        ? `${errorText.value}, review and remove workflow errors.`
+        : hasChanges.value
+          ? "Save Workflow"
+          : "No changes to save.",
 );
 
 const { confirm } = useConfirmDialog();
@@ -1396,15 +1393,15 @@ watch(
                         <FontAwesomeIcon :icon="faMagic" />
                     </GButton>
 
-                    <BButton
+                    <GButton
                         id="workflow-canvas-button"
-                        v-g-tooltip.hover.bottom
                         title="Return to Workflow"
-                        variant="link"
-                        role="button"
+                        tooltip
+                        transparent
+                        size="large"
                         @click="showAttributes">
                         <FontAwesomeIcon :icon="faTimes" />
-                    </BButton>
+                    </GButton>
                 </template>
             </MarkdownEditor>
         </template>
@@ -1420,7 +1417,7 @@ watch(
                         </span>
                     </span>
 
-                    <BButtonGroup>
+                    <div class="d-flex align-items-center flex-gapx-1">
                         <BDropdown
                             v-if="credentialSteps.length > 0"
                             no-caret
@@ -1451,30 +1448,38 @@ watch(
                             </BDropdownItem>
                         </BDropdown>
 
-                        <BButton
-                            :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
-                            variant="secondary"
-                            :disabled="!undoRedoStore.hasUndo || loadingWorkflow"
-                            @click="undoRedoStore.undo()">
-                            <FontAwesomeIcon :icon="faUndo" />
-                        </BButton>
-                        <BButton
-                            :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
-                            variant="secondary"
-                            :disabled="!undoRedoStore.hasRedo || loadingWorkflow"
-                            @click="undoRedoStore.redo()">
-                            <FontAwesomeIcon :icon="faRedo" />
-                        </BButton>
-                        <BButton
+                        <GButtonGroup>
+                            <GButton
+                                :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
+                                :transparent="!undoRedoStore.hasUndo || loadingWorkflow"
+                                size="large"
+                                :disabled="!undoRedoStore.hasUndo || loadingWorkflow"
+                                @click="undoRedoStore.undo()">
+                                <FontAwesomeIcon :icon="faUndo" />
+                            </GButton>
+                            <GButton
+                                :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
+                                :transparent="!undoRedoStore.hasRedo || loadingWorkflow"
+                                size="large"
+                                :disabled="!undoRedoStore.hasRedo || loadingWorkflow"
+                                @click="undoRedoStore.redo()">
+                                <FontAwesomeIcon :icon="faRedo" />
+                            </GButton>
+                        </GButtonGroup>
+
+                        <GButton
                             id="workflow-save-button"
-                            class="py-1 px-2"
-                            variant="link"
+                            size="large"
+                            color="blue"
                             :disabled="!hasChanges || loadingWorkflow"
+                            :disabled-title="saveWorkflowTitle"
                             :title="saveWorkflowTitle"
+                            tooltip
+                            transparent
                             @click="saveOrCreate">
                             <FontAwesomeIcon :icon="faSave" />
-                        </BButton>
-                    </BButtonGroup>
+                        </GButton>
+                    </div>
                 </div>
 
                 <ReadmeEditor
