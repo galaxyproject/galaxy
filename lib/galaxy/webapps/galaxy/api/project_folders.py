@@ -3,6 +3,7 @@ API operations on project folders, an optional per-user grouping of histories.
 """
 
 import logging
+from typing import Annotated
 
 from fastapi import (
     Body,
@@ -26,13 +27,18 @@ from . import (
     DependsOnTrans,
     Router,
 )
+from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["project folders"])
 
-FolderIdPathParam = Path(..., title="Project Folder ID", description="The encoded ID of the project folder.")
-HistoryIdPathParam = Path(..., title="History ID", description="The encoded ID of the history.")
+# Annotated aliases so the encoded id in the path is decoded, rather than
+# FastAPI trying to parse the encoded string straight into an int.
+FolderIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Project Folder ID", description="The encoded database identifier of the project folder."),
+]
 
 
 @router.cbv
@@ -66,7 +72,7 @@ class FastAPIProjectFolders:
     )
     def update(
         self,
-        folder_id: DecodedDatabaseIdField = FolderIdPathParam,
+        folder_id: FolderIdPathParam,
         payload: UpdateProjectFolderPayload = Body(...),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> ProjectFolderSummary:
@@ -80,7 +86,7 @@ class FastAPIProjectFolders:
     )
     def delete(
         self,
-        folder_id: DecodedDatabaseIdField = FolderIdPathParam,
+        folder_id: FolderIdPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
         self.manager.delete(trans, folder_id)
@@ -92,7 +98,7 @@ class FastAPIProjectFolders:
     )
     def set_history_folder(
         self,
-        history_id: DecodedDatabaseIdField = HistoryIdPathParam,
+        history_id: HistoryIDPathParam,
         payload: SetHistoryProjectFolderPayload = Body(...),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> ProjectFolderSummary | None:

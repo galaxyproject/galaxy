@@ -7,7 +7,10 @@ from pydantic import (
     Field,
 )
 
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import Model
 
 FolderNameField = Field(
@@ -42,7 +45,7 @@ class UpdateProjectFolderPayload(BaseModel):
 
 
 class SetHistoryProjectFolderPayload(BaseModel):
-    project_folder_id: EncodedDatabaseIdField | None = Field(
+    project_folder_id: DecodedDatabaseIdField | None = Field(
         None,
         title="Project Folder ID",
         description="Folder to file the history under, or null to leave it unfiled.",

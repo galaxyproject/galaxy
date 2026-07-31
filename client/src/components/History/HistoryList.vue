@@ -30,6 +30,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -46,6 +47,7 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useProjectFolderStore } from "@/stores/projectFolderStore";
 import { updateHistoryFields } from "@/stores/services/history.services";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -62,6 +64,7 @@ import ListHeader from "@/components/Common/ListHeader.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
 import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import HistoryCardList from "@/components/History/HistoryCardList.vue";
+import ProjectFolderBar from "@/components/History/ProjectFolderBar.vue";
 import ProjectFolderPickerModal from "@/components/History/ProjectFolderPickerModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -155,6 +158,14 @@ const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted hist
 const showBulkPurge = computed(() => selectedHistories.value.some((h) => !h.purged));
 
 const showFolderPicker = ref(false);
+const { currentFolderId } = storeToRefs(useProjectFolderStore());
+
+/** Re-query when the folder scope changes; the filter is applied server side. */
+async function onFolderChange() {
+    offset.value = 0;
+    resetSelection();
+    await load(true);
+}
 const selectedHistoryIds = computed(() => selectedHistories.value.map((h) => h.id));
 
 /** Refresh after filing so the folder counts and any folder scope are current. */
@@ -261,6 +272,7 @@ async function load(overlayLoading: boolean = false, silent: boolean = false) {
         search: validatedFilterText(),
         sortBy: sortBy.value,
         sortDesc: sortDesc.value,
+        projectFolderId: currentFolderId.value,
     };
 
     try {
@@ -684,6 +696,8 @@ onMounted(async () => {
             id="history-list-overlay"
             :show="overlay"
             class="h-100 d-flex flex-column history-list-overlay">
+            <ProjectFolderBar class="mb-2" :total-count="totalHistories ?? 0" @change="onFolderChange" />
+
             <HistoryCardList
                 :histories="historiesLoaded"
                 :shared-view="sharedView"

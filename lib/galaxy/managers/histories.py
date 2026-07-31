@@ -957,6 +957,13 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "user_id": lambda item, key, encode_id=True, **context: (
                 self.app.security.encode_id(item.user_id) if item.user_id is not None and encode_id else item.user_id
             ),
+            # Encoded like every other id the client sees; without this the raw
+            # integer is emitted and never matches the encoded folder id.
+            "project_folder_id": lambda item, key, encode_id=True, **context: (
+                self.app.security.encode_id(item.project_folder_id)
+                if item.project_folder_id is not None and encode_id
+                else item.project_folder_id
+            ),
         }
         self.serializers.update(serializers)
 
