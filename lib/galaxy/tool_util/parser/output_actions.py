@@ -13,12 +13,24 @@ from typing_extensions import Protocol
 
 from galaxy import util
 
-try:
-    from galaxy.util.template import fill_template
-except ImportError:
-    fill_template = None  # type: ignore[assignment, unused-ignore]
-
 log = logging.getLogger(__name__)
+
+
+def _get_fill_template():
+    """Return Cheetah's fill_template, or None when Cheetah is unavailable.
+
+    Imported on demand rather than at module level: galaxy.util.template pulls in
+    Cheetah plus the lib2to3/fissix py2-to-py3 translation machinery, and this
+    module is reached from galaxy.tool_util.parser, which set_metadata imports.
+    set_metadata runs as a fresh process for every finished job, so the cost is
+    paid per job even though only Cheetah-templated output actions need it.
+    """
+    try:
+        from galaxy.util.template import fill_template
+
+        return fill_template
+    except ImportError:
+        return None
 
 
 class ToolOutputActionAppConfig(Protocol):
@@ -337,6 +349,7 @@ class MetadataToolOutputAction(ToolOutputAction):
         if self.default:
             # For historical reasons the default value takes preference over value,
             # and we only treat the default value as potentially containing cheetah.
+            fill_template = _get_fill_template()
             if fill_template is not None:
                 value = fill_template(
                     self.default,

@@ -40,12 +40,12 @@ from . import (
     tracks,
     xml,
 )
-from .display_applications.application import DisplayApplication
 
 if TYPE_CHECKING:
     from galaxy.datatypes.data import Data
     from galaxy.tool_util.toolbox.base import AbstractToolBox
     from galaxy.tools import SetMetadataTool
+    from .display_applications.application import DisplayApplication
 
 
 class ConfigurationError(Exception):
@@ -97,7 +97,7 @@ class Registry:
         # Datatype elements defined in local datatypes_conf.xml that contain display applications.
         self.display_app_containers = []
         # Map a display application id to a display application
-        self.display_applications: dict[str, DisplayApplication] = {}
+        self.display_applications: dict[str, "DisplayApplication"] = {}
         # The following 2 attributes are used in the to_xml_file()
         # method to persist the current state into an xml file.
         self.display_path_attr = None
@@ -728,6 +728,12 @@ class Registry:
         """
         Add display applications from self.display_app_containers or to appropriate datatypes.
         """
+        # Imported here rather than at module level: the display application
+        # subsystem pulls in Cheetah via galaxy.util.template, and this module is
+        # loaded by every upload job and every set_metadata process. Those call
+        # load_datatypes(use_display_applications=False) and never reach this method.
+        from .display_applications.application import DisplayApplication
+
         # Load display applications defined by local datatypes_conf.xml.
         datatype_elems = self.display_app_containers
         for elem in datatype_elems:

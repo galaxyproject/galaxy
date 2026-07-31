@@ -24,9 +24,8 @@ from galaxy.util.config_parsers import (
     parse_allowlist_ips,
 )
 from galaxy.util.config_templates import EnvironmentDict
-from galaxy.util.pydantic_partial import partial_model
 from galaxy.util.hash_util import HashFunctionNames
-from galaxy.util.template import fill_template
+from galaxy.util.pydantic_partial import partial_model
 
 if TYPE_CHECKING:
     from galaxy.files import OptionalUserContext
@@ -418,6 +417,12 @@ def resolve_file_source_template(
     Returns:
         Resolved configuration with all templates evaluated
     """
+    # Imported here rather than at module level: galaxy.util.template pulls in
+    # Cheetah and the lib2to3/fissix py2-to-py3 translation machinery, and this
+    # module is reached from galaxy.files, which galaxy.datatypes.sniff imports.
+    # Every upload job and every set_metadata process pays that otherwise.
+    from galaxy.util.template import fill_template
+
     template_variables = context.to_dict()
 
     def expand_template_value(value: Any) -> Any:
