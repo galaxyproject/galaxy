@@ -12,6 +12,8 @@
 import { isEqual, omit } from "lodash";
 import type { DefineComponent } from "vue";
 
+import levenshteinDistance from "@/utils/levenshtein";
+
 export type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
 
@@ -221,6 +223,10 @@ export function contains<T>(attribute: string, query?: string, converter?: Conve
  * `lib/galaxy/util/search.py`, which the backend applies to the same filter.
  */
 const NAME_TERM_SEPARATORS = /[\s\-_.,:;/\\|()[\]{}'"]+/;
+/** Same separators, for stripping every occurrence out of a value. */
+const NAME_TERM_SEPARATORS_GLOBAL = /[\s\-_.,:;/\\|()[\]{}'"]+/g;
+/** Below this length a typo is indistinguishable from a different word. */
+const MINIMUM_FUZZY_LENGTH = 5;
 /** Each term becomes its own comparison, so cap them as the backend does. */
 const MAX_NAME_TERMS = 8;
 
@@ -242,6 +248,33 @@ export function splitNameSearchTerms(value: string): string[] {
     return terms;
 }
 
+/** Shortest edit distance from `query` to any same-length run inside `value`.
+ *
+ * Compares against windows of the value rather than the whole thing, so a short
+ * query is not penalised for appearing in a long name.
+ */
+function isCloseMatch(query: string, value: string): boolean {
+    // Too short to tell a typo from a different word.
+    if (query.length < MINIMUM_FUZZY_LENGTH || value.length < query.length) {
+        return false;
+    }
+    const maxDistance = Math.floor(query.length / 4);
+    if (maxDistance < 1) {
+        return false;
+    }
+    for (let start = 0; start + query.length - maxDistance <= value.length; start++) {
+        for (const width of [query.length, query.length - maxDistance, query.length + maxDistance]) {
+            if (width <= 0 || start + width > value.length) {
+                continue;
+            }
+            if (levenshteinDistance(query, value.substr(start, width), true) <= maxDistance) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /**
  * Checks if every word of the query appears in the item value, independently of
  * the separators used. Searching `umi-tools` finds `umi tools`, and a truncated
@@ -261,7 +294,21 @@ export function containsTerms<T>(attribute: string, query?: string): HandlerRetu
                 // rather than letting an empty term list match every item.
                 return value.includes(toLower(q));
             }
-            return terms.every((term) => value.includes(term));
+            if (terms.every((term) => value.includes(term))) {
+                return true;
+            }
+            // The name may spell out separators the query left out, so compare
+            // both sides with them stripped: "umitools" finds "UMI-tools".
+            const squashedValue = value.replace(NAME_TERM_SEPARATORS_GLOBAL, "");
+            const squashedQuery = terms.join("");
+            if (squashedValue.includes(squashedQuery)) {
+                return true;
+            }
+            // Finally tolerate misspellings, so "umitoos" still finds
+            // "UMI-tools". The server does this with trigram similarity where
+            // the database supports it; this keeps the local re-filter from
+            // discarding the rows it returned.
+            return isCloseMatch(squashedQuery, squashedValue);
         },
     };
 }

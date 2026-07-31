@@ -254,6 +254,25 @@ describe("filtering", () => {
         // nothing here, rather than an empty term list matching every item.
         expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("___"), { ...item })).toBe(false);
     });
+    test("name filter tolerates separators typed either way", () => {
+        const item = { name: "UMI-tools deduplicate", deleted: false, visible: true };
+        // The name spells out a separator the query leaves out, and vice versa.
+        ["umitools", "umi-tools", "umi tools", "UMI_Tools"].forEach((filterText) => {
+            const filters = HistoryFilters.getFiltersForText(filterText);
+            expect(HistoryFilters.testFilters(filters, { ...item })).toBe(true);
+        });
+    });
+    test("name filter tolerates a misspelling", () => {
+        const item = { name: "UMI-tools deduplicate", deleted: false, visible: true };
+        // The server matches these with trigram similarity; the local re-filter
+        // has to accept them too or it would discard the rows it was sent.
+        ["umitoos", "umitols", "umi tols"].forEach((filterText) => {
+            const filters = HistoryFilters.getFiltersForText(filterText);
+            expect(HistoryFilters.testFilters(filters, { ...item })).toBe(true);
+        });
+        // Still narrows: an unrelated word of similar length does not match.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("bowtie2"), { ...item })).toBe(false);
+    });
     test("name filter still sends the raw value to the backend", () => {
         // The terms are split server-side too, so the query key is unchanged.
         const queryDict = HistoryFilters.getQueryDict("umi-tools");
