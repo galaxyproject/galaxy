@@ -9,11 +9,13 @@ import { useRouter } from "vue-router/composables";
 import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useProjectFolderStore } from "@/stores/projectFolderStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { HistoriesFilters } from "./HistoriesFilters";
 
 import GCard from "@/components/Common/GCard.vue";
+import ProjectFolderBar from "@/components/History/ProjectFolderBar.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
@@ -57,6 +59,8 @@ const emit = defineEmits<{
 const busy = ref(false);
 
 const historyStore = useHistoryStore();
+const projectFolderStore = useProjectFolderStore();
+const { currentFolderId } = storeToRefs(projectFolderStore);
 const { currentHistoryId, histories, totalHistoryCount, pinnedHistories } = storeToRefs(historyStore);
 const { currentUser } = storeToRefs(useUserStore());
 
@@ -118,6 +122,12 @@ const filtered = computed<HistorySummary[]>(() => {
     }
     if (props.hideDeleted) {
         filteredHistories = filteredHistories.filter((h) => !h.deleted && !h.purged);
+    }
+    if (currentFolderId.value !== null) {
+        // Browsing one project: only the histories filed under it.
+        filteredHistories = filteredHistories.filter(
+            (h) => (h as { project_folder_id?: string | null }).project_folder_id === currentFolderId.value,
+        );
     }
     return filteredHistories.sort((a, b) => {
         if (!isMultiviewPanel.value && a.id == currentHistoryId.value) {
@@ -297,6 +307,7 @@ function getHistoryTitleBadges(history: HistorySummary) {
         :load-disabled="Boolean(props.filter)"
         @load-more="loadMore">
         <template v-slot:search>
+            <ProjectFolderBar class="mb-2" :total-count="historiesProxy.length" />
             <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
                 Search term is too short
             </BBadge>

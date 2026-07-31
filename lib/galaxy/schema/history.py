@@ -28,6 +28,11 @@ class HistoryIndexQueryPayload(Model):
     sort_by: HistorySortByEnum = Field("update_time", title="Sort By", description="Sort by this attribute.")
     sort_desc: bool | None = Field(default=True, title="Sort descending", description="Sort in descending order.")
     search: str | None = Field(default=None, title="Filter text", description="Freetext to search.")
+    project_folder_id: int | None = Field(
+        default=None,
+        title="Project Folder ID",
+        description="Restrict to histories filed under this project folder.",
+    )
     limit: int | None = Field(default=100, lt=1000, title="Limit", description="Maximum number of entries to return.")
     offset: int | None = Field(default=0, title="Offset", description="Number of entries to skip.")
 

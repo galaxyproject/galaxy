@@ -163,6 +163,11 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
             stmt = stmt.outerjoin(self.model_class.users_shared_with)
         stmt = stmt.where(or_(*filters))
 
+        if payload.project_folder_id is not None:
+            # Folders are private, so this is scoped to the user's own folders
+            # by the ownership filters already applied above.
+            stmt = stmt.where(self.model_class.project_folder_id == payload.project_folder_id)
+
         if payload.search:
             search_query = payload.search
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
@@ -872,6 +877,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "tags",
                 "update_time",
                 "preferred_object_store_id",
+                "project_folder_id",
             ],
         )
         self.add_view(
