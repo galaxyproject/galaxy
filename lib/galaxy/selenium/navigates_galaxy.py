@@ -2754,7 +2754,17 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             assert element is not None
 
         if (textinsert := step.get("textinsert", None)) is not None:
-            element.send_keys(textinsert)
+            if "\t" in textinsert:
+                # send_keys interprets \t as a Tab keypress, which moves focus
+                # out of the element. Use JS to set the value directly instead.
+                self.execute_script(
+                    "arguments[0].value = arguments[1];"
+                    "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));",
+                    element,
+                    textinsert,
+                )
+            else:
+                element.send_keys(textinsert)
 
         tour_callback.handle_step(step, step_index)
 
