@@ -8,6 +8,7 @@ import {
     type CollectionEntry,
     type DCESummary,
     type HDCASummary,
+    type HistoryItemSummary,
     type HistorySummary,
     isCollectionElement,
     isHDCA,
@@ -23,6 +24,8 @@ import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
 import CollectionOperations from "./CollectionOperations.vue";
 import Alert from "@/components/Alert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import ContentItem from "@/components/History/Content/ContentItem.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
 
@@ -38,6 +41,46 @@ const props = withDefaults(defineProps<Props>(), {
     showControls: true,
     filterable: false,
 });
+
+/** Datasets picked out of this collection, to build a new collection from.
+ *
+ * Selecting inside a collection previously was not possible at all: the only
+ * route to a new collection was unhiding the elements in the history and
+ * working with them there.
+ */
+const selectedElements = ref(new Map<string, HistoryItemSummary>());
+const showCollectionCreator = ref(false);
+
+const selectedCount = computed(() => selectedElements.value.size);
+const selectedDatasets = computed(() => Array.from(selectedElements.value.values()));
+
+function isElementSelected(element: { object?: { id?: string } }) {
+    return element.object?.id !== undefined && selectedElements.value.has(element.object.id);
+}
+
+function setElementSelected(element: { element_type?: string; object?: HistoryItemSummary }, selected: boolean) {
+    const id = element.object?.id;
+    // Only datasets can go into a new list; nested collections are skipped.
+    if (!id || element.element_type !== "hda") {
+        return;
+    }
+    const next = new Map(selectedElements.value);
+    if (selected) {
+        next.set(id, element.object as HistoryItemSummary);
+    } else {
+        next.delete(id);
+    }
+    selectedElements.value = next;
+}
+
+function clearElementSelection() {
+    selectedElements.value = new Map();
+}
+
+function onCreatedCollection() {
+    clearElementSelection();
+    showCollectionCreator.value = false;
+}
 
 const collectionElementsStore = useCollectionElementsStore();
 
@@ -153,6 +196,15 @@ watch(
                         show>
                         {{ populatedStateMsg || "This is an empty collection." }}
                     </b-alert>
+                    <div v-if="selectedCount" class="d-flex align-items-center p-2 border-bottom">
+                        <GButton size="small" transparent class="mr-2" @click="clearElementSelection">
+                            {{ selectedCount }} selected
+                        </GButton>
+                        <GButton size="small" color="blue" @click="showCollectionCreator = true">
+                            Build Dataset List
+                        </GButton>
+                    </div>
+
                     <ListingLayout
                         v-else
                         data-key="element_index"
@@ -174,12 +226,26 @@ watch(
                                 :expand-dataset="isExpanded(item)"
                                 :is-dataset="item.element_type == 'hda'"
                                 :taggable="item.element_type == 'hda'"
+                                :selectable="canEdit && item.element_type == 'hda'"
+                                :selected="isElementSelected(item)"
                                 :filterable="filterable"
+                                @update:selected="setElementSelected(item, $event)"
                                 @drag-start="setItemDragstart(item, $event)"
                                 @update:expand-dataset="setExpanded(item, $event)"
                                 @view-collection="onViewDatasetCollectionElement(item)" />
                         </template>
                     </ListingLayout>
+
+                    <CollectionCreatorIndex
+                        v-if="showCollectionCreator"
+                        :history-id="history.id"
+                        collection-type="list"
+                        :extended-collection-type="{}"
+                        :selected-items="selectedDatasets"
+                        :show.sync="showCollectionCreator"
+                        hide-on-create
+                        default-hide-source-items
+                        @created-collection="onCreatedCollection" />
                 </div>
             </section>
         </section>
