@@ -15,7 +15,6 @@ import GLink from "@/components/BaseComponents/GLink.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import HistoryList from "@/components/History/HistoryScrollList.vue";
-import ProjectFolderPickerModal from "@/components/History/ProjectFolderPickerModal.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 type PinnedHistory = { id: string };
@@ -59,10 +58,6 @@ const selectedHistories = ref<PinnedHistory[]>([]);
 const filter = ref("");
 const busy = ref(false);
 const showAdvanced = ref(false);
-const showFolderPicker = ref(false);
-
-/** Ids of the currently selected histories, for filing into a folder. */
-const selectedIds = computed(() => selectedHistories.value.map((item: PinnedHistory) => item.id));
 const modal = ref<InstanceType<typeof GModal> | null>(null);
 
 const { pinnedHistories } = storeToRefs(useHistoryStore());
@@ -166,15 +161,6 @@ const modalBodyClasses = computed(() => {
                         <i>{{ selectedHistories.length }} histories selected</i>
                     </GLink>
                     <GButton
-                        v-if="multiple && selectedHistories.length"
-                        v-localize
-                        class="mr-2"
-                        data-description="add to folder button"
-                        :disabled="showAdvanced"
-                        @click="showFolderPicker = true">
-                        Add to folder
-                    </GButton>
-                    <GButton
                         v-if="multiple"
                         v-localize
                         data-description="change selected histories button"
@@ -187,8 +173,6 @@ const modalBodyClasses = computed(() => {
                 </span>
             </template>
         </HistoryList>
-
-        <ProjectFolderPickerModal :show-modal.sync="showFolderPicker" :history-ids="selectedIds" />
     </GModal>
 </template>
 

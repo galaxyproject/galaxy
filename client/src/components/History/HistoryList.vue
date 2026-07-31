@@ -160,6 +160,10 @@ const showBulkPurge = computed(() => selectedHistories.value.some((h) => !h.purg
 const showFolderPicker = ref(false);
 const { currentFolderId } = storeToRefs(useProjectFolderStore());
 
+/** Total across all folders, kept so the "All histories" count does not
+ * collapse to the size of whichever folder is currently selected. */
+const totalHistoriesUnscoped = ref(0);
+
 /** Re-query when the folder scope changes; the filter is applied server side. */
 async function onFolderChange() {
     offset.value = 0;
@@ -296,6 +300,9 @@ async function load(overlayLoading: boolean = false, silent: boolean = false) {
         if (data !== undefined) {
             historiesLoaded.value = data;
             totalHistories.value = total!;
+            if (!currentFolderId.value) {
+                totalHistoriesUnscoped.value = total!;
+            }
         }
     } catch (error) {
         if (thisGeneration !== loadGeneration) {
@@ -696,7 +703,7 @@ onMounted(async () => {
             id="history-list-overlay"
             :show="overlay"
             class="h-100 d-flex flex-column history-list-overlay">
-            <ProjectFolderBar class="mb-2" :total-count="totalHistories ?? 0" @change="onFolderChange" />
+            <ProjectFolderBar class="mb-2" :total-count="totalHistoriesUnscoped" @change="onFolderChange" />
 
             <HistoryCardList
                 :histories="historiesLoaded"

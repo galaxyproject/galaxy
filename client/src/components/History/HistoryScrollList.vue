@@ -60,7 +60,10 @@ const busy = ref(false);
 
 const historyStore = useHistoryStore();
 const projectFolderStore = useProjectFolderStore();
-const { currentFolderId } = storeToRefs(projectFolderStore);
+const { currentFolderId, currentFolder } = storeToRefs(projectFolderStore);
+
+/** Total for the footer: the folder's own size when one is selected. */
+const scopedTotalCount = computed(() => (currentFolder.value ? currentFolder.value.count : totalHistoryCount.value));
 const { currentHistoryId, histories, totalHistoryCount, pinnedHistories } = storeToRefs(historyStore);
 const { currentUser } = storeToRefs(useUserStore());
 
@@ -124,7 +127,8 @@ const filtered = computed<HistorySummary[]>(() => {
         filteredHistories = filteredHistories.filter((h) => !h.deleted && !h.purged);
     }
     if (currentFolderId.value !== null) {
-        // Browsing one project: only the histories filed under it.
+        // The folder scope is applied by the server; this keeps the rendered
+        // list consistent with it for rows already in the store.
         filteredHistories = filteredHistories.filter(
             (h) => (h as { project_folder_id?: string | null }).project_folder_id === currentFolderId.value,
         );
@@ -197,10 +201,37 @@ function openInMulti(history: HistorySummary) {
 /** Loads (paginates) for more histories
  * @param noScroll If true, we are not scrolling and will load _all_ items for current filter
  */
+/** Fetch the histories for the newly chosen folder scope.
+ *
+ * The scope has to be applied by the server: this list pages in a few
+ * histories at a time, so filtering what happens to be loaded would show an
+ * empty folder whenever the filed histories are not on the loaded page.
+ */
+async function onFolderChange() {
+    busy.value = true;
+    try {
+        // Start the new scope at the top, and page it. Loading unpaginated
+        // here fetched every history the user owns just to show the first
+        // screenful, which is what made switching back to "All histories"
+        // stall for seconds.
+        historyStore.historiesOffset = 0;
+        await historyStore.loadHistories(true, folderQueryString());
+    } finally {
+        busy.value = false;
+    }
+}
+
+/** Query string carrying the current folder scope, empty when showing all. */
+function folderQueryString() {
+    return currentFolderId.value ? `project_folder_id=${currentFolderId.value}` : "";
+}
+
 async function loadMore(noScroll = false) {
     if (!busy.value && (noScroll || (!noScroll && !props.filter && !allLoaded.value))) {
         busy.value = true;
-        const queryString = props.filter && HistoriesFilters.getQueryString(props.filter);
+        const queryString = [props.filter && HistoriesFilters.getQueryString(props.filter), folderQueryString()]
+            .filter(Boolean)
+            .join("&");
         await historyStore.loadHistories(true, queryString);
         busy.value = false;
     }
@@ -300,14 +331,14 @@ function getHistoryTitleBadges(history: HistorySummary) {
         :item-key="(history) => history.id"
         :in-panel="!props.inModal"
         :prop-items="filtered"
-        :prop-total-count="totalHistoryCount"
+        :prop-total-count="scopedTotalCount"
         :prop-busy="busy"
         name="history"
         name-plural="histories"
         :load-disabled="Boolean(props.filter)"
         @load-more="loadMore">
         <template v-slot:search>
-            <ProjectFolderBar class="mb-2" :total-count="historiesProxy.length" />
+            <ProjectFolderBar class="mb-2" :total-count="totalHistoryCount" @change="onFolderChange" />
             <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
                 Search term is too short
             </BBadge>
