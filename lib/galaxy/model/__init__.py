@@ -2205,6 +2205,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             tool_uuid=self.dynamic_tool and self.dynamic_tool.uuid,
             user=self.user,
         )
+        assert tool is not None
+        tool = app.toolbox.materialize_tool(tool, reason="serialization")
         param_dict = tool.get_param_values(self, ignore_errors=ignore_errors)
         return param_dict
 
@@ -2597,6 +2599,8 @@ class Task(Base, JobLike, RepresentById):
         """
         param_dict = {p.name: p.value for p in self.job.parameters}
         tool = app.toolbox.get_tool(self.job.tool_id, tool_version=self.job.tool_version)
+        assert tool is not None
+        tool = app.toolbox.materialize_tool(tool, reason="serialization")
         param_dict = tool.params_from_strings(param_dict)
         return param_dict
 

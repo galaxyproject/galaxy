@@ -104,3 +104,10 @@ class TestUserDefinedToolRecommendedJobSetupTPV(TestUserDefinedToolRecommendedJo
             cores = response["outputs"][0]
             cores_content = self.dataset_populator.get_history_dataset_content(history_id, content_id=cores["id"])
             assert cores_content == "2.0\n"
+
+
+class TestCachedUserDefinedToolRecommendedJobSetupTPV(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestUserDefinedToolRecommendedJobSetupTPV,
+):
+    pass

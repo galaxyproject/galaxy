@@ -429,8 +429,9 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         user_credentials_id = credentials_list[0]["id"]
 
         # Save the tool reference before removing it
-        tool = self._app.toolbox.get_tool(CREDENTIALS_TEST_TOOL)
-        assert tool is not None, f"Tool {CREDENTIALS_TEST_TOOL} should be available before removal"
+        tool_like = self._app.toolbox.get_tool(CREDENTIALS_TEST_TOOL)
+        assert tool_like is not None, f"Tool {CREDENTIALS_TEST_TOOL} should be available before removal"
+        tool = self._app.toolbox.materialize_tool(tool_like, reason="detail")
 
         try:
             # Remove the tool to simulate it being unavailable

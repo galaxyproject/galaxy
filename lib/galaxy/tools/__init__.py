@@ -14,6 +14,7 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
+from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -369,6 +370,78 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "Interval2Maf1": parse_version("1.0.1+galaxy0"),
 }
 
+
+def parse_tool_version_for_comparison(version: str):
+    """Parse Galaxy's numeric ``+galaxyN`` suffix as a PEP 440 version."""
+    suffix_marker = "+galaxy"
+    if suffix_marker in version:
+        base, suffix = version.split(suffix_marker, 1)
+        if suffix:
+            version = f"{base}{suffix_marker}.{suffix.lstrip('.')}"
+    return parse_version(version)
+
+
+def tool_requires_galaxy_python_environment(
+    *,
+    tool_type: str,
+    profile: float,
+    preserve_python_environment: str,
+    tool_shed: str | None,
+    old_id: str | None,
+    version: str | None,
+) -> bool:
+    """Return the runtime-environment policy from metadata available at population time."""
+    if tool_type not in {
+        "default",
+        "manage_data",
+        "interactive",
+        "data_source",
+        "data_source_async",
+        "user_defined",
+    }:
+        return True
+    if tool_type == "manage_data" and Version(str(profile)) < Version("18.09"):
+        return True
+    if tool_type == "data_source" and Version(str(profile)) < Version("21.09"):
+        return True
+    if tool_type == "data_source_async" and profile < 24.0:
+        return True
+    if preserve_python_environment == "always":
+        return True
+    if preserve_python_environment == "legacy_and_local" and tool_shed is None:
+        return True
+    if old_id in GALAXY_LIB_TOOLS_UNVERSIONED:
+        return True
+    if old_id is None:
+        return False
+    fixed_version = GALAXY_LIB_TOOLS_VERSIONED.get(old_id)
+    if fixed_version is None:
+        return False
+    parsed_version = parse_tool_version_for_comparison(version or "")
+    return parsed_version < fixed_version
+
+
+def load_tool_action_class(module_name: str, class_name: str) -> type[ToolAction]:
+    """Load and validate a configured tool action class."""
+    module = __import__(module_name, globals(), locals(), [class_name])
+    try:
+        action_class: object = getattr(module, class_name)
+    except AttributeError as exc:
+        raise AttributeError(f"Tool action module {module_name!r} has no class {class_name!r}") from exc
+    if not isinstance(action_class, type) or not issubclass(action_class, ToolAction):
+        raise TypeError(f"Configured tool action {module_name}.{class_name} is not a ToolAction subclass")
+    return action_class
+
+
+def tool_produces_real_jobs(tool_type: str, action_module: tuple[str, str] | None) -> bool:
+    """Return the action policy without constructing a complete tool."""
+    if action_module is not None:
+        action_class = load_tool_action_class(*action_module)
+    else:
+        action_class = tool_types.get(tool_type, Tool).default_tool_action
+    return action_class.produces_real_jobs
+
+
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
 }
@@ -524,6 +597,8 @@ class ToolBox(AbstractToolBox):
         self, config_filenames: list[str], tool_root_dir, app, save_integrated_tool_panel: bool = True
     ) -> None:
         self._reload_count = 0
+        self._tools_loaded_from_store = 0
+        self._tools_parsed_from_file = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
@@ -543,14 +618,44 @@ class ToolBox(AbstractToolBox):
             view_sources=view_sources,
             default_panel_view=default_panel_view,
             save_integrated_tool_panel=save_integrated_tool_panel,
+            load_panel_views=not app.config.display_builtin_converters,
         )
         # Load built-in converters
         if app.config.display_builtin_converters:
             self.load_builtin_converters()
-        if old_toolbox := getattr(app, "toolbox", None):
+        if old_toolbox := app.toolbox_or_none:
             self.dependency_manager = old_toolbox.dependency_manager
         else:
             self._init_dependency_manager()
+
+        # Log tool loading summary
+        self._log_tool_loading_summary()
+
+    def _log_tool_loading_summary(self):
+        """Log a summary of how tools were loaded (from store vs parsed from file)."""
+        total_tools = len(self._tools_by_id)
+        store_count = self._tools_loaded_from_store
+        file_count = self._tools_parsed_from_file
+
+        if store_count > 0 or file_count > 0:
+            store = self.app.tool_source_store
+            backend = "unknown"
+            if store:
+                try:
+                    stats = store.get_stats()
+                    backend = stats.get("backend", "unknown")
+                except Exception:
+                    pass
+
+            if store_count > 0 and file_count == 0:
+                log.info(f"Loaded {total_tools} tools from tool source store ({backend}), 0 parsed from files")
+            elif store_count == 0:
+                log.info(f"Loaded {total_tools} tools by parsing from files (no store configured or empty)")
+            else:
+                log.info(
+                    f"Loaded {total_tools} tools: {store_count} from store ({backend}), "
+                    f"{file_count} parsed from files"
+                )
 
     def tool_tag_manager(self):
         if hasattr(self.app.config, "get_bool") and self.app.config.get_bool("enable_tool_tags", False):
@@ -620,20 +725,85 @@ class ToolBox(AbstractToolBox):
         return self._tools_by_id
 
     def create_tool(self, config_file: StrPath, **kwds) -> "Tool":
-        tool_source = self.get_expanded_tool_source(config_file)
+        # Pass guid to enable direct store lookup for shed tools
+        guid = kwds.get("guid")
+        tool_source = self.get_expanded_tool_source(config_file, tool_id=guid)
         return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
-    def get_expanded_tool_source(self, config_file: StrPath) -> ToolSource:
+    def get_expanded_tool_source(self, config_file: StrPath, tool_id: str | None = None) -> ToolSource:
+        # Try to load from tool source store first (pre-parsed, macro-expanded)
+        tool_source = self._get_tool_source_from_store(config_file, tool_id=tool_id)
+        if tool_source is not None:
+            self._tools_loaded_from_store += 1
+            return tool_source
+
+        # Fall back to parsing from file
         try:
-            return get_tool_source(
+            tool_source = get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
             )
+            self._tools_parsed_from_file += 1
+            return tool_source
         except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
+
+    def _get_tool_source_from_store(self, config_file: StrPath, tool_id: str | None = None) -> ToolSource | None:
+        """
+        Try to load tool source from the pre-parsed store.
+
+        Args:
+            config_file: Path to the tool XML file.
+            tool_id: Optional tool ID (guid for shed tools) to look up directly.
+
+        Returns:
+            ToolSource if found in store, None otherwise.
+        """
+        # Default (eager) deployments parse from disk; only consult the store
+        # when the operator opted into ``use_cached_toolbox``. The silent-wrong-source
+        # defect that used to live on this path only manifested under the cached
+        # toolbox, so default deployments stay on the eager parse path.
+        if not self.app.config.use_cached_toolbox:
+            return None
+
+        store = self.app.tool_source_store
+        if store is None:
+            return None
+
+        # Resolve by the on-disk file path first. ``source_path`` is recorded
+        # at populate time and the populator updates that per-path row in place,
+        # so a hit here is content-current and exact (no regex shortcut, no
+        # ``sources[0]`` fallback that could silently return a different tool's
+        # source).
+        stored = store.get_by_source_path(os.path.abspath(str(config_file)))
+
+        # Shed installs hand us the full guid; fall back to it only when the
+        # path lookup misses. ``get_by_tool_id`` has no ORDER BY and the
+        # append-only store accumulates superseded content rows for the same
+        # tool_id, so pick the most recently stored one rather than an
+        # arbitrary row.
+        if stored is None and tool_id:
+            sources = store.get_by_tool_id(tool_id)
+            if sources:
+                stored = max(sources, key=lambda s: (s.stored_at is not None, s.stored_at or datetime.min))
+
+        if stored is None:
+            return None
+
+        # Create tool source from stored content
+        try:
+            tool_source = get_tool_source(
+                raw_tool_source=stored.raw_source,
+                tool_source_class=stored.tool_source_class,
+            )
+            log.debug(f"Loaded tool source from store: {stored.tool_id} ({config_file})")
+            return tool_source
+        except Exception as e:
+            log.warning(f"Error loading tool source from store for {config_file}: {e}")
+            return None
 
     def _create_tool_from_source(self, tool_source: ToolSource, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
@@ -691,7 +861,8 @@ class ToolBox(AbstractToolBox):
                     raise exceptions.ItemAccessibilityException("Tool not accessible.")
                 return tool
             return self.dynamic_tool_to_tool(dynamic_tool)
-        return self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
+        tool_like = self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
+        return self.materialize_tool(tool_like, reason="execution") if tool_like else None
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
         tool = self.dynamic_tool_to_tool(dynamic_tool)
@@ -1128,22 +1299,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def version_object(self):
         """Parse version string, handling special Galaxy version format."""
-        GALAXY_VERSION_SUFFIX = "+galaxy"
-        version = self.version
-
-        # Check if version has Galaxy suffix that we need to modify (e.g., "1.0+galaxy123")
-        if GALAXY_VERSION_SUFFIX not in version:
-            return parse_version(version)
-
-        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
-
-        # Handle Galaxy versions that need numeric sorting
-        if suffix:
-            # Per PEP-440 a version like <base_version>+galaxy<suffix> would be sorted lexicographically if not separated by a '.'.
-            # Injecting a '.' here will force a numeric sort if the suffix is an integer, otherwise the outcome will be the same.
-            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
-
-        return parse_version(version)
+        return parse_tool_version_for_comparison(self.version)
 
     @property
     def sa_session(self):
@@ -1220,42 +1376,18 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def requires_galaxy_python_environment(self):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
-        # All special tool types (data source, history import/export, etc...)
-        # seem to require Galaxy's Python.
-        # FIXME: the (instantiated) tool class should emit this behavior, and not
-        #        use inspection by string check
-        if self.tool_type not in [
-            "default",
-            "manage_data",
-            "interactive",
-            "data_source",
-            "data_source_async",
-            "user_defined",
-        ]:
-            return True
+        return tool_requires_galaxy_python_environment(
+            tool_type=self.tool_type,
+            profile=self.profile,
+            preserve_python_environment=self.app.config.preserve_python_environment,
+            tool_shed=self.tool_shed,
+            old_id=self.old_id,
+            version=self.version,
+        )
 
-        if self.tool_type == "manage_data" and Version(str(self.profile)) < Version("18.09"):
-            return True
-
-        if self.tool_type == "data_source" and Version(str(self.profile)) < Version("21.09"):
-            return True
-
-        if self.tool_type == "data_source_async" and self.profile < 24.0:
-            return True
-
-        config = self.app.config
-        preserve_python_environment = config.preserve_python_environment
-        if preserve_python_environment == "always":
-            return True
-        elif preserve_python_environment == "legacy_and_local" and self.tool_shed is None:
-            return True
-        else:
-            unversioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_UNVERSIONED
-            versioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_VERSIONED
-            legacy_tool = unversioned_legacy_tool or (
-                versioned_legacy_tool and self.old_id and self.version_object < GALAXY_LIB_TOOLS_VERSIONED[self.old_id]
-            )
-            return legacy_tool
+    @property
+    def produces_real_jobs(self) -> bool:
+        return self.tool_action.produces_real_jobs
 
     def __get_job_tool_configuration(self, job_params: dict | None = None) -> "JobToolConfiguration":
         """Generalized method for getting this tool's job configuration.
@@ -1500,8 +1632,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             self.tool_action = self.default_tool_action()
         else:
             module, cls = action
-            mod = __import__(module, globals(), locals(), [cls])
-            self.tool_action = getattr(mod, cls)()
+            self.tool_action = load_tool_action_class(module, cls)()
             if getattr(self.tool_action, "requires_js_runtime", False):
                 try:
                     expressions.find_engine(self.app.config)
@@ -1611,7 +1742,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.config_files.extend(tool_source.parse_template_configfiles())
         self.config_files.extend(tool_source.parse_file_sources())
 
-    def parse_tests(self):
+    def parse_tests(self) -> None:
         self.__tests_parsed = True
         source = self.tool_source
         if source is None:
@@ -3297,6 +3428,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 raise exceptions.MessageException(
                     f"This dataset was created by an obsolete tool ({tool_id}). Can't re-run."
                 )
+            tool = self.app.toolbox.materialize_tool(tool, reason="detail")
             assert tool_id
             if (self.id != tool_id and self.old_id != tool_id) or self.version != tool_version:
                 if self.id == tool_id:
@@ -3652,8 +3784,12 @@ class SetMetadataTool(Tool):
     tool_action: "SetMetadataToolAction"
 
     def regenerate_imported_metadata_if_needed(
-        self, hda: HistoryDatasetAssociation, history: History, user: model.User, session_id: int
-    ):
+        self,
+        hda: HistoryDatasetAssociation,
+        history: History,
+        user: model.User | None,
+        session_id: int | None,
+    ) -> None:
         if hda.has_metadata_files:
             job, *_ = self.tool_action.execute_via_app(
                 self,

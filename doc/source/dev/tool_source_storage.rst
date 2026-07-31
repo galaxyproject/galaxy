@@ -5,8 +5,8 @@ This document describes the architecture of the tool source storage subsystem:
 the store backends, the populator, and the index they build. For operator-facing
 setup and configuration, see :doc:`/admin/tool_source_storage`.
 
-A toolbox that consumes this store to load tools on demand is planned as
-follow-up work; the pieces documented here are the storage layer it will build on.
+The ``CachedToolBox`` consumes this store to load tools on demand; it is
+documented below alongside the storage layer it builds on.
 
 Goals
 -----
@@ -22,31 +22,10 @@ path:
   the canonical, macro-expanded source plus a lightweight metadata index.
 - The store and index are laid out so a consumer can load only the index at
   startup and materialize ``Tool`` objects on demand, instead of parsing the
-  full tree in-process. That consumer is the planned follow-up toolbox.
-
-Module Layout
--------------
-
-::
-
-    lib/galaxy/tools/source_store/
-      __init__.py        Public re-exports
-      interface.py       ToolSourceStore ABC and StoredToolSource
-      factory.py         Store construction from Galaxy configuration
-      sqlalchemy.py      SqlAlchemyToolSourceStore (any SQLAlchemy URL)
-      composite.py       CompositeToolSourceStore (per-conf routing, merged index)
-      index.py           ToolIndex, ToolIndexEntry (the lightweight metadata)
-      search.py          ToolWhooshIndex (Whoosh search index built from a ToolIndex)
-      discover.py        discover_tools() — conf walk without booting a ToolBox
-      populator.py       Population + watch logic (parse, store, index, broadcast)
-      freshness.py       Optional external freshness probes
-      watcher.py         Filesystem watch support
-
-    scripts/tool_source/populate_store.py    Thin CLI wrapper over populator.main
-
-The same ``populator.main`` is registered as the
-``galaxy-populate-tool-source-store`` console script in the ``galaxy-app``
-package metadata (``packages/app/pyproject.toml``).
+  full tree in-process. That consumer is the ``CachedToolBox``.
+- Batch endpoints (``/api/tools``, ``/api/tools/tests_summary``,
+  ``/api/tool_panels`` …) answer from the index instead of iterating the
+  full toolbox.
 
 Data Model
 ----------
@@ -70,6 +49,52 @@ shed metadata). The index is serialized and gzip-compressed as a blob.
 The schema is auto-created on first open; ``tool_index`` holds a single
 row per index version.
 
+Bundle Compatibility Contract
+-----------------------------
+
+The SQLite layout, stored source serialization, and index payload evolve
+independently. A published bundle therefore carries a JSON sidecar with a
+version for each format, an overall compatibility cohort, the exact index
+schema hash, producer identity, capabilities, and a content-derived tool
+snapshot digest. It is both a publisher/CI contract and the consumer-side
+selection contract for named stores configured with
+``external_store_directory``. Normal URL stores never read a manifest.
+
+Compatibility changes follow these rules:
+
+- Adding optional/defaultable index data is a minor change. Older readers must
+  ignore unknown fields; newer readers must tolerate absence or use an
+  advertised capability to choose a correct fallback.
+- Required fields, removals or renames, type changes, changed projection
+  semantics, SQLite table changes, and incompatible stored-source changes are
+  major changes. Increment the cohort and publish a parallel bundle.
+- Keep the exact schema hash as a diagnostic fingerprint. It is deliberately
+  stricter than the future major/minor contract and protects current readers
+  from silently accepting stale projections.
+
+For every supported cohort, CI should exercise both an older producer with a
+newer consumer and a newer producer with an older consumer. Cover index-backed
+batch APIs, exact-version lookup, XML/YAML materialization, and the clean eager
+fallback for an incompatible read-only index. Before changing any format,
+classify the change, update its version/capability, rebuild with ``--full``,
+and retain the previous immutable cohort until its consumers leave support.
+
+The standalone populator writes ``<database>.manifest.json`` after a
+successful SQLite index commit. The snapshot digest covers stable tool/source
+identity and deliberately excludes build timestamps, so an unchanged
+incremental run has the same snapshot identity. The write uses a temporary
+file and atomic rename; an incomplete sidecar is a population failure.
+
+At application startup, the named-store factory scans sidecars one directory
+below a configured ``external_store_directory``. A candidate is eligible only when its
+manifest version, cohort, stable store alias, database/source/index formats,
+exact index schema hash, and required capabilities match the running Galaxy.
+The newest eligible ``built_at`` wins, with path ordering as a deterministic
+tie-breaker. No-match and malformed-manifest cases produce an unavailable
+read-only member: index/source lookups miss and normal eager parsing remains
+correct. Do not relax this gate without also teaching the relevant readers to
+handle the newly accepted format.
+
 Backend Abstraction
 -------------------
 
@@ -83,9 +108,10 @@ Backend Abstraction
 ``build_tool_source_store(config)`` is the only entry point used
 by Galaxy. It builds the default store from
 ``config.tool_source_database_connection`` and uses the same SQLAlchemy-backed
-store implementation for all configured URIs. ``ConfigurationError`` is raised
-for missing required settings and is allowed to propagate up so
-misconfiguration fails fast at startup.
+store implementation for all configured URIs. The store is only built when
+``use_cached_toolbox`` is enabled — default deployments never initialize it.
+``ConfigurationError`` is raised for missing required settings and is allowed
+to propagate up so misconfiguration fails fast at startup.
 
 The ABC defines a ``read_only: bool`` class attribute (default ``False``).
 ``ReadOnlyStoreError`` is raised by mutating methods of stores that opted
@@ -142,6 +168,32 @@ run; ``--target NAME`` restricts to a single store and raises
 read-only in default mode are silently skipped (the bundle is treated as
 authoritative for those entries).
 
+CachedToolBox
+-----------
+
+``CachedToolBox`` extends ``ToolBox`` rather than reimplementing it, so the rest
+of Galaxy can keep using the same ``trans.app.toolbox`` interface. The key
+override is ``_init_tools_from_configs``:
+
+1. It loads the persistent ``ToolIndex`` from the store. If the index does
+   not cover every tool the configs reference (fresh checkout, new conf
+   entry, wiped store), the populator runs in-process to fill the gap —
+   it is content-addressed and idempotent, so re-runs on a warm store only
+   touch new rows.
+2. It then delegates to the eager conf walk. Every ``<tool>`` the walk
+   loads lands in ``create_tool``, where indexed sources short-circuit to a
+   ``CachedTool`` stub instead of parsing; the panel, ``_tools_by_id``, and
+   lineage bookkeeping are all built by the unmodified upstream pipeline
+   operating on stubs.
+
+Full ``Tool`` objects are built on demand and kept in an ``LRUCache`` of
+``cached_toolbox_cache_size`` entries (default 500). Cache hits and misses are
+guarded by an ``RLock`` for thread safety.
+
+Opting in is explicit: only ``use_cached_toolbox: true`` activates the cached
+toolbox. A populated store on its own (e.g. brought in by a per-conf
+``store="..."`` attribute) does not flip a default deployment to cached-toolbox mode.
+
 Discovery
 ---------
 
@@ -152,6 +204,10 @@ used by:
 - the populator to find tools to parse and store.
 - watch mode to know which directories to monitor.
 - callers that compare on-disk confs against the indexed tool set.
+
+It also walks ``data_manager_conf``/``shed_data_manager_conf`` and the
+datatype converters so data-manager and converter tools — loaded post-boot
+outside any tool_conf — still land in the index.
 
 Pulling discovery out of ``ToolBox`` was deliberate: the populator must run
 *without* a full app (or even a running Galaxy), and the watch mode must run in
@@ -168,8 +224,8 @@ model. Tools are parsed in a
 ``ThreadPoolExecutor`` (``--parallel``, default 4 workers); each tool is
 matched to its source path and carried forward when its raw file hash is unchanged
 (``--incremental``, the default). Once the JSON index is committed the
-populator rebuilds the Whoosh search index (``search.py``) so ranked tool
-search stays in sync with the stored sources.
+rendered cached toolbox builds one Whoosh corpus per panel view from the
+merged ``ToolIndex`` and that view's in-memory membership.
 
 Watch mode (``--watch``) uses ``watchdog`` to monitor every directory yielded
 by ``discover_tools``. File events are debounced (default 2 s), the changed
@@ -178,10 +234,43 @@ files are re-parsed, the store is updated, and a single
 exchange. ``--watch-polling`` switches to ``PollingObserver`` for
 NFS/CVMFS/network filesystems where inotify is unreliable.
 
-The broadcast is the populator's half of the contract: it publishes
-``reload_tool_source_cache`` so peer processes can drop their stale index
-view. The control-task handler that consumes the message lands with the
-follow-up toolbox.
+The populator broadcasts ``reload_tool_source_cache`` so peers invalidate
+their toolbox and store indexes. Reload evicts materialised tools whose source
+hash changed; unchanged tools stay cached.
+
+Batch Endpoint Integration
+--------------------------
+
+``ToolsService`` (``services/tools.py``) serves the batch endpoints without
+materialising tools:
+
+- ``list_tools`` (flat and panel) goes through ``AbstractToolBox.to_dict``
+  in both modes — the per-user ``FilterFactory`` pass runs as in eager mode,
+  and ``get_tool_to_dict`` serves ``CachedTool`` stubs from their index
+  entries.
+- ``search_tools`` queries the ``app.toolbox_search`` singleton
+  (``CachedToolboxSearch`` in cached-toolbox mode); hits are resolved against registered
+  stubs via ``CachedToolBox.resolve_search_hit`` with a per-hit access check.
+- ``get_tests_summary`` and ``get_all_requirements`` answer from
+  ``ToolIndex`` entries when the cached toolbox is active, and iterate the toolbox
+  otherwise.
+
+``CachedToolboxSearch`` (``tools/search/__init__.py``) builds and queries one
+Whoosh index for each rendered panel view. Membership is read directly from
+the toolbox and is not persisted in ``ToolIndex``. Eager and cached search use
+the same document normalization, fields, boosts, scoring, and 20,000-character
+help-text bound, so the same panel corpus produces the same ordered results.
+Named-store tools participate through the merged runtime index.
+
+App Wiring
+----------
+
+``galaxy.app.UniverseApplication.__init__`` calls
+``_init_tool_source_store`` early and registers the result as a singleton
+under ``ToolSourceStore``. The toolbox is then chosen based on
+``use_cached_toolbox``. The store is exposed as ``app.tool_source_store`` and is
+``Optional`` only to satisfy type checkers — in practice the build either
+succeeds or raises ``ConfigurationError``.
 
 Design Notes
 ------------
@@ -204,12 +293,6 @@ effectively a no-op.
 Testing
 -------
 
-- Store unit tests: ``test/unit/app/tools/source_store/`` exercises each backend
-  through the ``ToolSourceStore`` interface (``test_stores.py``,
-  ``test_sqlite_store.py``, ``test_composite_store.py``,
-  ``test_index_versions.py``).
-- Populator/discovery unit tests: ``test/unit/scripts/tool_source/``
-  (``test_populate_store.py``, ``test_discover.py``,
-  ``test_build_index_entry.py``, ``test_whoosh_dir.py``). These use fakes
-  (not mocks) of ``ToolSourceStore`` so behavior is verified against the real
-  interface.
+Tests cover backend contracts, discovery and population, per-view search
+parity, lazy API behavior, store recovery, and selected integration workflows
+under both eager and cached toolboxes.

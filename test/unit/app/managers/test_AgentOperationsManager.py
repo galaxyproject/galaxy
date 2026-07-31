@@ -269,6 +269,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         mock_tool_v2.tests = []
 
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.side_effect = lambda tid, tool_version=None: (
             mock_tool_v2 if tool_version == "2.0" else mock_tool_v1
         )
@@ -286,6 +287,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         self.app.toolbox_search = mock.MagicMock()
         self.app.toolbox_search.search.return_value = ["upload1"]
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.return_value = mock_tool
 
         result = self.agent_ops.search_tools("upload")
@@ -304,6 +306,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         mock_tool.help = "Help text"
 
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.return_value = mock_tool
 
         result = self.agent_ops.get_tool_details("cat1")
@@ -314,6 +317,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
     def test_get_tool_details_not_found(self):
         self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.materialize_tool.side_effect = lambda tool, **kwargs: tool
         self.app.toolbox.get_tool.return_value = None
 
         with pytest.raises(ValueError, match="not found"):

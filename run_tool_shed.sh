@@ -13,14 +13,14 @@ LOG_FILE=$TOOL_SHED_LOG
 
 parse_common_args $@
 
+# Conditional dependencies come from tool_shed.yml here, not galaxy.yml
+export GALAXY_CONDITIONAL_DEPENDENCIES_APP=tool_shed
+
 run_common_start_up
 
 setup_python
 
-if [ -z "$TOOL_SHED_CONFIG_FILE" ]; then
-    TOOL_SHED_CONFIG_FILE=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['tool_shed', 'tool_shed_wsgi'], include_samples=True) or '')")
-    export TOOL_SHED_CONFIG_FILE
-fi
+set_tool_shed_config_file_var
 
 find_server ${TOOL_SHED_CONFIG_FILE:-none} tool_shed
 echo "Executing: $run_server $server_args"

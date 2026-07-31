@@ -276,6 +276,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             tool = self.deps.toolbox.get_tool(tool_id)
             if not tool:
                 return {"id": tool_id, "error": "Tool not found"}
+            tool = self.deps.toolbox.materialize_tool(tool, reason="detail")
 
             details: dict[str, Any] = {
                 "id": tool.id,

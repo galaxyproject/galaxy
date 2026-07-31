@@ -1,5 +1,6 @@
 <template>
     <div id="columns">
+        <LoadingOverlay v-if="props.loading" />
         <div id="center" class="d-flex flex-column h-100 w-100">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
@@ -56,12 +57,14 @@ import type { WorkflowLabel } from "./Editor/types";
 import GModal from "../BaseComponents/GModal.vue";
 import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";
+import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
 const props = defineProps<{
     markdownText: string;
     mode: DirectiveMode;
     labels?: Array<WorkflowLabel>;
+    loading?: boolean;
     steps?: Record<string, any>;
     title: string;
     hideToolbox?: boolean;

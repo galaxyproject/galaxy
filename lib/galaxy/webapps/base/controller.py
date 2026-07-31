@@ -53,6 +53,7 @@ from galaxy.model import (
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import BasicSharedApp
+from galaxy.tool_util.toolbox.base import AbstractToolBox
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
     error,
@@ -86,7 +87,7 @@ class BaseController:
         self.sa_session = app.model.context
         self.user_manager = users.UserManager(app)
 
-    def get_toolbox(self):
+    def get_toolbox(self) -> AbstractToolBox:
         """Returns the application toolbox"""
         return self.app.toolbox
 

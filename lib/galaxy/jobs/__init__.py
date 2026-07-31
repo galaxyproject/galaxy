@@ -2608,6 +2608,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")
             if metadata_tool is not None:
+                metadata_tool = self.app.toolbox.materialize_tool(metadata_tool, reason="job_setup")
                 # Due to tool shed hacks for migrate and installed tool tests...
                 # see (``setup_shed_tools_for_test`` in test/base/driver_util.py).
                 dependency_shell_commands = metadata_tool.build_dependency_shell_commands(
@@ -2813,11 +2814,12 @@ class JobWrapper(MinimalJobWrapper):
         self.queue = queue
         app = self.queue.app
         self.job_runner_mapper = JobRunnerMapper(self, self.queue.dispatcher.url_to_destination, app.job_config)
+        tool = app.toolbox.tool_for_job(job, exact=True, check_access=False)
         super().__init__(
             job,
             app=app,
             use_persisted_destination=use_persisted_destination,
-            tool=app.toolbox.tool_for_job(job, exact=True, check_access=False),
+            tool=tool,
         )
 
     @property

@@ -2128,17 +2128,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         invocations.invocations_table.wait_for_visible()
         return invocations.invocations_table_rows.all()
 
-    def open_toolbox(self):
+    def open_toolbox(self) -> None:
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        if self.element_absent(self.components.tools.tools_activity_workflow_editor):
-            if self.element_absent(self.components._.toolbox_panel):
-                self.components.tools.activity.wait_for_and_click()
-        else:
-            if self.element_absent(self.components._.toolbox_panel):
-                self.components.tools.tools_activity_workflow_editor.wait_for_and_click()
+        toolbox_panel = self.components._.toolbox_panel
 
-        self.sleep_for(self.wait_types.UX_RENDER)
+        def ensure_open() -> None:
+            if toolbox_panel.is_absent or not toolbox_panel.is_displayed:
+                if self.components.tools.tools_activity_workflow_editor.is_absent:
+                    self.components.tools.activity.wait_for_and_click()
+                else:
+                    self.components.tools.tools_activity_workflow_editor.wait_for_and_click()
+            toolbox_panel.wait_for_visible()
+
+        retry_call_during_transitions(
+            ensure_open,
+            attempts=0,
+            exception_check=lambda exception: isinstance(exception, SeleniumTimeoutException)
+            or exception_seems_to_indicate_transition(exception),
+        )
 
     def swap_to_tool_panel(self, panel_id: str) -> None:
         tool_panel = self.components.tool_panel
