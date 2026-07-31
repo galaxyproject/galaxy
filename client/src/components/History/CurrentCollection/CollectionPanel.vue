@@ -103,11 +103,21 @@ function datasetKey(item: HistoryItemSummary) {
     return String(item?.id);
 }
 
+/** Enriched dataset for an element, so selecting stores the same object the
+ * list holds (with a name) rather than the bare one on the element. */
+function datasetFor(element: DCESummary) {
+    return { ...element.object, name: element.element_identifier } as HistoryItemSummary;
+}
+
 /** The datasets behind this collection's elements, in listing order. */
 const selectableDatasets = computed(() =>
     collectionElements.value
         .filter((element): element is DCESummary => "element_type" in element && element.element_type === "hda")
-        .map((element) => element.object as HistoryItemSummary),
+        // The element carries the dataset, which has no name of its own: inside
+        // a collection the displayed name is the element identifier. Carry it
+        // across, or anything downstream (the collection creator) shows
+        // "undefined" where a name should be.
+        .map(datasetFor),
 );
 
 const {
@@ -241,7 +251,7 @@ watch(
                             <ContentItem
                                 v-else
                                 :id="item.element_index + 1"
-                                :ref="itemRefs[datasetKey(item.object)]"
+                                :ref="itemRefs[datasetKey(datasetFor(item))]"
                                 :item="item.object"
                                 :name="item.element_identifier"
                                 :expand-dataset="isExpanded(item)"
@@ -250,13 +260,13 @@ watch(
                                 :writable="canEdit"
                                 :get-item-key="datasetKey"
                                 :selectable="showSelection && item.element_type == 'hda'"
-                                :selected="isSelected(item.object)"
-                                :is-range-select-anchor="isRangeSelectAnchor(item.object)"
+                                :selected="isSelected(datasetFor(item))"
+                                :is-range-select-anchor="isRangeSelectAnchor(datasetFor(item))"
                                 :select-click-handler="onSelectClick"
                                 :filterable="filterable"
-                                @update:selected="setSelected(item.object, $event)"
+                                @update:selected="setSelected(datasetFor(item), $event)"
                                 @init-key-selection="initKeySelection"
-                                @on-key-down="onSelectKeyDown(item.object, $event)"
+                                @on-key-down="onSelectKeyDown(datasetFor(item), $event)"
                                 @drag-start="setItemDragstart(item, $event)"
                                 @update:expand-dataset="setExpanded(item, $event)"
                                 @view-collection="onViewDatasetCollectionElement(item)" />
