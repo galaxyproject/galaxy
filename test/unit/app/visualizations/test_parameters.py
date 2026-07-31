@@ -1,6 +1,5 @@
 """Tests for :mod:`galaxy.visualization.parameters`."""
 
-import os
 from xml.etree.ElementTree import fromstring
 
 import pytest
@@ -13,7 +12,6 @@ from galaxy.visualization.parameters import (
     DataColumnParameterModel,
     DataParameterModel,
     input_models_for_visualization,
-    input_models_for_visualization_path,
     IntegerParameterModel,
     SelectParameterModel,
     TextParameterModel,
@@ -22,8 +20,55 @@ from galaxy.visualization.parameters import (
 )
 from galaxy.visualization.parameters.factory import VisualizationParameterParsingException
 
-GALAXY_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir))
-IGV_XML = os.path.join(GALAXY_ROOT, "config", "plugins", "visualizations", "igv", "static", "igv.xml")
+# An IGV-shaped plugin declaration, inlined so the test does not depend on the
+# shipped igv plugin (visualization plugins are installed at build time and are
+# absent from the unit-test checkout). Mirrors igv's structure: a settings
+# conditional (select test_param + data_table/data_json/data cases) and tracks.
+IGV_XML = """
+<visualization name="igv">
+    <settings>
+        <input><name>locus</name><type>text</type><value>all</value></input>
+        <input>
+            <name>source</name><type>conditional</type>
+            <test_param>
+                <name>origin</name><type>select</type><value>igv</value>
+                <data>
+                    <data><label>IGV</label><value>igv</value></data>
+                    <data><label>Builtin</label><value>builtin</value></data>
+                    <data><label>History</label><value>history</value></data>
+                </data>
+            </test_param>
+            <cases>
+                <cases><value>igv</value><inputs>
+                    <inputs><name>genome</name><type>data_json</type><url>https://example/genomes.json</url></inputs>
+                </inputs></cases>
+                <cases><value>builtin</value><inputs>
+                    <inputs><name>genome</name><type>data_table</type><tables><tables>fasta_indexes</tables></tables></inputs>
+                </inputs></cases>
+                <cases><value>history</value><inputs>
+                    <inputs><name>genome</name><type>data</type><extension>fasta,twobit</extension></inputs>
+                </inputs></cases>
+            </cases>
+        </input>
+    </settings>
+    <tracks>
+        <input><name>urlDataset</name><type>data</type><extension>bam,bed</extension></input>
+        <input><name>type</name><type>select</type><value>auto</value>
+            <data>
+                <data><label>Auto</label><value>auto</value></data>
+                <data><label>Annotation</label><value>annotation</value></data>
+            </data>
+        </input>
+        <input><name>displayMode</name><type>select</type><value>EXPANDED</value>
+            <data>
+                <data><label>Collapsed</label><value>COLLAPSED</value></data>
+                <data><label>Expanded</label><value>EXPANDED</value></data>
+            </data>
+        </input>
+        <input><name>color</name><type>color</type></input>
+    </tracks>
+</visualization>
+"""
 
 
 def bundle_from(settings="", tracks=""):
@@ -205,8 +250,8 @@ def test_nested_conditional_rejected():
 # --- real plugin integration -------------------------------------------------
 
 
-def test_real_igv_plugin():
-    bundle = input_models_for_visualization_path(IGV_XML)
+def test_igv_like_plugin():
+    bundle = input_models_for_visualization(fromstring(IGV_XML))
     assert [p.name for p in bundle.settings] == ["locus", "source"]
     assert isinstance(bundle.settings[1], ConditionalParameterModel)
     track_names = [p.name for p in bundle.tracks]
@@ -250,7 +295,7 @@ def test_json_schema_export():
 
 
 def test_json_schema_export_igv_conditional():
-    bundle = input_models_for_visualization_path(IGV_XML)
+    bundle = input_models_for_visualization(fromstring(IGV_XML))
     schema = visualization_request_json_schema(bundle)
     source = schema["$defs"]["VisualizationRequestSettings"]["properties"]["source"]
     discriminated = next(branch for branch in source["anyOf"] if "discriminator" in branch)
