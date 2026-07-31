@@ -26,7 +26,6 @@ import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
 import CollectionOperations from "./CollectionOperations.vue";
 import Alert from "@/components/Alert.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import ContentItem from "@/components/History/Content/ContentItem.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
@@ -208,22 +207,17 @@ watch(
                     :selected-collections="selectedCollections"
                     v-on="$listeners" />
                 <CollectionDetails :dsc="dsc" :writeable="canEdit" @update:dsc="updateDsc(dsc, $event)" />
-                <CollectionOperations v-if="canEdit && showControls" :dsc="dsc" />
+                <CollectionOperations
+                    v-if="showControls"
+                    :dsc="dsc"
+                    :selectable="canEdit"
+                    :show-selection="showSelection"
+                    :selection-size="selectionSize"
+                    @update:show-selection="setShowSelection"
+                    @build-collection="showCollectionCreator = true" />
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>
-                    <div v-if="canEdit" class="d-flex align-items-center p-2">
-                        <GButton size="small" transparent @click="setShowSelection(!showSelection)">
-                            {{ showSelection ? "Cancel" : "Select" }}
-                        </GButton>
-                        <template v-if="showSelection && selectionSize">
-                            <span class="mx-2">{{ selectionSize }} selected</span>
-                            <GButton size="small" color="blue" @click="showCollectionCreator = true">
-                                Build Dataset List
-                            </GButton>
-                        </template>
-                    </div>
-
                     <b-alert
                         v-if="collectionElements.length === 0"
                         class="m-2"
