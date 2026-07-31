@@ -13,8 +13,6 @@ from typing import (
     TYPE_CHECKING,
 )
 
-import dns.resolver
-from dns.exception import DNSException
 from sqlalchemy import (
     func,
     select,
@@ -140,6 +138,13 @@ def validate_email(
 
 
 def validate_email_domain_name(domain: str) -> LiteralString:
+    # Imported here rather than at module level: dnspython is only needed to
+    # resolve email domains during user registration, but galaxy.model imports
+    # validate_password_str from this module, so every process loading the model
+    # was also loading dnspython.
+    import dns.resolver
+    from dns.exception import DNSException
+
     message = ""
     try:
         dns.resolver.resolve(domain, "MX")

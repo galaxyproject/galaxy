@@ -27,6 +27,16 @@ log = getLogger(__name__)
 SET_METADATA_SCRIPT = """
 import os
 import traceback
+
+# Pydantic discovers and activates plugins declared via entry points the first
+# time it is imported. Galaxy pins logfire, which registers such a plugin, so
+# every process that imports pydantic also imports logfire, opentelemetry and
+# protobuf: about 330 modules for instrumentation no Galaxy code consumes. This
+# process exists only to set metadata for one job and then exits, so the plugin
+# has nothing to report. setdefault leaves it overridable from the job
+# environment for anyone who does want the instrumentation.
+os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
+
 try:
     from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()
 except Exception:

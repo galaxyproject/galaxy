@@ -5,6 +5,16 @@ import os
 import shutil
 import sys
 import tempfile
+
+if __name__ == "__main__":
+    # Set before the imports below pull in pydantic. Pydantic activates plugins
+    # declared via entry points on first import, and Galaxy pins logfire, which
+    # registers one; that costs roughly 330 modules (logfire, opentelemetry,
+    # protobuf) for instrumentation no Galaxy code consumes. The fetch tool runs
+    # as a short-lived subprocess per job, so there is nothing to instrument.
+    # Guarded on __main__ so importing this module inside the Galaxy server or a
+    # celery worker, where plugins may legitimately be wanted, is unaffected.
+    os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
 from io import StringIO
 from typing import (
     Any,

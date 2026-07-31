@@ -2,7 +2,6 @@
 HTML Sanitizer (lists of acceptable_* ripped from feedparser)
 """
 
-import bleach
 
 from galaxy.util import unicodify
 
@@ -251,6 +250,11 @@ _acceptable_attributes = [
 
 
 def sanitize_html(htmlSource, allow_data_urls=False):
+    # Imported here rather than at module level: this module is reached from
+    # galaxy.schema.schema, so every process importing the model was loading
+    # bleach even though only page and markdown rendering sanitizes HTML.
+    import bleach
+
     kwd = dict(tags=_acceptable_elements, attributes=_acceptable_attributes, strip=True)
     if allow_data_urls:
         kwd["protocols"] = list(bleach.ALLOWED_PROTOCOLS) + ["data"]

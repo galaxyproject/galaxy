@@ -2,15 +2,27 @@ import functools
 import os
 import threading
 
-try:
-    import docutils.core
-    import docutils.io
-    import docutils.utils
-    import docutils.writers.html4css1
-except ImportError:
-    docutils = None  # type: ignore[assignment]
-
 from .custom_logging import get_logger
+
+
+@functools.cache
+def _get_docutils():
+    """Return the docutils package, or None when it is not installed.
+
+    Imported on demand rather than at module level because galaxy.util re-exports
+    rst_to_html, so every importer of galaxy.util was loading docutils. Only tool
+    help rendering needs it, and the per-job metadata and fetch processes never
+    render help.
+    """
+    try:
+        import docutils.core
+        import docutils.io
+        import docutils.utils
+        import docutils.writers.html4css1
+
+        return docutils
+    except ImportError:
+        return None
 
 
 class FakeStream:
@@ -28,6 +40,8 @@ class FakeStream:
 
 @functools.cache
 def get_publisher(error=False):
+    docutils = _get_docutils()
+    assert docutils is not None, "docutils unavailable"
     docutils_writer = docutils.writers.html4css1.Writer()
     docutils_template_path = os.path.join(os.path.dirname(__file__), "docutils_template.txt")
     no_report_level = docutils.utils.Reporter.SEVERE_LEVEL + 1
@@ -64,7 +78,7 @@ _publish_lock = threading.Lock()
 
 @functools.cache
 def rst_to_html(s, error=False):
-    if docutils is None:
+    if _get_docutils() is None:
         raise Exception("Attempted to use rst_to_html but docutils unavailable.")
 
     with _publish_lock:

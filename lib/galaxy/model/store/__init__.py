@@ -37,11 +37,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
 )
-from rocrate.model.computationalworkflow import (
-    ComputationalWorkflow,
-    WorkflowDescription,
-)
-from rocrate.rocrate import ROCrate
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.scoping import scoped_session
@@ -117,7 +112,6 @@ from ._bco_convert_utils import (
     bco_workflow_version,
     SoftwarePrerequisiteTracker,
 )
-from .ro_crate_utils import WorkflowRunCrateProfileBuilder
 from ..custom_types import json_encoder
 from ..item_attrs import (
     add_item_annotation,
@@ -125,6 +119,8 @@ from ..item_attrs import (
 )
 
 if TYPE_CHECKING:
+    from rocrate.rocrate import ROCrate
+
     from galaxy.managers.workflows import WorkflowContentsManager
     from galaxy.model import (
         HistoryItem,
@@ -2627,7 +2623,14 @@ class WriteCrates:
         # But for now we only populate included_invocations when exporting a workflow invocation, so this is fine.
         return bool(self.included_invocations)
 
-    def _init_crate(self) -> ROCrate:
+    def _init_crate(self) -> "ROCrate":
+        # Imported here rather than at module level: RO-Crate export is one of
+        # several export formats, but galaxy.model.store is imported by
+        # set_metadata, which runs once per finished job and never exports.
+        from rocrate.rocrate import ROCrate
+
+        from .ro_crate_utils import WorkflowRunCrateProfileBuilder
+
         is_invocation_export = self._is_invocation_export()
         if is_invocation_export:
             invocation_crate_builder = WorkflowRunCrateProfileBuilder(self)
@@ -2686,6 +2689,11 @@ class WriteCrates:
         if os.path.exists(workflows_directory):
             for filename in os.listdir(workflows_directory):
                 is_computational_wf = not filename.endswith(".cwl")
+                from rocrate.model.computationalworkflow import (
+                    ComputationalWorkflow,
+                    WorkflowDescription,
+                )
+
                 workflow_cls = ComputationalWorkflow if is_computational_wf else WorkflowDescription
                 lang = "galaxy" if not filename.endswith(".cwl") else "cwl"
                 dest_path = os.path.join("workflows", filename)
