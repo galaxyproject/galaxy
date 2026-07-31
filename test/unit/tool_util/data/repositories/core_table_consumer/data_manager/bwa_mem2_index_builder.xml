@@ -1,0 +1,56 @@
+<tool id="bwa_mem2_index_builder_data_manager" name="BWA-MEM2 index builder" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" tool_type="manage_data" profile="23.0">
+    <description></description>
+    <macros>
+        <token name="@TOOL_VERSION@">2.2.1</token>
+        <token name="@VERSION_SUFFIX@">2</token>
+    </macros>
+    <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">bwa-mem2</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        #set $fasta_file_name = str($all_fasta_source.fields.path).split('/')[-1]
+        mkdir -p '${out_file.extra_files_path}' &&
+        ln -s '${all_fasta_source.fields.path}' '${out_file.extra_files_path}/${fasta_file_name}' &&
+        bwa-mem2 index '${out_file.extra_files_path}/${fasta_file_name}' &&
+        rm '${out_file.extra_files_path}/${fasta_file_name}' &&
+        cp '$dmjson' '$out_file'
+        ]]>
+    </command>
+    <configfiles>
+        <configfile name="dmjson"><![CDATA[#slurp
+#set $fasta_file_name = str($all_fasta_source.fields.path).split('/')[-1]
+#set $value = $sequence_id or $all_fasta_source.fields.dbkey
+#set $name = $sequence_name or $all_fasta_source.fields.name
+{
+  "data_tables":{
+    "bwa_mem2_indexes":[
+      {
+        "value": "${value}",
+        "dbkey": "${all_fasta_source.fields.dbkey}",
+        "name": "${name}",
+        "path": "${fasta_file_name}"
+      }
+    ]
+  }
+}
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="all_fasta_source" type="select" label="Source FASTA Sequence">
+            <options from_data_table="all_fasta"/>
+        </param>
+        <param name="sequence_name" type="text" value="" label="Name of sequence" />
+        <param name="sequence_id" type="text" value="" label="ID for sequence" />
+    </inputs>
+    <outputs>
+        <data name="out_file" format="data_manager_json" />
+    </outputs>
+    <help>
+<![CDATA[
+Builds a BWA-MEM2 index from a FASTA sequence chosen from the core all_fasta table.
+]]>
+    </help>
+    <citations>
+        <citation type="doi">10.1038/nmeth.3317</citation>
+    </citations>
+</tool>
