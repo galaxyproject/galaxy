@@ -40,8 +40,15 @@ class ProjectFolderManager:
     def index(self, trans: ProvidesUserContext) -> list[tuple[model.ProjectFolder, int]]:
         """Return the user's folders with the number of histories in each."""
         user = self._require_user(trans)
+        # Only filed histories can contribute to a folder count, and
+        # project_folder_id is indexed, so this touches the handful of filed
+        # rows instead of scanning the whole history table. That scan made the
+        # switch-history dialog block while it counted every history on the
+        # instance, most of which are unfiled.
         history_count = (
             select(model.History.project_folder_id, func.count(model.History.id).label("count"))
+            .where(model.History.project_folder_id.is_not(None))
+            .where(model.History.user_id == user.id)
             .where(model.History.deleted == False)  # noqa: E712
             .group_by(model.History.project_folder_id)
             .subquery()
