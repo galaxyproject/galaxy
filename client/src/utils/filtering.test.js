@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { nameMatchScore } from "@/utils/filtering";
 
 const filterTexts = [
     "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
@@ -272,6 +273,17 @@ describe("filtering", () => {
         });
         // Still narrows: an unrelated word of similar length does not match.
         expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("bowtie2"), { ...item })).toBe(false);
+    });
+    test("ranks literal matches above similar ones", () => {
+        const q = "mrd2020-022";
+        // The case from the report: a name containing the query must outrank a
+        // near-miss that only matches by edit distance.
+        expect(nameMatchScore("MRD2020-022_new_round3", q)).toBeGreaterThan(nameMatchScore("MRD2020-023", q));
+        // Exact beats prefix beats substring beats separator-insensitive.
+        expect(nameMatchScore("MRD2020-022", q)).toBeGreaterThan(nameMatchScore("MRD2020-022_new_round3", q));
+        expect(nameMatchScore("run MRD2020-022 final", q)).toBeGreaterThan(nameMatchScore("mrd2020 022", q));
+        // A name that does not match at all scores zero.
+        expect(nameMatchScore("bowtie run", q)).toBe(0);
     });
     test("name filter still sends the raw value to the backend", () => {
         // The terms are split server-side too, so the query key is unchanged.

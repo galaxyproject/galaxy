@@ -10,6 +10,7 @@ import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
+import { nameMatchScore } from "@/utils/filtering";
 
 import { HistoriesFilters } from "./HistoriesFilters";
 
@@ -141,9 +142,19 @@ const filtered = computed<HistorySummary[]>(() => {
     if (props.hideDeleted) {
         filteredHistories = filteredHistories.filter((h) => !h.deleted && !h.purged);
     }
+    // When searching, rank by how well the name matches before anything else,
+    // so a literal hit comes above a merely similar one: searching
+    // "mrd2020-022" puts "mrd2020-022_new_round3" above "mrd2020-023".
+    const searchTerm = props.filter ? HistoriesFilters.getFilterValue(props.filter, "name") : undefined;
     // Copy before sorting: with no filter this array is historiesProxy itself,
     // and sorting in place would mutate reactive state from inside a computed.
     return [...filteredHistories].sort((a, b) => {
+        if (searchTerm) {
+            const scoreDifference = nameMatchScore(b.name, searchTerm) - nameMatchScore(a.name, searchTerm);
+            if (scoreDifference !== 0) {
+                return scoreDifference;
+            }
+        }
         if (!isMultiviewPanel.value && a.id == currentHistoryId.value) {
             return -1;
         } else if (!isMultiviewPanel.value && b.id == currentHistoryId.value) {

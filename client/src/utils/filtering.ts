@@ -275,6 +275,49 @@ function isCloseMatch(query: string, value: string): boolean {
     return false;
 }
 
+/** How well a value matches a search query; higher is a better match, 0 is none.
+ *
+ * Ordering results by this puts a literal hit above a merely similar one, so
+ * searching "mrd2020-022" ranks "mrd2020-022_new_round3" above "mrd2020-023".
+ */
+export function nameMatchScore<T>(value: T, query: T): number {
+    const haystack = toLower(value);
+    const needle = toLower(query);
+    if (!needle) {
+        return 0;
+    }
+    if (haystack === needle) {
+        return 100;
+    }
+    if (haystack.startsWith(needle)) {
+        return 90;
+    }
+    if (haystack.includes(needle)) {
+        return 80;
+    }
+    const terms = splitNameSearchTerms(needle);
+    if (!terms.length) {
+        return 0;
+    }
+    const squashedValue = haystack.replace(NAME_TERM_SEPARATORS_GLOBAL, "");
+    const squashedQuery = terms.join("");
+    if (squashedValue === squashedQuery) {
+        return 75;
+    }
+    if (squashedValue.startsWith(squashedQuery)) {
+        return 70;
+    }
+    if (squashedValue.includes(squashedQuery)) {
+        return 60;
+    }
+    // Every word present, but scattered through the name.
+    if (terms.every((term) => haystack.includes(term))) {
+        return 50;
+    }
+    // Only similar, not actually contained: always ranked below the above.
+    return isCloseMatch(squashedQuery, squashedValue) ? 10 : 0;
+}
+
 /**
  * Checks if every word of the query appears in the item value, independently of
  * the separators used. Searching `umi-tools` finds `umi tools`, and a truncated
