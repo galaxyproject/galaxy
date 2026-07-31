@@ -57,7 +57,6 @@ from .badges import (
     StoredBadgeDict,
 )
 from .caching import CacheTarget
-from .templates import ObjectStoreConfiguration
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -65,6 +64,13 @@ if TYPE_CHECKING:
         DatasetInstance,
         User,
     )
+
+    # Only ever used in annotations, which this module defers via
+    # "from __future__ import annotations". Importing it eagerly would pull in
+    # galaxy.util.config_templates and galaxy.tool_util_models, which are needed
+    # exclusively for user-defined object stores. galaxy.objectstore is imported
+    # by set_metadata, and that runs as a fresh process for every finished job.
+    from .templates import ObjectStoreConfiguration
 
 NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."

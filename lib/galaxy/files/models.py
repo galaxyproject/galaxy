@@ -23,10 +23,8 @@ from galaxy.util.config_parsers import (
     IpAllowedListEntryT,
     parse_allowlist_ips,
 )
-from galaxy.util.config_templates import (
-    EnvironmentDict,
-    partial_model,
-)
+from galaxy.util.config_templates import EnvironmentDict
+from galaxy.util.pydantic_partial import partial_model
 from galaxy.util.hash_util import HashFunctionNames
 from galaxy.util.template import fill_template
 

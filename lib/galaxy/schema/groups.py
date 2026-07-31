@@ -16,7 +16,7 @@ from galaxy.schema.schema import (
     Model,
     WithModelClass,
 )
-from galaxy.util.config_templates import partial_model
+from galaxy.util.pydantic_partial import partial_model
 
 GROUP_MODEL_CLASS = Literal["Group"]
 

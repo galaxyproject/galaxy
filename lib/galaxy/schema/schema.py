@@ -58,7 +58,7 @@ from galaxy.tool_util_models.sample_sheet import (
     SampleSheetRows,
 )
 from galaxy.tool_util_models.tool_source import FieldDict
-from galaxy.util.config_templates import partial_model
+from galaxy.util.pydantic_partial import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
 

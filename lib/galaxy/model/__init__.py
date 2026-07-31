@@ -145,11 +145,6 @@ import galaxy.exceptions
 import galaxy.model.metadata
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.files.templates import (
-    FileSourceConfiguration,
-    FileSourceTemplate,
-    template_to_configuration as file_source_template_to_configuration,
-)
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.custom_types import (
     DoubleEncodedJsonType,
@@ -169,11 +164,6 @@ from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore import (
     ObjectStoreAuth,
     USER_OBJECTS_SCHEME,
-)
-from galaxy.objectstore.templates import (
-    ObjectStoreConfiguration,
-    ObjectStoreTemplate,
-    template_to_configuration as object_store_template_to_configuration,
 )
 from galaxy.schema.invocation import (
     InvocationCancellationUserRequest,
@@ -249,6 +239,14 @@ if TYPE_CHECKING:
         BaseObjectStore,
         ObjectStorePopulator,
         QuotaSourceMap,
+    )
+    from galaxy.files.templates import (
+        FileSourceConfiguration,
+        FileSourceTemplate,
+    )
+    from galaxy.objectstore.templates import (
+        ObjectStoreConfiguration,
+        ObjectStoreTemplate,
     )
     from galaxy.schema.invocation import InvocationMessageUnion
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
@@ -12639,12 +12637,19 @@ class UserObjectStore(Base, HasConfigTemplate):
     user: Mapped["User"] = relationship("User", back_populates="object_stores")
 
     @property
-    def template(self) -> ObjectStoreTemplate:
+    def template(self) -> "ObjectStoreTemplate":
+        # Deferred for the same reason as FileSourceTemplate below.
+        from galaxy.objectstore.templates import ObjectStoreTemplate
+
         return ObjectStoreTemplate(**self.template_definition or {})
 
     def object_store_configuration(
-        self, secrets: SecretsDict, environment: EnvironmentDict, templates: list[ObjectStoreTemplate] | None = None
-    ) -> ObjectStoreConfiguration:
+        self, secrets: SecretsDict, environment: EnvironmentDict, templates: list["ObjectStoreTemplate"] | None = None
+    ) -> "ObjectStoreConfiguration":
+        from galaxy.objectstore.templates import (
+            template_to_configuration as object_store_template_to_configuration,
+        )
+
         if templates is None:
             templates = [self.template]
         user_details = self.user.config_template_details()
@@ -12707,7 +12712,13 @@ class UserFileSource(Base, HasConfigTemplate):
     user: Mapped["User"] = relationship("User", back_populates="file_sources")
 
     @property
-    def template(self) -> FileSourceTemplate:
+    def template(self) -> "FileSourceTemplate":
+        # Imported lazily: galaxy.files.templates reaches galaxy.files.sources and
+        # galaxy.util.config_templates, which nothing else in this module needs.
+        # galaxy.model is imported by set_metadata, and that runs as a fresh
+        # process for every finished job, so the cost is paid per job.
+        from galaxy.files.templates import FileSourceTemplate
+
         return FileSourceTemplate(**self.template_definition or {})
 
     def file_source_configuration(
@@ -12715,8 +12726,10 @@ class UserFileSource(Base, HasConfigTemplate):
         secrets: SecretsDict,
         environment: EnvironmentDict,
         implicit: ImplicitConfigurationParameters,
-        templates: list[FileSourceTemplate] | None = None,
-    ) -> FileSourceConfiguration:
+        templates: list["FileSourceTemplate"] | None = None,
+    ) -> "FileSourceConfiguration":
+        from galaxy.files.templates import template_to_configuration as file_source_template_to_configuration
+
         if templates is None:
             templates = [self.template]
         user_details = self.user.config_template_details()
