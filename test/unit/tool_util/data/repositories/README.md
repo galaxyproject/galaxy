@@ -65,3 +65,12 @@ make the loader's merge raise; assembly must skip the loader and still report cl
 - `conflicting_columns/` — same table, different column sets → `ConflictingTableSchema`
 - `conflicting_indexes/` — same column names, different index attributes → `ConflictingTableSchema`
 - `conflicting_separator/` — same table, different separators → `ConflictingTableSchema`
+
+### Core-table exclusion fixture — `find_and_lint_repository_data_tables`
+
+- `core_table_consumer/` — an index-builder data manager (modeled on IUC
+  `data_manager_bwa_mem2_index_builder`) that defines its own `bwa_mem2_indexes`
+  table but consumes the core `all_fasta` table via `from_data_table`. The one-call
+  `find_and_lint` entry seeds `DEFAULT_EXTERNAL_TABLE_NAMES` (`all_fasta`,
+  `fasta_indexes`, `__dbkeys__`), so the core reference must **not** warn; linted
+  without that seeding it does, proving the exclusion is what suppresses it.

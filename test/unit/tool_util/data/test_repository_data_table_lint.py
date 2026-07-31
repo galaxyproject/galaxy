@@ -12,6 +12,7 @@ from galaxy.tool_util.data.bundles.lint import (
     ConsumerTableDefined,
     DuplicateColumnNames,
     EmptyLocFile,
+    find_and_lint_repository_data_tables,
     lint_repository_data_tables,
     lint_repository_data_tables_bundle,
     LocRowShape,
@@ -42,6 +43,7 @@ CONFLICT_COLUMNS_REPO = os.path.join(REPOS, "conflicting_columns")
 CONFLICT_SEPARATOR_REPO = os.path.join(REPOS, "conflicting_separator")
 CONFLICT_INDEXES_REPO = os.path.join(REPOS, "conflicting_indexes")
 EMPTY_LOC_REPO = os.path.join(REPOS, "empty_loc")
+CORE_CONSUMER_REPO = os.path.join(REPOS, "core_table_consumer")
 
 FETCH_TABLE_TEST_CONF = os.path.join(FETCH_REPO, "tool_data_table_conf.xml.test")
 FETCH_DM_CONF = os.path.join(FETCH_REPO, "data_manager_conf.xml")
@@ -375,3 +377,35 @@ def test_bundle_reports_assembly_failure(tmp_path):
     errors = lint_ctx.error_messages
     assert len(errors) == 1
     assert "Problem assembling repository data table model" in errors[0].message
+
+
+CORE_CONSUMER_SAMPLE_CONF = os.path.join(CORE_CONSUMER_REPO, "tool_data_table_conf.xml.sample")
+CORE_CONSUMER_WRAPPER = os.path.join(CORE_CONSUMER_REPO, "data_manager", "bwa_mem2_index_builder.xml")
+
+
+def test_find_and_lint_excludes_core_tables():
+    # An index-builder data manager that defines its own bwa_mem2_indexes table but
+    # consumes the core all_fasta table (supplied by Galaxy core) via from_data_table.
+    # The one-call find_and_lint entry seeds DEFAULT_EXTERNAL_TABLE_NAMES, so the core
+    # reference must not be flagged as an undefined consumer table -- and, because a
+    # literal reference was still checked, ConsumerTableDefined confirms valid.
+    lint_ctx = LintContext(level=LintLevel.SILENT)
+    find_and_lint_repository_data_tables(lint_ctx, CORE_CONSUMER_REPO)
+    assert [w for w in lint_ctx.warn_messages if w.linter == ConsumerTableDefined.name()] == []
+    assert any(v.linter == ConsumerTableDefined.name() for v in lint_ctx.valid_messages)
+
+
+def test_core_table_exclusion_is_what_suppresses_the_warning():
+    # Guard against a vacuous pass above: the same repo, linted WITHOUT the default
+    # core-table seeding, does warn on all_fasta -- so it really is consumed, not
+    # locally defined, and the DEFAULT_EXTERNAL_TABLE_NAMES seeding is doing the work.
+    model = build_repository_data_tables(
+        CORE_CONSUMER_REPO,
+        tool_data_table_confs=[CORE_CONSUMER_SAMPLE_CONF],
+        consumer_tool_sources=_consumer_sources(CORE_CONSUMER_WRAPPER),
+    )
+    assert "all_fasta" not in model.configured_table_names
+    assert any(c.table_name == "all_fasta" for c in model.consumers)
+    warns = [w for w in _lint(model).warn_messages if w.linter == ConsumerTableDefined.name()]
+    assert len(warns) == 1
+    assert "all_fasta" in warns[0].message
