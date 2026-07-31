@@ -2,7 +2,8 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    ?=
+# Build in parallel by default; override with `SPHINXOPTS=` for a serial build.
+SPHINXOPTS    ?= -j auto
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build

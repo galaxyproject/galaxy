@@ -67,7 +67,7 @@ class TourGenerator:
         tool = self._trans.app.toolbox.get_tool(tool_id, tool_version)
         if not tool:
             raise ObjectNotFound(f'Tool "{tool_id}" version "{tool_version}" does not exist.')
-        return tool
+        return self._trans.app.toolbox.materialize_tool(tool, reason="detail")
 
     def _upload_test_data(self, performs_upload=True):
         """

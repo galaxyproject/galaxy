@@ -1,7 +1,10 @@
 """Builders resolving Galaxy configuration into tool source stores."""
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+from sqlalchemy.engine import URL
 
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from .composite import CompositeToolSourceStore
@@ -13,7 +16,9 @@ from .interface import (
     ConfigurationError,
     ToolSourceStore,
 )
+from .manifest import resolve_compatible_store
 from .sqlalchemy import SqlAlchemyToolSourceStore
+from .unavailable import UnavailableToolSourceStore
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
@@ -58,8 +63,10 @@ def build_named_store(
 ) -> ToolSourceStore:
     """Build a single named store from a ``tool_source_stores`` entry.
 
-    ``spec`` is the dict from galaxy.yml - a SQLAlchemy ``url`` plus
-    optional ``read_only`` and ``freshness`` keys.
+    ``spec`` is the dict from galaxy.yml - either a normal SQLAlchemy ``url``
+    or an ``external_store_directory`` containing published sidecars, plus
+    optional ``read_only`` and ``freshness`` keys. Manifests are consulted
+    only for the external form.
     Named stores get no probe unless one is declared: a store populated on
     a different host (the CVMFS publishing model) would never match a
     locally-computed conf hash, so ``tool_confs`` cannot be the default
@@ -71,10 +78,40 @@ def build_named_store(
         raise ConfigurationError(
             f"tool_source_stores[{name!r}] must use 'url'; 'backend' and 'path' are no longer supported"
         )
+    external_store_directory = spec.get("external_store_directory")
     url = spec.get("url")
-    if not url:
-        raise ConfigurationError(f"tool_source_stores[{name!r}] requires a 'url'")
-    read_only = bool(spec.get("read_only", False))
+    if external_store_directory is not None and url:
+        raise ConfigurationError(
+            f"tool_source_stores[{name!r}] cannot define both 'url' and 'external_store_directory'"
+        )
+    read_only = bool(spec.get("read_only", external_store_directory is not None))
+    if external_store_directory is not None:
+        if not isinstance(external_store_directory, str) or not external_store_directory:
+            raise ConfigurationError(f"tool_source_stores[{name!r}] external_store_directory must be a non-empty path")
+        if not read_only:
+            raise ConfigurationError(f"tool_source_stores[{name!r}] external stores must be read-only")
+        resolved, diagnostics = resolve_compatible_store(Path(external_store_directory), name)
+        for diagnostic in diagnostics:
+            log.debug("tool_source_stores[%r] candidate rejected: %s", name, diagnostic)
+        if resolved is None:
+            reason = f"no compatible external tool source store for {name!r} under {external_store_directory}"
+            log.warning("%s; tools from this conf will parse eagerly", reason)
+            return UnavailableToolSourceStore(reason)
+        url = str(
+            URL.create(
+                "sqlite",
+                database=f"file:{resolved.database_path}",
+                query={"mode": "ro", "uri": "true"},
+            )
+        )
+        log.info(
+            "Resolved tool source store %r to cohort %r at %s",
+            name,
+            resolved.manifest.cohort,
+            resolved.database_path,
+        )
+    elif not url:
+        raise ConfigurationError(f"tool_source_stores[{name!r}] requires a 'url' or 'external_store_directory'")
     probe = _build_freshness_probe(name, spec, config)
     return SqlAlchemyToolSourceStore(url=url, read_only=read_only, freshness_probe=probe)
 

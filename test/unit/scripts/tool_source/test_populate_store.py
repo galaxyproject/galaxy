@@ -9,10 +9,11 @@ Following test guidelines:
 - Real objects with constraints (temp files, fake stores)
 """
 
-import os
-import tempfile
+import json
+import threading
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import (
     Any,
 )
@@ -23,7 +24,7 @@ import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
-from galaxy.tools.source_store import build_tool_source_store
+from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token
 from galaxy.tools.source_store.populator import (
@@ -81,6 +82,24 @@ class FakeConfig:
 
     amqp_internal_connection: str | None = None
     database_connection: str = "sqlite:///:memory:"
+
+
+def _tool_xml(tool_id: str, *, name: str | None = None, version: str = "1.0", command: str = "echo") -> str:
+    return (
+        f'<tool id="{tool_id}" name="{name or tool_id}" version="{version}" profile="21.09">'
+        f"<command>{command}</command></tool>"
+    )
+
+
+def _write_tool(path: Path, tool_id: str, **kwds: Any) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_tool_xml(tool_id, **kwds))
+    return path
+
+
+def _write_tool_conf(path: Path, tools_dir: Path, items: str = "") -> Path:
+    path.write_text(f'<toolbox tool_path="{tools_dir}">{items}</toolbox>')
+    return path
 
 
 # --- Tests ---
@@ -160,7 +179,7 @@ class TestToolFileWatcher:
         assert watcher.tools_dirs == tools_dirs
         assert watcher.verbose is True
 
-    def test_process_tool_file_ignores_non_tool_xml(self):
+    def test_process_tool_file_ignores_non_tool_xml(self, tmp_path):
         """XML files without <tool> tag should be ignored."""
         store = FakeToolSourceStore()
         watcher = ToolFileWatcher(
@@ -169,18 +188,15 @@ class TestToolFileWatcher:
             tools_dirs=[],
         )
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
-            f.write("<data>not a tool</data>")
-            temp_path = f.name
+        path = tmp_path / "not_a_tool.xml"
+        path.write_text("<data>not a tool</data>")
 
-        try:
-            result = watcher._process_tool_file(temp_path)
-            assert result is False
-            assert store.count == 0
-        finally:
-            os.unlink(temp_path)
+        result = watcher._process_tool_file(str(path))
 
-    def test_process_tool_file_populates_changed_tool(self):
+        assert result is False
+        assert store.count == 0
+
+    def test_process_tool_file_populates_changed_tool(self, tmp_path):
         calls: list = []
         watcher = ToolFileWatcher(
             config=FakeConfig(),
@@ -189,29 +205,19 @@ class TestToolFileWatcher:
             populate_callable=_recording_populate(calls),
         )
 
-        tool_content = """<tool id="test_tool" name="Test" version="1.0">
-            <command>echo hello</command>
-        </tool>"""
+        path = _write_tool(tmp_path / "test_tool.xml", "test_tool", name="Test", command="echo hello")
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
-            f.write(tool_content)
-            temp_path = f.name
+        result = watcher._process_tool_file(str(path))
 
-        try:
-            result = watcher._process_tool_file(temp_path)
-            assert result is True
-            assert len(calls) == 1
-            assert calls[0]["paths"] == [temp_path]
-        finally:
-            os.unlink(temp_path)
+        assert result is True
+        assert len(calls) == 1
+        assert calls[0]["paths"] == [str(path)]
 
-    def test_process_tool_file_skips_unchanged_tool(self):
+    def test_process_tool_file_skips_unchanged_tool(self, tmp_path):
         """Tool already in store with same hash should be skipped."""
         store = FakeToolSourceStore()
 
-        tool_content = """<tool id="test_tool" name="Test" version="1.0">
-            <command>echo hello</command>
-        </tool>"""
+        tool_content = _tool_xml("test_tool", name="Test", command="echo hello")
         content_hash = compute_hash(tool_content)
 
         # Pre-populate store with this hash
@@ -223,20 +229,14 @@ class TestToolFileWatcher:
             tools_dirs=[],
         )
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
-            f.write(tool_content)
-            temp_path = f.name
+        path = tmp_path / "test_tool.xml"
+        path.write_text(tool_content)
 
-        try:
-            result = watcher._process_tool_file(temp_path)
+        result = watcher._process_tool_file(str(path))
 
-            assert result is False
-            # Store count unchanged (still just the pre-populated one)
-            assert store.count == 1
-            # No new store calls
-            assert len(store.store_calls) == 0
-        finally:
-            os.unlink(temp_path)
+        assert result is False
+        assert store.count == 1
+        assert len(store.store_calls) == 0
 
     def test_process_tool_file_macro_repopulates_siblings(self, tmp_path):
         # A changed macros file re-expands the sibling tools that import it,
@@ -249,8 +249,7 @@ class TestToolFileWatcher:
             populate_callable=_recording_populate(calls),
         )
 
-        tool_path = tmp_path / "sometool.xml"
-        tool_path.write_text('<tool id="t" name="T" version="1.0"><command>echo</command></tool>')
+        tool_path = _write_tool(tmp_path / "sometool.xml", "t", name="T")
         macro_path = tmp_path / "macros.xml"
         macro_path.write_text('<macros><token name="@X@">1</token></macros>')
 
@@ -273,7 +272,7 @@ class TestToolFileWatcher:
 
         assert watcher._shutdown_event.is_set()
 
-    def test_on_change_notifies_on_update(self):
+    def test_on_change_notifies_on_update(self, tmp_path):
         """A changed tool file re-populates and fires one notification."""
         notification_sent: list = []
         watcher = ToolFileWatcher(
@@ -284,27 +283,17 @@ class TestToolFileWatcher:
             populate_callable=_recording_populate([]),
         )
 
-        tool_content = """<tool id="test" version="1.0">
-            <command>echo</command>
-        </tool>"""
+        path = _write_tool(tmp_path / "test.xml", "test")
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
-            f.write(tool_content)
-            temp_path = f.name
+        watcher._on_change(str(path))
 
-        try:
-            watcher._on_change(temp_path)
-            assert len(notification_sent) == 1
-        finally:
-            os.unlink(temp_path)
+        assert len(notification_sent) == 1
 
-    def test_on_change_no_notification_when_unchanged(self):
+    def test_on_change_no_notification_when_unchanged(self, tmp_path):
         """No notification fires when the tool is already stored."""
         store = FakeToolSourceStore()
 
-        tool_content = """<tool id="test" version="1.0">
-            <command>echo</command>
-        </tool>"""
+        tool_content = _tool_xml("test")
         store.stored_sources[compute_hash(tool_content)] = "exists"
 
         notification_sent: list = []
@@ -315,16 +304,13 @@ class TestToolFileWatcher:
             notify_callable=_recording_notify(notification_sent),
         )
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
-            f.write(tool_content)
-            temp_path = f.name
+        path = tmp_path / "test.xml"
+        path.write_text(tool_content)
 
-        try:
-            watcher._on_change(temp_path)
-            assert len(store.store_calls) == 0
-            assert len(notification_sent) == 0
-        finally:
-            os.unlink(temp_path)
+        watcher._on_change(str(path))
+
+        assert len(store.store_calls) == 0
+        assert len(notification_sent) == 0
 
 
 def _populate_config(tmp_path, conf):
@@ -352,29 +338,165 @@ def _populate_config(tmp_path, conf):
     return _Cfg()
 
 
+def _populate_default(config: Any, **kwds: Any) -> dict[str, int]:
+    return populate_store_inline(config, target=DEFAULT_STORE_NAME, **kwds)
+
+
+def _load_default_index(config: Any):
+    store = _build_default_store(config)
+    index = store.load_index()
+    assert index is not None
+    return store, index
+
+
 class TestIncrementalFastPath:
     """A second populate carries byte-identical tools forward without re-parsing."""
 
     def test_unchanged_tools_carried_forward(self, tmp_path):
         tools_dir = tmp_path / "tools"
-        tools_dir.mkdir()
         for i in (1, 2):
-            (tools_dir / f"itest_{i}.xml").write_text(
-                f'<tool id="itest_{i}" name="ITest {i}" version="1.0" profile="21.09"><command>echo</command></tool>'
-            )
-        conf = tmp_path / "tool_conf.xml"
-        conf.write_text(
-            f'<toolbox tool_path="{tools_dir}"><tool file="itest_1.xml"/><tool file="itest_2.xml"/></toolbox>'
+            _write_tool(tools_dir / f"itest_{i}.xml", f"itest_{i}", name=f"ITest {i}")
+        conf = _write_tool_conf(
+            tmp_path / "tool_conf.xml",
+            tools_dir,
+            '<tool file="itest_1.xml"/><tool file="itest_2.xml"/>',
         )
         cfg = _populate_config(tmp_path, conf)
 
-        r1 = populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="itest_", incremental=True)
+        r1 = _populate_default(cfg, pattern="itest_", incremental=True)
         assert (r1["stored"], r1["unchanged"]) == (2, 0)
 
         # Nothing changed on disk: the second run skips the parse and store
         # write, carrying both index entries forward.
-        r2 = populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="itest_", incremental=True)
+        r2 = _populate_default(cfg, pattern="itest_", incremental=True)
         assert (r2["stored"], r2["unchanged"]) == (0, 2)
+
+    def test_adhoc_shed_tool_becomes_panel_tool_when_conf_catches_up(self, tmp_path):
+        tools_dir = tmp_path / "shed_tools"
+        tool_path = _write_tool(tools_dir / "fastp.xml", "fastp", version="0.20.1+galaxy0")
+        conf = _write_tool_conf(tmp_path / "shed_tool_conf.xml", tools_dir)
+        cfg = _populate_config(tmp_path, conf)
+        guid = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.20.1+galaxy0"
+
+        _populate_default(
+            cfg,
+            paths=[str(tool_path)],
+            path_guids={str(tool_path): guid},
+            incremental=True,
+        )
+        store, index = _load_default_index(cfg)
+        entry = index.entries[guid]
+        assert entry.in_panel is False
+
+        _write_tool_conf(
+            conf,
+            tools_dir,
+            '<section id="test_section_multi" name="Test Section with Multiple Versions">'
+            f'<tool file="{tool_path.name}" guid="{guid}">'
+            "<tool_shed>toolshed.g2.bx.psu.edu</tool_shed>"
+            "<repository_name>fastp</repository_name>"
+            "<repository_owner>iuc</repository_owner>"
+            "<installed_changeset_revision>dbf9c561ef29</installed_changeset_revision>"
+            "</tool></section>",
+        )
+
+        result = _populate_default(
+            cfg,
+            pattern="fastp.xml",
+            incremental=True,
+        )
+        assert result["unchanged"] == 1
+        store.invalidate_index_cache()
+        index = store.load_index()
+        assert index is not None
+        entry = index.entries[guid]
+        assert entry.in_panel is True
+        assert entry.panel_section_id == "test_section_multi"
+        assert [(item.tool_id, item.section_id) for item in index.panel_items] == [(guid, "test_section_multi")]
+
+    def test_in_process_population_is_atomic_with_tool_removal(self, tmp_path, monkeypatch):
+        """A stale scan must commit before a concurrent uninstall can prune it."""
+        tools_dir = tmp_path / "tools"
+        _write_tool(tools_dir / "keep.xml", "keep")
+        _write_tool(tools_dir / "doomed.xml", "doomed")
+        conf = _write_tool_conf(
+            tmp_path / "tool_conf.xml",
+            tools_dir,
+            '<tool file="keep.xml"/><tool file="doomed.xml"/>',
+        )
+        cfg = _populate_config(tmp_path, conf)
+        _populate_default(cfg)
+
+        from galaxy.tools.source_store import populator
+
+        scan_complete = threading.Event()
+        allow_commit = threading.Event()
+
+        def pause_after_discovery(*args, **kwargs):
+            discovered = list(actual_discover_tools(*args, **kwargs))
+            scan_complete.set()
+            if not allow_commit.wait(timeout=5):
+                raise TimeoutError("test did not release the paused population")
+            return iter(discovered)
+
+        monkeypatch.setattr(populator, "discover_tools", pause_after_discovery)
+        app = SimpleNamespace(_toolbox_lock=threading.RLock())
+        errors: list[Exception] = []
+
+        def populate_from_stale_scan():
+            try:
+                _populate_default(cfg, app=app, incremental=False)
+            except Exception as exc:
+                errors.append(exc)
+
+        population = threading.Thread(target=populate_from_stale_scan)
+        population.start()
+        assert scan_complete.wait(timeout=5)
+
+        # With no population lock this succeeds: uninstall prunes the index,
+        # then the paused stale scan writes ``doomed`` straight back.
+        acquired_during_population = app._toolbox_lock.acquire(blocking=False)
+        if acquired_during_population:
+            _write_tool_conf(conf, tools_dir, '<tool file="keep.xml"/>')
+            _build_default_store(cfg).remove_index_entry("doomed")
+            app._toolbox_lock.release()
+
+        allow_commit.set()
+        population.join(timeout=10)
+        assert not population.is_alive()
+        assert not errors
+
+        if not acquired_during_population:
+            with app._toolbox_lock:
+                _write_tool_conf(conf, tools_dir, '<tool file="keep.xml"/>')
+                _build_default_store(cfg).remove_index_entry("doomed")
+
+        assert not acquired_during_population
+        _, index = _load_default_index(cfg)
+        assert "doomed" not in index.entries
+
+    def test_manifest_is_opt_in_for_cli_callers(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        _write_tool(tools_dir / "manifest_tool.xml", "manifest_tool", name="Manifest")
+        conf = _write_tool_conf(
+            tmp_path / "tool_conf.xml",
+            tools_dir,
+            '<tool file="manifest_tool.xml"/>',
+        )
+        cfg = _populate_config(tmp_path, conf)
+        sidecar = tmp_path / "ts.sqlite.manifest.json"
+
+        _populate_default(cfg, pattern="manifest_tool")
+        assert not sidecar.exists()
+
+        _populate_default(
+            cfg,
+            pattern="manifest_tool",
+            write_manifests=True,
+        )
+        payload = json.loads(sidecar.read_text())
+        assert payload["store"] == DEFAULT_STORE_NAME
+        assert payload["tool_snapshot"]["default_tool_count"] == 1
 
 
 class TestTwinDeterminism:
@@ -383,23 +505,19 @@ class TestTwinDeterminism:
     Regression: the winner among same-id/same-version twins is decided by
     index add-order. Consuming pool results as_completed — or adding
     carried-forward entries before re-parsed ones — flipped the winner (and
-    its panel section in the whoosh corpus) between runs, defeating the
-    whoosh corpus-signature rebuild skip.
+    its panel section in the search corpus) between runs even though no input
+    changed.
     """
 
     def test_twin_winner_stable_across_runs(self, tmp_path):
         tools_dir = tmp_path / "tools"
-        tools_dir.mkdir()
         for suffix in ("a", "b"):
-            (tools_dir / f"twin_{suffix}.xml").write_text(
-                f'<tool id="twin" name="Twin" version="1.0" profile="21.09"><command>echo {suffix}</command></tool>'
-            )
-        conf = tmp_path / "tool_conf.xml"
-        conf.write_text(
-            f'<toolbox tool_path="{tools_dir}">'
+            _write_tool(tools_dir / f"twin_{suffix}.xml", "twin", name="Twin", command=f"echo {suffix}")
+        conf = _write_tool_conf(
+            tmp_path / "tool_conf.xml",
+            tools_dir,
             '<section id="sec_a" name="A"><tool file="twin_a.xml"/></section>'
-            '<section id="sec_b" name="B"><tool file="twin_b.xml"/></section>'
-            "</toolbox>"
+            '<section id="sec_b" name="B"><tool file="twin_b.xml"/></section>',
         )
         cfg = _populate_config(tmp_path, conf)
 
@@ -407,9 +525,8 @@ class TestTwinDeterminism:
         # via the unchanged fast path while its twin re-parses — the winner
         # must still be decided by document order, not by which path parsed.
         for run in (1, 2, 3):
-            populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="twin_", incremental=True, parallel=4)
-            index = build_tool_source_store(cfg).load_index()
-            assert index is not None
+            _populate_default(cfg, pattern="twin_", incremental=True, parallel=4)
+            _, index = _load_default_index(cfg)
             assert index.entries["twin"].panel_section_id == "sec_b", f"wrong twin won on run {run}"
 
 
@@ -418,30 +535,28 @@ class TestFreshnessStamping:
 
     def test_populate_stamps_token_and_conf_edit_invalidates(self, tmp_path):
         tools_dir = tmp_path / "tools"
-        tools_dir.mkdir()
-        (tools_dir / "ftest_1.xml").write_text(
-            '<tool id="ftest_1" name="FTest" version="1.0" profile="21.09"><command>echo</command></tool>'
+        _write_tool(tools_dir / "ftest_1.xml", "ftest_1", name="FTest")
+        conf = _write_tool_conf(
+            tmp_path / "tool_conf.xml",
+            tools_dir,
+            '<tool file="ftest_1.xml"/>',
         )
-        conf = tmp_path / "tool_conf.xml"
-        conf.write_text(f'<toolbox tool_path="{tools_dir}"><tool file="ftest_1.xml"/></toolbox>')
         cfg = _populate_config(tmp_path, conf)
 
-        populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="ftest_", incremental=True)
+        _populate_default(cfg, pattern="ftest_", incremental=True)
 
-        store = _build_default_store(cfg)
-        index = store.load_index()
-        assert index is not None
+        store, index = _load_default_index(cfg)
         assert index.freshness_token == tool_confs_token(cfg)
         assert store.index_is_fresh() is True
 
-        (tools_dir / "ftest_2.xml").write_text(
-            '<tool id="ftest_2" name="FTest 2" version="1.0" profile="21.09"><command>echo</command></tool>'
-        )
-        conf.write_text(
-            f'<toolbox tool_path="{tools_dir}"><tool file="ftest_1.xml"/><tool file="ftest_2.xml"/></toolbox>'
+        _write_tool(tools_dir / "ftest_2.xml", "ftest_2", name="FTest 2")
+        _write_tool_conf(
+            conf,
+            tools_dir,
+            '<tool file="ftest_1.xml"/><tool file="ftest_2.xml"/>',
         )
         assert store.index_is_fresh() is False
 
-        populate_store_inline(cfg, target=DEFAULT_STORE_NAME, pattern="ftest_", incremental=True)
+        _populate_default(cfg, pattern="ftest_", incremental=True)
         store.invalidate_index_cache()
         assert store.index_is_fresh() is True

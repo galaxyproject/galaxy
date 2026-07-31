@@ -92,6 +92,11 @@ class BasicSharedApp(Container):
     def toolbox(self) -> "ToolBox":
         raise NotImplementedError()
 
+    @property
+    def toolbox_or_none(self) -> "ToolBox | None":
+        """The registered toolbox, or None before one has been configured."""
+        raise NotImplementedError()
+
 
 class MinimalToolApp(Protocol):
     is_webapp: bool
@@ -154,6 +159,8 @@ class MinimalManagerApp(MinimalApp):
     def is_job_handler(self) -> bool: ...
 
     def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None: ...
+
+    def reindex_tool_search(self) -> None: ...
 
 
 class StructuredApp(MinimalManagerApp):

@@ -137,6 +137,27 @@ class CompositeToolSourceStore(ToolSourceStore):
         """
         return {name for name, member in self._members if member.read_only}
 
+    @property
+    def unavailable_read_only_member_names(self) -> set[str]:
+        """Read-only members that cannot supply a schema-compatible index.
+
+        The cached toolbox must disable its index-only panel fast path when
+        this is non-empty; otherwise placements from a healthy default store
+        could make tools belonging to the unavailable conf disappear instead
+        of falling through to the eager traversal.
+        """
+        unavailable: set[str] = set()
+        for name, member in self._members:
+            if not member.read_only:
+                continue
+            try:
+                if member.load_index() is None:
+                    unavailable.add(name)
+            except Exception as e:
+                log.warning("Loading index from read-only store %r failed: %s", name, e)
+                unavailable.add(name)
+        return unavailable
+
     def count(self) -> int:
         # Distinct hashes across the composite.
         return sum(1 for _ in self.list_all())
@@ -210,9 +231,11 @@ class CompositeToolSourceStore(ToolSourceStore):
         member is trusted whenever its index loads under the current schema
         (see the SQLAlchemy backend): ``False`` there means no loadable
         index at all, which can't be healed locally — warn and continue,
-        the publisher owns repopulation. A member without a probe
-        downgrades an otherwise-fresh verdict to ``None`` so the caller
-        still runs its coverage scan.
+        the publisher owns repopulation. An unavailable cohort placeholder
+        reports itself handled to avoid futile local population; the cached
+        toolbox separately detects its missing index and forces eager panel
+        traversal. A member without a probe downgrades an otherwise-fresh
+        verdict to ``None`` so the caller still runs its coverage scan.
         """
         verdict: bool | None = True
         for name, member in self._members:

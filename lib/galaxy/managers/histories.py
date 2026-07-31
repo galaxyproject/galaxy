@@ -397,6 +397,7 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         # Run job to do import.
         history_imp_tool = trans.app.toolbox.get_tool("__IMPORT_HISTORY__")
         assert history_imp_tool is not None
+        history_imp_tool = trans.app.toolbox.materialize_tool(history_imp_tool, reason="execution")
         incoming = {"__ARCHIVE_SOURCE__": archive_source, "__ARCHIVE_TYPE__": archive_type}
         job, *_ = history_imp_tool.execute(trans, incoming=incoming, history=target_history)
         trans.app.job_manager.enqueue(job, tool=history_imp_tool)
@@ -457,6 +458,7 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
         assert history_exp_tool is not None
+        history_exp_tool = trans.app.toolbox.materialize_tool(history_exp_tool, reason="execution")
         job, *_ = history_exp_tool.execute(trans, incoming=params, history=history)
         trans.app.job_manager.enqueue(job, tool=history_exp_tool)
         return job
