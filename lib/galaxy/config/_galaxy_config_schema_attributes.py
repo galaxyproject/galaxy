@@ -21,6 +21,7 @@ class GalaxyAppConfigurationAttributes:
     database_template: str | None
     database_log_query_counts: bool
     slow_query_log_threshold: float
+    slow_job_finish_log_threshold: float
     enable_per_request_sql_debugging: bool
     install_database_connection: str | None
     database_auto_migrate: bool

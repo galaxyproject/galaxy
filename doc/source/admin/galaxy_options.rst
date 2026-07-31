@@ -195,6 +195,26 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``slow_job_finish_log_threshold``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Slow job finalization logging. Finalizing a job (moving outputs
+    into place, discovering them, setting metadata and sizing them)
+    happens after the tool itself has finished, so a quick tool can
+    still take a long time to appear as ready. Jobs whose finalization
+    takes longer than this threshold, in seconds, have a breakdown of
+    the time spent in each phase logged as a warning. A value of '0'
+    is disabled. The breakdown is always available at debug level;
+    this threshold exists so it can be collected on a production
+    instance without turning on debug logging. For example, set this
+    to 10 to report every job that takes more than ten seconds to
+    finalize.
+:Default: ``0.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_per_request_sql_debugging``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

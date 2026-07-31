@@ -2352,11 +2352,21 @@ class MinimalJobWrapper(HasResourceParameters):
         self.cleanup(delete_files=delete_files)
         log.debug(finish_timer.to_str(job_id=self.job_id, tool_id=job.tool_id))
         if finish_timings:
-            log.debug(
-                "(%s) finish() spent (ms): %s",
-                job.id,
-                ", ".join(f"{phase}={seconds * 1000:0.1f}" for phase, seconds in finish_timings.items()),
-            )
+            breakdown = ", ".join(f"{phase}={seconds * 1000:0.1f}" for phase, seconds in finish_timings.items())
+            elapsed = finish_timer.elapsed
+            threshold = self.app.config.slow_job_finish_log_threshold
+            # Reporting slow finalization has to be possible without turning on
+            # debug logging, which is not something to enable on a busy instance.
+            if threshold and elapsed > threshold:
+                log.warning(
+                    "(%s) tool %s took %0.1fs to finalize, spent (ms): %s",
+                    job.id,
+                    job.tool_id,
+                    elapsed,
+                    breakdown,
+                )
+            else:
+                log.debug("(%s) finish() spent (ms): %s", job.id, breakdown)
 
     def discover_outputs(self, job, inp_data, out_data, out_collections, final_job_state):
         # Try to just recover input_ext and dbkey from job parameters (used and set in
