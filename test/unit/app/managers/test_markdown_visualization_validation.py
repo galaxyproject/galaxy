@@ -2,8 +2,10 @@
 
 import logging
 import os
+from typing import cast
 
 from galaxy.exceptions import ObjectNotFound
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.markdown_util import validate_visualization_blocks
 from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
@@ -33,8 +35,13 @@ class _Trans:
         self.app = type("App", (), {"visualizations_registry": registry})()
 
 
-def _trans():
-    return _Trans(_Registry({"igv": _igv_plugin()}))
+def _as_trans(registry) -> ProvidesAppContext:
+    # validate_visualization_blocks only reaches trans.app.visualizations_registry.
+    return cast(ProvidesAppContext, _Trans(registry))
+
+
+def _trans() -> ProvidesAppContext:
+    return _as_trans(_Registry({"igv": _igv_plugin()}))
 
 
 def _block(config: str) -> str:
@@ -91,5 +98,5 @@ def test_block_without_name_is_ignored(caplog):
 
 def test_no_registry_is_a_noop(caplog):
     with caplog.at_level(logging.WARNING):
-        validate_visualization_blocks(_Trans(None), _block("visualization_name: igv\nsettings:\n  bogus: 1\n"))
+        validate_visualization_blocks(_as_trans(None), _block("visualization_name: igv\nsettings:\n  bogus: 1\n"))
     assert _warnings(caplog) == []
