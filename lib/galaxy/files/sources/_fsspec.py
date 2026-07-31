@@ -198,6 +198,35 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         target_path = self._to_filesystem_path(target_path, context.config)
         fs.put_file(native_path, target_path)
 
+    def _exists(
+        self,
+        path: str,
+        context: FilesSourceRuntimeContext[FsspecResolvedConfigurationType],
+    ) -> bool:
+        cache_options = self._get_cache_options(context.config)
+        fs = self._open_fs(context, cache_options)
+        return fs.exists(self._to_filesystem_path(path, context.config))
+
+    def _size(
+        self,
+        path: str,
+        context: FilesSourceRuntimeContext[FsspecResolvedConfigurationType],
+    ) -> int:
+        cache_options = self._get_cache_options(context.config)
+        fs = self._open_fs(context, cache_options)
+        return int(fs.size(self._to_filesystem_path(path, context.config)) or 0)
+
+    def _remove(
+        self,
+        path: str,
+        context: FilesSourceRuntimeContext[FsspecResolvedConfigurationType],
+        recursive: bool = False,
+    ) -> bool:
+        cache_options = self._get_cache_options(context.config)
+        fs = self._open_fs(context, cache_options)
+        fs.rm(self._to_filesystem_path(path, context.config), recursive=recursive)
+        return True
+
     def _adapt_entry_path(self, filesystem_path: str, config: FsspecResolvedConfigurationType) -> str:
         """Adapt the filesystem path to the desired entry path.
 

@@ -1863,6 +1863,10 @@ def type_to_object_store_class(
     objectstore_constructor_kwds: dict[str, Any] = {}
     if store == "disk":
         objectstore_class = DiskObjectStore
+    elif store == "source":
+        from .source_store import SourceObjectStore
+
+        objectstore_class = SourceObjectStore
     elif store == "boto3":
         from .s3_boto3 import S3ObjectStore as Boto3ObjectStore
 

@@ -142,6 +142,39 @@ class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfigur
         shutil.copyfile(native_path, target_native_path_part)
         os.rename(target_native_path_part, target_native_path)
 
+    def usage_percent(self, user_context=None) -> float | None:
+        context = self._get_runtime_context(None, user_context)
+        st = os.statvfs(self._effective_root(context.config))
+        return (float(st.f_blocks - st.f_bavail) / st.f_blocks) * 100
+
+    def _get_local_path(self, path: str, context: FilesSourceRuntimeContext[PosixConfiguration]) -> str:
+        native_path = self._to_native_path(path, context.config)
+        if context.config.enforce_symlink_security:
+            if not safe_contains(self._effective_root(context.config), native_path, allowlist=self._allowlist):
+                raise Exception("Operation not allowed.")
+        if not os.path.exists(native_path):
+            raise FileNotFoundError(native_path)
+        return native_path
+
+    def _exists(self, path: str, context: FilesSourceRuntimeContext[PosixConfiguration]) -> bool:
+        return os.path.exists(self._to_native_path(path, context.config))
+
+    def _size(self, path: str, context: FilesSourceRuntimeContext[PosixConfiguration]) -> int:
+        return os.path.getsize(self._to_native_path(path, context.config))
+
+    def _remove(
+        self, path: str, context: FilesSourceRuntimeContext[PosixConfiguration], recursive: bool = False
+    ) -> bool:
+        native_path = self._to_native_path(path, context.config)
+        if context.config.enforce_symlink_security:
+            if not safe_contains(self._effective_root(context.config), native_path, allowlist=self._allowlist):
+                raise Exception("Operation not allowed.")
+        if recursive:
+            shutil.rmtree(native_path, ignore_errors=True)
+        else:
+            os.remove(native_path)
+        return True
+
     def _to_native_path(self, source_path: str, config: PosixConfiguration):
         source_path = os.path.normpath(source_path)
         if source_path.startswith("/"):

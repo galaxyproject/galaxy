@@ -611,6 +611,84 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
     ):
         pass
 
+    def exists(
+        self,
+        path: str,
+        user_context: "OptionalUserContext" = None,
+        opts: FilesSourceOptions | None = None,
+    ) -> bool:
+        """Return whether an object exists at ``path`` (relative to the URI root)."""
+        self._check_user_access(user_context)
+        self._check_credentials_fresh()
+        context = self._get_runtime_context(opts, user_context)
+        return self._exists(path, context)
+
+    def _exists(self, path: str, context: FilesSourceRuntimeContext[TResolvedConfig]) -> bool:
+        raise NotImplementedError()
+
+    def size(
+        self,
+        path: str,
+        user_context: "OptionalUserContext" = None,
+        opts: FilesSourceOptions | None = None,
+    ) -> int:
+        """Return the size in bytes of the object at ``path`` (relative to the URI root)."""
+        self._check_user_access(user_context)
+        self._check_credentials_fresh()
+        context = self._get_runtime_context(opts, user_context)
+        return self._size(path, context)
+
+    def _size(self, path: str, context: FilesSourceRuntimeContext[TResolvedConfig]) -> int:
+        raise NotImplementedError()
+
+    def remove(
+        self,
+        path: str,
+        recursive: bool = False,
+        user_context: "OptionalUserContext" = None,
+        opts: FilesSourceOptions | None = None,
+    ) -> bool:
+        """Delete the object at ``path`` (relative to the URI root).
+
+        With ``recursive=True``, delete every object beneath ``path``.
+        """
+        self._ensure_writeable()
+        self._check_user_access(user_context)
+        self._check_credentials_fresh()
+        context = self._get_runtime_context(opts, user_context)
+        return self._remove(path, context, recursive=recursive)
+
+    def _remove(self, path: str, context: FilesSourceRuntimeContext[TResolvedConfig], recursive: bool = False) -> bool:
+        raise NotImplementedError()
+
+    def get_local_path(
+        self,
+        path: str,
+        user_context: "OptionalUserContext" = None,
+        opts: FilesSourceOptions | None = None,
+    ) -> str:
+        """Resolve ``path`` to a local filesystem path the caller may read IN PLACE.
+
+        Unlike :meth:`realize_to` (which copies to a caller-chosen destination), the returned
+        path is owned by the file source -- callers must not move or delete it. Local sources
+        return their real path (zero copy); cache-backed sources return a cache path. Sources
+        without a stable local representation do not implement this.
+        """
+        self._check_user_access(user_context)
+        self._check_credentials_fresh()
+        context = self._get_runtime_context(opts, user_context)
+        return self._get_local_path(path, context)
+
+    def _get_local_path(self, path: str, context: FilesSourceRuntimeContext[TResolvedConfig]) -> str:
+        raise NotImplementedError()
+
+    def usage_percent(self, user_context: "OptionalUserContext" = None) -> float | None:
+        """Return the percent of backing storage used, or None if unknown / not applicable.
+
+        Local sources can report this (e.g. via ``statvfs``); remote sources typically cannot.
+        """
+        return None
+
     def _ensure_writeable(self):
         if not self.get_writable():
             raise Exception("Cannot write to a non-writable file source.")
