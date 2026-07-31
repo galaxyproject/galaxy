@@ -7,8 +7,6 @@ a ``settings`` list plus the single top-level ``tracks`` repeat.
 
 from typing import (
     Any,
-    Dict,
-    List,
 )
 from xml.etree.ElementTree import (
     Element,
@@ -64,7 +62,7 @@ def input_models_for_visualization_path(path: str) -> VisualizationParameterBund
     return input_models_for_visualization(parse_xml(path).getroot())
 
 
-def _common_kwargs(elem: Element) -> Dict[str, Any]:
+def _common_kwargs(elem: Element) -> dict[str, Any]:
     name = text(elem, "name")
     if not name:
         raise VisualizationParameterParsingException("Visualization input requires a <name>.")
@@ -76,7 +74,7 @@ def _common_kwargs(elem: Element) -> Dict[str, Any]:
     }
 
 
-def _parse_options(elem: Element) -> List[LabelValue]:
+def _parse_options(elem: Element) -> list[LabelValue]:
     options = []
     for option in wrapped_children(elem, "data"):
         options.append(LabelValue(label=text(option, "label") or "", value=text(option, "value") or ""))
@@ -126,7 +124,7 @@ def _optional_bool(elem: Element):
     return None if value is None else value.strip().lower() in ("true", "yes", "on", "1")
 
 
-def _parse_conditional(elem: Element, common: Dict[str, Any]) -> ConditionalParameterModel:
+def _parse_conditional(elem: Element, common: dict[str, Any]) -> ConditionalParameterModel:
     test_elem = elem.find("test_param")
     if test_elem is None:
         raise VisualizationParameterParsingException(f"Conditional input '{common['name']}' requires a <test_param>.")

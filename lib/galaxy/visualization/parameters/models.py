@@ -16,10 +16,7 @@ from typing import (
     Annotated,
     Any,
     cast,
-    List,
     Literal,
-    Optional,
-    Union,
 )
 
 from pydantic import (
@@ -41,21 +38,21 @@ FieldDefinition = tuple
 
 
 def _optional(type_: Any) -> Any:
-    return cast(type, Optional[type_])
+    return cast(type, type_ | None)
 
 
-def _union(types: List[Any]) -> Any:
+def _union(types: list[Any]) -> Any:
     result = types[0]
     for type_ in types[1:]:
-        result = cast(type, Union[result, type_])
+        result = cast(type, result | type_)
     return result
 
 
 def _list(type_: Any) -> Any:
-    return cast(type, List[type_])
+    return cast(type, list[type_])
 
 
-def _literal(values: List[Any]) -> Any:
+def _literal(values: list[Any]) -> Any:
     return cast(type, Literal[tuple(values)])
 
 
@@ -68,8 +65,8 @@ class BaseVisualizationParameterModel(BaseModel):
     """Shared declaration fields for every visualization input."""
 
     name: str
-    label: Optional[str] = None
-    help: Optional[str] = None
+    label: str | None = None
+    help: str | None = None
     optional: bool = False
 
     @property
@@ -94,7 +91,7 @@ class BaseVisualizationParameterModel(BaseModel):
 
 class BooleanParameterModel(BaseVisualizationParameterModel):
     parameter_type: Literal["gx_boolean"] = "gx_boolean"
-    value: Optional[bool] = None
+    value: bool | None = None
 
     def field_definition(self) -> FieldDefinition:
         return self._finalize(StrictBool)
@@ -102,7 +99,7 @@ class BooleanParameterModel(BaseVisualizationParameterModel):
 
 class ColorParameterModel(BaseVisualizationParameterModel):
     parameter_type: Literal["gx_color"] = "gx_color"
-    value: Optional[str] = None
+    value: str | None = None
 
     def field_definition(self) -> FieldDefinition:
         return self._finalize(StrictStr)
@@ -110,9 +107,9 @@ class ColorParameterModel(BaseVisualizationParameterModel):
 
 class IntegerParameterModel(BaseVisualizationParameterModel):
     parameter_type: Literal["gx_integer"] = "gx_integer"
-    value: Optional[int] = None
-    min: Optional[int] = None
-    max: Optional[int] = None
+    value: int | None = None
+    min: int | None = None
+    max: int | None = None
 
     def field_definition(self) -> FieldDefinition:
         base: Any = StrictInt
@@ -123,9 +120,9 @@ class IntegerParameterModel(BaseVisualizationParameterModel):
 
 class FloatParameterModel(BaseVisualizationParameterModel):
     parameter_type: Literal["gx_float"] = "gx_float"
-    value: Optional[float] = None
-    min: Optional[float] = None
-    max: Optional[float] = None
+    value: float | None = None
+    min: float | None = None
+    max: float | None = None
 
     def field_definition(self) -> FieldDefinition:
         base: Any = _union([StrictFloat, StrictInt])
@@ -136,7 +133,7 @@ class FloatParameterModel(BaseVisualizationParameterModel):
 
 class TextParameterModel(BaseVisualizationParameterModel):
     parameter_type: Literal["gx_text"] = "gx_text"
-    value: Optional[str] = None
+    value: str | None = None
     area: bool = False
 
     def field_definition(self) -> FieldDefinition:
@@ -145,8 +142,8 @@ class TextParameterModel(BaseVisualizationParameterModel):
 
 class SelectParameterModel(BaseVisualizationParameterModel):
     parameter_type: Literal["gx_select"] = "gx_select"
-    value: Optional[str] = None
-    options: List[LabelValue] = []
+    value: str | None = None
+    options: list[LabelValue] = []
     multiple: bool = False
 
     def field_definition(self) -> FieldDefinition:
@@ -158,8 +155,8 @@ class SelectParameterModel(BaseVisualizationParameterModel):
 
 class DataParameterModel(BaseVisualizationParameterModel):
     parameter_type: Literal["gx_data"] = "gx_data"
-    extension: Optional[str] = None
-    value: Optional[str] = None
+    extension: str | None = None
+    value: str | None = None
 
     def field_definition(self) -> FieldDefinition:
         return self._finalize(StrictStr)
@@ -168,7 +165,7 @@ class DataParameterModel(BaseVisualizationParameterModel):
 class DataColumnParameterModel(BaseVisualizationParameterModel):
     parameter_type: Literal["gx_data_column"] = "gx_data_column"
     is_number: bool = False
-    value: Optional[Any] = None
+    value: Any | None = None
 
     def field_definition(self) -> FieldDefinition:
         base: Any = StrictInt if self.is_number else StrictStr
@@ -179,8 +176,8 @@ class DataJsonParameterModel(BaseVisualizationParameterModel):
     """Dynamic select whose options are fetched from a URL; values unchecked."""
 
     parameter_type: Literal["gx_data_json"] = "gx_data_json"
-    url: Optional[str] = None
-    value: Optional[str] = None
+    url: str | None = None
+    value: str | None = None
 
     def field_definition(self) -> FieldDefinition:
         return self._finalize(StrictStr)
@@ -190,8 +187,8 @@ class DataTableParameterModel(BaseVisualizationParameterModel):
     """Dynamic select whose options come from a Galaxy data table; values unchecked."""
 
     parameter_type: Literal["gx_data_table"] = "gx_data_table"
-    tables: List[str] = []
-    value: Optional[str] = None
+    tables: list[str] = []
+    value: str | None = None
 
     def field_definition(self) -> FieldDefinition:
         return self._finalize(StrictStr)
@@ -199,13 +196,13 @@ class DataTableParameterModel(BaseVisualizationParameterModel):
 
 class VisualizationWhen(BaseModel):
     value: Any
-    inputs: List["VisualizationParameterT"] = []
+    inputs: list["VisualizationParameterT"] = []
 
 
 class ConditionalParameterModel(BaseVisualizationParameterModel):
     parameter_type: Literal["gx_conditional"] = "gx_conditional"
-    test_parameter: Union[BooleanParameterModel, SelectParameterModel]
-    whens: List[VisualizationWhen] = []
+    test_parameter: BooleanParameterModel | SelectParameterModel
+    whens: list[VisualizationWhen] = []
 
     def field_definition(self) -> FieldDefinition:
         test = self.test_parameter
@@ -227,19 +224,17 @@ class ConditionalParameterModel(BaseVisualizationParameterModel):
 
 
 VisualizationParameterT = Annotated[
-    Union[
-        BooleanParameterModel,
-        ColorParameterModel,
-        IntegerParameterModel,
-        FloatParameterModel,
-        TextParameterModel,
-        SelectParameterModel,
-        DataParameterModel,
-        DataColumnParameterModel,
-        DataJsonParameterModel,
-        DataTableParameterModel,
-        ConditionalParameterModel,
-    ],
+    BooleanParameterModel
+    | ColorParameterModel
+    | IntegerParameterModel
+    | FloatParameterModel
+    | TextParameterModel
+    | SelectParameterModel
+    | DataParameterModel
+    | DataColumnParameterModel
+    | DataJsonParameterModel
+    | DataTableParameterModel
+    | ConditionalParameterModel,
     Field(discriminator="parameter_type"),
 ]
 
@@ -247,8 +242,8 @@ VisualizationParameterT = Annotated[
 class VisualizationParameterBundleModel(BaseModel):
     """The parsed parameter tree: a flat ``settings`` list and the ``tracks`` repeat."""
 
-    settings: List[VisualizationParameterT] = []
-    tracks: List[VisualizationParameterT] = []
+    settings: list[VisualizationParameterT] = []
+    tracks: list[VisualizationParameterT] = []
 
 
 VisualizationWhen.model_rebuild()
@@ -263,7 +258,7 @@ def _create_model(*args, **kwd) -> type[BaseModel]:
     return create_model(*args, **kwd)
 
 
-def _model_from_parameters(parameters: List[Any], name: str, extra: ExtraT) -> type[BaseModel]:
+def _model_from_parameters(parameters: list[Any], name: str, extra: ExtraT) -> type[BaseModel]:
     fields: dict[str, tuple] = {parameter.name: parameter.field_definition() for parameter in parameters}
     return _create_model(name, __config__=ConfigDict(extra=extra), **fields)
 

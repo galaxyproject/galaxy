@@ -12,14 +12,10 @@ distinguish these from ordinary nesting, so this module walks the ElementTree
 directly with type awareness.
 """
 
-from typing import (
-    List,
-    Optional,
-)
 from xml.etree.ElementTree import Element
 
 
-def text(elem: Optional[Element], tag: str) -> Optional[str]:
+def text(elem: Element | None, tag: str) -> str | None:
     """Return the stripped text of ``elem``'s ``tag`` child, or None."""
     if elem is None:
         return None
@@ -29,7 +25,7 @@ def text(elem: Optional[Element], tag: str) -> Optional[str]:
     return child.text.strip()
 
 
-def value_of(elem: Element) -> Optional[str]:
+def value_of(elem: Element) -> str | None:
     """Return an input's default from its ``<value>`` child.
 
     A present-but-empty ``<value></value>`` is a real default (empty string), so
@@ -42,7 +38,7 @@ def value_of(elem: Element) -> Optional[str]:
     return (child.text or "").strip()
 
 
-def asbool(value: Optional[str], default: bool = False) -> bool:
+def asbool(value: str | None, default: bool = False) -> bool:
     if value is None:
         return default
     return value.strip().lower() in ("true", "yes", "on", "1")
@@ -52,17 +48,17 @@ def flag(elem: Element, tag: str, default: bool = False) -> bool:
     return asbool(text(elem, tag), default)
 
 
-def as_int(elem: Element, tag: str) -> Optional[int]:
+def as_int(elem: Element, tag: str) -> int | None:
     value = text(elem, tag)
     return int(value) if value not in (None, "") else None
 
 
-def as_float(elem: Element, tag: str) -> Optional[float]:
+def as_float(elem: Element, tag: str) -> float | None:
     value = text(elem, tag)
     return float(value) if value not in (None, "") else None
 
 
-def wrapped_children(elem: Element, tag: str) -> List[Element]:
+def wrapped_children(elem: Element, tag: str) -> list[Element]:
     """Return the repeated children of a plural wrapper ``<tag><tag>...``."""
     wrapper = elem.find(tag)
     if wrapper is None:
@@ -70,7 +66,7 @@ def wrapped_children(elem: Element, tag: str) -> List[Element]:
     return wrapper.findall(tag)
 
 
-def input_elements(section: Optional[Element]) -> List[Element]:
+def input_elements(section: Element | None) -> list[Element]:
     """Return the ``<input>`` children of a ``<settings>``/``<tracks>`` section."""
     if section is None:
         return []
