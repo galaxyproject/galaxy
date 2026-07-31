@@ -1,8 +1,8 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Person">
-        <FontAwesomeIcon ref="button" :icon="faUser" />
+        <FontAwesomeIcon :id="popoverTarget" :icon="faUser" />
 
-        <GPopover triggers="click blur" :target="$refs['button'] || 'works-lazily'" title="Person">
+        <GPopover triggers="click blur" :target="popoverTarget" title="Person">
             <GTable :items="items" :fields="fields" />
         </GPopover>
 
@@ -51,6 +51,8 @@ import { faOrcid } from "@fortawesome/free-brands-svg-icons";
 import { faExternalLinkAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import { useUid } from "@/composables/utils/uid";
+
 import ThingViewerMixin from "./ThingViewerMixin";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
@@ -75,6 +77,9 @@ export default {
             faOrcid,
             faUser,
             faExternalLinkAlt,
+            // An element id rather than a template ref: $refs is empty on first render and isn't
+            // reactive, so a ref-based target never resolves until something re-renders.
+            popoverTarget: useUid("person-viewer-").value,
             implicitMicrodataProperties: ["name", "givenName", "email", "familyName", "url", "identifier"],
             thing: this.person,
             fields: [
