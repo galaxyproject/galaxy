@@ -32,18 +32,10 @@ from bx.seq.twobit import (
     TWOBIT_MAGIC_NUMBER,
     TWOBIT_MAGIC_NUMBER_SWAP,
 )
-from h5grove.content import (
-    DatasetContent,
-    get_content_from_file,
-    GroupContent,
-    ResolvedEntityContent,
-)
-from h5grove.encoders import encode
-from h5grove.utils import (
-    convert,
-    parse_slice,
-    QueryArgumentError,
-)
+# h5grove is imported inside the four functions that use it. It is only needed
+# to serve the h5web visualization protocol, but this module is loaded by
+# galaxy.datatypes.registry, which every upload job and every set_metadata
+# process imports. Deferring it avoids ~270 modules per job.
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -1298,6 +1290,8 @@ def _h5_normalize_selection(shape: tuple[int, ...], selection: str | None) -> tu
     if selection is None:
         return [slice(*slice(None).indices(dim)) for dim in shape], tuple(shape)
 
+    from h5grove.utils import parse_slice
+
     try:
         members = parse_slice(selection)
     except (ValueError, TypeError) as e:
@@ -1429,6 +1423,8 @@ def _h5_stream_data(
     npy_shape: tuple[int, ...],
     flatten: bool,
 ) -> Iterator[bytes]:
+    from h5grove.utils import convert
+
     # This generator owns its own file handle: the caller's get_content_from_file
     # context closes before the streaming response body is iterated.
     with h5py.File(file_name, "r", locking=False) as f:
@@ -1455,6 +1451,11 @@ def _h5_prepare_streaming_data(
     flatten: bool,
     selection: str | None,
 ) -> tuple[Iterator[bytes], dict[str, str]]:
+    from h5grove.utils import (
+        convert,
+        QueryArgumentError,
+    )
+
     read_slices, result_shape = _h5_normalize_selection(ds.shape, selection)
     try:
         out_dtype = convert(np.empty((0,), ds.dtype), dtype).dtype
@@ -1614,6 +1615,14 @@ class H5(Binary):
         This allows the h5web visualization tool (https://github.com/silx-kit/h5web)
         to be used directly with Galaxy datasets.
         """
+        from h5grove.content import (
+            DatasetContent,
+            get_content_from_file,
+            GroupContent,
+            ResolvedEntityContent,
+        )
+        from h5grove.encoders import encode
+
         flatten = str(flatten).lower() != "false"
         file_name = dataset.get_file_name()
         with get_content_from_file(file_name, path, self._create_error, h5py_options={"locking": False}) as content:

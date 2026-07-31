@@ -12,13 +12,10 @@ from collections.abc import Iterator
 from typing import (
     Any,
     Literal,
+    TYPE_CHECKING,
 )
 
-import mrcfile
 import numpy as np
-import png
-import pydicom
-import tifffile
 
 try:
     import PIL
@@ -44,6 +41,16 @@ from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
 from . import data
 from .xml import GenericXml
+
+if TYPE_CHECKING:
+    import tifffile
+
+# mrcfile, png, pydicom and tifffile are imported inside the methods that use
+# them. They are only needed to handle those specific image formats, but this
+# module is reached from galaxy.datatypes.registry, which every upload job and
+# every set_metadata process loads. pydicom alone costs about 0.8s and 500
+# modules, paid twice per job on installations where Galaxy lives on shared
+# storage.
 
 log = logging.getLogger(__name__)
 
@@ -215,6 +222,8 @@ class Png(Image):
 
         # Read the image data row by row, to avoid allocating memory for the entire image
         if dataset.metadata.dtype == "uint8" and dataset.metadata.frames in (0, 1):
+            import png
+
             reader = png.Reader(filename=dataset.get_file_name())
             width, height, pixels, metadata = reader.asDirect()
 
@@ -268,6 +277,8 @@ class Tiff(Image):
         """
         Populate the metadata of the TIFF image using the tifffile library.
         """
+        import tifffile
+
         spec_key = "offsets"
         if hasattr(dataset.metadata, spec_key):
             offsets_file = dataset.metadata.offsets
@@ -348,7 +359,7 @@ class Tiff(Image):
         return shape[idx] if idx >= 0 else 0
 
     @staticmethod
-    def _get_num_unique_values(series: tifffile.TiffPageSeries) -> int | None:
+    def _get_num_unique_values(series: "tifffile.TiffPageSeries") -> int | None:
         """
         Determines the number of unique values in a TIFF series of pages.
         """
@@ -367,7 +378,7 @@ class Tiff(Image):
 
     @staticmethod
     def _read_chunks(
-        page: tifffile.TiffPage | tifffile.TiffFrame, mmap_chunk_size: int = 2**14
+        page: "tifffile.TiffPage | tifffile.TiffFrame", mmap_chunk_size: int = 2**14
     ) -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all chunks of values from a TIFF page.
@@ -388,7 +399,7 @@ class Tiff(Image):
                 yield from np.array_split(arr_flat, chunks_count)
 
     @staticmethod
-    def _read_segments(page: tifffile.TiffPage | tifffile.TiffFrame) -> Iterator["np.typing.NDArray"]:
+    def _read_segments(page: "tifffile.TiffPage | tifffile.TiffFrame") -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all segments of a TIFF page.
         """
@@ -408,6 +419,8 @@ class OMETiff(Tiff):
     file_ext = "ome.tiff"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        import tifffile
+
         buf = io.BytesIO(file_prefix.contents_header_bytes)
         with tifffile.TiffFile(buf) as tif:
             return tif.is_ome
@@ -587,6 +600,8 @@ class Dicom(Image):
         tiles of a mosaic or pyramid (WSI DICOM). Distinguishing these cases is not straight-forward (and, as a
         consequence, neither is determining the `axes` of the image). This can be implemented in the future.
         """
+        import pydicom
+
         try:
             dcm = pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True)
         except pydicom.errors.InvalidDicomError:
@@ -755,6 +770,8 @@ class Mrc2014(Binary):
     file_ext = "mrc"
 
     def sniff(self, filename: str) -> bool:
+        import mrcfile
+
         try:
             # An exception is thrown
             # if the file is not an
