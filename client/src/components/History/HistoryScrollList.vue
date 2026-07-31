@@ -65,8 +65,22 @@ const effectiveCurrentId = computed(() =>
     props.currentItemId === undefined ? currentHistoryId.value : props.currentItemId,
 );
 
+/** How many matches to put in the DOM at a time.
+ *
+ * The list is not virtualized: every item handed to ScrollList becomes a card.
+ * Rendering thousands at once is what made the panel stall, to the point that
+ * the search box could not be typed in and no result could be clicked, so the
+ * matches are held in memory but revealed a window at a time.
+ */
+const RENDER_PAGE_SIZE = 50;
+const renderLimit = ref(RENDER_PAGE_SIZE);
+
 const hasNoResults = computed(() => props.filter && filtered.value.length == 0);
-const allLoaded = computed(() => allHistoriesLoaded.value || totalHistoryCount.value <= filtered.value.length);
+/** The matches actually rendered, as opposed to all of the ones that matched. */
+const visible = computed(() => filtered.value.slice(0, renderLimit.value));
+const serverExhausted = computed(
+    () => allHistoriesLoaded.value || totalHistoryCount.value <= historiesProxy.value.length,
+);
 
 onMounted(async () => {
     // if mounted with a filter, the whole list is needed to search it
@@ -78,10 +92,15 @@ onMounted(async () => {
 watch(
     () => props.filter,
     async (newVal: string, oldVal: string) => {
+        if (newVal === oldVal) {
+            return;
+        }
+        // A new search starts at the top of its own results.
+        renderLimit.value = RENDER_PAGE_SIZE;
         // Searching happens against the locally held list, so the list only has
         // to be fetched once rather than queried again on every change of the
         // text. Matching a few thousand names in the browser is immediate.
-        if (newVal !== "" && newVal !== oldVal) {
+        if (newVal !== "") {
             await historyStore.loadAllHistories();
         }
     },
@@ -122,7 +141,9 @@ const filtered = computed<HistorySummary[]>(() => {
     if (props.hideDeleted) {
         filteredHistories = filteredHistories.filter((h) => !h.deleted && !h.purged);
     }
-    return filteredHistories.sort((a, b) => {
+    // Copy before sorting: with no filter this array is historiesProxy itself,
+    // and sorting in place would mutate reactive state from inside a computed.
+    return [...filteredHistories].sort((a, b) => {
         if (!isMultiviewPanel.value && a.id == currentHistoryId.value) {
             return -1;
         } else if (!isMultiviewPanel.value && b.id == currentHistoryId.value) {
@@ -190,13 +211,22 @@ function openInMulti(history: HistorySummary) {
 /** Loads (paginates) for more histories
  * @param noScroll If true, we are not scrolling and will load _all_ items for current filter
  */
-/** Loads (paginates) the next page of histories as the list is scrolled.
+/** Reveals more of the list as it is scrolled.
  *
  * Searching no longer goes through here: the whole list is pulled in once and
  * matched locally, so there is no per-search request to supersede or cancel.
  */
 async function loadMore() {
-    if (busy.value || props.filter || allLoaded.value) {
+    if (busy.value) {
+        return;
+    }
+    // Widen the rendered window first. The matches are already in memory, so
+    // this costs nothing but the cards it adds.
+    if (renderLimit.value < filtered.value.length) {
+        renderLimit.value += RENDER_PAGE_SIZE;
+        return;
+    }
+    if (props.filter || serverExhausted.value) {
         return;
     }
     busy.value = true;
@@ -300,12 +330,11 @@ function getHistoryTitleBadges(history: HistorySummary) {
     <ScrollList
         :item-key="(history) => history.id"
         :in-panel="!props.inModal"
-        :prop-items="filtered"
-        :prop-total-count="totalHistoryCount"
+        :prop-items="visible"
+        :prop-total-count="props.filter ? filtered.length : totalHistoryCount"
         :prop-busy="busy"
         name="history"
         name-plural="histories"
-        :load-disabled="Boolean(props.filter)"
         @load-more="loadMore">
         <template v-slot:search>
             <BAlert v-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
