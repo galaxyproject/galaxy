@@ -20,7 +20,8 @@
 #
 # Instead of a single `path`, the cache can be sharded across multiple directories
 # with weighted distribution. All cache entries for the same dataset (including
-# extra_files and metadata) resolve to the same shard deterministically:
+# extra_files) resolve to the same shard deterministically. Metadata files have
+# their own id space and may land on a different shard:
 #
 # cache:
 #   dirs:

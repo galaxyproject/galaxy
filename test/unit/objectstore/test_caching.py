@@ -50,15 +50,42 @@ def test_same_shard_for_same_object_id():
     obj_id = 12345
     main_path = mgr.get_cache_path(obj_id, "000/dataset_12345.dat")
     extra_path = mgr.get_cache_path(obj_id, "000/dataset_12345_files/extra.txt")
-    meta_path = mgr.get_cache_path(obj_id, "000/metadata_12345.dat")
     shard_paths = mgr.paths
 
-    # All three must resolve to the same shard root
-    assert (
-        _shard_root(main_path, shard_paths)
-        == _shard_root(extra_path, shard_paths)
-        == _shard_root(meta_path, shard_paths)
-    )
+    # The main dataset file and its extra_files must resolve to the same shard
+    # because they share the same object_id.
+    assert _shard_root(main_path, shard_paths) == _shard_root(extra_path, shard_paths)
+
+
+def test_metadata_file_may_land_on_different_shard():
+    """MetadataFile has its own id space — _get_object_id returns the
+    MetadataFile's id, not the Dataset's id.  With multiple shards the
+    metadata file may land on a different shard than the dataset.
+
+    This test verifies that the shard selection is purely a function of
+    the object_id passed in — different ids can (and often do) map to
+    different shards.
+    """
+    shards = make_shards(["/a", "/b"], weights=[1, 1])
+    mgr = CacheShardManager(shards)
+    shard_paths = mgr.paths
+
+    # Find a dataset id and a metadata id that land on different shards.
+    # With 2 equal-weight shards this happens ~50% of the time.
+    found_divergence = False
+    for dataset_id in range(1000):
+        dataset_path = mgr.get_cache_path(dataset_id, "000/dataset.dat")
+        dataset_shard = _shard_root(dataset_path, shard_paths)
+        for metadata_id in range(1000):
+            metadata_path = mgr.get_cache_path(metadata_id, "000/metadata.dat")
+            metadata_shard = _shard_root(metadata_path, shard_paths)
+            if dataset_shard != metadata_shard:
+                found_divergence = True
+                break
+        if found_divergence:
+            break
+
+    assert found_divergence, "Expected at least one dataset/metadata pair to land on different shards"
 
 
 def test_weight_distribution():
