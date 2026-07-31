@@ -83,8 +83,8 @@ mypy: _setup-mypy-venv _mypy
 _setup-dev-venv:
 	uv pip install -r dev-requirements.txt
 
-lint-dist: _setup-dev-venv
-	uv run twine check $(DIST)/*
+lint-dist:
+	uvx --with-requirements dev-requirements.txt --from twine twine check $(DIST)/*
 
 commit-version:
 	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)
