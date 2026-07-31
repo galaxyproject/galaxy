@@ -173,6 +173,7 @@ watch(
                                 :name="item.element_identifier"
                                 :expand-dataset="isExpanded(item)"
                                 :is-dataset="item.element_type == 'hda'"
+                                :taggable="item.element_type == 'hda'"
                                 :filterable="filterable"
                                 @drag-start="setItemDragstart(item, $event)"
                                 @update:expand-dataset="setExpanded(item, $event)"

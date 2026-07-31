@@ -43,6 +43,10 @@ interface Props {
     isDataset?: boolean;
     isRangeSelectAnchor?: boolean;
     isHistoryItem?: boolean;
+    /** Allow editing tags even when this is not a top level history item.
+     * Collection elements wrap a real dataset, so their tags are editable even
+     * though the item itself is not a history item. */
+    taggable?: boolean;
     selected?: boolean;
     selectable?: boolean;
     filterable?: boolean;
@@ -60,6 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
     isDataset: true,
     isRangeSelectAnchor: false,
     isHistoryItem: false,
+    taggable: false,
     selected: false,
     selectable: false,
     filterable: false,
@@ -155,7 +160,7 @@ const tags = computed(() => {
 });
 
 const tagsDisabled = computed(() => {
-    return !props.writable || !props.expandDataset || !props.isHistoryItem;
+    return !props.writable || !props.expandDataset || !(props.isHistoryItem || props.taggable);
 });
 
 const isCollection = computed(() => {
@@ -276,7 +281,13 @@ function onShowCollectionInfo() {
 
 function onTags(newTags: string[]) {
     emit("tag-change", props.item, newTags);
-    updateContentFields(props.item, { tags: newTags });
+    // A collection element carries the underlying dataset, which has a
+    // history_id but no history_content_type, so fill it in from what the item
+    // is. Without it the update would be addressed to "undefineds".
+    const target = props.item.history_content_type
+        ? props.item
+        : { ...props.item, history_content_type: isCollection.value ? "dataset_collection" : "dataset" };
+    updateContentFields(target, { tags: newTags });
 }
 
 function onTagClick(tag: string) {
