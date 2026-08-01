@@ -1910,10 +1910,24 @@ class Anndata(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         with h5py.File(dataset.get_file_name(), "r", locking=False) as anndata_file:
+            root_encoding_type = anndata_file.attrs.get("encoding-type")
+            if isinstance(root_encoding_type, np.ndarray):
+                root_encoding_type = root_encoding_type[0] if root_encoding_type.size else None
+            if isinstance(root_encoding_type, bytes):
+                root_encoding_type = root_encoding_type.decode()
+            root_encoding_version = anndata_file.attrs.get("encoding-version")
+            if isinstance(root_encoding_version, np.ndarray):
+                root_encoding_version = root_encoding_version[0] if root_encoding_version.size else None
+            if isinstance(root_encoding_version, bytes):
+                root_encoding_version = root_encoding_version.decode()
+
             dataset.metadata.title = anndata_file.attrs.get("title")
             dataset.metadata.description = anndata_file.attrs.get("description")
             dataset.metadata.url = anndata_file.attrs.get("url")
             dataset.metadata.doi = anndata_file.attrs.get("doi")
+            dataset.metadata.anndata_spec_version = (
+                root_encoding_version if root_encoding_type == "anndata" and root_encoding_version else ""
+            )
             dataset.metadata.creation_date = anndata_file.attrs.get("creation_date")
             dataset.metadata.shape = anndata_file.attrs.get("shape", dataset.metadata.shape)
             # none of the above appear to work in any dataset tested, but could be useful for
