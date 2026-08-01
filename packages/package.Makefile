@@ -55,7 +55,7 @@ _dist:
 	uv build -o $(DIST)
 	ls -l $(DIST)
 
-dist: setup-venv clean _dist
+dist: clean _dist
 
 _setup-mypy-venv: setup-venv
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
@@ -76,8 +76,8 @@ lint: _setup-lint-venv _lint
 _setup-dev-venv:
 	uv pip install -r dev-requirements.txt
 
-lint-dist: _setup-dev-venv
-	uv run twine check $(DIST)/*
+lint-dist:
+	uvx --with-requirements dev-requirements.txt --from twine twine check $(DIST)/*
 
 # black doesn't actually work on symlinked files because they are outside
 # the current directory
