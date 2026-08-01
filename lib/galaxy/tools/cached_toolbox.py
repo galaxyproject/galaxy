@@ -563,7 +563,7 @@ class CachedToolBox(ToolBox):
     def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
         """Load or populate the index, then let the eager walk register stubs."""
         # Index-backed lineages reflect reloads and all known versions.
-        self._lineage_map = CachedLineageMap(self.app, versions_for=self._index_versions_for)
+        self._lineage_map = CachedLineageMap(self, versions_for=self._index_versions_for)
         self._tool_panel_loaded_from_index = False
         if self._store is not None:
             self._tool_index = self._store.load_index() or ToolIndex()

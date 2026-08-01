@@ -348,7 +348,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         self._tool_panel = ToolPanelElements()
         self._index = 0
         self.data_manager_tools: dict[str, Tool] = {}
-        self._lineage_map = LineageMap(app)
+        self._lineage_map = LineageMap(self)
         # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents
         self._init_integrated_tool_panel(app.config)
         # The following refers to the tool_path config setting for backward compatibility.  The shed-related
