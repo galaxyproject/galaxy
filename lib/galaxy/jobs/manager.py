@@ -73,7 +73,8 @@ class JobManager:
         tool_id = None
         configured_handler = None
         if tool:
-            tool = self.app.toolbox.materialize_tool(tool, reason="job_setup")
+            if (toolbox := self.app.toolbox_or_none) is not None:
+                tool = toolbox.materialize_tool(tool, reason="job_setup")
             tool_id = tool.id
             configured_handler = tool.get_configured_job_handler()
             if configured_handler is not None:
