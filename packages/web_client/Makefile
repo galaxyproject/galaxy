@@ -80,9 +80,6 @@ _mypy:
 
 mypy: _setup-mypy-venv _mypy
 
-_setup-dev-venv:
-	uv pip install -r dev-requirements.txt
-
 lint-dist:
 	uvx --with-requirements dev-requirements.txt --from twine twine check $(DIST)/*
 
