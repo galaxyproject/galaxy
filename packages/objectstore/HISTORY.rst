@@ -3,11 +3,34 @@ History
 
 .. to_doc
 
--------
-26.1rc1
--------
+-------------------
+26.1.0 (2026-08-02)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Try to create Rucio temp directory before writing rucio.cfg by `@evilkermit <https://github.com/evilkermit>`_ in `#22112 <https://github.com/galaxyproject/galaxy/pull/22112>`_
+* Fix S3 multipart upload to start all threads before waiting by `@martenson <https://github.com/martenson>`_ in `#22356 <https://github.com/galaxyproject/galaxy/pull/22356>`_
+* Default S3 request checksum to when_required for non-AWS endpoints by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23034 <https://github.com/galaxyproject/galaxy/pull/23034>`_
+* Fix typo in irods object store cache size by `@davelopez <https://github.com/davelopez>`_ in `#23124 <https://github.com/galaxyproject/galaxy/pull/23124>`_
+
+============
+Enhancements
+============
+
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#22206 <https://github.com/galaxyproject/galaxy/pull/22206>`_
+* Use now() wrapper instead of datetime.now() by `@bgruening <https://github.com/bgruening>`_ in `#22579 <https://github.com/galaxyproject/galaxy/pull/22579>`_
+* Remove leftover debug print statement by `@davelopez <https://github.com/davelopez>`_ in `#22697 <https://github.com/galaxyproject/galaxy/pull/22697>`_
+
+=============
+Other changes
+=============
+
+* Propagate \`start()\` to backends in \`DistributedObjectStore\` by `@pauldg <https://github.com/pauldg>`_ in `#22220 <https://github.com/galaxyproject/galaxy/pull/22220>`_
 
 -------------------
 26.0.1 (2026-06-04)

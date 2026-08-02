@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
--------
-26.1rc1
--------
+-------------------
+26.1.0 (2026-08-02)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Use correct binary unit prefixes (KiB/MiB/GiB) by `@dannon <https://github.com/dannon>`_ in `#22153 <https://github.com/galaxyproject/galaxy/pull/22153>`_
+
+============
+Enhancements
+============
+
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
 
 -------------------
 26.0.1 (2026-06-04)

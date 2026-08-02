@@ -3,11 +3,47 @@ History
 
 .. to_doc
 
--------
-26.1rc1
--------
+-------------------
+26.1.0 (2026-08-02)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix Selenium select_by_value: wait for element before find by `@jmchilton <https://github.com/jmchilton>`_ in `#21874 <https://github.com/galaxyproject/galaxy/pull/21874>`_
+* Install playwright browsers for unit tests by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22161 <https://github.com/galaxyproject/galaxy/pull/22161>`_
+* Minor styling fixes for invocation view header and history list cards by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22639 <https://github.com/galaxyproject/galaxy/pull/22639>`_
+* Route ChatGXY on the current message, and ask when uncertain by `@dannon <https://github.com/dannon>`_ in `#22791 <https://github.com/galaxyproject/galaxy/pull/22791>`_
+* Reuse the global, context-aware GalaxyAI for Galaxy Notebooks by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22807 <https://github.com/galaxyproject/galaxy/pull/22807>`_
+
+============
+Enhancements
+============
+
+* Improve the workflow import UI by `@neoformit <https://github.com/neoformit>`_ in `#21516 <https://github.com/galaxyproject/galaxy/pull/21516>`_
+* Improvements for ssh file sources by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21646 <https://github.com/galaxyproject/galaxy/pull/21646>`_
+* Add Selenium tests for workflow extraction UI by `@jmchilton <https://github.com/jmchilton>`_ in `#21805 <https://github.com/galaxyproject/galaxy/pull/21805>`_
+* Migrate more E2E tests to be Playwright compatible by `@jmchilton <https://github.com/jmchilton>`_ in `#21841 <https://github.com/galaxyproject/galaxy/pull/21841>`_
+* Beta upload: create dataset collections directly via HdcaDataItemsTarget by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21855 <https://github.com/galaxyproject/galaxy/pull/21855>`_
+* Enhance Playwright tests by `@jmchilton <https://github.com/jmchilton>`_ in `#21893 <https://github.com/galaxyproject/galaxy/pull/21893>`_
+* Migrate Library components from BTable to GTable and improve GTable by `@itisAliRH <https://github.com/itisAliRH>`_ in `#21894 <https://github.com/galaxyproject/galaxy/pull/21894>`_
+* Convert workflow extraction interface to Vue by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#21935 <https://github.com/galaxyproject/galaxy/pull/21935>`_
+* Replace v-b-tooltip directive with custom v-g-tooltip by `@dannon <https://github.com/dannon>`_ in `#21962 <https://github.com/galaxyproject/galaxy/pull/21962>`_
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+* Replace mocked agent tests with static YAML backend for deterministic API/E2E testing by `@jmchilton <https://github.com/jmchilton>`_ in `#22070 <https://github.com/galaxyproject/galaxy/pull/22070>`_
+* Replace WinBox with native Vue scratchbook component by `@dannon <https://github.com/dannon>`_ in `#22095 <https://github.com/galaxyproject/galaxy/pull/22095>`_
+* Replace BModal usage with GModal in several components by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22114 <https://github.com/galaxyproject/galaxy/pull/22114>`_
+* Add test suite for running tool tests via Playwright using the tool form by `@jmchilton <https://github.com/jmchilton>`_ in `#22157 <https://github.com/galaxyproject/galaxy/pull/22157>`_
+* Expand E2E testing by `@jmchilton <https://github.com/jmchilton>`_ in `#22164 <https://github.com/galaxyproject/galaxy/pull/22164>`_
+* Galaxy Notebooks: Persistent Narrative for Human-AI Collaborative Science in Galaxy by `@jmchilton <https://github.com/jmchilton>`_ in `#22361 <https://github.com/galaxyproject/galaxy/pull/22361>`_
+* Add Selenium/Playwright coverage to Beta Upload Activity by `@davelopez <https://github.com/davelopez>`_ in `#22467 <https://github.com/galaxyproject/galaxy/pull/22467>`_
+* Server-Sent Events for history + notification updates by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22513 <https://github.com/galaxyproject/galaxy/pull/22513>`_
+* Paginate /api/tools/{tool_id}/build history options by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22643 <https://github.com/galaxyproject/galaxy/pull/22643>`_
+* Rebrand ChatGXY to GalaxyAI by `@dannon <https://github.com/dannon>`_ in `#22707 <https://github.com/galaxyproject/galaxy/pull/22707>`_
+* Improve import workflow usability by `@davelopez <https://github.com/davelopez>`_ in `#22813 <https://github.com/galaxyproject/galaxy/pull/22813>`_
+* Further polish/bugfixes for notebooks created from invocations by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22873 <https://github.com/galaxyproject/galaxy/pull/22873>`_
 
 -------------------
 26.0.1 (2026-06-04)

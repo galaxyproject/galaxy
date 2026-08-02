@@ -3,11 +3,21 @@ History
 
 .. to_doc
 
--------
-26.1rc1
--------
+-------------------
+26.1.0 (2026-08-02)
+-------------------
 
 
+============
+Enhancements
+============
+
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+* More concise test logging by `@jmchilton <https://github.com/jmchilton>`_ in `#21983 <https://github.com/galaxyproject/galaxy/pull/21983>`_
+* Replace mocked agent tests with static YAML backend for deterministic API/E2E testing by `@jmchilton <https://github.com/jmchilton>`_ in `#22070 <https://github.com/galaxyproject/galaxy/pull/22070>`_
+* Use shared host_port_and_url helper in integration driver by `@itisAliRH <https://github.com/itisAliRH>`_ in `#22512 <https://github.com/galaxyproject/galaxy/pull/22512>`_
+* Server-Sent Events for history + notification updates by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22513 <https://github.com/galaxyproject/galaxy/pull/22513>`_
+* Speed up integration tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22538 <https://github.com/galaxyproject/galaxy/pull/22538>`_
 
 -------------------
 26.0.1 (2026-06-04)
