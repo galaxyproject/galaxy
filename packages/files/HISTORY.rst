@@ -3,11 +3,48 @@ History
 
 .. to_doc
 
--------
-26.1rc1
--------
+---------
+26.2.dev0
+---------
 
 
+
+-------------------
+26.1.0 (2026-08-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add request_checksum_calculation support for s3fs by `@lldelisle <https://github.com/lldelisle>`_ in `#21993 <https://github.com/galaxyproject/galaxy/pull/21993>`_
+* Fix broken log format string in validate_non_local by `@jmchilton <https://github.com/jmchilton>`_ in `#22004 <https://github.com/galaxyproject/galaxy/pull/22004>`_
+* Restore WebDAV template v0; add v1 for url -> base_url rename by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22570 <https://github.com/galaxyproject/galaxy/pull/22570>`_
+* Default S3 request checksum to when_required for non-AWS endpoints by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23034 <https://github.com/galaxyproject/galaxy/pull/23034>`_
+* Stop the ssh file source from using local keys or the SSH agent by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#23066 <https://github.com/galaxyproject/galaxy/pull/23066>`_
+* Use requests rather than urllib for Invenio authenticated downloads by `@martenson <https://github.com/martenson>`_ in `#23096 <https://github.com/galaxyproject/galaxy/pull/23096>`_
+* Support multipart upload for Invenio-based file sources by `@martenson <https://github.com/martenson>`_ in `#23118 <https://github.com/galaxyproject/galaxy/pull/23118>`_
+
+============
+Enhancements
+============
+
+* Always use context managers in py2filesystem file sources by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21645 <https://github.com/galaxyproject/galaxy/pull/21645>`_
+* Improvements for ssh file sources by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21646 <https://github.com/galaxyproject/galaxy/pull/21646>`_
+* Add support for file hash in Dataverse datasets by `@davelopez <https://github.com/davelopez>`_ in `#21890 <https://github.com/galaxyproject/galaxy/pull/21890>`_
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#22003 <https://github.com/galaxyproject/galaxy/pull/22003>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#22206 <https://github.com/galaxyproject/galaxy/pull/22206>`_
+* Unify path adaptation for remote file sources by `@davelopez <https://github.com/davelopez>`_ in `#22336 <https://github.com/galaxyproject/galaxy/pull/22336>`_
+* Add OneDrive file source by `@PlushZ <https://github.com/PlushZ>`_ in `#22367 <https://github.com/galaxyproject/galaxy/pull/22367>`_
+* Add IIIF File Source Support by `@davelopez <https://github.com/davelopez>`_ in `#22420 <https://github.com/galaxyproject/galaxy/pull/22420>`_
+* Migrate WebDAV file source to fsspec/webdav4 by `@PlushZ <https://github.com/PlushZ>`_ in `#22477 <https://github.com/galaxyproject/galaxy/pull/22477>`_
+* Allow attaching OIDC access token to DRS requests by `@marius-mather <https://github.com/marius-mather>`_ in `#22484 <https://github.com/galaxyproject/galaxy/pull/22484>`_
+* Migrate Dropbox file source to fsspec by `@PlushZ <https://github.com/PlushZ>`_ in `#22682 <https://github.com/galaxyproject/galaxy/pull/22682>`_
+* Add support for file checksums in Zenodo/Invenio by `@davelopez <https://github.com/davelopez>`_ in `#22691 <https://github.com/galaxyproject/galaxy/pull/22691>`_
+* Migrate the Google Drive file source to fsspec by `@PlushZ <https://github.com/PlushZ>`_ in `#22696 <https://github.com/galaxyproject/galaxy/pull/22696>`_
+* Backport of iRODS file source by `@davelopez <https://github.com/davelopez>`_ in `#22816 <https://github.com/galaxyproject/galaxy/pull/22816>`_
 
 -------------------
 26.0.1 (2026-06-04)

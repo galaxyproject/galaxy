@@ -3,11 +3,49 @@ History
 
 .. to_doc
 
--------
-26.1rc1
--------
+---------
+26.2.dev0
+---------
 
 
+
+-------------------
+26.1.0 (2026-08-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix workflow implicit mapping of flat collections over paired_or_unpaired by `@jmchilton <https://github.com/jmchilton>`_ in `#21933 <https://github.com/galaxyproject/galaxy/pull/21933>`_
+* [26.1 (spiritually)] Fix UDT collection outputs being silently dropped in YAML tool parser by `@jmchilton <https://github.com/jmchilton>`_ in `#22761 <https://github.com/galaxyproject/galaxy/pull/22761>`_
+* Relax legacy doi:-prefixed citation handling (#22795) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22799 <https://github.com/galaxyproject/galaxy/pull/22799>`_
+* Add fixed color set from webcolors package by `@guerler <https://github.com/guerler>`_ in `#22869 <https://github.com/galaxyproject/galaxy/pull/22869>`_
+* Always attempt to build tool request for new API endpoint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22894 <https://github.com/galaxyproject/galaxy/pull/22894>`_
+* Accept dce collection references in the tool request model by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22926 <https://github.com/galaxyproject/galaxy/pull/22926>`_
+* Make the user-defined tool schema robust for LLM authoring (CustomToolAgent) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22968 <https://github.com/galaxyproject/galaxy/pull/22968>`_
+* Custom-tool agent: verified container resolution + authoring safeguards (with a reusable mulled-recommend CLI) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22981 <https://github.com/galaxyproject/galaxy/pull/22981>`_
+
+============
+Enhancements
+============
+
+* Various YAML Tool Hardening and Progress toward Tool State Goals by `@jmchilton <https://github.com/jmchilton>`_ in `#21828 <https://github.com/galaxyproject/galaxy/pull/21828>`_
+* Migrate tool execution request from api/tools to api/jobs by `@guerler <https://github.com/guerler>`_ in `#21842 <https://github.com/galaxyproject/galaxy/pull/21842>`_
+* Fix tool.parameters initialization by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21914 <https://github.com/galaxyproject/galaxy/pull/21914>`_
+* Allow tools to specify time limits by `@jmchilton <https://github.com/jmchilton>`_ in `#21927 <https://github.com/galaxyproject/galaxy/pull/21927>`_
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+* Model subcollection mapping (map_over_type) and DCE in tool parameter schema by `@jmchilton <https://github.com/jmchilton>`_ in `#21991 <https://github.com/galaxyproject/galaxy/pull/21991>`_
+* Enrich tool parameter JSON Schema with Galaxy metadata via model methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22020 <https://github.com/galaxyproject/galaxy/pull/22020>`_
+* More Complete, Robust, and Tested JSON-Schema for Tool State Models by `@jmchilton <https://github.com/jmchilton>`_ in `#22362 <https://github.com/galaxyproject/galaxy/pull/22362>`_
+* Clean up Pydantic v2 deprecation warnings by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22463 <https://github.com/galaxyproject/galaxy/pull/22463>`_
+* Clean up various pytest warnings by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22472 <https://github.com/galaxyproject/galaxy/pull/22472>`_
+* Narrow YAML schema by `@jmchilton <https://github.com/jmchilton>`_ in `#22507 <https://github.com/galaxyproject/galaxy/pull/22507>`_
+* Tighten the workflow test schema by `@jmchilton <https://github.com/jmchilton>`_ in `#22566 <https://github.com/galaxyproject/galaxy/pull/22566>`_
+* Push UserToolSource semantic validation onto the pydantic model by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22615 <https://github.com/galaxyproject/galaxy/pull/22615>`_
+* Lift legacy UserToolSource representations on read by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22624 <https://github.com/galaxyproject/galaxy/pull/22624>`_
+* Expose more metadata in ParsedTool abstraction by `@jmchilton <https://github.com/jmchilton>`_ in `#22667 <https://github.com/galaxyproject/galaxy/pull/22667>`_
 
 -------------------
 26.0.1 (2026-06-04)

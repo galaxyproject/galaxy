@@ -3,11 +3,47 @@ History
 
 .. to_doc
 
--------
-26.1rc1
--------
+---------
+26.2.dev0
+---------
 
 
+
+-------------------
+26.1.0 (2026-08-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix dbkey filter returning no options when dbkey unset by `@jmchilton <https://github.com/jmchilton>`_ in `#21916 <https://github.com/galaxyproject/galaxy/pull/21916>`_
+* Fix workflow implicit mapping of flat collections over paired_or_unpaired by `@jmchilton <https://github.com/jmchilton>`_ in `#21933 <https://github.com/galaxyproject/galaxy/pull/21933>`_
+* Fix more paired_or_unpaired collection issues by `@jmchilton <https://github.com/jmchilton>`_ in `#22170 <https://github.com/galaxyproject/galaxy/pull/22170>`_
+* Fix mypy and packaging issues; pin rocrate<0.15.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22469 <https://github.com/galaxyproject/galaxy/pull/22469>`_
+* Honor group-derived roles in unprivileged tool access check by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22623 <https://github.com/galaxyproject/galaxy/pull/22623>`_
+* Update test workflows to respect gxformat2 0.26.0 syntax by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22642 <https://github.com/galaxyproject/galaxy/pull/22642>`_
+* Always attempt to build tool request for new API endpoint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22894 <https://github.com/galaxyproject/galaxy/pull/22894>`_
+
+============
+Enhancements
+============
+
+* Show persistent best practice results in workflow editor by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19546 <https://github.com/galaxyproject/galaxy/pull/19546>`_
+* Add Selenium tests for workflow extraction UI by `@jmchilton <https://github.com/jmchilton>`_ in `#21805 <https://github.com/galaxyproject/galaxy/pull/21805>`_
+* Migrate tool execution request from api/tools to api/jobs by `@guerler <https://github.com/guerler>`_ in `#21842 <https://github.com/galaxyproject/galaxy/pull/21842>`_
+* Support URL and TRS references for subworkflows in workflow import by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21887 <https://github.com/galaxyproject/galaxy/pull/21887>`_
+* Converge framework workflow test syntax toward Planemo syntax by `@jmchilton <https://github.com/jmchilton>`_ in `#21907 <https://github.com/galaxyproject/galaxy/pull/21907>`_
+* Add the History Graph API by `@guerler <https://github.com/guerler>`_ in `#21932 <https://github.com/galaxyproject/galaxy/pull/21932>`_
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+* Enrich tool parameter JSON Schema with Galaxy metadata via model methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22020 <https://github.com/galaxyproject/galaxy/pull/22020>`_
+* Replace mocked agent tests with static YAML backend for deterministic API/E2E testing by `@jmchilton <https://github.com/jmchilton>`_ in `#22070 <https://github.com/galaxyproject/galaxy/pull/22070>`_
+* Simplify gxformat2 contract - drop ImporterGalaxyInterface, convert_and_import_workflow by `@jmchilton <https://github.com/jmchilton>`_ in `#22241 <https://github.com/galaxyproject/galaxy/pull/22241>`_
+* Galaxy Notebooks: Persistent Narrative for Human-AI Collaborative Science in Galaxy by `@jmchilton <https://github.com/jmchilton>`_ in `#22361 <https://github.com/galaxyproject/galaxy/pull/22361>`_
+* Server-Sent Events for history + notification updates by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22513 <https://github.com/galaxyproject/galaxy/pull/22513>`_
+* Tighten the workflow test schema by `@jmchilton <https://github.com/jmchilton>`_ in `#22566 <https://github.com/galaxyproject/galaxy/pull/22566>`_
+* Add bulk dataset storage migration by `@davelopez <https://github.com/davelopez>`_ in `#22606 <https://github.com/galaxyproject/galaxy/pull/22606>`_
 
 -------------------
 26.0.1 (2026-06-04)

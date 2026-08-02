@@ -3,11 +3,30 @@ History
 
 .. to_doc
 
--------
-26.1rc1
--------
+---------
+26.2.dev0
+---------
 
 
+
+-------------------
+26.1.0 (2026-08-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix HTTP Range requests on dataset files (non-nginx deployments) by `@jmchilton <https://github.com/jmchilton>`_ in `#22924 <https://github.com/galaxyproject/galaxy/pull/22924>`_
+
+============
+Enhancements
+============
+
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+* Use now() wrapper instead of datetime.now() by `@bgruening <https://github.com/bgruening>`_ in `#22579 <https://github.com/galaxyproject/galaxy/pull/22579>`_
+* Emit SSE/queue metrics as gauges, sample SSE counts in web workers by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22960 <https://github.com/galaxyproject/galaxy/pull/22960>`_
 
 -------------------
 26.0.1 (2026-06-04)
