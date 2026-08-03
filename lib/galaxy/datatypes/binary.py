@@ -1,6 +1,7 @@
 """Binary classes"""
 
 import binascii
+import functools
 import gzip
 import io
 import json
@@ -111,11 +112,13 @@ except ModuleNotFoundError:
     # If astropy cannot be found FITS datatype will work with minimal metadata support
     pass
 
-parquet: Optional[Any] = None
+# Optional dependency for Parquet metadata parsing
 try:
-    import pyarrow.parquet as parquet
+    import thriftpy2
+    from thriftpy2.protocol.compact import TCompactProtocolFactory
+    from thriftpy2.transport import TMemoryBuffer
 except ModuleNotFoundError:
-    pass
+    thriftpy2 = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesUserContext
@@ -4620,6 +4623,78 @@ class ICM(Binary):
         return False
 
 
+_PARQUET_THRIFT_DEFINITION = """
+namespace py parquet
+
+struct SchemaElement {
+  4: required string name
+  5: optional i32 num_children
+}
+
+struct FileMetaData {
+  1: required i32 version
+  2: required list<SchemaElement> schema
+  3: required i64 num_rows
+}
+"""
+
+
+@functools.lru_cache(maxsize=1)
+def _get_parquet_thrift_module() -> Any:
+    if thriftpy2 is None:
+        raise RuntimeError("thriftpy2 is required for parquet metadata parsing")
+    return thriftpy2.load_fp(io.StringIO(_PARQUET_THRIFT_DEFINITION), module_name="galaxy_parquet_metadata_thrift")
+
+
+def _read_parquet_file_metadata(payload: bytes) -> tuple[int, list[str]]:
+    """Extract row count and top-level column names from Parquet metadata."""
+    thrift_module = _get_parquet_thrift_module()
+    metadata = thrift_module.FileMetaData()
+    protocol = TCompactProtocolFactory().get_protocol(TMemoryBuffer(payload))
+    metadata.read(protocol)
+    num_rows = int(metadata.num_rows)
+
+    schema_list = list(metadata.schema)
+    if not schema_list:
+        return num_rows, []
+    column_names = []
+    stack = [(schema_list[0].name, schema_list[0].num_children or 0)]
+    for i in range(1, len(schema_list)):
+        elem = schema_list[i]
+        while stack and stack[-1][1] == 0:
+            stack.pop()
+        current_depth = len(stack)
+        if stack:
+            parent_name, remaining = stack[-1]
+            stack[-1] = (parent_name, remaining - 1)
+        if current_depth == 1:
+            column_names.append(elem.name)
+        if elem.num_children is not None and elem.num_children > 0:
+            stack.append((elem.name, elem.num_children))
+    return num_rows, column_names
+
+
+def _read_parquet_footer_metadata(filename: str) -> bytes:
+    with open(filename, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        file_size = f.tell()
+        if file_size < 8:
+            raise ValueError("File too small to contain a parquet footer")
+
+        f.seek(-8, os.SEEK_END)
+        footer = f.read(8)
+        metadata_len = struct.unpack("<I", footer[:4])[0]
+        metadata_start = file_size - 8 - metadata_len
+        if metadata_start < 0:
+            raise ValueError("Invalid parquet metadata length in footer")
+
+        f.seek(metadata_start, os.SEEK_SET)
+        metadata = f.read(metadata_len)
+        if len(metadata) != metadata_len:
+            raise ValueError("Could not read complete parquet metadata payload")
+        return metadata
+
+
 @build_sniff_from_prefix
 class Parquet(Binary):
     """
@@ -4640,6 +4715,7 @@ class Parquet(Binary):
         desc="Number of columns",
         readonly=True,
         visible=False,
+        optional=True,
         no_value=0,
     )
     MetadataElement(
@@ -4673,18 +4749,19 @@ class Parquet(Binary):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if not os.path.isfile(dataset.get_file_name()):
             return
-        if parquet is None:
-            return
-        parquet_file = parquet.ParquetFile(dataset.get_file_name())
-        column_names = list(parquet_file.schema_arrow.names)
-        dataset.metadata.column_names = column_names
-        dataset.metadata.column_count = len(column_names)
-        dataset.metadata.line_count = parquet_file.metadata.num_rows
+        try:
+            footer_metadata = _read_parquet_footer_metadata(dataset.get_file_name())
+            num_rows, column_names = _read_parquet_file_metadata(footer_metadata)
+            dataset.metadata.column_names = column_names
+            dataset.metadata.column_count = len(column_names)
+            dataset.metadata.line_count = num_rows
+        except Exception:
+            pass
 
     def set_peek(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.get_file_name())
-            if parquet is not None and dataset.metadata.column_count:
+            if dataset.metadata.column_count:
                 col_label = "column" if dataset.metadata.column_count == 1 else "columns"
                 line_label = "line" if dataset.metadata.line_count == 1 else "lines"
                 dataset.blurb = f"{util.commaify(str(dataset.metadata.column_count))} {col_label}, {util.commaify(str(dataset.metadata.line_count))} {line_label}, {nice_size(dataset.get_size())}"
