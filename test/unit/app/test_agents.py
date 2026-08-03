@@ -751,24 +751,14 @@ class TestAgentUnitMocked:
         """A non-integer cap can't reach a slice index -- it would raise mid-request."""
         agent = ErrorAnalysisAgent(self.deps)
 
-        for bad in ("not-a-number", None, [10]):
+        # Everything nonsense falls back. bool is an int subclass and YAML reads `yes`
+        # as one, so int(True) == 1 would trim every query to a single character;
+        # int(inf) raises OverflowError rather than ValueError; and a non-positive cap
+        # is meaningless.
+        nonsense: list[Any] = ["not-a-number", None, [10], True, False, float("inf"), 0, -1]
+        for bad in nonsense:
             self.mock_config.inference_services = {"default": {"max_query_length": bad}}
-            assert agent._resolve_max_query_length() == agents_base.DEFAULT_MAX_QUERY_LENGTH
-
-        # bool is an int subclass and YAML reads `yes` as one; int(True) == 1 would
-        # trim every query to a single character instead of falling back.
-        for bad in (True, False):
-            self.mock_config.inference_services = {"default": {"max_query_length": bad}}
-            assert agent._resolve_max_query_length() == agents_base.DEFAULT_MAX_QUERY_LENGTH
-
-        # int(float("inf")) raises OverflowError, which is not a ValueError.
-        self.mock_config.inference_services = {"default": {"max_query_length": float("inf")}}
-        assert agent._resolve_max_query_length() == agents_base.DEFAULT_MAX_QUERY_LENGTH
-
-        # A non-positive cap is meaningless, so it falls back.
-        for bad in (0, -1):
-            self.mock_config.inference_services = {"default": {"max_query_length": bad}}
-            assert agent._resolve_max_query_length() == agents_base.DEFAULT_MAX_QUERY_LENGTH
+            assert agent._resolve_max_query_length() == agents_base.DEFAULT_MAX_QUERY_LENGTH, bad
 
         # But a small *explicit* cap is an admin decision and is honoured as-is.
         # Quietly raising it would defeat a limit set for cost or safety reasons.
