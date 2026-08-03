@@ -258,7 +258,7 @@ class MzSpecLibJson(Json):
         no_value=0,
     )
 
-    _required_keys = ("format_version", "attributes", "spectra")
+    _required_keys = {"format_version", "attributes", "spectra"}
     _key_pattern = re.compile(r"\"(format_version|attributes|spectra)\"\s*:")
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -267,7 +267,7 @@ class MzSpecLibJson(Json):
             return False
 
         found_keys = {match.group(1) for match in self._key_pattern.finditer(header)}
-        if not all(key in found_keys for key in self._required_keys):
+        if found_keys != self._required_keys:
             return False
 
         if not file_prefix.truncated:
