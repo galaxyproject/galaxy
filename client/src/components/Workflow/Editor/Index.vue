@@ -16,11 +16,11 @@ import { logicAnd, logicNot, logicOr } from "@vueuse/math";
 import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormTextarea } from "bootstrap-vue";
 import type { ZoomTransform } from "d3-zoom";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, onMounted, onUnmounted, ref, unref, watch } from "vue";
+import { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import { generateAIReport as generateAIReportFetch } from "@/api/chat";
-import type { Creator } from "@/api/workflows";
+import type { Creator, RefactorRequestAction } from "@/api/workflows";
 import { InsertStepAction, useStepActions } from "@/components/Workflow/Editor/Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "@/components/Workflow/Editor/Actions/workflowActions";
 import { defaultPosition } from "@/components/Workflow/Editor/composables/useDefaultStepPosition";
@@ -93,19 +93,30 @@ const emit = defineEmits<{
     (e: "forceReload"): void;
 }>();
 
-// TODO: Refactor -----------------------------------------------------------------------------
-// Options API setup section:
+const route = useRoute();
+const router = useRouter();
+
+const Toast = useToast();
+
+const { confirm } = useConfirmDialog();
+
+const inputs = getWorkflowInputs();
+
+const services = new Services();
+const lastQueue = new LastQueue();
 
 const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
 
 const uid = unref(useUid("workflow-editor-"));
 
+// Central `id` ref and stores setup
 const id = ref(props.workflowId || uid);
 
 const { connectionStore, stepStore, stateStore, commentStore, undoRedoStore } = provideScopedWorkflowStores(id.value);
 
 const { captureTransformAndBounds, calculateAdjustedTransform } = useWorkflowBoundingBox(id.value);
 
+// Undo/Redo keyboard shortcuts and stack
 const { undo, redo } = undoRedoStore;
 const { undoStackLength } = storeToRefs(undoRedoStore);
 const { ctrl_z, ctrl_shift_z, meta_z, meta_shift_z } = useMagicKeys();
@@ -113,13 +124,19 @@ const { ctrl_z, ctrl_shift_z, meta_z, meta_shift_z } = useMagicKeys();
 const undoKeys = logicOr(ctrl_z, meta_z);
 const redoKeys = logicOr(ctrl_shift_z, meta_shift_z);
 
+/** Tracks when the workflow is being fetched or an operation is ongoing */
 const loadingWorkflow = ref(false);
 
 whenever(logicAnd(undoKeys, logicNot(redoKeys)), () => !loadingWorkflow.value && undo());
 whenever(redoKeys, () => !loadingWorkflow.value && redo());
 
-const activityBar = ref<any>(null);
-const workflowGraph = ref<any>(null);
+const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
+
+// Activity bar and sidebar state
+const activityBar = ref<InstanceType<typeof ActivityBar> | null>(null);
+function isActiveSideBar(activityBarId: string) {
+    return activityBar.value?.isActiveSideBar(activityBarId);
+}
 const reportActive = computed(() => isActiveSideBar("workflow-editor-report"));
 
 const parameters = ref<UntypedParameters>();
@@ -137,6 +154,17 @@ function showAttributes(args?: any) {
         highlightAttribute.value = args.highlight;
     }
 }
+
+// Workflow attributes refs and handlers -------------------------------------
+
+/** Current version of the workflow. `null` if the workflow is unversioned. */
+const version = ref<number | null>(props.initialVersion !== undefined ? props.initialVersion : null);
+
+/** All versions of the workflow, fetched from the server. */
+const versions = ref<{ version: number; update_time: string; steps: number }[]>([]);
+
+/** Attribute element that is highlighted in the workflow attributes panel. */
+const highlightAttribute = ref<string | undefined>();
 
 const name = ref("Unnamed Workflow");
 const setNameActionHandler = new SetValueActionHandler(
@@ -281,6 +309,37 @@ function setTags(newTags: string[]) {
     // We used to have that here...
 }
 
+// ---------------------------------------------------------------------------
+
+// For the State Upgrade modal
+const stateMessages = ref<UpgradeMessage[]>([]);
+const insertedStateMessages = ref<UpgradeMessage[]>([]);
+
+/** Refactor actions that are queued up to be executed on the workflow. */
+const refactorActions = ref<RefactorRequestAction[]>([]);
+
+// For the error modal
+const errorMessageTitle = ref<string | null>(null);
+const errorMessageBody = ref<string | null>(null);
+
+// For the Save As modal
+const saveAsName = ref<string | null>(null);
+const saveAsAnnotation = ref<string | null>(null);
+const showSaveAsModal = ref(false);
+
+// For the Save Changes modal
+const showSaveChangesModal = ref(false);
+const saveChangesAppendVersion = ref(false);
+const navUrl = ref("");
+
+const rightPanelElement = ref<HTMLElement | null>(null);
+function scrollToTop() {
+    rightPanelElement.value?.scrollTo({
+        top: 0,
+        behavior: "instant",
+    });
+}
+// Scroll to top when the active node changes
 watch(
     () => stateStore.activeNodeId,
     () => {
@@ -288,15 +347,7 @@ watch(
     },
 );
 
-const rightPanelElement = ref<HTMLElement | null>(null);
-
-function scrollToTop() {
-    rightPanelElement.value?.scrollTo({
-        top: 0,
-        behavior: "instant",
-    });
-}
-
+// Comments, Steps and State stores
 const { comments } = storeToRefs(commentStore);
 const { steps, duplicateLabels } = storeToRefs(stepStore);
 const { activeNodeId, hasChanges } = storeToRefs(stateStore);
@@ -306,11 +357,10 @@ const activeStep = computed(() => {
     }
     return null;
 });
-
-const initialLoading = ref(true);
 const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
 const hasDuplicateOutputs = computed(() => duplicateLabels.value.size > 0);
 
+// Error handling and text for the workflow editor
 const hasErrors = computed(() => hasInvalidConnections.value || hasDuplicateOutputs.value);
 
 const errorText = computed(() => {
@@ -326,6 +376,10 @@ const errorText = computed(() => {
 
     return `Workflow has ${textify(texts, "and")}`;
 });
+
+/** Is true on initial load of when this component is mounted, and false after that.
+ * Used to avoid setting `hasChanges` on initial load. */
+const initialLoading = ref(true);
 
 stepStore.$subscribe((_mutation, _state) => {
     if (!initialLoading.value) {
@@ -357,23 +411,57 @@ onUnmounted(async () => {
 
 const stepActions = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
 
-// TODO: Type this, and recheck if `insertMarkdown` takes an object or string
-const markdownEditor = ref<any>(null);
-function insertMarkdown(markdown: any) {
-    markdownEditor.value?.insertMarkdown(markdown);
-}
+/** Workflow data object that is used for saving and creating workflows.
+ * It is a computed property that returns an object with the current values of the workflow properties. */
+const workflowData = computed<Workflow>(() => ({
+    id: id.value,
+    name: name.value,
+    annotation: annotation.value,
+    license: license.value,
+    creator: creator.value,
+    version: version.value ?? undefined,
+    report: report.value,
+    steps: steps.value,
+    comments: comments.value,
+    tags: tags.value,
+    logo_url: logoUrl.value,
+    readme: readme.value,
+    help: help.value,
+    doi: doi.value || undefined,
+}));
 
+/** Is true when we are on a fresh workflow editor with no ID yet (uncreated workflow) */
 const isNewTempWorkflow = computed(() => !props.workflowId);
+
+/** Boolean flag to toggle the visibility of the credentials dropdown menu in the top bar */
+const showCredentialsDropdown = ref(false);
+
+const unprivilegedToolStore = useUnprivilegedToolStore();
+const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
+
+/** Workflow activities specific to the workflow editor activity bar */
+const workflowActivities = useWorkflowActivities(
+    "workflow-editor",
+    isNewTempWorkflow,
+    hasChanges,
+    undoStackLength,
+    canUseUnprivilegedTools,
+);
+
+/** Lint/Best Practices panel data */
 const lintData = useLintData(id, steps, datatypesMapper, annotation, readme, license, creator);
 
-const { specialWorkflowActivities, exitWorkflowActivity, runWorkflowActivity } = useSpecialWorkflowActivities(
+/** Activities locked at the bottom of the workflow editor activity bar */
+const { bestPracticesActivity, exitWorkflowActivity, runWorkflowActivity } = useSpecialWorkflowActivities(
     computed(() => ({
         lintData: lintData,
     })),
 );
 
+/** Markdown Editor labels */
 const getLabels = computed(() => fromSteps(steps.value));
 
+/** Tooltip to show on the Save button in the top bar */
 const saveWorkflowTitle = computed(() =>
     hasInvalidConnections.value
         ? `${errorText.value}, review and remove workflow errors.`
@@ -382,24 +470,11 @@ const saveWorkflowTitle = computed(() =>
           : "No changes to save.",
 );
 
-const { confirm } = useConfirmDialog();
-const inputs = getWorkflowInputs();
-
 const credentialSteps = computed(() => {
     return Object.values(steps.value).filter(
         (step) => step.type === "tool" && step.config_form?.credentials?.length > 0,
     );
 });
-
-const unprivilegedToolStore = useUnprivilegedToolStore();
-const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
-const workflowActivities = useWorkflowActivities(
-    "workflow-editor",
-    isNewTempWorkflow,
-    hasChanges,
-    undoStackLength,
-    canUseUnprivilegedTools,
-);
 
 const scrollToId = ref<number | null>(null);
 
@@ -416,19 +491,7 @@ function onToolClick(toolId: number) {
     onScrollTo(toolId);
 }
 
-// TODO: Refactor -----------------------------------------------------------------------------
-// Options API data section:
-const versions = ref<{ version: number; update_time: string; steps: number }[]>([]);
-const stateMessages = ref<any[]>([]);
-const insertedStateMessages = ref<UpgradeMessage[]>([]);
-const refactorActions = ref<any[]>([]);
-const highlightAttribute = ref<string | undefined>();
-const errorMessageTitle = ref<string | null>(null);
-const errorMessageBody = ref<string | null>(null);
-const version = ref<number | null>(props.initialVersion !== undefined ? props.initialVersion : null);
-const saveAsName = ref<string | null>(null);
-const saveAsAnnotation = ref<string | null>(null);
-const showSaveAsModal = ref(false);
+// For keeping track of the workflow graph transform and bounds, so we can adjust for coordinate shifts
 const transform = ref<ZoomTransform>({ x: 0, y: 0, k: 1 } as ZoomTransform);
 const graphOffset = ref({
     left: 0,
@@ -441,13 +504,9 @@ const graphOffset = ref({
     y: 0,
     update: () => {},
 });
-const showSaveChangesModal = ref(false);
-const saveChangesAppendVersion = ref(false);
-const navUrl = ref("");
 
-// TODO: Refactor -----------------------------------------------------------------------------
-// Options API watch section:
-// TODO:!!!!!! Do we even need these for attributes that are being set by the `SetValueActionHandler`?
+// Several watchers ----------------------------------------------------------
+
 watch(
     () => id.value,
     (newId, oldId) => {
@@ -457,6 +516,17 @@ watch(
     },
 );
 
+watch(
+    () => props.workflowTags,
+    (newTags) => {
+        tags.value = [...newTags];
+    },
+    { immediate: true },
+);
+
+// `SetValueActionHandler`/`LazySetValueAction` only queue undo/redo actions and write the
+// value back via `setValueHandler` — they never touch `hasChanges`. These watchers are the
+// only thing that marks the workflow dirty when these attributes change, so they're required.
 watch(
     () => annotation.value,
     (newAnnotation, oldAnnotation) => {
@@ -518,22 +588,14 @@ watch(
     },
 );
 
-// TODO: Refactor -----------------------------------------------------------------------------
-// Options API created section:
-const services = new Services();
-const lastQueue = new LastQueue();
-
-// TODO: Remove/Adjust this if possible because we prefer just calling methods directly
-// in the setup here.
-onMounted(async () => {
-    await loadCurrent(id.value, version.value, true);
-
-    initialLoading.value = false;
-});
-
-// TODO: Refactor -----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // Options API methods section:
 
+/**
+ * Used to block certain actions while the workflow is loading, and show a warning toast to the user.
+ * @param [action="making changes"] Text followed by the prefix in the warning toast
+ * @returns `true` if the workflow is currently loading, and a warning toast is shown to the user.
+ */
 function blockedWhileLoading(action = "making changes") {
     if (loadingWorkflow.value) {
         Toast.warning(`Please wait for the workflow to finish loading before ${action}.`);
@@ -1195,44 +1257,13 @@ function onDoi(newDoi: string[] | null) {
     }
 }
 
-// TODO: Refactor -----------------------------------------------------------------------------
-// Stuff added for Composition API:
+/** Calls the `loadCurrent` function to load the workflow data into the editor when the component is mounted. */
+async function initializeWorkflowEditor() {
+    await loadCurrent(id.value, version.value, true);
 
-const route = useRoute();
-const router = useRouter();
-
-const Toast = useToast();
-
-const showDropdown = ref(false);
-
-const workflowData = computed<Workflow>(() => ({
-    id: id.value,
-    name: name.value,
-    annotation: annotation.value,
-    license: license.value,
-    creator: creator.value,
-    version: version.value ?? undefined,
-    report: report.value,
-    steps: steps.value,
-    comments: comments.value,
-    tags: tags.value,
-    logo_url: logoUrl.value,
-    readme: readme.value,
-    help: help.value,
-    doi: doi.value || undefined,
-}));
-
-function isActiveSideBar(activityBarId: string) {
-    return activityBar.value?.isActiveSideBar(activityBarId);
+    initialLoading.value = false;
 }
-
-watch(
-    () => props.workflowTags,
-    (newTags) => {
-        tags.value = [...newTags];
-    },
-    { immediate: true },
-);
+initializeWorkflowEditor();
 </script>
 
 <template>
@@ -1292,7 +1323,7 @@ watch(
             ref="activityBar"
             data-description="workflow editor activity bar"
             :default-activities="workflowActivities"
-            :special-activities="specialWorkflowActivities"
+            :special-activities="[bestPracticesActivity]"
             :exit-activity="exitWorkflowActivity"
             :run-activity="runWorkflowActivity"
             activity-bar-id="workflow-editor"
@@ -1371,14 +1402,12 @@ watch(
 
         <template v-if="reportActive">
             <MarkdownEditor
-                ref="markdownEditor"
                 :markdown-text="report.markdown || reportDefault"
                 mode="report"
                 :title="'Workflow Report Template: ' + name"
                 :labels="getLabels"
                 :loading="loadingWorkflow"
                 :steps="steps"
-                @insert="insertMarkdown"
                 @update="onReportUpdate">
                 <template v-slot:buttons>
                     <GButton
@@ -1426,8 +1455,8 @@ watch(
                             variant="link"
                             style="z-index: 60000"
                             title="Workflow contains steps that require credentials"
-                            @show="() => (showDropdown = true)"
-                            @hide="() => (showDropdown = false)">
+                            @show="() => (showCredentialsDropdown = true)"
+                            @hide="() => (showCredentialsDropdown = false)">
                             <template v-slot:button-content>
                                 <FontAwesomeIcon :icon="faKey" fixed-width />
                             </template>
