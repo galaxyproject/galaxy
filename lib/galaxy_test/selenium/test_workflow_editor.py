@@ -73,7 +73,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
         # shouldn't have changes on fresh load
         save_button = self.components.workflow_editor.save_button
-        save_button.assert_disabled()
+        save_button.has_class("g-disabled")
 
         self.screenshot("workflow_editor_blank")
 
