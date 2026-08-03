@@ -14,6 +14,7 @@ import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
@@ -166,6 +167,36 @@ describe("Index", () => {
         it("does not have changes once the initial load settles", async () => {
             await flushPromises();
             expect(stateStore.hasChanges).toBeFalsy();
+        });
+
+        it("assigns a fresh id and uuid when cloning a step", async () => {
+            await flushPromises();
+
+            const stepStore = useWorkflowStepStore("workflow_id");
+            const sourceStep = stepStore.addStep({
+                type: "tool",
+                label: "source label",
+                name: "source step",
+                content_id: "cat1",
+                tool_id: "cat1",
+                tool_state: {},
+                input_connections: {},
+                inputs: [],
+                outputs: [],
+                position: { left: 0, top: 0 },
+                uuid: "11111111-1111-1111-1111-111111111111",
+            });
+
+            wrapper.find(SELECTORS.WORKFLOW_GRAPH).vm.$emit("onClone", String(sourceStep.id));
+            await nextTick();
+
+            const clonedStepId = Object.keys(stepStore.steps).find((stepId) => stepId !== String(sourceStep.id))!;
+            const clonedStep = stepStore.steps[clonedStepId]!;
+
+            // The clone must not keep the source step's uuid, otherwise saving
+            // the workflow fails with "Duplicate step UUID ... in request."
+            expect(clonedStep.uuid).not.toBe(sourceStep.uuid);
+            expect(clonedStep.label).not.toBe(sourceStep.label);
         });
 
         it("routes to download URL and respects Galaxy prefix", async () => {

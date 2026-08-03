@@ -363,6 +363,9 @@ export class CopyStepAction extends UndoRedoAction {
         this.stepLabel = `${step.id + 1}: ${step.label ?? step.name}`;
         this.step = cloneStepWithUniqueLabel(step, labelSet);
         delete this.step.id;
+        // A cloned step must get its own uuid; keeping the source step's uuid
+        // produces a "Duplicate step UUID" error when saving the workflow.
+        delete this.step.uuid;
     }
 
     get name() {
