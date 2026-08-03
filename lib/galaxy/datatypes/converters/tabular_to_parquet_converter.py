@@ -11,8 +11,8 @@ try:
     import pyarrow as pa
     import pyarrow.parquet
 except ImportError:
-    pa = None  # type: ignore[assignment]
-    pyarrow = None  # type: ignore[assignment]
+    pa = None
+    pyarrow = None
 
 
 def __main__():
