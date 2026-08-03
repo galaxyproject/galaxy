@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fontsource/atkinson-hyperlegible':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fortawesome/fontawesome-svg-core':
         specifier: ^6.5.0
         version: 6.7.2
@@ -17,6 +20,9 @@ importers:
       '@fortawesome/vue-fontawesome':
         specifier: ^3.0.6
         version: 3.3.3(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.26(typescript@5.9.3))
+      '@galaxyproject/brand-tokens':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@galaxyproject/galaxy-ui':
         specifier: file:../../../../client/packages/ui
         version: file:../../../../client/packages/ui(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/vue-fontawesome@3.3.3(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.26(typescript@5.9.3)))(@vueuse/core@11.3.0(vue@3.5.26(typescript@5.9.3)))(vue-router@4.6.4(vue@3.5.26(typescript@5.9.3)))(vue@3.5.26(typescript@5.9.3))
@@ -318,6 +324,9 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
+  '@fontsource/atkinson-hyperlegible@5.3.0':
+    resolution: {integrity: sha512-Sp8Ve8+rQmENY2Lv02VH7sLpntzTTvnncnJMTbRE7DX6TLxGraN4ykZfzaUWIoCFmaomwkvNiqmlPkrKBuDoSA==}
+
   '@fortawesome/fontawesome-common-types@6.7.2':
     resolution: {integrity: sha512-Zs+YeHUC5fkt7Mg1l6XTniei3k4bwG/yo3iFUtZWd/pMx9g3fdvkSK9E0FOC+++phXOka78uJcYb8JaFkW52Xg==}
     engines: {node: '>=6'}
@@ -335,6 +344,9 @@ packages:
     peerDependencies:
       '@fortawesome/fontawesome-svg-core': ~1 || ~6 || ~7
       vue: '>= 3.0.0 < 4'
+
+  '@galaxyproject/brand-tokens@0.1.0':
+    resolution: {integrity: sha512-fzTXovmajr/U5ZfPoI4ui1KdWto4zAxZDjwsINESTLybnjrrVXzTMc2f9c6zVM8aMwWvEq+onbWRr+i4vLM3ZA==}
 
   '@galaxyproject/galaxy-ui@file:../../../../client/packages/ui':
     resolution: {directory: ../../../../client/packages/ui, type: directory}
@@ -2197,6 +2209,8 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
+  '@fontsource/atkinson-hyperlegible@5.3.0': {}
+
   '@fortawesome/fontawesome-common-types@6.7.2': {}
 
   '@fortawesome/fontawesome-svg-core@6.7.2':
@@ -2211,6 +2225,8 @@ snapshots:
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.7.2
       vue: 3.5.26(typescript@5.9.3)
+
+  '@galaxyproject/brand-tokens@0.1.0': {}
 
   '@galaxyproject/galaxy-ui@file:../../../../client/packages/ui(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/vue-fontawesome@3.3.3(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.26(typescript@5.9.3)))(@vueuse/core@11.3.0(vue@3.5.26(typescript@5.9.3)))(vue-router@4.6.4(vue@3.5.26(typescript@5.9.3)))(vue@3.5.26(typescript@5.9.3))':
     dependencies:

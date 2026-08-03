@@ -10,8 +10,16 @@ import "@quasar/extras/material-symbols-rounded/material-symbols-rounded.css"
 // import "@quasar/extras/material-icons-outlined/material-icons-outlined.css"
 // import "@quasar/extras/material-symbols-outlined/material-symbols-outlined.css"
 import "quasar/src/css/index.sass"
+
+// Galaxy brand: cross-property design tokens (--color-galaxy-*) and the
+// Atkinson Hyperlegible face used across Galaxy web properties.
+import "@galaxyproject/brand-tokens/tokens.css"
 // galaxy-ui component token contract (--color-*/--spacing-* custom properties)
 import "@galaxyproject/galaxy-ui/tokens.css"
+import "@fontsource/atkinson-hyperlegible/400.css"
+import "@fontsource/atkinson-hyperlegible/400-italic.css"
+import "@fontsource/atkinson-hyperlegible/700.css"
+import "@fontsource/atkinson-hyperlegible/700-italic.css"
 import router from "@/router"
 import { createPinia } from "pinia"
 
