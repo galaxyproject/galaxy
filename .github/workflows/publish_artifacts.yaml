@@ -81,7 +81,7 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: ${{ (github.event_name == 'workflow_dispatch' && inputs.release_type == 'prerelease') || (github.event_name == 'release' && github.event.release.prerelease) && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          repository-url: ${{ ((github.event_name == 'workflow_dispatch' && inputs.release_type == 'prerelease') || (github.event_name == 'release' && github.event.release.prerelease)) && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
 
   build-and-publish-npm:
     if: |
