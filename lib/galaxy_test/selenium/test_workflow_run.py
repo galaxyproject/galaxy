@@ -876,7 +876,7 @@ steps: {}
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
-    def test_modal_upload_updates_form(self):
+    def test_inline_upload_updates_form(self):
         history_id = self.current_history_id()
         self.upload_context("paste-content").stage_paste_content("goodbye land").start()
 
@@ -891,13 +891,10 @@ steps: {}
         self.history_panel_wait_for_hid_ok(2)
 
         builder = workflow_run.input.collection_builder._(label="input1")
-        # it is a div so I don't think it works to click directly but we can go to it and click
-        # on that part of the screen.
-        element = builder.element_by_hid(hid=2).wait_for_present()
-        action_chains = self.action_chains()
-        action_chains.move_to_element(element)
-        action_chains.click()
-        action_chains.perform()
+        # The inline upload auto-selects the dataset into the collection
+        # builder, so we only need to verify it appears — clicking on it
+        # would toggle it off (unselect it).
+        builder.element_by_hid(hid=2).wait_for_present()
 
         input.collection_tab_build_link.wait_for_and_click()
         builder.create.wait_for_and_click()
