@@ -23,6 +23,7 @@ import SaveChangesModal from "./SaveChangesModal.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import ReadmeEditor from "@/components/Workflow/Editor/ReadmeEditor.vue";
 import WorkflowAttributes from "@/components/Workflow/Editor/WorkflowAttributes.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
@@ -162,6 +163,11 @@ describe("Index", () => {
             expect(workflowGraph.props("datatypesMapper")).not.toBeUndefined();
         });
 
+        it("does not have changes once the initial load settles", async () => {
+            await flushPromises();
+            expect(stateStore.hasChanges).toBeFalsy();
+        });
+
         it("routes to download URL and respects Galaxy prefix", async () => {
             Object.defineProperty(window, "location", {
                 value: { href: "original" },
@@ -213,6 +219,85 @@ describe("Index", () => {
             wrapper.findComponent(WorkflowAttributes).vm.$emit("update:nameCurrent", "new name");
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("tracks changes to help", async () => {
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:helpCurrent", "original help");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            await resetChanges();
+
+            // Re-emitting the same value should not mark the workflow as changed again.
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:helpCurrent", "original help");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:helpCurrent", "new help");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("tracks changes to logoUrl", async () => {
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:logoUrlCurrent", "http://example.com/a.png");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            await resetChanges();
+
+            // Re-emitting the same value should not mark the workflow as changed again.
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:logoUrlCurrent", "http://example.com/a.png");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:logoUrlCurrent", "http://example.com/b.png");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("tracks changes to readme", async () => {
+            // wait for the initial workflow load to settle before making changes.
+            await flushPromises();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:readme-active", true);
+            await nextTick();
+
+            wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "original readme");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            await resetChanges();
+
+            // Re-emitting the same value should not mark the workflow as changed again.
+            wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "original readme");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "new readme");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("clears hasChanges after a successful save", async () => {
+            mockSaveWorkflow.mockResolvedValue({ version: 1 });
+
+            // wait for the initial workflow load to settle before making changes.
+            await flushPromises();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "a change");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            wrapper.find("#workflow-save-button").vm!.$emit("click");
+            await flushPromises();
+
+            expect(mockSaveWorkflow).toHaveBeenCalled();
+            expect(stateStore.hasChanges).toBeFalsy();
         });
 
         it("save as calls createWorkflow with the provided name and annotation", async () => {
