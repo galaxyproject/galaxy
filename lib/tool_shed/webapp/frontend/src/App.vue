@@ -3,7 +3,7 @@
         <a href="#main-content" class="skip-link">Skip to main content</a>
         <q-layout view="hHh lpR fFf">
             <q-header elevated role="banner">
-                <ShedToolbar title="Galaxy Tool Shed" />
+                <ShedToolbar title="Tool Shed" />
             </q-header>
             <q-page-container id="main-content" role="main">
                 <router-view />

@@ -15,15 +15,13 @@ void authStore.setup()
 const admin = computed(() => authStore.user && authStore.user.is_admin)
 </script>
 <template>
-    <q-toolbar class="bg-primary glossy text-white" role="navigation" aria-label="Main navigation">
+    <q-toolbar class="shed-masthead text-white" role="navigation" aria-label="Main navigation">
         <q-toolbar-title>
-            <q-avatar rounded>
-                <router-link to="/" aria-label="Tool Shed Home">
-                    <img alt="Tool Shed Logo" src="/static/favicon.ico" />
-                </router-link>
-            </q-avatar>
-            <!-- <q-btn flat round dense icon="menu" class="q-mr-sm" /> -->
-            <span class="text-bold">
+            <router-link to="/" aria-label="Tool Shed Home" class="masthead-brand">
+                <img alt="Galaxy" src="../assets/galaxy_logo.svg" />
+            </router-link>
+            <!-- Phones get the logo alone, which already reads "Galaxy" -->
+            <span class="text-bold gt-xs">
                 {{ title }}
             </span>
         </q-toolbar-title>
@@ -118,3 +116,31 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
         <q-btn class="q-mx-sm toolbar-help" flat round dense icon="help" to="/help" title="Help" aria-label="Help" />
     </q-toolbar>
 </template>
+<style lang="scss" scoped>
+// Galaxy masthead idiom: flat dark bar, gold hover/active accents.
+.shed-masthead {
+    background: var(--color-galaxy-dark, #2c3143);
+
+    :deep(.q-btn:hover),
+    :deep(.q-btn[aria-expanded="true"]) {
+        color: var(--color-galaxy-gold, #ffd700);
+    }
+
+    .masthead-brand {
+        display: inline-block;
+        vertical-align: middle;
+        // The logo is a wordmark, so the title follows it as the next word
+        margin-right: 0.4rem;
+
+        img {
+            display: block;
+            height: 1.75rem;
+        }
+    }
+
+    .q-toolbar__title {
+        display: flex;
+        align-items: center;
+    }
+}
+</style>
