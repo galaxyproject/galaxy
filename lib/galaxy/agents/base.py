@@ -480,9 +480,12 @@ class BaseGalaxyAgent(ABC):
         # Only nonsense falls back. An explicitly configured small cap is an admin
         # decision -- quietly raising it would defeat a limit set for cost or safety.
         if resolved <= 0:
+            # Log the type, not the value: _get_agent_config is the same accessor that
+            # serves api_key, so echoing whatever it returned into the log is a habit
+            # worth not having. The type is enough to find the offending YAML line.
             log.warning(
-                "Ignoring invalid max_query_length %r for the %s agent; using %d.",
-                configured,
+                "Ignoring invalid max_query_length of type %s for the %s agent; using %d.",
+                type(configured).__name__,
                 self.agent_type,
                 DEFAULT_MAX_QUERY_LENGTH,
             )
