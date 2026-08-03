@@ -225,9 +225,6 @@ onMounted(async () => {
             </div>
         </GAlert>
 
-        <WorkflowCredentialsManagement
-            v-if="showModal"
-            :tool-identifiers="props.toolIdentifiers"
-            @close="toggleDialog" />
+        <WorkflowCredentialsManagement :show.sync="showModal" :tool-identifiers="props.toolIdentifiers" />
     </div>
 </template>
