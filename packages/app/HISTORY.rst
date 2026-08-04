@@ -10,6 +10,17 @@ History
 
 
 -------------------
+26.1.1 (2026-08-04)
+-------------------
+
+
+=============
+Other changes
+=============
+
+* Ship the web client in the galaxy-web-client artifacts again by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23254 <https://github.com/galaxyproject/galaxy/pull/23254>`_
+
+-------------------
 26.1.0 (2026-08-02)
 -------------------
 
