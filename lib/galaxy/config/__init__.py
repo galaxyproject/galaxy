@@ -850,6 +850,8 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         if not self.database_connection:  # Provide default if not supplied by user
             db_path = self._in_data_dir("universe.sqlite")
             self.database_connection = f"sqlite:///{db_path}?isolation_level=IMMEDIATE"
+        if not self.tool_source_database_connection:
+            self.tool_source_database_connection = f"sqlite:///{self._in_data_dir('tool_sources.sqlite')}"
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_encoding = kwargs.get("database_encoding")  # Create new databases with this encoding
         self.thread_local_log = None
@@ -1357,6 +1359,7 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
 
         try_parsing(self.database_connection, "database_connection")
         try_parsing(self.install_database_connection, "install_database_connection")
+        try_parsing(self.tool_source_database_connection, "tool_source_database_connection")
         if self.interactivetoolsproxy_map is not None:
             try_parsing(self.interactivetoolsproxy_map, "interactivetoolsproxy_map")
         try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
@@ -1428,10 +1431,29 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
 
+    def all_tool_config_files(self) -> list[str]:
+        """Every tool config the toolbox loads: ``tool_config_file`` plus the
+        shed tool conf and, when present on disk, the migrated tools conf.
+        """
+        configs = list(self.tool_configs or [])
+        if self.shed_tool_config_file and self.shed_tool_config_file not in configs:
+            configs.append(self.shed_tool_config_file)
+        # migrated_tools_config is reserved for tools eliminated from the
+        # distribution; only load it when it exists (an existing deployment
+        # where migrations were previously run).
+        if (
+            self.migrated_tools_config
+            and os.path.exists(self.migrated_tools_config)
+            and self.migrated_tools_config not in configs
+        ):
+            configs.append(self.migrated_tools_config)
+        return configs
+
     def check(self):
         # Check that required directories exist; attempt to create otherwise
         paths_to_check = [
             self.data_dir,
+            self.file_path,
             self.ftp_upload_dir,
             self.library_import_dir,
             self.managed_config_dir,

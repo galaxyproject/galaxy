@@ -97,6 +97,7 @@ from galaxy.webapps.galaxy.api.common import (
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
 from galaxy.webapps.galaxy.services.workflows import WorkflowsService
+from galaxy.work.context import SessionRequestContext
 from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
@@ -215,7 +216,7 @@ class FastAPIHistories:
     def index(
         self,
         response: Response,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         limit: int | None = LimitQueryParam,
         offset: int | None = OffsetQueryParam,
         show_own: bool = ShowOwnQueryParam,
@@ -263,7 +264,7 @@ class FastAPIHistories:
     )
     def count(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> int:
         return self.service.count(trans)
 
@@ -274,7 +275,7 @@ class FastAPIHistories:
     )
     def index_deleted(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         all: bool | None = AllHistoriesQueryParam,
@@ -476,7 +477,7 @@ class FastAPIHistories:
     )
     def create(
         self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: CreateHistoryPayload = Depends(CreateHistoryFormData.as_form),  # type: ignore[attr-defined]
         payload_as_json: Any | None = Depends(try_get_request_body_as_json),
         serialization_params: SerializationParams = Depends(query_serialization_params),

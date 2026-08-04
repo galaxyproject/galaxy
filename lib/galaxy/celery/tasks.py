@@ -139,8 +139,16 @@ def purge_hda(
 
 
 @galaxy_task(ignore_result=True, action="completely removes a set of datasets from the object_store")
-def purge_datasets(dataset_manager: DatasetManager, request: PurgeDatasetsTaskRequest, task_user_id: int | None = None):
-    dataset_manager.purge_datasets(request)
+def purge_datasets(
+    sa_session: galaxy_scoped_session,
+    dataset_manager: DatasetManager,
+    request: PurgeDatasetsTaskRequest,
+    task_user_id: int | None = None,
+):
+    user = None
+    if task_user_id:
+        user = sa_session.get(User, task_user_id)
+    dataset_manager.purge_datasets(request, user)
 
 
 @galaxy_task(action="purge all datasets in a history")
@@ -553,12 +561,16 @@ def export_history(
 
 @galaxy_task(action="preparing compressed file for collection download")
 def prepare_dataset_collection_download(
+    sa_session: galaxy_scoped_session,
     request: PrepareDatasetCollectionDownload,
     collection_manager: DatasetCollectionManager,
     task_user_id: int | None = None,
 ):
     """Create a short term storage file tracked and available for download of target collection."""
-    collection_manager.write_dataset_collection(request)
+    user = None
+    if task_user_id:
+        user = sa_session.get(User, task_user_id)
+    collection_manager.write_dataset_collection(request, user=user)
 
 
 @galaxy_task(action="preparing Galaxy Markdown PDF for download")
@@ -784,37 +796,47 @@ def emit_queue_metrics_task(app: MinimalManagerApp):
     )
 
 
+def _cleanup_jwds(
+    sa_session: galaxy_scoped_session,
+    object_store: BaseObjectStore,
+    days: int,
+) -> int:
+    """Cleanup job working directories for failed jobs that are older than `days` days.
+
+    Returns the number of job working directories deleted.
+    """
+
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=days)
+
+    def _delete_jwd(job: model.Job) -> bool:
+        try:
+            path = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
+            shutil.rmtree(path)
+            return True
+        except ObjectNotFound:
+            return False
+        except OSError as e:
+            log.error(f"Error deleting job working directory: {path} : {e.strerror}")
+            return False
+
+    deleted_count = 0
+    stmt = select(model.Job).where(
+        model.Job.state == "error",
+        model.Job.update_time < cutoff,
+    )
+    for job in sa_session.scalars(stmt).yield_per(100):
+        if _delete_jwd(job):
+            deleted_count += 1
+
+    log.info("Deleted %d job working directories older than %d days", deleted_count, days)
+    return deleted_count
+
+
 @galaxy_task(action="clean up job working directories")
 def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, config: GalaxyAppConfiguration):
     """Cleanup job working directories for failed jobs that are older than X days"""
-
-    def get_failed_jobs():
-        return sa_session.query(model.Job.id).filter(
-            model.Job.state == "error",
-            model.Job.update_time < datetime.datetime.now() - datetime.timedelta(days=days),
-            model.Job.object_store_id.isnot(None),
-        )
-
-    def delete_jwd(job):
-        try:
-            # Get job working directory from object store
-            path = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
-            shutil.rmtree(path)
-        except ObjectNotFound:
-            # job working directory already deleted
-            pass
-        except OSError as e:
-            log.error(f"Error deleting job working directory: {path} : {e.strerror}")
-
-    failed_jobs = get_failed_jobs()
     days = config.failed_jobs_working_directory_cleanup_days
-
-    if not failed_jobs:
-        log.info("No failed jobs found within the last %s days", days)
-
-    for job in failed_jobs:
-        delete_jwd(job)
-        log.info("Deleted job working directory for job %s", job.id)
+    _cleanup_jwds(sa_session, object_store, days)
 
 
 @galaxy_task(action="renewing Hashicorp Vault token")

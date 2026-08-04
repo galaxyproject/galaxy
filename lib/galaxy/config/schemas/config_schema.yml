@@ -322,6 +322,66 @@ mapping:
           Other tool config files must include the tool_path as an attribute in the
           <toolbox> tag.
 
+      use_cached_toolbox:
+        type: bool
+        required: false
+        desc: |
+          When true, use the CachedToolBox which loads tools on demand from the
+          tool source store. Otherwise (the default), the traditional eager
+          ToolBox is used and any per-conf ``store="..."`` attributes on
+          tool_conf files are ignored. Opt-in is explicit: a populated tool
+          source store does not flip a default deployment to cached-toolbox mode.
+
+      cached_toolbox_cache_size:
+        type: int
+        default: 500
+        required: false
+        desc: |
+          Maximum number of fully constructed Tool objects the CachedToolBox keeps
+          in its in-memory LRU cache. Larger values reduce repeat parsing cost
+          for popular tools at the expense of memory.
+
+      tool_source_database_connection:
+        type: str
+        required: false
+        desc: |
+          SQLAlchemy connection string for the tool source store, a
+          rebuildable cache of pre-parsed tool sources kept outside Galaxy's
+          main database. Multi-host deployments should point every Galaxy
+          process at the same URI, such as a SQLite file on a shared
+          filesystem.
+
+          Sample default ``sqlite:///<data_dir>/tool_sources.sqlite``.
+
+          Populate the store with: python scripts/tool_source/populate_store.py
+
+          For details see
+          https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
+
+      tool_source_stores:
+        type: map
+        required: false
+        desc: |
+          Optional named tool source stores referenced from individual
+          tool_conf files via a top-level ``store="<name>"`` attribute (XML)
+          or ``store: <name>`` key (YAML). When any tool_conf opts in, the
+          process composes its named store with the default
+          (``tool_source_database_connection``) store at runtime, with reads
+          tried in declared order and writes always landing on the default.
+
+          Each entry takes either a normal SQLAlchemy ``url`` or an
+          ``external_store_directory`` containing versioned publisher
+          bundles. Galaxy never consults manifests for a normal URL. For an
+          external directory it reads the sidecars and automatically selects
+          the newest cohort compatible with its store/source/index formats
+          and index schema. External stores are always read-only.
+
+          For SQLite connection-level read-only, use a SQLite URI with
+          ``mode=ro&uri=true``.
+
+          For details see
+          https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
+
       tool_dependency_dir:
         type: str
         default: dependencies
@@ -519,7 +579,7 @@ mapping:
         desc: |
           Location of files available for a short time as downloads (short term storage).
           This directory is exclusively used for serving dynamically generated downloadable
-          content. Galaxy may uses the new_file_path parameter as a general temporary directory
+          content. Galaxy may use the new_file_path parameter as a general temporary directory
           and that directory should be monitored by a tool such as tmpwatch in production
           environments. short_term_storage_dir on the other hand is monitored by Galaxy's task
           framework and should not require such external tooling.
@@ -738,7 +798,7 @@ mapping:
         required: false
         desc: |
           XML config file that contains data table entries for the
-          ToolDataTableManager.  This file is manually # maintained by the Galaxy
+          ToolDataTableManager.  This file is manually maintained by the Galaxy
           administrator (.sample used if default does not exist).
 
       shed_tool_data_table_config:
@@ -934,7 +994,7 @@ mapping:
           defaults to bash for all jobs and can be overridden at the destination
           level for heterogeneous clusters. conda job resolution requires bash or zsh
           so if this is switched to /bin/sh for instance - conda resolution
-          should be disabled. Containerized jobs always use /bin/sh - so more maximum
+          should be disabled. Containerized jobs always use /bin/sh - so for maximum
           portability tool authors should assume generated commands run in sh.
 
       tool_search_index_dir:
@@ -971,7 +1031,7 @@ mapping:
         required: false
         desc: |
           Set this to true to attempt to resolve bio.tools metadata for tools for tool not
-          resovled via biotools_content_directory.
+          resolved via biotools_content_directory.
 
       biotools_service_cache_type:
         type: str
@@ -1894,7 +1954,7 @@ mapping:
 
       citation_bibtex:
         type: str
-        default: '@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}'
+        default: '@article{Galaxy2026, title="Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2026", doi="10.1093/nar/gkag469", url="https://doi.org/10.1093/nar/gkag469"}'
         required: false
         per_host: true
         desc: |
@@ -4101,7 +4161,7 @@ mapping:
 
       enable_tool_requests:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Submit tool jobs through the asynchronous tool requests API (`/api/jobs`)
@@ -4228,6 +4288,14 @@ mapping:
           retries"). custom_tool's producer keeps a budget of 0 because it runs its
           own reflection loop; a shared ``default`` block does not change that -- set
           ``custom_tool.retries`` explicitly to override it.
+          custom_tool also accepts ``quality_critic_enabled`` (default false) to turn on the
+          LLM clarity/idiomaticity critic, and ``container_recommendation_enabled`` (default
+          false) to resolve the produced tool's container to a verified quay.io biocontainer.
+          Container recommendation runs a dedicated container critic that infers the tool's
+          conda packages from its command and config files, independently of
+          ``quality_critic_enabled``; it adds an extra model call plus an outbound network
+          call to quay.io during the agent turn. Example:
+          inference_services: { custom_tool: { quality_critic_enabled: true, container_recommendation_enabled: true } }
 
       agent_model_capabilities_file:
         type: str

@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import IO
 from urllib.parse import (
     quote_plus,
     unquote_plus,
@@ -45,6 +46,7 @@ from galaxy.webapps.base.controller import (
     BaseUIController,
     UsesExtendedMetadataMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
 from ..api import depends
 
@@ -61,6 +63,7 @@ except ImportError:
 
 
 class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesExtendedMetadataMixin):
+    app: "StructuredApp"
     history_manager: HistoryManager = depends(HistoryManager)
     hda_manager: HDAManager = depends(HDAManager)
     hda_deserializer: HDADeserializer = depends(HDADeserializer)
@@ -69,7 +72,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
-    def _can_access_dataset(self, trans, dataset_association, allow_admin=True, additional_roles=None):
+    def _can_access_dataset(
+        self, trans: GalaxyWebTransaction, dataset_association, allow_admin=True, additional_roles=None
+    ):
         roles = trans.get_current_user_roles()
         if additional_roles:
             roles = roles + additional_roles
@@ -78,11 +83,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         )
 
     @web.expose
-    def default(self, trans, dataset_id=None, **kwd):
+    def default(self, trans: GalaxyWebTransaction, dataset_id=None, **kwd):
         return "This link may not be followed from within Galaxy."
 
     @web.expose_api_raw_anonymous_and_sessionless
-    def get_metadata_file(self, trans, hda_id=None, metadata_name=None, **kwd):
+    def get_metadata_file(self, trans: GalaxyWebTransaction, hda_id=None, metadata_name=None, **kwd):
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""
         if hda_id is None or metadata_name is None:
             raise RequestParameterInvalidException("Required parameters 'hda_id' and 'metadata_name' are missing.")
@@ -93,7 +98,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         trans.response.headers.update(headers)
         return fh
 
-    def _check_dataset(self, trans, hda_id):
+    def _check_dataset(self, trans: GalaxyWebTransaction, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
             data = trans.sa_session.query(HistoryDatasetAssociation).get(self.decode_id(hda_id))
@@ -113,7 +118,15 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
     @web.expose
     def display(
-        self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd
+        self,
+        trans: GalaxyWebTransaction,
+        dataset_id=None,
+        preview=False,
+        filename=None,
+        to_ext=None,
+        offset=None,
+        ck_size=None,
+        **kwd,
     ):
         data = self._check_dataset(trans, dataset_id)
         if "hdca" in kwd:
@@ -140,7 +153,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return display_data
 
     @web.expose_api_anonymous
-    def get_edit(self, trans, dataset_id=None, **kwd):
+    def get_edit(self, trans: GalaxyWebTransaction, dataset_id=None, **kwd):
         """Produces the input definitions available to modify dataset attributes"""
         status = None
         data, message = self._get_dataset_for_edit(trans, dataset_id)
@@ -323,7 +336,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             )
 
     @web.expose_api_anonymous
-    def set_edit(self, trans, payload=None, **kwd):
+    def set_edit(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """Allows user to modify parameters of an HDA."""
         status = "success"
         operation = payload.get("operation")
@@ -413,7 +426,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             raise MessageException(f"Invalid operation identifier ({operation}).")
         return {"status": status, "message": sanitize_text(message)}
 
-    def _get_dataset_for_edit(self, trans, dataset_id):
+    def _get_dataset_for_edit(self, trans: GalaxyWebTransaction, dataset_id):
         if dataset_id is not None:
             id = self.decode_id(dataset_id)
             data = trans.sa_session.get(HistoryDatasetAssociation, id)
@@ -438,7 +451,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return data, None
 
     @web.expose
-    def display_at(self, trans, dataset_id, filename=None, **kwd):
+    def display_at(self, trans: GalaxyWebTransaction, dataset_id, filename=None, **kwd):
         """Sets up a dataset permissions so it is viewable at an external site"""
         if not trans.app.config.enable_old_display_applications:
             return trans.show_error_message(
@@ -472,7 +485,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.do_not_cache
     def display_application(
         self,
-        trans,
+        trans: GalaxyWebTransaction,
         dataset_id=None,
         user_id=None,
         app_name=None,
@@ -571,7 +584,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 else:
                                     file_name = value.get_file_name()
                                 content_length = os.path.getsize(file_name)
-                                rval = open(file_name, "rb")
+                                rval: str | IO[bytes] = open(file_name, "rb")
                             except OSError as e:
                                 log.debug("Unable to access requested file in display application: %s", e)
                                 return paste.httpexceptions.HTTPNotFound("This file is no longer available.")

@@ -981,21 +981,40 @@ export function getRouter(Galaxy) {
         return false;
     }
 
+    /** Checks for unsaved changes (e.g., in the workflow editor) before navigating.
+     * Prompts the user to confirm if there are unsaved changes.
+     * @returns true if navigation should proceed, false to abort.
+     */
+    function checkUnsavedChanges(router) {
+        if (!router.confirmation) {
+            return true;
+        }
+        if (confirm("There are unsaved changes which will be lost.")) {
+            router.confirmation = undefined;
+            return true;
+        }
+        return false;
+    }
+
     router.beforeEach(async (to, from, next) => {
         // TODO: merge anon redirect functionality here for more standard handling
+
+        if (!checkUnsavedChanges(router)) {
+            return next(false);
+        }
 
         const isAdminAccessRequired = checkAdminAccessRequired(to);
         if (isAdminAccessRequired) {
             const error = new Error(`Admin access required for '${to.path}'.`);
             error.name = "AdminRequired";
-            next(error);
+            return next(error);
         }
 
         const isRegisteredUserAccessRequired = checkRegisteredUserAccessRequired(to);
         if (isRegisteredUserAccessRequired) {
             const error = new Error(`Registered user access required for '${to.path}'.`);
             error.name = "RegisteredUserRequired";
-            next(error);
+            return next(error);
         }
         next();
     });

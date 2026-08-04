@@ -3,11 +3,32 @@ History
 
 .. to_doc
 
--------
-26.1rc1
--------
+---------
+26.2.dev0
+---------
 
 
+
+-------------------
+26.1.0 (2026-08-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Don't install data table entries for non-DM tool installs by `@natefoo <https://github.com/natefoo>`_ in `#22679 <https://github.com/galaxyproject/galaxy/pull/22679>`_
+* Fix shed install column mismatch from synthesized name alias by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22733 <https://github.com/galaxyproject/galaxy/pull/22733>`_
+* Fix tool shed state serving for stock tools by `@jmchilton <https://github.com/jmchilton>`_ in `#22963 <https://github.com/galaxyproject/galaxy/pull/22963>`_
+
+============
+Enhancements
+============
+
+* Add Metadata Inspector UI and Enhanced reset_metadata API by `@jmchilton <https://github.com/jmchilton>`_ in `#21786 <https://github.com/galaxyproject/galaxy/pull/21786>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#22003 <https://github.com/galaxyproject/galaxy/pull/22003>`_
+* Clean up more Tool Shed code (round 2) by `@jmchilton <https://github.com/jmchilton>`_ in `#22037 <https://github.com/galaxyproject/galaxy/pull/22037>`_
 
 -------------------
 26.0.1 (2026-06-04)

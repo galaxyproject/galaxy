@@ -34,13 +34,14 @@ from galaxy.web.framework.helpers import (
     time_ago,
 )
 from galaxy.webapps.base import controller
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
 
 class UserListGrid(grids.GridData):
     class StatusColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
+        def get_value(self, trans: GalaxyWebTransaction, grid, user):
             if user.purged:
                 return "Purged"
             elif user.deleted:
@@ -48,24 +49,24 @@ class UserListGrid(grids.GridData):
             return "Available"
 
     class GroupsColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
+        def get_value(self, trans: GalaxyWebTransaction, grid, user):
             if user.groups:
                 return len(user.groups)
             return 0
 
     class RolesColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
+        def get_value(self, trans: GalaxyWebTransaction, grid, user):
             if user.roles:
                 return len(user.roles)
             return 0
 
     class LastLoginColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
+        def get_value(self, trans: GalaxyWebTransaction, grid, user):
             if user.galaxy_sessions:
                 return self.format(user.current_galaxy_session.update_time)
             return "never"
 
-        def sort(self, trans, query, ascending, column_name=None):
+        def sort(self, trans: GalaxyWebTransaction, query, ascending, column_name=None):
             last_login_subquery = (
                 trans.sa_session.query(
                     model.GalaxySession.table.c.user_id,
@@ -83,10 +84,10 @@ class UserListGrid(grids.GridData):
             return query
 
     class DiskUsageColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
+        def get_value(self, trans: GalaxyWebTransaction, grid, user):
             return user.get_disk_usage(nice_size=True)
 
-        def sort(self, trans, query, ascending, column_name=None):
+        def sort(self, trans: GalaxyWebTransaction, query, ascending, column_name=None):
             if column_name is None:
                 column_name = self.key
             column = self.model_class.table.c.get(column_name)
@@ -160,13 +161,13 @@ class UserListGrid(grids.GridData):
 
 class RoleListGrid(grids.GridData):
     class GroupsColumn(grids.GridColumn):
-        def get_value(self, trans, grid, role):
+        def get_value(self, trans: GalaxyWebTransaction, grid, role):
             if role.groups:
                 return len(role.groups)
             return 0
 
     class UsersColumn(grids.GridColumn):
-        def get_value(self, trans, grid, role):
+        def get_value(self, trans: GalaxyWebTransaction, grid, role):
             if role.users:
                 return len(role.users)
             return 0
@@ -224,13 +225,13 @@ class RoleListGrid(grids.GridData):
 
 class GroupListGrid(grids.GridData):
     class RolesColumn(grids.GridColumn):
-        def get_value(self, trans, grid, group):
+        def get_value(self, trans: GalaxyWebTransaction, grid, group):
             if group.roles:
                 return len(group.roles)
             return 0
 
     class UsersColumn(grids.GridColumn):
-        def get_value(self, trans, grid, group):
+        def get_value(self, trans: GalaxyWebTransaction, grid, group):
             if group.users:
                 return len(group.users)
             return 0
@@ -280,23 +281,23 @@ class GroupListGrid(grids.GridData):
 
 class QuotaListGrid(grids.GridData):
     class AmountColumn(grids.GridColumn):
-        def get_value(self, trans, grid, quota):
+        def get_value(self, trans: GalaxyWebTransaction, grid, quota):
             return quota.operation + quota.display_amount
 
     class DefaultTypeColumn(grids.GridColumn):
-        def get_value(self, trans, grid, quota):
+        def get_value(self, trans: GalaxyWebTransaction, grid, quota):
             if quota.default:
                 return quota.default[0].type
             return None
 
     class UsersColumn(grids.GridColumn):
-        def get_value(self, trans, grid, quota):
+        def get_value(self, trans: GalaxyWebTransaction, grid, quota):
             if quota.users:
                 return len(quota.users)
             return 0
 
     class GroupsColumn(grids.GridColumn):
-        def get_value(self, trans, grid, quota):
+        def get_value(self, trans: GalaxyWebTransaction, grid, quota):
             if quota.groups:
                 return len(quota.groups)
             return 0
@@ -372,7 +373,7 @@ class AdminGalaxy(controller.BaseUIController):
     @web.expose
     @web.json
     @web.require_admin
-    def data_tables_list(self, trans, **kwd):
+    def data_tables_list(self, trans: GalaxyWebTransaction, **kwd):
         data = []
         message = kwd.get("message", "")
         status = kwd.get("status", "done")
@@ -395,7 +396,7 @@ class AdminGalaxy(controller.BaseUIController):
     @web.expose
     @web.json
     @web.require_admin
-    def data_types_list(self, trans, **kwd) -> DatatypesEntryT:
+    def data_types_list(self, trans: GalaxyWebTransaction, **kwd) -> DatatypesEntryT:
         datatypes = []
         keys: set[str] = set()
         message = kwd.get("message", "")
@@ -409,17 +410,17 @@ class AdminGalaxy(controller.BaseUIController):
     @web.expose
     @web.json
     @web.require_admin
-    def users_list(self, trans, **kwd):
+    def users_list(self, trans: GalaxyWebTransaction, **kwd):
         return self.user_list_grid(trans, **kwd)
 
     @web.legacy_expose_api
     @web.require_admin
-    def quotas_list(self, trans, payload=None, **kwargs):
+    def quotas_list(self, trans: GalaxyWebTransaction, payload=None, **kwargs):
         return self.quota_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
     @web.require_admin
-    def create_quota(self, trans, payload=None, **kwd):
+    def create_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         if trans.request.method == "GET":
             all_users = []
             all_groups = []
@@ -441,7 +442,7 @@ class AdminGalaxy(controller.BaseUIController):
             default_options = [("No", "no")]
             for type_ in trans.app.model.DefaultQuotaAssociation.types:
                 default_options.append((f"Yes, {type_}", type_))
-            rval = {
+            rval: dict = {
                 "title": "Create Quota",
                 "inputs": [
                     {"name": "name", "label": "Name"},
@@ -487,7 +488,7 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def rename_quota(self, trans, payload=None, **kwd):
+    def rename_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
             return self.message_exception(trans, "No quota id received for renaming.")
@@ -508,7 +509,7 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def manage_users_and_groups_for_quota(self, trans, payload=None, **kwd):
+    def manage_users_and_groups_for_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         quota_id = kwd.get("id")
         if not quota_id:
             return self.message_exception(trans, f"Invalid quota id ({str(quota_id)}) received")
@@ -555,7 +556,7 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def edit_quota(self, trans, payload=None, **kwd):
+    def edit_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
             return self.message_exception(trans, "No quota id received for renaming.")
@@ -586,7 +587,7 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def set_quota_default(self, trans, payload=None, **kwd):
+    def set_quota_default(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
             return self.message_exception(trans, "No quota id received for renaming.")
@@ -616,7 +617,7 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.expose
     @web.require_admin
-    def impersonate(self, trans, **kwd):
+    def impersonate(self, trans: GalaxyWebTransaction, **kwd):
         if not trans.app.config.allow_user_impersonation:
             return trans.show_error_message("User impersonation is not enabled in this instance of Galaxy.")
         user = None
@@ -639,12 +640,12 @@ class AdminGalaxy(controller.BaseUIController):
     @web.expose
     @web.json
     @web.require_admin
-    def roles_list(self, trans, **kwargs):
+    def roles_list(self, trans: GalaxyWebTransaction, **kwargs):
         return self.role_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
     @web.require_admin
-    def rename_role(self, trans, payload=None, **kwd):
+    def rename_role(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
             return self.message_exception(trans, "No role id received for renaming.")
@@ -679,7 +680,7 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def manage_users_and_groups_for_role(self, trans, payload=None, **kwd):
+    def manage_users_and_groups_for_role(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         role_id = kwd.get("id")
         if not role_id:
             return self.message_exception(trans, f"Invalid role id ({str(role_id)}) received")
@@ -729,12 +730,12 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def groups_list(self, trans, **kwargs):
+    def groups_list(self, trans: GalaxyWebTransaction, **kwargs):
         return self.group_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
     @web.require_admin
-    def rename_group(self, trans, payload=None, **kwd):
+    def rename_group(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
             return self.message_exception(trans, "No group id received for renaming.")
@@ -764,12 +765,12 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.expose
     @web.require_admin
-    def create_new_user(self, trans, **kwd):
+    def create_new_user(self, trans: GalaxyWebTransaction, **kwd):
         return trans.response.send_redirect(web.url_for(controller="user", action="create", cntrller="admin"))
 
     @web.legacy_expose_api
     @web.require_admin
-    def reset_user_password(self, trans, payload=None, **kwd):
+    def reset_user_password(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         users = {user_id: get_user(trans, user_id) for user_id in util.listify(kwd.get("id"))}
         if users:
             if trans.request.method == "GET":
@@ -797,7 +798,7 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def manage_roles_and_groups_for_user(self, trans, payload=None, **kwd):
+    def manage_roles_and_groups_for_user(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         user_id = kwd.get("id")
         if not user_id:
             return self.message_exception(trans, f"Invalid user id ({str(user_id)}) received")
@@ -867,7 +868,7 @@ def build_select_input(name, label, options, value):
     }
 
 
-def get_user(trans, user_id):
+def get_user(trans: GalaxyWebTransaction, user_id):
     """Get a User from the database by id."""
     user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
     if not user:
@@ -875,7 +876,7 @@ def get_user(trans, user_id):
     return user
 
 
-def get_role(trans, id):
+def get_role(trans: GalaxyWebTransaction, id):
     """Get a Role from the database by id."""
     # Load user from database
     id = trans.security.decode_id(id)
@@ -885,7 +886,7 @@ def get_role(trans, id):
     return role
 
 
-def get_group(trans, id):
+def get_group(trans: GalaxyWebTransaction, id):
     """Get a Group from the database by id."""
     # Load user from database
     id = trans.security.decode_id(id)
@@ -895,7 +896,7 @@ def get_group(trans, id):
     return group
 
 
-def get_quota(trans, id):
+def get_quota(trans: GalaxyWebTransaction, id):
     """Get a Quota from the database by id."""
     # Load user from database
     id = trans.security.decode_id(id)

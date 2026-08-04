@@ -40,11 +40,11 @@ from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.resources import get_resource_mapper_function
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.model import (
         Workflow,
         WorkflowStep,
     )
-    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 INPUT_STEP_TYPES = ["data_input", "data_collection_input", "parameter_input"]
 
@@ -261,7 +261,7 @@ def _flatten_step_params(param_dict: dict, prefix: str = "") -> dict:
 
 
 def _get_target_history(
-    trans: "GalaxyWebTransaction",
+    trans: "ProvidesHistoryContext",
     workflow: "Workflow",
     payload: dict[str, Any],
     param_keys: list[list] | None = None,
@@ -306,7 +306,7 @@ def _get_target_history(
 
 
 def build_workflow_run_configs(
-    trans: "GalaxyWebTransaction", workflow: "Workflow", payload: dict[str, Any]
+    trans: "ProvidesHistoryContext", workflow: "Workflow", payload: dict[str, Any]
 ) -> list[WorkflowRunConfig]:
     app = trans.app
     allow_tool_state_corrections = payload.get("allow_tool_state_corrections", False)
@@ -532,7 +532,7 @@ def build_workflow_run_configs(
 
 
 def workflow_run_config_to_request(
-    trans: "GalaxyWebTransaction", run_config: WorkflowRunConfig, workflow: "Workflow"
+    trans: "ProvidesHistoryContext", run_config: WorkflowRunConfig, workflow: "Workflow"
 ) -> WorkflowInvocation:
     param_types = WorkflowRequestInputParameter.types
 

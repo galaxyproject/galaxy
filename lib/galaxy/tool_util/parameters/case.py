@@ -96,18 +96,23 @@ def legacy_from_string(parameter: ToolParameterT, value: Any | None, warnings: l
     """
     result_value: Any = value
     if isinstance(value, str):
-        if isinstance(parameter, (IntegerParameterModel,)):
-            if WARN_ON_UNTYPED_XML_STRINGS:
-                warnings.append(
-                    f"Implicitly converted {parameter.name} to an integer from a string value, please use 'value_json' to define this test input parameter value instead."
-                )
-            result_value = int(value)
-        elif isinstance(parameter, (FloatParameterModel,)):
-            if WARN_ON_UNTYPED_XML_STRINGS:
-                warnings.append(
-                    f"Implicitly converted {parameter.name} to a floating point number from a string value, please use 'value_json' to define this test input parameter value instead."
-                )
-            result_value = float(value)
+        if isinstance(parameter, (IntegerParameterModel, FloatParameterModel)):
+            # ``value=""`` on a numeric param is the legacy "not set" convention; emit None
+            # rather than raising on int("")/float("").
+            if value == "":
+                result_value = None
+            elif isinstance(parameter, IntegerParameterModel):
+                if WARN_ON_UNTYPED_XML_STRINGS:
+                    warnings.append(
+                        f"Implicitly converted {parameter.name} to an integer from a string value, please use 'value_json' to define this test input parameter value instead."
+                    )
+                result_value = int(value)
+            else:
+                if WARN_ON_UNTYPED_XML_STRINGS:
+                    warnings.append(
+                        f"Implicitly converted {parameter.name} to a floating point number from a string value, please use 'value_json' to define this test input parameter value instead."
+                    )
+                result_value = float(value)
         elif isinstance(parameter, (BooleanParameterModel,)):
             if WARN_ON_UNTYPED_XML_STRINGS:
                 warnings.append(
@@ -319,15 +324,16 @@ def test_case_state(
 
     for test_input in inputs:
         input_name = test_input["name"]
-        if input_name not in handled_inputs:
+        if input_name not in handled_inputs and not _input_name_was_handled_by_legacy_fallback(
+            input_name, handled_inputs, profile
+        ):
             unhandled_inputs.append(input_name)
 
     tool_state = TestCaseToolState(state)
     if validate:
         tool_state.validate(tool_parameter_bundle, name=name)
         for input_name in unhandled_inputs:
-            if not _input_name_was_handled_by_legacy_fallback(input_name, handled_inputs, profile):
-                raise Exception(f"Invalid parameter name found {input_name}")
+            raise Exception(f"Invalid parameter name found {input_name}")
     return TestCaseStateAndWarnings(tool_state, warnings, unhandled_inputs)
 
 
@@ -426,7 +432,8 @@ def _merge_into_state(
         if input_name not in state_at_level:
             state_at_level[input_name] = repeat_state_array
 
-        repeat_instance_inputs = _repeat_inputs_to_array(state_path, tool_input.parameters, context.inputs)
+        repeat_instance_inputs = _repeat_inputs_to_array(state_path, context.inputs)
+        supplied_instances = len(repeat_instance_inputs)
         if tool_input.min is not None:
             while len(repeat_instance_inputs) < tool_input.min:
                 repeat_instance_inputs.append([])
@@ -435,14 +442,18 @@ def _merge_into_state(
                 repeat_state_array.append({})
 
             repeat_instance_prefix = f"{state_path}_{i}"
-            handled_inputs.update(
-                _merge_level_into_state(
-                    tool_input.parameters,
-                    context.for_inputs(repeat_instance_inputs[i]),
-                    repeat_state_array[i],
-                    repeat_instance_prefix,
-                )
+            instance_handled_inputs = _merge_level_into_state(
+                tool_input.parameters,
+                context.for_inputs(repeat_instance_inputs[i]),
+                repeat_state_array[i],
+                repeat_instance_prefix,
             )
+            # Instances past the ones the test actually supplied exist only to satisfy min.
+            # Nothing resolved into them, so their paths must not count as handling a raw
+            # input - the legacy suffix match would otherwise read queries_0|input2 as
+            # covering a bare input2 that was in fact dropped.
+            if i < supplied_instances:
+                handled_inputs.update(instance_handled_inputs)
     elif isinstance(tool_input, (SectionParameterModel,)):
         section_state = state_at_level.get(input_name, {})
         if input_name not in state_at_level:
@@ -499,9 +510,7 @@ def _merge_into_state(
     return handled_inputs
 
 
-def _repeat_inputs_to_array(
-    state_path: str, parameters: list[ToolParameterT], inputs: ToolSourceTestInputs
-) -> list[ToolSourceTestInputs]:
+def _repeat_inputs_to_array(state_path: str, inputs: ToolSourceTestInputs) -> list[ToolSourceTestInputs]:
     inputs_as_dict = _inputs_as_dict(inputs)
     repeat_instance_input_dicts = repeat_inputs_to_array(state_path, inputs_as_dict)
     if not repeat_instance_input_dicts and "|" in state_path:
@@ -515,21 +524,7 @@ def _repeat_inputs_to_array(
             repeat_instance_input_dicts = repeat_inputs_to_array(candidate_path, inputs_as_dict)
             if repeat_instance_input_dicts:
                 break
-    repeat_instance_inputs = [list(instance_inputs.values()) for instance_inputs in repeat_instance_input_dicts]
-    if repeat_instance_inputs:
-        return repeat_instance_inputs
-
-    legacy_repeat_inputs: list[ToolSourceTestInputs] = []
-    for parameter in parameters:
-        parameter_name = parameter.name
-        matching_inputs = [input for input in inputs if input["name"] == parameter_name]
-        for i, input in enumerate(matching_inputs):
-            while len(legacy_repeat_inputs) <= i:
-                legacy_repeat_inputs.append([])
-            synthetic_input = cast(ToolSourceTestInput, dict(input))
-            synthetic_input["name"] = f"{state_path}_{i}|{parameter_name}"
-            legacy_repeat_inputs[i].append(synthetic_input)
-    return legacy_repeat_inputs
+    return [list(instance_inputs.values()) for instance_inputs in repeat_instance_input_dicts]
 
 
 def _select_which_when(

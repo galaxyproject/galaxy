@@ -13,6 +13,7 @@ from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import smart_str
 
 log = logging.getLogger(__name__)
@@ -148,7 +149,7 @@ class _SpalnDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(dataset.get_file_name(), encoding="utf-8") as handle:
+            with open(dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user)), encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass

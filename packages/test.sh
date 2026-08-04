@@ -71,7 +71,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Use a throw-away virtualenv
     TEST_ENV_DIR=$(mktemp -d -t gxpkgtestenvXXXXXX)
-    ${VENV_CMD} "$TEST_ENV_DIR"
+    ${VENV_CMD} "${TEST_ENV_DIR}"
     # shellcheck disable=SC1091
     . "${TEST_ENV_DIR}/bin/activate"
     if [ "${PIP_CMD}" = 'python -m pip' ]; then
@@ -115,4 +115,6 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
         ${TWINE_CMD} check dist/*
     fi
     cd ..
+    deactivate
+    rm -rf "${TEST_ENV_DIR}"
 done < $PACKAGE_LIST_FILE

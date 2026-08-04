@@ -43,6 +43,11 @@
             @onChangeVersion="onChangeVersion">
             <div class="mt-2 mb-4">
                 <Heading v-localize h2 separator bold size="sm"> Tool Parameters </Heading>
+
+                <GAlert v-if="showNoToolParametersAlert" show variant="info" data-description="no tool parameters">
+                    This tool requires no input parameters and can be run as is.
+                </GAlert>
+
                 <FormDisplay
                     :id="toolId"
                     :inputs="formConfig.inputs"
@@ -134,6 +139,7 @@ import GModal from "../BaseComponents/GModal.vue";
 import ToolRecommendation from "../ToolRecommendation.vue";
 import ToolCard from "./ToolCard.vue";
 import ToolFormTags from "./ToolFormTags.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
@@ -154,6 +160,7 @@ export default {
         ToolFormTags,
         ToolRecommendation,
         Heading,
+        GAlert,
         GModal,
     },
     props: {
@@ -278,16 +285,18 @@ export default {
         initialized() {
             return this.formData !== undefined;
         },
+        showNoToolParametersAlert() {
+            return !this.loading && this.formConfig?.inputs?.length === 0;
+        },
         canMutateHistory() {
             return this.currentHistory && canMutateHistory(this.currentHistory);
         },
         hasCredentialsErrors() {
             if (this.formConfig.credentials?.length) {
-                const { hasUserProvidedAllRequiredServiceCredentials, toolHasRequiredServiceCredentials } =
-                    useUserToolCredentials(this.formConfig.id, this.formConfig.version);
-                if (!toolHasRequiredServiceCredentials.value) {
-                    return false;
-                }
+                const { hasUserProvidedAllRequiredServiceCredentials } = useUserToolCredentials(
+                    this.formConfig.id,
+                    this.formConfig.version,
+                );
                 return !hasUserProvidedAllRequiredServiceCredentials.value;
             }
             return false;
@@ -385,31 +394,17 @@ export default {
                 this.history_id,
                 this.formData,
                 optionsPagination,
-            ).then((data) => {
-                const newInput = findInputByDottedName(data.inputs, name);
-                const target = findInputByDottedName(this.formConfig.inputs, name);
-                if (!newInput || !target) {
-                    return;
-                }
-                const existing = (target.options && target.options[src]) || [];
-                const incoming = (newInput.options && newInput.options[src]) || [];
-                const seen = new Set(existing.map((o) => `${o.id}_${o.src}`));
-                const appended = existing.concat(incoming.filter((o) => !seen.has(`${o.id}_${o.src}`)));
-                target.options = { ...target.options, [src]: appended };
-                if (newInput.options_meta && newInput.options_meta[src]) {
-                    target.options_meta = {
-                        ...(target.options_meta || {}),
-                        [src]: newInput.options_meta[src],
-                    };
-                }
-            });
+            ).then((data) => this.mergeFetchedOptions(name, src, data));
         },
         /**
          * Handle the user typing in the dropdown's search box. Refetch the
-         * parameter's options against the backend with the search filter and
-         * **replace** (not append) the local options/meta — we want the
-         * narrowed list, not a union with whatever was previously loaded.
-         * An empty query effectively resets to the default first page.
+         * parameter's options against the backend with the search filter, then
+         * MERGE (not replace) the server matches into the already-loaded options.
+         * Merging keeps the list non-empty and preserves any already-loaded or
+         * selected options, so the multiselect (and its focused search input) is
+         * never unmounted mid-typing; the client-side filter still narrows the
+         * union down to the typed query. An empty query fetches the default first
+         * page. Debounced upstream in ``FormSelect``.
          */
         onSearchChange({ name, src, query, limit }) {
             const spec = { offset: 0, limit };
@@ -424,20 +419,46 @@ export default {
                 this.history_id,
                 this.formData,
                 optionsPagination,
-            ).then((data) => {
-                const newInput = findInputByDottedName(data.inputs, name);
-                const target = findInputByDottedName(this.formConfig.inputs, name);
-                if (!newInput || !target) {
-                    return;
-                }
-                target.options = { ...target.options, [src]: newInput.options?.[src] || [] };
-                if (newInput.options_meta && newInput.options_meta[src]) {
-                    target.options_meta = {
-                        ...(target.options_meta || {}),
-                        [src]: newInput.options_meta[src],
-                    };
-                }
-            });
+            ).then((data) => this.mergeFetchedOptions(name, src, data));
+        },
+        /**
+         * Merge a freshly fetched page of options (from load-more or search) into
+         * the matching parameter's option list, de-duplicating by ``id``/``src``.
+         * Both callers merge rather than replace so the dropdown never empties out
+         * from under an open multiselect (which would unmount its focused input),
+         * and so a beyond-the-page selection stays visible. Refreshes the form
+         * afterwards so the rendered clone picks up the new options (see
+         * ``refreshInputs``).
+         */
+        mergeFetchedOptions(name, src, data) {
+            const newInput = findInputByDottedName(data.inputs, name);
+            const target = findInputByDottedName(this.formConfig.inputs, name);
+            if (!newInput || !target) {
+                return;
+            }
+            const existing = (target.options && target.options[src]) || [];
+            const incoming = (newInput.options && newInput.options[src]) || [];
+            const seen = new Set(existing.map((o) => `${o.id}_${o.src}`));
+            const merged = existing.concat(incoming.filter((o) => !seen.has(`${o.id}_${o.src}`)));
+            target.options = { ...target.options, [src]: merged };
+            if (newInput.options_meta && newInput.options_meta[src]) {
+                target.options_meta = {
+                    ...(target.options_meta || {}),
+                    [src]: newInput.options_meta[src],
+                };
+            }
+            this.refreshInputs();
+        },
+        /**
+         * Hand ``FormDisplay`` a fresh ``inputs`` array reference after mutating a
+         * parameter's ``options``/``options_meta`` in place. ``FormDisplay`` renders
+         * from an internal *clone* of ``inputs`` that is only re-synced by its
+         * ``watch(() => props.inputs)``, which fires on array identity change, not on
+         * deep mutation. Without this bump the paginated / searched options are
+         * fetched but never reach the dropdown (issue #23135).
+         */
+        refreshInputs() {
+            this.formConfig.inputs = [...this.formConfig.inputs];
         },
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);

@@ -58,6 +58,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         alt_name=None,
         obj_dir: bool = False,
         in_cache: bool = False,
+        **_kwargs,
     ) -> str:
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot

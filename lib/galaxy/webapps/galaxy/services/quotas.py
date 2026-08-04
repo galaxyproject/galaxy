@@ -7,7 +7,10 @@ from sqlalchemy import (
 )
 
 from galaxy import util
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.groups import get_group_by_name
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model import Quota
@@ -121,7 +124,7 @@ class QuotasService(ServiceBase):
         quota = self.quota_manager.get_quota(trans, id, deleted=True)
         return self.quota_manager.undelete_quota(quota)
 
-    def validate_in_users_and_groups(self, trans, payload):
+    def validate_in_users_and_groups(self, trans: ProvidesAppContext, payload):
         """
         For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
         """

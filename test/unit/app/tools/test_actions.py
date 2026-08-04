@@ -3,12 +3,19 @@ from typing import (
     cast,
 )
 
+import pytest
+
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.parser.xml import parse_change_format
+from galaxy.tools import (
+    load_tool_action_class,
+    tool_produces_real_jobs,
+)
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
@@ -61,6 +68,23 @@ MULTIPLE_DATA_TOOL = """<tool id="test_tool" name="Test Tool" version="1.0" prof
     </outputs>
 </tool>
 """
+
+
+def test_load_tool_action_class_validates_configured_class():
+    action_class = load_tool_action_class("galaxy.tools.actions", "DefaultToolAction")
+
+    assert action_class is DefaultToolAction
+    assert tool_produces_real_jobs("default", ("galaxy.tools.actions", "DefaultToolAction")) is True
+
+
+def test_load_tool_action_class_rejects_missing_class():
+    with pytest.raises(AttributeError, match="has no class 'MissingToolAction'"):
+        load_tool_action_class("galaxy.tools.actions", "MissingToolAction")
+
+
+def test_load_tool_action_class_rejects_non_action_class():
+    with pytest.raises(TypeError, match="is not a ToolAction subclass"):
+        load_tool_action_class("json", "JSONDecoder")
 
 
 def test_on_text_for_numeric_ids():
@@ -191,7 +215,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         self._init_tool(contents)
         job, out_data, *_ = self.action.execute(
             tool=self.tool,
-            trans=self.trans,
+            trans=cast(ProvidesHistoryContext, self.trans),
             history=self.history,
             incoming=incoming,
         )

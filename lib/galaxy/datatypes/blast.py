@@ -44,6 +44,7 @@ from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import smart_str
 from .data import (
     Data,
@@ -242,7 +243,7 @@ class _BlastDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(dataset.get_file_name(), encoding="utf-8") as handle:
+            with open(dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user)), encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass

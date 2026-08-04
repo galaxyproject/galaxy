@@ -244,6 +244,7 @@ class CredentialsService:
             raise ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
         if not tool.allow_user_access(user):
             raise AuthenticationFailed(f"Access denied, please login for tool with id '{tool_id}'.")
+        tool = self.app.toolbox.materialize_tool(tool, reason="detail")
         # even if the tool is found, the version might not be the same
         if tool.version != tool_version:
             raise ObjectNotFound(f"Could not find tool {tool_id} with version '{tool_version}'.")

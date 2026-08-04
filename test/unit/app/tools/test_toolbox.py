@@ -144,6 +144,16 @@ class TestToolBox(BaseToolBoxTestCase):
             assert len(test_section["elems"]) == 1
             assert test_section["elems"][0]["id"] == "test_tool"
 
+    def test_panel_entry_matches_to_dict(self):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect("tool_runner", "/test/tool_runner")
+        tool = self.toolbox.get_tool("test_tool")
+        for is_admin in (False, True):
+            trans = mock_trans(is_admin=is_admin)
+            assert tool.to_panel_entry(trans) == tool.to_dict(trans)
+            assert ("config_file" in tool.to_panel_entry(trans)) is is_admin
+
     def test_to_dict_out_of_panel(self):
         for json_conf in [True, False]:
             self._init_tool_in_section(json=json_conf)
@@ -218,6 +228,37 @@ class TestToolBox(BaseToolBoxTestCase):
         assert favorites_section["model_class"] == "ToolSection"
         assert favorites_section["name"] == "Favorites"
         assert favorites_section["tools"] == []
+
+    def test_panel_view_referencing_tool_by_old_id_loads_while_toolbox_is_built(self):
+        # Panel views are rendered from within ToolBox.__init__, before any
+        # toolbox is registered on the app.
+        self._init_tool()
+        self._setup_two_versions_in_config()
+        self._setup_two_versions()
+        self.app.config.panel_views = [
+            {
+                "id": "old_id_view",
+                "name": "Old Id View",
+                "type": "generic",
+                "items": [{"type": "tool", "id": "test_tool"}],
+            }
+        ]
+
+        assert "old_id_view" in self.toolbox.panel_view_dicts()
+
+    def test_lineage_for_tool_registered_outside_of_panel_load(self):
+        # `register_tool` is how built-in converters and hidden tools enter the
+        # toolbox, and it registers no lineage. Resolving one must not depend on
+        # the toolbox already being the one registered on the app.
+        self._init_tool()
+        self._add_config("""<toolbox></toolbox>""")
+        toolbox = self.toolbox
+        hidden_tool = toolbox.load_hidden_tool(self._tool_path())
+        self.app._toolbox = None
+
+        lineage = toolbox._lineage_map.get("test_tool")
+        assert lineage is not None
+        assert hidden_tool.version in lineage.tool_versions
 
     def test_out_of_panel_filtering(self):
         self._init_tool_in_section()

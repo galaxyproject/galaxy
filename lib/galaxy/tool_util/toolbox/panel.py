@@ -10,6 +10,7 @@ from galaxy.util.odict import odict
 from .parser import ensure_tool_conf_item
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.tools import Tool
 
 
@@ -99,7 +100,9 @@ class ToolSection(UsesDictVisibleKeys, HasPanelItems):
 
         return copy
 
-    def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None, only_ids=False):
+    def to_dict(
+        self, trans: "ProvidesHistoryContext", link_details=False, tool_help=False, toolbox=None, only_ids=False
+    ):
         """Return a dict that includes section's attributes.
 
         if `only_ids` is `True`, we store only the ids of the section's tools in `section.tools`
@@ -162,7 +165,9 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
     used both by tool panel itself (normal and integrated) and its sections.
     """
 
-    _section_by_tool: dict[str, tuple[str, str]] = {}
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._section_by_tool: dict[str, tuple[str, str]] = {}
 
     def record_section_for_tool_id(self, tool_id: str, key: str, val: str):
         self._section_by_tool[tool_id] = (key, val)
@@ -186,13 +191,12 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
     def get_or_create_section(
         self, sec_id: str, sec_nm: str, description: str | None = None, links: dict[str, str] | None = None
     ) -> ToolSection:
-        if sec_id not in self:
+        section = self.get(sec_id)
+        if not isinstance(section, ToolSection):
             section = ToolSection(
                 {"id": sec_id, "name": sec_nm, "description": description, "version": "", "links": links}
             )
             self[sec_id] = section
-        else:
-            section = self[sec_id]
         return section
 
     def remove_tool(self, tool_id: str) -> None:
@@ -205,6 +209,14 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
                 if tool_key in val.elems:
                     del self[key].elems[tool_key]
                     break
+
+    def remove_unresolved_tools(self) -> None:
+        """Discard tool placeholders that no configuration walk resolved."""
+        for key, item in list(self.items()):
+            if isinstance(item, ToolSection):
+                item.elems.remove_unresolved_tools()
+            elif key.startswith("tool_") and item is None:
+                del self[key]
 
     def update_or_append(self, index: int, key: str, value) -> None:
         if key in self or index is None:

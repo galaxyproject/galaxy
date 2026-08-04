@@ -6,11 +6,21 @@ import { useUserStore } from "@/stores/userStore";
 
 import { usePersistentToggle } from "./persistentToggle";
 
+function extractBaseToolId(toolId: string, tool: Tool | undefined) {
+    if (tool?.version && toolId.endsWith(`/${tool.version}`)) {
+        return toolId.slice(0, -tool.version.length - 1);
+    }
+    return undefined;
+}
+
 /**
  * Composable for managing favorites and recent tools in the tool panel.
  * Provides computed properties for favorites/recent tool filtering and persistent collapse state.
  */
-export function useToolPanelFavorites(localToolsById: Ref<Record<string, Tool>>) {
+export function useToolPanelFavorites(
+    localToolsById: Ref<Record<string, Tool>>,
+    panelToolIds?: ComputedRef<Set<string>>,
+) {
     const { currentFavorites, recentTools } = storeToRefs(useUserStore());
 
     // Collapse state with localStorage persistence (user-specific)
@@ -31,8 +41,37 @@ export function useToolPanelFavorites(localToolsById: Ref<Record<string, Tool>>)
     );
 
     // Derived recent tools data
-    const recentToolIds = computed(() => recentTools.value || []);
-    const recentToolIdsInPanel = computed(() => recentToolIds.value.filter((toolId) => !!localToolsById.value[toolId]));
+    const recentToolIds = computed(() => [...new Set(recentTools.value || [])]);
+    const panelUniqueToolIds = computed(() => {
+        const baseToolIdMap = new Map<string, string>();
+        for (const toolId of panelToolIds?.value || []) {
+            const baseToolId = extractBaseToolId(toolId, localToolsById.value[toolId]);
+            if (baseToolId) {
+                baseToolIdMap.set(baseToolId, toolId);
+            }
+        }
+        return baseToolIdMap;
+    });
+    const recentToolIdsInPanel = computed(() => {
+        const seenToolIds = new Set<string>();
+        return recentToolIds.value
+            .map((toolId) => {
+                if (!panelToolIds || panelToolIds.value.has(toolId)) {
+                    return toolId;
+                }
+
+                const baseToolId = extractBaseToolId(toolId, localToolsById.value[toolId]);
+                return baseToolId ? panelUniqueToolIds.value.get(baseToolId) : undefined;
+            })
+            .filter((toolId): toolId is string => !!toolId && !!localToolsById.value[toolId])
+            .filter((toolId) => {
+                if (seenToolIds.has(toolId)) {
+                    return false;
+                }
+                seenToolIds.add(toolId);
+                return true;
+            });
+    });
     const recentToolIdsToShow = computed(() =>
         recentToolIdsInPanel.value.filter((toolId) => !favoriteToolIdSet.value.has(toolId)),
     );

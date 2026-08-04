@@ -203,6 +203,36 @@ HELP_INVALID_RST = """
 </tool>
 """
 
+HELP_MARKDOWN_INVALID_RST = """
+<tool id="id" name="name">
+    <help format="markdown">
+        **xxl__
+    </help>
+</tool>
+"""
+
+HELP_YAML_MARKDOWN_INVALID_RST = """
+class: GalaxyTool
+id: id
+name: name
+version: '1.0'
+command: echo test
+help: |
+  **xxl__
+"""
+
+HELP_YAML_RST_INVALID = """
+class: GalaxyTool
+id: id
+name: name
+version: '1.0'
+command: echo test
+help:
+  format: restructuredtext
+  content: |
+    **xxl__
+"""
+
 # test tool xml for inputs linter
 INPUTS_NO_INPUTS = """
 <tool id="id" name="name">
@@ -1240,8 +1270,7 @@ def test_citations_legacy_doi_prefix(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX)
     run_lint_module(lint_ctx, citations, tool_source)
     assert lint_ctx.warn_messages == [
-        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
-        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; use the bare DOI '10.1186/1471-2105-11-485' instead."
     ]
     assert not lint_ctx.error_messages
 
@@ -1258,8 +1287,7 @@ def test_citations_legacy_doi_prefix_error_on_modern_profile(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX_MODERN)
     run_lint_module(lint_ctx, citations, tool_source)
     assert lint_ctx.error_messages == [
-        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
-        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; use the bare DOI '10.1186/1471-2105-11-485' instead."
     ]
     assert not lint_ctx.warn_messages
 
@@ -1451,6 +1479,29 @@ def test_help_invalid_rst(lint_ctx):
     assert len(lint_ctx.valid_messages) == 1
     assert len(lint_ctx.warn_messages) == 1
     assert not lint_ctx.error_messages
+
+
+def test_help_markdown_skips_rst_validation(lint_ctx):
+    tool_source = get_xml_tool_source(HELP_MARKDOWN_INVALID_RST)
+    run_lint_module(lint_ctx, help, tool_source)
+    assert "Tool contains help section." in lint_ctx.valid_messages
+    assert "Help contains valid reStructuredText." not in lint_ctx.valid_messages
+    assert "Invalid reStructuredText found in help" not in lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_help_yaml_markdown_skips_rst_validation(lint_ctx):
+    tool_source = get_tool_source(HELP_YAML_MARKDOWN_INVALID_RST)
+    run_lint_module(lint_ctx, help, tool_source)
+    assert "Help contains valid reStructuredText." not in lint_ctx.valid_messages
+    assert "Invalid reStructuredText found in help" not in lint_ctx.warn_messages
+
+
+def test_help_yaml_rst_invalid(lint_ctx):
+    tool_source = get_tool_source(HELP_YAML_RST_INVALID)
+    run_lint_module(lint_ctx, help, tool_source)
+    assert "Invalid reStructuredText found in help" in lint_ctx.warn_messages
+    assert "Help contains valid reStructuredText." not in lint_ctx.valid_messages
 
 
 def test_inputs_no_inputs(lint_ctx):

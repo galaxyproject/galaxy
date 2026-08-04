@@ -4,6 +4,7 @@ import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListIn
 import { describe, expect, it } from "vitest";
 
 import {
+    countUniqueToolsInList,
     createSortedResultPanel,
     createWhooshQuery,
     determineWidth,
@@ -96,6 +97,12 @@ describe("test helpers in tool searching utilities", () => {
     it("builds tag-only whoosh queries without an empty leading clause", async () => {
         expect(createWhooshQuery({ tag: ["data cleanup"] })).toEqual('(tool_tags:("data cleanup"))');
         expect(createWhooshQuery({ section: '"Get Data"' })).toEqual('(section:("Get Data"))');
+    });
+
+    it("counts versioned tools once when falling back to the full tools list", async () => {
+        const firstTool = toolsList[0]!;
+        const toolsWithOlderVersion = [...toolsList, { ...firstTool, id: `${firstTool.id}/0.9`, version: "0.9" }];
+        expect(countUniqueToolsInList(toolsWithOlderVersion)).toBe(toolsList.length);
     });
 
     it("lowercases tag clauses to match the Whoosh field analyzer", async () => {

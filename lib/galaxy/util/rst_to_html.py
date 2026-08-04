@@ -1,5 +1,6 @@
 import functools
 import os
+import threading
 
 try:
     import docutils.core
@@ -57,12 +58,17 @@ def get_publisher(error=False):
     return pub
 
 
+# Cached docutils publishers are stateful and not thread-safe.
+_publish_lock = threading.Lock()
+
+
 @functools.cache
 def rst_to_html(s, error=False):
     if docutils is None:
         raise Exception("Attempted to use rst_to_html but docutils unavailable.")
 
-    publisher = get_publisher(error=error)
-    publisher.set_source(s, None)
-    publisher.set_destination(None, None)
-    return publisher.publish(enable_exit_status=False)
+    with _publish_lock:
+        publisher = get_publisher(error=error)
+        publisher.set_source(s, None)
+        publisher.set_destination(None, None)
+        return publisher.publish(enable_exit_status=False)

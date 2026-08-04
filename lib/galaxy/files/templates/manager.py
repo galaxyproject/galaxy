@@ -19,6 +19,7 @@ from .models import (
     FileSourceTemplate,
     FileSourceTemplateCatalog,
     FileSourceTemplateSummaries,
+    get_oauth2_config_or_none,
 )
 
 SECRETS_NEED_VAULT_MESSAGE = "The file source templates configuration can not be used - a Galaxy vault must be configured for templates that use secrets - please set the vault_config_file configuration option to point at a valid vault configuration."
@@ -64,6 +65,7 @@ class ConfiguredFileSourceTemplates:
             template_dict.pop("environment")
             object_store_type = configuration["type"]
             template_dict["type"] = object_store_type
+            template_dict["requires_oauth2_authorization"] = get_oauth2_config_or_none(template) is not None
             summaries.append(template_dict)
         return FileSourceTemplateSummaries.model_validate(summaries)
 

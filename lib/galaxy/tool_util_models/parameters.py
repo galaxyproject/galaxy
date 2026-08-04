@@ -1,6 +1,7 @@
 # attempt to model requires_value...
 # conditional can descend...
 import builtins
+import re
 from abc import abstractmethod
 from collections.abc import (
     Callable,
@@ -326,6 +327,11 @@ def _json_schema_extra_for_validators(validators: Sequence[VT]) -> dict[str, Any
             # Python re.match anchors at start; JSON Schema pattern does not
             if not pattern.startswith("^"):
                 pattern = "^" + pattern
+            # Python ``re`` (used by pydantic's ``pattern``) doesn't recognise POSIX
+            # character classes; defer such patterns to ``statically_validate`` which uses
+            # the ``regex`` module (seurat_plot).
+            if "[:" in pattern and ":]" in pattern:
+                continue
             extra["pattern"] = pattern
             break
     for v in validators:
@@ -459,7 +465,7 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
-        elif _is_landing_request(state_representation):
+        elif _values_not_required(state_representation):
             requires_value = False
         return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
@@ -521,7 +527,7 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
-        elif _is_landing_request(state_representation):
+        elif _values_not_required(state_representation):
             requires_value = False
         validators = self.validators[:]
         if self.min is not None or self.max is not None:
@@ -1545,6 +1551,9 @@ class HiddenParameterModel(BaseGalaxyToolParameterModelDefinition):
         py_type = decorate_type_with_validators_if_needed(py_type, self.validators)
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
+            if not self.optional and self.value is None:
+                py_type = optional(py_type)
+                requires_value = False
         elif state_representation == "workflow_step" and not self.optional:
             # allow it to be linked in so force allow optional...
             py_type = optional(py_type)
@@ -1667,7 +1676,7 @@ class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
         requires_value = self.request_requires_value
-        if _is_landing_request(state_representation):
+        if _values_not_required(state_representation):
             requires_value = False
         return dynamic_model_information_from_py_type(
             self,
@@ -1681,13 +1690,159 @@ class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
         return True
 
 
-class RulesMapping(StrictModel):
-    type: str
+def _validate_regex_expression(v: str) -> str:
+    try:
+        re.compile(v)
+    except re.error as e:
+        raise ValueError(f"Invalid regular expression: {e}") from e
+    return v
+
+
+ValidRegex = Annotated[str, AfterValidator(_validate_regex_expression)]
+
+
+class AddColumnMetadataRule(BaseModel):
+    type: Literal["add_column_metadata"]
+    value: str
+
+
+class AddColumnGroupTagValueRule(BaseModel):
+    type: Literal["add_column_group_tag_value"]
+    value: str
+    default_value: str | None = None
+
+
+class AddColumnConcatenateRule(BaseModel):
+    type: Literal["add_column_concatenate"]
+    target_column_0: StrictInt
+    target_column_1: StrictInt
+
+
+class AddColumnBasenameRule(BaseModel):
+    type: Literal["add_column_basename"]
+    target_column: StrictInt
+
+
+class AddColumnRegexRule(BaseModel):
+    type: Literal["add_column_regex"]
+    target_column: StrictInt
+    expression: ValidRegex
+    replacement: str | None = None
+    group_count: StrictInt | None = None
+    allow_unmatched: StrictBool | None = None
+
+
+class AddColumnRownumRule(BaseModel):
+    type: Literal["add_column_rownum"]
+    start: StrictInt
+
+
+class AddColumnValueRule(BaseModel):
+    type: Literal["add_column_value"]
+    value: str
+
+
+class AddColumnSubstrRule(BaseModel):
+    type: Literal["add_column_substr"]
+    target_column: StrictInt
+    length: StrictInt
+    substr_type: Literal["keep_prefix", "drop_prefix", "keep_suffix", "drop_suffix"]
+
+
+class AddColumnFromSampleSheetIndexRule(BaseModel):
+    type: Literal["add_column_from_sample_sheet_index"]
+    value: StrictInt
+
+
+class RemoveColumnsRule(BaseModel):
+    type: Literal["remove_columns"]
+    target_columns: list[StrictInt]
+
+
+class AddFilterRegexRule(BaseModel):
+    type: Literal["add_filter_regex"]
+    target_column: StrictInt
+    invert: StrictBool
+    expression: ValidRegex
+
+
+class AddFilterCountRule(BaseModel):
+    type: Literal["add_filter_count"]
+    count: StrictInt
+    invert: StrictBool
+    which: Literal["first", "last"]
+
+
+class AddFilterEmptyRule(BaseModel):
+    type: Literal["add_filter_empty"]
+    target_column: StrictInt
+    invert: StrictBool
+
+
+class AddFilterMatchesRule(BaseModel):
+    type: Literal["add_filter_matches"]
+    target_column: StrictInt
+    invert: StrictBool
+    value: str
+
+
+class AddFilterCompareRule(BaseModel):
+    type: Literal["add_filter_compare"]
+    target_column: StrictInt
+    value: float
+    compare_type: Literal["less_than", "less_than_equal", "greater_than", "greater_than_equal"]
+
+
+class SortRule(BaseModel):
+    type: Literal["sort"]
+    target_column: StrictInt
+    numeric: StrictBool
+
+
+class SwapColumnsRule(BaseModel):
+    type: Literal["swap_columns"]
+    target_column_0: StrictInt
+    target_column_1: StrictInt
+
+
+class SplitColumnsRule(BaseModel):
+    type: Literal["split_columns"]
+    target_columns_0: list[StrictInt]
+    target_columns_1: list[StrictInt]
+
+
+RuleDefinition = Annotated[
+    AddColumnMetadataRule
+    | AddColumnGroupTagValueRule
+    | AddColumnConcatenateRule
+    | AddColumnBasenameRule
+    | AddColumnRegexRule
+    | AddColumnRownumRule
+    | AddColumnValueRule
+    | AddColumnSubstrRule
+    | AddColumnFromSampleSheetIndexRule
+    | RemoveColumnsRule
+    | AddFilterRegexRule
+    | AddFilterCountRule
+    | AddFilterEmptyRule
+    | AddFilterMatchesRule
+    | AddFilterCompareRule
+    | SortRule
+    | SwapColumnsRule
+    | SplitColumnsRule,
+    Discriminator("type"),
+]
+
+MAPPING_TYPES = Literal["list_identifiers", "paired_identifier", "paired_or_unpaired_identifier"]
+
+
+class RulesMapping(BaseModel):
+    type: MAPPING_TYPES
     columns: list[StrictInt]
 
 
-class RulesModel(StrictModel):
-    rules: list[dict[str, Any]]
+class RulesModel(BaseModel):
+    rules: list[RuleDefinition]
     mapping: list[RulesMapping]
 
 
@@ -1700,7 +1855,17 @@ class RulesParameterModel(BaseGalaxyToolParameterModelDefinition):
         return RulesModel
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        py_type = self.py_type
+        requires_value = self.request_requires_value
+        if state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(py_type)
+        elif state_representation == "workflow_step":
+            # allow it to be linked in so force allow optional...
+            py_type = optional(py_type)
+            requires_value = False
+        if state_representation in ("job_internal", "job_runtime"):
+            requires_value = True
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
@@ -1743,7 +1908,9 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
             py_type = StrictStr
         if self.multiple:
             if allow_connections:
-                py_type = list_type(allow_connected_value(py_type))
+                # Allow both individual elements and the whole list to be connected:
+                # Union[List[Union[T, ConnectedValue]], ConnectedValue]
+                py_type = allow_connected_value(list_type(allow_connected_value(py_type)))
             else:
                 py_type = list_type(py_type)
         elif allow_connections:
@@ -2023,6 +2190,9 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
             return dynamic_model_information_from_py_type(
                 self, self.py_type, validators={}, requires_value=requires_value
             )
+        elif state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(self.py_type)
+            return dynamic_model_information_from_py_type(self, py_type, requires_value=False)
         else:
             requires_value = self.request_requires_value
             if state_representation in ("job_internal", "job_runtime"):
@@ -2119,6 +2289,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         is_boolean = isinstance(self.test_parameter, BooleanParameterModel)
         test_param_name = self.test_parameter.name
+        safe_test_name = safe_field_name(test_param_name)
         test_info = self.test_parameter.pydantic_template(state_representation)
         extra_validators = test_info.validators
         if state_representation in ("job_internal", "job_runtime"):
@@ -2135,7 +2306,8 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
             else:
                 initialize_test = None
             tag = str(discriminator) if not is_boolean else str(discriminator).lower()
-            extra_kwd = {test_param_name: (Literal[when.discriminator], initialize_test)}
+            test_field_alias = test_param_name if safe_test_name != test_param_name else None
+            extra_kwd = {safe_test_name: (Literal[when.discriminator], Field(initialize_test, alias=test_field_alias))}
             when_types.append(
                 cast(
                     type[BaseModel],
@@ -2206,9 +2378,11 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
                 initialize_cond = None
 
         field_kwargs = self.field_kwargs()
+        name = safe_field_name(self.name)
+        alias = self.name if self.name != name else None
         return DynamicModelInformation(
-            self.name,
-            (py_type, Field(initialize_cond, **field_kwargs)),
+            name,
+            (py_type, Field(initialize_cond, alias=alias, **field_kwargs)),
             {},
         )
 
@@ -2243,7 +2417,7 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
-        elif _is_landing_request(state_representation):
+        elif _values_not_required(state_representation):
             requires_value = False
             min_length = 0  # in a landing request - parameters can be partially filled
 
@@ -2257,9 +2431,11 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
             root: list[instance_class] = Field(initialize_repeat, min_length=min_length, max_length=max_length)  # type: ignore[valid-type]
 
         field_kwargs = self.field_kwargs()
+        name = safe_field_name(self.name)
+        alias = self.name if self.name != name else None
         return DynamicModelInformation(
-            self.name,
-            (RepeatType, Field(initialize_repeat, **field_kwargs)),
+            name,
+            (RepeatType, Field(initialize_repeat, alias=alias, **field_kwargs)),
             {},
         )
 
@@ -2287,14 +2463,18 @@ class SectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
+        elif _values_not_required(state_representation):
+            requires_value = False
         if requires_value:
             initialize_section = ...
         else:
             initialize_section = None
         field_kwargs = self.field_kwargs()
+        name = safe_field_name(self.name)
+        alias = self.name if self.name != name else None
         return DynamicModelInformation(
-            self.name,
-            (instance_class, Field(initialize_section, **field_kwargs)),
+            name,
+            (instance_class, Field(initialize_section, alias=alias, **field_kwargs)),
             {},
         )
 
@@ -2613,5 +2793,11 @@ def create_field_model(
     return pydantic_model
 
 
-def _is_landing_request(state_representation: StateRepresentationT):
-    return state_representation in ["landing_request", "landing_request_internal"]
+def _values_not_required(state_representation: StateRepresentationT):
+    # Landing requests allow partial fills; workflow_step state is inherently
+    # incomplete because connected parameters are absent (they live in the
+    # connections dict, not the state dict).  In both cases every field must
+    # be optional so that missing keys are tolerated.  The *linked* model
+    # (workflow_step_linked) re-introduces required-ness after ConnectedValue
+    # markers are injected.
+    return state_representation in ["landing_request", "landing_request_internal", "workflow_step"]

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { getStepTitle } from "./util";
+import type { StepJobSummary } from "@/api/invocations";
+
+import { getStepTitle, isTerminal, numTerminal } from "./util";
 
 describe("getStepTitle", () => {
     it("uses label when provided, regardless of type", () => {
@@ -37,5 +39,35 @@ describe("getStepTitle", () => {
 
     it("handles unknown step types", () => {
         expect(getStepTitle(0, "some_future_type")).toBe("Step 1: Unknown step type 'some_future_type'");
+    });
+});
+
+describe("numTerminal / isTerminal", () => {
+    // A collection-mapped step: one `StepJobSummary` entry can represent many jobs at once, so
+    // partial completion (some terminal, some still running) must be visible as a count, not just
+    // a step-wide terminal/non-terminal flag.
+    const partiallyDoneCollectionStep = {
+        id: "collection1",
+        model: "ImplicitCollectionJobs",
+        states: { ok: 2, running: 1 },
+    } as unknown as StepJobSummary;
+
+    it("counts only terminal jobs within a partially-completed collection step", () => {
+        expect(numTerminal(partiallyDoneCollectionStep)).toBe(2);
+    });
+
+    it("does not consider a step terminal while any job in it is still running", () => {
+        expect(isTerminal(partiallyDoneCollectionStep)).toBe(false);
+    });
+
+    it("considers a step terminal once every job in it has a terminal state", () => {
+        const fullyDoneCollectionStep = {
+            id: "collection1",
+            model: "ImplicitCollectionJobs",
+            states: { ok: 2, error: 1 },
+        } as unknown as StepJobSummary;
+
+        expect(numTerminal(fullyDoneCollectionStep)).toBe(3);
+        expect(isTerminal(fullyDoneCollectionStep)).toBe(true);
     });
 });

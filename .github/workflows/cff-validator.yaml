@@ -19,4 +19,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate CITATION.cff
-        uses: dieghernan/cff-validator@v5
+        uses: dieghernan/cff-validator@v5.1.1

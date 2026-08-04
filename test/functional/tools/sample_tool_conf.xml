@@ -124,6 +124,9 @@
   <tool file="async_ambiguous_unqualified_name.xml" />
   <tool file="async_nested_conditional_shared_discriminator.xml" />
   <tool file="async_nested_conditional_shared_discriminator_bare.xml" />
+  <tool file="async_posix_regex_validator.xml" />
+  <tool file="async_min_repeat_unqualified.xml" />
+  <tool file="async_repeat_unqualified_no_min.xml" />
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />

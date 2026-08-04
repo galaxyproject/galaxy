@@ -12,6 +12,7 @@ from typing import (
 from playwright.sync_api import (
     ElementHandle,
     JSHandle,
+    Locator,
 )
 from selenium.webdriver.common.keys import Keys
 
@@ -71,9 +72,10 @@ class PlaywrightElement:
     WebElement API, allowing the same code to work with both backends.
     """
 
-    def __init__(self, element_handle: ElementHandle, driver: "HasPlaywrightDriver"):
+    def __init__(self, element_handle: ElementHandle, driver: "HasPlaywrightDriver", locator: Locator | None = None):
         self._element = element_handle
         self._driver = driver
+        self._locator = locator
 
     @property
     def text(self) -> str:
@@ -88,7 +90,11 @@ class PlaywrightElement:
 
     def click(self) -> None:
         """Click the element."""
-        self._element.click()
+        if self._locator is not None:
+            # Re-resolve after DOM changes between the wait and the click.
+            self._locator.click()
+        else:
+            self._element.click()
 
     def send_keys(self, *value: str) -> None:
         """

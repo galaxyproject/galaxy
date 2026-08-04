@@ -326,7 +326,7 @@ def handle_user_login(trans: SessionRequestContext, user: SaUser) -> None:
     replace_previous_session(trans, user)
 
 
-def handle_user_logout(trans, logout_all=False):
+def handle_user_logout(trans: SessionRequestContext, logout_all=False):
     """
     Logout the current user:
         - invalidate current session + previous sessions (optional)
@@ -339,13 +339,16 @@ def handle_user_logout(trans, logout_all=False):
     replace_previous_session(trans, None)
 
 
-def replace_previous_session(trans, user):
+def replace_previous_session(trans: SessionRequestContext, user):
     prev_galaxy_session = trans.get_galaxy_session()
     # Invalidate previous session
     if prev_galaxy_session:
         prev_galaxy_session.is_valid = False
     # Create new session
-    new_session = create_new_session(trans, prev_galaxy_session, user)
+    # tool_shed.context.SessionRequestContext structurally satisfies everything
+    # create_new_session uses (.security, .app, .request) but is a distinct
+    # hierarchy from galaxy.webapps.base.webapp.GalaxyWebTransaction.
+    new_session = create_new_session(trans, prev_galaxy_session, user)  # type: ignore[arg-type]
     trans.set_galaxy_session(new_session)
     trans.sa_session.add_all((prev_galaxy_session, new_session))
     trans.sa_session.commit()

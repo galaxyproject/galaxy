@@ -337,6 +337,13 @@ def test_fill_defaults():
     with_defaults = fill_state_for({}, "parameters/gx_genomebuild_optional")
     assert with_defaults["parameter"] is None
 
+    # ``<param type="color" value="" optional="true">`` is the legacy "no default color"
+    # convention (see tools-iuc arriba color1). The empty string default would trip the
+    # color validator on the job-internal model, so ``_fill_default_for`` must emit None
+    # instead. Regression for the async CI ``Invalid color value ''`` failures.
+    with_defaults = fill_state_for({}, "parameters/gx_color_optional_no_default")
+    assert with_defaults["parameter"] is None
+
     with_defaults = fill_state_for({}, "parameters/gx_select")
     assert with_defaults["parameter"] == "--ex1"
 

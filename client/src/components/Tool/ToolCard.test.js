@@ -1,4 +1,4 @@
-import { expectConfigurationRequest, getLocalVue } from "@tests/vitest/helpers";
+import { expectConfigurationRequest, getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -14,16 +14,28 @@ const { server, http } = useServerMock();
 
 vi.mock("@/api/schema");
 
+vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
+    const { ref } = await import("vue");
+    return {
+        useUserLocalStorageFromHashId: (_key, initialValue) => ref(initialValue),
+    };
+});
+
 const config = { enable_tool_source_display: false };
 setupMockConfig(config);
 
 const localVue = getLocalVue();
+const router = injectTestRouter(localVue);
 
 describe("ToolCard", () => {
     let wrapper;
     let userStore;
 
     beforeEach(async () => {
+        if (router.currentRoute.fullPath !== "/") {
+            await router.push("/");
+        }
+
         // some child component must be bypassing useConfig - so we need to explicitly
         // stup the API endpoint also. If you can drop this without request problems in log,
         // this hack can be removed.
@@ -58,6 +70,7 @@ describe("ToolCard", () => {
                 disabled: false,
             },
             localVue,
+            router,
             pinia,
         });
         userStore = useUserStore();
@@ -90,5 +103,49 @@ describe("ToolCard", () => {
         const backdropActive = wrapper.findAll(".portlet-backdrop");
         expect(backdropActive.length).toBe(1);
         await flushPromises();
+    });
+
+    it("shows newer version badge when latest version is not active and navigates to the latest alias", async () => {
+        await wrapper.setProps({
+            version: "1.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "1.0",
+                versions: ["1.0", "2.0"],
+            },
+        });
+
+        const badge = wrapper.find("[data-description='newer tool version']");
+        expect(badge.text()).toBe("Newer version available");
+
+        await badge.trigger("click");
+
+        expect(router.currentRoute.fullPath).toBe("/?tool_id=identifier&version=latest");
+    });
+
+    it("does not show newer version badge for the latest lineage version", async () => {
+        await wrapper.setProps({
+            version: "2.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "2.0",
+                versions: ["1.0", "2.0"],
+            },
+        });
+
+        expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
+    });
+
+    it("does not show newer version badge for single-version tools", async () => {
+        await wrapper.setProps({
+            version: "1.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "1.0",
+                versions: ["1.0"],
+            },
+        });
+
+        expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
     });
 });

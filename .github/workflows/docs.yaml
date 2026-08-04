@@ -33,13 +33,15 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@v6.2.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
       - name: Install Python dependencies
-        run: uv pip install --system -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning
+        run: |
+          uv venv .venv
+          . .venv/bin/activate
+          uv pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning
       - name: Add Google Analytics to doc/source/conf.py
         run: |
           sed -i -e "/html_theme_options = {/a\
@@ -55,6 +57,11 @@ jobs:
       - name: Append doc/source/conf.versioning.py
         run: cat doc/source/conf.versioning.py >> doc/source/conf.py
       - name: Build docs
+        env:
+          # sphinx.ext.viewcode is not parallelized and dominates the build.
+          # Pull request builds only need to prove the documentation still
+          # builds, so skip it there and keep it for the deployed builds.
+          GALAXY_DOCS_SKIP_VIEW_CODE: ${{ github.event_name == 'pull_request' && '1' || '0' }}
         run: make docs
       - name: Deploy docs
         if: github.event_name == 'push' && github.repository_owner == 'galaxyproject'

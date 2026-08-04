@@ -34,6 +34,7 @@ from galaxy.webapps.base.controller import (
     BaseUIController,
     UsesFormDefinitionsMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
 
     def __handle_role_and_group_auto_creation(
         self,
-        trans,
+        trans: GalaxyWebTransaction,
         user,
         roles,
         auto_create_roles=False,
@@ -99,7 +100,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                 trans.log_event("Assigning role to newly created user")
                 trans.app.security_agent.associate_user_role(user, role)
 
-    def __autoregistration(self, trans, login, password):
+    def __autoregistration(self, trans: GalaxyWebTransaction, login, password):
         """
         Does the autoregistration if enabled. Returns a message
         """
@@ -140,11 +141,11 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         return message, user
 
     @expose_api_anonymous_and_sessionless
-    def login(self, trans, payload=None, **kwd):
+    def login(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         payload = payload or {}
         return self.__validate_login(trans, payload, **kwd)
 
-    def __validate_login(self, trans, payload=None, **kwd):
+    def __validate_login(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """Handle Galaxy Log in"""
         if not payload:
             payload = kwd
@@ -211,7 +212,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
 
     @web.expose
-    def resend_verification(self, trans, **kwargs):
+    def resend_verification(self, trans: GalaxyWebTransaction, **kwargs):
         """
         Exposed function for use outside of the class. E.g. when user click on the resend link in the masthead.
         """
@@ -221,7 +222,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         else:
             return trans.show_error_message(message)
 
-    def resend_activation_email(self, trans, email, username):
+    def resend_activation_email(self, trans: GalaxyWebTransaction, email, username):
         """
         Function resends the verification email in case user wants to log in with an inactive account or he clicks the resend link.
         """
@@ -240,7 +241,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                 message += f" Error contact: {trans.app.config.error_email_to}."
         return message, is_activation_sent
 
-    def is_outside_grace_period(self, trans, create_time):
+    def is_outside_grace_period(self, trans: GalaxyWebTransaction, create_time):
         """
         Function checks whether the user is outside the config-defined grace period for inactive accounts.
         """
@@ -252,7 +253,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
 
     @web.expose
     @web.json
-    def logout(self, trans, logout_all=False, **kwd):
+    def logout(self, trans: GalaxyWebTransaction, logout_all=False, **kwd):
         if message := trans.check_csrf_token(kwd):
             return self.message_exception(trans, message)
         # Since logging an event requires a session, we'll log prior to ending the session
@@ -264,7 +265,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         return success_response
 
     @expose_api_anonymous_and_sessionless
-    def create(self, trans, payload=None, **kwd):
+    def create(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         if not payload:
             payload = kwd
         message = trans.check_csrf_token(payload)
@@ -280,7 +281,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         return {"message": "Success."}
 
     @web.expose
-    def activate(self, trans, **kwd):
+    def activate(self, trans: GalaxyWebTransaction, **kwd):
         """
         Check whether token fits the user and then activate the user's account.
         """
@@ -332,7 +333,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                 return trans.show_error_message(invalid_link_message)
 
     @expose_api_anonymous_and_sessionless
-    def change_password(self, trans, payload=None, **kwd):
+    def change_password(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """
         Allows to change own password.
 
@@ -352,7 +353,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         return {"message": "Password has been changed."}
 
     @expose_api_anonymous_and_sessionless
-    def reset_password(self, trans, payload=None, **kwd):
+    def reset_password(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
         payload = payload or {}
         if message := self.user_manager.send_reset_email(trans, payload):

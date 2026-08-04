@@ -75,6 +75,13 @@ def make_deps(
 
     Routes all agents through `inference_services.default`, so the router
     handoff targets resolve via the registry without needing a live Galaxy.
+
+    The ``custom_tool`` block additionally turns on ``container_recommendation_enabled``
+    so the custom-tool eval exercises the full container-resolution path -- the
+    dedicated container critic, the quay.io recommender, and the deterministic
+    override. Config is resolved per-key (agent block then ``default``), so only the
+    flag is set here; model/api/temperature still come from ``default``. This adds an
+    extra model call plus outbound quay.io lookups to custom_tool cases.
     """
     config = MagicMock()
     config.ai_api_key = None
@@ -87,7 +94,14 @@ def make_deps(
             "api_base_url": base_url,
             "temperature": temperature,
             "max_tokens": max_tokens,
-        }
+        },
+        "custom_tool": {
+            "container_recommendation_enabled": True,
+            # The producer emits a full tool definition (inputs/outputs/configfiles),
+            # which overruns the 4000-token default block -- mirror the agent's own
+            # DEFAULT_MAX_TOKENS so generation isn't truncated in the eval.
+            "max_tokens": 16384,
+        },
     }
     # MagicMock for trans/user so handoff targets that touch deps.trans.app
     # (history, error_analysis, tools) don't crash before the model returns.

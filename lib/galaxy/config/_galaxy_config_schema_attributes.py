@@ -37,6 +37,10 @@ class GalaxyAppConfigurationAttributes:
     migrated_tools_config: str
     integrated_tool_panel_config: str
     tool_path: str
+    use_cached_toolbox: bool
+    cached_toolbox_cache_size: int
+    tool_source_database_connection: str | None
+    tool_source_stores: Any
     tool_dependency_dir: str | None
     dependency_resolvers_config_file: str
     conda_prefix: str | None
@@ -274,6 +278,7 @@ class GalaxyAppConfigurationAttributes:
     statsd_influxdb: bool
     statsd_mock_calls: bool
     queue_metrics_interval: int
+    enable_sse_connection_metrics: bool
     library_import_dir: str | None
     user_library_import_dir: str | None
     user_library_import_dir_auto_creation: bool
@@ -434,6 +439,8 @@ class GalaxyAppConfigurationAttributes:
     agent_model_capabilities_file: str
     gtn_database_path: str
     gtn_database_url: str
+    gtn_database_refresh_interval: int
+    iwc_manifest_refresh_interval: int
     enable_tool_recommendations: bool
     tool_recommendation_model_path: str
     topk_recommendations: int

@@ -43,7 +43,7 @@ docs: ## Generate HTML documentation.
 	$(IN_VENV) $(MAKE) -C doc html
 
 docs-develop: ## Fast doc generation and more warnings (for development)
-	$(IN_VENV) GALAXY_DOCS_SKIP_VIEW_CODE=1 SPHINXOPTS='-j 4' $(MAKE) -C doc html
+	$(IN_VENV) GALAXY_DOCS_SKIP_VIEW_CODE=1 $(MAKE) -C doc html
 
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
@@ -123,6 +123,9 @@ config-rebuild: ## Rebuild all sample YAML, RST files, and type stubs from confi
 
 config-lint: ## lint galaxy YAML configuration file
 	$(CONFIG_MANAGE) lint galaxy
+
+client-gen-markdown-directives: ## Regenerate Galaxy Markdown directive artifacts from directives.yml (reference, requirements, validator registry)
+	$(IN_VENV) python scripts/markdown_directives_doc.py
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
 ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )

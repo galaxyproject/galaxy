@@ -94,7 +94,7 @@ class HistoryGraphManager:
         return HistoryGraphBuilder(
             sa_session=sa_session,
             security=self.app.security,
-            toolbox=self.app.toolbox,
+            toolbox=self.app.toolbox_or_none,
             history_id=history_id,
             limit=limit,
             include_deleted=include_deleted,

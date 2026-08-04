@@ -6,7 +6,10 @@ from functools import (
     wraps,
 )
 from multiprocessing import get_context
-from threading import local
+from threading import (
+    local,
+    Lock,
+)
 from typing import (
     Any,
 )
@@ -112,19 +115,32 @@ def get_galaxy_app():
     return build_app()
 
 
-@lru_cache(maxsize=1)
-def build_app():
-    if kwargs := get_app_properties():
-        kwargs["check_migrate_databases"] = False
-        kwargs["use_display_applications"] = False
-        kwargs["use_converters"] = True
-        import galaxy.app
+_build_app_lock = Lock()
+_built_app = None
 
-        galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
-        # GalaxyManagerApplication has no toolbox, so the converter tools the async
-        # execution path relies on must be loaded directly into the datatypes registry.
-        galaxy_app.datatypes_registry.load_datatype_converters_without_toolbox(galaxy_app)
-        return galaxy_app
+
+def build_app():
+    # Build the app under a double-checked lock so that a cold start with N
+    # concurrent threads (celery ``--pool threads``) builds exactly one app; the
+    # losing threads wait on the lock and reuse the winner's result.
+    global _built_app
+    if _built_app is not None:
+        return _built_app
+    with _build_app_lock:
+        if _built_app is not None:
+            return _built_app
+        if kwargs := get_app_properties():
+            kwargs["check_migrate_databases"] = False
+            kwargs["use_display_applications"] = False
+            kwargs["use_converters"] = True
+            import galaxy.app
+
+            galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
+            # GalaxyManagerApplication has no toolbox, so the converter tools the async
+            # execution path relies on must be loaded directly into the datatypes registry.
+            galaxy_app.datatypes_registry.load_datatype_converters_without_toolbox(galaxy_app)
+            _built_app = galaxy_app
+    return _built_app
 
 
 @lru_cache(maxsize=1)

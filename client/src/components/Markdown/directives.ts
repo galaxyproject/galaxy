@@ -6,10 +6,25 @@ type DirectiveMetadataValueByMode = {
     [key: string]: string;
 };
 
+interface DirectiveParameter {
+    type: string;
+    context?: string;
+    description?: string;
+    default?: string | boolean;
+    values?: string[];
+}
+
 interface DirectiveMetadata {
     side_panel_name: string | DirectiveMetadataValueByMode;
     side_panel_description?: string | DirectiveMetadataValueByMode;
     help?: string | DirectiveMetadataValueByMode;
+    category?: string;
+    renders?: string;
+    embeddable?: boolean;
+    requires?: string;
+    parameter_set?: string;
+    parameters?: { [key: string]: DirectiveParameter };
+    dynamic_parameters?: boolean;
 }
 
 type DirectivesMetadata = {

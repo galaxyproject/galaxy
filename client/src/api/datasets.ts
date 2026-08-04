@@ -24,6 +24,11 @@ export interface LoadDatasetsResult {
     totalMatches: number;
 }
 
+interface CopyDatasetsResult {
+    copiedDatasets: Awaited<ReturnType<typeof copyDataset>>[];
+    failedDatasetIds: string[];
+}
+
 export async function loadDatasets(options: LoadDatasetsOptions): Promise<LoadDatasetsResult> {
     const { limit = 24, offset = 0, sortBy = "update_time", sortDesc = true, search = "" } = options;
 
@@ -145,6 +150,34 @@ export async function copyDataset(
         rethrowSimple(error);
     }
     return data;
+}
+
+export async function copyDatasets(
+    datasetIds: string[],
+    historyId: CopyDatasetParamsType["path"]["history_id"],
+): Promise<CopyDatasetsResult> {
+    const BATCH_SIZE = 5;
+    const results: PromiseSettledResult<Awaited<ReturnType<typeof copyDataset>>>[] = [];
+
+    for (let i = 0; i < datasetIds.length; i += BATCH_SIZE) {
+        const batch = datasetIds.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.allSettled(batch.map((datasetId) => copyDataset(datasetId, historyId)));
+
+        results.push(...batchResults);
+    }
+
+    const copiedDatasets = [];
+    const failedDatasetIds = [];
+
+    for (const [index, result] of results.entries()) {
+        if (result.status === "fulfilled") {
+            copiedDatasets.push(result.value);
+        } else if (datasetIds[index] !== undefined) {
+            failedDatasetIds.push(datasetIds[index]);
+        }
+    }
+
+    return { copiedDatasets, failedDatasetIds };
 }
 
 export function getCompositeDatasetLink(historyDatasetId: string, path: string) {

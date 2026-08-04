@@ -530,9 +530,9 @@ class TestHistoryPages(SeleniumTestCase):
         items[-1].click()
         self.components.pages.history.revision_view.wait_for_visible()
 
-        # Oldest: "Compare to Previous" should be hidden, "Compare to Current" visible
-        self.components.pages.history.revision_compare_previous_button.assert_absent_or_hidden()
+        # Wait for the newly selected revision before asserting what disappeared.
         self.components.pages.history.revision_compare_current_button.wait_for_visible()
+        self.components.pages.history.revision_compare_previous_button.assert_absent_or_hidden()
 
         # Click "Compare to Current"
         self.components.pages.history.revision_compare_current_button.wait_for_and_click()

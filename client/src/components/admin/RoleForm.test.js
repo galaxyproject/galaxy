@@ -21,7 +21,7 @@ vi.mock("vue-router/composables", () => ({
 vi.mock("@/composables/filter/filter.js", () => {
     const { ref } = require("vue");
     return {
-        useFilterObjectArray: () => ref([]),
+        useFilterObjectArray: () => ({ filtered: ref([]), pending: ref(false) }),
     };
 });
 

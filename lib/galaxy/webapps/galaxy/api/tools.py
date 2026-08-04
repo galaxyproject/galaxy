@@ -64,6 +64,7 @@ from galaxy.tool_util.parameters import (
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util_models import (
     lift_user_tool_source,
+    ParsedTool,
     UserToolSource,
 )
 from galaxy.tools.evaluation import global_tool_errors
@@ -92,7 +93,10 @@ from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api.common import serve_workbook
 from galaxy.webapps.galaxy.services.base import tool_request_detailed_to_model
-from galaxy.webapps.galaxy.services.tools import ToolsService
+from galaxy.webapps.galaxy.services.tools import (
+    get_tool,
+    ToolsService,
+)
 from . import (
     APIContentTypeRoute,
     as_form,
@@ -151,6 +155,11 @@ ToolIDPathParam: str = Path(
     ...,
     title="Tool ID",
     description="The tool ID for the lineage stored in Galaxy's toolbox.",
+)
+ToolVersionPathParam: str = Path(
+    ...,
+    title="Tool Version",
+    description="The full version string defined on the Galaxy tool wrapper.",
 )
 ToolVersionQueryParam: str | None = Query(default=None, title="Tool Version", description="")
 
@@ -433,6 +442,87 @@ class FetchTools:
     def tool_tags(self, trans: ProvidesHistoryContext = DependsOnTrans) -> dict[str, list[str]]:
         return self.service.curated_tool_tags_by_id(trans)
 
+    @router.get(
+        "/api/tools/{tool_id}/interop",
+        operation_id="tools__interop",
+        summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
+    )
+    def parsed_tool(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str | None = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ParsedTool:
+        return self._parsed_tool(trans, tool_id, tool_version)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/interop",
+        operation_id="tools__versioned_interop",
+        summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
+    )
+    def parsed_tool_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ParsedTool:
+        return self._parsed_tool(trans, tool_id, tool_version)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema",
+        operation_id="tools__versioned_parameter_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool request API.",
+    )
+    def tool_state_request_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(RequestToolState, inputs)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/parameter_landing_request_schema",
+        operation_id="tools__versioned_parameter_landing_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool landing request API.",
+    )
+    def tool_state_landing_request_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(LandingRequestToolState, inputs)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/parameter_test_case_xml_schema",
+        operation_id="tools__versioned_parameter_test_case_xml_schema",
+        summary="Return a JSON schema description of the tool's inputs for test case construction.",
+    )
+    def tool_state_test_case_xml_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(TestCaseToolState, inputs)
+
+    def _parsed_tool(
+        self,
+        trans: ProvidesHistoryContext,
+        tool_id: str,
+        tool_version: str | None,
+    ) -> ParsedTool:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        tool = get_tool(trans, tool_run_ref)
+        return tool.parsed_tool()
+
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
@@ -458,6 +548,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :param q: if present search on the given query will be performed
         :param tool_id: if present the given tool_id will be searched for
                         all installed versions
+
+        Note: When cached toolbox is enabled, search and flat listing use a
+        pre-computed index for O(1) access instead of iterating over all tools.
         """
 
         # Read params.
@@ -475,20 +568,19 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                     hits = favorites["tools"]
                 else:
                     hits = None
-            else:
-                hits = self.service._search(q, view)
-            results = []
-            if hits:
-                for hit in hits:
-                    try:
-                        tool = self.service._get_tool(trans, hit, user=trans.user)
-                        if tool:
-                            results.append(tool.id)
-                    except exceptions.AuthenticationFailed:
-                        pass
-                    except exceptions.ObjectNotFound:
-                        pass
-            return results
+                results = []
+                if hits:
+                    for hit in hits:
+                        try:
+                            tool = self.service._get_tool(trans, hit, user=trans.user)
+                            if tool.id:
+                                results.append(tool.id)
+                        except exceptions.AuthenticationFailed:
+                            pass
+                        except exceptions.ObjectNotFound:
+                            pass
+                return results
+            return self.service.search_tools(trans, q, view=view)
 
         # Find whether to detect.
         if tool_id:
@@ -497,7 +589,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(trans, in_panel=in_panel, tool_help=tool_help, view=view)
+            return self.service.list_tools(trans, in_panel=in_panel, tool_help=tool_help, view=view)
         except exceptions.MessageException:
             raise
         except Exception:
@@ -510,12 +602,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         GET /api/tool_panels
         returns a dictionary of available tool panel views and default view
-        """
 
-        rval = {}
-        rval["default_panel_view"] = self.app.toolbox._default_panel_view(trans)
-        rval["views"] = self.app.toolbox.panel_view_dicts()
-        return rval
+        Note: When cached toolbox is enabled, this endpoint uses a pre-computed index
+        for O(1) access.
+        """
+        return self.service.get_panel_views(trans)
 
     @expose_api_anonymous_and_sessionless
     def panel_view(self, trans: GalaxyWebTransaction, view, **kwds):
@@ -551,7 +642,14 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         link_details = util.string_as_bool(kwd.get("link_details", False))
         tool_version = kwd.get("tool_version")
         tool_uuid = kwd.get("tool_uuid")
-        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=tool_version, tool_uuid=tool_uuid)
+        tool = self.service._get_materialized_tool(
+            trans,
+            id,
+            user=trans.user,
+            tool_version=tool_version,
+            tool_uuid=tool_uuid,
+            materialization_reason="detail",
+        )
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
     @expose_api_anonymous
@@ -569,7 +667,14 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
         options_pagination = _parse_options_pagination(kwd.pop("options_pagination", None))
-        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user, tool_uuid=tool_uuid)
+        tool = self.service._get_materialized_tool(
+            trans,
+            id,
+            tool_version=tool_version,
+            user=trans.user,
+            tool_uuid=tool_uuid,
+            materialization_reason="serialization",
+        )
         return tool.to_json(trans, kwd.get("inputs", kwd), history=history, options_pagination=options_pagination)
 
     @web.require_admin
@@ -580,7 +685,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version", None)
-        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
+        tool = self.service._get_materialized_tool(
+            trans, id, tool_version=tool_version, user=trans.user, materialization_reason="tests"
+        )
         try:
             path = tool.test_data_path(kwd.get("filename"))
         except ValueError as e:
@@ -596,7 +703,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         GET /api/tools/{tool_id}/test_data_download?tool_version={tool_version}&filename={filename}
         """
         tool_version = kwd.get("tool_version", None)
-        tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
+        tool = self.service._get_materialized_tool(
+            trans, id, tool_version=tool_version, user=trans.user, materialization_reason="tests"
+        )
         filename = kwd.get("filename")
         if filename is None:
             raise exceptions.ObjectNotFound("Test data filename not specified.")
@@ -626,20 +735,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         the tests.
 
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
+
+        Note: When cached toolbox is enabled, this endpoint uses a pre-computed index
+        for O(1) access instead of iterating over all tools.
         """
-        test_counts_by_tool: dict[str, dict] = {}
-        for _id, tool in self.app.toolbox.tools():
-            if not tool.is_datatype_converter:
-                tests = tool.tests
-                if tests:
-                    if tool.id not in test_counts_by_tool:
-                        test_counts_by_tool[tool.id] = {}
-                    available_versions = test_counts_by_tool[tool.id]
-                    available_versions[tool.version] = {
-                        "tool_name": tool.name,
-                        "count": len(tests),
-                    }
-        return test_counts_by_tool
+        return self.service.get_tests_summary(trans)
 
     @expose_api_anonymous_and_sessionless
     def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> list[ToolTestDescriptionDict]:
@@ -658,16 +758,21 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version", None)
         if tool_version == "*":
-            tools = self.app.toolbox.get_tool(id, get_all_versions=True)
-            for tool in tools:
+            tool_likes = self.app.toolbox.get_tool(id, get_all_versions=True)
+            for tool in tool_likes:
                 if not tool.allow_user_access(trans.user):
                     raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
+            tools = [self.app.toolbox.materialize_tool(tool, reason="tests") for tool in tool_likes]
         else:
-            tools = [self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)]
+            tools = [
+                self.service._get_materialized_tool(
+                    trans, id, tool_version=tool_version, user=trans.user, materialization_reason="tests"
+                )
+            ]
 
         test_defs = []
         for tool in tools:
-            test_defs.extend([t.to_dict() for t in tool.tests])
+            test_defs.extend([t.to_dict() for t in tool.tests or []])
         return test_defs
 
     @web.require_admin
@@ -689,9 +794,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         GET /api/tools/all_requirements
         Return list of unique requirements for all tools.
-        """
 
-        return trans.app.toolbox.all_requirements
+        Note: When cached toolbox is enabled, this endpoint uses a pre-computed index
+        for O(1) access instead of iterating over all tools.
+        """
+        return self.service.get_all_requirements(trans)
 
     @web.require_admin
     @expose_api
@@ -701,7 +808,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Return the resolver status for a specific tool id.
         [{"status": "installed", "name": "hisat2", "versionless": false, "resolver_type": "conda", "version": "2.0.3", "type": "package"}]
         """
-        tool = self.service._get_tool(trans, id, user=trans.user)
+        tool = self.service._get_materialized_tool(trans, id, user=trans.user, materialization_reason="dependency")
         return tool.tool_requirements_status
 
     @web.require_admin
@@ -724,7 +831,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             build_dependency_cache:  If true, attempts to cache dependencies for this tool
             force_rebuild:           If true and cache dir exists, attempts to delete cache dir
         """
-        tool = self.service._get_tool(trans, id, user=trans.user)
+        tool = self.service._get_materialized_tool(trans, id, user=trans.user, materialization_reason="dependency")
         tool._view.install_dependencies(tool.requirements, **kwds)
         if kwds.get("build_dependency_cache"):
             tool.build_dependency_cache(**kwds)
@@ -749,7 +856,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
             resolver_type: Use the dependency resolver of this resolver_type to install dependency
         """
-        tool = self.service._get_tool(trans, id, user=trans.user)
+        tool = self.service._get_materialized_tool(trans, id, user=trans.user, materialization_reason="dependency")
         tool._view.uninstall_dependencies(requirements=tool.requirements, **kwds)
         # TODO: rework resolver install system to log and report what has been done.
         return tool.tool_requirements_status
@@ -764,7 +871,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         parameters:
             force_rebuild:           If true and chache dir exists, attempts to delete cache dir
         """
-        tool = self.service._get_tool(trans, id)
+        tool = self.service._get_materialized_tool(trans, id, materialization_reason="dependency")
         tool.build_dependency_cache(**kwds)
         # TODO: Should also have a more meaningful return.
         return tool.tool_requirements_status
@@ -782,7 +889,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         def to_dict(x):
             return x.to_dict()
 
-        tool = self.service._get_tool(trans, id, user=trans.user)
+        tool = self.service._get_materialized_tool(trans, id, user=trans.user, materialization_reason="job_setup")
         if hasattr(tool, "lineage"):
             lineage_dict = tool.lineage.to_dict()
         else:
@@ -814,7 +921,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
     @expose_api
     def conversion(self, trans: GalaxyWebTransaction, tool_id, payload, **kwd):
-        converter = self.service._get_tool(trans, tool_id, user=trans.user)
+        converter = self.service._get_materialized_tool(
+            trans, tool_id, user=trans.user, materialization_reason="execution"
+        )
         target_type = payload.get("target_type")
         source_type = payload.get("source_type")
         input_src = payload.get("src")
@@ -884,8 +993,13 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 "Only administrators may display tool sources on this Galaxy server."
             )
         tool_uuid = kwds.get("tool_uuid")
-        tool = self.service._get_tool(
-            trans, id, user=trans.user, tool_version=kwds.get("tool_version"), tool_uuid=tool_uuid
+        tool = self.service._get_materialized_tool(
+            trans,
+            id,
+            user=trans.user,
+            tool_version=kwds.get("tool_version"),
+            tool_uuid=tool_uuid,
+            materialization_reason="serialization",
         )
         trans.response.headers["language"] = tool.tool_source.language
         if dynamic_tool := getattr(tool, "dynamic_tool", None):

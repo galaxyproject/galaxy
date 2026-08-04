@@ -40,20 +40,12 @@ jobs:
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - uses: actions/setup-python@v6.2.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache galaxy venv
-        uses: actions/cache@v5.0.5
-        with:
-          path: 'galaxy root/.venv'
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-framework
+      - name: Install Python
+        run: uv python install
       - name: Run tests
         run: ./run_tests.sh --coverage --main_tools
         working-directory: 'galaxy root'

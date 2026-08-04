@@ -14,6 +14,7 @@ import tempfile
 from json import dumps
 from typing import (
     cast,
+    TYPE_CHECKING,
 )
 
 import pysam
@@ -62,6 +63,7 @@ from galaxy.datatypes.sniff import (
     validate_tabular,
 )
 from galaxy.exceptions import InvalidFileFormatError
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import compression_utils
 from galaxy.util.compression_utils import (
     FileObjType,
@@ -72,6 +74,10 @@ from galaxy.util.markdown import (
     pre_formatted_contents,
 )
 from . import dataproviders
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesAppContext
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -141,7 +147,9 @@ class TabularData(Text):
         except Exception:
             return False
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
+    def get_chunk(
+        self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
+    ) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         return dumps(
             {
@@ -151,7 +159,7 @@ class TabularData(Text):
             }
         )
 
-    def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: int | None = None):
+    def _read_chunk(self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int, ck_size: int | None = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
             f.seek(offset)
             try:
@@ -172,7 +180,7 @@ class TabularData(Text):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -183,23 +191,24 @@ class TabularData(Text):
     ):
         headers = kwd.pop("headers", {})
         preview = util.string_as_bool(preview)
+        fname = dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user))
         if offset is not None:
             return self.get_chunk(trans, dataset, offset, ck_size), headers
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(dataset, to_ext, headers, **kwd)
+            return self._serve_raw(dataset, to_ext, headers, auth=ObjectStoreAuth(user=trans.user), **kwd)
         elif dataset.metadata.columns > 100:
             # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000  # 1 MB
-            if os.stat(dataset.get_file_name()).st_size < max_peek_size:
+            if os.stat(fname).st_size < max_peek_size:
                 self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
-                return open(dataset.get_file_name(), mode="rb"), headers
+                return open(fname, mode="rb"), headers
             else:
                 headers["content-type"] = "text/html"
                 headers["x-content-truncated"] = max_peek_size
-                with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as fh:
+                with compression_utils.get_fileobj(fname, "rb") as fh:
                     return util.unicodify(fh.read(max_peek_size)), headers
         else:
             headers["x-content-chunked"] = "true"
@@ -387,6 +396,12 @@ class Tabular(TabularData):
 
     def get_column_names(self, first_line: str) -> list[str] | None:
         return None
+
+    def make_html_peek_header(self, dataset: DatasetProtocol, *args, **kwargs) -> str:
+        # Only generic tabular loses generated headers; subclasses may define real column labels.
+        if type(self) is Tabular:
+            return ""
+        return super().make_html_peek_header(dataset, *args, **kwargs)
 
     def set_meta(
         self,
@@ -1623,7 +1638,9 @@ class ConnectivityTable(Tabular):
                 i += 1
         return False
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
+    def get_chunk(
+        self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
+    ) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         try:
             # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.

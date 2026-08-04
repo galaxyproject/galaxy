@@ -28,27 +28,77 @@ from galaxy.util.properties import (
 )
 
 
-class ConditionalDependencies:
+class BaseConditionalDependencies:
+    """Machinery and checks shared by every app that ships a config file.
+
+    A ``check_<dependency>`` method here must only read options that every
+    subclass' config schema defines. App-specific checks belong on the subclass;
+    ``check()`` treats a missing method as "not needed".
+    """
+
+    # Section to read from a YAML config file; None keeps load_app_properties'
+    # own default, which is what the Galaxy config path has always relied on.
+    config_section: str | None = None
+
     def __init__(self, config_file, config=None):
         self.config_file = config_file
-        self.job_runners = []
-        self.authenticators = []
-        self.object_stores = []
-        self.file_sources = []
         self.conditional_reqs = []
-        self.container_interface_types = []
-        self.job_rule_modules = []
-        self.error_report_modules = []
-        self.vault_type = None
         if config is None:
-            self.config = load_app_properties(config_file=self.config_file)
+            self.config = load_app_properties(config_file=self.config_file, config_section=self.config_section)
         else:
             self.config = config
-        self.config_object = GalaxyAppConfiguration(config_file=self.config_file, override_tempdir=False, **self.config)
         self.parse_configs()
         self.get_conditional_requirements()
 
     def parse_configs(self):
+        """Collect app-specific signals from auxiliary config files."""
+
+    def get_conditional_requirements(self):
+        crfile = join(dirname(__file__), "conditional-requirements.txt")
+        with open(crfile) as fh:
+            dependency_file = parse(fh.read(), file_type="requirements.txt")
+            for dep in dependency_file.dependencies:
+                self.conditional_reqs.append(dep)
+
+    def check(self, name):
+        try:
+            name = name.replace("-", "_").replace(".", "_")
+            return getattr(self, f"check_{name}")()
+        except Exception:
+            return False
+
+    def check_psycopg2_binary(self):
+        return self.config["database_connection"].startswith(("postgresql://", "postgresql+psycopg2://"))
+
+    def check_psycopg(self):
+        return self.config["database_connection"].startswith("postgresql+psycopg://")
+
+    def check_mysqlclient(self):
+        return self.config["database_connection"].startswith("mysql")
+
+    def check_sentry_sdk(self):
+        return self.config.get("sentry_dsn", None) is not None
+
+
+class ToolShedConditionalDependencies(BaseConditionalDependencies):
+    config_section = "tool_shed"
+
+
+class ConditionalDependencies(BaseConditionalDependencies):
+    def __init__(self, config_file, config=None):
+        self.job_runners = []
+        self.authenticators = []
+        self.object_stores = []
+        self.file_sources = []
+        self.container_interface_types = []
+        self.job_rule_modules = []
+        self.error_report_modules = []
+        self.vault_type = None
+        super().__init__(config_file, config=config)
+
+    def parse_configs(self):
+        self.config_object = GalaxyAppConfiguration(config_file=self.config_file, override_tempdir=False, **self.config)
+
         def load_job_config_dict(job_conf_dict):
             runners = job_conf_dict.get("runners", {})
             for runner in runners.values():
@@ -176,29 +226,6 @@ class ConditionalDependencies:
             vault_conf = {}
         self.vault_type = vault_conf.get("type", "").lower()
 
-    def get_conditional_requirements(self):
-        crfile = join(dirname(__file__), "conditional-requirements.txt")
-        with open(crfile) as fh:
-            dependency_file = parse(fh.read(), file_type="requirements.txt")
-            for dep in dependency_file.dependencies:
-                self.conditional_reqs.append(dep)
-
-    def check(self, name):
-        try:
-            name = name.replace("-", "_").replace(".", "_")
-            return getattr(self, f"check_{name}")()
-        except Exception:
-            return False
-
-    def check_psycopg2_binary(self):
-        return self.config["database_connection"].startswith(("postgresql://", "postgresql+psycopg2://"))
-
-    def check_psycopg(self):
-        return self.config["database_connection"].startswith("postgresql+psycopg://")
-
-    def check_mysqlclient(self):
-        return self.config["database_connection"].startswith("mysql")
-
     def check_drmaa(self):
         return (
             "galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners
@@ -233,9 +260,6 @@ class ConditionalDependencies:
     def check_fluent_logger(self):
         return asbool(self.config["fluent_log"])
 
-    def check_sentry_sdk(self):
-        return self.config.get("sentry_dsn", None) is not None
-
     def check_statsd(self):
         return self.config.get("statsd_host", None) is not None
 
@@ -253,6 +277,9 @@ class ConditionalDependencies:
 
     def check_boto3(self):
         return "boto3" in self.object_stores
+
+    def check_cloudbridge(self):
+        return "cloud" in self.object_stores
 
     def check_kamaki(self):
         return "pithos" in self.object_stores
@@ -318,9 +345,6 @@ class ConditionalDependencies:
             self.config.get("ai_api_key", None) is not None or self.config.get("inference_services", None) is not None
         )
 
-    def check_fastmcp(self):
-        return asbool(self.config.get("enable_mcp_server", False))
-
     def check_weasyprint(self):
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
@@ -373,14 +397,29 @@ def strip_comment(line):
     return re.sub(r"\s+#.*", "", line).strip()
 
 
-def optional(config_file=None):
+GALAXY_APP = "galaxy"
+TOOL_SHED_APP = "tool_shed"
+
+# Each app resolves its own config file and evaluates its own set of checks, so
+# that conditional-requirements.txt governs every app we ship, not just Galaxy.
+APPS = {
+    GALAXY_APP: (ConditionalDependencies, ["galaxy", "universe_wsgi"]),
+    TOOL_SHED_APP: (ToolShedConditionalDependencies, ["tool_shed", "tool_shed_wsgi"]),
+}
+
+
+def optional(config_file=None, app=GALAXY_APP):
+    try:
+        dependencies_class, config_file_names = APPS[app]
+    except KeyError:
+        raise ValueError(f"Unknown app '{app}', expected one of: {', '.join(sorted(APPS))}")
     if not config_file:
-        config_file = find_config_file(["galaxy", "universe_wsgi"], include_samples=True)
+        config_file = find_config_file(config_file_names, include_samples=True)
     if not config_file:
-        print("galaxy.dependencies.optional: no config file found", file=sys.stderr)
+        print(f"galaxy.dependencies.optional: no {app} config file found", file=sys.stderr)
         return []
     rval = []
-    conditional = ConditionalDependencies(config_file)
+    conditional = dependencies_class(config_file)
     for dependency in conditional.conditional_reqs:
         if conditional.check(dependency.name):
             rval.append(strip_comment(dependency.line))

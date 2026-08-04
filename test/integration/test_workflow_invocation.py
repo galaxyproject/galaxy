@@ -294,3 +294,10 @@ steps:
             # Wait for workflow to complete — should delay then succeed
             invocation = self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
             assert invocation["state"] == "completed", invocation
+
+
+class TestCachedWorkflowInvocation(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestWorkflowInvocation,
+):
+    pass

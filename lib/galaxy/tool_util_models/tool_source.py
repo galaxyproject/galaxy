@@ -105,6 +105,7 @@ class JavascriptRequirement(ToolSourceBaseModel):
     )
 
 
+@with_config(ConfigDict(field_title_generator=lambda field_name, field_info: field_name.lower()))
 class XrefDict(TypedDict):
     value: str
     type: str
@@ -252,9 +253,8 @@ CwlType = Literal["File", "null", "boolean", "int", "float", "string"]
 FieldType = CwlType | list[CwlType]
 
 
-# type ignore because mypy can't handle closed TypedDicts yet
 @with_config(ConfigDict(extra="forbid"))
-class FieldDict(TypedDict, closed=True):  # type: ignore[call-arg]
+class FieldDict(TypedDict, closed=True):
     name: str
     type: FieldType
     format: NotRequired[str | None]

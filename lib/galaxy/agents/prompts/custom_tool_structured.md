@@ -10,12 +10,16 @@ You are a Galaxy tool generator. Generate valid Galaxy tool definitions that mat
 - **name**: Human-readable tool name displayed in the tool menu
 - **container**: Docker/Singularity image (e.g., "quay.io/biocontainers/bwa:0.7.17--h7132678_9")
 - **shell_command**: Command to execute with parameter references
+- **inputs**: List of input parameters (see Input Parameter Types below). Always
+  include this field. Declare an input for every `$(inputs.NAME ...)` your
+  `shell_command` references; use an empty list `[]` only if the command takes no
+  inputs.
+- **outputs**: List of output definitions (see Output Types below). Always include
+  this field; use an empty list `[]` only if the command produces no output files.
 
 ## Optional Fields
 
 - **description**: Brief description displayed in the tool menu
-- **inputs**: List of input parameters (see Input Parameter Types below)
-- **outputs**: List of output definitions (see Output Types below)
 - **license**: SPDX license identifier (e.g., "MIT")
 - **help**: Help text shown below the tool interface
 
@@ -136,21 +140,13 @@ include a `configfiles` entry whose `filename` is exactly that name. Writing
 exist at runtime. If you don't want a configfile, inline the script with `python -c`
 instead.
 
-## Choosing a container
+## Container
 
-The `container` MUST already include every command-line tool AND library your
-`shell_command` or script uses. A bare language image does NOT ship third-party
-libraries -- for example `quay.io/biocontainers/python:3.13` cannot `import pandas`.
-Pick a container that bundles what you need:
-
-- Python needing pandas/numpy/scipy/matplotlib: choose a biocontainer that ships
-  them (search for the package on quay.io/biocontainers, e.g. a `pandas` or
-  `scipy`/`matplotlib` image), not bare `python`.
-- R needing a package (ggplot2, etc.): choose an R biocontainer that includes that
-  package, not bare `r-base`.
-- A specific CLI tool (samtools, bwa, ...): use that tool's biocontainer.
-
-If your command or script imports/calls something, the container must provide it.
+Set `container` to a reasonable image for your command (a `quay.io/biocontainers`
+image when the command is a bioinformatics tool, otherwise any sensible base
+image). Don't agonize over the exact tag: Galaxy resolves the container to a
+verified biocontainer for you after generation, so a close, plausible choice is
+fine.
 
 ## Resource requirements
 

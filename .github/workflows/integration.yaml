@@ -15,6 +15,7 @@ on:
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
+  workflow_dispatch:
 env:
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
@@ -25,8 +26,63 @@ concurrency:
   cancel-in-progress: true
 permissions: {}
 jobs:
+  prepare-mulled-cache:
+    name: Prepare mulled resolution cache
+    runs-on: ubuntu-latest
+    steps:
+      - name: Select weekly cache
+        run: echo "MULLED_CACHE_WEEK=$(date -u +%G-%V)" >> "$GITHUB_ENV"
+      - name: Restore Biocontainers repository index
+        id: restore-mulled-cache
+        uses: actions/cache/restore@v6.1.0
+        with:
+          key: biocontainers-repository-index-${{ env.MULLED_CACHE_WEEK }}
+          path: '${{ runner.temp }}/mulled-resolution-seed'
+      - name: Check out Galaxy for mulled-cache
+        if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7.0.0
+        with:
+          path: 'galaxy cache source'
+          persist-credentials: false
+      - name: Install uv
+        if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
+        uses: astral-sh/setup-uv@v8.3.2
+        with:
+          python-version: '3.10'
+      - name: Fetch Biocontainers repository index
+        id: fetch-mulled-cache
+        if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        env:
+          SEED_DIRECTORY: '${{ runner.temp }}/mulled-resolution-seed'
+        run: |
+          uv tool run --from './galaxy cache source/packages/tool_util' mulled-cache \
+              --namespace biocontainers \
+              --output "$SEED_DIRECTORY/biocontainers.json"
+      - name: Save Biocontainers repository index
+        if: steps.restore-mulled-cache.outputs.cache-hit != 'true' && steps.fetch-mulled-cache.outcome == 'success'
+        uses: actions/cache/save@v6.1.0
+        with:
+          key: biocontainers-repository-index-${{ env.MULLED_CACHE_WEEK }}
+          path: '${{ runner.temp }}/mulled-resolution-seed'
+      - name: Create fallback seed
+        if: steps.fetch-mulled-cache.outcome == 'failure'
+        env:
+          SEED_DIRECTORY: '${{ runner.temp }}/mulled-resolution-seed'
+        run: |
+          echo '::warning::Could not index the biocontainers namespace, integration tests run without a seeded mulled resolution cache'
+          mkdir -p "$SEED_DIRECTORY"
+          echo '{"namespace":"biocontainers","repositories":[]}' > "$SEED_DIRECTORY/biocontainers.json"
+      - name: Upload mulled resolution cache seed
+        uses: actions/upload-artifact@v7
+        with:
+          name: mulled-resolution-cache-seed
+          path: '${{ runner.temp }}/mulled-resolution-seed/biocontainers.json'
+          retention-days: 1
+
   test:
     name: Test
+    needs: prepare-mulled-cache
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -37,6 +93,9 @@ jobs:
       - if: github.event_name == 'schedule'
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          # --cov=lib line-traces a live Galaxy for the whole job, so integration
+          # coverage is collected on this weekly run only.
+          echo "GALAXY_TEST_COVERAGE=1" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
           # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
@@ -57,28 +116,30 @@ jobs:
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - uses: actions/setup-python@v6.2.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache galaxy venv
-        uses: actions/cache@v5.0.5
+      - name: Install Python
+        run: uv python install
+      - name: Download mulled resolution cache seed
+        uses: actions/download-artifact@v8
         with:
-          path: 'galaxy root/.venv'
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration
+          name: mulled-resolution-cache-seed
+          path: '${{ runner.temp }}/mulled-resolution-seed'
       - name: Install Apptainer's singularity
-        uses: eWaterCycle/setup-apptainer@v2
+        uses: './galaxy root/.github/actions/install_apptainer'
       - name: Run tests
+        env:
+          GALAXY_TEST_MULLED_RESOLUTION_CACHE_SEED: '${{ runner.temp }}/mulled-resolution-seed/biocontainers.json'
+          GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_DATA_DIR: '${{ runner.temp }}/mulled-resolution-cache/data'
+          GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_LOCK_DIR: '${{ runner.temp }}/mulled-resolution-cache/locks'
         run: |
           . .ci/minikube-test-setup/start_services.sh
-          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
+          ./run_tests.sh -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.0.0
+        if: github.event_name == 'schedule'
         with:
           flags: integration
           working-directory: 'galaxy root'

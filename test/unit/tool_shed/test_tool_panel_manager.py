@@ -1,15 +1,34 @@
 import os
+from unittest import mock
+from xml.etree.ElementTree import (
+    Element,
+    SubElement,
+)
 
 from galaxy.app_unittest_utils.toolbox_support import (
     BaseToolBoxTestCase,
     SimplifiedToolBox,
 )
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
-from galaxy.util import parse_xml
+from galaxy.tool_util.toolbox.base import resolve_tool_path
+from galaxy.util import (
+    Element as GalaxyElement,
+    parse_xml,
+)
 from tool_shed.tools import tool_version_manager
 from ._util import TestToolShedApp
 
 DEFAULT_GUID = "123456"
+
+
+class _RecordingLock:
+    held = False
+
+    def __enter__(self):
+        self.held = True
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.held = False
 
 
 class TestToolPanelManager(BaseToolBoxTestCase):
@@ -147,6 +166,36 @@ class TestToolPanelManager(BaseToolBoxTestCase):
         all_versions = new_toolbox.get_tool("test_tool", get_all_versions=True)
         assert not all_versions
 
+    def test_uninstall_rewrites_conf_before_toolbox_removal(self):
+        # A toolbox rebuild interleaving between the index prune and the conf
+        # rewrite sees a conf-listed tool file with no index entry — the state
+        # the cached toolbox's ad-hoc self-heal repairs by re-indexing the
+        # tool, resurrecting it after uninstall.
+        self._init_tool()
+        self._setup_two_versions_in_config(section=True)
+        self._setup_two_versions()
+        guid = "github.com/galaxyproject/example/test_tool/0.2"
+        conf_path = os.path.join(self.test_directory, "tool_conf.xml")
+        recording_lock = _RecordingLock()
+        conf_when_removed = {}
+        lock_held_when_removed = {}
+        original_remove = self.toolbox.remove_tool_by_id
+
+        def recording_remove(tool_id, remove_from_panel=True):
+            with open(conf_path) as fh:
+                conf_when_removed[tool_id] = fh.read()
+            lock_held_when_removed[tool_id] = recording_lock.held
+            return original_remove(tool_id, remove_from_panel=remove_from_panel)
+
+        with (
+            mock.patch.object(self.app, "_toolbox_lock", recording_lock),
+            mock.patch.object(self.toolbox, "remove_tool_by_id", side_effect=recording_remove),
+        ):
+            self._remove_repository_contents(guid, uninstall=True)
+
+        assert guid not in conf_when_removed[guid]
+        assert lock_held_when_removed[guid]
+
     def _setup_two_versions_remove_one(self, section, uninstall):
         self._init_tool()
         self._setup_two_versions_in_config(section=section)
@@ -195,6 +244,24 @@ class TestToolPanelManager(BaseToolBoxTestCase):
             message = f"file {filename} does not contain valid XML, content {content}"
             raise AssertionError(message)
 
+    def test_generate_tool_panel_elem_list_skips_unmatched_guid(self):
+        tool = self._init_ts_tool(guid=DEFAULT_GUID)
+        tool_path = self._tool_path()
+        repository_tools_tups = [(tool_path, DEFAULT_GUID, tool)]
+        tool_panel_dict = {
+            DEFAULT_GUID: [{"id": "", "name": "", "version": "", "tool_config": tool_path}],
+            "guid-without-tool": [{"id": "", "name": "", "version": "", "tool_config": "missing.xml"}],
+        }
+        elem_list = self.tpm.generate_tool_panel_elem_list(
+            "example",
+            "toolshed.g2.bx.psu.edu/repos/iuc/example",
+            "0123456789abcdef",
+            tool_panel_dict,
+            repository_tools_tups,
+        )
+        assert len(elem_list) == 1
+        assert elem_list[0].attrib["guid"] == DEFAULT_GUID
+
     def _init_ts_tool(self, guid=DEFAULT_GUID, **kwds):
         tool = self._init_tool(**kwds)
         tool.guid = guid
@@ -208,3 +275,62 @@ class TestToolPanelManager(BaseToolBoxTestCase):
     @property
     def tvm(self):
         return tool_version_manager.ToolVersionManager(self.ts_app)
+
+
+GUID_V2 = DEFAULT_GUID + "v/2"
+
+
+def _new_install_elem_list():
+    section = Element("section", {"id": "sec", "name": "Sec", "version": ""})
+    SubElement(section, "tool", {"file": "repos/iuc/fastp/abc/fastp/fastp.xml", "guid": DEFAULT_GUID})
+    top = Element("tool", {"file": "repos/iuc/other/def/other/other.xml", "guid": GUID_V2})
+    return [section, top]
+
+
+def test_collect_new_tool_paths_resolves_relative_tool_path_the_way_discovery_does(tmp_path):
+    # The partial populate filters discovered tools on exact path strings, so
+    # ``_collect_new_tool_paths`` must resolve a relative ``tool_path`` exactly
+    # the way ``discover`` does — through the shared ``resolve_tool_path`` —
+    # otherwise the strings never match. ``resolve_tool_path`` expands the
+    # ``${tool_conf_dir}`` template but leaves a bare relative path relative
+    # (CWD-relative, no abspath), so the collected paths stay relative too.
+    conf = tmp_path / "config" / "shed_tool_conf.xml"
+    path_guids = tool_panel_manager._collect_new_tool_paths(_new_install_elem_list(), "../shed_tools", str(conf))
+    base = resolve_tool_path("../shed_tools", str(conf))
+    assert path_guids == {
+        os.path.normpath(os.path.join(base, "repos/iuc/fastp/abc/fastp/fastp.xml")): DEFAULT_GUID,
+        os.path.normpath(os.path.join(base, "repos/iuc/other/def/other/other.xml")): GUID_V2,
+    }
+
+
+def test_collect_new_tool_paths_absolute_tool_path(tmp_path):
+    base = str(tmp_path / "shed_tools")
+    path_guids = tool_panel_manager._collect_new_tool_paths(
+        _new_install_elem_list(), base, str(tmp_path / "shed_tool_conf.xml")
+    )
+    assert all(p.startswith(f"{base}/") for p in path_guids)
+    assert set(path_guids.values()) == {DEFAULT_GUID, GUID_V2}
+
+
+def test_config_rewrite_preserves_custom_toolbox_attributes(tmp_path):
+    config_path = tmp_path / "shed_tool_conf.xml"
+    config_path.write_text(
+        '<?xml version="1.0"?>\n'
+        '<toolbox tool_path="/old/tools" store="cvmfs_main" monitor="true" publisher="usegalaxy-tools">'
+        '<tool file="old.xml"/>'
+        "</toolbox>"
+    )
+    replacement = GalaxyElement("tool", {"file": "new.xml"})
+
+    manager = tool_panel_manager.ToolPanelManager.__new__(tool_panel_manager.ToolPanelManager)
+    manager.config_elems_to_xml_file([replacement], str(config_path), "/new/tools")
+
+    root = parse_xml(config_path).getroot()
+    attributes = {key: value for key, value in root.attrib.items() if isinstance(key, str) and isinstance(value, str)}
+    assert attributes == {
+        "tool_path": "/new/tools",
+        "store": "cvmfs_main",
+        "monitor": "true",
+        "publisher": "usegalaxy-tools",
+    }
+    assert [child.get("file") for child in root] == ["new.xml"]

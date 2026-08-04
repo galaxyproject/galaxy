@@ -4,7 +4,6 @@ from typing import (
     Any,
     TYPE_CHECKING,
 )
-from urllib.parse import urljoin
 
 from a2wsgi import WSGIMiddleware
 from fastapi import (
@@ -36,6 +35,7 @@ from galaxy.webapps.base.webapp import (
     _is_embed_request,
     config_allows_origin,
 )
+from galaxy.webapps.galaxy.api.mcp import get_mcp_app
 from galaxy.webapps.openapi._compat.v2 import GenerateJsonSchema
 from galaxy.webapps.openapi.utils import get_openapi
 
@@ -243,17 +243,26 @@ def get_openapi_schema() -> dict[str, Any]:
 
 def include_tus(app: FastAPI, gx_app):
     config = gx_app.config
-    root_path = "" if config.galaxy_url_prefix == "/" else config.galaxy_url_prefix
+    # These prefixes must not include galaxy_url_prefix. When a prefix is configured,
+    # initialize_fast_app mounts this whole app underneath it, so routes registered here
+    # are matched against the prefix-stripped path -- prepending it again never matches,
+    # and the request silently falls through to the legacy WSGI upload hooks endpoint,
+    # which returns 200 with no TUS Location header. tuspyserver reconstructs the external
+    # URL from the request's root_path, so the Location header stays correct either way.
+    upload_files_dir = config.tus_upload_store or config.new_file_path
     upload_tus_router = create_tus_router(
-        prefix=urljoin(root_path, "api/upload/resumable_upload"),
-        files_dir=config.tus_upload_store or config.new_file_path,
+        prefix="api/upload/resumable_upload",
+        files_dir=upload_files_dir,
         max_size=config.maximum_upload_file_size,
     )
+    log.debug("Configured upload TUS router with files_dir=%s", upload_files_dir)
+    job_files_dir = config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path
     job_files_tus_router = create_tus_router(
-        prefix=urljoin(root_path, "api/job_files/resumable_upload"),
-        files_dir=config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path,
+        prefix="api/job_files/resumable_upload",
+        files_dir=job_files_dir,
         max_size=config.maximum_upload_file_size,
     )
+    log.debug("Configured job files TUS router with files_dir=%s", job_files_dir)
     app.include_router(upload_tus_router)
     app.include_router(job_files_tus_router)
 
@@ -267,13 +276,8 @@ def get_mcp_lifespan(gx_app):
         return None, None
 
     try:
-        from galaxy.webapps.galaxy.api.mcp import get_mcp_app
-
         mcp_app = get_mcp_app(gx_app)
         return mcp_app, mcp_app.lifespan
-    except ImportError:
-        log.info("MCP server dependencies not installed (fastmcp), skipping")
-        return None, None
     except Exception:
         log.exception("Failed to initialize MCP server")
         return None, None

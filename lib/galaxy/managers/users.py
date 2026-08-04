@@ -9,6 +9,7 @@ import string
 import time
 from typing import (
     Any,
+    TYPE_CHECKING,
 )
 
 from markupsafe import escape
@@ -32,6 +33,11 @@ from galaxy.managers import (
     deletable,
 )
 from galaxy.managers.base import combine_lists
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import (
     Job,
     User,
@@ -56,6 +62,9 @@ from galaxy.structured_app import (
 )
 from galaxy.util import now
 from galaxy.util.hash_util import new_secure_hash_v2
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +97,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.app_type = app_type
         super().__init__(app)
 
-    def register(self, trans, email=None, username=None, password=None, confirm=None, subscribe=False):
+    def register(
+        self, trans: "GalaxyWebTransaction", email=None, username=None, password=None, confirm=None, subscribe=False
+    ):
         """
         Register a new user.
         """
@@ -121,14 +132,29 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             message = self.send_subscription_email(email)
             if message:
                 return None, message
-        user = self.create(email=email, username=username, password=password)
-        if self.app.config.user_activation_on:
-            self.send_activation_email(trans, email, username)
+        user = self.create(email=email, username=username, password=password, trans=trans, send_activation_email=True)
         return user, None
 
-    def create(self, email=None, username=None, password=None, **kwargs):
+    def create(
+        self,
+        email=None,
+        username=None,
+        password=None,
+        *,
+        trans=None,
+        trusted_email=False,
+        send_activation_email=False,
+        **kwargs,
+    ):
         """
         Create a new user.
+
+        The account is active unless email activation is enabled
+        (``user_activation_on``). ``trusted_email`` activates the account
+        regardless, for emails already verified by a trusted source such as an
+        OIDC identity provider. When the account is created inactive and
+        ``send_activation_email`` is set, an activation email is sent (requires
+        ``trans``).
         """
         self._error_on_duplicate_email(email)
         user = self.model_class(email=email, username=username)
@@ -136,11 +162,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             user.set_password_cleartext(password)
         else:
             user.set_random_password()
-        if self.app.config.user_activation_on:
-            user.active = False
-        else:
-            # Activation is off, every new user is active by default.
-            user.active = True
+        user.active = trusted_email or not self.app.config.user_activation_on
         session = self.session()
         session.add(user)
         try:
@@ -148,10 +170,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             self.app.security_agent.create_user_role(user, self.app)
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
+        if send_activation_email and not user.active:
+            self.send_activation_email(trans, email, username)
         return user
 
     def update_email(
-        self, trans, user: User, new_email: str, *, commit: bool = True, send_activation_email: bool = True
+        self,
+        trans: ProvidesAppContext,
+        user: User,
+        new_email: str,
+        *,
+        commit: bool = True,
+        send_activation_email: bool = True,
     ) -> None:
         """
         Update a user's email address, keeping the private role in sync and honoring activation settings.
@@ -169,15 +199,17 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session.add_all([user, private_role])
         if trans.app.config.user_activation_on:
             user.active = False
-            if send_activation_email and not self.send_activation_email(trans, user.email, user.username):
-                error_message = "Unable to send activation email, please contact your local Galaxy administrator."
-                if trans.app.config.error_email_to is not None:
-                    error_message += f" Contact: {trans.app.config.error_email_to}"
-                raise exceptions.InternalServerError(error_message)
+            if send_activation_email:
+                if not self.send_activation_email(trans, user.email, user.username):
+                    session.rollback()
+                    error_message = "Unable to send activation email, please contact your local Galaxy administrator."
+                    if trans.app.config.error_email_to is not None:
+                        error_message += f" Contact: {trans.app.config.error_email_to}"
+                    raise exceptions.InternalServerError(error_message)
         if commit:
             session.commit()
 
-    def update_username(self, trans, user: User, new_username: str, *, commit: bool = True) -> None:
+    def update_username(self, trans: ProvidesAppContext, user: User, new_username: str, *, commit: bool = True) -> None:
         """
         Update a user's public name after validating it. Raises RequestParameterInvalidException on validation errors.
         """
@@ -363,7 +395,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return util.safe_str_cmp(bootstrap_hash, provided_hash)
 
     # ---- admin
-    def is_admin(self, user: model.User | None, trans=None) -> bool:
+    def is_admin(self, user: model.User | None, trans: ProvidesUserContext | None = None) -> bool:
         """Return True if this user is an admin (or session is authenticated as admin).
 
         Do not pass trans to simply check if an existing user object is an admin user,
@@ -372,7 +404,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if user is None:
             # Anonymous session or master_api_key used, if master_api_key is detected
             # return True.
-            return trans and trans.user_is_admin
+            return bool(trans and trans.user_is_admin)
         return self.app.config.is_admin_user(user)
 
     def admins(self, filters=None, **kwargs):
@@ -425,7 +457,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return user
 
     # ---- current
-    def current_user(self, trans):
+    def current_user(self, trans: ProvidesUserContext):
         # define here for single point of change and make more readable
         # TODO: trans
         return trans.user
@@ -493,7 +525,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             else:
                 return user, "User not found."
 
-    def __set_password(self, trans, user, password, confirm):
+    def __set_password(self, trans: ProvidesUserContext, user, password, confirm):
         if not password:
             return "Please provide a new password."
         if user:
@@ -522,14 +554,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             return "Failed to determine user, access denied."
 
-    def impersonate(self, trans, user):
+    def impersonate(self, trans: "GalaxyWebTransaction", user):
         if not trans.app.config.allow_user_impersonation:
-            raise exceptions.Message("User impersonation is not enabled in this instance of Galaxy.")
+            raise exceptions.MessageException("User impersonation is not enabled in this instance of Galaxy.")
         if user:
             trans.handle_user_logout()
             trans.handle_user_login(user)
         else:
-            raise exceptions.Message("Please provide a valid user.")
+            raise exceptions.MessageException("Please provide a valid user.")
 
     def send_activation_email(self, trans, email, username):
         """
@@ -560,26 +592,32 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         subject = "Galaxy Account Activation"
         try:
             util.send_mail(self.app.config.email_from, to, subject, body, self.app.config, html=html)
+            self.session().commit()
             return True
         except Exception:
             log.debug(body)
             log.exception("Unable to send the activation email.")
             return False
 
-    def __get_activation_token(self, trans, email):
+    def __get_activation_token(self, trans: ProvidesAppContext, email):
         """
         Check for the activation token. Create new activation token and store it in the database if no token found.
+        Flushes but does not commit—the caller is responsible for committing the transaction.
         """
-        user = get_user_by_email(trans.sa_session, email, self.app.model.User)
+        session = trans.sa_session
+        # Flush pending changes so the user is visible to the DB query below.
+        session.flush()
+        user = get_user_by_email(session, email, self.app.model.User)
+        assert user is not None, f"User with email '{email}' not found while generating activation token."
         activation_token = user.activation_token
         if activation_token is None:
             activation_token = util.hash_util.new_secure_hash_v2(str(random.getrandbits(256)))
             user.activation_token = activation_token
-            trans.sa_session.add(user)
-            trans.sa_session.commit()
+            session.add(user)
+            session.flush()
         return activation_token
 
-    def send_reset_email(self, trans, payload, **kwd):
+    def send_reset_email(self, trans: "GalaxyWebTransaction", payload, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
         if self.app.config.smtp_server is None:
             return "Mail is not configured for this Galaxy instance and password reset information cannot be sent. Please contact your local Galaxy administrator."
@@ -612,7 +650,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             log.warning(f"Failed to produce password reset token. User with email '{email}' not found.")
         return None
 
-    def get_reset_token(self, trans, email):
+    def get_reset_token(self, trans: ProvidesAppContext, email):
         reset_user = self.by_email(email)
         if not reset_user:
             reset_user = self.by_email(email, case_sensitive=False)
@@ -779,17 +817,21 @@ class UserDeserializer(base.ModelDeserializer):
         }
         self.deserializers.update(user_deserializers)
 
-    def deserialize_preferred_object_store_id(self, item: Any, key: Any, val: Any, trans=None, **context):
+    def deserialize_preferred_object_store_id(
+        self, item: Any, key: Any, val: Any, trans: ProvidesUserContext | None = None, **context
+    ):
         preferred_object_store_id = val
-        validation_error = validate_preferred_object_store_id(trans, self.app.object_store, preferred_object_store_id)
+        validation_error = validate_preferred_object_store_id(
+            trans.user if trans else None, self.app.object_store, preferred_object_store_id
+        )
         if validation_error:
             raise base.ModelDeserializingError(validation_error)
         return self.default_deserializer(item, key, preferred_object_store_id, **context)
 
-    def deserialize_username(self, item, key, username, trans=None, **context):
+    def deserialize_username(self, item, key, username, trans: ProvidesAppContext | None = None, **context):
         # TODO: validate_publicname requires trans and should(?) raise exceptions
         # move validation to UserValidator and use self.app, exceptions instead
-        validation_error = validate_publicname(trans, username, user=item)
+        validation_error = validate_publicname(trans, username, user=item)  # type: ignore[arg-type]
         if validation_error:
             raise base.ModelDeserializingError(validation_error)
         return self.default_deserializer(item, key, username, trans=trans, **context)
@@ -807,14 +849,14 @@ class CurrentUserSerializer(UserSerializer):
             return self.serialize_current_anonymous_user(user, keys, **kwargs)
         return super(UserSerializer, self).serialize(user, keys, **kwargs)
 
-    def serialize_current_anonymous_user(self, user, keys, trans=None, **kwargs):
+    def serialize_current_anonymous_user(self, user, keys, trans: ProvidesHistoryContext | None = None, **kwargs):
         # use the current history if any to get usage stats for trans' anonymous user
         # TODO: might be better as sep. Serializer class
-        usage = 0
+        usage: float = 0
         percent = None
 
-        if hasattr(trans, "history") and trans.history:
-            usage = self.app.quota_agent.get_usage(trans, history=trans.history)
+        if trans is not None and trans.history:
+            usage = self.app.quota_agent.get_usage(trans, history=trans.history) or 0
             percent = self.app.quota_agent.get_percent(trans=trans, usage=usage)
 
         # a very small subset of keys available

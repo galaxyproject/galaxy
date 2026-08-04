@@ -23,11 +23,17 @@ log = logging.getLogger(__name__)
 class RDMFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     token: str | TemplateExpansion | None = None
     public_name: str | TemplateExpansion | None = None
+    multipart_threshold: int | TemplateExpansion | None = None  # MB
+    multipart_chunk_size: int | TemplateExpansion | None = None  # MB
+    default_resource_type: str | TemplateExpansion | None = None
 
 
 class RDMFileSourceConfiguration(BaseFileSourceConfiguration):
     token: str | None = None
     public_name: str | None = None
+    multipart_threshold: int | None = None  # MB
+    multipart_chunk_size: int | None = None  # MB
+    default_resource_type: str | None = None
 
 
 class ContainerAndFileIdentifier(NamedTuple):
