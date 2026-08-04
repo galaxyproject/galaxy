@@ -1,17 +1,4 @@
-"""Regression tests for the contents of the built galaxy-web-client artifacts.
-
-``galaxy-web-client`` exists to ship the compiled frontend.  Both the frontend
-(``src/galaxy/web_client/dist``) and ``src/galaxy/web_client/client_build_hash.txt``
-are produced by ``make dist`` and are git-ignored, so setuptools-scm's SCM file
-finder cannot see them and they only reach the artifacts because MANIFEST.in lists
-them explicitly.  When MANIFEST.in was dropped during the "src" layout conversion
-the published 26.1.0 wheel shipped without the web client at all, and
-``galaxy-web-client-install`` failed on every installation.
-
-These tests build a real sdist and wheel from a copy of the package that has small
-sentinel files standing in for the compiled frontend, so they run in seconds
-without an npm build.
-"""
+"""Test the contents of built galaxy-web-client distributions."""
 
 import shutil
 import subprocess
@@ -27,9 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from check_artifacts import check_artifact  # noqa: E402
 
 PACKAGE_DIR = Path(__file__).parent.parent
-# Generated, git-ignored, or otherwise irrelevant entries that must not be copied
-# into the staging tree -- `dist` in particular covers both the package's own
-# build output and the compiled frontend we replace with sentinels.
+# Exclude build output and generated assets from the staging copy.
 IGNORED = shutil.ignore_patterns(
     "dist", "build", "*.egg-info", "__pycache__", ".venv", ".tox", ".omc", "client_build_hash.txt", "tests"
 )
@@ -51,8 +36,7 @@ def artifacts(tmp_path_factory):
     """Build an sdist and a wheel from the package with a sentinel web client staged."""
     tmp_path = tmp_path_factory.mktemp("web_client_packaging")
     source_dir = tmp_path / "web_client"
-    # symlinks=False so the LICENSE and dev-requirements.txt symlinks, which point
-    # outside the package, are dereferenced into the standalone copy.
+    # Dereference package symlinks so the copy is self-contained.
     shutil.copytree(PACKAGE_DIR, source_dir, symlinks=False, ignore=IGNORED)
 
     client_dir = source_dir / "src" / "galaxy" / "web_client"
@@ -112,7 +96,6 @@ def test_wheel_contains_web_client(artifacts, wheel_members):
 
 
 def test_wheel_installs_to_the_path_install_py_expects(artifacts, tmp_path):
-    """`galaxy.web_client.install` asserts on this exact layout before doing anything."""
     _, wheel = artifacts
     site_packages = tmp_path / "site-packages"
     with zipfile.ZipFile(wheel) as zf:

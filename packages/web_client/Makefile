@@ -14,8 +14,6 @@ PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests
 DIST=dist
-# Unlike the shared package Makefile there is no top-level $(SOURCE_DIR) to
-# collect tests from; this package's sources live under src/.
 TESTS?=$(TEST_DIR)
 
 .PHONY: clean-pyc clean-build docs clean
@@ -84,8 +82,6 @@ mypy: _setup-mypy-venv _mypy
 
 lint-dist:
 	uvx --with-requirements dev-requirements.txt --from twine twine check $(DIST)/*
-	# twine only validates metadata and the README, so it happily passes an
-	# artifact that omits the web client this package exists to ship.
 	uv run --no-project python check_artifacts.py $(DIST)/*
 
 commit-version:

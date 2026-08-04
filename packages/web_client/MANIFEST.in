@@ -1,7 +1,3 @@
-# The compiled frontend and its build hash are produced by `make dist` (see the
-# `src/galaxy/web_client/client_build_hash.txt` rule in the Makefile) and are
-# git-ignored, so setuptools-scm's SCM file finder cannot discover them.  They
-# must be listed explicitly or the sdist -- and therefore the wheel built from
-# it -- ships without the web client it exists to distribute.
+# Generated assets must be included explicitly because they are not tracked by Git.
 include src/galaxy/web_client/client_build_hash.txt
 recursive-include src/galaxy/web_client/dist *
