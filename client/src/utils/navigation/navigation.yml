@@ -771,6 +771,7 @@ tool_form:
     repeat_insert: '[data-description="repeat insert"]'
     repeat_move_up: '#${parameter}_up'
     repeat_move_down: '#${parameter}_down'
+    repeat_clone: '#${parameter}_clone'
     section_header: '.ui-portlet-section .portlet-header'
     reference: '.formatted-reference'
     about: '.tool-footer'
