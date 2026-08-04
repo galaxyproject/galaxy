@@ -146,12 +146,13 @@ dataset_details:
 
 object_store_details:
   selectors:
-    stored_by_name: '.display-os-by-name'
-    badge_of_type: '.object-store-badge-wrapper [data-badge-type="${type}"]'
-    usage_details: '.quota-usage-bar'
-    usage_bytes: '.quota-usage'
-    usage_percent: '.quota-percent-text'
-    usage_progress: '.quota-usage-bar .progress'
+    _: '[aria-labelledby="dataset-details-heading"]'
+    stored_by_name: '[aria-labelledby="dataset-details-heading"] .display-os-by-name'
+    badge_of_type: '[aria-labelledby="dataset-details-heading"] .object-store-badge-wrapper [data-badge-type="${type}"]'
+    usage_details: '[aria-labelledby="dataset-details-heading"] .quota-usage-bar'
+    usage_bytes: '[aria-labelledby="dataset-details-heading"] .quota-usage'
+    usage_percent: '[aria-labelledby="dataset-details-heading"] .quota-percent-text'
+    usage_progress: '[aria-labelledby="dataset-details-heading"] .quota-usage-bar .progress'
 
 confirm_dialog:
   selectors:
