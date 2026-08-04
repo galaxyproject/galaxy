@@ -11,8 +11,8 @@ try:
     import pyarrow.csv as csv
     import pyarrow.parquet as parquet
 except ImportError:
-    csv = None  # type: ignore[assignment]
-    parquet = None  # type: ignore[assignment]
+    csv = None
+    parquet = None
 
 
 def __main__():
@@ -26,7 +26,7 @@ def __main__():
     if csv is None or parquet is None:
         raise Exception("Cannot run conversion, pyarrow is not installed.")
 
-    csv.write_csv(parquet.read_table(infile), outfile)  # type: ignore[attr-defined]
+    csv.write_csv(parquet.read_table(infile), outfile)
 
 
 if __name__ == "__main__":

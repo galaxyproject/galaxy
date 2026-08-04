@@ -118,7 +118,7 @@ try:
     from thriftpy2.protocol.compact import TCompactProtocolFactory
     from thriftpy2.transport import TMemoryBuffer
 except ModuleNotFoundError:
-    thriftpy2 = None  # type: ignore[assignment]
+    thriftpy2 = None
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesUserContext
