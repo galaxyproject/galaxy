@@ -35,6 +35,11 @@ classifiers = [
 ]
 keywords = ["Galaxy"]
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
 [project.scripts]
 galaxy-web-client-install = "galaxy.web_client.install:main"
 

@@ -1312,6 +1312,20 @@ ON CONFLICT
 
     def attempt_create_private_role(self):
         session = required_object_session(self)
+        if self.id is not None:
+            # Two requests logging in the same user concurrently would each find no
+            # private role and each insert one; a user with more than one private role
+            # is in an inconsistent state that no code path can resolve. Take a row lock
+            # on the user so the loser of the race re-checks after the winner commits.
+            session.execute(select(User.id).where(User.id == self.id).with_for_update())
+            stmt = (
+                select(Role.id)
+                .join(UserRoleAssociation, Role.id == UserRoleAssociation.role_id)
+                .where(and_(UserRoleAssociation.user_id == self.id, Role.type == Role.types.PRIVATE))
+            )
+            if session.scalars(stmt).first() is not None:
+                session.commit()  # release the lock
+                return
         role = Role(type=Role.types.PRIVATE)
         assoc = UserRoleAssociation(self, role)
         session.add(assoc)
