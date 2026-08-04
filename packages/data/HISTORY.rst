@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-26.1.1.dev0
------------
+-------------------
+26.1.1 (2026-08-04)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Prevent and tolerate duplicate private roles by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23206 <https://github.com/galaxyproject/galaxy/pull/23206>`_
 
 -------------------
 26.1.0 (2026-08-02)
