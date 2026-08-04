@@ -300,7 +300,7 @@ history_panel:
       option_cards: '[id^="g-card-"][data-source-option-card-id]'
       option_card: '#g-card-${object_store_id}'
       option_card_select: '#g-card-action-select-${object_store_id}'
-      confirm_button: '#modal-select-history-storage-location .btn-primary'
+      confirm_button: '#modal-select-history-storage-location .g-modal-confirm-buttons button:last-child'
 
   selectors:
     _: '#current-history-panel'
