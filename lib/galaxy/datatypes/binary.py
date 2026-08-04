@@ -4751,20 +4751,22 @@ class Parquet(Binary):
             return
         try:
             footer_metadata = _read_parquet_footer_metadata(dataset.get_file_name())
-            num_rows, column_names = _read_parquet_file_metadata(footer_metadata)
-            dataset.metadata.column_names = column_names
-            dataset.metadata.column_count = len(column_names)
-            dataset.metadata.line_count = num_rows
+            line_count, column_names = _read_parquet_file_metadata(footer_metadata)
+            setattr(dataset.metadata, "column_names", column_names)
+            setattr(dataset.metadata, "column_count", len(column_names))
+            setattr(dataset.metadata, "line_count", line_count)
         except Exception:
             pass
 
     def set_peek(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.get_file_name())
-            if dataset.metadata.column_count:
-                col_label = "column" if dataset.metadata.column_count == 1 else "columns"
-                line_label = "line" if dataset.metadata.line_count == 1 else "lines"
-                dataset.blurb = f"{util.commaify(str(dataset.metadata.column_count))} {col_label}, {util.commaify(str(dataset.metadata.line_count))} {line_label}, {nice_size(dataset.get_size())}"
+            column_count = getattr(dataset.metadata, "column_count", 0)
+            line_count = getattr(dataset.metadata, "line_count", 0)
+            if column_count > 0 or line_count > 0:
+                col_label = "column" if column_count <= 1 else "columns"
+                line_label = "line" if line_count <= 1 else "lines"
+                dataset.blurb = f"{util.commaify(str(column_count))} {col_label}, {util.commaify(str(line_count))} {line_label}, {nice_size(dataset.get_size())}"
             else:
                 dataset.blurb = nice_size(dataset.get_size())
         else:
