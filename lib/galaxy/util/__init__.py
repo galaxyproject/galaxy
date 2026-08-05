@@ -1374,9 +1374,7 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
     return True
 
 
-# Browsers drop tabs and newlines from a URL before resolving it, so "/<TAB>/host"
-# reaches the network as the protocol-relative "//host".
-STRIPPED_BY_BROWSERS = re.compile(r"[\t\r\n]")
+CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
 
 
 def is_safe_local_redirect(path: Any) -> bool:
@@ -1389,11 +1387,15 @@ def is_safe_local_redirect(path: Any) -> bool:
     """
     if not isinstance(path, str) or not path:
         return False
-    # Validate what the browser will actually see, not what we were handed.
-    candidate = STRIPPED_BY_BROWSERS.sub("", path).strip()
-    if not candidate.startswith("/"):
+    # A browser drops tabs and newlines before resolving a URL, so "/<TAB>/host" would
+    # reach the network as the protocol-relative "//host". Refuse control characters
+    # outright rather than accepting a value whose meaning changes later; surrounding
+    # whitespace gets trimmed the same way.
+    if path != path.strip() or CONTROL_CHARACTERS.search(path):
         return False
-    return candidate[1:2] not in ("/", "\\")
+    if not path.startswith("/"):
+        return False
+    return path[1:2] not in ("/", "\\")
 
 
 def read_build_sites(filename, check_builds=True):

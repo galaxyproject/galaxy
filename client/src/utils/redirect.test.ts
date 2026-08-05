@@ -39,6 +39,17 @@ describe("safeRedirectPath", () => {
         // browsers strip tabs and newlines, so this reaches the network as "//evil.example.com"
         expect(safeRedirectPath("/\t/evil.example.com")).toBeUndefined();
         expect(safeRedirectPath("/\n/evil.example.com")).toBeUndefined();
+        expect(safeRedirectPath(" //evil.example.com")).toBeUndefined();
+    });
+
+    it("refuses control characters outright", () => {
+        // Accepting these would hand on a value whose meaning changes when it is resolved.
+        expect(safeRedirectPath("/foo\tbar")).toBeUndefined();
+        expect(safeRedirectPath("/foo\nbar")).toBeUndefined();
+        expect(safeRedirectPath("/foo\u0000bar")).toBeUndefined();
+        expect(safeRedirectPath("/foo\u007fbar")).toBeUndefined();
+        expect(safeRedirectPath(" /histories/list")).toBeUndefined();
+        expect(safeRedirectPath("/histories/list ")).toBeUndefined();
     });
 
     it("rejects non-paths and empty values", () => {

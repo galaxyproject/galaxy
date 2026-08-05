@@ -55,9 +55,8 @@ function hasRoot(path: string) {
     return path.startsWith(getAppRoot());
 }
 
-// Browsers drop tabs and newlines from a URL before resolving it, so "/<TAB>/host"
-// reaches the network as the protocol-relative "//host".
-const strippedByBrowsers = /[\t\r\n]/g;
+// eslint-disable-next-line no-control-regex
+const controlCharacters = /[\u0000-\u001f\u007f]/;
 
 /**
  * Guards a post-login redirect target, which arrives from the query string and is
@@ -71,9 +70,14 @@ export function safeRedirectPath(path: unknown): string | undefined {
     if (typeof path !== "string" || !path) {
         return undefined;
     }
-    // Validate what the browser will actually see, not what we were handed.
-    const candidate = path.replace(strippedByBrowsers, "").trim();
-    if (!candidate.startsWith("/") || candidate[1] === "/" || candidate[1] === "\\") {
+    // A browser drops tabs and newlines before resolving a URL, so "/<TAB>/host" would
+    // reach the network as the protocol-relative "//host". Refuse control characters
+    // outright rather than accepting a value whose meaning changes later; surrounding
+    // whitespace gets trimmed the same way.
+    if (path !== path.trim() || controlCharacters.test(path)) {
+        return undefined;
+    }
+    if (!path.startsWith("/") || path[1] === "/" || path[1] === "\\") {
         return undefined;
     }
     return path;

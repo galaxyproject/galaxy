@@ -8,9 +8,10 @@ import { ExternalIdentities } from "@/components/User/ExternalIdentities";
 import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import AdminRoutes from "@/entry/analysis/routes/admin-routes";
 import LibraryRoutes from "@/entry/analysis/routes/library-routes";
+import LoginRoutes from "@/entry/analysis/routes/login-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
 import { getAppRoot } from "@/onload/loadConfig";
-import { redirectLoggedIn, requireAuth, requireAuthForUploadMethod } from "@/router/guards";
+import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -109,8 +110,6 @@ import WorkflowImport from "@/components/Workflow/WorkflowImport.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 import Analysis from "@/entry/analysis/modules/Analysis.vue";
 import Home from "@/entry/analysis/modules/Home.vue";
-import Login from "@/entry/analysis/modules/Login.vue";
-import Register from "@/entry/analysis/modules/Register.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
 Vue.use(VueRouter);
@@ -157,18 +156,8 @@ export function getRouter(Galaxy) {
         base: getAppRoot(),
         mode: "history",
         routes: [
-            /** Login entry route */
-            {
-                path: "/login/start",
-                component: Login,
-                beforeEnter: redirectLoggedIn,
-            },
-            /** Registration entry route */
-            {
-                path: "/register/start",
-                component: Register,
-                beforeEnter: redirectLoggedIn,
-            },
+            /** Login and registration entry routes */
+            ...LoginRoutes,
             /** Workflow editor */
             {
                 path: "/workflows/edit",

@@ -100,8 +100,13 @@ def test_login_redirect_targets_the_login_entry_point():
     assert urlparse(location).path == "/login"
 
 
-def test_login_route_itself_is_not_gated():
-    """Otherwise require_login would bounce the login page to itself."""
-    trans = _trans_for("/login", "redirect=%2Ftool_landings%2Fabc")
+@pytest.mark.parametrize("path", ["/login", "/login/start"])
+def test_login_routes_are_not_themselves_gated(path):
+    """The whole chain lands on one of these, so gating either one is an infinite loop.
+
+    /login redirects to /login/start, and both have to pass through the require_login
+    check or an anonymous user can never reach a login form at all.
+    """
+    trans = _trans_for(path, "redirect=%2Ftool_landings%2Fabc")
     # No HTTPFound raised means the request was allowed through.
     trans._ensure_logged_in_user("galaxysession")
