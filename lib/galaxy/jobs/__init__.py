@@ -71,6 +71,7 @@ from galaxy.job_execution.setup import (
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.mapper import (
     JobMappingException,
+    JobNotReadyException,
     JobRunnerMapper,
 )
 from galaxy.jobs.runners import (
@@ -114,6 +115,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.crypt4gh import assert_crypt4gh_job_readiness
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.path import external_chown
 from galaxy.util.xml_macros import load
@@ -1781,6 +1783,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def enqueue(self):
         job = self.get_job()
+        self._assert_crypt4gh_job_readiness(job)
         # Change to queued state before handing to worker thread so the runner won't pick it up again
         if self.is_task:
             self.change_state(Job.states.QUEUED, flush=False, job=job)
@@ -1795,6 +1798,20 @@ class MinimalJobWrapper(HasResourceParameters):
         if job.state == model.Job.states.PAUSED:
             return False
         return True
+
+    def _assert_crypt4gh_job_readiness(self, job: Job) -> None:
+        """Fail-closed readiness guard for Crypt4GH-wrapped input datasets.
+
+        Delegates to :func:`galaxy.util.crypt4gh.assert_crypt4gh_job_readiness`
+        and fails the job with an actionable error if any Crypt4GH input
+        is missing required compute metadata or has an expired keypair.
+        """
+        errors = assert_crypt4gh_job_readiness(job)
+        if errors:
+            error_message = "Crypt4GH job readiness check failed:\n" + "\n".join(errors)
+            log.warning("(%s) %s", job.id, error_message)
+            self.fail(error_message)
+            raise JobNotReadyException(error_message)
 
     def _pause_job_if_over_quota(self, job):
         quota_source_map = self.app.object_store.get_quota_source_map()

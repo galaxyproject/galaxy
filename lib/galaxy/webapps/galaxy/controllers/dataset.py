@@ -39,7 +39,10 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.util import sanitize_text
-from galaxy.util.crypt4gh import preserve_crypt4gh_inner_file_ext
+from galaxy.util.crypt4gh import (
+    preserve_crypt4gh_inner_file_ext,
+    validate_crypt4gh_compute_metadata,
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import form_builder
@@ -354,7 +357,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 # The following for loop will save all metadata_spec items
                 for name, spec in data.datatype.metadata_spec.items():
                     if not spec.get("readonly"):
-                        setattr(data.metadata, name, spec.unwrap(payload.get(name) or None))
+                        val = payload.get(name) or None
+                        if val is not None:
+                            validate_crypt4gh_compute_metadata(data, name, spec.unwrap(val))
+                        setattr(data.metadata, name, spec.unwrap(val))
                 data.datatype.after_setting_metadata(data)
                 # Sanitize annotation before adding it.
                 if payload.get("annotation"):

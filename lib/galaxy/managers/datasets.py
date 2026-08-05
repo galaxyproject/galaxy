@@ -47,7 +47,10 @@ from galaxy.schema.tasks import (
     PurgeDatasetsTaskRequest,
 )
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.util.crypt4gh import preserve_crypt4gh_inner_file_ext
+from galaxy.util.crypt4gh import (
+    preserve_crypt4gh_inner_file_ext,
+    validate_crypt4gh_compute_metadata,
+)
 from galaxy.util.hash_util import memory_bound_hexdigest
 
 log = logging.getLogger(__name__)
@@ -900,6 +903,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         if metadata_specification.get("readonly"):
             return
         unwrapped_val = metadata_specification.unwrap(val)
+        validate_crypt4gh_compute_metadata(dataset_assoc, key, unwrapped_val)
         setattr(dataset_assoc.metadata, key, unwrapped_val)
         # ...?
         return unwrapped_val
