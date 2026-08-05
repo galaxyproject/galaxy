@@ -242,6 +242,30 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
             response = self._post("notifications", data=mismatched_payload, json=True)
             self._assert_status_code_is(response, 400)
 
+    def test_envelope_is_server_controlled(self):
+        """The notification envelope (source, variant, expiration) is server-stamped regardless of the payload."""
+        user = self._setup_user("tool_installation_request_envelope@galaxy.test")
+        payload = {
+            "recipients": {"user_ids": [], "group_ids": [], "role_ids": []},
+            "notification": {
+                "source": "client-chosen-source",
+                "category": "tool_installation_request",
+                "variant": "urgent",
+                "expiration_time": "2000-01-01T00:00:00",
+                "content": {
+                    "category": "tool_installation_request",
+                    "tools": [{"name": "FastQC"}],
+                },
+            },
+        }
+        with self._different_user(user["email"]):
+            response = self._post("notifications", data=payload, json=True)
+            self._assert_status_code_is(response, 200)
+            notification = response.json()["notification"]
+        assert notification["variant"] == "info", "variant must be server-stamped, not client-escalated"
+        assert notification["source"] == "tool_installation_request_form"
+        assert notification["expiration_time"] != "2000-01-01T00:00:00"
+
     def test_non_admin_cannot_send_disallowed_category(self):
         """Non-admin users may not send 'message' category notifications."""
         user = self._setup_user("tool_installation_request_category_check@galaxy.test")

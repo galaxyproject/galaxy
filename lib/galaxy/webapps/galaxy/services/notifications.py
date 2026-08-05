@@ -274,12 +274,19 @@ class NotificationService(ServiceBase):
 
         content = handler.stamp_content(payload.notification.content, sender)
 
+        # Like the stamped content fields, the envelope of a user-submitted
+        # request is server-controlled: source and variant are fixed (a client
+        # must not escalate to e.g. `urgent`, which bypasses channel opt-outs),
+        # and the timing fields are not client-settable -- publication is
+        # immediate and expiration falls back to the default retention period
+        # applied by the notification model.
         notification_data = InternalNotificationCreateData.model_construct(
-            source=payload.notification.source or f"{category}_form",
+            source=f"{category}_form",
             category=payload.notification.category,
-            variant=payload.notification.variant or NotificationVariant.info,
+            variant=NotificationVariant.info,
             content=content,
-            expiration_time=payload.notification.expiration_time,
+            publication_time=None,
+            expiration_time=None,
         )
 
         # Admin-facing request: delivered to the handler-resolved recipients (the
