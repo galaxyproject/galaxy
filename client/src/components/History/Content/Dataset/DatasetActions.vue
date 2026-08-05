@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faBug, faChartBar, faInfoCircle, faKey, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import type { HDADetailed } from "@/api";
+import { useCrypt4ghRecrypt } from "@/composables/useCrypt4ghRecrypt";
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { absPath, prependPath } from "@/utils/redirect";
@@ -45,6 +46,22 @@ const showVisualizations = computed(() => {
 const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
 });
+
+const isCrypt4gh = computed(() => {
+    const ext = props.item.extension;
+    return ext === "c4gh" || (ext != null && ext.endsWith(".c4gh"));
+});
+
+const showRecrypt = computed(() => {
+    return (
+        props.writable &&
+        isCrypt4gh.value &&
+        !props.item.purged &&
+        !["error", "failed_metadata", "upload", "noPermission"].includes(props.item.state)
+    );
+});
+
+const { recrypting, recrypt } = useCrypt4ghRecrypt();
 const reportErrorUrl = computed(() => {
     return prependPath(props.itemUrls.reportError!);
 });
@@ -88,6 +105,10 @@ function onVisualize() {
 
 function onRerun() {
     router.push(`/?job_id=${props.item.creating_job}`);
+}
+
+function onRecrypt() {
+    recrypt(props.item);
 }
 </script>
 
@@ -165,6 +186,18 @@ function onRerun() {
                     :href="rerunUrl"
                     @click.prevent.stop="onRerun">
                     <FontAwesomeIcon :icon="faRedo" />
+                </BButton>
+
+                <BButton
+                    v-if="showRecrypt"
+                    v-g-tooltip.hover
+                    class="recrypt-btn px-1"
+                    :title="recrypting ? 'Recrypting...' : 'Recrypt Crypt4GH-encrypted dataset for compute'"
+                    size="sm"
+                    variant="link"
+                    :disabled="recrypting"
+                    @click.prevent.stop="onRecrypt">
+                    <FontAwesomeIcon :icon="faKey" />
                 </BButton>
             </div>
         </div>
