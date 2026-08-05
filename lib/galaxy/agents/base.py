@@ -93,6 +93,16 @@ TOOL_HELPER_HISTORY_MESSAGES = 8
 DEFAULT_MAX_QUERY_LENGTH = 10000
 """Fallback cap on a single query, overridable per agent via ``max_query_length``."""
 
+JOB_LOG_EXCERPT_CHARS = 4000
+"""Budget for any single job stream (stderr/stdout/info) shown to a model.
+
+One budget for every excerpt, so the same log can't reach the model at four
+different sizes depending on which agent asked for it. Set to the largest of the
+values it replaces -- middle-trimming already buys more per character than the
+head slices it supersedes, and lowering a shipped diagnostic budget would need
+evidence this change does not have.
+"""
+
 _TRUNCATION_MARKER = "\n\n[... {omitted} characters omitted ...]\n\n"
 
 # Phrases that only show up in a deliberate injection attempt, so every agent scans
@@ -192,6 +202,7 @@ __all__ = [
     "extract_structured_output",
     "extract_usage_info",
     "GalaxyAgentDependencies",
+    "JOB_LOG_EXCERPT_CHARS",
     "MAX_HISTORY_MESSAGES",
     "normalize_llm_text",
     "SimpleGalaxyAgent",

@@ -26,6 +26,7 @@ from .base import (
     extract_result_content,
     extract_structured_output,
     GalaxyAgentDependencies,
+    JOB_LOG_EXCERPT_CHARS,
     normalize_llm_text,
     truncate_middle,
 )
@@ -101,8 +102,8 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 "tool_version": job.tool_version,
                 "state": job.state,
                 "exit_code": job.exit_code,
-                "stderr": job.stderr[:2000] if job.stderr else "",
-                "stdout": job.stdout[:1000] if job.stdout else "",
+                "stderr": truncate_middle(job.stderr, JOB_LOG_EXCERPT_CHARS) if job.stderr else "",
+                "stdout": truncate_middle(job.stdout, JOB_LOG_EXCERPT_CHARS) if job.stdout else "",
                 "command_line": job.command_line,
                 "parameters": job.get_param_values(self.deps.trans.app) if hasattr(job, "get_param_values") else {},
                 "create_time": job.create_time.isoformat() if job.create_time else None,
@@ -212,7 +213,9 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         if job_details.get("exit_code") is not None:
             parts.append(f"Exit Code: {job_details['exit_code']}")
         if job_details.get("stderr"):
-            parts.append(f"Error Output: {job_details['stderr'][:500]}...")
+            # Already excerpted by get_job_details -- re-slicing here would drop the
+            # tail it deliberately kept, and made that budget dead code.
+            parts.append(f"Error Output: {job_details['stderr']}")
 
         return "\n".join(parts)
 
