@@ -8,9 +8,15 @@
 <table style="font-size: 12pt; border-collapse: collapse; width: 100%;{% if not loop.last %} margin-bottom: 8px;{% endif %}">
   <tr>
     <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Tool</td>
-    <td style="padding: 4px 8px;">{{ tool['name'] or tool['tool_shed_id'] or tool['tool_url'] }}</td>
+    <td style="padding: 4px 8px;">{{ tool['name'] or tool['tool_shed_id'] or tool['tool_url'] or "(unspecified)" }}</td>
   </tr>
-  {% if tool['tool_url'] %}
+  {% if tool['tool_shed_id'] and tool['name'] %}
+  <tr>
+    <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Tool shed ID</td>
+    <td style="padding: 4px 8px;">{{ tool['tool_shed_id'] }}</td>
+  </tr>
+  {% endif %}
+  {% if tool['tool_url'] and (tool['name'] or tool['tool_shed_id']) %}
   <tr>
     <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">URL</td>
     <td style="padding: 4px 8px;">{{ tool['tool_url'] }}</td>
@@ -19,7 +25,7 @@
   {% if tool['description'] %}
   <tr>
     <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Description</td>
-    <td style="padding: 4px 8px;">{{ tool['description'] }}</td>
+    <td style="padding: 4px 8px; white-space: pre-line;">{{ tool['description'] }}</td>
   </tr>
   {% endif %}
   {% if tool['scientific_domain'] %}
@@ -40,7 +46,7 @@
 <table style="font-size: 12pt; border-collapse: collapse; width: 100%;">
   <tr>
     <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Additional remarks</td>
-    <td style="padding: 4px 8px;">{{ content['additional_remarks'] }}</td>
+    <td style="padding: 4px 8px; white-space: pre-line;">{{ content['additional_remarks'] }}</td>
   </tr>
 </table>
 {% endif %}
