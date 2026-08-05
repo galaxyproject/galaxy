@@ -37,6 +37,7 @@ export function useFileDrop({
     function disableGlobalDropTargetTarget() {
         return (
             document.querySelectorAll(".modal.show").length > 0 ||
+            document.querySelectorAll(".g-modal").length > 0 ||
             document.querySelectorAll("[data-galaxy-file-drop-target]").length > 0
         );
     }
