@@ -29,6 +29,7 @@ from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
     BroadcastNotificationContent,
     BroadcastNotificationCreateRequest,
+    InternalNotificationCreateData,
     NotificationBroadcastUpdateRequest,
     NotificationCategorySettings,
     NotificationChannelSettings,
@@ -84,7 +85,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         data = self._default_test_notification_data()
         if notification:
             data.update(notification)
-        notification_data = NotificationCreateData(**data)
+        notification_data = InternalNotificationCreateData(**data)
 
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(
@@ -538,7 +539,7 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
 
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
-            notification=NotificationCreateData(**self._default_test_notification_data()),
+            notification=InternalNotificationCreateData(**self._default_test_notification_data()),
             galaxy_url="https://test.galaxy.url",
         )
 

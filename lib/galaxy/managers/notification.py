@@ -59,6 +59,7 @@ from galaxy.schema.notifications import (
     AnyNotificationContent,
     BroadcastNotificationCreateRequest,
     BroadcastNotificationResponse,
+    InternalNotificationCreateData,
     MandatoryNotificationCategory,
     MessageNotificationContent,
     NewSharedItemNotificationContent,
@@ -224,7 +225,7 @@ class NotificationManager:
 
         notification_request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(user_ids=[user_id]),
-            notification=NotificationCreateData(
+            notification=InternalNotificationCreateData(
                 source="galaxy",
                 category=PersonalNotificationCategory.storage_operation,
                 variant=variant,
