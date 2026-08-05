@@ -259,6 +259,7 @@ class ConfigSerializer(base.ModelSerializer):
             "enable_webhooks": lambda item, key, **context: (
                 hasattr(self.app, "webhooks_registry") and bool(self.app.webhooks_registry.webhooks)
             ),
+            "enable_crypt4gh_transparent_staging": _use_config,
         }
 
 
