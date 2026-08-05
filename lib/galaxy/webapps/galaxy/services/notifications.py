@@ -29,9 +29,9 @@ from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
     BroadcastNotificationResponse,
+    InternalNotificationCreateData,
     NotificationBroadcastUpdateRequest,
     NotificationCategory,
-    NotificationCreateData,
     NotificationCreatedResponse,
     NotificationCreateRequest,
     NotificationCreateRequestBody,
@@ -232,10 +232,12 @@ class NotificationService(ServiceBase):
         category = payload.notification.category
 
         # Admin sending arbitrary category notification: pass through unchanged.
+        # The data is promoted to the internal model so the request matches its
+        # declared (full content union) type on the Celery round-trip.
         if sender_context.user_is_admin and category not in _USER_ALLOWED_CATEGORIES:
             return [
                 NotificationCreateRequest.model_construct(
-                    notification=payload.notification,
+                    notification=InternalNotificationCreateData.model_construct(**dict(payload.notification)),
                     recipients=payload.recipients,
                     galaxy_url=galaxy_url,
                 )
@@ -262,7 +264,7 @@ class NotificationService(ServiceBase):
 
         content = handler.stamp_content(payload.notification.content, sender)
 
-        notification_data = NotificationCreateData.model_construct(
+        notification_data = InternalNotificationCreateData.model_construct(
             source=payload.notification.source or f"{category}_form",
             category=payload.notification.category,
             variant=payload.notification.variant or NotificationVariant.info,

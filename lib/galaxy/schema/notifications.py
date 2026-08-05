@@ -406,6 +406,20 @@ class NotificationCreateData(Model):
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",
     )
 
+class InternalNotificationCreateData(NotificationCreateData):
+    """Internal variant of :class:`NotificationCreateData` for server-built notifications.
+
+    ``content`` is the full notification content union instead of the
+    client-submittable create union, so server-stamped content models (e.g. a
+    tool installation request carrying ``requester_email``/``is_confirmation``)
+    survive typed serialization round-trips such as the Celery task dispatch.
+    This model never appears in the API schema; clients submit
+    :class:`NotificationCreateData` instead.
+    """
+
+    content: AnyNotificationContent
+
+
 class GenericNotificationRecipients(GenericModel, Generic[DatabaseIdT], PatchGenericPickle):
     """The recipients of a notification. Can be a combination of users, groups and roles."""
 
@@ -442,6 +456,11 @@ class GenericNotificationCreate(GenericModel, Generic[DatabaseIdT]):
 
 
 class NotificationCreateRequest(GenericNotificationCreate[int]):
+    notification: InternalNotificationCreateData = Field(
+        ...,
+        title="Notification",
+        description="The notification to create. The structure depends on the category.",
+    )
     galaxy_url: str | None = Field(
         None,
         title="Galaxy URL",
