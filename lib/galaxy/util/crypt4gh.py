@@ -1,9 +1,9 @@
-"""Crypt4GH header parsing and file-extension helpers.
+"""Crypt4GH header parsing, file-extension helpers, and validation.
 
-This module provides strict, dependency-free utilities for detecting
-Crypt4GH files, validating their binary headers, and managing the
-``inner_ext.c4gh`` wrapper-extension convention used by the Galaxy
-datatype registry.
+This module provides utilities for detecting Crypt4GH files, validating
+their binary headers, managing the ``inner_ext.c4gh`` wrapper-extension
+convention used by the Galaxy datatype registry, and validating compute
+metadata / job readiness for Crypt4GH-wrapped datasets.
 
 Security invariants
 -------------------
@@ -13,11 +13,27 @@ Security invariants
 * Header bytes returned by :func:`read_crypt4gh_header` are the raw
   public header; callers are responsible for redacting them before
   logging.
+* Error messages are crafted to be actionable without leaking header
+  bytes or other sensitive material.
 """
 
+from __future__ import annotations
+
 import struct
+from datetime import datetime
 from re import fullmatch
-from typing import IO
+from typing import (
+    IO,
+    TYPE_CHECKING,
+)
+
+from galaxy.exceptions import RequestParameterInvalidException
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetInstance,
+        Job,
+    )
 
 # --- Constants -------------------------------------------------------------
 
@@ -187,7 +203,9 @@ def check_crypt4gh(file_path: str) -> bool:
 
 
 __all__ = (
+    "assert_crypt4gh_job_readiness",
     "check_crypt4gh",
+    "CRYPT4GH_COMPUTE_METADATA_KEYS",
     "CRYPT4GH_FILE_EXT",
     "CRYPT4GH_MAGIC",
     "CRYPT4GH_SUFFIX",
@@ -198,5 +216,162 @@ __all__ = (
     "preserve_crypt4gh_inner_file_ext",
     "read_crypt4gh_header",
     "unwrap_crypt4gh_file_ext",
+    "validate_crypt4gh_compute_metadata",
+    "validate_crypt4gh_keypair_expiration",
     "wrap_crypt4gh_file_ext",
 )
+
+
+# --- Compute metadata validation (dataset-level) ---------------------------
+
+#: Metadata field names that can be set by the recrypt action.
+CRYPT4GH_COMPUTE_METADATA_KEYS = frozenset(
+    {
+        "crypt4gh_compute_header",
+        "crypt4gh_compute_keypair_id",
+        "crypt4gh_compute_keypair_expiration_date",
+    }
+)
+
+
+def validate_crypt4gh_compute_metadata(
+    dataset_assoc: DatasetInstance,
+    key: str,
+    val: object,
+) -> None:
+    """Validate a single Crypt4GH compute metadata update.
+
+    Called from :class:`DatasetAssociationDeserializer.deserialize_metadatum`
+    before the value is persisted.
+
+    Only Crypt4GH-wrapped datasets may receive compute metadata.  The
+    keypair expiration date must be a valid ISO 8601 string that is in
+    the future.
+
+    :raises RequestParameterInvalidException: if the dataset is not
+        Crypt4GH-wrapped, is in an active job, or the expiration date
+        is invalid or expired.
+    """
+    if key not in CRYPT4GH_COMPUTE_METADATA_KEYS:
+        return
+
+    ext = dataset_assoc.ext or ""
+    if not is_crypt4gh_file_ext(ext):
+        raise RequestParameterInvalidException(
+            f"Crypt4GH compute metadata '{key}' can only be set on Crypt4GH-wrapped datasets, not '{ext}'."
+        )
+
+    if not dataset_assoc.ok_to_edit_metadata():
+        raise RequestParameterInvalidException(
+            "Dataset metadata could not be updated because it is used as input or output of a running job."
+        )
+
+    if key == "crypt4gh_compute_keypair_expiration_date" and val:
+        validate_crypt4gh_keypair_expiration(str(val))
+
+
+def validate_crypt4gh_keypair_expiration(val: str) -> None:
+    """Ensure the keypair expiration date is valid ISO 8601 and in the future.
+
+    :raises RequestParameterInvalidException: if the value is not
+        parseable as ISO 8601 or is not in the future.
+    """
+    try:
+        expiration = datetime.fromisoformat(val)
+    except (ValueError, TypeError):
+        raise RequestParameterInvalidException(
+            f"Invalid Crypt4GH keypair expiration date '{val}': expected ISO 8601 format."
+        )
+    if expiration.tzinfo is not None:
+        now = datetime.now(expiration.tzinfo)
+    else:
+        now = datetime.now()
+    if expiration <= now:
+        raise RequestParameterInvalidException(
+            "Crypt4GH keypair expiration date must be in the future."
+        )
+
+
+# --- Job readiness guard (job-level) ---------------------------------------
+
+
+def assert_crypt4gh_job_readiness(job: Job) -> list[str]:
+    """Validate that every Crypt4GH input dataset is ready for compute.
+
+    Returns a list of human-readable error messages (empty if all
+    Crypt4GH inputs are ready).  Each error message is actionable and
+    tells the user to use the recrypt action to fix the problem.
+
+    This function does **not** raise; the caller is responsible for
+    failing the job when errors are returned.
+    """
+    input_associations = [
+        *list(job.input_datasets or []),
+        *list(job.input_library_datasets or []),
+    ]
+    if not input_associations:
+        return []
+
+    errors: list[str] = []
+    for assoc in input_associations:
+        dataset = getattr(assoc, "dataset", None)
+        if dataset is None:
+            continue
+        ext = getattr(dataset, "ext", "") or ""
+        if not is_crypt4gh_file_ext(ext):
+            continue
+
+        input_name = getattr(assoc, "name", "") or "<unnamed>"
+        errors.extend(_validate_single_crypt4gh_input(input_name, dataset))
+
+    return errors
+
+
+def _validate_single_crypt4gh_input(input_name: str, dataset: DatasetInstance) -> list[str]:
+    """Validate one Crypt4GH input dataset and return a list of errors."""
+    metadata = dataset.metadata
+    compute_header = getattr(metadata, "crypt4gh_compute_header", None)
+    keypair_id = getattr(metadata, "crypt4gh_compute_keypair_id", None)
+    expiration_str = getattr(metadata, "crypt4gh_compute_keypair_expiration_date", None)
+
+    if not compute_header:
+        return [
+            f"Input '{input_name}': missing crypt4gh_compute_header metadata. "
+            f"Use the recrypt action to prepare this dataset for compute."
+        ]
+    if not keypair_id:
+        return [
+            f"Input '{input_name}': missing crypt4gh_compute_keypair_id metadata. "
+            f"Use the recrypt action to prepare this dataset for compute."
+        ]
+    if not expiration_str:
+        return [
+            f"Input '{input_name}': missing crypt4gh_compute_keypair_expiration_date metadata. "
+            f"Use the recrypt action to prepare this dataset for compute."
+        ]
+
+    return _validate_keypair_not_expired(input_name, str(expiration_str))
+
+
+def _validate_keypair_not_expired(input_name: str, expiration_str: str) -> list[str]:
+    """Validate that the keypair expiration date is valid and not expired."""
+    try:
+        expiration = datetime.fromisoformat(expiration_str)
+    except (ValueError, TypeError):
+        return [
+            f"Input '{input_name}': invalid crypt4gh_compute_keypair_expiration_date "
+            f"'{expiration_str}': expected ISO 8601 format."
+        ]
+
+    if expiration.tzinfo is not None:
+        now = datetime.now(expiration.tzinfo)
+    else:
+        now = datetime.now()
+
+    if expiration <= now:
+        return [
+            f"Input '{input_name}': Crypt4GH keypair has expired "
+            f"(expiration: {expiration_str}). Use the recrypt action to renew."
+        ]
+
+    return []
