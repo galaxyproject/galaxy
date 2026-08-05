@@ -44,6 +44,39 @@ function toolLabel(tool: RequestedTool | undefined): string {
     return tool?.name || tool?.tool_shed_id || tool?.tool_url || "(unspecified)";
 }
 
+interface ToolDetailRow {
+    label: string;
+    value: string;
+    /** Break long unbroken values (ids, URLs). */
+    breakText?: boolean;
+    /** Preserve the line structure of multiline values. */
+    multiline?: boolean;
+}
+
+/** The detail rows shown for a requested tool; values already used as the tool's label are skipped. */
+function toolDetailRows(tool: RequestedTool | undefined): ToolDetailRow[] {
+    if (!tool) {
+        return [];
+    }
+    const rows: ToolDetailRow[] = [];
+    if (tool.tool_shed_id && tool.name) {
+        rows.push({ label: "Tool shed ID", value: tool.tool_shed_id, breakText: true });
+    }
+    if (tool.tool_url && (tool.name || tool.tool_shed_id)) {
+        rows.push({ label: "URL", value: tool.tool_url, breakText: true });
+    }
+    if (tool.description) {
+        rows.push({ label: "Description", value: tool.description, multiline: true });
+    }
+    if (tool.scientific_domain) {
+        rows.push({ label: "Scientific domain", value: tool.scientific_domain });
+    }
+    if (tool.requested_version) {
+        rows.push({ label: "Version", value: tool.requested_version });
+    }
+    return rows;
+}
+
 function handleMessageClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
     const anchor = target.closest("a");
@@ -98,6 +131,8 @@ const singleRequestedTool = computed(() =>
         ? props.notification.content.tools[0]
         : undefined,
 );
+
+const singleToolDetailRows = computed(() => toolDetailRows(singleRequestedTool.value));
 
 const sharedItemType = computed(() => {
     if (props.notification.category === "new_shared_item" && props.notification.content?.item_type) {
@@ -214,26 +249,16 @@ function markNotificationAsSeen() {
                                         {{ toolLabel(tool) }}
                                         <!-- Per-tool details nested under the tool so it is clear
                                              which tool each detail belongs to. -->
-                                        <ul
-                                            v-if="
-                                                tool.tool_url ||
-                                                tool.description ||
-                                                tool.scientific_domain ||
-                                                tool.requested_version
-                                            "
-                                            class="mb-0 pl-3 list-unstyled">
-                                            <li v-if="tool.tool_url">
-                                                <strong>URL:</strong>
-                                                <span class="text-break">{{ tool.tool_url }}</span>
-                                            </li>
-                                            <li v-if="tool.description">
-                                                <strong>Description:</strong> {{ tool.description }}
-                                            </li>
-                                            <li v-if="tool.scientific_domain">
-                                                <strong>Scientific domain:</strong> {{ tool.scientific_domain }}
-                                            </li>
-                                            <li v-if="tool.requested_version">
-                                                <strong>Version:</strong> {{ tool.requested_version }}
+                                        <ul v-if="toolDetailRows(tool).length" class="mb-0 pl-3 list-unstyled">
+                                            <li v-for="row in toolDetailRows(tool)" :key="row.label">
+                                                <strong>{{ row.label }}:</strong>
+                                                <span
+                                                    :class="{
+                                                        'text-break': row.breakText,
+                                                        'preserve-lines': row.multiline,
+                                                    }"
+                                                    >{{ row.value }}</span
+                                                >
                                             </li>
                                         </ul>
                                     </li>
@@ -244,25 +269,17 @@ function markNotificationAsSeen() {
                             <dt>Tool</dt>
                             <dd>{{ toolLabel(singleRequestedTool) }}</dd>
                         </template>
-                        <template v-if="singleRequestedTool">
-                            <template v-if="singleRequestedTool.tool_url">
-                                <dt>URL</dt>
-                                <dd>
-                                    <span class="text-break">{{ singleRequestedTool.tool_url }}</span>
-                                </dd>
-                            </template>
-                            <template v-if="singleRequestedTool.description">
-                                <dt>Description</dt>
-                                <dd>{{ singleRequestedTool.description }}</dd>
-                            </template>
-                            <template v-if="singleRequestedTool.scientific_domain">
-                                <dt>Scientific domain</dt>
-                                <dd>{{ singleRequestedTool.scientific_domain }}</dd>
-                            </template>
-                            <template v-if="singleRequestedTool.requested_version">
-                                <dt>Version</dt>
-                                <dd>{{ singleRequestedTool.requested_version }}</dd>
-                            </template>
+                        <template v-for="row in singleToolDetailRows">
+                            <dt :key="`detail-dt-${row.label}`">{{ row.label }}</dt>
+                            <dd :key="`detail-dd-${row.label}`">
+                                <span
+                                    :class="{
+                                        'text-break': row.breakText,
+                                        'preserve-lines': row.multiline,
+                                    }"
+                                    >{{ row.value }}</span
+                                >
+                            </dd>
                         </template>
                         <template v-if="props.notification.content.workflow_id">
                             <dt>Workflow</dt>
@@ -274,7 +291,7 @@ function markNotificationAsSeen() {
                         </template>
                         <template v-if="props.notification.content.additional_remarks">
                             <dt>Additional remarks</dt>
-                            <dd>{{ props.notification.content.additional_remarks }}</dd>
+                            <dd class="preserve-lines">{{ props.notification.content.additional_remarks }}</dd>
                         </template>
                         <template v-if="props.notification.content.requester_email">
                             <dt>Requested by</dt>
@@ -327,5 +344,9 @@ function markNotificationAsSeen() {
     p {
         margin: 0;
     }
+}
+
+.preserve-lines {
+    white-space: pre-line;
 }
 </style>
