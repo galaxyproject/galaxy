@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { fetchJobs, type JobBaseModel, type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
+import type { JobsQueryParams } from "@/components/Jobs/JobsFilters";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { isRetryableApiError, MAX_RETRIES, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
@@ -43,7 +44,7 @@ export const useJobStore = defineStore("jobStore", () => {
      * @param extraProps Additional filters
      * @returns The fetched page of jobs
      */
-    async function fetchAllJobs(offset = 0, limit = 20, extraProps?: Record<string, unknown>) {
+    async function fetchAllJobs(offset = 0, limit = 20, extraProps?: JobsQueryParams) {
         const jobs = await fetchJobs(offset, limit, extraProps);
         jobs.forEach(storeJob);
         return jobs;
