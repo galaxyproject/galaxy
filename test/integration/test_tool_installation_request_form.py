@@ -242,8 +242,28 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
             response = self._post("notifications", data=mismatched_payload, json=True)
             self._assert_status_code_is(response, 400)
 
-    def test_envelope_is_server_controlled(self):
-        """The notification envelope (source, variant, expiration) is server-stamped regardless of the payload."""
+    def test_whitespace_only_tool_identifier_rejected(self):
+        """A tool entry whose only identifier is whitespace fails validation."""
+        user = self._setup_user("tool_installation_request_blank_id@galaxy.test")
+        payload = {
+            "recipients": {"user_ids": [], "group_ids": [], "role_ids": []},
+            "notification": {
+                "source": "tool_installation_request_form",
+                "category": "tool_installation_request",
+                "variant": "info",
+                "content": {
+                    "category": "tool_installation_request",
+                    "tools": [{"name": "   "}],
+                },
+            },
+        }
+        with self._different_user(user["email"]):
+            response = self._post("notifications", data=payload, json=True)
+            assert response.status_code in (400, 422), response.text
+
+    def test_control_characters_sanitized_and_envelope_stamped(self):
+        """Newlines in tool fields are collapsed, and the notification envelope
+        (source, variant, expiration) is server-controlled regardless of the payload."""
         user = self._setup_user("tool_installation_request_envelope@galaxy.test")
         payload = {
             "recipients": {"user_ids": [], "group_ids": [], "role_ids": []},
@@ -254,7 +274,7 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
                 "expiration_time": "2000-01-01T00:00:00",
                 "content": {
                     "category": "tool_installation_request",
-                    "tools": [{"name": "FastQC"}],
+                    "tools": [{"name": "FastQC\nEvil"}],
                 },
             },
         }
@@ -265,6 +285,7 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
         assert notification["variant"] == "info", "variant must be server-stamped, not client-escalated"
         assert notification["source"] == "tool_installation_request_form"
         assert notification["expiration_time"] != "2000-01-01T00:00:00"
+        assert notification["content"]["tools"][0]["name"] == "FastQC Evil"
 
     def test_non_admin_cannot_send_disallowed_category(self):
         """Non-admin users may not send 'message' category notifications."""

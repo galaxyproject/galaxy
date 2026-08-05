@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from enum import Enum
 from typing import (
@@ -11,6 +12,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    field_validator,
     model_validator,
     RootModel,
 )
@@ -139,46 +141,111 @@ class StorageOperationNotificationContent(MessageNotificationContentBase):
     skipped_count: int = Field(default=0, title="Skipped Count", description="Skipped datasets count.")
 
 
+# Tool-request fields are raw user input that ends up in emails (including the
+# subject header) and notification cards. Control characters would allow forging
+# extra lines in the plain-text emails or break SMTP header construction, and
+# whitespace-only values would defeat the "must have an identifier" invariant,
+# so all free-text fields are normalized on validation.
+# C0/C1 controls and DEL, plus the Unicode line/paragraph separators, all of
+# which can start a new line in Unicode-aware renderers.
+_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]+")
+_CONTROL_CHARS_EXCEPT_NEWLINE = re.compile(r"[\x00-\x09\x0b-\x1f\x7f-\x9f\u2028\u2029]+")
+# NEL and the Unicode line/paragraph separators, normalized to \n in multiline fields.
+_UNICODE_LINE_BREAKS = re.compile(r"[\x85\u2028\u2029]")
+# Invisible/format characters: zero-width chars that would render blank labels,
+# bidi embedding/override/isolate controls that can visually reverse rendered
+# text (RTL spoofing), invisible operators, and Unicode tag characters.
+_INVISIBLE_CHARS = re.compile(
+    r"[\u00ad\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff\U000e0000-\U000e007f]+"
+)
+
+
+def _sanitize_single_line(value: str | None) -> str | None:
+    """Collapse control characters (including any line break) and trim; empty becomes None."""
+    if value is None:
+        return None
+    value = _CONTROL_CHARS.sub(" ", value)
+    value = _INVISIBLE_CHARS.sub("", value)
+    return value.strip() or None
+
+
+def _sanitize_multiline(value: str | None) -> str | None:
+    """Normalize all line-break forms to newlines, drop other control characters, and trim; empty becomes None."""
+    if value is None:
+        return None
+    value = value.replace("\r\n", "\n").replace("\r", "\n")
+    value = _UNICODE_LINE_BREAKS.sub("\n", value)
+    value = _CONTROL_CHARS_EXCEPT_NEWLINE.sub(" ", value)
+    value = _INVISIBLE_CHARS.sub("", value)
+    return value.strip() or None
+
+
 class RequestedTool(Model):
     """A single requested tool in a tool installation request.
 
     This is the per-item model: each entry describes one tool. An installation
     request submits an array of these, wrapped by
     :class:`ToolInstallationRequestNotificationContent` which carries the
-    request-level metadata.
+    request-level metadata. All fields are sanitized on validation: control
+    characters are collapsed and whitespace-only values become ``None``.
     """
 
     name: str | None = Field(
         None,
+        max_length=255,
         title="Tool name",
         description="The human-readable name of the tool, if known.",
     )
     tool_shed_id: str | None = Field(
         None,
+        max_length=255,
         title="Tool shed ID",
         description="The fully qualified tool shed repository ID "
         "(e.g. ``toolshed.g2.bx.psu.edu/repos/devteam/bwa``), if known.",
     )
     tool_url: str | None = Field(
         None,
+        max_length=2048,
         title="Tool URL",
         description="Homepage or repository URL for the requested tool. Must be an http(s) URL.",
     )
     requested_version: str | None = Field(
-        None, title="Requested version", description="The version of the tool being requested, if any."
+        None, max_length=255, title="Requested version", description="The version of the tool being requested, if any."
     )
     description: str | None = Field(
         None,
+        max_length=5000,
         title="Description",
         description="Short description of the tool and its scientific use case.",
     )
     scientific_domain: str | None = Field(
-        None, title="Scientific domain", description="The scientific domain for the requested tool."
+        None, max_length=255, title="Scientific domain", description="The scientific domain for the requested tool."
     )
+
+    # mode="before" so the max_length bounds apply to the sanitized value
+    # (e.g. CRLF text that fits after normalization is not rejected).
+    @field_validator("name", "tool_shed_id", "tool_url", "requested_version", "scientific_domain", mode="before")
+    @classmethod
+    def _sanitize_single_line_fields(cls, value: Any) -> Any:
+        return _sanitize_single_line(value) if isinstance(value, str) else value
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def _sanitize_description(cls, value: Any) -> Any:
+        return _sanitize_multiline(value) if isinstance(value, str) else value
+
+    @field_validator("tool_url", mode="after")
+    @classmethod
+    def _tool_url_must_be_http(cls, value: str | None) -> str | None:
+        # Scheme is case-insensitive per RFC 3986.
+        if value and not value.lower().startswith(("http://", "https://")):
+            raise ValueError("tool_url must be an http(s) URL")
+        return value
 
     @model_validator(mode="after")
     def _has_identifier(self) -> "RequestedTool":
         # A requested tool must be identifiable somehow: a name, a shed id, or a URL.
+        # Sanitization has already turned whitespace-only values into None.
         if not (self.name or self.tool_shed_id or self.tool_url):
             raise ValueError("a requested tool must provide at least one of name, tool_shed_id, or tool_url")
         return self
@@ -201,19 +268,33 @@ class ToolInstallationRequestCreateContent(Model):
     tools: list[RequestedTool] = Field(
         ...,
         min_length=1,
+        max_length=50,
         title="Requested tools",
         description="The tools being requested. Each entry describes a single tool.",
     )
     workflow_id: str | None = Field(
         None,
+        max_length=255,
         title="Workflow ID",
         description="Encoded ID of the workflow requiring these tools, if applicable.",
     )
     additional_remarks: str | None = Field(
         None,
+        max_length=5000,
         title="Additional remarks",
         description="Any additional information or context for the request.",
     )
+
+    @field_validator("workflow_id", mode="before")
+    @classmethod
+    def _sanitize_workflow_id(cls, value: Any) -> Any:
+        return _sanitize_single_line(value) if isinstance(value, str) else value
+
+    @field_validator("additional_remarks", mode="before")
+    @classmethod
+    def _sanitize_additional_remarks(cls, value: Any) -> Any:
+        return _sanitize_multiline(value) if isinstance(value, str) else value
+
 
 class ToolInstallationRequestNotificationContent(ToolInstallationRequestCreateContent):
     """The persisted/response shape of a tool installation request.
