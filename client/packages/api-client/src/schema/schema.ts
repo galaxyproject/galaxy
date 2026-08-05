@@ -19777,7 +19777,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
-                | components["schemas"]["ToolInstallationRequestNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
@@ -21758,7 +21758,7 @@ export interface components {
             tool_shed_id?: string | null;
             /**
              * Tool URL
-             * @description Homepage or repository URL for the requested tool.
+             * @description Homepage or repository URL for the requested tool. Must be an http(s) URL.
              */
             tool_url?: string | null;
         };
@@ -24727,12 +24727,46 @@ export interface components {
             values: string;
         };
         /**
-         * ToolInstallationRequestNotificationContent
-         * @description A tool installation request.
+         * ToolInstallationRequestCreateContent
+         * @description The client-submittable (request) shape of a tool installation request.
          *
-         *     Carries the requested ``tools`` and request-level metadata (workflow
-         *     context, remarks). ``requester_email`` and ``is_confirmation`` are stamped
-         *     by the service and never trusted from the client.
+         *     Carries only the fields a user supplies: the requested ``tools`` and
+         *     request-level metadata (workflow context, remarks). The two server-stamped
+         *     fields -- ``requester_email`` and ``is_confirmation`` -- are deliberately
+         *     absent so they cannot be set by clients and do not appear in the POST
+         *     request schema. The service stamps them, promoting the content to a
+         *     :class:`ToolInstallationRequestNotificationContent` for persistence.
+         */
+        ToolInstallationRequestCreateContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
+             */
+            tools: components["schemas"]["RequestedTool"][];
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
+        /**
+         * ToolInstallationRequestNotificationContent
+         * @description The persisted/response shape of a tool installation request.
+         *
+         *     Extends the create model with the two server-stamped fields. ``requester_email``
+         *     is derived from the authenticated submitter; ``is_confirmation`` selects the
+         *     confirmation vs. admin-facing email template. Both are written by the service
+         *     and never trusted from the client.
          */
         ToolInstallationRequestNotificationContent: {
             /**

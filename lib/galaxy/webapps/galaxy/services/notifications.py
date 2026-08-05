@@ -38,6 +38,7 @@ from galaxy.schema.notifications import (
     NotificationUpdateRequest,
     NotificationVariant,
     PersonalNotificationCategory,
+    ToolInstallationRequestCreateContent,
     ToolInstallationRequestNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationListResponse,
@@ -167,12 +168,18 @@ class NotificationService(ServiceBase):
 
         content = payload.notification.content
         if category == PersonalNotificationCategory.tool_installation_request and isinstance(
-            content, ToolInstallationRequestNotificationContent
+            content, ToolInstallationRequestCreateContent
         ):
-            # Stamp the requester's real email server-side (never trust the client).
-            # Client-supplied is_confirmation is discarded -- the service decides
-            # which copy is the confirmation below.
-            content = content.model_copy(update={"requester_email": sender.email, "is_confirmation": False})
+            # Promote the request (create) content to the persisted content model
+            # and stamp the requester's real email server-side (never trust the
+            # client). The create model cannot carry requester_email or
+            # is_confirmation at all, so they are not spoofable. model_construct
+            # reuses the already-validated field values.
+            content = ToolInstallationRequestNotificationContent.model_construct(
+                **dict(content),
+                requester_email=sender.email,
+                is_confirmation=False,
+            )
 
         notification_data = NotificationCreateData.model_construct(
             source=payload.notification.source or "tool_installation_request_form",

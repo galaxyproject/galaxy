@@ -38,6 +38,8 @@ export interface MessageNotificationCreateRequest extends NotificationCreateRequ
 export type ToolInstallationRequestNotificationContent =
     components["schemas"]["ToolInstallationRequestNotificationContent"];
 
+export type ToolInstallationRequestCreateContent = components["schemas"]["ToolInstallationRequestCreateContent"];
+
 export type RequestedTool = components["schemas"]["RequestedTool"];
 
 export interface ToolInstallationRequestNotification extends BaseUserNotification {
@@ -46,14 +48,14 @@ export interface ToolInstallationRequestNotification extends BaseUserNotificatio
 }
 
 /**
- * Caller-supplied fields for a tool installation request. The server-stamped
- * `category`/`requester_email`/`is_confirmation` fields are excluded; the
- * service always derives them server-side.
+ * Caller-supplied fields for a tool installation request.
+ *
+ * Derived from the create-only content model, which already omits the
+ * server-stamped `category`/`requester_email`/`is_confirmation` fields.
+ * `submitToolInstallationRequest` adds the `category` discriminator (required
+ * by the OpenAPI union) when building the request payload.
  */
-export type ToolInstallationRequestInput = Omit<
-    ToolInstallationRequestNotificationContent,
-    "category" | "requester_email" | "is_confirmation"
->;
+export type ToolInstallationRequestInput = Omit<ToolInstallationRequestCreateContent, "category">;
 
 export type UserNotification =
     | MessageNotification
