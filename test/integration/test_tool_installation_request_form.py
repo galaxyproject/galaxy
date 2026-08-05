@@ -204,6 +204,44 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
             tool_installation_request_notifications == []
         ), "Client-supplied recipients must be ignored for user submissions"
 
+    def test_mismatched_category_and_content_rejected(self):
+        """A tool_installation_request submission with non-tool-request content is rejected."""
+        user = self._setup_user("tool_installation_request_mismatch@galaxy.test")
+        mismatched_payload = {
+            "recipients": {"user_ids": [], "group_ids": [], "role_ids": []},
+            "notification": {
+                "source": "tool_installation_request_form",
+                "category": "tool_installation_request",
+                "variant": "info",
+                "content": {
+                    "category": "message",
+                    "subject": "Not a tool request",
+                    "message": "This content does not match the declared category",
+                },
+            },
+        }
+        with self._different_user(user["email"]):
+            response = self._post("notifications", data=mismatched_payload, json=True)
+            self._assert_status_code_is(response, 400)
+
+    def test_admin_mismatched_category_and_content_rejected(self):
+        """The envelope/content category check also applies to the admin passthrough path."""
+        mismatched_payload = {
+            "recipients": {"user_ids": [], "group_ids": [], "role_ids": []},
+            "notification": {
+                "source": "test",
+                "category": "message",
+                "variant": "info",
+                "content": {
+                    "category": "tool_installation_request",
+                    "tools": [{"name": "FastQC"}],
+                },
+            },
+        }
+        with self._different_user(ADMIN_TEST_USER):
+            response = self._post("notifications", data=mismatched_payload, json=True)
+            self._assert_status_code_is(response, 400)
+
     def test_non_admin_cannot_send_disallowed_category(self):
         """Non-admin users may not send 'message' category notifications."""
         user = self._setup_user("tool_installation_request_category_check@galaxy.test")
