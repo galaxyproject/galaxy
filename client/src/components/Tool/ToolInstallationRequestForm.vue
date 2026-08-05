@@ -77,11 +77,15 @@ async function submit() {
 
     try {
         await submitToolInstallationRequest({
-            tool_names: [toolName.value.trim()],
-            tool_url: toolUrl.value.trim() || undefined,
-            description: description.value.trim(),
-            scientific_domain: scientificDomain.value.trim() || undefined,
-            requested_version: requestedVersion.value.trim() || undefined,
+            tools: [
+                {
+                    name: toolName.value.trim(),
+                    tool_url: toolUrl.value.trim() || undefined,
+                    description: description.value.trim(),
+                    scientific_domain: scientificDomain.value.trim() || undefined,
+                    requested_version: requestedVersion.value.trim() || undefined,
+                },
+            ],
             additional_remarks: additionalRemarks.value.trim() || undefined,
         });
 

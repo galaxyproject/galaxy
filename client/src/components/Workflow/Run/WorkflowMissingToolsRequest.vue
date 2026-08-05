@@ -6,6 +6,7 @@ import { submitToolInstallationRequest } from "@/api/notifications";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { parseRequestedToolParts } from "@/utils/tool-version";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -44,9 +45,9 @@ async function requestInstallation() {
 
     try {
         await submitToolInstallationRequest({
-            tool_names: props.missingToolIds,
+            tools: props.missingToolIds.map(parseRequestedToolParts),
             workflow_id: props.workflowId,
-            description,
+            additional_remarks: description,
         });
 
         submitted.value = true;
