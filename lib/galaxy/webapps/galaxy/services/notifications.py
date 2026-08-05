@@ -74,7 +74,12 @@ class NotificationRequestHandler(Protocol):
         ...
 
     def stamp_content(self, content: AnyNotificationCreateContent, sender: User) -> AnyNotificationContent:
-        """Rewrite the client-supplied content server-side (e.g. stamp the requester email)."""
+        """Rewrite the client-supplied content server-side (e.g. stamp the requester email).
+
+        Must raise ``RequestParameterInvalidException`` when the content type does
+        not match this handler's category, so mismatched category/content
+        submissions are rejected instead of persisted.
+        """
         ...
 
     def resolve_recipients(
@@ -104,7 +109,9 @@ class ToolInstallationRequestHandler:
 
     def stamp_content(self, content: AnyNotificationCreateContent, sender: User) -> AnyNotificationContent:
         if not isinstance(content, ToolInstallationRequestCreateContent):
-            return content
+            raise RequestParameterInvalidException(
+                "The notification content does not match the tool_installation_request category."
+            )
         # Promote the request (create) content to the persisted content model and
         # stamp the requester's real email server-side (never trust the client).
         # is_confirmation is forced False on the admin-facing copy; the service
@@ -134,8 +141,9 @@ class ToolInstallationRequestHandler:
             return None
         notification_data = admin_request.notification
         content = notification_data.content
-        if not isinstance(content, ToolInstallationRequestNotificationContent):
-            return None
+        # stamp_content rejects any other content type for this category, so the
+        # admin request always carries the promoted model; assert only narrows the type.
+        assert isinstance(content, ToolInstallationRequestNotificationContent)
         confirmation_content = content.model_copy(update={"is_confirmation": True})
         confirmation_notification = notification_data.model_copy(update={"content": confirmation_content})
         return admin_request.model_copy(
@@ -230,6 +238,8 @@ class NotificationService(ServiceBase):
         resolution, confirmation copy). See ``_REQUEST_HANDLERS``.
         """
         category = payload.notification.category
+        # Envelope/content category agreement is enforced by the
+        # NotificationCreateData model validator when the body is parsed.
 
         # Admin sending arbitrary category notification: pass through unchanged.
         # The data is promoted to the internal model so the request matches its
