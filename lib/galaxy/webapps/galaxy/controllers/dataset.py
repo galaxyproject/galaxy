@@ -39,6 +39,7 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.util import sanitize_text
+from galaxy.util.crypt4gh import preserve_crypt4gh_inner_file_ext
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import form_builder
@@ -385,6 +386,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     self.hda_manager.ensure_dataset_on_disk(trans, data)
                     path = data.dataset.get_file_name()
                     datatype = guess_ext(path, trans.app.datatypes_registry.sniff_order)
+                    datatype = preserve_crypt4gh_inner_file_ext(
+                        datatype,
+                        current_ext=data.extension,
+                        metadata_inner_ext=getattr(data.metadata, "crypt4gh_inner_ext", None),
+                    )
                     trans.app.datatypes_registry.change_datatype(data, datatype)
                     trans.sa_session.commit()
                     job, *_ = trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
