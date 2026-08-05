@@ -180,7 +180,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.tool_set_value("the_repeat_2|texttest", "Cloned Text B")
         assert_input_order(["Text A", "Text B", "Cloned Text B", "Text C"])
 
-        # Validate for: "shared reference" independence holds in both directions
+        # Validate for: deep copy independence holds in both directions
         self.tool_set_value("the_repeat_1|texttest", "Edited Text B")
         assert_input_order(["Text A", "Edited Text B", "Cloned Text B", "Text C"])
 
