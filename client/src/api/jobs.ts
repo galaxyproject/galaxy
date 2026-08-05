@@ -1,4 +1,5 @@
 import type { components } from "@/api/schema";
+import type { JobsQueryParams } from "@/components/Jobs/JobsFilters";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { GalaxyApi } from "./client";
@@ -90,7 +91,7 @@ export async function deleteJob(jobId: string, message?: string): Promise<boolea
  * @param extraProps Additional query params, e.g. `user_id` or the filters built by `jobsFilterParams`
  * @returns List of jobs
  */
-export async function fetchJobs(offset = 0, limit = 20, extraProps?: Record<string, unknown>) {
+export async function fetchJobs(offset = 0, limit = 20, extraProps?: JobsQueryParams) {
     const params = {
         limit,
         offset,

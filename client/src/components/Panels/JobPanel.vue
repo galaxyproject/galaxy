@@ -19,6 +19,7 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 const HIDDEN_TOOL_IDS = ["__DATA_FETCH__"];
+const FETCH_LIMIT = 20;
 
 interface Props {
     inPanel?: boolean;
@@ -54,7 +55,7 @@ watch(filterKey, () => {
     allFetched.value = false;
 });
 
-async function loadJobs(_offset: number, limit: number) {
+async function loadJobs(_offset: number) {
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return { items: [], total: 0 };
     }
@@ -68,10 +69,12 @@ async function loadJobs(_offset: number, limit: number) {
     try {
         // Keep requesting pages until we have something to list (a whole page can be
         // filtered out) or until the API runs out of jobs.
+        // TODO: We are not getting the total count yet, need to include that and use that
+        //      to track whether we have fetched all jobs.
         while (!allFetched.value && items.length === 0) {
-            const jobs = await jobStore.fetchAllJobs(serverOffset.value, limit, extraProps);
+            const jobs = await jobStore.fetchAllJobs(serverOffset.value, FETCH_LIMIT, extraProps);
             serverOffset.value += jobs.length;
-            allFetched.value = jobs.length < limit;
+            allFetched.value = jobs.length < FETCH_LIMIT;
             items.push(...jobs.filter((job) => !HIDDEN_TOOL_IDS.includes(job.tool_id)));
         }
     } finally {
@@ -80,6 +83,7 @@ async function loadJobs(_offset: number, limit: number) {
     loadHistories(items);
     listedCount.value += items.length;
 
+    // TODO: This `listedCount + 1` is a hack to make the `ScrollList` keep requesting more pages until the API runs out of jobs, because we don't have the total count yet.
     return { items, total: allFetched.value ? listedCount.value : listedCount.value + 1 };
 }
 
@@ -110,7 +114,7 @@ function cardClicked(job: JobBaseModel) {
     router.push(`/jobs/${job.id}/view`);
 }
 </script>
- 
+
 <template>
     <ActivityPanel title="Jobs">
         <template v-slot:header>
