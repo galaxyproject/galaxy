@@ -406,6 +406,16 @@ class NotificationCreateData(Model):
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",
     )
 
+    @model_validator(mode="after")
+    def _content_matches_category(self) -> "NotificationCreateData":
+        # The content union is discriminated by its own category field; a
+        # notification whose envelope category disagrees with it would render
+        # and dispatch incorrectly, so reject it at validation time.
+        if self.content.category != self.category:
+            raise ValueError("The content category does not match the notification category.")
+        return self
+
+
 class InternalNotificationCreateData(NotificationCreateData):
     """Internal variant of :class:`NotificationCreateData` for server-built notifications.
 
