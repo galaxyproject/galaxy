@@ -34,18 +34,27 @@ const showButton = computed(
 
 const toolCount = computed(() => props.missingToolIds.length);
 
+/** Mirrors the server-side bound on requested-tool entries per request. */
+const MAX_REQUESTED_TOOLS = 50;
+
 async function requestInstallation() {
     submitting.value = true;
     errorMessage.value = "";
 
+    // The requested tools carry the ids/versions in structured form, so the
+    // remarks only add the workflow context (and a note when the request had
+    // to be truncated to the server-side limit).
     const toolVerb = toolCount.value === 1 ? "tool is" : "tools are";
-    const description =
-        `The following ${toolVerb} required by this workflow but not installed on this instance: ` +
-        `${props.missingToolIds.join(", ")}. These tools are available in the Tool Shed and need to be installed.`;
+    let description =
+        `The requested ${toolVerb} required by this workflow but not installed on this instance. ` +
+        `These tools are available in the Tool Shed and need to be installed.`;
+    if (toolCount.value > MAX_REQUESTED_TOOLS) {
+        description += ` Only the first ${MAX_REQUESTED_TOOLS} of ${toolCount.value} missing tools are listed in this request.`;
+    }
 
     try {
         await submitToolInstallationRequest({
-            tools: props.missingToolIds.map(parseRequestedToolParts),
+            tools: props.missingToolIds.slice(0, MAX_REQUESTED_TOOLS).map(parseRequestedToolParts),
             workflow_id: props.workflowId,
             additional_remarks: description,
         });
@@ -98,6 +107,10 @@ async function requestInstallation() {
             </p>
             <p class="text-muted small mb-0">
                 The admins will receive a notification and can install the tools from the Tool Shed.
+            </p>
+            <p v-if="toolCount > MAX_REQUESTED_TOOLS" data-testid="truncation-note" class="text-muted small mb-0">
+                Only the first {{ MAX_REQUESTED_TOOLS }} of the {{ toolCount }} missing tools will be included in the
+                request.
             </p>
         </GModal>
     </div>

@@ -21728,7 +21728,8 @@ export interface components {
          *     This is the per-item model: each entry describes one tool. An installation
          *     request submits an array of these, wrapped by
          *     :class:`ToolInstallationRequestNotificationContent` which carries the
-         *     request-level metadata.
+         *     request-level metadata. All fields are sanitized on validation: control
+         *     characters are collapsed and whitespace-only values become ``None``.
          */
         RequestedTool: {
             /**

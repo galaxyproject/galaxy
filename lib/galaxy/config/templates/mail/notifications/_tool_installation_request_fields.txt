@@ -2,21 +2,22 @@
    Included by tool_installation_request-email.txt and
    tool_installation_request_confirmation-email.txt. Pure partial body (no
    >>>>>> doc header). Variables: content (a tool installation request, with a
-   `tools` array of requested-tool dicts). -#}
+   `tools` array of requested-tool dicts). Multiline values are indented so
+   user-supplied text cannot mimic a field row at column 0. -#}
 {%- set tools = content['tools'] -%}
 {%- if tools | length == 1 -%}
 {%- set tool = tools[0] -%}
 Tool name:    {{ tool['name'] or tool['tool_shed_id'] or tool['tool_url'] }}
 {% if tool['tool_url'] %}URL:          {{ tool['tool_url'] }}
-{% endif %}{% if tool['description'] %}Description:  {{ tool['description'] }}
+{% endif %}{% if tool['description'] %}Description:  {{ tool['description'] | replace("\n", "\n              ") }}
 {% endif %}{% if tool['scientific_domain'] %}Domain:       {{ tool['scientific_domain'] }}
 {% endif %}{% if tool['requested_version'] %}Version:      {{ tool['requested_version'] }}
 {% endif %}{% else -%}
 Tools:
 {% for tool in tools %}  - {{ tool['name'] or tool['tool_shed_id'] or tool['tool_url'] }}
 {% if tool['tool_url'] %}    URL:          {{ tool['tool_url'] }}
-{% endif %}{% if tool['description'] %}    Description:  {{ tool['description'] }}
+{% endif %}{% if tool['description'] %}    Description:  {{ tool['description'] | replace("\n", "\n                  ") }}
 {% endif %}{% if tool['scientific_domain'] %}    Domain:       {{ tool['scientific_domain'] }}
 {% endif %}{% if tool['requested_version'] %}    Version:      {{ tool['requested_version'] }}
-{% endif %}{% endfor %}{% endif %}{% if content['additional_remarks'] %}Remarks:      {{ content['additional_remarks'] }}
+{% endif %}{% endfor %}{% endif %}{% if content['additional_remarks'] %}Remarks:      {{ content['additional_remarks'] | replace("\n", "\n              ") }}
 {% endif -%}
