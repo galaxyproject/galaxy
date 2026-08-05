@@ -101,15 +101,20 @@ describe("ToolInstallationRequestForm", () => {
         expect(mockSubmitToolInstallationRequest).toHaveBeenCalledOnce();
         const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
         expect(payload).toMatchObject({
-            tool_names: ["FastQC"],
-            tool_url: "https://github.com/s-andrews/FastQC",
-            description: "Quality control for sequencing data",
-            scientific_domain: "Genomics",
-            requested_version: "0.12.1",
+            tools: [
+                {
+                    name: "FastQC",
+                    tool_url: "https://github.com/s-andrews/FastQC",
+                    description: "Quality control for sequencing data",
+                    scientific_domain: "Genomics",
+                    requested_version: "0.12.1",
+                },
+            ],
             additional_remarks: "Optional extra info",
         });
         // Requester email comes from the server (authenticated user), not the form
         expect(payload).not.toHaveProperty("requester_email");
+        expect(payload).not.toHaveProperty("is_confirmation");
         // Removed fields no longer sent
         expect(payload).not.toHaveProperty("requester_name");
         expect(payload).not.toHaveProperty("requester_affiliation");
@@ -159,7 +164,9 @@ describe("ToolInstallationRequestForm", () => {
         const wrapper = await mountForm(true);
         wrapper.findComponent(GModal).vm.$emit("cancel");
         await flushPromises();
-        expect(wrapper.emitted("update:show")).toBeTruthy();
-        expect((wrapper.emitted("update:show") as boolean[][])[0]).toEqual([false]);
+        const emitted = wrapper.emitted("update:show") as boolean[][];
+        expect(emitted).toBeTruthy();
+        // GModal emits update:show=true when it opens, so assert on the latest emission.
+        expect(emitted[emitted.length - 1]).toEqual([false]);
     });
 });

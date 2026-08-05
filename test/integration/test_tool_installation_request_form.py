@@ -15,11 +15,16 @@ TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY = {
         "variant": "info",
         "content": {
             "category": "tool_installation_request",
-            "tool_names": ["FastQC"],
-            "tool_url": "https://github.com/s-andrews/FastQC",
-            "description": "Quality control tool for high-throughput sequencing data.",
-            "scientific_domain": "Genomics",
-            "requested_version": "0.12.1",
+            "tools": [
+                {
+                    "name": "FastQC",
+                    "tool_shed_id": None,
+                    "tool_url": "https://github.com/s-andrews/FastQC",
+                    "description": "Quality control tool for high-throughput sequencing data.",
+                    "scientific_domain": "Genomics",
+                    "requested_version": "0.12.1",
+                }
+            ],
             "additional_remarks": "Would be great for the genomics team.",
         },
     },
@@ -130,11 +135,16 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
                 "variant": "info",
                 "content": {
                     "category": "tool_installation_request",
-                    "tool_names": ["FastQC"],
-                    "tool_url": "https://github.com/s-andrews/FastQC",
-                    "description": "Quality control tool for high-throughput sequencing data.",
-                    "scientific_domain": "Genomics",
-                    "requested_version": "0.12.1",
+                    "tools": [
+                        {
+                            "name": "FastQC",
+                            "tool_shed_id": None,
+                            "tool_url": "https://github.com/s-andrews/FastQC",
+                            "description": "Quality control tool for high-throughput sequencing data.",
+                            "scientific_domain": "Genomics",
+                            "requested_version": "0.12.1",
+                        }
+                    ],
                     "additional_remarks": "Would be great for the genomics team.",
                     "requester_email": "spoofed@example.com",
                     "is_confirmation": True,
@@ -224,8 +234,16 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
                 "variant": "info",
                 "content": {
                     "category": "tool_installation_request",
-                    "tool_names": ["Samtools"],
-                    "description": "Tools for manipulating alignments in SAM format.",
+                    "tools": [
+                        {
+                            "name": "Samtools",
+                            "tool_shed_id": None,
+                            "tool_url": None,
+                            "description": "Tools for manipulating alignments in SAM format.",
+                            "scientific_domain": None,
+                            "requested_version": None,
+                        }
+                    ],
                 },
             },
         }
@@ -244,12 +262,25 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
                 "variant": "info",
                 "content": {
                     "category": "tool_installation_request",
-                    "tool_names": [
-                        "toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17",
-                        "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13",
+                    "tools": [
+                        {
+                            "name": None,
+                            "tool_shed_id": "toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17",
+                            "tool_url": None,
+                            "description": "These tools are required by My Analysis workflow.",
+                            "scientific_domain": None,
+                            "requested_version": None,
+                        },
+                        {
+                            "name": None,
+                            "tool_shed_id": "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13",
+                            "tool_url": None,
+                            "description": None,
+                            "scientific_domain": None,
+                            "requested_version": None,
+                        },
                     ],
                     "workflow_id": "encoded-workflow-id-abc",
-                    "description": "These tools are required by My Analysis workflow.",
                 },
             },
         }
@@ -270,7 +301,7 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
         ), f"Expected at least one tool_installation_request notification with workflow_id, got: {notifications}"
         content = workflow_tool_notifications[0]["content"]
         assert content["workflow_id"] == "encoded-workflow-id-abc"
-        assert len(content["tool_names"]) == 2
+        assert len(content["tools"]) == 2
 
 
 class TestToolInstallationRequestFormEmailDeliveryIntegration(ToolInstallationRequestFormIntegrationBase):

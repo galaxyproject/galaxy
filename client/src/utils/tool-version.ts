@@ -4,6 +4,9 @@
 
 import type { Tool } from "@/stores/toolStore";
 
+/** Matches segments that look like a version (e.g. "1.13", "2.4.2+galaxy0"). */
+const VERSION_SEGMENT_REGEX = /^\d+(\.\d+)*[-+\w]*$/;
+
 /**
  * Extracts the base tool ID from a versioned tool ID.
  * Handles both simple tool IDs (tool/version) and tool shed IDs
@@ -18,9 +21,7 @@ export function extractBaseToolId(toolId: string): string {
         if (parts.length >= 5) {
             // Remove the version part if it exists
             const lastPart = parts[parts.length - 1];
-            // Check if the last part looks like a version (contains dots or is numeric, optionally with suffix)
-            // Now also handles + signs (e.g., "2.4.2+galaxy0")
-            if (lastPart && /^\d+(\.\d+)*[-+\w]*$/.test(lastPart)) {
+            if (lastPart && VERSION_SEGMENT_REGEX.test(lastPart)) {
                 baseId = parts.slice(0, -1).join("/");
             }
         }
@@ -30,12 +31,44 @@ export function extractBaseToolId(toolId: string): string {
         const parts = toolId.split("/");
         const lastPart = parts[parts.length - 1];
         // Check if the last part looks like a version
-        if (lastPart && /^\d+(\.\d+)*[-+\w]*$/.test(lastPart)) {
+        if (lastPart && VERSION_SEGMENT_REGEX.test(lastPart)) {
             baseId = parts.slice(0, -1).join("/");
         }
     }
 
     return baseId;
+}
+
+export interface RequestedToolParts {
+    tool_shed_id?: string;
+    name: string;
+    requested_version?: string;
+}
+
+/**
+ * Splits a tool id into the parts of a tool installation request entry.
+ * Tool-shed tools use ids of the form
+ * `<shed host>/repos/<owner>/<repo>/<tool id>[/<version>]`, from which the
+ * shed repository id, tool name, and version are derived (the trailing segment
+ * is treated as a version only when it looks like one, mirroring
+ * `extractBaseToolId`); anything else (e.g. a local tool id) only identifies
+ * the tool by name.
+ */
+export function parseRequestedToolParts(toolId: string): RequestedToolParts {
+    const match = toolId.match(/^(.+\/repos\/[^/]+\/[^/]+)\/(.+)$/);
+    const toolShedId = match?.[1];
+    const rest = match?.[2];
+    if (!toolShedId || !rest) {
+        return { name: toolId };
+    }
+    const segments = rest.split("/");
+    const lastSegment = segments[segments.length - 1];
+    let requestedVersion: string | undefined;
+    if (segments.length > 1 && lastSegment && VERSION_SEGMENT_REGEX.test(lastSegment)) {
+        segments.pop();
+        requestedVersion = lastSegment;
+    }
+    return { tool_shed_id: toolShedId, name: segments.join("/"), requested_version: requestedVersion };
 }
 
 /**

@@ -21722,6 +21722,47 @@ export interface components {
             | "genome_data"
             | "in_use_state";
         /**
+         * RequestedTool
+         * @description A single requested tool in a tool installation request.
+         *
+         *     This is the per-item model: each entry describes one tool. An installation
+         *     request submits an array of these, wrapped by
+         *     :class:`ToolInstallationRequestNotificationContent` which carries the
+         *     request-level metadata.
+         */
+        RequestedTool: {
+            /**
+             * Description
+             * @description Short description of the tool and its scientific use case.
+             */
+            description?: string | null;
+            /**
+             * Tool name
+             * @description The human-readable name of the tool, if known.
+             */
+            name?: string | null;
+            /**
+             * Requested version
+             * @description The version of the tool being requested, if any.
+             */
+            requested_version?: string | null;
+            /**
+             * Scientific domain
+             * @description The scientific domain for the requested tool.
+             */
+            scientific_domain?: string | null;
+            /**
+             * Tool shed ID
+             * @description The fully qualified tool shed repository ID (e.g. ``toolshed.g2.bx.psu.edu/repos/devteam/bwa``), if known.
+             */
+            tool_shed_id?: string | null;
+            /**
+             * Tool URL
+             * @description Homepage or repository URL for the requested tool.
+             */
+            tool_url?: string | null;
+        };
+        /**
          * Requirement
          * @description Available types of job sources (model classes) that produce dataset collections.
          * @enum {string}
@@ -24685,7 +24726,14 @@ export interface components {
              */
             values: string;
         };
-        /** ToolInstallationRequestNotificationContent */
+        /**
+         * ToolInstallationRequestNotificationContent
+         * @description A tool installation request.
+         *
+         *     Carries the requested ``tools`` and request-level metadata (workflow
+         *     context, remarks). ``requester_email`` and ``is_confirmation`` are stamped
+         *     by the service and never trusted from the client.
+         */
         ToolInstallationRequestNotificationContent: {
             /**
              * Additional remarks
@@ -24698,41 +24746,21 @@ export interface components {
              */
             category: "tool_installation_request";
             /**
-             * Description
-             * @description Short description of the tool and its scientific use case.
-             */
-            description: string;
-            /**
              * Is confirmation
-             * @description Set server-side to mark this as the request confirmation copy delivered to the requester (as opposed to the admin-facing request). Selects the confirmation email template and subject. Client-supplied values are ignored; the service always stamps this when building the requester copy.
+             * @description True on the copy sent to the user who made the request; False on the request sent to admins.
              * @default false
              */
             is_confirmation: boolean;
             /**
-             * Requested version
-             * @description The version of the tool being requested.
-             */
-            requested_version?: string | null;
-            /**
              * Requester email
-             * @description The email address of the requester for follow-up. This is derived server-side for user submissions.
+             * @description Email address of the user who made the request.
              */
             requester_email?: string | null;
             /**
-             * Scientific domain
-             * @description The scientific domain for the requested tool.
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
              */
-            scientific_domain?: string | null;
-            /**
-             * Tool names
-             * @description Names or tool-shed IDs of the requested tools.
-             */
-            tool_names: string[];
-            /**
-             * Tool URL
-             * @description Homepage or repository URL for the requested tool (single-tool installation requests only).
-             */
-            tool_url?: string | null;
+            tools: components["schemas"]["RequestedTool"][];
             /**
              * Workflow ID
              * @description Encoded ID of the workflow requiring these tools, if applicable.

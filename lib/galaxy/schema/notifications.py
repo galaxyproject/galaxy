@@ -139,51 +139,88 @@ class StorageOperationNotificationContent(MessageNotificationContentBase):
     skipped_count: int = Field(default=0, title="Skipped Count", description="Skipped datasets count.")
 
 
-class ToolInstallationRequestNotificationContent(Model):
-    category: Literal[PersonalNotificationCategory.tool_installation_request] = (
-        PersonalNotificationCategory.tool_installation_request
+class RequestedTool(Model):
+    """A single requested tool in a tool installation request.
+
+    This is the per-item model: each entry describes one tool. An installation
+    request submits an array of these, wrapped by
+    :class:`ToolInstallationRequestNotificationContent` which carries the
+    request-level metadata.
+    """
+
+    name: str | None = Field(
+        None,
+        title="Tool name",
+        description="The human-readable name of the tool, if known.",
     )
-    tool_names: list[str] = Field(
-        ..., min_length=1, title="Tool names", description="Names or tool-shed IDs of the requested tools."
+    tool_shed_id: str | None = Field(
+        None,
+        title="Tool shed ID",
+        description="The fully qualified tool shed repository ID "
+        "(e.g. ``toolshed.g2.bx.psu.edu/repos/devteam/bwa``), if known.",
     )
     tool_url: str | None = Field(
         None,
         title="Tool URL",
-        description="Homepage or repository URL for the requested tool (single-tool installation requests only).",
+        description="Homepage or repository URL for the requested tool.",
     )
-    description: str = Field(
-        ..., title="Description", description="Short description of the tool and its scientific use case."
+    requested_version: str | None = Field(
+        None, title="Requested version", description="The version of the tool being requested, if any."
+    )
+    description: str | None = Field(
+        None,
+        title="Description",
+        description="Short description of the tool and its scientific use case.",
     )
     scientific_domain: str | None = Field(
         None, title="Scientific domain", description="The scientific domain for the requested tool."
     )
-    requested_version: str | None = Field(
-        None, title="Requested version", description="The version of the tool being requested."
+
+    @model_validator(mode="after")
+    def _has_identifier(self) -> "RequestedTool":
+        # A requested tool must be identifiable somehow: a name, a shed id, or a URL.
+        if not (self.name or self.tool_shed_id or self.tool_url):
+            raise ValueError("a requested tool must provide at least one of name, tool_shed_id, or tool_url")
+        return self
+
+
+class ToolInstallationRequestNotificationContent(Model):
+    """A tool installation request.
+
+    Carries the requested ``tools`` and request-level metadata (workflow
+    context, remarks). ``requester_email`` and ``is_confirmation`` are stamped
+    by the service and never trusted from the client.
+    """
+
+    category: Literal[PersonalNotificationCategory.tool_installation_request] = (
+        PersonalNotificationCategory.tool_installation_request
+    )
+    tools: list[RequestedTool] = Field(
+        ...,
+        min_length=1,
+        title="Requested tools",
+        description="The tools being requested. Each entry describes a single tool.",
+    )
+    workflow_id: str | None = Field(
+        None,
+        title="Workflow ID",
+        description="Encoded ID of the workflow requiring these tools, if applicable.",
+    )
+    additional_remarks: str | None = Field(
+        None,
+        title="Additional remarks",
+        description="Any additional information or context for the request.",
     )
     requester_email: str | None = Field(
         None,
         title="Requester email",
-        description="The email address of the requester for follow-up. This is derived server-side for user submissions.",
-    )
-    workflow_id: str | None = Field(
-        None, title="Workflow ID", description="Encoded ID of the workflow requiring these tools, if applicable."
-    )
-    additional_remarks: str | None = Field(
-        None, title="Additional remarks", description="Any additional information or context for the request."
+        description="Email address of the user who made the request.",
     )
     is_confirmation: bool = Field(
         default=False,
         title="Is confirmation",
-        description="Set server-side to mark this as the request confirmation copy delivered to the requester "
-        "(as opposed to the admin-facing request). Selects the confirmation email template and subject. "
-        "Client-supplied values are ignored; the service always stamps this when building the requester copy.",
+        description="True on the copy sent to the user who made the request; False on the request sent to admins.",
     )
-
-    @model_validator(mode="after")
-    def _tool_url_single_tool_only(self) -> "ToolInstallationRequestNotificationContent":
-        if self.tool_url and len(self.tool_names) != 1:
-            raise ValueError("tool_url may only be supplied when exactly one tool is requested")
-        return self
 
 
 NotificationContentField = Field(
@@ -205,6 +242,10 @@ AnyNotificationContent = Annotated[
     AnyUserNotificationContent | BroadcastNotificationContent,
     NotificationContentField,
 ]
+
+AnyUserNotificationCreateContent = AnyUserNotificationContent
+
+AnyNotificationCreateContent = AnyNotificationContent
 
 
 NotificationIdField = Field(
@@ -327,7 +368,7 @@ class NotificationCreateData(Model):
     source: str = NotificationSourceField
     category: NotificationCategory = NotificationCategoryField
     variant: NotificationVariant = NotificationVariantField
-    content: AnyNotificationContent
+    content: AnyNotificationCreateContent
     publication_time: OffsetNaiveDatetime | None = Field(
         None,
         title="Publication time",

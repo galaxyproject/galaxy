@@ -28,6 +28,12 @@ const MISSING_TOOL_IDS = [
     "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13",
 ];
 
+// The requested-tool entries the component derives from MISSING_TOOL_IDS.
+const EXPECTED_REQUESTED_TOOLS = [
+    { tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/bwa", name: "bwa", requested_version: "0.7.17" },
+    { tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/samtools", name: "samtools", requested_version: "1.13" },
+];
+
 const REGISTERED_USER = {
     id: "user1",
     username: "testuser",
@@ -133,9 +139,9 @@ describe("WorkflowMissingToolsRequest", () => {
 
         expect(mockSubmitToolInstallationRequest).toHaveBeenCalledOnce();
         const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        expect(payload.tool_names).toEqual(MISSING_TOOL_IDS);
+        expect(payload.tools).toEqual(EXPECTED_REQUESTED_TOOLS);
         expect(payload.workflow_id).toBe("workflow-encoded-id-abc");
-        expect(typeof payload.description).toBe("string");
+        expect(typeof payload.additional_remarks).toBe("string");
     });
 
     it("shows success alert after successful request", async () => {
@@ -182,7 +188,7 @@ describe("WorkflowMissingToolsRequest", () => {
         expect(wrapper.find(".workflow-missing-tools-request").exists()).toBe(false);
     });
 
-    it("sends tool_names as array of IDs", async () => {
+    it("splits versioned tool-shed ids into tool_shed_id, name, and requested_version", async () => {
         const wrapper = mountComponent({ missingToolIds: [MISSING_TOOL_IDS[0]], workflowId: "wf-id" });
         await flushPromises();
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
@@ -191,11 +197,23 @@ describe("WorkflowMissingToolsRequest", () => {
         await flushPromises();
 
         const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        expect(payload.tool_names).toEqual([MISSING_TOOL_IDS[0]]);
+        expect(payload.tools).toEqual([EXPECTED_REQUESTED_TOOLS[0]]);
         expect(payload.workflow_id).toBe("wf-id");
     });
 
-    it("description includes each tool ID", async () => {
+    it("sends local (non-tool-shed) tool ids as names, without a tool_shed_id", async () => {
+        const wrapper = mountComponent({ missingToolIds: ["Cut1"], workflowId: "wf-id" });
+        await flushPromises();
+        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
+        await flushPromises();
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+
+        const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
+        expect(payload.tools).toEqual([{ name: "Cut1" }]);
+    });
+
+    it("additional_remarks includes each tool ID", async () => {
         const wrapper = mountComponent();
         await flushPromises();
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
@@ -205,7 +223,7 @@ describe("WorkflowMissingToolsRequest", () => {
 
         const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
         for (const id of MISSING_TOOL_IDS) {
-            expect(payload.description as string).toContain(id);
+            expect(payload.additional_remarks as string).toContain(id);
         }
     });
 

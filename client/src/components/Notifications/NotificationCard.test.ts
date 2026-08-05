@@ -149,15 +149,55 @@ describe("Notifications categories", () => {
             notification,
         });
 
-        // Title should include the first tool name
-        expect(wrapper.text()).toContain(notification.content.tool_names[0]);
+        // Title should include the first tool's label
+        const firstTool = notification.content.tools[0]!;
+        expect(wrapper.text()).toContain(firstTool.name);
 
         // Description area should show tool installation request details
         const descriptionArea = wrapper.find(`#g-card-description-${notification.id}`);
-        expect(descriptionArea.text()).toContain(notification.content.description);
-        expect(descriptionArea.text()).toContain(notification.content.scientific_domain);
-        expect(descriptionArea.text()).toContain(notification.content.requested_version);
+        expect(descriptionArea.text()).toContain(firstTool.description);
+        expect(descriptionArea.text()).toContain(firstTool.scientific_domain);
+        expect(descriptionArea.text()).toContain(firstTool.requested_version);
         expect(descriptionArea.text()).toContain(notification.content.requester_email);
+    });
+
+    it("tool_installation_request notification associates details with each tool in multi-tool requests", async () => {
+        const notification = generateToolInstallationRequestNotification();
+        notification.content.tools = [
+            {
+                name: "bwa",
+                tool_shed_id: null,
+                tool_url: null,
+                description: "Aligner for short reads",
+                scientific_domain: null,
+                requested_version: null,
+            },
+            {
+                name: "samtools",
+                tool_shed_id: null,
+                tool_url: null,
+                description: "SAM/BAM utilities",
+                scientific_domain: null,
+                requested_version: "1.13",
+            },
+        ];
+
+        const wrapper = await mountComponent(NotificationCard, {
+            notification,
+        });
+
+        expect(wrapper.text()).toContain("Tool Installation Request: 2 tools");
+
+        // Each tool's list item must contain its own details and not the other tool's.
+        const toolItems = wrapper.findAll("ul:not(.list-unstyled) > li");
+        expect(toolItems).toHaveLength(2);
+        expect(toolItems.at(0).text()).toContain("bwa");
+        expect(toolItems.at(0).text()).toContain("Aligner for short reads");
+        expect(toolItems.at(0).text()).not.toContain("SAM/BAM utilities");
+        expect(toolItems.at(1).text()).toContain("samtools");
+        expect(toolItems.at(1).text()).toContain("SAM/BAM utilities");
+        expect(toolItems.at(1).text()).toContain("1.13");
+        expect(toolItems.at(1).text()).not.toContain("Aligner for short reads");
     });
 
     it("tool_installation_request notification links workflow id and exposes anchor for deep-linking", async () => {

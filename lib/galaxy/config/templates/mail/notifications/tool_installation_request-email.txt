@@ -18,11 +18,13 @@ sent:
 - notification_settings_url The URL to the admin's notification settings to manage their subscriptions
 - variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
 - content                   The tool_installation_request payload
-  - tool_names              List of tool names or tool-shed IDs being requested
-  - tool_url                Homepage or repository URL for the tool (optional, single-tool installation requests only)
-  - description             Description of the tool and its use case
-  - scientific_domain       Scientific domain (optional)
-  - requested_version       Requested version (optional)
+  - tools                   List of requested tools. Each entry may provide:
+    - name                  Human-readable tool name (optional)
+    - tool_shed_id          Tool shed repository ID (optional)
+    - tool_url              Homepage or repository URL for the tool (optional)
+    - description           Description of the tool and its use case (optional)
+    - scientific_domain     Scientific domain (optional)
+    - requested_version     Requested version (optional)
   - requester_email         The email address of the requester
   - workflow_id             Encoded ID of the workflow requiring these tools (optional)
   - additional_remarks      Any additional information provided by the requester (optional)
@@ -32,7 +34,7 @@ sent:
 Template begins here>>>>>>
 Hello {{ name }},
 
-A user has submitted a request to install {% if content['tool_names'] | length == 1 %}a new tool{% else %}new tools{% endif %} on {{ hostname }} on {{ date }}.
+A user has submitted a request to install {% if content['tools'] | length == 1 %}a new tool{% else %}new tools{% endif %} on {{ hostname }} on {{ date }}.
 
 {% include "mail/notifications/_tool_installation_request_fields.txt" %}{% if content['workflow_id'] %}Workflow:     {{ workflow_name if workflow_name else content['workflow_id'] }}
 {% endif %}{% if content['requester_email'] %}Requested by: {{ content['requester_email'] }}

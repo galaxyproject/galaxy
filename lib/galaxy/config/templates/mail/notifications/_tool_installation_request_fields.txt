@@ -1,13 +1,22 @@
-{# Shared tool-request field block for the plain-text email body.
+{#- Shared tool-request field block for the plain-text email body.
    Included by tool_installation_request-email.txt and
    tool_installation_request_confirmation-email.txt. Pure partial body (no
-   >>>>>> doc header). Variables: content. -#}
-{%- if content['tool_names'] | length == 1 %}Tool name:    {{ content['tool_names'][0] }}
-{% else %}Tools:
-{% for tool in content['tool_names'] %}  - {{ tool }}
-{% endfor %}{% endif %}{% if content['tool_url'] %}URL:          {{ content['tool_url'] }}
-{% endif %}Description:  {{ content['description'] }}
-{% if content['scientific_domain'] %}Domain:       {{ content['scientific_domain'] }}
-{% endif %}{% if content['requested_version'] %}Version:      {{ content['requested_version'] }}
-{% endif %}{% if content['additional_remarks'] %}Remarks:      {{ content['additional_remarks'] }}
-{% endif %}
+   >>>>>> doc header). Variables: content (a tool installation request, with a
+   `tools` array of requested-tool dicts). -#}
+{%- set tools = content['tools'] -%}
+{%- if tools | length == 1 -%}
+{%- set tool = tools[0] -%}
+Tool name:    {{ tool['name'] or tool['tool_shed_id'] or tool['tool_url'] }}
+{% if tool['tool_url'] %}URL:          {{ tool['tool_url'] }}
+{% endif %}{% if tool['description'] %}Description:  {{ tool['description'] }}
+{% endif %}{% if tool['scientific_domain'] %}Domain:       {{ tool['scientific_domain'] }}
+{% endif %}{% if tool['requested_version'] %}Version:      {{ tool['requested_version'] }}
+{% endif %}{% else -%}
+Tools:
+{% for tool in tools %}  - {{ tool['name'] or tool['tool_shed_id'] or tool['tool_url'] }}
+{% if tool['tool_url'] %}    URL:          {{ tool['tool_url'] }}
+{% endif %}{% if tool['description'] %}    Description:  {{ tool['description'] }}
+{% endif %}{% if tool['scientific_domain'] %}    Domain:       {{ tool['scientific_domain'] }}
+{% endif %}{% if tool['requested_version'] %}    Version:      {{ tool['requested_version'] }}
+{% endif %}{% endfor %}{% endif %}{% if content['additional_remarks'] %}Remarks:      {{ content['additional_remarks'] }}
+{% endif -%}
