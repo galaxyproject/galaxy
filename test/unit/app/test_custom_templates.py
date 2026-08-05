@@ -123,15 +123,20 @@ def test_template_can_include_a_packaged_partial(tmp_path):
     custom_templates_dir = tmp_path
     template_path = custom_templates_dir / "mail/uses_partial.html"
     template_path.parent.mkdir(parents=True, exist_ok=True)
-    # The packaged tool-request field partial renders the tool_names row.
+    # The packaged tool-request field partial renders the requested tool row.
     with open(template_path, "w") as f:
         f.write(">>>>>> body\n{% include 'mail/notifications/_tool_installation_request_fields.html' %}")
     content = {
-        "tool_names": ["FastQC"],
-        "description": "QC tool",
-        "tool_url": None,
-        "scientific_domain": None,
-        "requested_version": None,
+        "tools": [
+            {
+                "name": "FastQC",
+                "tool_shed_id": None,
+                "tool_url": None,
+                "description": "QC tool",
+                "scientific_domain": None,
+                "requested_version": None,
+            }
+        ],
         "additional_remarks": None,
     }
     output = templates.render("mail/uses_partial.html", {"content": content}, custom_templates_dir)
@@ -164,11 +169,16 @@ def test_partial_output_is_autoescaped(tmp_path):
     with open(template_path, "w") as f:
         f.write(">>>>>> body\n{% include 'mail/notifications/_tool_installation_request_fields.html' %}")
     content = {
-        "tool_names": ["<script>x</script>"],
-        "description": "d",
-        "tool_url": None,
-        "scientific_domain": None,
-        "requested_version": None,
+        "tools": [
+            {
+                "name": "<script>x</script>",
+                "tool_shed_id": None,
+                "tool_url": None,
+                "description": "d",
+                "scientific_domain": None,
+                "requested_version": None,
+            }
+        ],
         "additional_remarks": None,
     }
     output = templates.render("mail/uses_partial.html", {"content": content}, custom_templates_dir)
@@ -181,11 +191,16 @@ def test_tool_installation_request_email_renders_with_partial(tmp_path):
     custom_templates_dir = tmp_path
     content = {
         "category": "tool_installation_request",
-        "tool_names": ["BWA"],
-        "tool_url": "https://github.com/lh3/bwa",
-        "description": "Aligner",
-        "scientific_domain": "Genomics",
-        "requested_version": "0.7.17",
+        "tools": [
+            {
+                "name": "BWA",
+                "tool_shed_id": None,
+                "tool_url": "https://github.com/lh3/bwa",
+                "description": "Aligner",
+                "scientific_domain": "Genomics",
+                "requested_version": "0.7.17",
+            }
+        ],
         "requester_email": "user@example.org",
         "workflow_id": None,
         "additional_remarks": None,

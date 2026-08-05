@@ -16,7 +16,7 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { UserNotification } from "@/api/notifications";
+import type { RequestedTool, UserNotification } from "@/api/notifications";
 import type { CardAction, TitleIcon } from "@/components/Common/GCard.types";
 import { useMarkdown } from "@/composables/markdown";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -38,6 +38,11 @@ const notificationsStore = useNotificationsStore();
 const router = useRouter();
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: false });
+
+/** Display label for a requested tool: name, else shed id, else URL, else a placeholder. */
+function toolLabel(tool: RequestedTool | undefined): string {
+    return tool?.name || tool?.tool_shed_id || tool?.tool_url || "(unspecified)";
+}
 
 function handleMessageClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
@@ -66,10 +71,10 @@ const title = computed(() => {
     } else if (props.notification.category === "storage_operation") {
         return props.notification.content.subject;
     } else if (props.notification.category === "tool_installation_request") {
-        const names = props.notification.content.tool_names;
-        return names.length === 1
-            ? `Tool Installation Request: ${names[0]}`
-            : `Tool Installation Request: ${names.length} tools`;
+        const tools = props.notification.content.tools;
+        return tools.length === 1 && tools[0]
+            ? `Tool Installation Request: ${toolLabel(tools[0])}`
+            : `Tool Installation Request: ${tools.length} tools`;
     } else {
         return props.notification.content.subject;
     }
@@ -86,6 +91,13 @@ const titleIcon = computed<TitleIcon>(() => {
         class: `text-${notificationVariant.value}`,
     };
 });
+
+/** The single requested tool, when a tool installation request contains exactly one. */
+const singleRequestedTool = computed(() =>
+    props.notification.category === "tool_installation_request" && props.notification.content.tools.length === 1
+        ? props.notification.content.tools[0]
+        : undefined,
+);
 
 const sharedItemType = computed(() => {
     if (props.notification.category === "new_shared_item" && props.notification.content?.item_type) {
@@ -194,37 +206,63 @@ function markNotificationAsSeen() {
                 </template>
                 <template v-else-if="props.notification.category === 'tool_installation_request'">
                     <dl class="mb-0">
-                        <template v-if="props.notification.content.tool_names.length > 1">
+                        <template v-if="props.notification.content.tools.length > 1">
                             <dt>Tools</dt>
                             <dd>
                                 <ul class="mb-0 pl-3">
-                                    <li v-for="name in props.notification.content.tool_names" :key="name">
-                                        {{ name }}
+                                    <li v-for="(tool, index) in props.notification.content.tools" :key="index">
+                                        {{ toolLabel(tool) }}
+                                        <!-- Per-tool details nested under the tool so it is clear
+                                             which tool each detail belongs to. -->
+                                        <ul
+                                            v-if="
+                                                tool.tool_url ||
+                                                tool.description ||
+                                                tool.scientific_domain ||
+                                                tool.requested_version
+                                            "
+                                            class="mb-0 pl-3 list-unstyled">
+                                            <li v-if="tool.tool_url">
+                                                <strong>URL:</strong>
+                                                <span class="text-break">{{ tool.tool_url }}</span>
+                                            </li>
+                                            <li v-if="tool.description">
+                                                <strong>Description:</strong> {{ tool.description }}
+                                            </li>
+                                            <li v-if="tool.scientific_domain">
+                                                <strong>Scientific domain:</strong> {{ tool.scientific_domain }}
+                                            </li>
+                                            <li v-if="tool.requested_version">
+                                                <strong>Version:</strong> {{ tool.requested_version }}
+                                            </li>
+                                        </ul>
                                     </li>
                                 </ul>
                             </dd>
                         </template>
                         <template v-else>
                             <dt>Tool</dt>
-                            <dd>{{ props.notification.content.tool_names[0] }}</dd>
+                            <dd>{{ toolLabel(singleRequestedTool) }}</dd>
                         </template>
-                        <template v-if="props.notification.content.description">
-                            <dt>Description</dt>
-                            <dd>{{ props.notification.content.description }}</dd>
-                        </template>
-                        <template v-if="props.notification.content.tool_url">
-                            <dt>URL</dt>
-                            <dd>
-                                <span class="text-break">{{ props.notification.content.tool_url }}</span>
-                            </dd>
-                        </template>
-                        <template v-if="props.notification.content.scientific_domain">
-                            <dt>Scientific domain</dt>
-                            <dd>{{ props.notification.content.scientific_domain }}</dd>
-                        </template>
-                        <template v-if="props.notification.content.requested_version">
-                            <dt>Version</dt>
-                            <dd>{{ props.notification.content.requested_version }}</dd>
+                        <template v-if="singleRequestedTool">
+                            <template v-if="singleRequestedTool.tool_url">
+                                <dt>URL</dt>
+                                <dd>
+                                    <span class="text-break">{{ singleRequestedTool.tool_url }}</span>
+                                </dd>
+                            </template>
+                            <template v-if="singleRequestedTool.description">
+                                <dt>Description</dt>
+                                <dd>{{ singleRequestedTool.description }}</dd>
+                            </template>
+                            <template v-if="singleRequestedTool.scientific_domain">
+                                <dt>Scientific domain</dt>
+                                <dd>{{ singleRequestedTool.scientific_domain }}</dd>
+                            </template>
+                            <template v-if="singleRequestedTool.requested_version">
+                                <dt>Version</dt>
+                                <dd>{{ singleRequestedTool.requested_version }}</dd>
+                            </template>
                         </template>
                         <template v-if="props.notification.content.workflow_id">
                             <dt>Workflow</dt>

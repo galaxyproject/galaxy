@@ -38,18 +38,17 @@ export interface MessageNotificationCreateRequest extends NotificationCreateRequ
 export type ToolInstallationRequestNotificationContent =
     components["schemas"]["ToolInstallationRequestNotificationContent"];
 
+export type RequestedTool = components["schemas"]["RequestedTool"];
+
 export interface ToolInstallationRequestNotification extends BaseUserNotification {
     category: "tool_installation_request";
     content: ToolInstallationRequestNotificationContent;
 }
 
 /**
- * Caller-supplied fields for a tool installation request.
- *
- * Omits server-stamped fields the caller must never set: `category` (a fixed
- * discriminator), `requester_email` and `is_confirmation` (both stamped by the
- * service from the authenticated user). `submitToolInstallationRequest` fills
- * these in when building the request payload.
+ * Caller-supplied fields for a tool installation request. The server-stamped
+ * `category`/`requester_email`/`is_confirmation` fields are excluded; the
+ * service always derives them server-side.
  */
 export type ToolInstallationRequestInput = Omit<
     ToolInstallationRequestNotificationContent,
@@ -80,12 +79,9 @@ export async function submitToolInstallationRequest(content: ToolInstallationReq
                 source: "tool_installation_request_form",
                 category: "tool_installation_request",
                 variant: "info",
-                // `category`/`is_confirmation`/`requester_email` are server-stamped;
-                // fill the discriminator + default here so callers never spell them.
                 content: {
                     ...content,
                     category: "tool_installation_request",
-                    is_confirmation: false,
                 },
             },
         },

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Tool } from "@/stores/toolStore";
 
-import { extractBaseToolId, filterLatestToolVersions } from "./tool-version";
+import { extractBaseToolId, filterLatestToolVersions, parseRequestedToolParts } from "./tool-version";
 
 describe("Tool Version Utilities", () => {
     describe("extractBaseToolId", () => {
@@ -36,6 +36,46 @@ describe("Tool Version Utilities", () => {
         it("should handle tools with slashes but no version", () => {
             expect(extractBaseToolId("category/subcategory/tool")).toBe("category/subcategory/tool");
             expect(extractBaseToolId("test/tool/name")).toBe("test/tool/name");
+        });
+    });
+
+    describe("parseRequestedToolParts", () => {
+        it("splits a versioned tool shed id into shed repository id, name, and version", () => {
+            expect(parseRequestedToolParts("toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17")).toEqual({
+                tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/bwa",
+                name: "bwa",
+                requested_version: "0.7.17",
+            });
+            expect(
+                parseRequestedToolParts("toolshed.g2.bx.psu.edu/repos/devteam/bowtie2/bowtie2/2.4.2+galaxy0"),
+            ).toEqual({
+                tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/bowtie2",
+                name: "bowtie2",
+                requested_version: "2.4.2+galaxy0",
+            });
+        });
+
+        it("keeps the shed repository id for unversioned tool shed ids", () => {
+            expect(parseRequestedToolParts("toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa_tool")).toEqual({
+                tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/bwa",
+                name: "bwa_tool",
+                requested_version: undefined,
+            });
+        });
+
+        it("does not treat a non-version trailing segment as a version", () => {
+            expect(parseRequestedToolParts("toolshed.g2.bx.psu.edu/repos/owner/repo/tool/subtool")).toEqual({
+                tool_shed_id: "toolshed.g2.bx.psu.edu/repos/owner/repo",
+                name: "tool/subtool",
+                requested_version: undefined,
+            });
+        });
+
+        it("returns local (non-tool-shed) ids as a bare name", () => {
+            expect(parseRequestedToolParts("Cut1")).toEqual({ name: "Cut1" });
+            expect(parseRequestedToolParts("interactive_tool_jupyter")).toEqual({
+                name: "interactive_tool_jupyter",
+            });
         });
     });
 
