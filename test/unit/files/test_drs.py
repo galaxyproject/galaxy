@@ -1,6 +1,7 @@
 import io
 import json
 import os
+import tempfile
 import urllib
 from typing import Any
 from unittest import mock
@@ -12,6 +13,7 @@ from galaxy.files import (
     DictFileSourcesUserContext,
     ProvidesFileSourcesUserContext,
 )
+from galaxy.files.sources.util import sanitize_drs_name
 from ._util import (
     assert_realizes_as,
     assert_realizes_contains,
@@ -161,6 +163,105 @@ def test_file_source_drs_http():
         assert file_source_pair.file_source.id == "test1"
 
         assert_realizes_as(file_sources, test_url, "hello drs world", user_context=user_context)
+
+        # The DRS object's own name is reported back through metadata_out so callers can
+        # name the dataset something better than the identifier in the URI.
+        metadata_out: dict[str, Any] = {}
+        with tempfile.NamedTemporaryFile(mode="r") as temp:
+            file_source_pair.file_source.realize_to(
+                file_source_pair.path, temp.name, user_context=user_context, metadata_out=metadata_out
+            )
+        assert metadata_out["name"] == "hello-314159"
+
+
+@responses.activate
+def test_file_source_drs_omits_unusable_name_from_metadata():
+    """A DRS object with no usable name leaves metadata_out empty so callers keep their own fallback."""
+
+    def drs_repo_handler(request):
+        data = {
+            "id": "271828",
+            "access_methods": [{"type": "https", "access_url": {"url": "https://my.respository.org/myfile.txt"}}],
+        }
+        return (200, {}, json.dumps(data))
+
+    responses.add_callback(
+        responses.GET,
+        "https://drs.example.org/ga4gh/drs/v1/objects/271828",
+        callback=drs_repo_handler,
+        content_type="application/json",
+    )
+
+    test_url = "drs://drs.example.org/271828"
+
+    def download(request, **kwargs):
+        response: Any = io.StringIO("hello drs world")
+        response.headers = {}
+        response.geturl = lambda: test_url
+        return response
+
+    with mock.patch.object(urllib.request, "urlopen", new=download):
+        user_context = user_context_fixture()
+        file_sources = configured_file_sources(FILE_SOURCES_CONF)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+        metadata_out: dict[str, Any] = {}
+        with tempfile.NamedTemporaryFile(mode="r") as temp:
+            file_source_pair.file_source.realize_to(
+                file_source_pair.path, temp.name, user_context=user_context, metadata_out=metadata_out
+            )
+        assert metadata_out == {}
+
+
+@pytest.mark.parametrize(
+    "raw_name, expected",
+    [
+        ("sample.bed", "sample.bed"),
+        ("L1000_LINCS_DCIC_PBIOA020_HCC515_24H_G06.tsv.gz", "L1000_LINCS_DCIC_PBIOA020_HCC515_24H_G06.tsv.gz"),
+        ("  padded.txt  ", "padded.txt"),
+        ("ünïcödé.txt", "ünïcödé.txt"),
+        ("../../../etc/passwd", "passwd"),
+        ("/etc/passwd", "passwd"),
+        ("..\\..\\windows\\system32\\cmd.exe", "cmd.exe"),
+        ("sample\t\r\n.bed", "sample.bed"),
+        ("sample\x00.bed", "sample.bed"),
+        # Bidi overrides and zero-width characters are how a name gets to look like
+        # something it isn't, so they go too.
+        ("‮gnp.exe", "gnp.exe"),
+        ("file​name.txt", "filename.txt"),
+        ("a" * 300, "a" * 255),
+        ("", None),
+        ("   ", None),
+        (".", None),
+        ("..", None),
+        ("some/dir/", None),
+        ("\x00\x01", None),
+        (None, None),
+        (12345, None),
+        (["sample.bed"], None),
+        ({"value": "sample.bed"}, None),
+    ],
+)
+def test_sanitize_drs_name(raw_name, expected):
+    assert sanitize_drs_name(raw_name) == expected
+
+
+@pytest.mark.parametrize(
+    "raw_name",
+    [
+        "a" * 300,
+        "\U0001f600" * 255,  # 255 characters, 1020 UTF-8 bytes
+        "ü" * 200,
+        "🎉ünïcödé" * 40,
+    ],
+)
+def test_sanitize_drs_name_caps_encoded_bytes(raw_name):
+    """The cap has to be on bytes -- POSIX NAME_MAX is a byte limit, so 255 emoji would overrun it."""
+    sanitized = sanitize_drs_name(raw_name)
+    assert sanitized
+    assert len(sanitized.encode("utf-8")) <= 255
+    # Truncation keeps a prefix and never leaves a mangled partial character behind.
+    assert raw_name.startswith(sanitized)
+    assert sanitized.encode("utf-8").decode("utf-8") == sanitized
 
 
 @responses.activate

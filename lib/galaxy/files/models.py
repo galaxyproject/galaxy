@@ -457,9 +457,10 @@ def resolve_file_source_template(
 class FilesSourceRuntimeContext(Generic[TResolvedConfig]):
     """Context for file source operations, providing user data and resolved configuration."""
 
-    def __init__(self, user_data: UserData, config: TResolvedConfig):
+    def __init__(self, user_data: UserData, config: TResolvedConfig, metadata_out: Optional[dict] = None):
         self._user_data = user_data
         self._config = config
+        self._metadata_out = metadata_out
 
     @property
     def user_data(self) -> UserData:
@@ -470,3 +471,14 @@ class FilesSourceRuntimeContext(Generic[TResolvedConfig]):
     def config(self) -> TResolvedConfig:
         """Resolved configuration for the file source with all templates expanded."""
         return self._config
+
+    @property
+    def metadata_out(self) -> Optional[dict]:
+        """Caller-supplied dict a file source may populate with metadata about the realized source.
+
+        This is how a file source reports back things it learns while realizing a
+        source that the caller cannot derive from the URI alone -- currently only the
+        DRS file source uses it, to report the object's ``name``. ``None`` when the
+        caller isn't interested.
+        """
+        return self._metadata_out
