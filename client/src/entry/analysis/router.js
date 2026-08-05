@@ -10,7 +10,7 @@ import AdminRoutes from "@/entry/analysis/routes/admin-routes";
 import LibraryRoutes from "@/entry/analysis/routes/library-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
 import { getAppRoot } from "@/onload/loadConfig";
-import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
+import { redirectLoggedIn, requireAuth, requireAuthForUploadMethod } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -145,14 +145,6 @@ function redirectAnon(redirect = "") {
     }
 }
 
-// redirect logged in users
-function redirectLoggedIn() {
-    const Galaxy = getGalaxyInstance();
-    if (Galaxy.user.id) {
-        return "/";
-    }
-}
-
 function redirectIf(condition, path) {
     if (condition) {
         return path;
@@ -169,13 +161,13 @@ export function getRouter(Galaxy) {
             {
                 path: "/login/start",
                 component: Login,
-                redirect: redirectLoggedIn(),
+                beforeEnter: redirectLoggedIn,
             },
             /** Registration entry route */
             {
                 path: "/register/start",
                 component: Register,
-                redirect: redirectLoggedIn(),
+                beforeEnter: redirectLoggedIn,
             },
             /** Workflow editor */
             {

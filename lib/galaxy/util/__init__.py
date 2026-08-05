@@ -1374,6 +1374,28 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
     return True
 
 
+# Browsers drop tabs and newlines from a URL before resolving it, so "/<TAB>/host"
+# reaches the network as the protocol-relative "//host".
+STRIPPED_BY_BROWSERS = re.compile(r"[\t\r\n]")
+
+
+def is_safe_local_redirect(path: Any) -> bool:
+    """Is ``path`` a relative URL that cannot leave this server?
+
+    Post-login redirect targets arrive from the query string, so they are attacker
+    supplied. Anything a browser could resolve to a different origin -- an absolute
+    URL, a protocol-relative ``//host``, or the backslash spelling browsers normalize
+    to it -- has to be refused.
+    """
+    if not isinstance(path, str) or not path:
+        return False
+    # Validate what the browser will actually see, not what we were handed.
+    candidate = STRIPPED_BY_BROWSERS.sub("", path).strip()
+    if not candidate.startswith("/"):
+        return False
+    return candidate[1:2] not in ("/", "\\")
+
+
 def read_build_sites(filename, check_builds=True):
     """read db names to ucsc mappings from file, this file should probably be merged with the one above"""
     build_sites = []

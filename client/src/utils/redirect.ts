@@ -54,3 +54,27 @@ export function withPrefix(path: string) {
 function hasRoot(path: string) {
     return path.startsWith(getAppRoot());
 }
+
+// Browsers drop tabs and newlines from a URL before resolving it, so "/<TAB>/host"
+// reaches the network as the protocol-relative "//host".
+const strippedByBrowsers = /[\t\r\n]/g;
+
+/**
+ * Guards a post-login redirect target, which arrives from the query string and is
+ * therefore attacker-supplied. Anything a browser could resolve to a different origin --
+ * an absolute URL, a protocol-relative `//host`, or the backslash spelling browsers
+ * normalize to it -- is refused.
+ * @param path
+ * @returns The path if it is a relative URL that stays on this Galaxy, otherwise undefined.
+ */
+export function safeRedirectPath(path: unknown): string | undefined {
+    if (typeof path !== "string" || !path) {
+        return undefined;
+    }
+    // Validate what the browser will actually see, not what we were handed.
+    const candidate = path.replace(strippedByBrowsers, "").trim();
+    if (!candidate.startsWith("/") || candidate[1] === "/" || candidate[1] === "\\") {
+        return undefined;
+    }
+    return path;
+}
