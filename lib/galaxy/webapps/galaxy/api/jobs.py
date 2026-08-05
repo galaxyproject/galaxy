@@ -19,6 +19,7 @@ from fastapi import (
     Depends,
     Path,
     Query,
+    Response,
 )
 from fastapi.responses import PlainTextResponse
 from pydantic import Field
@@ -284,6 +285,7 @@ class FastAPIJobs:
     @router.get("/api/jobs")
     def index(
         self,
+        response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         states: list[str] | None = Depends(query_parameter_as_list(StateQueryParam)),
         user_details: bool = UserDetailsQueryParam,
@@ -322,7 +324,10 @@ class FastAPIJobs:
             limit=limit,
             offset=offset,
         )
-        return self.service.index(trans, payload)
+        jobs, total_matches = self.service.index(trans, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        # Ignoring type checking here because `service.index` returns plain dicts, not response models.
+        return jobs  # type: ignore[return-value]
 
     @router.get(
         "/api/jobs/{job_id}/common_problems",
