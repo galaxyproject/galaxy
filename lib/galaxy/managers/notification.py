@@ -988,10 +988,17 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
         stored_workflow = session.get(StoredWorkflow, workflow_db_id)
         return stored_workflow.name if stored_workflow else None
 
-    @staticmethod
-    def _tool_label(tool: RequestedTool) -> str:
-        """A display label for a requested tool: name, else shed id, else URL."""
-        return tool.name or tool.tool_shed_id or tool.tool_url or "(unspecified)"
+    #: Subject lines must stay well under the RFC 5322 998-char header limit;
+    #: a space-free label (e.g. a long URL) cannot be folded by the mailer.
+    _SUBJECT_LABEL_MAX_LENGTH = 100
+
+    @classmethod
+    def _tool_label(cls, tool: RequestedTool) -> str:
+        """A display label for a requested tool: name, else shed id, else URL; truncated for header use."""
+        label = tool.name or tool.tool_shed_id or tool.tool_url or "(unspecified)"
+        if len(label) > cls._SUBJECT_LABEL_MAX_LENGTH:
+            label = f"{label[:cls._SUBJECT_LABEL_MAX_LENGTH]}..."
+        return label
 
     def get_subject(self) -> str:
         content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))

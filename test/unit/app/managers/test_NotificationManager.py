@@ -40,6 +40,8 @@ from galaxy.schema.notifications import (
     NotificationRecipients,
     NotificationVariant,
     PersonalNotificationCategory,
+    RequestedTool,
+    ToolInstallationRequestCreateContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
@@ -654,7 +656,52 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
 
 
 class TestToolInstallationRequestContentValidation:
-    """Validation of the user-submitted tool-request content models."""
+    """Sanitization/bounds on the user-submitted tool-request content models."""
+
+    def test_control_characters_are_collapsed_in_single_line_fields(self):
+        tool = RequestedTool(name="FastQC\nEvil", requested_version="1.0\r2")
+        assert tool.name == "FastQC Evil"
+        assert tool.requested_version == "1.0 2"
+
+    def test_whitespace_only_identifier_is_rejected(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(name="   ")
+
+    def test_multiline_fields_keep_newlines_but_drop_other_control_characters(self):
+        content = ToolInstallationRequestCreateContent(
+            tools=[RequestedTool(name="bwa")],
+            additional_remarks="line1\r\nline2\x00x",
+        )
+        assert content.additional_remarks == "line1\nline2 x"
+
+    def test_non_http_tool_url_is_rejected(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(tool_url="javascript:alert(1)")
+
+    def test_tools_list_is_bounded(self):
+        with pytest.raises(ValidationError):
+            ToolInstallationRequestCreateContent(tools=[RequestedTool(name=f"tool-{i}") for i in range(51)])
+
+    def test_unicode_line_separators_are_sanitized(self):
+        # NEL in single-line fields collapses to a space; in multiline fields
+        # Unicode line/paragraph separators normalize to newlines.
+        tool = RequestedTool(name="FastQC\x85Evil", description="l1\u2028l2\u2029l3")
+        assert tool.name == "FastQC Evil"
+        assert tool.description == "l1\nl2\nl3"
+
+    def test_zero_width_identifier_is_rejected(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(name="\u200b")
+
+    def test_crlf_text_fitting_after_normalization_is_accepted(self):
+        # Raw length exceeds the bound, sanitized length does not.
+        remarks = ("y\r\n" * 2000).rstrip()
+        assert len(remarks) > 5000
+        content = ToolInstallationRequestCreateContent(tools=[RequestedTool(name="bwa")], additional_remarks=remarks)
+        assert content.additional_remarks == "\n".join(["y"] * 2000)
+
+    def test_uppercase_url_scheme_is_accepted(self):
+        assert RequestedTool(tool_url="HTTPS://example.com/tool").tool_url == "HTTPS://example.com/tool"
 
     def test_mismatched_envelope_and_content_category_is_rejected(self):
         with pytest.raises(ValidationError, match="does not match"):
@@ -666,3 +713,27 @@ class TestToolInstallationRequestContentValidation:
                     "content": {"category": "message", "subject": "x", "message": "y"},
                 }
             )
+
+    def test_bidi_and_tag_characters_are_stripped(self):
+        # RTL override (U+202E) must not survive into rendered labels, and a
+        # name made only of Unicode tag characters is not a usable identifier.
+        tool = RequestedTool(name="a\u202eevil\u202cb")
+        assert tool.name == "aevilb"
+        with pytest.raises(ValidationError):
+            RequestedTool(name="\U000e0041\U000e0042")
+
+    def test_subject_tool_label_is_truncated_for_header_safety(self):
+        from galaxy.managers.notification import ToolInstallationRequestEmailNotificationTemplateBuilder
+
+        tool = RequestedTool(tool_url="https://example.org/" + "x" * 1500)
+        label = ToolInstallationRequestEmailNotificationTemplateBuilder._tool_label(tool)
+        assert len(label) <= ToolInstallationRequestEmailNotificationTemplateBuilder._SUBJECT_LABEL_MAX_LENGTH + 3
+        assert label.endswith("...")
+        # Short labels are untouched.
+        assert ToolInstallationRequestEmailNotificationTemplateBuilder._tool_label(RequestedTool(name="bwa")) == "bwa"
+
+    def test_field_lengths_are_bounded(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(name="x" * 256)
+        with pytest.raises(ValidationError):
+            ToolInstallationRequestCreateContent(tools=[RequestedTool(name="bwa")], additional_remarks="x" * 5001)
