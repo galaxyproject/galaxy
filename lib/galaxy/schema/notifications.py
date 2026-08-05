@@ -162,7 +162,7 @@ class RequestedTool(Model):
     tool_url: str | None = Field(
         None,
         title="Tool URL",
-        description="Homepage or repository URL for the requested tool.",
+        description="Homepage or repository URL for the requested tool. Must be an http(s) URL.",
     )
     requested_version: str | None = Field(
         None, title="Requested version", description="The version of the tool being requested, if any."
@@ -184,12 +184,15 @@ class RequestedTool(Model):
         return self
 
 
-class ToolInstallationRequestNotificationContent(Model):
-    """A tool installation request.
+class ToolInstallationRequestCreateContent(Model):
+    """The client-submittable (request) shape of a tool installation request.
 
-    Carries the requested ``tools`` and request-level metadata (workflow
-    context, remarks). ``requester_email`` and ``is_confirmation`` are stamped
-    by the service and never trusted from the client.
+    Carries only the fields a user supplies: the requested ``tools`` and
+    request-level metadata (workflow context, remarks). The two server-stamped
+    fields -- ``requester_email`` and ``is_confirmation`` -- are deliberately
+    absent so they cannot be set by clients and do not appear in the POST
+    request schema. The service stamps them, promoting the content to a
+    :class:`ToolInstallationRequestNotificationContent` for persistence.
     """
 
     category: Literal[PersonalNotificationCategory.tool_installation_request] = (
@@ -211,6 +214,16 @@ class ToolInstallationRequestNotificationContent(Model):
         title="Additional remarks",
         description="Any additional information or context for the request.",
     )
+
+class ToolInstallationRequestNotificationContent(ToolInstallationRequestCreateContent):
+    """The persisted/response shape of a tool installation request.
+
+    Extends the create model with the two server-stamped fields. ``requester_email``
+    is derived from the authenticated submitter; ``is_confirmation`` selects the
+    confirmation vs. admin-facing email template. Both are written by the service
+    and never trusted from the client.
+    """
+
     requester_email: str | None = Field(
         None,
         title="Requester email",
@@ -230,11 +243,14 @@ NotificationContentField = Field(
     description="The content of the notification. The structure depends on the category.",
 )
 
+# Content models shared verbatim between the response and create unions; the
+# two unions below differ only in the tool-installation-request entry.
+_CommonUserNotificationContent = (
+    MessageNotificationContent | NewSharedItemNotificationContent | StorageOperationNotificationContent
+)
+
 AnyUserNotificationContent = Annotated[
-    MessageNotificationContent
-    | NewSharedItemNotificationContent
-    | StorageOperationNotificationContent
-    | ToolInstallationRequestNotificationContent,
+    _CommonUserNotificationContent | ToolInstallationRequestNotificationContent,
     NotificationContentField,
 ]
 
@@ -243,9 +259,19 @@ AnyNotificationContent = Annotated[
     NotificationContentField,
 ]
 
-AnyUserNotificationCreateContent = AnyUserNotificationContent
+# Request-side content union. Same as ``AnyNotificationContent`` except the
+# tool-installation-request entry uses the create-only model, which omits the
+# server-stamped ``requester_email`` / ``is_confirmation`` fields so clients
+# cannot set them and they stay out of the POST request schema.
+AnyUserNotificationCreateContent = Annotated[
+    _CommonUserNotificationContent | ToolInstallationRequestCreateContent,
+    NotificationContentField,
+]
 
-AnyNotificationCreateContent = AnyNotificationContent
+AnyNotificationCreateContent = Annotated[
+    AnyUserNotificationCreateContent | BroadcastNotificationContent,
+    NotificationContentField,
+]
 
 
 NotificationIdField = Field(
@@ -379,7 +405,6 @@ class NotificationCreateData(Model):
         title="Expiration time",
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",
     )
-
 
 class GenericNotificationRecipients(GenericModel, Generic[DatabaseIdT], PatchGenericPickle):
     """The recipients of a notification. Can be a combination of users, groups and roles."""
