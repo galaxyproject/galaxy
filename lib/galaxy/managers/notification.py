@@ -72,6 +72,7 @@ from galaxy.schema.notifications import (
     NotificationResponse,
     NotificationVariant,
     PersonalNotificationCategory,
+    RequestedTool,
     StorageOperationNotificationContent,
     ToolInstallationRequestNotificationContent,
     UpdateUserNotificationPreferencesRequest,
@@ -927,12 +928,19 @@ class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplate
 
 class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
     _workflow_name: Any = _UNSET
+    _content: Any = _UNSET
     # Tool request fields are raw user input; escape them in the HTML body.
     autoescape_html = True
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = ToolInstallationRequestNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
-        return content
+        # model_validate (not model_construct): the stored JSON holds the nested
+        # tools as plain dicts, which must be coerced into RequestedTool models
+        # for the attribute access in _tool_label/get_subject. The content is
+        # format-independent for this builder and consulted several times per
+        # email (subject, template selection, both bodies), so validate once.
+        if self._content is _UNSET:
+            self._content = ToolInstallationRequestNotificationContent.model_validate(self.notification.content)
+        return self._content
 
     def _is_confirmation(self) -> bool:
         """Whether this email renders the request confirmation sent to the requester.
@@ -979,15 +987,21 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
         stored_workflow = session.get(StoredWorkflow, workflow_db_id)
         return stored_workflow.name if stored_workflow else None
 
+    @staticmethod
+    def _tool_label(tool: RequestedTool) -> str:
+        """A display label for a requested tool: name, else shed id, else URL."""
+        return tool.name or tool.tool_shed_id or tool.tool_url or "(unspecified)"
+
     def get_subject(self) -> str:
         content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
+        tools = content.tools
         if self._is_confirmation():
-            if len(content.tool_names) == 1:
-                return f"[Galaxy] Tool installation request submitted: {content.tool_names[0]}"
-            return f"[Galaxy] Tool installation request submitted ({len(content.tool_names)} tools)"
-        if len(content.tool_names) == 1:
-            return f"[Galaxy] Tool installation request: {content.tool_names[0]}"
-        return f"[Galaxy] Tool installation request ({len(content.tool_names)} tools)"
+            if len(tools) == 1:
+                return f"[Galaxy] Tool installation request submitted: {self._tool_label(tools[0])}"
+            return f"[Galaxy] Tool installation request submitted ({len(tools)} tools)"
+        if len(tools) == 1:
+            return f"[Galaxy] Tool installation request: {self._tool_label(tools[0])}"
+        return f"[Galaxy] Tool installation request ({len(tools)} tools)"
 
 
 class EmailNotificationChannelPlugin(NotificationChannelPlugin):

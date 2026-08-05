@@ -77,11 +77,18 @@ export function generateToolInstallationRequestNotification(): ToolInstallationR
         expiration_time: new Date(Date.now() + 86400000).toISOString(),
         content: {
             category: "tool_installation_request",
-            tool_names: [generateRandomString()],
-            tool_url: "https://github.com/example/tool",
-            description: "A useful scientific analysis tool",
-            scientific_domain: "Genomics",
-            requested_version: "1.0.0",
+            tools: [
+                {
+                    name: generateRandomString(),
+                    tool_shed_id: null,
+                    tool_url: "https://github.com/example/tool",
+                    description: "A useful scientific analysis tool",
+                    scientific_domain: "Genomics",
+                    requested_version: "1.0.0",
+                },
+            ],
+            workflow_id: null,
+            additional_remarks: null,
             requester_email: "requester@example.com",
             is_confirmation: false,
         },
