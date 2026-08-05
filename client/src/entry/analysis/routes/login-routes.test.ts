@@ -72,6 +72,8 @@ describe("login entry routes", () => {
     });
 
     it("renders the registration page for anonymous users", async () => {
+        // Only reachable this way when require_login is off -- with it on, the server
+        // gate redirects first, because /register/start is not in its allowed paths.
         setUser(null);
         const router = await navigateTo("/register/start");
         expect(router.currentRoute.path).toEqual("/register/start");

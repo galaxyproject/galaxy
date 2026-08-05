@@ -43,7 +43,7 @@ class RoutedWebApplication(WebApplication):
         return object()
 
 
-def _trans_for(path: str, query_string: str = "") -> StubGalaxyWebTransaction:
+def _trans_for(path: str, query_string: str = "", script_name: str = "") -> StubGalaxyWebTransaction:
     app = cast(BasicSharedApp, galaxy_mock.MockApp())
     app.config.require_login = True
     app.config.show_welcome_with_login = False
@@ -61,15 +61,15 @@ def _trans_for(path: str, query_string: str = "") -> StubGalaxyWebTransaction:
     routes_config.host = "galaxy.example.org"
     routes_config.protocol = "https"
 
-    environ = galaxy_mock.buildMockEnviron(PATH_INFO=path, QUERY_STRING=query_string)
+    environ = galaxy_mock.buildMockEnviron(PATH_INFO=path, QUERY_STRING=query_string, SCRIPT_NAME=script_name)
     trans = StubGalaxyWebTransaction(environ, app, cast(WebApplication, webapp), "galaxysession")
     trans.galaxy_session = Bunch(user=None)
     return trans
 
 
-def _login_redirect_for(path: str, query_string: str = "") -> str:
+def _login_redirect_for(path: str, query_string: str = "", script_name: str = "") -> str:
     """Run the require_login gate and return where it sent the browser."""
-    trans = _trans_for(path, query_string)
+    trans = _trans_for(path, query_string, script_name)
     with pytest.raises(webob.exc.HTTPFound) as caught:
         trans._ensure_logged_in_user("galaxysession")
     return caught.value.location
@@ -93,6 +93,19 @@ def test_login_redirect_preserves_the_query_string():
 def test_login_redirect_without_a_query_string_is_unchanged():
     redirect = _redirect_param(_login_redirect_for(LANDING_PATH))
     assert redirect == LANDING_PATH
+
+
+def test_login_redirect_is_root_relative_under_a_prefix():
+    """Every consumer re-applies the app root, so it must not be in here already.
+
+    url_for on the way out of the OIDC callback, withPrefix on the local login path, and
+    the client router's `base` all prepend it -- a prefixed destination becomes
+    /galaxy/galaxy/... and 404s.
+    """
+    location = _login_redirect_for(LANDING_PATH, LANDING_QUERY, script_name="/galaxy")
+    redirect = _redirect_param(location)
+    assert redirect == f"{LANDING_PATH}?{LANDING_QUERY}"
+    assert not redirect.startswith("/galaxy"), f"app root leaked into the destination: {redirect}"
 
 
 def test_login_redirect_targets_the_login_entry_point():
