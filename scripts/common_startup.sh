@@ -248,15 +248,20 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
         # webapp.py picks it up via `import galaxy.web_client` and serves its
         # bundled dist/ directly -- no pnpm or staging required.
         GALAXY_WEB_CLIENT_VERSION=$(PYTHONPATH=lib python -c "from galaxy.version import VERSION; print(VERSION)")
+        GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
         case "$GALAXY_WEB_CLIENT_VERSION" in
             *dev*)
-                echo "ERROR: Galaxy is at development version ${GALAXY_WEB_CLIENT_VERSION}, for which no galaxy-web-client wheel is published to PyPI."
-                echo "The prebuilt client install path (GALAXY_INSTALL_PREBUILT_CLIENT=1) is only supported against tagged releases.  Unset GALAXY_INSTALL_PREBUILT_CLIENT to build the client from source instead."
-                exit 1
+                echo "WARNING: Galaxy is at development version ${GALAXY_WEB_CLIENT_VERSION}. The prebuilt client install path (GALAXY_INSTALL_PREBUILT_CLIENT=1) is only supported against tagged releases."
+                GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_VERSION%%.dev*}
+                GALAXY_WEB_CLIENT_PATCH_VERSION=${GALAXY_WEB_CLIENT_RELEASE_VERSION##*.}
+                GALAXY_WEB_CLIENT_VERSION_PREFIX=${GALAXY_WEB_CLIENT_RELEASE_VERSION%.*}
+                GALAXY_WEB_CLIENT_VERSION="${GALAXY_WEB_CLIENT_VERSION_PREFIX}.$((GALAXY_WEB_CLIENT_PATCH_VERSION - 1))"
+                echo "Installing galaxy-web-client ${GALAXY_WEB_CLIENT_VERSION}, which may differ slightly from this development version."
+                GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
                 ;;
         esac
         # shellcheck disable=SC2086
-        if ! ${PIP_CMD} install "galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"; then
+        if ! ${PIP_CMD} install "$GALAXY_WEB_CLIENT_REQUIREMENT"; then
             echo "ERROR: Galaxy prebuilt client install failed.  See ./client/README.md for more information, including how to get help."
             exit 1
         fi
