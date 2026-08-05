@@ -477,9 +477,14 @@
     process composes its named store with the default
     (``tool_source_database_connection``) store at runtime, with reads
     tried in declared order and writes always landing on the default.
-    Each entry takes a SQLAlchemy ``url`` and an optional ``read_only:
-    true`` flag. For SQLite connection-level read-only, use a SQLite
-    URI with ``mode=ro&uri=true``.
+    Each entry takes either a normal SQLAlchemy ``url`` or an
+    ``external_store_directory`` containing versioned publisher
+    bundles. Galaxy never consults manifests for a normal URL. For an
+    external directory it reads the sidecars and automatically selects
+    the newest cohort compatible with its store/source/index formats
+    and index schema. External stores are always read-only.
+    For SQLite connection-level read-only, use a SQLite URI with
+    ``mode=ro&uri=true``.
     For details see
     https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 :Default: ``None``
@@ -1218,6 +1223,35 @@
     compressed datatypes will be unpacked before sniffing.
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_crypt4gh_transparent_staging``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable transparent datatype matching for Crypt4GH-wrapped
+    datasets. When enabled, wrapped datatypes (for example
+    ``fastqsanger.c4gh``) can match tool input formats that accept
+    their inner datatype, assuming Crypt4GH staging/decryption support
+    is configured for job execution.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``crypt4gh_reencryption_service_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Base URL of the runner-side Crypt4GH re-encryption service.  When
+    ``enable_crypt4gh_transparent_staging`` is true this service is
+    called during job pre/post-processing to decrypt inputs and
+    encrypt outputs.  The service is responsible for all private-key
+    operations; Galaxy never handles private keys or plaintext payload
+    bytes. Example: ``http://127.0.0.1:47419``
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

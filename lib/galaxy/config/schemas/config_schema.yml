@@ -897,6 +897,28 @@ mapping:
           With this option set to false the compressed datatypes will be unpacked
           before sniffing.
 
+      enable_crypt4gh_transparent_staging:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable transparent datatype matching for Crypt4GH-wrapped datasets.
+          When enabled, wrapped datatypes (for example ``fastqsanger.c4gh``)
+          can match tool input formats that accept their inner datatype, assuming
+          Crypt4GH staging/decryption support is configured for job execution.
+
+      crypt4gh_reencryption_service_url:
+        type: str
+        default: null
+        required: false
+        desc: |
+          Base URL of the runner-side Crypt4GH re-encryption service.  When
+          ``enable_crypt4gh_transparent_staging`` is true this service is
+          called during job pre/post-processing to decrypt inputs and encrypt
+          outputs.  The service is responsible for all private-key operations;
+          Galaxy never handles private keys or plaintext payload bytes.
+          Example: ``http://127.0.0.1:47419``
+
       datatypes_disable_auto:
         type: bool
         default: false

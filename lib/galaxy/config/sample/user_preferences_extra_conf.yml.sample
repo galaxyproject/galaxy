@@ -179,6 +179,15 @@ preferences:
               required: False
               value: False
 
+    crypt4gh_recrypt_service:
+        description: Crypt4GH recryption service running on your machine
+        inputs:
+            - name: port
+              label: Port number of your local Service instance
+              type: text
+              required: False
+              value: "61357"
+
     # Used in file_sources_conf.yml
     elabftw:
         description: Your eLabFTW Integration Settings
