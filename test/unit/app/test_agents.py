@@ -551,6 +551,38 @@ class TestAgentUnitMocked:
         assert response.metadata["query_truncated"] is True
         assert response.metadata["original_query_length"] == 40000
 
+    def test_format_job_context_does_not_reslice_an_excerpted_log(self):
+        """get_job_details already budgeted this stream; slicing again drops its tail.
+
+        The old 500-char head slice made that budget dead code -- only the first few
+        lines of a failing tool's banner ever reached the model.
+        """
+        agent = ErrorAnalysisAgent(self.deps)
+        stderr = "HEAD_MARKER" + ("x" * 1500) + "TAIL_MARKER"
+
+        rendered = agent._format_job_context({"tool_id": "ngm", "state": "error", "stderr": stderr})
+
+        assert "HEAD_MARKER" in rendered
+        assert "TAIL_MARKER" in rendered
+
+    @pytest.mark.asyncio
+    async def test_get_job_details_keeps_the_tail_of_a_long_stderr(self):
+        """A head slice here would drop the traceback before the prompt is ever built."""
+        agent = ErrorAnalysisAgent(self.deps)
+        job = mock.MagicMock()
+        job.stderr = "HEAD_MARKER\n" + ("noise\n" * 5000) + "TAIL_MARKER: killed"
+        job.stdout = ""
+        job.id = 42
+
+        self.deps.job_manager = mock.Mock()
+        self.deps.job_manager.get_accessible_job.return_value = job
+
+        details = await agent.get_job_details(42)
+
+        assert len(details["stderr"]) <= agents_base.JOB_LOG_EXCERPT_CHARS
+        assert "HEAD_MARKER" in details["stderr"]
+        assert "TAIL_MARKER" in details["stderr"]
+
     @pytest.mark.asyncio
     async def test_error_analysis_trims_oversized_stderr_instead_of_rejecting(self):
         """A huge stderr dump gets trimmed and analyzed rather than refused for length.
