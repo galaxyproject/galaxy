@@ -61,9 +61,20 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
         config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
         config["job_runner_monitor_sleep"] = 1
         config["job_handler_monitor_sleep"] = 1
-        config["job_metrics"] = [{"type": "core"}]
+        config["job_metrics"] = [{"type": "core"}, {"type": "resubmission"}]
         # Can't set job_metrics_config_file to None as default location will be used otherwise
         config["job_metrics_config_file"] = "xxx.xml"
+
+    def _assert_resubmission_count(self, history_id, expected_count):
+        jobs = self.dataset_populator.history_jobs(history_id=history_id)
+        assert len(jobs) == 1
+        job_metrics = self.dataset_populator._get(f"/api/jobs/{jobs[0]['id']}/metrics").json()
+        resubmission_metric = next(metric for metric in job_metrics if metric["plugin"] == "resubmission")
+        assert resubmission_metric["name"] == "resubmission_count"
+        assert resubmission_metric["plugin"] == "resubmission"
+        assert resubmission_metric["title"] == "Resubmission Count"
+        assert resubmission_metric["value"] == str(expected_count)
+        assert int(resubmission_metric["raw_value"]) == expected_count
 
     def test_retry_tools_have_resource_params(self):
         tool_show = self._get("tools/simple_constructs", data=dict(io_details=True)).json()
@@ -95,15 +106,15 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
                 },
                 history_id=history_id,
             )
-            jobs = self.dataset_populator.history_jobs(history_id=history_id)
-            assert len(jobs) == 1
-            job_metrics = self.dataset_populator._get(f"/api/jobs/{jobs[0]['id']}/metrics").json()
-            assert job_metrics
+            self._assert_resubmission_count(history_id, 0)
 
     def test_walltime_resubmission(self):
-        self._assert_job_passes(
-            resource_parameters={"test_name": "test_walltime_resubmission", "failure_state": "walltime_reached"}
-        )
+        with self.dataset_populator.test_history() as history_id:
+            self._assert_job_passes(
+                resource_parameters={"test_name": "test_walltime_resubmission", "failure_state": "walltime_reached"},
+                history_id=history_id,
+            )
+            self._assert_resubmission_count(history_id, 1)
 
     def test_memory_resubmission(self):
         self._assert_job_passes(
@@ -162,6 +173,18 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
                 "failure_state": "walltime_reached",
             }
         )
+
+    def test_multiple_resubmissions_are_counted_after_working_directory_reset(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._assert_job_fails(
+                resource_parameters={
+                    "test_name": "test_condition_attempt",
+                    "initial_target_environment": "fail_two_attempts",
+                    "failure_state": "unknown_error",
+                },
+                history_id=history_id,
+            )
+            self._assert_resubmission_count(history_id, 2)
 
     def test_condition_seconds_running(self):
         self._assert_job_passes(
