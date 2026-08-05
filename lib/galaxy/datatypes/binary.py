@@ -4752,9 +4752,9 @@ class Parquet(Binary):
         try:
             footer_metadata = _read_parquet_footer_metadata(dataset.get_file_name())
             line_count, column_names = _read_parquet_file_metadata(footer_metadata)
-            setattr(dataset.metadata, "column_names", column_names)
-            setattr(dataset.metadata, "column_count", len(column_names))
-            setattr(dataset.metadata, "line_count", line_count)
+            dataset.metadata.column_names = column_names
+            dataset.metadata.column_count = len(column_names)
+            dataset.metadata.line_count = line_count
         except Exception:
             pass
 
