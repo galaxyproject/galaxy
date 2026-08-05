@@ -32,6 +32,27 @@ const cancelButtonText = computed(() => (submitting.value ? "Cancel" : "Close"))
 
 const formValid = () => !!(toolName.value.trim() && description.value.trim());
 
+/** Server-side field bounds (see RequestedTool / ToolInstallationRequestCreateContent). */
+const FIELD_LIMITS: [label: string, value: () => string, limit: number][] = [
+    ["Tool Name", () => toolName.value.trim(), 255],
+    ["Homepage / Repository URL", () => toolUrl.value.trim(), 2048],
+    ["Description", () => description.value.trim(), 5000],
+    ["Scientific Domain", () => scientificDomain.value.trim(), 255],
+    ["Requested Version", () => requestedVersion.value.trim(), 255],
+    ["Additional Remarks", () => additionalRemarks.value.trim(), 5000],
+];
+
+function validateFieldLengths(): boolean {
+    for (const [label, value, limit] of FIELD_LIMITS) {
+        const length = value().length;
+        if (length > limit) {
+            errorMessage.value = `${label} is too long (${length} characters; the maximum is ${limit}).`;
+            return false;
+        }
+    }
+    return true;
+}
+
 function validateToolUrl(): boolean {
     const url = toolUrl.value.trim();
 
@@ -68,6 +89,10 @@ async function submit() {
     }
 
     if (!validateToolUrl()) {
+        return;
+    }
+
+    if (!validateFieldLengths()) {
         return;
     }
 

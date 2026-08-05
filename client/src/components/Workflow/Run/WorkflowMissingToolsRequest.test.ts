@@ -213,7 +213,7 @@ describe("WorkflowMissingToolsRequest", () => {
         expect(payload.tools).toEqual([{ name: "Cut1" }]);
     });
 
-    it("additional_remarks includes each tool ID", async () => {
+    it("additional_remarks describes the workflow context without repeating the structured tool ids", async () => {
         const wrapper = mountComponent();
         await flushPromises();
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
@@ -222,9 +222,49 @@ describe("WorkflowMissingToolsRequest", () => {
         await flushPromises();
 
         const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
+        const remarks = payload.additional_remarks as string;
+        expect(remarks).toContain("required by this workflow");
         for (const id of MISSING_TOOL_IDS) {
-            expect(payload.additional_remarks as string).toContain(id);
+            expect(remarks).not.toContain(id);
         }
+    });
+
+    it("tells the submitter in the modal when the request will be truncated to 50 tools", async () => {
+        const manyToolIds = Array.from({ length: 60 }, (_, i) => `tool-${i}`);
+        const wrapper = mountComponent({ missingToolIds: manyToolIds });
+        await flushPromises();
+        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
+        await flushPromises();
+
+        const note = wrapper.find("[data-testid='truncation-note']");
+        expect(note.exists()).toBe(true);
+        expect(note.text()).toContain("first 50 of the 60 missing tools");
+    });
+
+    it("does not show the truncation note when at or under the limit", async () => {
+        const wrapper = mountComponent();
+        await flushPromises();
+        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find("[data-testid='truncation-note']").exists()).toBe(false);
+    });
+
+    it("caps the request at 50 tools and notes the truncation in the remarks", async () => {
+        const manyToolIds = Array.from({ length: 60 }, (_, i) => `tool-${i}`);
+        const wrapper = mountComponent({ missingToolIds: manyToolIds });
+        await flushPromises();
+        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
+        await flushPromises();
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+
+        const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
+        const tools = payload.tools as { name: string }[];
+        expect(tools).toHaveLength(50);
+        expect(tools[0]?.name).toBe("tool-0");
+        expect(tools[49]?.name).toBe("tool-49");
+        expect(payload.additional_remarks as string).toContain("Only the first 50 of 60 missing tools");
     });
 
     it("button is disabled while the submission is in-flight", async () => {

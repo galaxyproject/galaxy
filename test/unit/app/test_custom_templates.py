@@ -221,3 +221,46 @@ def test_tool_installation_request_email_renders_with_partial(tmp_path):
     assert "Aligner" in output
     assert "user@example.org" in output  # admin-only "Requested by" row
     assert "<!DOCTYPE html>" in output
+
+
+def _render_txt_tool_request_email(tmp_path, content):
+    return templates.render(
+        "mail/notifications/tool_installation_request-email.txt",
+        {
+            "content": content,
+            "name": "Admin",
+            "hostname": "galaxy.example",
+            "date": "August 05, 2026",
+            "galaxy_url": None,
+            "workflow_name": None,
+            "notification_settings_url": None,
+            "contact_email": None,
+        },
+        tmp_path,
+    )
+
+
+def test_tool_installation_request_text_email_indents_multiline_fields(tmp_path):
+    """Continuation lines of multiline fields are indented, so user text cannot mimic a field row."""
+    content = {
+        "category": "tool_installation_request",
+        "tools": [
+            {
+                "name": "bwa",
+                "tool_shed_id": None,
+                "tool_url": None,
+                "description": None,
+                "scientific_domain": None,
+                "requested_version": None,
+            }
+        ],
+        "requester_email": "real@example.org",
+        "workflow_id": None,
+        "additional_remarks": "ok\nRequested by: forged@example.org",
+    }
+    output = _render_txt_tool_request_email(tmp_path, content)
+    # The forged line is indented under Remarks, not at column 0.
+    assert "\nRequested by: forged@example.org" not in output
+    assert "\n              Requested by: forged@example.org" in output
+    # The genuine stamped row still renders at column 0.
+    assert "\nRequested by: real@example.org" in output
