@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButton, BFormCheckbox, BFormCheckboxGroup, BFormGroup, BFormTextarea, BModal } from "bootstrap-vue";
+import { BFormCheckbox, BFormCheckboxGroup, BFormGroup, BFormTextarea } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -9,6 +9,8 @@ import { Toast } from "@/composables/toast";
 import { useDbKeyStore } from "@/stores/dbKeyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
 import FormDrilldown from "@/components/Form/Elements/FormDrilldown/FormDrilldown.vue";
@@ -260,84 +262,88 @@ watch(
 </script>
 
 <template>
-    <BModal :title="title" visible scrollable content-class="directory-dataset-picker" @hide="emit('onClose')">
-        <GTabs v-if="!pathMode" v-model="activeTab" fill pills>
-            <GTab title="Choose Files" />
+    <GModal
+        show
+        confirm
+        :ok-text="okButtonText"
+        :ok-disabled="importDisable"
+        size="medium"
+        fixed-height
+        :title="title"
+        @ok="onImport"
+        @close="emit('onClose')">
+        <div class="directory-dataset-picker">
+            <GTabs v-if="!pathMode" v-model="activeTab" fill pills>
+                <GTab title="Choose Files" />
 
-            <GTab title="Choose Folders" />
-        </GTabs>
+                <GTab title="Choose Folders" />
+            </GTabs>
 
-        <BAlert v-if="filesMode" show class="mt-2">
-            All files you select will be imported into the current folder ignoring their folder structure.
-        </BAlert>
-        <BAlert v-else-if="!filesMode" show class="mt-2">
-            All files within the selected folders and their sub-folders will be imported into the current folder.
-        </BAlert>
-        <BAlert v-else-if="pathMode" show class="mt-2">
-            All files within the given folders and their sub-folders will be imported into the current folder.
-        </BAlert>
+            <GAlert v-if="filesMode" class="mt-2">
+                All files you select will be imported into the current folder ignoring their folder structure.
+            </GAlert>
+            <GAlert v-else-if="!filesMode" class="mt-2">
+                All files within the selected folders and their sub-folders will be imported into the current folder.
+            </GAlert>
+            <GAlert v-else-if="pathMode" class="mt-2">
+                All files within the given folders and their sub-folders will be imported into the current folder.
+            </GAlert>
 
-        <BFormCheckboxGroup v-model="preserveOptions" switches class="directory-dataset-picker-options">
-            <BFormCheckbox value="link_files">Link files instead of copying </BFormCheckbox>
-            <BFormCheckbox value="to_posix_lines">Convert line endings to POSIX</BFormCheckbox>
-            <BFormCheckbox value="space_to_tab">Convert spaces to tabs</BFormCheckbox>
-            <BFormCheckbox value="tags_from_filenames">Tag datasets based on file names</BFormCheckbox>
-            <BFormCheckbox v-if="!filesMode || pathMode" value="preserve_directory_structure">
-                Preserve directory structure
-            </BFormCheckbox>
-        </BFormCheckboxGroup>
+            <BFormCheckboxGroup v-model="preserveOptions" switches class="directory-dataset-picker-options">
+                <BFormCheckbox value="link_files">Link files instead of copying </BFormCheckbox>
+                <BFormCheckbox value="to_posix_lines">Convert line endings to POSIX</BFormCheckbox>
+                <BFormCheckbox value="space_to_tab">Convert spaces to tabs</BFormCheckbox>
+                <BFormCheckbox value="tags_from_filenames">Tag datasets based on file names</BFormCheckbox>
+                <BFormCheckbox v-if="!filesMode || pathMode" value="preserve_directory_structure">
+                    Preserve directory structure
+                </BFormCheckbox>
+            </BFormCheckboxGroup>
 
-        <hr />
+            <hr />
 
-        You can set database/build and extension type for all imported datasets at once:
-        <BFormGroup label="Database/Build">
-            <SingleItemSelector
-                :current-item="selectedDbKey"
-                collection-name="DB Keys"
-                :items="dbKeyList"
-                @update:selected-item="onSelectDbKey" />
-        </BFormGroup>
+            You can set database/build and extension type for all imported datasets at once:
+            <BFormGroup label="Database/Build">
+                <SingleItemSelector
+                    :current-item="selectedDbKey"
+                    collection-name="DB Keys"
+                    :items="dbKeyList"
+                    @update:selected-item="onSelectDbKey" />
+            </BFormGroup>
 
-        <BFormGroup label="Extension">
-            <SingleItemSelector
-                :current-item="selectedExtension"
-                collection-name="Extensions"
-                :items="extensionsList"
-                track-by="extension"
-                label="extension"
-                @update:selected-item="onSelectExtension" />
-        </BFormGroup>
+            <BFormGroup label="Extension">
+                <SingleItemSelector
+                    :current-item="selectedExtension"
+                    collection-name="Extensions"
+                    :items="extensionsList"
+                    track-by="extension"
+                    label="extension"
+                    @update:selected-item="onSelectExtension" />
+            </BFormGroup>
 
-        <hr />
+            <hr />
 
-        <BFormTextarea
-            v-if="pathMode"
-            id="import_paths"
-            v-model="paths"
-            placeholder="Absolute paths (or paths relative to Galaxy root) separated by newline"
-            rows="5" />
-        <BAlert v-else-if="optionsLoading" variant="info" show>
-            <LoadingSpan message="Loading directories" />
-        </BAlert>
-        <BAlert v-else-if="errorMessage" variant="danger" show>
-            {{ errorMessage }}
-        </BAlert>
-        <FormDrilldown
-            v-else
-            :id="filesMode ? 'files' : 'folders'"
-            v-model="currentValue"
-            class="directory-dataset-picker-list"
-            show-icons
-            :options="options"
-            multiple />
-
-        <template v-slot:modal-footer>
-            <BButton size="sm" variant="secondary" :disabled="importing" @click="emit('onClose')">Close</BButton>
-            <BButton size="sm" variant="primary" :disabled="importDisable" @click="onImport">
-                {{ okButtonText }}
-            </BButton>
-        </template>
-    </BModal>
+            <BFormTextarea
+                v-if="pathMode"
+                id="import_paths"
+                v-model="paths"
+                placeholder="Absolute paths (or paths relative to Galaxy root) separated by newline"
+                rows="5" />
+            <GAlert v-else-if="optionsLoading" variant="info">
+                <LoadingSpan message="Loading directories" />
+            </GAlert>
+            <GAlert v-else-if="errorMessage" variant="danger">
+                {{ errorMessage }}
+            </GAlert>
+            <FormDrilldown
+                v-else
+                :id="filesMode ? 'files' : 'folders'"
+                v-model="currentValue"
+                class="directory-dataset-picker-list"
+                show-icons
+                :options="options"
+                multiple />
+        </div>
+    </GModal>
 </template>
 
 <style scoped lang="scss">

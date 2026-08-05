@@ -1387,7 +1387,7 @@ libraries:
         selector: '//button[contains(text(), "Import")]'
       import_datasets_cancel_button:
         type: xpath
-        selector: '//button[contains(text(), "Close")]'
+        selector: '//button[contains(text(), "Cancel")]'
       export_to_history_options: '#library-collection-type-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
