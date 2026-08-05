@@ -51,6 +51,19 @@ zone library and can be listed with the following command:
 
     python3 -c 'import zoneinfo; list(map(print, sorted(zoneinfo.available_timezones())))'
 
+resubmission
+~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    - type: resubmission
+
+The optional resubmission plugin records ``resubmission_count``, the number of Galaxy-level job resubmission events. It reads the persisted job state history, so the value is retained when a resubmission clears or recreates the job working directory. A job that runs once reports ``0``; the execution attempt number is therefore ``resubmission_count + 1``.
+
+This metric includes both configured resubmission rules and runner-triggered resubmissions, such as Slurm node-failure recovery. It does not include scheduler-internal requeues that Galaxy does not observe.
+
+It has no options.
+
 cpuinfo
 ~~~~~~~
 

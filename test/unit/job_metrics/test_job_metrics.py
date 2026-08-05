@@ -33,6 +33,16 @@ def test_job_metrics_format_core():
     )
 
 
+def test_job_metrics_format_resubmission():
+    _assert_format(
+        "resubmission",
+        "resubmission_count",
+        2,
+        assert_title="Resubmission Count",
+        assert_value="2",
+    )
+
+
 def test_job_metrics_format_cgroup():
     _assert_format(
         "cgroup",

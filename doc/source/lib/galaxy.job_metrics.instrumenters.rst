@@ -25,8 +25,16 @@ galaxy.job\_metrics.instrumenters.core module
    :undoc-members:
    :show-inheritance:
 
+galaxy.job\_metrics.instrumenters.resubmission module
+------------------------------------------------------
+
+.. automodule:: galaxy.job_metrics.instrumenters.resubmission
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.job\_metrics.instrumenters.cpuinfo module
-------------------------------------------------
+-------------------------------------------------
 
 .. automodule:: galaxy.job_metrics.instrumenters.cpuinfo
    :members:
