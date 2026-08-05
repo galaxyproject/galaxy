@@ -12,6 +12,7 @@ from unittest.mock import (
 )
 
 import pytest
+from pydantic import ValidationError
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.notification import (
@@ -650,3 +651,18 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
             self.trans.app.security_agent.associate_group_role(group, role)
         sa_session.flush()
         return role
+
+
+class TestToolInstallationRequestContentValidation:
+    """Validation of the user-submitted tool-request content models."""
+
+    def test_mismatched_envelope_and_content_category_is_rejected(self):
+        with pytest.raises(ValidationError, match="does not match"):
+            NotificationCreateData.model_validate(
+                {
+                    "source": "s",
+                    "category": "tool_installation_request",
+                    "variant": "info",
+                    "content": {"category": "message", "subject": "x", "message": "y"},
+                }
+            )
