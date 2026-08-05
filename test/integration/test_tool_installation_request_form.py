@@ -1,5 +1,6 @@
 """Integration tests for the tool-installation-request-form feature (routed via POST /api/notifications)."""
 
+import json
 import os
 from typing import ClassVar
 
@@ -346,6 +347,58 @@ class TestToolInstallationRequestFormEmailDeliveryIntegration(ToolInstallationRe
             assert len(tool_installation_request_notifications) >= 1
 
         assert not os.path.exists(os.path.join(self.email_directory, "email.json"))
+
+
+class TestToolInstallationRequestFormEmailContentIntegration(ToolInstallationRequestFormIntegrationBase):
+    """End-to-end rendering/delivery of the tool-request email via the real dispatch path."""
+
+    email_directory: ClassVar[str]
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        cls.email_directory = cls._test_driver.mkdtemp()
+        # The email channel is only registered when async (Celery) processing is on.
+        config["enable_celery_tasks"] = True
+        config["email_from"] = "galaxy-no-reply@example.com"
+        config["smtp_server"] = f"mock_emails_to_path://{cls.email_directory}/email.json"
+
+    def test_admin_email_renders_requested_tool_fields(self):
+        """The admin email subject/body render the requested tools from the persisted content.
+
+        An admin submits their own request so exactly one (admin-facing) email is
+        produced, making the mock email file content deterministic.
+        """
+        with self._different_user(ADMIN_TEST_USER):
+            response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
+            self._assert_status_code_is(response, 200)
+            self.dataset_populator.wait_on_task_id(response.json()["id"])
+
+        # Emails are delivered by the periodic background dispatcher, not during
+        # the request; run it directly to render and send the pending email.
+        dispatched = self._app.notification_manager.dispatch_pending_notifications_via_channels()
+        assert dispatched >= 1
+
+        email_path = os.path.join(self.email_directory, "email.json")
+        assert os.path.exists(email_path), "Expected the admin tool-request email to be delivered"
+        with open(email_path) as f:
+            email = json.load(f)
+        assert email["to"] == ADMIN_TEST_USER
+        assert email["subject"] == "[Galaxy] Tool installation request: FastQC"
+        body = email["body"]
+        assert "Tool name:    FastQC" in body
+        assert "URL:          https://github.com/s-andrews/FastQC" in body
+        assert "Domain:       Genomics" in body
+        assert "Version:      0.12.1" in body
+        assert "Remarks:      Would be great for the genomics team." in body
+        assert f"Requested by: {ADMIN_TEST_USER}" in body
+        # No stray blank lines within the rendered field block: exactly one blank
+        # line before it, and consecutive field lines with no gaps.
+        assert "\n\nTool name:" in body
+        assert "\n\n\nTool name:" not in body
+        assert "0.12.1\nRemarks:" in body
+        html = email["html"]
+        assert "FastQC" in html and "Genomics" in html
 
 
 class TestToolInstallationRequestFormDisabledIntegration(IntegrationTestCase):
