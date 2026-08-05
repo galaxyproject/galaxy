@@ -87,7 +87,7 @@ export const defaultActivities = [
         icon: faTrain,
         id: "jobs",
         mutable: false,
-        optional: false,
+        optional: true,
         panel: true,
         title: "Jobs",
         to: null,
