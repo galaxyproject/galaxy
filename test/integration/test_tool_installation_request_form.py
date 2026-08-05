@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 from typing import ClassVar
 
 from galaxy_test.base.api_util import ADMIN_TEST_USER
@@ -469,17 +470,19 @@ class TestToolInstallationRequestFormEmailContentIntegration(ToolInstallationReq
         assert email["to"] == ADMIN_TEST_USER
         assert email["subject"] == "[Galaxy] Tool installation request: FastQC"
         body = email["body"]
-        assert "Tool name:    FastQC" in body
-        assert "URL:          https://github.com/s-andrews/FastQC" in body
-        assert "Domain:       Genomics" in body
-        assert "Version:      0.12.1" in body
-        assert "Remarks:      Would be great for the genomics team." in body
-        assert f"Requested by: {ADMIN_TEST_USER}" in body
+        # Field rows start at column 0 with their value on the same line; the
+        # exact label padding is presentation, so it is not pinned here.
+        assert re.search(r"^Tool: +FastQC$", body, re.MULTILINE)
+        assert re.search(r"^URL: +https://github\.com/s-andrews/FastQC$", body, re.MULTILINE)
+        assert re.search(r"^Domain: +Genomics$", body, re.MULTILINE)
+        assert re.search(r"^Version: +0\.12\.1$", body, re.MULTILINE)
+        assert re.search(r"^Remarks: +Would be great for the genomics team\.$", body, re.MULTILINE)
+        assert re.search(rf"^Requested by: {re.escape(ADMIN_TEST_USER)}$", body, re.MULTILINE)
         # No stray blank lines within the rendered field block: exactly one blank
         # line before it, and consecutive field lines with no gaps.
-        assert "\n\nTool name:" in body
-        assert "\n\n\nTool name:" not in body
-        assert "0.12.1\nRemarks:" in body
+        assert "\n\nTool:" in body
+        assert "\n\n\nTool:" not in body
+        assert re.search(r"^Version: +0\.12\.1\nRemarks:", body, re.MULTILINE)
         html = email["html"]
         assert "FastQC" in html and "Genomics" in html
 

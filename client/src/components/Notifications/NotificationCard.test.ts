@@ -161,6 +161,28 @@ describe("Notifications categories", () => {
         expect(descriptionArea.text()).toContain(notification.content.requester_email);
     });
 
+    it("tool_installation_request notification shows the tool shed id alongside the tool name", async () => {
+        const notification = generateToolInstallationRequestNotification();
+        notification.content.tools = [
+            {
+                name: "bwa",
+                tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/bwa",
+                tool_url: null,
+                description: null,
+                scientific_domain: null,
+                requested_version: "0.7.17",
+            },
+        ];
+
+        const wrapper = await mountComponent(NotificationCard, {
+            notification,
+        });
+
+        const descriptionArea = wrapper.find(`#g-card-description-${notification.id}`);
+        expect(descriptionArea.text()).toContain("Tool shed ID");
+        expect(descriptionArea.text()).toContain("toolshed.g2.bx.psu.edu/repos/devteam/bwa");
+    });
+
     it("tool_installation_request notification associates details with each tool in multi-tool requests", async () => {
         const notification = generateToolInstallationRequestNotification();
         notification.content.tools = [

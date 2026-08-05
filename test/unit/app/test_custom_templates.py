@@ -1,5 +1,7 @@
 """Test custom template configuration and rendering."""
 
+import re
+
 import pytest
 
 from galaxy.config import templates
@@ -238,6 +240,72 @@ def _render_txt_tool_request_email(tmp_path, content):
         },
         tmp_path,
     )
+
+
+def test_tool_installation_request_text_email_renders_multiple_tools(tmp_path):
+    """The multi-tool branch of the text partial lists each tool with its own details."""
+    content = {
+        "category": "tool_installation_request",
+        "tools": [
+            {
+                "name": "bwa",
+                "tool_shed_id": "toolshed.g2.bx.psu.edu/repos/devteam/bwa",
+                "tool_url": None,
+                "description": "Short read aligner",
+                "scientific_domain": None,
+                "requested_version": "0.7.17",
+            },
+            {
+                "name": None,
+                "tool_shed_id": "toolshed.g2.bx.psu.edu/repos/devteam/samtools",
+                "tool_url": None,
+                "description": None,
+                "scientific_domain": None,
+                "requested_version": None,
+            },
+        ],
+        "requester_email": "user@example.org",
+        "workflow_id": None,
+        "additional_remarks": None,
+    }
+    output = _render_txt_tool_request_email(tmp_path, content)
+    assert "new tools" in output  # plural intro
+    # Each tool renders as a list entry; details are indented under their tool.
+    # The indentation depths matter (they attribute details to a tool); the
+    # exact label padding is presentation and is not pinned.
+    assert re.search(r"^  - bwa$", output, re.MULTILINE)
+    assert re.search(r"^    Tool shed: +toolshed\.g2\.bx\.psu\.edu/repos/devteam/bwa$", output, re.MULTILINE)
+    assert re.search(r"^    Description: +Short read aligner$", output, re.MULTILINE)
+    assert re.search(r"^    Version: +0\.7\.17$", output, re.MULTILINE)
+    # A tool identified only by shed id uses the shed id as its label (no separate row).
+    assert re.search(r"^  - toolshed\.g2\.bx\.psu\.edu/repos/devteam/samtools$", output, re.MULTILINE)
+    assert output.count("Tool shed:") == 1
+    # No stray blank lines inside the field block.
+    assert "\n\n  - " not in output
+    assert "\n\nRequested by:" not in output
+
+
+def test_tool_installation_request_text_email_does_not_repeat_label_values(tmp_path):
+    """A tool identified only by its URL renders the URL once (as the label), not again as a URL row."""
+    content = {
+        "category": "tool_installation_request",
+        "tools": [
+            {
+                "name": None,
+                "tool_shed_id": None,
+                "tool_url": "https://x.org/tool",
+                "description": None,
+                "scientific_domain": None,
+                "requested_version": None,
+            }
+        ],
+        "requester_email": "user@example.org",
+        "workflow_id": None,
+        "additional_remarks": None,
+    }
+    output = _render_txt_tool_request_email(tmp_path, content)
+    assert re.search(r"^Tool: +https://x\.org/tool$", output, re.MULTILINE)
+    assert "URL:" not in output
 
 
 def test_tool_installation_request_text_email_indents_multiline_fields(tmp_path):
