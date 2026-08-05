@@ -38,6 +38,7 @@ from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
 )
+from galaxy.util.crypt4gh import preserve_crypt4gh_inner_file_ext
 from galaxy.util.hash_util import verify_hash
 from .dereference import get_replacement_dataset
 
@@ -279,6 +280,11 @@ class DatasetInstanceMaterializer:
         if dataset_instance.extension != "auto":
             return
         sniffed = guess_ext(path, self._datatypes_registry.sniff_order)
+        sniffed = preserve_crypt4gh_inner_file_ext(
+            sniffed,
+            current_ext=dataset_instance.extension,
+            metadata_inner_ext=getattr(dataset_instance.metadata, "crypt4gh_inner_ext", None),
+        )
         if sniffed and sniffed != "auto":
             dataset_instance.extension = sniffed
 
