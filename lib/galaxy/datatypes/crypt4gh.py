@@ -100,7 +100,7 @@ class Crypt4GH(Binary):
         "node, in ISO 8601 format (retained for both analysis input and output "
         "datasets).",
         readonly=False,
-        visible=False,
+        visible=True,
         optional=True,
         no_value="",
     )
@@ -172,9 +172,7 @@ class Crypt4GH(Binary):
         known, the wrapper can match tool inputs that accept the inner
         format.  Otherwise, only direct type matches are considered.
         """
-        datatype_classes = tuple(
-            datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes
-        )
+        datatype_classes = tuple(datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes)
         if datatype_classes and isinstance(self, datatype_classes):
             return True
         inner_datatype = self.crypt4gh_inner_datatype
