@@ -61,11 +61,12 @@ from galaxy.job_execution.output_collect import (
     collect_shrinked_content_from_path,
 )
 from galaxy.job_execution.setup import (
-    create_working_directory_for_job,
     ensure_configs_directory,
     JobIO,
+    JobWorkingDirectory,
     TOOL_PROVIDED_JOB_METADATA_FILE,
     TOOL_PROVIDED_JOB_METADATA_KEYS,
+    validate_working_directory_path,
 )
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.mapper import (
@@ -1321,6 +1322,9 @@ class MinimalJobWrapper(HasResourceParameters):
     def _setup_working_directory(self, job=None):
         if job is None:
             job = self.get_job()
+        # Resolve and set job.working_directory from destination params before
+        # creating anything on disk.
+        self._set_working_directory(job)
         try:
             working_directory = self._create_working_directory(job)
             self.__working_directory = working_directory
@@ -1347,29 +1351,19 @@ class MinimalJobWrapper(HasResourceParameters):
     def working_directory(self):
         if self.__working_directory is None:
             job = self.get_job()
-
-            # object_store_id needs to be set before get_filename can be called, this
-            # will also create the directory on the worker.
-            # It is possible these next two lines are not needed - if a job a cannot be recovered
-            # before enqueue is called (seems likely) - this shouldn't be needed.
-            if job.object_store_id:
-                self._set_object_store_ids(job)
-
-            self.__working_directory = self.app.object_store.get_filename(
-                job, base_dir="job_work", dir_only=True, obj_dir=True
-            )
+            self.__working_directory = JobWorkingDirectory(job, self.app.object_store).resolve()
         return self.__working_directory
 
     def working_directory_exists(self) -> bool:
         job = self.get_job()
-        return self.app.object_store.exists(job, base_dir="job_work", dir_only=True, obj_dir=True)
+        return JobWorkingDirectory(job, self.app.object_store).exists()
 
     @property
     def tool_working_directory(self):
         return os.path.join(self.working_directory, "working")
 
     def _create_working_directory(self, job):
-        return create_working_directory_for_job(self.object_store, job)
+        return JobWorkingDirectory(job, self.object_store).create()
 
     def clear_working_directory(self):
         job = self.get_job()
@@ -1379,16 +1373,15 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             return
 
-        self.object_store.create(
-            job, base_dir="job_work", dir_only=True, obj_dir=True, extra_dir="_cleared_contents", extra_dir_at_root=True
-        )
-        base = self.object_store.get_filename(
-            job, base_dir="job_work", dir_only=True, obj_dir=True, extra_dir="_cleared_contents", extra_dir_at_root=True
-        )
+        jwd = JobWorkingDirectory(job, self.object_store)
+        base = jwd.cleared_contents_base()
         date_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         arc_dir = os.path.join(base, date_str)
         shutil.move(self.working_directory, arc_dir)
         self._setup_working_directory(job=job)
+        # Flush so the working_directory column survives the sa_session.refresh()
+        # that mark_as_resubmitted() performs at the end of the resubmit flow.
+        self.sa_session.flush()
         log.debug("(%s) Previous working directory moved to %s", self.job_id, arc_dir)
 
     def default_compute_environment(self, job=None):
@@ -1851,6 +1844,46 @@ class MinimalJobWrapper(HasResourceParameters):
 
         job.object_store_id = object_store_populator.object_store_id
         self._setup_working_directory(job=job)
+
+    def _set_working_directory(self, job: Job):
+        """Resolve and persist ``job_working_directory`` from destination params.
+
+        Validates the resolved path before persisting it via the canonical
+        ``validate_working_directory_path`` (also enforced at disk-operation
+        time by ``JobWorkingDirectory``).
+
+        Does not flush the session. Callers that need the column to survive a
+        subsequent ``sa_session.refresh()`` (notably the resubmit path via
+        ``clear_working_directory``) must flush/commit themselves. The enqueue
+        path is covered by the ``commit()`` in ``enqueue()``.
+        """
+        # Reads from ``job.destination_params`` (persisted) directly, not via
+        # ``get_destination_configuration``. The latter would fall back to
+        # ``app.config.job_working_directory`` (mapped to ``jobs_directory``) when
+        # no destination param specifies the key, causing the column to be set to
+        # the config default even for destinations that don't specify one. We only
+        # want to persist the column when a destination param explicitly sets it.
+
+        # Reading the persisted params is also what makes the resubmit reorder
+        # load-bearing: ``set_job_destination`` persists the new params but does
+        # not update the mapper's cached destination, so reading
+        # ``self.job_destination.params`` directly would return stale values.
+        working_directory = (job.destination_params or {}).get("job_working_directory", None)
+        if isinstance(working_directory, str):
+            validate_working_directory_path(working_directory)
+            job.working_directory = working_directory
+        else:
+            # Reset to None so a resubmitted job whose new destination no longer
+            # specifies a custom path falls back to the object-store strategy
+            # instead of retaining the stale value from the prior attempt.
+            job.working_directory = None
+            if working_directory is not None:
+                log.warning(
+                    "(%s) job_working_directory destination param is not a string (%r), "
+                    "falling back to object-store path.",
+                    self.job_id,
+                    working_directory,
+                )
 
     def _set_object_store_ids_full(self, job: Job):
         user = job.user
@@ -2388,9 +2421,8 @@ class MinimalJobWrapper(HasResourceParameters):
                         if e.errno != errno.ENOENT:
                             raise
             if delete_files:
-                self.object_store.delete(
-                    self.get_job(), base_dir="job_work", entire_dir=True, dir_only=True, obj_dir=True
-                )
+                job = self.get_job()
+                JobWorkingDirectory(job, self.object_store).delete()
         except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
 

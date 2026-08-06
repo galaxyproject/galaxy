@@ -45,6 +45,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.job_metrics import (
     RawMetric,
     Safety,
@@ -402,9 +403,7 @@ class JobManager:
         console_output = {}
         console_output["state"] = job.state
         if job.state == job.states.RUNNING:
-            working_directory = trans.app.object_store.get_filename(
-                job, base_dir="job_work", dir_only=True, obj_dir=True
-            )
+            working_directory = JobWorkingDirectory(job, trans.app.object_store).resolve()
             if stdout_length > -1 and stdout_position > -1:
                 try:
                     stdout_path = Path(working_directory) / STDOUT_LOCATION

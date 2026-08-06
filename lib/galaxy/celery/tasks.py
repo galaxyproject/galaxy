@@ -1,6 +1,5 @@
 import datetime
 import json
-import shutil
 from collections.abc import Callable
 from concurrent.futures import TimeoutError
 from functools import lru_cache
@@ -34,6 +33,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.exceptions import ObjectNotFound
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.dataset_storage_operations import DatasetStorageOperationManager
@@ -810,13 +810,11 @@ def _cleanup_jwds(
 
     def _delete_jwd(job: model.Job) -> bool:
         try:
-            path = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
-            shutil.rmtree(path)
-            return True
+            return JobWorkingDirectory(job, object_store).delete()
         except ObjectNotFound:
             return False
         except OSError as e:
-            log.error(f"Error deleting job working directory: {path} : {e.strerror}")
+            log.error(f"Error deleting job working directory for job {job.id}: {e.strerror}")
             return False
 
     deleted_count = 0

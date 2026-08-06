@@ -5,6 +5,7 @@ import os
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -66,10 +67,8 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
             sa_session = self._app.model.session
             job = sa_session.scalars(select(model.Job).filter_by(id=job_id_decoded)).one()
 
-            # Get the job working directory using the object store
-            job_working_directory = self._app.object_store.get_filename(
-                job, base_dir="job_work", dir_only=True, obj_dir=True
-            )
+            # Get the job working directory
+            job_working_directory = JobWorkingDirectory(job, self._app.object_store).resolve()
             assert job_working_directory is not None, "Could not determine job working directory"
 
             # Verify that do_not_collect_me.txt does NOT exist in the Galaxy job working directory
