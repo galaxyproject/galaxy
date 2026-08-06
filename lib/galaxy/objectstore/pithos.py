@@ -18,6 +18,10 @@ except ImportError:
 
 from galaxy.util import directory_hash_id
 from ._caching_base import CachingConcreteObjectStore
+from .caching import (
+    CacheShardManager,
+    CacheTarget,
+)
 
 NO_KAMAKI_ERROR_MESSAGE = (
     "ObjectStore configured, but no kamaki.clients dependency available."
@@ -82,14 +86,13 @@ def parse_config_xml(config_xml):
 class PithosObjectStore(CachingConcreteObjectStore):
     """
     Object store that stores objects as items in a Pithos+ container.
-    Cache is ignored for the time being.
     """
 
     store_type = "pithos"
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
-        self.staging_path = self.config.file_path
+        self._cache_shards = CacheShardManager.from_config(config_dict.get("cache") or {}, config)
         log.info("Parse config_xml for pithos object store")
         self.config_dict = config_dict
 
@@ -142,8 +145,8 @@ class PithosObjectStore(CachingConcreteObjectStore):
         if project and c.get("x-container-policy-project") != project:
             self.pithos.reassign_container(project)
 
-    def _download(self, rel_path):
-        local_destination = self._get_cache_path(rel_path)
+    def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
+        local_destination = cache_path
         with self._atomic_download(local_destination) as tmp:
             self.pithos.download_object(rel_path, tmp)
 
@@ -154,6 +157,8 @@ class PithosObjectStore(CachingConcreteObjectStore):
         :returns: weather the file exists remotely or in cache
         """
         path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(path, object_id)
         try:
             self.pithos.get_object_info(path)
             return True
@@ -161,7 +166,7 @@ class PithosObjectStore(CachingConcreteObjectStore):
             if ce.status not in (404,):
                 raise
 
-        in_cache = self._in_cache(path)
+        in_cache = self._in_cache(cache_path)
         dir_only = kwargs.get("dir_only", False)
         if dir_only:
             base_dir = kwargs.get("base_dir", None)
@@ -174,7 +179,6 @@ class PithosObjectStore(CachingConcreteObjectStore):
             return False
 
         if in_cache:
-            cache_path = self._get_cache_path(path)
             # Maybe the upload should have happened in some thread elsewhere?
             with open(cache_path) as f:
                 self.pithos.upload_object(path, f)
@@ -190,8 +194,10 @@ class PithosObjectStore(CachingConcreteObjectStore):
             dir_only = kwargs.get("dir_only", False)
             alt_name = kwargs.get("alt_name", None)
 
+            object_id = self._get_object_id(obj)
+
             # Construct hashed path
-            rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
+            rel_path = os.path.join(*directory_hash_id(object_id))
 
             # Optionally append extra_dir
             if extra_dir is not None:
@@ -201,15 +207,15 @@ class PithosObjectStore(CachingConcreteObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
 
             # Create given directory in cache
-            cache_dir = os.path.join(self.staging_path, rel_path)
+            cache_dir = self._get_cache_path(rel_path, object_id)
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir, exist_ok=True)
 
             if dir_only:
                 self.pithos.upload_from_string(rel_path, "", content_type="application/directory")
             else:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
-                new_file = os.path.join(self.staging_path, rel_path)
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{object_id}.dat")
+                new_file = self._get_cache_path(rel_path, object_id)
                 open(new_file, "w").close()
                 self.pithos.upload_from_string(rel_path, "")
         return self
