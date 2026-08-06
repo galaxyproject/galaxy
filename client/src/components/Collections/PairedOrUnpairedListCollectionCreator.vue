@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faUndo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ColDef, GetRowIdParams, IRowDragItem, NewValueParams } from "ag-grid-community";
 import { BAlert, BCol, BLink, BRow } from "bootstrap-vue";
 import { getActivePinia } from "pinia";
@@ -22,6 +24,7 @@ import { type AutoPairingResult, autoPairWithCommonFilters, guessNameForPair } f
 
 import AutoPairing from "./common/AutoPairing.vue";
 import PairedOrUnpairedListCreatorHelp from "./PairedOrUnpairedListCreatorHelp.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
 type CollectionElementIdentifier = components["schemas"]["CollectionElementIdentifier"];
@@ -832,6 +835,15 @@ export default {
                             </BAlert>
                         </BCol>
                     </BRow>
+                    <div class="d-flex justify-content-end mb-1">
+                        <GButton
+                            :title="localize('Discard all manual pairing and start over')"
+                            size="small"
+                            @click="initialize">
+                            <FontAwesomeIcon :icon="faUndo" fixed-width />
+                            {{ localize("Reset") }}
+                        </GButton>
+                    </div>
                     <div :style="style" :class="theme">
                         <AgGridVue
                             :row-drag-managed="true"
