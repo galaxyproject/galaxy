@@ -1117,6 +1117,10 @@ class MinimalJobWrapper(HasResourceParameters):
                 tool_source_class=type(self.tool.tool_source).__name__ if self.tool else None,
                 tool_dir=tool_dir,
                 is_task=self.is_task,
+                crypt4gh_config={
+                    "reencryption_service_url": self.app.config.crypt4gh_reencryption_service_url,
+                    "enable_crypt4gh_transparent_staging": self.app.config.enable_crypt4gh_transparent_staging,
+                },
             )
         return self._job_io
 

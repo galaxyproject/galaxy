@@ -89,6 +89,7 @@ class JobIO(UsesDictVisibleKeys):
         "tool_source_class",
         "tool_dir",
         "is_task",
+        "crypt4gh_config",
     )
 
     def __init__(
@@ -117,6 +118,7 @@ class JobIO(UsesDictVisibleKeys):
         tool_source_class: Optional["str"] = "XmlToolSource",
         tool_dir: StrPath | None = None,
         is_task: bool = False,
+        crypt4gh_config: dict[str, Any] | None = None,
     ):
         user_context_instance: FileSourcesUserContext
         self.file_sources_dict = file_sources_dict
@@ -147,6 +149,7 @@ class JobIO(UsesDictVisibleKeys):
         self.is_task = is_task
         self.tool_source = tool_source
         self.tool_source_class = tool_source_class
+        self.crypt4gh_config = crypt4gh_config
         self.job_outputs = JobOutputs()
         self._dataset_path_rewriter: DatasetPathRewriter | None = None
 
