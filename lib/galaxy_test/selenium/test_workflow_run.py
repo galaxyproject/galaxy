@@ -834,7 +834,7 @@ steps: {}
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(4)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=4)
-        # TODO: why is this reversed? is this expected due to how the paired or unpaired list input works?
+        # The elements are reversed to match the history panel display order (newest HID first)
         assert content.strip() == "reverse content\nforward content"
 
     @selenium_only("Not yet migrated to support Playwright backend")

@@ -72,7 +72,8 @@ const emit = defineEmits<{
 
 const currentForwardFilter = ref(props.forwardFilter);
 const currentReverseFilter = ref(props.reverseFilter);
-const activeElements = ref(props.initialElements);
+// reverse the order of the elements to emulate what we have in the history panel
+const activeElements = ref([...props.initialElements].reverse());
 const { currentSummary, summaryText, autoPair } = usePairingSummary<HistoryItemSummary>(props);
 
 const {
