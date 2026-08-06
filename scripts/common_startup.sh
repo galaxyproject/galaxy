@@ -250,14 +250,18 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
         GALAXY_WEB_CLIENT_VERSION=$(PYTHONPATH=lib python -c "from galaxy.version import VERSION; print(VERSION)")
         GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
         case "$GALAXY_WEB_CLIENT_VERSION" in
-            *dev*)
-                echo "WARNING: Galaxy is at development version ${GALAXY_WEB_CLIENT_VERSION}. The prebuilt client install path (GALAXY_INSTALL_PREBUILT_CLIENT=1) is only supported against tagged releases."
+            *dev*|*rc*)
+                # Only tagged releases are published, so ask the resolver for the
+                # most recent one below this version instead of pinning exactly.
+                # Bound on the version with the .dev/rc suffix stripped: a bound
+                # that is itself a prerelease would let pip match the stray
+                # prerelease wheels on PyPI.
                 GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_VERSION%%.dev*}
-                GALAXY_WEB_CLIENT_PATCH_VERSION=${GALAXY_WEB_CLIENT_RELEASE_VERSION##*.}
-                GALAXY_WEB_CLIENT_VERSION_PREFIX=${GALAXY_WEB_CLIENT_RELEASE_VERSION%.*}
-                GALAXY_WEB_CLIENT_VERSION="${GALAXY_WEB_CLIENT_VERSION_PREFIX}.$((GALAXY_WEB_CLIENT_PATCH_VERSION - 1))"
-                echo "Installing galaxy-web-client ${GALAXY_WEB_CLIENT_VERSION}, which may differ slightly from this development version."
-                GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
+                GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_RELEASE_VERSION%%rc*}
+                GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_RELEASE_VERSION%.}
+                echo "WARNING: Galaxy is at untagged version ${GALAXY_WEB_CLIENT_VERSION}, for which no galaxy-web-client wheel is published to PyPI."
+                echo "Installing the most recent galaxy-web-client release below ${GALAXY_WEB_CLIENT_RELEASE_VERSION}, which may differ slightly from this version of Galaxy."
+                GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client<${GALAXY_WEB_CLIENT_RELEASE_VERSION}"
                 ;;
         esac
         # shellcheck disable=SC2086
