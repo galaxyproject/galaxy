@@ -10,6 +10,25 @@ History
 
 
 -------------------
+26.1.1 (2026-08-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Prevent and tolerate duplicate private roles by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23206 <https://github.com/galaxyproject/galaxy/pull/23206>`_
+* Fix NPM publish job by pointing pnpm setup at client/package.json by `@dannon <https://github.com/dannon>`_ in `#23249 <https://github.com/galaxyproject/galaxy/pull/23249>`_
+* Pin release npm upgrade to 11.x and fix PyPI repository-url precedence by `@dannon <https://github.com/dannon>`_ in `#23251 <https://github.com/galaxyproject/galaxy/pull/23251>`_
+
+=============
+Other changes
+=============
+
+* Ship the web client in the galaxy-web-client artifacts again by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23254 <https://github.com/galaxyproject/galaxy/pull/23254>`_
+
+-------------------
 26.1.0 (2026-08-02)
 -------------------
 
