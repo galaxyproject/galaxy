@@ -1802,10 +1802,13 @@ class MinimalJobWrapper(HasResourceParameters):
     def _assert_crypt4gh_job_readiness(self, job: Job) -> None:
         """Fail-closed readiness guard for Crypt4GH-wrapped input datasets.
 
-        Delegates to :func:`galaxy.util.crypt4gh.assert_crypt4gh_job_readiness`
-        and fails the job with an actionable error if any Crypt4GH input
-        is missing required compute metadata or has an expired keypair.
+        Fails the job with an actionable error message if any Crypt4GH-wrapped input
+        is missing required compute metadata or has an expired or invalid encryption key.
         """
+        # Skip the check for metadata tools, because those tools
+        # only read dataset metadata and should not require recrypt.
+        if job.tool_id == "__SET_METADATA__":
+            return
         errors = assert_crypt4gh_job_readiness(job)
         if errors:
             error_message = "Crypt4GH job readiness check failed:\n" + "\n".join(errors)
