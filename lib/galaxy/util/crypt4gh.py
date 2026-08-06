@@ -49,6 +49,7 @@ _PRELUDE_SIZE = struct.calcsize(_PRELUDE_FORMAT)
 
 # --- Extension helpers ------------------------------------------------------
 
+
 def _is_generic_crypt4gh_file_ext(file_ext: str) -> bool:
     """Return True for bare wrapper extensions like ``c4gh``, ``crypt4gh``."""
     return fullmatch(r"c[^.]*4gh", file_ext) is not None
@@ -89,7 +90,7 @@ def infer_crypt4gh_inner_file_ext(filename: str, registry) -> str | None:
     """Try to infer the inner datatype extension from *filename* via the registry."""
     inner_filename = _unwrap_crypt4gh_suffix(filename) or filename
     datatype = registry.get_datatype_from_filename(inner_filename)
-    if datatype and datatype.file_ext not in ("data", "binary", "txt", "auto"):
+    if datatype and datatype.file_ext not in ("data", "auto"):
         return datatype.file_ext
     return None
 
@@ -145,6 +146,7 @@ def preserve_crypt4gh_inner_file_ext(
 
 
 # --- Header reading / validation -------------------------------------------
+
 
 def read_crypt4gh_header(stream_or_path: str | IO[bytes]) -> bytes:
     """Read and validate the Crypt4GH header from a file path or stream.
@@ -287,9 +289,7 @@ def validate_crypt4gh_keypair_expiration(val: str) -> None:
     else:
         now = datetime.now()
     if expiration <= now:
-        raise RequestParameterInvalidException(
-            "Crypt4GH keypair expiration date must be in the future."
-        )
+        raise RequestParameterInvalidException("Crypt4GH keypair expiration date must be in the future.")
 
 
 # --- Job readiness guard (job-level) ---------------------------------------
@@ -336,18 +336,18 @@ def _validate_single_crypt4gh_input(input_name: str, dataset: DatasetInstance) -
 
     if not compute_header:
         return [
-            f"Input '{input_name}': missing crypt4gh_compute_header metadata. "
-            f"Use the recrypt action to prepare this dataset for compute."
+            f"Input '{input_name}': missing crypt4gh_compute_header metadata. ",
+            "Use the recrypt action to prepare this dataset for compute.",
         ]
     if not keypair_id:
         return [
-            f"Input '{input_name}': missing crypt4gh_compute_keypair_id metadata. "
-            f"Use the recrypt action to prepare this dataset for compute."
+            f"Input '{input_name}': missing crypt4gh_compute_keypair_id metadata. ",
+            "Use the recrypt action to prepare this dataset for compute.",
         ]
     if not expiration_str:
         return [
-            f"Input '{input_name}': missing crypt4gh_compute_keypair_expiration_date metadata. "
-            f"Use the recrypt action to prepare this dataset for compute."
+            f"Input '{input_name}': missing crypt4gh_compute_keypair_expiration_date metadata. ",
+            "Use the recrypt action to prepare this dataset for compute.",
         ]
 
     return _validate_keypair_not_expired(input_name, str(expiration_str))
@@ -359,8 +359,8 @@ def _validate_keypair_not_expired(input_name: str, expiration_str: str) -> list[
         expiration = datetime.fromisoformat(expiration_str)
     except (ValueError, TypeError):
         return [
-            f"Input '{input_name}': invalid crypt4gh_compute_keypair_expiration_date "
-            f"'{expiration_str}': expected ISO 8601 format."
+            f"Input '{input_name}': invalid crypt4gh_compute_keypair_expiration_date ",
+            f"'{expiration_str}': expected ISO 8601 format.",
         ]
 
     if expiration.tzinfo is not None:
@@ -370,8 +370,8 @@ def _validate_keypair_not_expired(input_name: str, expiration_str: str) -> list[
 
     if expiration <= now:
         return [
-            f"Input '{input_name}': Crypt4GH keypair has expired "
-            f"(expiration: {expiration_str}). Use the recrypt action to renew."
+            f"Input '{input_name}': Crypt4GH keypair has expired ",
+            f"(expiration: {expiration_str}). Use the recrypt action to renew.",
         ]
 
     return []
