@@ -2,12 +2,11 @@
 import type { ColDef, GetRowIdParams, IRowDragItem, NewValueParams } from "ag-grid-community";
 import { BAlert, BCol, BLink, BRow } from "bootstrap-vue";
 import { getActivePinia } from "pinia";
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import type { components, CreateNewCollectionPayload, HDASummary, HistoryItemSummary } from "@/api";
-import { splitIntoPairedAndUnpaired } from "@/components/Collections/pairing";
 import { useConfirmDialog } from "@/composables/confirmDialog";
-import { Toast } from "@/composables/toast";
+import { useToast } from "@/composables/toast";
 import { useAgGrid } from "@/composables/useAgGrid";
 import { usePairingDatasetTargetsStore } from "@/stores/collectionBuilderItemsStore";
 import localize from "@/utils/localization";
@@ -32,6 +31,8 @@ const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this 
 const { confirm } = useConfirmDialog();
 
 const pinia = getActivePinia();
+
+const Toast = useToast();
 
 const pairingTargetsStore = usePairingDatasetTargetsStore();
 
@@ -72,7 +73,6 @@ const emit = defineEmits<{
 
 const currentForwardFilter = ref(props.forwardFilter);
 const currentReverseFilter = ref(props.reverseFilter);
-const activeElements = ref(props.initialElements);
 const { currentSummary, summaryText, autoPair } = usePairingSummary<HistoryItemSummary>(props);
 
 const {
@@ -259,12 +259,12 @@ function syncPairingToRowData(summary: AutoPairingResult<HistoryItemSummary>, ro
                 rowDataValue.push(unpairedRow(unpaired));
             }
         } else {
-            for (const unpaired of activeElements.value) {
+            for (const unpaired of props.initialElements) {
                 rowDataValue.push(unpairedRow(unpaired));
             }
         }
     } else {
-        for (const unpaired of activeElements.value) {
+        for (const unpaired of props.initialElements) {
             rowDataValue.push(unpairedRow(unpaired));
         }
     }
@@ -280,18 +280,18 @@ function syncRowDataToRowPairing() {
 
 function initialize() {
     if (currentForwardFilter.value === undefined) {
-        const summary = autoPairWithCommonFilters(activeElements.value, true);
+        const summary = autoPairWithCommonFilters(props.initialElements, true);
         const { forwardFilter, reverseFilter } = summary;
         if (forwardFilter !== undefined && reverseFilter !== undefined) {
             currentSummary.value = summary;
             currentForwardFilter.value = forwardFilter;
             currentReverseFilter.value = reverseFilter;
         } else {
-            autoPair(activeElements.value, "", "", removeExtensions.value);
+            autoPair(props.initialElements, "", "", removeExtensions.value);
         }
     } else {
         autoPair(
-            activeElements.value,
+            props.initialElements,
             currentForwardFilter.value,
             currentReverseFilter.value || "",
             removeExtensions.value,
@@ -299,43 +299,99 @@ function initialize() {
     }
     syncRowDataToRowPairing();
     checkForDuplicates(false);
+    _refresh();
 }
 
-initialize();
+let hasInitialized = false;
+
+/**
+ * Reconcile `rowData` with a changed `initialElements` without disturbing existing pairs:
+ * add rows for newly-seen elements, drop rows for elements no longer present (splitting
+ * a pair back to unpaired if only one side of it was removed), and leave everything
+ * else (manual or auto pairs, identifiers, etc.) untouched.
+ */
+function reconcileWithInitialElements(newInitialElements: HistoryItemSummary[]) {
+    const validIds = new Set(newInitialElements.map((el) => el.id));
+
+    for (const row of [...rowData.value]) {
+        if ("forward" in row.datasets) {
+            const forwardValid = validIds.has(row.datasets.forward.id);
+            const reverseValid = validIds.has(row.datasets.reverse.id);
+            if (!forwardValid && !reverseValid) {
+                onRemove(row.datasets, false);
+            } else if (!forwardValid || !reverseValid) {
+                const survivor = forwardValid ? row.datasets.forward : row.datasets.reverse;
+                onRemove(row.datasets, false);
+                rowData.value.push(unpairedRow(survivor));
+            }
+        } else {
+            if (!validIds.has(row.datasets.unpaired.id)) {
+                onRemove(row.datasets, false);
+            }
+        }
+    }
+
+    const knownRowIds = new Set<string>();
+    for (const row of rowData.value) {
+        if ("forward" in row.datasets) {
+            knownRowIds.add(row.datasets.forward.id);
+            knownRowIds.add(row.datasets.reverse.id);
+        } else {
+            knownRowIds.add(row.datasets.unpaired.id);
+        }
+    }
+    for (const el of newInitialElements) {
+        if (!knownRowIds.has(el.id)) {
+            rowData.value.push(unpairedRow(el));
+        }
+    }
+
+    checkForDuplicates(false);
+    _refresh();
+}
+
+watch(
+    () => props.initialElements,
+    (newInitialElements) => {
+        if (!hasInitialized) {
+            hasInitialized = true;
+            initialize();
+        } else {
+            reconcileWithInitialElements(newInitialElements);
+        }
+    },
+    { immediate: true },
+);
 
 function getRowId(params: GetRowIdParams) {
     return String(params.data.id);
 }
 
 function addUploadedFiles(files: HDASummary[]) {
-    // Any uploaded files are added to workingElements in _elementsSetUp
+    // Any uploaded files are added to initialElements once the history refreshes
     // The user will have to manually select the files to add them to the pair
 
     // Check for validity of uploads
-    const addedFiles = [];
+    const addedFiles: HDASummary[] = [];
     files.forEach((file) => {
         const problem = isElementInvalid(file);
         if (problem) {
             const invalidMsg = `${file.hid}: ${file.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
             Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
         } else {
-            activeElements.value.push(file);
             addedFiles.push(file);
         }
     });
-    if (currentForwardFilter.value === undefined) {
-        // Auto-pairing hasn't paired anything yet - just take all the files and try them...
-        initialize();
-    } else {
-        const summary = splitIntoPairedAndUnpaired(
-            files,
-            currentForwardFilter.value || "",
-            currentReverseFilter.value || "",
-            removeExtensions.value,
+
+    if (addedFiles.length > 0) {
+        const singularDatasetName =
+            addedFiles[0] && addedFiles.length == 1 ? `dataset '${addedFiles[0].name}'` : "datasets";
+
+        Toast.info(
+            `Look for the ${singularDatasetName} in the list below to add them to a pair.`,
+            "Uploaded files added to history",
         );
-        syncPairingToRowData(summary, rowData.value);
     }
-    _refresh();
 }
 
 function updatePairNames() {
@@ -591,7 +647,7 @@ function onPair(firstId: string, secondId: string, pairBy: PairBy) {
 }
 
 function _refresh() {
-    gridApi.value!.setRowData(rowData.value);
+    gridApi.value?.setRowData(rowData.value);
 }
 
 function onUnpair(pair: GenericPair<HistoryItemSummary>) {
