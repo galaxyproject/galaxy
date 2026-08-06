@@ -50,6 +50,7 @@ from galaxy.job_execution.output_collect import (
     MetadataSourceProvider,
     PermissionProvider,
 )
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.managers.credentials import build_credentials_context_response
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
@@ -3803,7 +3804,7 @@ class SetMetadataTool(Tool):
             self.app.job_manager.enqueue(job=job, tool=self)
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
-        working_directory = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
+        working_directory = JobWorkingDirectory(job, app.object_store).resolve()
         for name, dataset in inp_data.items():
             external_metadata = get_metadata_compute_strategy(app.config, job.id, tool_id=self.id)
             sa_session = app.model.context

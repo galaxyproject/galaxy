@@ -18,6 +18,21 @@
 #   # cache. By default (true) data is also copied to the cache.
 #   cache_updated_data: true
 #
+# Instead of a single `path`, the cache can be sharded across multiple directories
+# with weighted distribution. All cache entries for the same dataset (including
+# extra_files) resolve to the same shard deterministically. Metadata files have
+# their own id space and may land on a different shard:
+#
+# cache:
+#   dirs:
+#     - path: /fast/cache
+#       weight: 3
+#       size: 500
+#     - path: /slow/cache
+#       weight: 1
+#       size: 200
+#   cache_updated_data: true
+#
 # Most object store types have a `store_by` option which can be set to either `uuid` or `id`. Older Galaxy servers
 # stored datasets by their numeric id (000/dataset_1.dat, 00/dataset_2.dat, ...), whereas newer Galaxy servers store
 # them by UUID (b/5/e/dataset_b5e0301c-4c2e-41ac-b2c1-3c243f91b6ec.dat, ...). Storing by UUID is preferred, storing by

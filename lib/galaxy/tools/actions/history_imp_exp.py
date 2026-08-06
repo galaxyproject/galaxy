@@ -3,7 +3,7 @@ import logging
 import os
 import tempfile
 
-from galaxy.job_execution.setup import create_working_directory_for_job
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model import (
     History,
     Job,
@@ -186,7 +186,7 @@ class ExportHistoryToolAction(ToolAction):
             # creating a dataset (like above for dataset export case).
             # ensure job.id is available
             trans.sa_session.commit()
-            job_directory = create_working_directory_for_job(trans.app.object_store, job)
+            job_directory = JobWorkingDirectory(job, trans.app.object_store).create()
             store_directory = os.path.join(job_directory, "working", "_object_export")
             os.makedirs(store_directory)
 

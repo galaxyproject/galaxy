@@ -579,6 +579,16 @@ PITHOS_TEST_CONFIG_YAML = get_example("pithos_simple.yml")
 
 
 @patch_object_stores_to_skip_initialize
+def test_pithos_caches_outside_the_dataset_directory():
+    # Pithos used to stage into config.file_path - the primary dataset directory -
+    # which puts cache files among datasets and points the cache monitor at them.
+    for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.staging_path == directory.global_config.object_store_cache_path
+            assert object_store.staging_path != directory.global_config.file_path
+
+
+@patch_object_stores_to_skip_initialize
 def test_config_parse_pithos():
     for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
         with TestConfig(config_str) as (directory, object_store):
@@ -1023,7 +1033,7 @@ def test_cache_monitor_thread(tmp_path):
     path.write_text("this is an example file")
 
     cache_target = CacheTarget(cache_dir, 1, 0.000000001)
-    monitor = InProcessCacheMonitor(cache_target, 30, 0)
+    monitor = InProcessCacheMonitor([cache_target], 30, 0)
 
     path_cleaned = False
     for _ in range(100):
@@ -1053,6 +1063,21 @@ def test_check_cache_sanity(tmp_path):
     small_cache_target = CacheTarget(cache_dir, 1, 0.000000001)
     check_cache(small_cache_target)
     assert not path.exists()
+
+
+def test_check_cache_treats_non_positive_size_as_unbounded(tmp_path):
+    # A non-positive cache size means "unbounded" everywhere else in this module
+    # (see CacheTarget.fits_in_cache), so the monitor must not treat it as a
+    # zero-byte budget and reap the whole directory.
+    cache_dir = tmp_path
+    path = cache_dir / "a_file_0"
+    path.write_text("this is an example file")
+
+    check_cache(CacheTarget(cache_dir, -1, 0.2))
+    assert path.exists()
+
+    check_cache(CacheTarget(cache_dir, 0, 0.2))
+    assert path.exists()
 
 
 def test_fits_in_cache_check(tmp_path):
