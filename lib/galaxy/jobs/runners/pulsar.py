@@ -1353,7 +1353,11 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # (e.g. cvmfsexec mountrepo mode). A destination ``file_actions`` rule
         # with ``path_types: container`` remaps the image; unlike unstructured
         # paths, container images are never staged.
-        return self.path_mapper.check_for_container_rewrite(container_path)
+        #
+        # getattr guards older pulsar-galaxy-lib releases lacking the method
+        # (added in galaxyproject/pulsar#475); drop once the pin requires it.
+        check = getattr(self.path_mapper, "check_for_container_rewrite", None)
+        return check(container_path) if check else None
 
     def working_directory(self):
         return self._working_directory
