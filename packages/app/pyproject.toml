@@ -23,7 +23,7 @@ dependencies = [
     "galaxy-job-execution",
     "galaxy-job-metrics",
     "galaxy-objectstore",
-    "galaxy-tool-util[cwl,edam]",
+    "galaxy-tool-util[cwl,edam,crypt4gh]",
     "galaxy-tool-shed-schema",
     "galaxy-tours",
     "galaxy-util[image-util,jstree]",

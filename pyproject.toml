@@ -13,6 +13,7 @@ readme = "README.rst"
 requires-python = ">=3.10"
 dependencies = [
     "a2wsgi",
+    "aiohttp",
     "aiofiles",
     "alembic",
     "apispec",
@@ -28,6 +29,7 @@ dependencies = [
     "cloudauthz==0.6.0",
     "circus",
     "conda-package-streaming",
+    "crypt4gh",
     "CT3>=3.3.3",  # Python 3.13 support
     "cwl-utils>=0.13",
     "cwltool>=3.1.20230624081518",  # save time, minimum needed by cwl-1.0 branch
