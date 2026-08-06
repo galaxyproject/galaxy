@@ -789,7 +789,7 @@ export default {
             render-extensions-toggle
             :extensions-toggle="removeExtensions"
             :extensions="extensions"
-            collection-type="collectionType"
+            :collection-type="collectionType"
             :no-items="props.initialElements.length == 0 && !props.fromSelection"
             :show-upload="!fromSelection"
             :show-buttons="showButtonsForModal"
