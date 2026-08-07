@@ -19,8 +19,10 @@ Security invariants
 
 from __future__ import annotations
 
+import shutil
 import struct
 from datetime import datetime
+from pathlib import Path
 from re import fullmatch
 from typing import (
     IO,
@@ -41,6 +43,10 @@ CRYPT4GH_MAGIC = b"crypt4gh"
 CRYPT4GH_VERSION = 1
 CRYPT4GH_FILE_EXT = "c4gh"
 CRYPT4GH_SUFFIX = f".{CRYPT4GH_FILE_EXT}"
+
+#: Sentinel emitted to stderr by the compute-side shell wrapper when
+#: plaintext cleanup fails.  Scanned by the host-side job finisher.
+CRYPT4GH_CLEANUP_FAILED_MARKER = "CRYPT4GH_PLAINTEXT_CLEANUP_FAILED"
 
 # Struct format for the 16-byte prelude: magic (8s) + version (I) + packet_count (I)
 _PRELUDE_FORMAT = "<8sII"
@@ -204,9 +210,23 @@ def check_crypt4gh(file_path: str) -> bool:
         return False
 
 
+def cleanup_crypt4gh_plaintext_artifacts(*, working_directory: str) -> None:
+    """Delete staged Crypt4GH plaintext input and output directories.
+
+    Removes ``_crypt/inputs`` and ``_crypt/outputs`` under *working_directory*.
+    """
+    crypt_root = Path(working_directory) / "_crypt"
+    for child_name in ("inputs", "outputs"):
+        child_path = crypt_root / child_name
+        if child_path.exists():
+            shutil.rmtree(child_path)
+
+
 __all__ = (
     "assert_crypt4gh_job_readiness",
     "check_crypt4gh",
+    "cleanup_crypt4gh_plaintext_artifacts",
+    "CRYPT4GH_CLEANUP_FAILED_MARKER",
     "CRYPT4GH_COMPUTE_METADATA_KEYS",
     "CRYPT4GH_FILE_EXT",
     "CRYPT4GH_MAGIC",
