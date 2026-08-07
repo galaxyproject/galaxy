@@ -15,6 +15,7 @@ Design principles
 """
 
 import base64
+import logging
 import os
 from datetime import datetime
 from inspect import isclass
@@ -23,6 +24,7 @@ from typing import Any
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util.crypt4gh import (
     check_crypt4gh,
     CRYPT4GH_FILE_EXT,
@@ -31,6 +33,8 @@ from galaxy.util.crypt4gh import (
     unwrap_crypt4gh_file_ext,
     wrap_crypt4gh_file_ext,
 )
+
+log = logging.getLogger(__name__)
 
 
 class Crypt4GH(Binary):
@@ -180,10 +184,70 @@ class Crypt4GH(Binary):
             return inner_datatype.matches_any(target_datatypes)
         return False
 
+    # --- Download / archive -------------------------------------------------
+
+    def is_archive_download(self, datatypes_registry, extension) -> bool:
+        """Return ``True`` for Crypt4GH datasets so downloads are streamed.
+
+        Crypt4GH datasets may have encrypted extra files that must be
+        included in a zip archive.  Since :meth:`is_archive_download`
+        cannot inspect the dataset instance, we return ``True`` for all
+        Crypt4GH extensions and let :meth:`_serve_file_download` decide
+        whether to zip (extra files present) or serve the primary file
+        directly.
+        """
+        if is_crypt4gh_file_ext(extension):
+            return True
+        return super().is_archive_download(datatypes_registry, extension)
+
+    def _serve_file_download(self, headers, data, trans, to_ext, file_size, **kwd):
+        """Serve a Crypt4GH dataset download.
+
+        If the dataset has extra files, produce a zip archive containing
+        the primary encrypted file and all encrypted extra files.
+        Otherwise, serve the primary file directly as a regular download.
+        """
+        if self._has_extra_files(data):
+            return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
+        # No extra files — serve the primary file directly.
+        headers["Content-Length"] = str(file_size)
+        headers["content-type"] = "application/octet-stream"
+        headers["Content-Disposition"] = self.download_content_disposition(data, to_ext, **kwd)
+        
+
+        return open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb"), headers
+
+    def _archive_main_file(self, archive, display_name: str, data_filename: str) -> tuple[bool, str, str]:
+        """Add the primary Crypt4GH file to the download archive.
+
+        Unlike the default implementation which writes the file as
+        ``{display_name}.html``, this writes it with its actual encrypted
+        extension (e.g. ``fastqsanger.c4gh``).
+        """
+        error, msg, messagetype = False, "", ""
+        archname = f"{display_name}.{self.file_ext}"
+        try:
+            archive.write(data_filename, archname)
+        except OSError:
+            error = True
+            log.exception("Unable to add Crypt4GH primary file %s to download archive", data_filename)
+            msg = "Unable to create archive for download, please report this error"
+            messagetype = "error"
+        return error, msg, messagetype
+
+    def _has_extra_files(self, dataset) -> bool:
+        """Check if *dataset* has a non-empty extra files directory."""
+        extra_files_path = getattr(dataset, "extra_files_path", None)
+        if not extra_files_path or not os.path.isdir(extra_files_path):
+            return False
+        for _root, _dirs, files in os.walk(extra_files_path):
+            if files:
+                return True
+        return False
+
     # --- Internal helpers ---------------------------------------------------
 
     def _infer_inner_ext(self, dataset: DatasetProtocol) -> str:
-        """Determine the inner extension from the datatype, dataset, or filename."""
         # 1. Typed wrapper extension (e.g. fastqsanger.c4gh -> fastqsanger)
         dataset_ext = unwrap_crypt4gh_file_ext(self.file_ext)
         if dataset_ext is not None:
