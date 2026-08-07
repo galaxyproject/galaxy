@@ -1399,10 +1399,34 @@ def build_crypt4gh_postrun_command(
         f"PYTHONPATH={shlex.quote(galaxy_lib_dir)}:$PYTHONPATH "
         f"{shlex.quote(python_executable)} -c {shlex.quote(cleanup_script)}"
     )
+
+    # Collect declared Crypt4GH output paths so the shell wrapper can remove
+    # plaintext remnants when the postrun did not run or did not succeed.
+    # Discovered output paths are not included here because they are only
+    # known after the postrun runs; the regular _crypt/outputs cleanup and
+    # job-runner working-directory deletion handle those.
+    plaintext_output_paths: list[str] = []
+    for target in output_targets:
+        path = str(target.get("output_path", "") or "")
+        if path:
+            plaintext_output_paths.append(path)
+
+    plaintext_cleanup_command = ""
+    if plaintext_output_paths:
+        plaintext_cleanup_script = (
+            f"from galaxy.util.crypt4gh import cleanup_crypt4gh_plaintext_outputs; "
+            f"cleanup_crypt4gh_plaintext_outputs(output_paths={json.dumps(plaintext_output_paths)})"
+        )
+        plaintext_cleanup_command = (
+            f"PYTHONPATH={shlex.quote(galaxy_lib_dir)}:$PYTHONPATH "
+            f"{shlex.quote(python_executable)} -c {shlex.quote(plaintext_cleanup_script)}"
+        )
+
     return build_crypt4gh_cleanup_wrapped_command(
         tool_command=tool_command,
         postrun_command=postrun_command,
         cleanup_command=cleanup_command,
+        plaintext_output_cleanup_command=plaintext_cleanup_command,
     )
 
 
@@ -2536,6 +2560,24 @@ def _verify_extra_files_manifest_evidence(
             expected_entries=expected_payload_entries,
             diagnostics=diagnostics,
         )
+        # Also check for unencrypted files that lack manifest entries.
+        unmanifested_entries = observed_entries - expected_payload_entries
+        for rel_path in sorted(unmanifested_entries):
+            unmanifested_file = extra_files_path / rel_path
+            if not unmanifested_file.exists():
+                continue
+            try:
+                with unmanifested_file.open("rb") as ef_stream:
+                    ef_prefix = ef_stream.read(8)
+            except Exception:
+                diagnostics.append(
+                    f"extra_files unmanifested payload unreadable for dataset_id={dataset_id} path={rel_path}"
+                )
+                continue
+            if ef_prefix != b"crypt4gh":
+                diagnostics.append(
+                    f"extra_files unmanifested plaintext payload for dataset_id={dataset_id} path={rel_path}"
+                )
         return
 
     if saw_missing_entries:
@@ -2557,11 +2599,17 @@ def _verify_no_residual_plaintext_staging_artifacts(*, working_directory: str, d
         for root, _dirs, files in os.walk(plaintext_root):
             root_path = Path(root)
             for file_name in files:
-                if file_name != "plaintext":
+                # Primary plaintext staging artifacts are named "plaintext".
+                if file_name == "plaintext":
+                    diagnostics.append(f"plaintext staging artifact remained at path={root_path / file_name}")
                     continue
 
-                leaked_path = root_path / file_name
-                diagnostics.append(f"plaintext staging artifact remained at path={leaked_path}")
+                # Input extra files are staged under plaintext_files/ directories.
+                # Any file remaining there (not cleaned up) is a residual artifact.
+                if "plaintext_files" in root_path.parts and not file_name.endswith(_CRYPT4GH_FILE_SUFFIX):
+                    diagnostics.append(
+                        f"plaintext extra_files staging artifact remained at path={root_path / file_name}"
+                    )
 
 
 def _verify_extra_files_payload_header_evidence(
@@ -2694,12 +2742,25 @@ def _dataset_payload_path(dataset: Any) -> str:
 
 
 def build_crypt4gh_cleanup_wrapped_command(
-    *, tool_command: str, cleanup_command: str, postrun_command: str = ""
+    *,
+    tool_command: str,
+    cleanup_command: str,
+    postrun_command: str = "",
+    plaintext_output_cleanup_command: str = "",
 ) -> str:
-    """Wrap tool command with postrun and cleanup steps that preserve failures."""
+    """Wrap tool command with postrun and cleanup steps that preserve failures.
+
+    When *plaintext_output_cleanup_command* is provided, it is executed after
+    the regular cleanup step **only if** the tool or postrun did not succeed.
+    This removes unencrypted output files left behind by a failed tool or a
+    failed/skipped postrun, ensuring no plaintext dataset persists on the
+    compute node.  A failure of this step is reported via the cleanup-failed
+    marker so the host side can surface it.
+    """
 
     postrun_command = postrun_command.strip()
     cleanup_command = cleanup_command.strip()
+    plaintext_output_cleanup_command = plaintext_output_cleanup_command.strip()
     if not cleanup_command:
         if not postrun_command:
             return tool_command
@@ -2729,6 +2790,35 @@ def build_crypt4gh_cleanup_wrapped_command(
             "    _CRYPT4GH_CLEANUP_EXIT=$?",
             marker_line,
             "fi",
+        ]
+    )
+
+    if plaintext_output_cleanup_command:
+        # Remove plaintext output files when the postrun did not succeed.
+        # This runs unconditionally after the regular cleanup step — the
+        # Python function itself checks for Crypt4GH magic bytes and only
+        # deletes files that are NOT encrypted.
+        plaintext_marker_line = (
+            f'    echo "{CRYPT4GH_CLEANUP_FAILED_MARKER}: plaintext output cleanup failed with exit code '
+            '${_CRYPT4GH_PLAINTEXT_CLEANUP_EXIT}" >&2'
+        )
+        lines.extend(
+            [
+                "if [ $_CRYPT4GH_TOOL_EXIT -ne 0 ] || [ $_CRYPT4GH_POSTRUN_EXIT -ne 0 ]; then",
+                "    if (",
+                plaintext_output_cleanup_command,
+                "    ); then",
+                "        _CRYPT4GH_PLAINTEXT_CLEANUP_EXIT=0",
+                "    else",
+                "        _CRYPT4GH_PLAINTEXT_CLEANUP_EXIT=$?",
+                plaintext_marker_line,
+                "    fi",
+                "fi",
+            ]
+        )
+
+    lines.extend(
+        [
             "if [ $_CRYPT4GH_TOOL_EXIT -ne 0 ]; then",
             "    exit $_CRYPT4GH_TOOL_EXIT",
             "fi",
