@@ -45,6 +45,9 @@ importers:
       '@fortawesome/vue-fontawesome':
         specifier: ^2.0.9
         version: 2.0.9(@fortawesome/fontawesome-svg-core@6.2.1)(vue@2.7.16)
+      '@galaxyproject/brand-tokens':
+        specifier: 0.1.0
+        version: 0.1.0
       '@galaxyproject/galaxy-api-client':
         specifier: workspace:*
         version: link:packages/api-client
@@ -1113,6 +1116,9 @@ packages:
     peerDependencies:
       '@fortawesome/fontawesome-svg-core': ~1 || ~6
       vue: 2.7.16
+
+  '@galaxyproject/brand-tokens@0.1.0':
+    resolution: {integrity: sha512-fzTXovmajr/U5ZfPoI4ui1KdWto4zAxZDjwsINESTLybnjrrVXzTMc2f9c6zVM8aMwWvEq+onbWRr+i4vLM3ZA==}
 
   '@guolao/vue-monaco-editor@1.6.0':
     resolution: {integrity: sha512-w2IiJ6eJGGeuIgCK6EKZOAfhHTTUB5aZwslzwGbZ5e89Hb4avx6++GkLTW8p84Sng/arFMjLPPxSBI56cFudyQ==}
@@ -6375,6 +6381,8 @@ snapshots:
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.2.1
       vue: 2.7.16
+
+  '@galaxyproject/brand-tokens@0.1.0': {}
 
   '@guolao/vue-monaco-editor@1.6.0(monaco-editor@0.52.2)(vue@2.7.16)':
     dependencies:
