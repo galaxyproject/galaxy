@@ -2,6 +2,7 @@
 import { computed } from "vue";
 
 import { useConfig } from "@/composables/config";
+import { withPrefix } from "@/utils/redirect";
 
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
@@ -54,6 +55,12 @@ const sections = computed(() => {
                     id: "admin-link-notifications",
                     title: "Notifications and Broadcasts",
                     route: "/admin/notifications",
+                },
+                {
+                    id: "admin-link-monitor",
+                    title: "Monitor",
+                    route: "/monitor",
+                    external: true,
                 },
             ],
         },
@@ -137,7 +144,18 @@ const sections = computed(() => {
                         </h2>
                         <div class="toolSectionBody">
                             <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
-                                <router-link v-if="!item.disabled" :id="item.id" class="title-link" :to="item.route">
+                                <a
+                                    v-if="!item.disabled && item.external"
+                                    :id="item.id"
+                                    class="title-link"
+                                    :href="withPrefix(item.route)">
+                                    <span class="name">{{ item.title }}</span>
+                                </a>
+                                <router-link
+                                    v-else-if="!item.disabled"
+                                    :id="item.id"
+                                    class="title-link"
+                                    :to="item.route">
                                     <span class="name">{{ item.title }}</span>
                                 </router-link>
                             </div>
