@@ -10,7 +10,10 @@ polls ``/`` for a 200 to decide the server is up, which never happens once
 ``require_login`` is on.
 """
 
-from typing import cast
+from typing import (
+    Any,
+    cast,
+)
 from urllib.parse import (
     parse_qs,
     urlparse,
@@ -21,7 +24,7 @@ import webob.exc
 from routes import request_config
 
 from galaxy.app_unittest_utils import galaxy_mock
-from galaxy.structured_app import BasicSharedApp
+from galaxy.model import GalaxySession
 from galaxy.util.bunch import Bunch
 from galaxy.webapps.base.webapp import (
     GalaxyWebTransaction,
@@ -44,14 +47,14 @@ class RoutedWebApplication(WebApplication):
 
 
 def _trans_for(path: str, query_string: str = "", script_name: str = "") -> StubGalaxyWebTransaction:
-    app = cast(BasicSharedApp, galaxy_mock.MockApp())
+    app: Any = galaxy_mock.MockApp()
     app.config.require_login = True
     app.config.show_welcome_with_login = False
     app.config.template_cache_path = "/tmp"
     # The login gate consults these while deciding what bypasses require_login.
     app.datatypes_registry = Bunch(get_display_sites=lambda name: [], display_applications={})
 
-    webapp = RoutedWebApplication(cast(WebApplication, app))
+    webapp = RoutedWebApplication(app)
     # The two generic routes url_for resolves against -- see buildapp.app_pair.
     webapp.add_route("/{controller}/{action}", action="index")
     webapp.add_route("/{action}", controller="root", action="index")
@@ -62,8 +65,8 @@ def _trans_for(path: str, query_string: str = "", script_name: str = "") -> Stub
     routes_config.protocol = "https"
 
     environ = galaxy_mock.buildMockEnviron(PATH_INFO=path, QUERY_STRING=query_string, SCRIPT_NAME=script_name)
-    trans = StubGalaxyWebTransaction(environ, app, cast(WebApplication, webapp), "galaxysession")
-    trans.galaxy_session = Bunch(user=None)
+    trans = StubGalaxyWebTransaction(environ, app, webapp, "galaxysession")
+    trans.galaxy_session = cast(GalaxySession, Bunch(user=None))
     return trans
 
 
