@@ -318,9 +318,13 @@ class Crypt4GHRemoteComputeEnvironment(SharedComputeEnvironment):
         compute_public_key: str | None,
         compute_keypair_id: str | None,
         compute_keypair_expiration_date: str | None,
+        input_extra_files_overrides_by_dataset_id: Mapping[int, str] | None = None,
     ) -> None:
         super().__init__(job_io=job_io, job=job)
         self._input_path_overrides_by_dataset_id = dict(input_path_overrides_by_dataset_id)
+        self._input_extra_files_overrides_by_dataset_id: dict[int, str] = dict(
+            input_extra_files_overrides_by_dataset_id or {}
+        )
         self.compute_public_key = compute_public_key
         self.compute_keypair_id = compute_keypair_id
         self.compute_keypair_expiration_date = compute_keypair_expiration_date
@@ -335,6 +339,21 @@ class Crypt4GHRemoteComputeEnvironment(SharedComputeEnvironment):
             if rewritten_path:
                 return rewritten_path
         return super().input_path_rewrite(dataset)
+
+    def input_extra_files_rewrite(self, dataset: DatasetInstance) -> str:
+        """Return staged plaintext extra-files path for Crypt4GH input datasets.
+
+        For Crypt4GH inputs whose extra files have been decrypted and staged,
+        return the plaintext staging directory.  For all other inputs, fall
+        back to the default compute-environment behaviour.
+        """
+        dataset_object = getattr(dataset, "dataset", None)
+        dataset_id = getattr(dataset_object, "id", None)
+        if isinstance(dataset_id, int):
+            extra_files_path = self._input_extra_files_overrides_by_dataset_id.get(dataset_id)
+            if extra_files_path:
+                return extra_files_path
+        return super().input_extra_files_rewrite(dataset)
 
 
 Crypt4GHComputeEnvironment = Crypt4GHRemoteComputeEnvironment
@@ -372,12 +391,14 @@ def build_crypt4gh_remote_compute_environment(
 
     crypt_inputs_workspace = _ensure_crypt4gh_inputs_workspace(working_directory)
     job_private_key, job_public_key = _generate_job_keypair()
-    input_path_overrides_by_dataset_id, compute_context = _prepare_plaintext_inputs(
-        datasets=crypt4gh_inputs,
-        crypt_inputs_workspace=crypt_inputs_workspace,
-        reencryption_service_url=reencryption_service_url,
-        job_public_key=job_public_key,
-        job_private_key=job_private_key,
+    input_path_overrides_by_dataset_id, input_extra_files_overrides_by_dataset_id, compute_context = (
+        _prepare_plaintext_inputs(
+            datasets=crypt4gh_inputs,
+            crypt_inputs_workspace=crypt_inputs_workspace,
+            reencryption_service_url=reencryption_service_url,
+            job_public_key=job_public_key,
+            job_private_key=job_private_key,
+        )
     )
 
     return Crypt4GHRemoteComputeEnvironment(
@@ -387,6 +408,7 @@ def build_crypt4gh_remote_compute_environment(
         compute_public_key=compute_context.public_key,
         compute_keypair_id=compute_context.keypair_id,
         compute_keypair_expiration_date=compute_context.keypair_expiration_date,
+        input_extra_files_overrides_by_dataset_id=input_extra_files_overrides_by_dataset_id,
     )
 
 
@@ -397,7 +419,7 @@ def _prepare_plaintext_inputs(
     reencryption_service_url: str,
     job_public_key: str,
     job_private_key: bytes,
-) -> tuple[dict[int, str], _ComputeKeyContext]:
+) -> tuple[dict[int, str], dict[int, str], _ComputeKeyContext]:
     endpoint = f"{reencryption_service_url.rstrip('/')}/recrypt_header_to_job_key"
     recrypt_payloads = _build_recrypt_payloads(datasets=datasets, job_public_key=job_public_key)
     responses = _post_many_reencryption_json(
@@ -411,6 +433,7 @@ def _prepare_plaintext_inputs(
         )
 
     input_path_overrides_by_dataset_id: dict[int, str] = {}
+    input_extra_files_overrides_by_dataset_id: dict[int, str] = {}
     compute_context: _ComputeKeyContext | None = None
 
     for payload, response in zip(recrypt_payloads, responses):
@@ -418,7 +441,7 @@ def _prepare_plaintext_inputs(
             response=response,
             endpoint=endpoint,
         )
-        dataset_id, plaintext_path = _prepare_plaintext_input_for_dataset(
+        dataset_id, plaintext_path, extra_files_path = _prepare_plaintext_input_for_dataset(
             dataset=cast(Any, payload["dataset"]),
             source_header=cast(str, payload["source_header"]),
             recrypt_header=recrypt_result.crypt4gh_header,
@@ -426,6 +449,8 @@ def _prepare_plaintext_inputs(
             job_private_key=job_private_key,
         )
         input_path_overrides_by_dataset_id[dataset_id] = plaintext_path
+        if extra_files_path:
+            input_extra_files_overrides_by_dataset_id[dataset_id] = extra_files_path
 
         candidate_context = _ComputeKeyContext(
             public_key=recrypt_result.crypt4gh_compute_public_key,
@@ -440,7 +465,7 @@ def _prepare_plaintext_inputs(
     if compute_context is None:
         raise Crypt4GHRemoteExecutionError("Crypt4GH remote execution requested but no Crypt4GH inputs were detected")
 
-    return input_path_overrides_by_dataset_id, compute_context
+    return input_path_overrides_by_dataset_id, input_extra_files_overrides_by_dataset_id, compute_context
 
 
 def _build_recrypt_payloads(
@@ -810,7 +835,13 @@ def _prepare_plaintext_input_for_dataset(
     recrypt_header: str,
     crypt_inputs_workspace: Path,
     job_private_key: bytes,
-) -> tuple[int, str]:
+) -> tuple[int, str, str | None]:
+    """Decrypt a Crypt4GH input dataset (and its extra files) to plaintext staging.
+
+    Returns ``(dataset_id, plaintext_path, extra_files_plaintext_path)``.
+    ``extra_files_plaintext_path`` is ``None`` when the dataset has no
+    extra files or they are not encrypted.
+    """
     dataset_object = getattr(dataset, "dataset", None)
     dataset_id = getattr(dataset_object, "id", None)
     if not isinstance(dataset_id, int):
@@ -828,7 +859,103 @@ def _prepare_plaintext_input_for_dataset(
         plaintext_path=plaintext_path,
         job_private_key=job_private_key,
     )
-    return dataset_id, str(plaintext_path)
+
+    extra_files_plaintext_path = _stage_input_extra_files(
+        dataset=dataset,
+        dataset_workspace=dataset_workspace,
+        recrypt_header=recrypt_header,
+        job_private_key=job_private_key,
+    )
+
+    return dataset_id, str(plaintext_path), extra_files_plaintext_path
+
+
+def _stage_input_extra_files(
+    *,
+    dataset: DatasetInstance,
+    dataset_workspace: Path,
+    recrypt_header: str,
+    job_private_key: bytes,
+) -> str | None:
+    """Decrypt or copy input extra files to the plaintext staging directory.
+
+    Walks the dataset's extra-files directory.  Files ending in ``.c4gh`` are
+    decrypted using the same recrypted header and job private key as the
+    primary file.  Non-encrypted files are copied as-is.  Returns the path
+    to the staging directory, or ``None`` if the dataset has no extra files.
+    """
+    source_extra_files_path = _resolve_input_extra_files_path(dataset)
+    if source_extra_files_path is None or not source_extra_files_path.is_dir():
+        return None
+
+    plaintext_extra_files_path = dataset_workspace / "plaintext_files"
+    plaintext_extra_files_path.mkdir(parents=True, exist_ok=True)
+
+    recrypted_header_bytes = _decode_header(recrypt_header)
+    found_any = False
+    for root, _dirs, files in os.walk(source_extra_files_path):
+        root_path = Path(root)
+        for file_name in files:
+            found_any = True
+            source_path = root_path / file_name
+            relative_path = os.path.relpath(source_path, source_extra_files_path)
+            dest_path = plaintext_extra_files_path / relative_path
+            dest_path.parent.mkdir(parents=True, exist_ok=True)
+
+            if file_name.endswith(_CRYPT4GH_FILE_SUFFIX):
+                _decrypt_extra_file(
+                    source_path=source_path,
+                    dest_path=dest_path,
+                    recrypted_header_bytes=recrypted_header_bytes,
+                    job_private_key=job_private_key,
+                )
+            else:
+                shutil.copy2(source_path, dest_path)
+
+    if not found_any:
+        return None
+
+    return str(plaintext_extra_files_path)
+
+
+def _resolve_input_extra_files_path(dataset: DatasetInstance) -> Path | None:
+    """Return the extra-files path for *dataset*, or ``None`` if unavailable."""
+    extra_files_path_str = getattr(dataset, "extra_files_path", None)
+    if extra_files_path_str:
+        return Path(str(extra_files_path_str))
+
+    # Fall back to deriving from the primary file path.
+    file_name = dataset.get_file_name()
+    if not file_name:
+        return None
+    derived = dataset_path_to_extra_path(str(file_name))
+    derived_path = Path(derived)
+    return derived_path if derived_path.is_dir() else None
+
+
+def _decrypt_extra_file(
+    *,
+    source_path: Path,
+    dest_path: Path,
+    recrypted_header_bytes: bytes,
+    job_private_key: bytes,
+) -> None:
+    """Decrypt a single Crypt4GH extra file to *dest_path* (without the ``.c4gh`` suffix)."""
+    try:
+        with source_path.open("rb") as source_stream, dest_path.open("wb") as plaintext_stream:
+            staged_stream = _HeaderThenBodyStream(
+                header_bytes=recrypted_header_bytes,
+                body_stream=source_stream,
+            )
+            crypt4gh.lib.decrypt([(0, job_private_key, None)], staged_stream, plaintext_stream)
+    except OSError as exc:
+        raise Crypt4GHRemoteExecutionError(
+            f"Failed to read Crypt4GH extra file {source_path}: {exc}"
+        ) from exc
+    except Exception as exc:
+        raise Crypt4GHRemoteExecutionError(
+            f"Failed to decrypt Crypt4GH extra file {source_path}"
+        ) from exc
 
 
 def collect_declared_crypt4gh_output_targets(
