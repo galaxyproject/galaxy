@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSearch, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { watchDebounced, watchImmediate } from "@vueuse/core";
+import { useEventListener, watchDebounced, watchImmediate } from "@vueuse/core";
 import { computed, nextTick, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -38,7 +38,7 @@ interface ResultSection {
     title: string;
 }
 
-const { isPaletteOpen, closePalette } = useCommandPalette();
+const { isPaletteOpen, closePalette, togglePalette } = useCommandPalette();
 const router = useRouter();
 const { config } = useConfig();
 const eventStore = useEventStore();
@@ -204,6 +204,14 @@ function onDialogClose() {
 watch(selectedIndex, () => {
     if (selectedItem.value) {
         document.getElementById(optionId(selectedIndex.value))?.scrollIntoView({ block: "nearest" });
+    }
+});
+
+useEventListener(window, "keydown", (event: KeyboardEvent) => {
+    const platformModifier = eventStore.isMac ? event.metaKey : event.ctrlKey;
+    if (event.key.toLowerCase() === "k" && platformModifier && !event.shiftKey && !event.altKey && !event.repeat) {
+        event.preventDefault();
+        togglePalette();
     }
 });
 

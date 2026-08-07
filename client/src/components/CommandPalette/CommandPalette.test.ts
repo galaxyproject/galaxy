@@ -103,4 +103,21 @@ describe("CommandPalette", () => {
         await wrapper.find("[data-description='palette input']").trigger("keydown", { key: "Escape" });
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
+
+    it("toggles on the global ctrl/cmd+k shortcut", async () => {
+        useCommandPalette().closePalette();
+
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, cancelable: true }));
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, cancelable: true }));
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
+    it("ignores plain 'k' without the platform modifier", () => {
+        useCommandPalette().closePalette();
+
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", cancelable: true }));
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
 });
