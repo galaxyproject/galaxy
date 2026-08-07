@@ -979,10 +979,20 @@ class Registry:
         if ext not in self._converters_by_datatype:
             converters = {}
             source_datatype = type(self.get_datatype_by_extension(ext))
+            inner_ext = unwrap_crypt4gh_file_ext(ext)
             for ext2, converters_dict in self.datatype_converters.items():
                 converter_datatype = type(self.get_datatype_by_extension(ext2))
                 if issubclass(source_datatype, converter_datatype):
                     converters.update({k: v for k, v in converters_dict.items() if k != ext})
+                elif inner_ext is not None and ext2 == inner_ext:
+                    # A converter registered for the inner datatype (e.g. sam -> bam)
+                    # also serves the Crypt4GH-wrapped variant (sam.c4gh -> bam.c4gh).
+                    for target_ext, converter in converters_dict.items():
+                        if target_ext == ext:
+                            continue
+                        wrapped_target = wrap_crypt4gh_file_ext(target_ext)
+                        if wrapped_target != ext and wrapped_target in self.datatypes_by_extension:
+                            converters[wrapped_target] = converter
             # Ensure ext-level converters are present
             if ext in self.datatype_converters.keys():
                 converters.update(self.datatype_converters[ext])
