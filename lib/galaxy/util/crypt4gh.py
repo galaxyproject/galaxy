@@ -19,6 +19,7 @@ Security invariants
 
 from __future__ import annotations
 
+import os
 import shutil
 import struct
 from datetime import datetime
@@ -30,6 +31,7 @@ from typing import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -222,10 +224,54 @@ def cleanup_crypt4gh_plaintext_artifacts(*, working_directory: str) -> None:
             shutil.rmtree(child_path)
 
 
+def cleanup_crypt4gh_plaintext_outputs(*, output_paths: list[str]) -> None:
+    """Remove plaintext (un-encrypted) output files left by a failed postrun.
+
+    For each path in *output_paths*, if the file exists and does **not** begin
+    with the Crypt4GH magic bytes, it is deleted.  If a sibling ``_files``
+    directory exists (extra-files), its non-``.c4gh`` contents are also removed.
+
+    This ensures that no unencrypted dataset remains on the compute node when
+    the tool or postrun script fails.
+    """
+    for output_path_str in output_paths:
+        output_path = Path(output_path_str)
+        if not output_path.exists():
+            continue
+
+        # Remove the primary output file if it is not encrypted.
+        if output_path.is_file():
+            try:
+                with output_path.open("rb") as fh:
+                    magic = fh.read(len(CRYPT4GH_MAGIC))
+                if magic != CRYPT4GH_MAGIC:
+                    output_path.unlink()
+            except OSError:
+                pass
+
+        # Remove plaintext files in the sibling extra-files directory.
+        extra_files_path = Path(dataset_path_to_extra_path(str(output_path)))
+        if extra_files_path.exists() and extra_files_path.is_dir():
+            for root, _dirs, files in os.walk(extra_files_path):
+                root_path = Path(root)
+                for file_name in files:
+                    if file_name.endswith(CRYPT4GH_SUFFIX):
+                        continue
+                    file_path = root_path / file_name
+                    try:
+                        with file_path.open("rb") as fh:
+                            magic = fh.read(len(CRYPT4GH_MAGIC))
+                        if magic != CRYPT4GH_MAGIC:
+                            file_path.unlink()
+                    except OSError:
+                        pass
+
+
 __all__ = (
     "assert_crypt4gh_job_readiness",
     "check_crypt4gh",
     "cleanup_crypt4gh_plaintext_artifacts",
+    "cleanup_crypt4gh_plaintext_outputs",
     "CRYPT4GH_CLEANUP_FAILED_MARKER",
     "CRYPT4GH_COMPUTE_METADATA_KEYS",
     "CRYPT4GH_FILE_EXT",
