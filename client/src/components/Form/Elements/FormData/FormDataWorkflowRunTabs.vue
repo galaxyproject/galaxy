@@ -42,7 +42,7 @@ const emit = defineEmits<{
 }>();
 
 const currentWorkflowTab = computed({
-    get: () => WorkflowRunTabs[props.workflowTab] ?? WorkflowRunTabs.view,
+    get: () => WorkflowRunTabs[props.workflowTab] ?? -1,
     set: (value) => {
         emit("update:workflow-tab", Object.keys(WorkflowRunTabs).find((key) => WorkflowRunTabs[key] === value) || "");
     },
