@@ -68,10 +68,7 @@ export function scorePaletteItems(items: PaletteItem[], query: string): ScoredPa
     const records = items.map((item) => ({
         id: item.id,
         name: item.title.toLowerCase(),
-        description: [item.subtitle, item.keywords]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase(),
+        description: [item.subtitle, item.keywords].filter(Boolean).join(" ").toLowerCase(),
     }));
     const { matchedResults } = searchObjectsByKeys(records, PALETTE_SEARCH_KEYS, query, ["name", "description"]);
     const itemsById = new Map(items.map((item) => [item.id, item]));

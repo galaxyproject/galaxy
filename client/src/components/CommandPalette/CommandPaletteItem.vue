@@ -16,7 +16,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "select", event: MouseEvent): void;
-    (e: "hover"): void;
+    (e: "highlight"): void;
 }>();
 </script>
 
@@ -31,7 +31,7 @@ const emit = defineEmits<{
         :aria-selected="props.active ? 'true' : 'false'"
         data-description="palette option"
         @click="emit('select', $event)"
-        @mousemove="emit('hover')">
+        @mousemove="emit('highlight')">
         <span class="item-icon" aria-hidden="true">
             <FontAwesomeIcon v-if="props.item.icon" fixed-width :icon="props.item.icon" />
         </span>
