@@ -57,7 +57,7 @@ const ACTIONS: ActionDefinition[] = [
 
 function actionItems(ctx: PaletteContext): PaletteItem[] {
     return ACTIONS.filter((action) => action.anonymous || !ctx.isAnonymous).map(
-        ({ anonymous, ...item }) => item,
+        ({ anonymous: _anonymous, ...item }) => item,
     );
 }
 

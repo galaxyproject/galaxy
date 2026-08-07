@@ -63,9 +63,7 @@ const selectedItem = computed(() => flatItems.value[selectedIndex.value]);
 
 const activeDescendant = computed(() => (selectedItem.value ? optionId(selectedIndex.value) : undefined));
 
-const reservedHint = computed(() =>
-    reservedPrefix.value ? RESERVED_PREFIX_LABELS[reservedPrefix.value] : undefined,
-);
+const reservedHint = computed(() => (reservedPrefix.value ? RESERVED_PREFIX_LABELS[reservedPrefix.value] : undefined));
 
 const modifierLabel = computed(() => (eventStore.isMac ? "⌘" : "Ctrl+"));
 
@@ -127,9 +125,7 @@ async function runSearch() {
             }),
         );
         if (epoch === searchEpoch) {
-            sections.value = results
-                .filter((section) => section.items.length > 0)
-                .sort((a, b) => b.score - a.score);
+            sections.value = results.filter((section) => section.items.length > 0).sort((a, b) => b.score - a.score);
             selectedIndex.value = 0;
         }
     } finally {
@@ -237,6 +233,8 @@ watchImmediate(isPaletteOpen, async (open) => {
 </script>
 
 <template>
+    <!-- Clicking the backdrop is a mouse-only close shortcut; keyboard users have escape -->
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -->
     <dialog
         ref="dialogElement"
         class="command-palette"
@@ -244,7 +242,11 @@ watchImmediate(isPaletteOpen, async (open) => {
         @click="onClickDialog"
         @close="onDialogClose">
         <div class="palette-input">
-            <FontAwesomeIcon class="palette-input-icon" fixed-width :icon="searching ? faSpinner : faSearch" :spin="searching" />
+            <FontAwesomeIcon
+                class="palette-input-icon"
+                fixed-width
+                :icon="searching ? faSpinner : faSearch"
+                :spin="searching" />
 
             <!-- eslint-disable-next-line vuejs-accessibility/no-autofocus -->
             <input
@@ -255,6 +257,7 @@ watchImmediate(isPaletteOpen, async (open) => {
                 role="combobox"
                 autocomplete="off"
                 spellcheck="false"
+                aria-label="Search Galaxy"
                 aria-haspopup="listbox"
                 aria-expanded="true"
                 placeholder="Search Galaxy…  (> commands, t: tools)"
@@ -274,22 +277,19 @@ watchImmediate(isPaletteOpen, async (open) => {
 
                 <CommandPaletteItem
                     v-for="(item, itemIdx) in section.items"
-                    :key="item.id"
                     :id="optionId(optionIndex(sectionIdx, itemIdx))"
+                    :key="item.id"
                     :active="optionIndex(sectionIdx, itemIdx) === selectedIndex"
                     :item="item"
                     @select="runItem(item, $event)"
-                    @hover="selectedIndex = optionIndex(sectionIdx, itemIdx)" />
+                    @highlight="selectedIndex = optionIndex(sectionIdx, itemIdx)" />
             </div>
 
             <div v-if="reservedHint" class="palette-hint" data-description="palette reserved hint">
                 <code>{{ reservedPrefix }}:</code> searches {{ reservedHint }} — coming in a future update.
             </div>
 
-            <div
-                v-else-if="flatItems.length === 0 && !searching"
-                class="palette-hint"
-                data-description="palette empty">
+            <div v-else-if="flatItems.length === 0 && !searching" class="palette-hint" data-description="palette empty">
                 No results.
             </div>
         </div>
@@ -299,7 +299,9 @@ watchImmediate(isPaletteOpen, async (open) => {
 
             <span><kbd>↵</kbd> open</span>
 
-            <span><kbd>{{ modifierLabel }}↵</kbd> new tab</span>
+            <span
+                ><kbd>{{ modifierLabel }}↵</kbd> new tab</span
+            >
 
             <span><kbd>esc</kbd> close</span>
         </div>
