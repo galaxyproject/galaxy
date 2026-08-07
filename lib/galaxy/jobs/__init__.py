@@ -2353,7 +2353,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if getattr(self.app.config, "enable_crypt4gh_transparent_staging", False) and CRYPT4GH_CLEANUP_FAILED_MARKER in (tool_stderr or ""):
             cleanup_failure_msg = (
                 "Crypt4GH plaintext cleanup failed on compute side — "
-                "plaintext staging artifacts may remain. "
+                "plaintext data may remain on the compute node. "
                 "Contact the compute site administrator."
             )
             if final_job_state == job.states.OK:
@@ -2583,7 +2583,7 @@ class MinimalJobWrapper(HasResourceParameters):
             except Exception:
                 cleanup_msg = (
                     "Crypt4GH plaintext cleanup failed — "
-                    "plaintext staging artifacts may remain on the compute side. "
+                    "plaintext data may remain on the compute node. "
                     "Contact the compute site administrator."
                 )
                 log.exception("(%d) %s", self.job_id, cleanup_msg)
