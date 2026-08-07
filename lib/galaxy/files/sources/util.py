@@ -15,6 +15,7 @@ from galaxy.files import (
 from galaxy.files.models import (
     FilesSourceOptions,
     PartialFilesSourceProperties,
+    RealizedSourceMetadata,
 )
 from galaxy.files.uris import stream_url_to_file
 from galaxy.util import (
@@ -40,6 +41,9 @@ def sanitize_drs_name(name: Any) -> Optional[str]:
     A DRS server can put anything in this field, and it ends up both as a dataset name and
     as an input to downstream filename construction, so strip it down to a single path
     component with no control characters. Returns None if nothing usable is left.
+
+    Not :func:`galaxy.util.sanitize_for_filename` - that mangles legitimate Unicode and
+    substitutes a random id rather than reporting failure.
     """
     if not isinstance(name, str):
         return None
@@ -361,7 +365,7 @@ def fetch_drs_to_file(
     retry_options: Optional[RetryOptions] = None,
     headers: Optional[dict] = None,
     fetch_url_allowlist: Optional[list[IpAllowedListEntryT]] = None,
-    metadata_out: Optional[dict] = None,
+    metadata_out: Optional[RealizedSourceMetadata] = None,
 ):
     """Fetch contents of drs:// URI to a target path.
 

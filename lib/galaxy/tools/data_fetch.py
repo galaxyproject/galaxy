@@ -22,6 +22,7 @@ from galaxy.datatypes.upload_util import (
 from galaxy.files.models import (
     FilesSourceOptions,
     PartialFilesSourceProperties,
+    RealizedSourceMetadata,
 )
 from galaxy.files.uris import (
     ensure_file_sources,
@@ -566,7 +567,7 @@ def _has_src_to_path(
 
         # Populated by file sources that can report a better name than the URI offers -
         # a DRS URI's last path segment is typically an opaque identifier.
-        source_metadata: dict[str, Any] = {}
+        source_metadata: RealizedSourceMetadata = {}
         try:
             path = stream_url_to_file(
                 url,

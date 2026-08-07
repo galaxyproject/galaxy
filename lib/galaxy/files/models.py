@@ -16,6 +16,7 @@ from pydantic import (
     ConfigDict,
     Field,
 )
+from typing_extensions import TypedDict
 
 from galaxy.files.sources._defaults import (
     DEFAULT_SCHEME,
@@ -454,10 +455,19 @@ def resolve_file_source_template(
     return resolved_config_class(**expanded_dict)
 
 
-class FilesSourceRuntimeContext(Generic[TResolvedConfig]):
-    """Context for file source operations, providing user data and resolved configuration."""
+class RealizedSourceMetadata(TypedDict, total=False):
+    """What a file source learned while realizing a source - every key optional."""
 
-    def __init__(self, user_data: UserData, config: TResolvedConfig, metadata_out: Optional[dict] = None):
+    name: str
+
+
+class FilesSourceRuntimeContext(Generic[TResolvedConfig]):
+    """Context for file source operations: user data, resolved configuration, and an
+    optional channel for a source to report metadata back to the caller."""
+
+    def __init__(
+        self, user_data: UserData, config: TResolvedConfig, metadata_out: Optional[RealizedSourceMetadata] = None
+    ):
         self._user_data = user_data
         self._config = config
         self._metadata_out = metadata_out
@@ -473,7 +483,7 @@ class FilesSourceRuntimeContext(Generic[TResolvedConfig]):
         return self._config
 
     @property
-    def metadata_out(self) -> Optional[dict]:
+    def metadata_out(self) -> Optional[RealizedSourceMetadata]:
         """Caller-supplied dict a file source may populate with metadata about the realized source.
 
         This is how a file source reports back things it learns while realizing a

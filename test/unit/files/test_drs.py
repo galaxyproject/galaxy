@@ -13,6 +13,7 @@ from galaxy.files import (
     DictFileSourcesUserContext,
     ProvidesFileSourcesUserContext,
 )
+from galaxy.files.models import RealizedSourceMetadata
 from galaxy.files.sources.util import sanitize_drs_name
 from ._util import (
     assert_realizes_as,
@@ -166,7 +167,7 @@ def test_file_source_drs_http():
 
         # The DRS object's own name is reported back through metadata_out so callers can
         # name the dataset something better than the identifier in the URI.
-        metadata_out: dict[str, Any] = {}
+        metadata_out: RealizedSourceMetadata = {}
         with tempfile.NamedTemporaryFile(mode="r") as temp:
             file_source_pair.file_source.realize_to(
                 file_source_pair.path, temp.name, user_context=user_context, metadata_out=metadata_out
@@ -204,7 +205,7 @@ def test_file_source_drs_omits_unusable_name_from_metadata():
         user_context = user_context_fixture()
         file_sources = configured_file_sources(FILE_SOURCES_CONF)
         file_source_pair = file_sources.get_file_source_path(test_url)
-        metadata_out: dict[str, Any] = {}
+        metadata_out: RealizedSourceMetadata = {}
         with tempfile.NamedTemporaryFile(mode="r") as temp:
             file_source_pair.file_source.realize_to(
                 file_source_pair.path, temp.name, user_context=user_context, metadata_out=metadata_out

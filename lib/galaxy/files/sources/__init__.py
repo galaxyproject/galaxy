@@ -31,6 +31,7 @@ from galaxy.files.models import (
     FilesSourceProperties,
     FilesSourceRuntimeContext,
     FilesSourceTemplateContext,
+    RealizedSourceMetadata,
     resolve_file_source_template,
     TResolvedConfig,
     TTemplateConfig,
@@ -114,7 +115,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         native_path: str,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
-        metadata_out: Optional[dict] = None,
+        metadata_out: Optional[RealizedSourceMetadata] = None,
     ):
         """Realize source path (relative to uri root) to local file system path.
 
@@ -129,7 +130,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         :param metadata_out: An optional dict the file source may populate with metadata about the
             realized source that isn't derivable from the URI - currently only a ``name`` key
             reported by the DRS file source. Filesource specific, defaults to None
-        :type metadata_out: Optional[dict], optional
+        :type metadata_out: Optional[RealizedSourceMetadata], optional
         """
 
     @abc.abstractmethod
@@ -468,7 +469,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self,
         opts: Optional[FilesSourceOptions] = None,
         user_context: "OptionalUserContext" = None,
-        metadata_out: Optional[dict] = None,
+        metadata_out: Optional[RealizedSourceMetadata] = None,
     ) -> FilesSourceRuntimeContext:
         """
         Get the runtime context for this file source, resolving the template configuration
@@ -603,7 +604,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         native_path: str,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
-        metadata_out: Optional[dict] = None,
+        metadata_out: Optional[RealizedSourceMetadata] = None,
     ):
         self._check_user_access(user_context)
         self._check_credentials_fresh()

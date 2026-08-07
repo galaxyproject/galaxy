@@ -15,7 +15,10 @@ from galaxy.files import (
     ConfiguredFileSources,
     NoMatchingFileSource,
 )
-from galaxy.files.models import FilesSourceOptions
+from galaxy.files.models import (
+    FilesSourceOptions,
+    RealizedSourceMetadata,
+)
 from galaxy.util import (
     stream_to_open_named_file,
     unicodify,
@@ -44,7 +47,7 @@ def stream_url_to_file(
     user_context=None,
     target_path: Optional[str] = None,
     file_source_opts: Optional[FilesSourceOptions] = None,
-    metadata_out: Optional[dict] = None,
+    metadata_out: Optional[RealizedSourceMetadata] = None,
 ) -> str:
     """Stream ``url`` to a local path and return that path.
 
