@@ -518,7 +518,9 @@ def _directory_to_items(directory):
 
 def _has_src_to_name(item) -> Optional[str]:
     # Logic should broadly match logic of _has_src_to_path but not resolve the item
-    # into a path.
+    # into a path. Deliberately does not consult file source metadata the way
+    # _has_src_to_path does - a DRS name would require the very fetch deferral avoids,
+    # so deferred DRS datasets keep the URI basename.
     name = item.get("name")
     src = item.get("src")
     if src == "url":
