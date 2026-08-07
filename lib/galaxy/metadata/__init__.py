@@ -38,8 +38,13 @@ except Exception:
     METADATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, "metadata")
     EXPORT_STORE_DIRECTORY = os.path.join(METADATA_DIRECTORY, "outputs_populated")
     os.makedirs(EXPORT_STORE_DIRECTORY, exist_ok=True)
-    with open(os.path.join(EXPORT_STORE_DIRECTORY, "traceback.txt"), "w") as out:
-        out.write(traceback.format_exc())
+    traceback_path = os.path.join(EXPORT_STORE_DIRECTORY, "traceback.txt")
+    # Don't overwrite a traceback from remote_tool_eval.py — that failure is
+    # the root cause and should be surfaced to the user, not masked by the
+    # secondary metadata-collection failure.
+    if not os.path.exists(traceback_path):
+        with open(traceback_path, "w") as out:
+            out.write(traceback.format_exc())
     raise
 """
 
