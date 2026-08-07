@@ -919,6 +919,16 @@ mapping:
           Galaxy never handles private keys or plaintext payload bytes.
           Example: ``http://127.0.0.1:47419``
 
+      crypt4gh_cleanup_failure_is_job_failure:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          When true, Crypt4GH plaintext cleanup failures on the compute side
+          are treated as job failures, preventing successful job completion
+          if plaintext staging artifacts cannot be removed.  Recommended for
+          sensitive deployments.
+
       datatypes_disable_auto:
         type: bool
         default: false

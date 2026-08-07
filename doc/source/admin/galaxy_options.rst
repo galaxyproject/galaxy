@@ -1254,6 +1254,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``crypt4gh_cleanup_failure_is_job_failure``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When true, Crypt4GH plaintext cleanup failures on the compute side
+    are treated as job failures, preventing successful job completion
+    if plaintext staging artifacts cannot be removed.  Recommended for
+    sensitive deployments.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``datatypes_disable_auto``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

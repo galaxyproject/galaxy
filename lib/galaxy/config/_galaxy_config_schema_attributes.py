@@ -97,6 +97,7 @@ class GalaxyAppConfigurationAttributes:
     sniff_compressed_dynamic_datatypes_default: bool
     enable_crypt4gh_transparent_staging: bool
     crypt4gh_reencryption_service_url: str | None
+    crypt4gh_cleanup_failure_is_job_failure: bool
     datatypes_disable_auto: bool
     visualization_plugins_directory: str
     tour_config_dir: str

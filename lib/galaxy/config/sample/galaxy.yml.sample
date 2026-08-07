@@ -998,6 +998,12 @@ galaxy:
   # Example: ``http://127.0.0.1:47419``
   #crypt4gh_reencryption_service_url: null
 
+  # When true, Crypt4GH plaintext cleanup failures on the compute side
+  # are treated as job failures, preventing successful job completion if
+  # plaintext staging artifacts cannot be removed.  Recommended for
+  # sensitive deployments.
+  #crypt4gh_cleanup_failure_is_job_failure: false
+
   # Disable the 'Auto-detect' option for file uploads
   #datatypes_disable_auto: false
 
