@@ -424,6 +424,7 @@ export const useToolStore = defineStore("toolStore", () => {
         saveAllTools,
         saveToolForId,
         saveToolResults,
+        toolResults,
         searchWorker,
         sectionDatalist,
         setPanel,
