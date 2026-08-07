@@ -1029,7 +1029,15 @@ def finalize_discovered_crypt4gh_payloads(
                 designation = match.groupdict().get("designation") if match.groupdict() else None
                 designation = designation or source_path.stem
                 encrypted_ext = str(spec["encrypted_ext"])
-                output_path = str(source_path.with_name(f"{source_path.name}.c4gh"))
+                # Encrypt the discovered plaintext file in place: the file keeps its
+                # original name (so Galaxy's pattern discovery still matches it) while
+                # its bytes become a Crypt4GH payload.  finalize_about_to_persist_crypt4gh_payload
+                # -> _finalize_output_target copies output_path to the plaintext staging
+                # area (_crypt/outputs/discovered/<designation>/plaintext, removed by
+                # cleanup_crypt4gh_plaintext_artifacts) and os.replace-s the encrypted
+                # result back onto output_path.  Pointing output_path at a non-existent
+                # ``*.c4gh`` sidecar (the previous behaviour) made that copyfile fail.
+                output_path = str(source_path)
 
                 finalize_about_to_persist_crypt4gh_payload(
                     output_path=output_path,
@@ -1047,8 +1055,6 @@ def finalize_discovered_crypt4gh_payloads(
                     plaintext_root_paths=cast(Sequence[str], spec.get("plaintext_root_paths", [])),
                     clear_compute_keypair=False,
                 )
-                os.replace(source_path, source_path.with_suffix(f"{source_path.suffix}.plaintext"))
-                os.replace(output_path, source_path)
 
                 payload_metadata.append(
                     {
