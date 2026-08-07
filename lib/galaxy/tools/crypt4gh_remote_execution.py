@@ -1108,6 +1108,9 @@ def collect_discovery_crypt4gh_output_specs(
                     "discovered_marker_map_path": discovered_marker_map_path,
                     "allowed_root_paths": [str(Path(working_directory).resolve())],
                     "plaintext_root_paths": [str(Path(working_directory).resolve())],
+                    "extra_files_manifest_dir": str(
+                        Path(working_directory) / "_c4gh_stage" / "outputs"
+                    ),
                 }
             )
 
@@ -1183,6 +1186,18 @@ def finalize_discovered_crypt4gh_payloads(
                     clear_compute_keypair=False,
                 )
 
+                # Encrypt any extra files in a sibling _files directory.
+                _finalize_discovered_extra_files(
+                    source_path=source_path,
+                    encrypted_ext=encrypted_ext,
+                    designation=designation,
+                    reencryption_service_url=reencryption_service_url,
+                    compute_public_key=compute_public_key,
+                    compute_keypair_id=compute_keypair_id,
+                    compute_keypair_expiration_date=compute_keypair_expiration_date,
+                    spec=spec,
+                )
+
                 payload_metadata.append(
                     {
                         "output_name": str(spec.get("output_name", "")),
@@ -1193,6 +1208,82 @@ def finalize_discovered_crypt4gh_payloads(
                 )
 
     return payload_metadata
+
+
+def _finalize_discovered_extra_files(
+    *,
+    source_path: Path,
+    encrypted_ext: str,
+    designation: str,
+    reencryption_service_url: str,
+    compute_public_key: str,
+    compute_keypair_id: str,
+    compute_keypair_expiration_date: str | None,
+    spec: Mapping[str, Any],
+) -> None:
+    """Encrypt extra files for a discovered dataset.
+
+    Looks for a sibling ``_files`` directory next to *source_path* (derived
+    via :func:`dataset_path_to_extra_path`).  If it exists and contains
+    files, each non-``.c4gh`` file is encrypted in-place using the same
+    compute key.  A manifest is written to the marker directory for
+    host-side verification.
+    """
+    extra_files_path_str = dataset_path_to_extra_path(str(source_path))
+    extra_files_path = Path(extra_files_path_str)
+    if not extra_files_path.exists() or not extra_files_path.is_dir():
+        return None
+
+    manifest_dir = Path(str(spec.get("extra_files_manifest_dir", "") or ""))
+    designation_token = _safe_discovered_designation_token(designation)
+    manifest_path = manifest_dir / f"designation_{designation_token}.extra_files_manifest.json" if manifest_dir else None
+
+    allowed_root_paths = cast(Sequence[str], spec.get("allowed_root_paths", []))
+    plaintext_root_paths = cast(Sequence[str], spec.get("plaintext_root_paths", []))
+
+    manifest: dict[str, str] = {}
+    for root, _dirs, files in os.walk(extra_files_path):
+        root_path = Path(root)
+        for file_name in files:
+            file_path = root_path / file_name
+            if file_name.endswith(_CRYPT4GH_FILE_SUFFIX):
+                # Already encrypted — record in manifest and skip.
+                rel = os.path.relpath(file_path, extra_files_path).replace(os.sep, "/")
+                manifest[rel] = encrypted_ext
+                continue
+
+            rel_path = os.path.relpath(file_path, extra_files_path)
+            normalized_rel_path = rel_path.replace(os.sep, "/")
+            encrypted_rel_path = _encrypted_extra_files_relative_path(relative_path=normalized_rel_path)
+            encrypted_file_path = extra_files_path / encrypted_rel_path
+
+            # Rename the plaintext file to the .c4gh path before encryption,
+            # consistent with declared output extra files handling.
+            encrypted_file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.rename(encrypted_file_path)
+
+            finalize_about_to_persist_crypt4gh_payload(
+                output_path=str(encrypted_file_path),
+                plaintext_path=str(
+                    encrypted_file_path.parent / f"{encrypted_file_path.name}.plaintext"
+                ),
+                encrypted_ext=encrypted_ext,
+                reencryption_service_url=reencryption_service_url,
+                compute_public_key=compute_public_key,
+                compute_keypair_id=compute_keypair_id,
+                compute_keypair_expiration_date=compute_keypair_expiration_date,
+                encrypted_marker_path="",
+                dataset_output_path="",
+                allowed_root_paths=allowed_root_paths,
+                plaintext_root_paths=plaintext_root_paths,
+                clear_compute_keypair=False,
+            )
+            _assert_crypt4gh_payload_header(path=encrypted_file_path)
+            manifest[encrypted_rel_path] = encrypted_ext
+
+    if manifest and manifest_path:
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(json.dumps({"files": manifest}))
 
 
 def emit_crypt4gh_galaxy_metadata(
@@ -1506,13 +1597,13 @@ def finalize_declared_crypt4gh_outputs(
                 compute_public_key=compute_public_key,
                 compute_keypair_id=compute_keypair_id,
             )
-            output_metadata.append(payload_metadata)
             _finalize_extra_files_payloads(
                 concrete_target=concrete_target,
                 reencryption_service_url=reencryption_service_url,
                 compute_public_key=compute_public_key,
                 compute_keypair_id=compute_keypair_id,
             )
+            output_metadata.append(payload_metadata)
     except Exception:
         _purge_output_targets_after_finalization_failure(resolved_targets)
         raise
