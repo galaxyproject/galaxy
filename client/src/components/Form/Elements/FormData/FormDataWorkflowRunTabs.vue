@@ -18,11 +18,14 @@ import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
 import UploadMethodViewInline from "@/components/Panels/Upload/UploadMethodViewInline.vue";
 
-const WorkflowRunTabs: Record<string, number> = {
+const WorkflowRunTabs = {
     view: 0,
     upload: 1,
     create: 2,
-};
+} as const;
+
+type WorkflowTabKey = keyof typeof WorkflowRunTabs;
+const workflowTabKeys = Object.keys(WorkflowRunTabs) as WorkflowTabKey[];
 
 const props = defineProps<{
     currentVariant?: VariantInterface | null;
@@ -42,9 +45,9 @@ const emit = defineEmits<{
 }>();
 
 const currentWorkflowTab = computed({
-    get: () => WorkflowRunTabs[props.workflowTab] ?? -1,
+    get: () => (props.workflowTab in WorkflowRunTabs ? WorkflowRunTabs[props.workflowTab as WorkflowTabKey] : -1),
     set: (value) => {
-        emit("update:workflow-tab", Object.keys(WorkflowRunTabs).find((key) => WorkflowRunTabs[key] === value) || "");
+        emit("update:workflow-tab", workflowTabKeys.find((key) => WorkflowRunTabs[key] === value) || "");
     },
 });
 
