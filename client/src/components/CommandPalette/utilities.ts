@@ -50,14 +50,20 @@ export function parsePaletteQuery(raw: string, providers: CommandPaletteProvider
     return { query: trimmed };
 }
 
+export interface ScoredPaletteItem {
+    item: PaletteItem;
+    /** Match quality from the shared scorer, higher is better */
+    order: number;
+}
+
 /**
- * Ranks palette items against a query, reusing the tool panel's weighted
+ * Scores palette items against a query, reusing the tool panel's weighted
  * scorer. Items that do not match are dropped; an empty query returns all
- * items unchanged.
+ * items unchanged with a neutral score.
  */
-export function rankPaletteItems(items: PaletteItem[], query: string): PaletteItem[] {
+export function scorePaletteItems(items: PaletteItem[], query: string): ScoredPaletteItem[] {
     if (!query.trim()) {
-        return items;
+        return items.map((item) => ({ item, order: 0 }));
     }
     const records = items.map((item) => ({
         id: item.id,
@@ -71,6 +77,13 @@ export function rankPaletteItems(items: PaletteItem[], query: string): PaletteIt
     const itemsById = new Map(items.map((item) => [item.id, item]));
     return matchedResults
         .sort((a, b) => b.order - a.order)
-        .map((match) => itemsById.get(match.id))
-        .filter((item): item is PaletteItem => Boolean(item));
+        .flatMap((match) => {
+            const item = itemsById.get(match.id);
+            return item ? [{ item, order: match.order }] : [];
+        });
+}
+
+/** Like {@link scorePaletteItems}, returning only the ordered items */
+export function rankPaletteItems(items: PaletteItem[], query: string): PaletteItem[] {
+    return scorePaletteItems(items, query).map((scored) => scored.item);
 }
