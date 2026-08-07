@@ -46,7 +46,10 @@ from galaxy.job_execution.compute_environment import (
     dataset_path_to_extra_path,
     SharedComputeEnvironment,
 )
-from galaxy.util.crypt4gh import read_crypt4gh_header
+from galaxy.util.crypt4gh import (
+    CRYPT4GH_CLEANUP_FAILED_MARKER,
+    read_crypt4gh_header,
+)
 
 try:
     _optional_truststore: Any = importlib.import_module("truststore")
@@ -227,7 +230,6 @@ class Crypt4GHRemoteExecutionError(Exception):
     """Raised when execution-side Crypt4GH setup must fail closed."""
 
 
-CRYPT4GH_PLAINTEXT_CLEANUP_FAILED_MARKER = "CRYPT4GH_PLAINTEXT_CLEANUP_FAILED"
 _DEFAULT_MINIMUM_TTL = timedelta(days=1)
 _DESTINATION_WALLTIME_BUFFER = timedelta(hours=1)
 _CRYPT4GH_FILE_SUFFIX = ".c4gh"
@@ -776,16 +778,6 @@ def _ensure_crypt4gh_inputs_workspace(working_directory: str) -> Path:
     return workspace
 
 
-def cleanup_crypt4gh_plaintext_artifacts(*, working_directory: str) -> None:
-    """Delete staged Crypt4GH plaintext input and output directories."""
-
-    crypt_root = Path(working_directory) / "_crypt"
-    for child_name in ("inputs", "outputs"):
-        child_path = crypt_root / child_name
-        if child_path.exists():
-            shutil.rmtree(child_path)
-
-
 def _format_crypt4gh_public_key(public_key: bytes) -> str:
     encoded_public_key = base64.b64encode(public_key).decode("ascii")
     return "\n".join(
@@ -1178,7 +1170,7 @@ def build_crypt4gh_postrun_command(
         f"PYTHONPATH={shlex.quote(galaxy_lib_dir)}:$PYTHONPATH "
         f"{shlex.quote(python_executable)} -c {shlex.quote(postrun_script)}"
     )
-    cleanup_script = f"from galaxy.tools.crypt4gh_remote_execution import cleanup_crypt4gh_plaintext_artifacts; cleanup_crypt4gh_plaintext_artifacts(working_directory={json.dumps(working_directory)})"
+    cleanup_script = f"from galaxy.util.crypt4gh import cleanup_crypt4gh_plaintext_artifacts; cleanup_crypt4gh_plaintext_artifacts(working_directory={json.dumps(working_directory)})"
     cleanup_command = (
         f"PYTHONPATH={shlex.quote(galaxy_lib_dir)}:$PYTHONPATH "
         f"{shlex.quote(python_executable)} -c {shlex.quote(cleanup_script)}"
@@ -2500,7 +2492,7 @@ def build_crypt4gh_cleanup_wrapped_command(
         include_exit_checks=False,
     )
     marker_line = (
-        f'    echo "{CRYPT4GH_PLAINTEXT_CLEANUP_FAILED_MARKER}: cleanup failed with exit code '
+        f'    echo "{CRYPT4GH_CLEANUP_FAILED_MARKER}: cleanup failed with exit code '
         '${_CRYPT4GH_CLEANUP_EXIT}" >&2'
     )
     lines.extend(
@@ -2518,9 +2510,6 @@ def build_crypt4gh_cleanup_wrapped_command(
             "fi",
             "if [ $_CRYPT4GH_POSTRUN_EXIT -ne 0 ]; then",
             "    exit $_CRYPT4GH_POSTRUN_EXIT",
-            "fi",
-            "if [ $_CRYPT4GH_CLEANUP_EXIT -ne 0 ]; then",
-            "    exit $_CRYPT4GH_CLEANUP_EXIT",
             "fi",
         ]
     )
