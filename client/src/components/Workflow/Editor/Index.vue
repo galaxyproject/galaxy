@@ -114,7 +114,7 @@ const uid = unref(useUid("workflow-editor-"));
 // Central `id` ref and stores setup
 const id = ref(props.workflowId || uid);
 
-const { connectionStore, stepStore, stateStore, commentStore, undoRedoStore } = provideScopedWorkflowStores(id.value);
+const { connectionStore, stepStore, stateStore, commentStore, undoRedoStore } = provideScopedWorkflowStores(id);
 
 const { captureTransformAndBounds, calculateAdjustedTransform } = useWorkflowBoundingBox(id.value);
 
