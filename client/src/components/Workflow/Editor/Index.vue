@@ -1043,9 +1043,17 @@ async function onSave(): Promise<boolean> {
 
         versions.value = await getVersions(id.value);
 
-        name.value = data.name;
-        version.value = data.version as number;
-        annotation.value = data.annotation;
+        // Mirror loadEditorData and only take fields the response actually carries,
+        // otherwise a partial response blanks out the in-memory workflow.
+        if (data.name !== undefined) {
+            name.value = data.name;
+        }
+        if (data.version !== undefined) {
+            version.value = data.version as number;
+        }
+        if (data.annotation !== undefined) {
+            annotation.value = data.annotation;
+        }
 
         hideErrorModal();
 
@@ -1058,7 +1066,7 @@ async function onSave(): Promise<boolean> {
         }
 
         await loadCurrent(id.value, version.value);
-        syncVersionToRoute(version.value, true);
+        syncVersionToRoute(version.value ?? undefined, true);
     } catch (response) {
         onWorkflowError("Saving workflow failed...", errorMessageAsString(response));
         return false;
