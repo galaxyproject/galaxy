@@ -67,6 +67,7 @@ import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
 import SearchPanel from "@/components/Panels/SearchPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 import WorkflowLint from "@/components/Workflow/Editor/Lint.vue";
@@ -690,11 +691,11 @@ async function onClone(stepId: string) {
     }
 }
 
-function onInsertTool(toolId: string, toolName: string) {
+function onInsertTool(toolId: string, toolName: string, toolUuid?: string) {
     if (blockedWhileLoading("inserting a tool")) {
         return;
     }
-    insertStep(toolId, toolName, "tool", undefined);
+    insertStep(toolId, toolName, "tool", undefined, toolUuid);
 }
 
 function onInsertModule(
