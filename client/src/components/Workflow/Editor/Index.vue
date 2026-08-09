@@ -329,21 +329,6 @@ const showSaveChangesModal = ref(false);
 const saveChangesAppendVersion = ref(false);
 const navUrl = ref("");
 
-const rightPanelElement = ref<HTMLElement | null>(null);
-function scrollToTop() {
-    rightPanelElement.value?.scrollTo({
-        top: 0,
-        behavior: "instant",
-    });
-}
-// Scroll to top when the active node changes
-watch(
-    () => stateStore.activeNodeId,
-    () => {
-        scrollToTop();
-    },
-);
-
 // Comments, Steps and State stores
 const { comments } = storeToRefs(commentStore);
 const { steps, duplicateLabels } = storeToRefs(stepStore);
@@ -429,9 +414,6 @@ const workflowData = computed<Workflow>(() => ({
 
 /** Is true when we are on a fresh workflow editor with no ID yet (uncreated workflow) */
 const isNewTempWorkflow = computed(() => !props.workflowId);
-
-/** Boolean flag to toggle the visibility of the credentials dropdown menu in the top bar */
-const showCredentialsDropdown = ref(false);
 
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
@@ -1462,9 +1444,7 @@ initializeWorkflowEditor();
                             right
                             variant="link"
                             style="z-index: 60000"
-                            title="Workflow contains steps that require credentials"
-                            @show="() => (showCredentialsDropdown = true)"
-                            @hide="() => (showCredentialsDropdown = false)">
+                            title="Workflow contains steps that require credentials">
                             <template v-slot:button-content>
                                 <FontAwesomeIcon :icon="faKey" fixed-width />
                             </template>
