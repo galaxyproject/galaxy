@@ -455,6 +455,10 @@ const { bestPracticesActivity, exitWorkflowActivity, runWorkflowActivity } = use
     })),
 );
 
+/** Activities passed to the activity bar as a stable array, so the prop identity
+ * does not change on every render of this component. */
+const specialActivities = computed(() => [bestPracticesActivity.value]);
+
 /** Markdown Editor labels */
 const getLabels = computed(() => fromSteps(steps.value));
 
@@ -1319,7 +1323,7 @@ initializeWorkflowEditor();
             ref="activityBar"
             data-description="workflow editor activity bar"
             :default-activities="workflowActivities"
-            :special-activities="[bestPracticesActivity]"
+            :special-activities="specialActivities"
             :exit-activity="exitWorkflowActivity"
             :run-activity="runWorkflowActivity"
             activity-bar-id="workflow-editor"
