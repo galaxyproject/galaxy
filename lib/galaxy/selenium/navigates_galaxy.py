@@ -1881,7 +1881,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if save_workflow:
             save_button = self.components.workflow_editor.save_button
             save_button.wait_for_visible()
-            assert not save_button.has_class("disabled")
+            assert not save_button.has_class("g-disabled")
             save_button.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name

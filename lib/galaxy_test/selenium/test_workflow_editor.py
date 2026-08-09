@@ -73,7 +73,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
         # shouldn't have changes on fresh load
         save_button = self.components.workflow_editor.save_button
-        save_button.has_class("g-disabled")
+        assert save_button.has_class("g-disabled")
 
         self.screenshot("workflow_editor_blank")
 
@@ -1330,7 +1330,7 @@ steps:
         save_button = self.components.workflow_editor.save_button
         save_button.wait_for_visible()
         # TODO: hook up best practice panel, disable save when "when" not connected
-        # assert save_button.has_class("disabled")
+        # assert save_button.has_class("g-disabled")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
