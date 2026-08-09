@@ -1397,7 +1397,7 @@ initializeWorkflowEditor();
 
         <template v-if="reportActive">
             <MarkdownEditor
-                :markdown-text="report.markdown || reportDefault"
+                :markdown-text="report.markdown ?? ''"
                 mode="report"
                 :title="'Workflow Report Template: ' + name"
                 :labels="getLabels"
