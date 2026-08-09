@@ -11,7 +11,7 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { until, useMagicKeys, whenever } from "@vueuse/core";
+import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
 import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormTextarea } from "bootstrap-vue";
 import type { ZoomTransform } from "d3-zoom";
@@ -35,6 +35,7 @@ import { Services } from "@/components/Workflow/services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useToast } from "@/composables/toast";
+import { useMagicKeys } from "@/composables/useMagicKeys";
 import { useUid } from "@/composables/utils/uid";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { getAppRoot } from "@/onload/loadConfig";
