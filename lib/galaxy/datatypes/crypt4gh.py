@@ -213,7 +213,6 @@ class Crypt4GH(Binary):
         headers["Content-Length"] = str(file_size)
         headers["content-type"] = "application/octet-stream"
         headers["Content-Disposition"] = self.download_content_disposition(data, to_ext, **kwd)
-        
 
         return open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb"), headers
 

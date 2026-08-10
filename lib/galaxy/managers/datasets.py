@@ -877,22 +877,24 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         super().add_deserializers()
         deletable.PurgableDeserializerMixin.add_deserializers(self)
 
-        self.deserializers.update(
-            {
-                "name": self.deserialize_basestring,
-                "info": self.deserialize_basestring,
-                "datatype": self.deserialize_datatype,
-            }
-        )
+        dataset_deserializers: dict[str, base.Deserializer] = {
+            "name": self.deserialize_basestring,
+            "info": self.deserialize_basestring,
+            "datatype": self.deserialize_datatype,
+            "metadata": self.deserialize_metadata,
+        }
+        self.deserializers.update(dataset_deserializers)
         self.deserializable_keyset.update(self.deserializers.keys())
 
     # TODO: untested
-    def deserialize_metadata(self, dataset_assoc, metadata_key, metadata_dict, **context):
+    def deserialize_metadata(self, item, key, val, **context):
         """ """
+        metadata_key = key
+        metadata_dict = val
         self.validate.matches_type(metadata_key, metadata_dict, dict)
         returned = {}
-        for key, val in metadata_dict.items():
-            returned[key] = self.deserialize_metadatum(dataset_assoc, key, val, **context)
+        for metadata_name, metadata_val in metadata_dict.items():
+            returned[metadata_name] = self.deserialize_metadatum(item, metadata_name, metadata_val, **context)
         return returned
 
     def deserialize_metadatum(self, dataset_assoc, key, val, **context):
