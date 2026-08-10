@@ -30,7 +30,6 @@ import galaxy.datatypes.registry
 import galaxy.model.mapping
 from galaxy.datatypes import sniff
 from galaxy.datatypes.data import validate
-from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
     collect_extra_files,
@@ -69,6 +68,7 @@ from galaxy.tool_util.parser.stdio import (
 )
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.util import (
+    dataset_path_to_extra_path,
     safe_contains,
     stringify_dictionary_keys,
     unicodify,

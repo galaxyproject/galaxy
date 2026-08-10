@@ -901,6 +901,16 @@ def in_directory(file, directory, local_path_module=os.path):
     return _safe_contains(directory, file)
 
 
+def dataset_path_to_extra_path(path: str) -> str:
+    """Return the extra-files path for a dataset path.
+
+    Given a dataset file path ending in ``.dat``, return the sibling
+    ``_files`` directory path used for extra-files storage.
+    """
+    base_path = path[0 : -len(".dat")]
+    return f"{base_path}_files"
+
+
 def merge_sorted_iterables(operator, *iterables):
     """
 

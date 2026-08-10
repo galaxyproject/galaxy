@@ -31,7 +31,7 @@ from typing import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
+from galaxy.util import dataset_path_to_extra_path
 
 if TYPE_CHECKING:
     from galaxy.model import (
