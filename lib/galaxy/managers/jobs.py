@@ -2267,7 +2267,11 @@ class JobSubmitter:
                 # API dataset materialization is immutable and produces new datasets
                 # here we just created the datasets - lets just materialize them in place
                 # and avoid extra and confusing input copies
-                self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
+                materialized = self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
+                if not materialized:
+                    raise RequestParameterInvalidException(
+                        f"Failed to fetch dataset from '{to_materialize.request.url}'"
+                    )
             if request.data_manager_mode:
                 tool_request.request["__data_manager_mode"] = request.data_manager_mode
             credentials_context = (
