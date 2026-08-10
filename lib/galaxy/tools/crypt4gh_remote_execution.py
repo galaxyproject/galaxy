@@ -217,8 +217,6 @@ def _post_many_reencryption_json(
 
 
 class _Crypt4GHAppConfig(Protocol):
-    enable_crypt4gh_transparent_input_matching: bool
-    enable_crypt4gh_remote_execution_staging: bool
     enable_crypt4gh_transparent_staging: bool
     outputs_to_working_directory: bool
     metadata_strategy: str
@@ -360,10 +358,7 @@ Crypt4GHComputeEnvironment = Crypt4GHRemoteComputeEnvironment
 
 
 def _crypt4gh_staging_enabled(app_config: _Crypt4GHAppConfig) -> bool:
-    return bool(
-        getattr(app_config, "enable_crypt4gh_remote_execution_staging", False)
-        or getattr(app_config, "enable_crypt4gh_transparent_staging", False)
-    )
+    return bool(getattr(app_config, "enable_crypt4gh_transparent_staging", False))
 
 
 def build_crypt4gh_remote_compute_environment(
@@ -561,7 +556,7 @@ def should_run_crypt4gh_remote_execution(
     """Decide whether execution-side Crypt4GH setup is allowed for this job.
 
     The helper is intentionally small for the Task 3 contract:
-    - top-level gate: ``enable_crypt4gh_remote_execution_staging``
+    - top-level gate: ``enable_crypt4gh_transparent_staging``
     - execution path only when ``tool_evaluation_strategy == "remote"``
     - only if at least one Crypt4GH input dataset is present
     - setup failures must fail closed
@@ -580,7 +575,7 @@ def should_run_crypt4gh_remote_execution(
     if provided_metadata_style == "legacy":
         raise Crypt4GHRemoteExecutionError(
             "Crypt4GH remote execution is not supported for tools with legacy provided_metadata_style; "
-            "use a tool with profile >= 17.09 or set provided_metadata_style to \"default\""
+            'use a tool with profile >= 17.09 or set provided_metadata_style to "default"'
         )
 
     effective_minimum_ttl = _minimum_ttl_for_destination(
@@ -603,18 +598,12 @@ def assert_crypt4gh_job_readiness(
 ) -> None:
     """Fail closed when Crypt4GH transparent-adapted jobs are misconfigured.
 
-    Transparent input matching and remote execution staging are intentionally split:
-    transparent input matching may be enabled alone, but if a job depends on
-    transparent adaptation (tool input does not explicitly accept ``.c4gh``),
-    remote-execution prerequisites must be satisfied.
+    If a job depends on transparent adaptation (tool input does not
+    explicitly accept ``.c4gh``), staging prerequisites must be satisfied.
     """
 
-    remote_execution_staging_enabled = bool(getattr(app_config, "enable_crypt4gh_remote_execution_staging", False))
-    transparent_input_matching_enabled = bool(getattr(app_config, "enable_crypt4gh_transparent_input_matching", False))
-
     required_remote_settings = [
-        "enable_crypt4gh_transparent_input_matching = true",
-        "enable_crypt4gh_remote_execution_staging = true",
+        "enable_crypt4gh_transparent_staging = true",
         "tool_evaluation_strategy = remote",
         "outputs_to_working_directory = true",
         "metadata_strategy = extended",
@@ -624,21 +613,15 @@ def assert_crypt4gh_job_readiness(
     def _missing_remote_settings_summary() -> str:
         return "; required settings: " + ", ".join(required_remote_settings)
 
-    if remote_execution_staging_enabled and not transparent_input_matching_enabled:
-        raise Crypt4GHRemoteExecutionError(
-            "Invalid Crypt4GH configuration: enable_crypt4gh_remote_execution_staging requires "
-            "enable_crypt4gh_transparent_input_matching = true" + _missing_remote_settings_summary()
-        )
-
     crypt4gh_input_names = _collect_crypt4gh_input_names(job_io=job_io)
     if not crypt4gh_input_names:
         return
 
     transparent_adapted_inputs = _collect_transparent_adapted_crypt4gh_input_names(job_io=job_io, tool=tool)
 
-    if not remote_execution_staging_enabled:
+    if not _crypt4gh_staging_enabled(app_config):
         raise Crypt4GHRemoteExecutionError(
-            "Crypt4GH input handling requires enable_crypt4gh_remote_execution_staging = true"
+            "Crypt4GH input handling requires enable_crypt4gh_transparent_staging = true"
             + _missing_remote_settings_summary()
         )
 
@@ -949,13 +932,9 @@ def _decrypt_extra_file(
             )
             crypt4gh.lib.decrypt([(0, job_private_key, None)], staged_stream, plaintext_stream)
     except OSError as exc:
-        raise Crypt4GHRemoteExecutionError(
-            f"Failed to read Crypt4GH extra file {source_path}: {exc}"
-        ) from exc
+        raise Crypt4GHRemoteExecutionError(f"Failed to read Crypt4GH extra file {source_path}: {exc}") from exc
     except Exception as exc:
-        raise Crypt4GHRemoteExecutionError(
-            f"Failed to decrypt Crypt4GH extra file {source_path}"
-        ) from exc
+        raise Crypt4GHRemoteExecutionError(f"Failed to decrypt Crypt4GH extra file {source_path}") from exc
 
 
 def collect_declared_crypt4gh_output_targets(
@@ -1066,7 +1045,9 @@ def collect_discovery_crypt4gh_output_specs(
 
     discovery_specs: list[dict[str, Any]] = []
     tool_working_directory = Path(working_directory) / "working"
-    discovered_marker_map_path = str(Path(working_directory) / "_c4gh_stage" / "outputs" / "discovered_designations.json")
+    discovered_marker_map_path = str(
+        Path(working_directory) / "_c4gh_stage" / "outputs" / "discovered_designations.json"
+    )
 
     for output_name, tool_output in tool_outputs.items():
         collectors = list(getattr(tool_output, "dataset_collector_descriptions", []) or [])
@@ -1108,9 +1089,7 @@ def collect_discovery_crypt4gh_output_specs(
                     "discovered_marker_map_path": discovered_marker_map_path,
                     "allowed_root_paths": [str(Path(working_directory).resolve())],
                     "plaintext_root_paths": [str(Path(working_directory).resolve())],
-                    "extra_files_manifest_dir": str(
-                        Path(working_directory) / "_c4gh_stage" / "outputs"
-                    ),
+                    "extra_files_manifest_dir": str(Path(working_directory) / "_c4gh_stage" / "outputs"),
                 }
             )
 
@@ -1151,7 +1130,11 @@ def finalize_discovered_crypt4gh_payloads(
                 if source_path.name.endswith(".c4gh"):
                     continue
 
-                candidate_text = str(source_path.relative_to(scan_root)) if bool(spec.get("match_relative_path", False)) else source_path.name
+                candidate_text = (
+                    str(source_path.relative_to(scan_root))
+                    if bool(spec.get("match_relative_path", False))
+                    else source_path.name
+                )
                 match = compiled_pattern.match(candidate_text)
                 if not match:
                     continue
@@ -1171,7 +1154,9 @@ def finalize_discovered_crypt4gh_payloads(
 
                 finalize_about_to_persist_crypt4gh_payload(
                     output_path=output_path,
-                    plaintext_path=str(Path(working_directory) / "_crypt" / "outputs" / "discovered" / designation / "plaintext"),
+                    plaintext_path=str(
+                        Path(working_directory) / "_crypt" / "outputs" / "discovered" / designation / "plaintext"
+                    ),
                     encrypted_ext=encrypted_ext,
                     reencryption_service_url=reencryption_service_url,
                     compute_public_key=compute_public_key,
@@ -1236,7 +1221,9 @@ def _finalize_discovered_extra_files(
 
     manifest_dir = Path(str(spec.get("extra_files_manifest_dir", "") or ""))
     designation_token = _safe_discovered_designation_token(designation)
-    manifest_path = manifest_dir / f"designation_{designation_token}.extra_files_manifest.json" if manifest_dir else None
+    manifest_path = (
+        manifest_dir / f"designation_{designation_token}.extra_files_manifest.json" if manifest_dir else None
+    )
 
     allowed_root_paths = cast(Sequence[str], spec.get("allowed_root_paths", []))
     plaintext_root_paths = cast(Sequence[str], spec.get("plaintext_root_paths", []))
@@ -1264,9 +1251,7 @@ def _finalize_discovered_extra_files(
 
             finalize_about_to_persist_crypt4gh_payload(
                 output_path=str(encrypted_file_path),
-                plaintext_path=str(
-                    encrypted_file_path.parent / f"{encrypted_file_path.name}.plaintext"
-                ),
+                plaintext_path=str(encrypted_file_path.parent / f"{encrypted_file_path.name}.plaintext"),
                 encrypted_ext=encrypted_ext,
                 reencryption_service_url=reencryption_service_url,
                 compute_public_key=compute_public_key,
@@ -2209,9 +2194,7 @@ def _rename_extra_files_payload_with_suffix_if_needed(
         context="finalize extra_files encrypted payload",
     )
     if encrypted_path.exists():
-        raise Crypt4GHRemoteExecutionError(
-            f"Crypt4GH extra_files encrypted payload already exists: {encrypted_path}"
-        )
+        raise Crypt4GHRemoteExecutionError(f"Crypt4GH extra_files encrypted payload already exists: {encrypted_path}")
 
     encrypted_path.parent.mkdir(parents=True, exist_ok=True)
     source_path.rename(encrypted_path)
@@ -2637,7 +2620,9 @@ def _verify_extra_files_payload_header_evidence(
             continue
 
         if payload_prefix != b"crypt4gh":
-            diagnostics.append(f"extra_files payload remained plaintext for dataset_id={dataset_id} path={relative_path}")
+            diagnostics.append(
+                f"extra_files payload remained plaintext for dataset_id={dataset_id} path={relative_path}"
+            )
 
 
 def _safe_discovered_designation_token(designation: str) -> str:
@@ -2777,7 +2762,7 @@ def build_crypt4gh_cleanup_wrapped_command(
         include_exit_checks=False,
     )
     marker_line = (
-        f'    echo "{CRYPT4GH_CLEANUP_FAILED_MARKER}: cleanup failed with exit code '
+        f'    echo "{CRYPT4GH_CLEANUP_FAILED_MARKER}: cleanup failed with exit code '  # noqa: ISC001
         '${_CRYPT4GH_CLEANUP_EXIT}" >&2'
     )
     lines.extend(

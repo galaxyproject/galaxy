@@ -57,8 +57,6 @@ class ToolAppConfig(NamedTuple):
 
 
 class Crypt4GHGateConfig(NamedTuple):
-    enable_crypt4gh_transparent_input_matching: bool = False
-    enable_crypt4gh_remote_execution_staging: bool = False
     enable_crypt4gh_transparent_staging: bool = False
     outputs_to_working_directory: bool = True
     metadata_strategy: str = "extended"
@@ -190,7 +188,9 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
             working_directory=working_directory,
         )
     else:
-        tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job_io.job))
+        tool_evaluator.set_compute_environment(
+            compute_environment=SharedComputeEnvironment(job_io=job_io, job=job_io.job)
+        )
 
     with open(os.path.join(working_directory, "tool_script.sh"), "a") as out:
         command_line, version_command_line, extra_filenames, environment_variables, *_ = tool_evaluator.build()
