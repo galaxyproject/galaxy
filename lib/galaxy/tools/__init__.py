@@ -38,7 +38,6 @@ from galaxy.exceptions import (
     ToolInputsNotReadyException,
 )
 from galaxy.job_execution import output_collect
-from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
     BaseJobContext,
     MetadataSourceProvider,
@@ -199,6 +198,7 @@ from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
     asbool,
+    dataset_path_to_extra_path,
     in_directory,
     Params,
     parse_xml_string,
