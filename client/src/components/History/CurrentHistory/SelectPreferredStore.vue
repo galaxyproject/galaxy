@@ -5,11 +5,14 @@ import { computed, type PropType, ref } from "vue";
 import { getPermissions, isHistoryPrivate, makePrivate, type PermissionsResponse } from "@/components/History/services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
+import { useToast } from "@/composables/toast";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
 import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
+
+const Toast = useToast();
 
 const props = defineProps({
     userPreferredObjectStoreId: {
@@ -35,8 +38,6 @@ const props = defineProps({
 });
 
 const { confirm } = useConfirmDialog();
-
-const error = ref();
 
 const newDatasetsDescription = "New dataset outputs from tools and workflows executed in this history";
 const galaxySelectionDefaultTitle = "Use Galaxy Defaults";
@@ -85,9 +86,8 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
             if (confirmed) {
                 try {
                     await makePrivate(props.history.id, permissionResponse);
-                } catch {
-                    error.value = "Failed to update default permissions for history.";
-                    throw new Error();
+                } catch (e) {
+                    throw new Error(errorMessageAsString(e || "Failed to update default permissions for history."));
                 }
             }
         }
@@ -95,13 +95,9 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
 
     const payload = { preferred_object_store_id: preferredObjectStoreId };
     const url = prependPath(`api/histories/${props.history.id}`);
-    try {
-        await axios.put(url, payload);
-        emit("updated", preferredObjectStoreId);
-    } catch (e) {
-        error.value = errorMessageAsString(e);
-        throw new Error();
-    }
+
+    await axios.put(url, payload);
+    emit("updated", preferredObjectStoreId);
 }
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
@@ -126,15 +122,15 @@ async function modalOk() {
     try {
         await handleSubmit(currentSelectedStoreId.value, currentSelectedStorePrivate.value);
         reset();
-    } catch (_e) {
-        // pass
+        emit("close");
+    } catch (e) {
+        Toast.error(errorMessageAsString(e), "Failed to update history storage location");
     }
 }
 
 function reset() {
     currentSelectedStoreId.value = props.preferredObjectStoreId;
     currentSelectedStorePrivate.value = false;
-    error.value = null;
 }
 </script>
 
@@ -148,12 +144,12 @@ function reset() {
         class="modal-select-history-storage-location"
         :ok-disabled="currentSelectedStoreId === props.preferredObjectStoreId"
         confirm
+        :close-on-ok="false"
         @cancel="reset"
         @close="emit('close')"
         @ok="modalOk">
         <SelectObjectStore
             :show-sub-setting="props.showSubSetting"
-            :parent-error="error"
             :for-what="newDatasetsDescription"
             :selected-object-store-id="currentSelectedStoreId"
             :default-option-title="defaultOptionTitle"
