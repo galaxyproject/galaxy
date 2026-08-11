@@ -11,6 +11,7 @@ import type { HistoryPageDetails, PageRevisionDetails, PageRevisionSummary } fro
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import GModal from "../BaseComponents/GModal.vue";
+import SaveChangesModal from "../Workflow/Editor/SaveChangesModal.vue";
 import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
 import PageEditorView from "./PageEditorView.vue";
@@ -27,7 +28,9 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-const mockPush = vi.fn();
+const mockPush = vi.fn().mockResolvedValue(undefined);
+const mockOnBeforeRouteLeave = vi.fn();
+const mockOnBeforeRouteUpdate = vi.fn();
 vi.mock("vue-router/composables", () => ({
     useRouter: vi.fn(() => ({
         push: mockPush,
@@ -35,9 +38,21 @@ vi.mock("vue-router/composables", () => ({
     useRoute: vi.fn(() => ({
         params: {},
     })),
-    onBeforeRouteLeave: vi.fn(),
-    onBeforeRouteUpdate: vi.fn(),
+    onBeforeRouteLeave: (guard: unknown) => mockOnBeforeRouteLeave(guard),
+    onBeforeRouteUpdate: (guard: unknown) => mockOnBeforeRouteUpdate(guard),
 }));
+
+/** Simulates vue-router invoking a captured onBeforeRouteLeave/onBeforeRouteUpdate guard. */
+function callGuard(mockRegister: typeof mockOnBeforeRouteLeave, toFullPath: string) {
+    const guard = mockRegister.mock.calls[mockRegister.mock.calls.length - 1]?.[0] as (
+        to: { fullPath: string },
+        from: unknown,
+        next: (arg?: false) => void,
+    ) => void;
+    const next = vi.fn();
+    guard({ fullPath: toFullPath }, {}, next);
+    return next;
+}
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: vi.fn(() => ({
@@ -98,6 +113,7 @@ function setupLoadedPage(historyId?: string) {
     store.currentContent = "# Hello";
     store.currentTitle = "My Page";
     vi.spyOn(store, "hasCurrentPage", "get").mockReturnValue(true);
+    vi.spyOn(store, "isDirty", "get").mockReturnValue(false);
     return store;
 }
 
@@ -114,10 +130,9 @@ describe("PageEditorView", () => {
 
     describe("Editor view (history mode)", () => {
         let wrapper: Wrapper<Vue>;
-        let store: ReturnType<typeof usePageEditorStore>;
 
         beforeEach(async () => {
-            store = setupLoadedPage(HISTORY_ID);
+            setupLoadedPage(HISTORY_ID);
             wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
         });
@@ -173,62 +188,85 @@ describe("PageEditorView", () => {
             wrapper.findComponent(PageDisplayToolbar).vm.$emit("back");
             expect(mockPush).toHaveBeenCalledWith("/pages/list");
         });
+    });
 
-        // TODO: We won't have a Save & View but will implement a save changes or ignore modal
-        // it("Save & View navigates to published page when WM inactive", async () => {
-        //     const store = usePageEditorStore();
-        //     store.currentPage = {
-        //         id: PAGE_ID,
-        //         history_id: null,
-        //         title: "My Page",
-        //         content: "# Hello",
-        //         update_time: "2024-01-01T00:00:00",
-        //         username: "testuser",
-        //         slug: "my-page",
-        //     } as Partial<HistoryPageDetails> as HistoryPageDetails;
-        //     store.currentContent = "modified";
-        //     store.currentTitle = "My Page";
+    describe("Unsaved changes guard", () => {
+        let wrapper: Wrapper<Vue>;
+        let store: ReturnType<typeof usePageEditorStore>;
 
-        //     const saveViewBtn = wrapper.find(SELECTORS.SAVE_VIEW_BUTTON);
-        //     // Mock location.href assignment
-        //     const hrefSpy = vi.spyOn(window, "location", "get").mockReturnValue({
-        //         ...window.location,
-        //         href: "",
-        //     } as unknown as Location);
-        //     await saveViewBtn.trigger("click");
-        //     await flushPromises();
+        beforeEach(async () => {
+            store = setupLoadedPage(HISTORY_ID);
+            wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
+            await flushPromises();
+        });
 
-        //     expect(store.savePage).toHaveBeenCalled();
-        //     hrefSpy.mockRestore();
-        // });
+        function makeDirty() {
+            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+        }
 
-        // it("Save & View uses router.push when WM is active", async () => {
-        //     mockGalaxyInstance.frame.active = true;
-        //     const store = usePageEditorStore();
-        //     store.currentPage = {
-        //         id: PAGE_ID,
-        //         history_id: null,
-        //         title: "My Page",
-        //         content: "# Hello",
-        //         update_time: "2024-01-01T00:00:00",
-        //     } as Partial<HistoryPageDetails> as HistoryPageDetails;
-        //     store.currentContent = "modified";
-        //     store.currentTitle = "My Page";
+        it("lets navigation through when there are no unsaved changes", () => {
+            const next = callGuard(mockOnBeforeRouteLeave, "/pages/list");
 
-        //     const saveViewBtn = wrapper.find(SELECTORS.SAVE_VIEW_BUTTON);
-        //     await saveViewBtn.trigger("click");
-        //     await flushPromises();
+            expect(next).toHaveBeenCalledWith();
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
+        });
 
-        //     expect(store.savePage).toHaveBeenCalled();
-        //     expect(mockPush).toHaveBeenCalledWith(
-        //         `/published/page?id=${PAGE_ID}&embed=true`,
-        //         expect.objectContaining({
-        //             title: "Report: My Page",
-        //             preventWindowManager: false,
-        //         }),
-        //     );
-        //     mockGalaxyInstance.frame.active = false;
-        // });
+        it("blocks navigation and opens SaveChangesModal when there are unsaved changes", async () => {
+            makeDirty();
+            const next = callGuard(mockOnBeforeRouteLeave, "/pages/list");
+            await wrapper.vm.$nextTick();
+
+            expect(next).toHaveBeenCalledWith(false);
+            const modal = wrapper.findComponent(SaveChangesModal);
+            expect(modal.props("showModal")).toBe(true);
+            expect(modal.props("navUrl")).toBe("/pages/list");
+        });
+
+        it("blocks in-editor navigation (onBeforeRouteUpdate) the same way", async () => {
+            makeDirty();
+            const next = callGuard(mockOnBeforeRouteUpdate, "/pages/editor?id=page-1&displayOnly=true");
+            await wrapper.vm.$nextTick();
+
+            expect(next).toHaveBeenCalledWith(false);
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(true);
+        });
+
+        it("Save proceeds: saves the page then navigates to the pending URL", async () => {
+            makeDirty();
+            callGuard(mockOnBeforeRouteLeave, "/pages/list");
+            await wrapper.vm.$nextTick();
+
+            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/pages/list", true, false, false);
+            await flushPromises();
+
+            expect(store.savePage).toHaveBeenCalled();
+            expect(mockPush).toHaveBeenCalledWith("/pages/list");
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
+        });
+
+        it("Don't Save proceeds: discards changes and navigates without saving", async () => {
+            makeDirty();
+            callGuard(mockOnBeforeRouteLeave, "/pages/list");
+            await wrapper.vm.$nextTick();
+
+            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/pages/list", false, true, false);
+            await flushPromises();
+
+            expect(store.savePage).not.toHaveBeenCalled();
+            expect(mockPush).toHaveBeenCalledWith("/pages/list");
+        });
+
+        it("Cancel: closes the modal and does not navigate", async () => {
+            makeDirty();
+            callGuard(mockOnBeforeRouteLeave, "/pages/list");
+            await wrapper.vm.$nextTick();
+
+            wrapper.findComponent(SaveChangesModal).vm.$emit("update:show-modal", false);
+            await flushPromises();
+
+            expect(store.savePage).not.toHaveBeenCalled();
+            expect(mockPush).not.toHaveBeenCalled();
+        });
     });
 
     describe("DisplayOnly mode", () => {
