@@ -37,6 +37,7 @@ from galaxy.tool_util.parameters.json import (
 from galaxy.tool_util.unittest_utils.parameters import (
     parameter_bundle_for_file,
     parameter_bundle_for_framework_tool,
+    parameter_bundle_for_internal_tool,
 )
 from galaxy.tool_util_models.parameters import (
     _INFINITY_SENTINEL,
@@ -80,6 +81,21 @@ def test_framework_tool_checks():
     parameter_spec = framework_tool_checks()
     for file in parameter_spec.keys():
         _test_file(file, parameter_spec, parameter_bundle_for_framework_tool(f"{file}.xml"))
+
+
+def test_data_fetch_upload_dataset():
+    bundle = parameter_bundle_for_internal_tool("lib/galaxy/tools/data_fetch.xml")
+    names = [p.name for p in bundle.parameters]
+    assert "files" not in names
+    assert "request_json" in names
+
+
+def test_upload1_upload_dataset():
+    bundle = parameter_bundle_for_internal_tool("tools/data_source/upload.xml")
+    names = [p.name for p in bundle.parameters]
+    assert "files" not in names
+    assert "files_metadata" not in names
+    assert "file_type" in names
 
 
 def test_single():

@@ -515,6 +515,10 @@ def input_models_for_page(page_source: PageSource, profile: float) -> List[ToolP
         if input_type == "display":
             # not a real input... just skip this. Should this be handled in the parser layer better?
             continue
+        if input_type == "upload_dataset":
+            continue
+        if input_type == "conditional" and input_source.get("value_from"):
+            continue
         tool_parameter_model = from_input_source(input_source, profile)
         input_models.append(tool_parameter_model)
     return input_models
