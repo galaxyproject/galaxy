@@ -20,7 +20,12 @@ import {
     useCollectionCreator,
 } from "./common/useCollectionCreator";
 import { usePairingSummary } from "./common/usePairingSummary";
-import { type AutoPairingResult, autoPairWithCommonFilters, guessNameForPair } from "./pairing";
+import {
+    type AutoPairingResult,
+    autoPairWithCommonFilters,
+    guessNameForPair,
+    splitIntoPairedAndUnpaired,
+} from "./pairing";
 
 import AutoPairing from "./common/AutoPairing.vue";
 import PairedOrUnpairedListCreatorHelp from "./PairedOrUnpairedListCreatorHelp.vue";
@@ -307,6 +312,63 @@ function initialize() {
 
 let hasInitialized = false;
 
+function knownRowIds(): Set<string> {
+    const ids = new Set<string>();
+    for (const row of rowData.value) {
+        if ("forward" in row.datasets) {
+            ids.add(row.datasets.forward.id);
+            ids.add(row.datasets.reverse.id);
+        } else {
+            ids.add(row.datasets.unpaired.id);
+        }
+    }
+    return ids;
+}
+
+/**
+ * Add rows for `elements` not already present in `rowData` (matched by id), auto-pairing
+ * them against each other using the current (or newly-detected) filters when applicable.
+ */
+function addNewElementsToRowData(elements: HistoryItemSummary[]) {
+    const existingIds = knownRowIds();
+    const newElements = elements.filter((el) => !existingIds.has(el.id));
+    if (newElements.length === 0) {
+        return;
+    }
+
+    if (!flatLists.value) {
+        // Filters may not have been detected yet if the creator first initialized with
+        // no elements (e.g. an empty history) so try again now that new elements arrived.
+        if (!currentForwardFilter.value || !currentReverseFilter.value) {
+            const { forwardFilter, reverseFilter } = autoPairWithCommonFilters(newElements, removeExtensions.value);
+            if (forwardFilter !== undefined && reverseFilter !== undefined) {
+                currentForwardFilter.value = forwardFilter;
+                currentReverseFilter.value = reverseFilter;
+            }
+        }
+
+        if (currentForwardFilter.value && currentReverseFilter.value) {
+            const { pairs, unpaired } = splitIntoPairedAndUnpaired(
+                newElements,
+                currentForwardFilter.value,
+                currentReverseFilter.value,
+                removeExtensions.value,
+            );
+            for (const pair of pairs) {
+                rowData.value.push(pairedRow(pair));
+            }
+            for (const el of unpaired) {
+                rowData.value.push(unpairedRow(el));
+            }
+            return;
+        }
+    }
+
+    for (const el of newElements) {
+        rowData.value.push(unpairedRow(el));
+    }
+}
+
 /**
  * Reconcile `rowData` with a changed `initialElements` without disturbing existing pairs:
  * add rows for newly-seen elements, drop rows for elements no longer present (splitting
@@ -334,20 +396,7 @@ function reconcileWithInitialElements(newInitialElements: HistoryItemSummary[]) 
         }
     }
 
-    const knownRowIds = new Set<string>();
-    for (const row of rowData.value) {
-        if ("forward" in row.datasets) {
-            knownRowIds.add(row.datasets.forward.id);
-            knownRowIds.add(row.datasets.reverse.id);
-        } else {
-            knownRowIds.add(row.datasets.unpaired.id);
-        }
-    }
-    for (const el of newInitialElements) {
-        if (!knownRowIds.has(el.id)) {
-            rowData.value.push(unpairedRow(el));
-        }
-    }
+    addNewElementsToRowData(newInitialElements);
 
     checkForDuplicates(false);
     _refresh();
