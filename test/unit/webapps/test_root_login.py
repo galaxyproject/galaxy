@@ -6,8 +6,6 @@ to be stashed in the login-next cookie *before* that bounce, because the OIDC ca
 has no other way to recover it -- see ``OIDC.callback`` in the ``authnz`` controller.
 """
 
-from typing import Optional
-
 import pytest
 
 from galaxy.util.bunch import Bunch
@@ -23,7 +21,7 @@ class StubTrans:
 
     def __init__(self, authenticators=(), oidc_providers=("tapis",)):
         self.cookies: dict[str, str] = {}
-        self.redirected_to: Optional[str] = None
+        self.redirected_to: str | None = None
         self.app = Bunch(
             config=Bunch(enable_oidc=True, oidc={name: {} for name in oidc_providers}),
             auth_manager=Bunch(authenticators=list(authenticators)),

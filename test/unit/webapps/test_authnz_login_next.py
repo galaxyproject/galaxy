@@ -5,8 +5,6 @@ the destination has to be validated -- doing it here covers every writer of the 
 including the ``next`` parameter accepted by ``OIDC.login``.
 """
 
-from typing import Optional
-
 import pytest
 
 from galaxy.util.bunch import Bunch
@@ -22,10 +20,10 @@ LANDING_PATH = "/tool_landings/1234-5678?public=true"
 class StubTrans:
     """The slice of the transaction interface ``OIDC.callback`` touches before it stops."""
 
-    def __init__(self, login_next_cookie: Optional[str]):
+    def __init__(self, login_next_cookie: str | None):
         self.user = None
         self._cookies = {LOGIN_NEXT_COOKIE_NAME: login_next_cookie}
-        self.login_redirect_url: Optional[str] = None
+        self.login_redirect_url: str | None = None
         self.app = Bunch(authnz_manager=Bunch(callback=self._callback))
 
     def get_cookie(self, name):
