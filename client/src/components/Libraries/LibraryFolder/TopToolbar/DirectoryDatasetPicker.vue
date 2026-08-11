@@ -269,6 +269,7 @@ watch(
         :ok-disabled="importDisable"
         size="medium"
         fixed-height
+        :close-on-ok="false"
         :title="title"
         @ok="onImport"
         @close="emit('onClose')">
