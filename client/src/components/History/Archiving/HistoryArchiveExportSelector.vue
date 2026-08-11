@@ -210,7 +210,7 @@ function onArchiveHistoryWithExport() {
         </GButton>
 
         <GModal :show.sync="isExportDialogOpen" title="Export history to permanent storage" size="medium" fixed-height>
-            <GTabs card vertical lazy class="export-option-tabs">
+            <GTabs card vertical lazy scrollable-content class="export-option-tabs">
                 <GTab id="to-remote-file-tab" title="To Repository" active>
                     <p>
                         <b>Exporting to a repository</b> will create a compressed archive of the history contents, copy

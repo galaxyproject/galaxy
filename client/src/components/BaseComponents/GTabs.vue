@@ -34,6 +34,8 @@ const props = withDefaults(
         card?: boolean;
         vertical?: boolean;
         lazy?: boolean;
+        /** For `vertical`tabs, enables scrollable content area while keeping the nav fixed. */
+        scrollableContent?: boolean;
     }>(),
     {
         value: undefined,
@@ -43,6 +45,7 @@ const props = withDefaults(
         card: false,
         vertical: false,
         lazy: false,
+        scrollableContent: false,
     },
 );
 
@@ -126,6 +129,7 @@ const navClasses = computed(() => ({
 // "tabs" class matches BTabs' outer div class for Selenium selector compatibility
 const containerClasses = computed(() => ({
     tabs: true,
+    "scrollable-content": props.scrollableContent,
     row: props.vertical,
     "no-gutters": props.vertical && props.card,
 }));
@@ -229,27 +233,29 @@ const TabTitleContent = defineComponent({
 </template>
 
 <style scoped lang="scss">
-// Vertical tabs: enable scrollable content while keeping nav fixed
-.tabs.row {
-    position: relative;
-    height: 100%;
-
-    // Nav column stays in normal flow on the left
-    .col-auto {
+// Vertical and `scrollableContent` tabs: enable scrollable content while keeping nav fixed
+.scrollable-content {
+    &.tabs.row {
         position: relative;
-        z-index: 1;
-    }
+        height: 100%;
 
-    // Content area fills remaining space with absolute positioning
-    .tab-content.col {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: auto;
-        width: calc(100% - 200px); // Adjust based on typical nav width
-        overflow-y: auto;
-        overflow-x: hidden;
+        // Nav column stays in normal flow on the left
+        .col-auto {
+            position: relative;
+            z-index: 1;
+        }
+
+        // Content area fills remaining space with absolute positioning
+        .tab-content.col {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: auto;
+            width: calc(100% - 200px); // Adjust based on typical nav width
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
     }
 }
 </style>
