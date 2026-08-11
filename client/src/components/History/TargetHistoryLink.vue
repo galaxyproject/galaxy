@@ -11,10 +11,16 @@ import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 interface Props {
     targetHistoryId: string;
     targetHistoryCaption?: string;
+    /**
+     * Whether to display the leading indicator (icon and caption) before the history link.
+     * @default true
+     */
+    hasLeadingIndicator?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     targetHistoryCaption: "History",
+    hasLeadingIndicator: true,
 });
 
 const historyStore = useHistoryStore();
@@ -26,7 +32,9 @@ const isCurrentTargetHistory = computed(() => {
 </script>
 <template>
     <span class="d-flex flex-gapx-1 align-items-center">
-        <FontAwesomeIcon :icon="faHdd" />{{ props.targetHistoryCaption }}:
+        <template v-if="props.hasLeadingIndicator">
+            <FontAwesomeIcon :icon="faHdd" />{{ props.targetHistoryCaption }}:
+        </template>
 
         <span v-if="props.targetHistoryId" class="history-link-wrapper d-flex flex-gapx-1 align-items-center">
             <SwitchToHistoryLink :history-id="props.targetHistoryId" />
