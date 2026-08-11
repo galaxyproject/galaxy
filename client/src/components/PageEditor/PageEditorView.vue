@@ -3,10 +3,11 @@ import { faCopy, faSpinner, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router/composables";
 
 import { PAGE_LABELS } from "@/components/Page/constants";
 import { useConfirmDialog } from "@/composables/confirmDialog.js";
+import { useSaveChangesModal } from "@/composables/useSaveChangesModal";
 import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type PageEditorMode, usePageEditorStore } from "@/stores/pageEditorStore";
@@ -72,15 +73,23 @@ const isOwnedPage = computed(() => userStore.matchesCurrentUsername(store.curren
 
 const showPermissions = ref(false);
 
+const { showSaveChangesModal, pendingNavUrl, handleSaveChangesProceed } = useSaveChangesModal(
+    computed(() => store.isDirty),
+    () => store.savePage(),
+    router,
+);
+
 onMounted(async () => {
     store.mode = editorMode.value;
     if (props.historyId) {
         store.setCurrentContext(props.historyId);
     }
     await store.loadPage(props.pageId);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 });
 
 onUnmounted(() => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
     if (!props.displayOnly) {
         // Clear editor-scoped state but leave store.error alone so a save failure
         // remains visible across the transient unmount/remount that error-state
@@ -98,49 +107,6 @@ watch(
     },
 );
 
-const showSaveChangesModal = ref(false);
-const pendingNavUrl = ref("");
-
-/**
- * Whether we're currently bypassing a check for a _dirty_ (unsaved) page.
- * Set when we know the user has already confirmed they want to navigate away
- * and we are in the process of navigating away.
- */
-let bypassDirtyGuard = false;
-
-// These checks are for navigating away from the editor when there are changes.
-// The save changes modal is used to decide whether to save, discard, or cancel the navigation.
-onBeforeRouteLeave((to, from, next) => {
-    if (store.isDirty && !bypassDirtyGuard) {
-        pendingNavUrl.value = to.fullPath;
-        showSaveChangesModal.value = true;
-        next(false);
-    } else {
-        next();
-    }
-});
-onBeforeRouteUpdate((to, from, next) => {
-    if (store.isDirty && !bypassDirtyGuard) {
-        pendingNavUrl.value = to.fullPath;
-        showSaveChangesModal.value = true;
-        next(false);
-    } else {
-        next();
-    }
-});
-
-async function handleSaveChangesProceed(url: string, forceSave: boolean, ignoreChanges: boolean) {
-    showSaveChangesModal.value = false;
-    if (forceSave) {
-        await store.savePage();
-    } else if (!ignoreChanges) {
-        return;
-    }
-    bypassDirtyGuard = true;
-    await router.push(url);
-    bypassDirtyGuard = false;
-}
-
 function handleBack() {
     if (props.invocationId) {
         router.push(`/workflows/invocations/${props.invocationId}/reports`);
@@ -148,6 +114,17 @@ function handleBack() {
         router.push(`/histories/${props.historyId}/pages`);
     } else {
         router.push("/pages/list");
+    }
+}
+
+/**
+ * If the page is dirty, prompt the user before leaving the page via non-internal navigation
+ * (e.g., closing the tab, refreshing page or navigating to a different site).
+ */
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+    if (store.isDirty) {
+        event.preventDefault();
+        event.returnValue = "";
     }
 }
 
