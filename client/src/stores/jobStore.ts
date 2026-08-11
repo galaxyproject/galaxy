@@ -4,37 +4,24 @@
  */
 
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { fetchJobs, type JobBaseModel, type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
-import type { JobsQueryParams } from "@/components/Jobs/JobsFilters";
+import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export const useJobStore = defineStore("jobStore", () => {
     const latestResponse = ref<ResponseVal | null>(null);
-    const allJobs = ref<JobBaseModel[]>([]);
 
-    /**
-     * Fetch a page of jobs and store them.
-     * @param offset Return jobs starting from this position
-     * @param limit Maximum number of jobs to return
-     * @param extraProps Additional filters
-     * @returns The fetched page of jobs
-     */
-    async function fetchAllJobs(offset = 0, limit = 20, extraProps?: JobsQueryParams) {
-        const jobs = await fetchJobs(offset, limit, extraProps);
-        jobs.forEach(storeJob);
-        return jobs;
-    }
-
-    function storeJob(job: JobBaseModel) {
-        const index = allJobs.value.findIndex((storedJob) => storedJob.id === job.id);
-        if (index >= 0) {
-            allJobs.value.splice(index, 1, job);
+    function updateJob(id: string, updatedData: Partial<ShowFullJobResponse>) {
+        if (storedJobs.value[id]) {
+            set(storedJobs.value, id, {
+                ...storedJobs.value[id],
+                ...updatedData,
+            });
         } else {
-            allJobs.value.push(job);
+            set(storedJobs.value, id, updatedData);
         }
     }
 
@@ -58,7 +45,14 @@ export const useJobStore = defineStore("jobStore", () => {
         getItemById: getJob,
         getItemLoadError: getJobLoadError,
         isLoadingItem: isLoadingJob,
+        storedItems: storedJobs,
     } = useKeyedCache<ShowFullJobResponse>(fetchJobById);
+
+    const sortedStoredJobs = computed(() => {
+        return Object.values(storedJobs.value)
+            .filter((job) => job !== undefined)
+            .sort((a, b) => new Date(b.update_time).getTime() - new Date(a.update_time).getTime());
+    });
 
     function pollJobUntilTerminal(params: FetchParams) {
         function poll() {
@@ -81,14 +75,13 @@ export const useJobStore = defineStore("jobStore", () => {
 
     return {
         fetchJob,
-        fetchAllJobs,
-        allJobs,
         saveLatestResponse,
         getJob,
         getJobLoadError,
         isLoadingJob,
         latestResponse,
         pollJobUntilTerminal,
-        storeJob,
+        sortedStoredJobs,
+        updateJob,
     };
 });

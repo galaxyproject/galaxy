@@ -91,7 +91,7 @@ export async function deleteJob(jobId: string, message?: string): Promise<boolea
  * @param offset Return jobs starting from this position
  * @param limit Maximum number of jobs to return
  * @param extraProps Additional query params, e.g. `user_id` or the filters built by `jobsFilterParams`
- * @returns List of jobs
+ * @returns A tuple of the list of jobs and the total number of matching jobs
  */
 export async function fetchJobs(offset = 0, limit = 20, extraProps?: JobsQueryParams) {
     const params = {
@@ -101,11 +101,12 @@ export async function fetchJobs(offset = 0, limit = 20, extraProps?: JobsQueryPa
         ...extraProps,
     } as Record<string, unknown>;
 
-    const { data, error } = await GalaxyApi().GET("/api/jobs", { params: { query: params } });
+    const { data, error, response } = await GalaxyApi().GET("/api/jobs", { params: { query: params } });
 
     if (error) {
         rethrowSimple(error);
     }
 
-    return data;
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
+    return [data, totalMatches] as const;
 }
