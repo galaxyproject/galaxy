@@ -35,6 +35,8 @@ vi.mock("vue-router/composables", () => ({
     useRoute: vi.fn(() => ({
         params: {},
     })),
+    onBeforeRouteLeave: vi.fn(),
+    onBeforeRouteUpdate: vi.fn(),
 }));
 
 vi.mock("@/stores/historyStore", () => ({
@@ -144,14 +146,8 @@ describe("PageEditorView", () => {
         it("back button navigates to history pages list", async () => {
             wrapper.findComponent(PageDisplayToolbar).vm.$emit("back");
 
-            expect(store.clearCurrentPage).toHaveBeenCalled();
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages`);
         });
-
-        // TODO: We won't have a Save & View but will implement a save changes or ignore modal
-        // it("hides save & view button in history mode", () => {
-        //     expect(wrapper.find(SELECTORS.SAVE_VIEW_BUTTON).exists()).toBe(false);
-        // });
     });
 
     describe("Editor view (standalone mode)", () => {
@@ -172,11 +168,6 @@ describe("PageEditorView", () => {
             const editor = wrapper.findComponent(MarkdownEditor);
             expect(editor.props("mode")).toBe("page");
         });
-
-        // TODO: We won't have a Save & View but will implement a save changes or ignore modal
-        // it("shows save & view button in standalone mode", () => {
-        //     expect(wrapper.find(SELECTORS.SAVE_VIEW_BUTTON).exists()).toBe(true);
-        // });
 
         it("back button navigates to pages list", async () => {
             wrapper.findComponent(PageDisplayToolbar).vm.$emit("back");

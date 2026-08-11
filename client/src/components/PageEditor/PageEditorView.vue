@@ -3,10 +3,8 @@ import { faCopy, faSpinner, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router/composables";
 
-// import { getGalaxyInstance } from "@/app";
-// import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
 import { PAGE_LABELS } from "@/components/Page/constants";
 import { useConfirmDialog } from "@/composables/confirmDialog.js";
 import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
@@ -16,6 +14,7 @@ import { useUserStore } from "@/stores/userStore.js";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
+import SaveChangesModal from "../Workflow/Editor/SaveChangesModal.vue";
 import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
 import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
@@ -99,8 +98,50 @@ watch(
     },
 );
 
+const showSaveChangesModal = ref(false);
+const pendingNavUrl = ref("");
+
+/**
+ * Whether we're currently bypassing a check for a _dirty_ (unsaved) page.
+ * Set when we know the user has already confirmed they want to navigate away
+ * and we are in the process of navigating away.
+ */
+let bypassDirtyGuard = false;
+
+// These checks are for navigating away from the editor when there are changes.
+// The save changes modal is used to decide whether to save, discard, or cancel the navigation.
+onBeforeRouteLeave((to, from, next) => {
+    if (store.isDirty && !bypassDirtyGuard) {
+        pendingNavUrl.value = to.fullPath;
+        showSaveChangesModal.value = true;
+        next(false);
+    } else {
+        next();
+    }
+});
+onBeforeRouteUpdate((to, from, next) => {
+    if (store.isDirty && !bypassDirtyGuard) {
+        pendingNavUrl.value = to.fullPath;
+        showSaveChangesModal.value = true;
+        next(false);
+    } else {
+        next();
+    }
+});
+
+async function handleSaveChangesProceed(url: string, forceSave: boolean, ignoreChanges: boolean) {
+    showSaveChangesModal.value = false;
+    if (forceSave) {
+        await store.savePage();
+    } else if (!ignoreChanges) {
+        return;
+    }
+    bypassDirtyGuard = true;
+    await router.push(url);
+    bypassDirtyGuard = false;
+}
+
 function handleBack() {
-    store.clearCurrentPage();
     if (props.invocationId) {
         router.push(`/workflows/invocations/${props.invocationId}/reports`);
     } else if (props.historyId) {
@@ -165,34 +206,6 @@ async function handleEdit() {
     }
 }
 
-// TODO: Uncomment when router guards with unsaved changes protection are implemented
-//       Before, we had a Save & View button that is now removed.
-// async function handleSaveAndView() {
-//     await store.savePage();
-//     if (props.invocationId) {
-//         router.push(`/workflows/invocations/${props.invocationId}/reports?id=${props.pageId}`);
-//         return;
-//     }
-//     if (store.currentPage) {
-//         const Galaxy = getGalaxyInstance();
-//         const isWmActive = Galaxy?.frame?.active;
-//         if (isWmActive) {
-//             const url = `/published/page?id=${props.pageId}&embed=true`;
-//             const options: RouterPushOptions = {
-//                 title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
-//                 preventWindowManager: false,
-//             };
-//             // @ts-ignore - monkeypatched router
-//             router.push(url, options);
-//         } else {
-//             const data = store.currentPage as any;
-//             if (data.username && data.slug) {
-//                 window.location.href = `/u/${data.username}/p/${data.slug}`;
-//             }
-//         }
-//     }
-// }
-
 function handleContentUpdate(newContent: string) {
     store.updateContent(newContent);
 }
@@ -209,6 +222,12 @@ function handleRevisionRestore(revisionId: string) {
 
 <template>
     <div class="page-editor-view d-flex flex-column h-100" data-description="page editor view">
+        <SaveChangesModal
+            :show-modal.sync="showSaveChangesModal"
+            :nav-url="pendingNavUrl"
+            :append-version="false"
+            @on-proceed="handleSaveChangesProceed" />
+
         <BAlert v-if="store.error" variant="danger" show dismissible @dismissed="store.error = null">
             {{ store.error }}
         </BAlert>
