@@ -2,7 +2,7 @@
 import axios from "axios";
 import { BCard, BCardGroup, BFormSelect, BFormSelectOption, BListGroup, BListGroupItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import type { AnyShareableItemWithStatus, ShareOption } from "@/api";
@@ -35,6 +35,14 @@ const permissionsChangeRequired = computed(() => {
         return props.item.extra.can_change.length > 0 || props.item.extra.cannot_change.length > 0;
     } else {
         return false;
+    }
+});
+
+const showPermissionsModal = ref(permissionsChangeRequired.value);
+
+watch(permissionsChangeRequired, (value) => {
+    if (value) {
+        showPermissionsModal.value = true;
     }
 });
 
@@ -99,6 +107,11 @@ const elementsNotFoundWarning = "No elements found. Consider changing the search
 function onCancel() {
     sharingCandidates.value = [...(props.item.users_shared_with ?? [])];
     emit("cancel");
+}
+
+function onPermissionsModalCancel() {
+    showPermissionsModal.value = false;
+    onCancel();
 }
 
 function onSubmit() {
@@ -214,14 +227,13 @@ defineExpose({
         <GModal
             class="user-sharing-modal"
             confirm
-            :show="permissionsChangeRequired"
+            :show.sync="showPermissionsModal"
             size="medium"
             title="Permissions Change Required"
             fixed-height
             data-description="sharing permissions change required"
             @ok="onUpdatePermissions"
-            @cancel="onCancel"
-            @close="onCancel">
+            @cancel="onPermissionsModalCancel">
             <GAlert v-if="canChangeCount > 0" variant="warning" dismissible>
                 This {{ modelClass }} contains {{ canChangeCount }}
                 {{ canChangeCount === 1 ? "dataset which is" : "datasets which are" }} exclusively private to you. You
