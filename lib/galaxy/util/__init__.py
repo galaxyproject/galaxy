@@ -1374,6 +1374,30 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
     return True
 
 
+CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def is_safe_local_redirect(path: Any) -> bool:
+    """Is ``path`` a relative URL that cannot leave this server?
+
+    Post-login redirect targets arrive from the query string, so they are attacker
+    supplied. Anything a browser could resolve to a different origin -- an absolute
+    URL, a protocol-relative ``//host``, or the backslash spelling browsers normalize
+    to it -- has to be refused.
+    """
+    if not isinstance(path, str) or not path:
+        return False
+    # A browser drops tabs and newlines before resolving a URL, so "/<TAB>/host" would
+    # reach the network as the protocol-relative "//host". Refuse control characters
+    # outright rather than accepting a value whose meaning changes later; surrounding
+    # whitespace gets trimmed the same way.
+    if path != path.strip() or CONTROL_CHARACTERS.search(path):
+        return False
+    if not path.startswith("/"):
+        return False
+    return path[1:2] not in ("/", "\\")
+
+
 def read_build_sites(filename, check_builds=True):
     """read db names to ucsc mappings from file, this file should probably be merged with the one above"""
     build_sites = []
