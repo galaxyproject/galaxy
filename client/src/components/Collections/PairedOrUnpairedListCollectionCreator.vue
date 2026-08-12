@@ -241,6 +241,23 @@ function checkForDuplicates(refresh: boolean) {
     return anyDuplicated;
 }
 
+// `RowT.id` (and thus AG Grid's `getRowId`) is namespaced by row kind so that a paired row and
+// an unpaired row can never collide on the same id . For e.g. when a pair is split back into a
+// lone survivor, the old pair row and the new unpaired row would otherwise both resolve to
+// the same forward.id, and AG Grid would treat it as an in-place update of the same row node
+// rather than a delete+insert, leaving cell renderers (like the discard button) holding a
+// stale reference to the old paired `datasets` value.
+
+/** Returns a namespaced row ID for an unpaired row. */
+function unpairedRowId(id: string): string {
+    return `single:${id}`;
+}
+
+/** Returns a namespaced row ID for a paired row. */
+function pairedRowId(forwardId: string): string {
+    return `pair:${forwardId}`;
+}
+
 function unpairedRow(item: HistoryItemSummary): RowT {
     let name = item.name || "";
     if (removeExtensions.value) {
@@ -250,11 +267,11 @@ function unpairedRow(item: HistoryItemSummary): RowT {
     if (props.collectionType.endsWith(":paired")) {
         status = "requires_pairing";
     }
-    return { identifier: name || "", datasets: { unpaired: item }, id: item.id, status: status };
+    return { identifier: name || "", datasets: { unpaired: item }, id: unpairedRowId(item.id), status: status };
 }
 
 function pairedRow(item: GenericPair<HistoryItemSummary>): RowT {
-    return { identifier: item.name, datasets: item, id: item.forward.id, status: "ok" };
+    return { identifier: item.name, datasets: item, id: pairedRowId(item.forward.id), status: "ok" };
 }
 
 function syncPairingToRowData(summary: AutoPairingResult<HistoryItemSummary>, rowDataValue: RowT[]) {
@@ -641,8 +658,10 @@ function onPair(firstId: string, secondId: string, pairBy: PairBy) {
     let reverse: HistoryItemSummary | null = null;
 
     const pairDirection = pairDirections[pairBy];
+    const firstRowId = unpairedRowId(firstId);
+    const secondRowId = unpairedRowId(secondId);
     rowData.value.forEach((row, index) => {
-        if (row.id == firstId && "unpaired" in row.datasets) {
+        if (row.id == firstRowId && "unpaired" in row.datasets) {
             firstIndex = index;
             if (pairDirection == "from_1_to_2") {
                 forward = row.datasets.unpaired as HistoryItemSummary;
@@ -650,7 +669,7 @@ function onPair(firstId: string, secondId: string, pairBy: PairBy) {
                 reverse = row.datasets.unpaired as HistoryItemSummary;
             }
         }
-        if (row.id == secondId && "unpaired" in row.datasets) {
+        if (row.id == secondRowId && "unpaired" in row.datasets) {
             secondIndex = index;
             if (pairDirection == "from_1_to_2") {
                 reverse = row.datasets.unpaired as HistoryItemSummary;
@@ -745,17 +764,18 @@ function onUnpairedClick(value: UnpairedValue) {
  * @param discard Whether to discard the item from future reconciliation. Defaults to `true`.
  */
 function onRemove(item: GenericPair<HistoryItemSummary> | UnpairedValue, refresh = true, discard = true) {
-    let rowId = null as string | null;
+    let rowId: string;
     if ("forward" in item) {
-        rowId = item.forward.id;
+        rowId = pairedRowId(item.forward.id);
         if (discard) {
+            discardedIds.add(item.forward.id);
             discardedIds.add(item.reverse.id);
         }
     } else {
-        rowId = item.unpaired.id;
-    }
-    if (discard && rowId !== null) {
-        discardedIds.add(rowId);
+        rowId = unpairedRowId(item.unpaired.id);
+        if (discard) {
+            discardedIds.add(item.unpaired.id);
+        }
     }
     let targetIndex = null;
     rowData.value.forEach((row, index) => {
