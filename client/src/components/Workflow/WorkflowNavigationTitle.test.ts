@@ -5,7 +5,9 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
+import type { AnyHistory } from "@/api";
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import WorkflowNavigationTitle from "./WorkflowNavigationTitle.vue";
@@ -22,6 +24,17 @@ const SAMPLE_WORKFLOW = {
     version: 1,
 };
 const IMPORT_ERROR_MESSAGE = "Failed to import workflow";
+
+// `getFakeRegisteredUser` always defaults to this id
+const CURRENT_USER_ID = "fake_user_id";
+const OTHER_USER_ID = "other-user-id";
+const UNOWNED_HISTORY_ID = "unowned-history-id";
+// Matches `sampleInvocation.history_id` so the component resolves it as the invocation's history
+const SAMPLE_HISTORY = {
+    id: sampleInvocation.history_id,
+    name: "history-name",
+    user_id: CURRENT_USER_ID,
+} as AnyHistory;
 
 const SELECTORS = {
     WORKFLOW_HEADING: "[data-description='workflow heading']",
@@ -67,12 +80,14 @@ const localVue = getLocalVue();
  * @param version The version of the component to mount (`run_form` or `invocation` view)
  * @param ownsWorkflow Whether the user owns the workflow associated with the invocation
  * @param unimportableWorkflow Whether the workflow import should fail
+ * @param ownsHistory Whether the current user owns the history associated with the invocation
  * @returns The wrapper object
  */
 async function mountWorkflowNavigationTitle(
     version: "run_form" | "invocation",
     ownsWorkflow = true,
     unimportableWorkflow = false,
+    ownsHistory = true,
 ) {
     let workflowId: string;
     let invocation;
@@ -87,17 +102,28 @@ async function mountWorkflowNavigationTitle(
         invocation = undefined;
     }
 
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+
+    const historyStore = useHistoryStore(pinia);
+    historyStore.setHistory(
+        ownsHistory ? SAMPLE_HISTORY : { ...SAMPLE_HISTORY, id: UNOWNED_HISTORY_ID, user_id: OTHER_USER_ID },
+    );
+    if (!ownsHistory && invocation) {
+        invocation = { ...invocation, history_id: UNOWNED_HISTORY_ID };
+    }
+
     const wrapper = shallowMount(WorkflowNavigationTitle as object, {
         propsData: {
             invocation,
             workflowId,
         },
         localVue,
-        pinia: createTestingPinia({ createSpy: vi.fn }),
+        pinia,
     });
 
     const userStore = useUserStore();
     userStore.currentUser = getFakeRegisteredUser({
+        id: CURRENT_USER_ID,
         username: ownsWorkflow ? WORKFLOW_OWNER : OTHER_USER,
     });
 
@@ -114,6 +140,13 @@ describe("WorkflowNavigationTitle renders", () => {
 
         const rerunButton = wrapper.find(SELECTORS.ROUTE_TO_RERUN_BUTTON);
         expect(rerunButton.attributes("title")).toContain("Rerun");
+    });
+
+    it("hides the rerun button if the user does not own the invocation's history", async () => {
+        const { wrapper } = await mountWorkflowNavigationTitle("invocation", true, false, false);
+
+        const rerunButton = wrapper.find(SELECTORS.ROUTE_TO_RERUN_BUTTON);
+        expect(rerunButton.exists()).toBe(false);
     });
 
     it("the workflow name in header and run button in actions; run form version", async () => {

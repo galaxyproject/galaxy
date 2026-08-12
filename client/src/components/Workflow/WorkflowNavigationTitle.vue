@@ -7,6 +7,7 @@ import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
+import { userOwnsHistory } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowSummary } from "@/api/workflows";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -45,7 +46,13 @@ const emit = defineEmits<{
 
 const { workflow, loading, error, owned } = useWorkflowInstance(props.workflowId);
 
-const { isAnonymous } = storeToRefs(useUserStore());
+const { isAnonymous, currentUser } = storeToRefs(useUserStore());
+
+const historyStore = useHistoryStore();
+const history = computed(() =>
+    props.invocation?.history_id ? historyStore.getHistoryById(props.invocation.history_id) : null,
+);
+const historyIsOwned = computed(() => (history.value ? userOwnsHistory(currentUser.value, history.value) : false));
 
 const importErrorMessage = ref<string | null>(null);
 const importedWorkflow = ref<WorkflowSummary | null>(null);
@@ -103,6 +110,12 @@ async function rerunWorkflow() {
         router.push(`/workflows/rerun?invocation_id=${props.invocation.id}`);
         return;
     }
+
+    if (!historyIsOwned.value) {
+        console.error("The running user is not the owner of the history with the original inputs for this workflow.");
+        return;
+    }
+
     const confirmed = await confirm(
         localize(
             "Rerunning this workflow requires changing the history to the one with the original inputs. Do you want to continue?",
@@ -196,6 +209,7 @@ async function rerunWorkflow() {
                             <span v-localize>Run</span>
                         </GButton>
                         <GButton
+                            v-if="historyIsOwned"
                             :title="localize('Rerun Workflow with same inputs')"
                             disabled-title="This workflow has been deleted."
                             data-button-rerun
