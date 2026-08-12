@@ -391,6 +391,23 @@ function addNewElementsToRowData(elements: HistoryItemSummary[]) {
     }
 }
 
+/** Matches the wording ListCollectionCreator/PairCollectionCreator use for the same situation. */
+function toastRemovedFromCollection(...items: HistoryItemSummary[]) {
+    const description = items.map((item) => `${item.hid}: ${item.name}`).join(", ");
+    const invalidMsg = `${description} ${localize("has been removed from the collection")}`;
+    Toast.error(invalidMsg, localize("Invalid element"));
+}
+
+/**
+ * A lesser-severity notice for datasets that disappeared but were never actually headed into
+ * the final collection to begin with (see the `strictPairs` cases below), so "removed from the
+ * collection" would overstate what happened.
+ */
+function toastNoLongerAvailable(item: HistoryItemSummary) {
+    const msg = `${item.hid}: ${item.name} ${localize("is no longer available and was removed from the pairing list")}`;
+    Toast.warning(msg, localize("Dataset unavailable"));
+}
+
 /**
  * Reconcile `rowData` with a changed `initialElements` without disturbing existing pairs:
  * add rows for newly-seen elements, drop rows for elements no longer present (splitting
@@ -399,21 +416,35 @@ function addNewElementsToRowData(elements: HistoryItemSummary[]) {
  */
 function reconcileWithInitialElements(newInitialElements: HistoryItemSummary[]) {
     const validIds = new Set(newInitialElements.map((el) => el.id));
+    const strictPairs = props.collectionType.endsWith(":paired");
 
     for (const row of [...rowData.value]) {
         if ("forward" in row.datasets) {
             const forwardValid = validIds.has(row.datasets.forward.id);
             const reverseValid = validIds.has(row.datasets.reverse.id);
             if (!forwardValid && !reverseValid) {
+                // The whole pair vanished; it was headed into the collection either way
+                // One toast for the pair, not one per side
                 onRemove(row.datasets, false, false);
+                toastRemovedFromCollection(row.datasets.forward, row.datasets.reverse);
             } else if (!forwardValid || !reverseValid) {
                 const survivor = forwardValid ? row.datasets.forward : row.datasets.reverse;
                 onRemove(row.datasets, false, false);
                 rowData.value.push(unpairedRow(survivor));
+                if (strictPairs) {
+                    toastNoLongerAvailable(forwardValid ? row.datasets.reverse : row.datasets.forward);
+                } else {
+                    toastRemovedFromCollection(forwardValid ? row.datasets.reverse : row.datasets.forward);
+                }
             }
         } else {
             if (!validIds.has(row.datasets.unpaired.id)) {
                 onRemove(row.datasets, false, false);
+                if (strictPairs) {
+                    toastNoLongerAvailable(row.datasets.unpaired);
+                } else {
+                    toastRemovedFromCollection(row.datasets.unpaired);
+                }
             }
         }
     }
