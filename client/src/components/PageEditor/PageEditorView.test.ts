@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type Vue from "vue";
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
 
 import type { HistoryPageDetails, PageRevisionDetails, PageRevisionSummary } from "@/api/pages";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
@@ -214,7 +214,7 @@ describe("PageEditorView", () => {
         it("blocks navigation and opens SaveChangesModal when there are unsaved changes", async () => {
             makeDirty();
             const next = callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(next).toHaveBeenCalledWith(false);
             const modal = wrapper.findComponent(SaveChangesModal);
@@ -225,7 +225,7 @@ describe("PageEditorView", () => {
         it("blocks in-editor navigation (onBeforeRouteUpdate) the same way", async () => {
             makeDirty();
             const next = callGuard(mockOnBeforeRouteUpdate, "/pages/editor?id=page-1&displayOnly=true");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(next).toHaveBeenCalledWith(false);
             expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(true);
@@ -234,7 +234,7 @@ describe("PageEditorView", () => {
         it("Save proceeds: saves the page then navigates to the pending URL", async () => {
             makeDirty();
             callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/pages/list", true, false, false);
             await flushPromises();
@@ -247,7 +247,7 @@ describe("PageEditorView", () => {
         it("Don't Save proceeds: discards changes and navigates without saving", async () => {
             makeDirty();
             callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/pages/list", false, true, false);
             await flushPromises();
@@ -256,10 +256,35 @@ describe("PageEditorView", () => {
             expect(mockPush).toHaveBeenCalledWith("/pages/list");
         });
 
+        it("keeps guarding subsequent navigation after a rejected router.push", async () => {
+            // We expect a rejection here, but we want to silence the console.error so it doesn't fail the test.
+            const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+            makeDirty();
+            mockPush.mockRejectedValueOnce(new Error("push failed"));
+            callGuard(mockOnBeforeRouteLeave, "/pages/list");
+            await nextTick();
+
+            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/pages/list", false, true, false);
+            await flushPromises();
+
+            expect(consoleErrorSpy).toHaveBeenCalled();
+
+            // bypassGuard must be reset even though the push rejected, so the next
+            // navigation attempt is still protected instead of silently passing through.
+            const next = callGuard(mockOnBeforeRouteLeave, "/pages/list");
+            await nextTick();
+
+            expect(next).toHaveBeenCalledWith(false);
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(true);
+
+            consoleErrorSpy.mockRestore();
+        });
+
         it("Cancel: closes the modal and does not navigate", async () => {
             makeDirty();
             callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             wrapper.findComponent(SaveChangesModal).vm.$emit("update:show-modal", false);
             await flushPromises();
@@ -346,7 +371,7 @@ describe("PageEditorView", () => {
 
             const revView = wrapper.findComponent(PageRevisionView);
             revView.vm.$emit("back");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(store.clearSelectedRevision).toHaveBeenCalled();
         });
@@ -368,7 +393,7 @@ describe("PageEditorView", () => {
 
             const revView = wrapper.findComponent(PageRevisionView);
             revView.vm.$emit("restore", "rev-1");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(store.restoreRevision).toHaveBeenCalledWith("rev-1");
         });
@@ -384,7 +409,7 @@ describe("PageEditorView", () => {
 
             const revList = wrapper.findComponent(PageRevisionList);
             revList.vm.$emit("select", "rev-1");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(store.loadRevision).toHaveBeenCalledWith("rev-1");
         });
@@ -402,7 +427,7 @@ describe("PageEditorView", () => {
 
             const revList = wrapper.findComponent(PageRevisionList);
             revList.vm.$emit("restore", "rev-1");
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(store.restoreRevision).toHaveBeenCalledWith("rev-1");
         });

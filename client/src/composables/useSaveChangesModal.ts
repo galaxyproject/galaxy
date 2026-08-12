@@ -60,8 +60,12 @@ export function useSaveChangesModal(isDirty: Ref<boolean>, onSave: () => Promise
             return;
         }
         bypassGuard = true;
-        await router.push(url);
-        bypassGuard = false;
+        try {
+            // Await the push and only reset the bypassGuard if it succeeds
+            await router.push(url);
+        } finally {
+            bypassGuard = false;
+        }
     }
 
     return {
