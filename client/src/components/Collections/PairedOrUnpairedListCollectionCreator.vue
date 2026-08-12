@@ -287,6 +287,7 @@ function syncRowDataToRowPairing() {
 }
 
 function initialize() {
+    discardedIds.clear();
     if (currentForwardFilter.value === undefined) {
         const summary = autoPairWithCommonFilters(props.initialElements, true);
         const { forwardFilter, reverseFilter } = summary;
@@ -312,6 +313,12 @@ function initialize() {
 
 let hasInitialized = false;
 
+/**
+ * IDs that the user has explicitly discarded from the grid. Used to ensure that on reconciliation
+ * with new `initialElements`, we don't resurrect any elements that the user has explicitly discarded.
+ */
+const discardedIds = new Set<string>();
+
 function knownRowIds(): Set<string> {
     const ids = new Set<string>();
     for (const row of rowData.value) {
@@ -331,7 +338,7 @@ function knownRowIds(): Set<string> {
  */
 function addNewElementsToRowData(elements: HistoryItemSummary[]) {
     const existingIds = knownRowIds();
-    const newElements = elements.filter((el) => !existingIds.has(el.id));
+    const newElements = elements.filter((el) => !existingIds.has(el.id) && !discardedIds.has(el.id));
     if (newElements.length === 0) {
         return;
     }
@@ -383,15 +390,15 @@ function reconcileWithInitialElements(newInitialElements: HistoryItemSummary[]) 
             const forwardValid = validIds.has(row.datasets.forward.id);
             const reverseValid = validIds.has(row.datasets.reverse.id);
             if (!forwardValid && !reverseValid) {
-                onRemove(row.datasets, false);
+                onRemove(row.datasets, false, false);
             } else if (!forwardValid || !reverseValid) {
                 const survivor = forwardValid ? row.datasets.forward : row.datasets.reverse;
-                onRemove(row.datasets, false);
+                onRemove(row.datasets, false, false);
                 rowData.value.push(unpairedRow(survivor));
             }
         } else {
             if (!validIds.has(row.datasets.unpaired.id)) {
-                onRemove(row.datasets, false);
+                onRemove(row.datasets, false, false);
             }
         }
     }
@@ -703,7 +710,7 @@ function _refresh() {
 }
 
 function onUnpair(pair: GenericPair<HistoryItemSummary>) {
-    const targetIndex = onRemove(pair, false) || 0;
+    const targetIndex = onRemove(pair, false, false) || 0;
     rowData.value.splice(targetIndex, 0, unpairedRow(pair.forward), unpairedRow(pair.reverse));
     _refresh();
 }
@@ -731,12 +738,24 @@ function onUnpairedClick(value: UnpairedValue) {
     }
 }
 
-function onRemove(item: GenericPair<HistoryItemSummary> | UnpairedValue, refresh = true) {
+/**
+ * Removes an item from the grid, optionally refreshing the grid and discarding the item from future reconciliation.
+ * @param item The item to remove from the grid.
+ * @param refresh Whether to refresh the grid after removal. Defaults to `true`.
+ * @param discard Whether to discard the item from future reconciliation. Defaults to `true`.
+ */
+function onRemove(item: GenericPair<HistoryItemSummary> | UnpairedValue, refresh = true, discard = true) {
     let rowId = null as string | null;
     if ("forward" in item) {
         rowId = item.forward.id;
+        if (discard) {
+            discardedIds.add(item.reverse.id);
+        }
     } else {
         rowId = item.unpaired.id;
+    }
+    if (discard && rowId !== null) {
+        discardedIds.add(rowId);
     }
     let targetIndex = null;
     rowData.value.forEach((row, index) => {
