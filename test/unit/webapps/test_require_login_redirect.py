@@ -1,0 +1,128 @@
+"""Tests for the ``require_login`` redirect built by ``GalaxyWebTransaction``.
+
+A deep link into Galaxy has to survive the round trip through the login flow, query
+string and all. Landing requests are the motivating case: the destination that matters
+is ``/tool_landings/<uuid>?public=true``, and dropping the query string silently
+orphans the landing request once the user finally logs in.
+
+This is a unit test rather than an integration test because the integration harness
+polls ``/`` for a 200 to decide the server is up, which never happens once
+``require_login`` is on.
+"""
+
+from typing import (
+    Any,
+    cast,
+)
+from urllib.parse import (
+    parse_qs,
+    urlparse,
+)
+
+import pytest
+import webob.exc
+from routes import request_config
+
+from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.model import GalaxySession
+from galaxy.util.bunch import Bunch
+from galaxy.webapps.base.webapp import (
+    GalaxyWebTransaction,
+    WebApplication,
+)
+
+LANDING_PATH = "/tool_landings/8a7f3c1e-0000-4000-8000-abcdef123456"
+LANDING_QUERY = "public=true"
+
+
+class StubGalaxyWebTransaction(GalaxyWebTransaction):
+    def _ensure_valid_session(self, session_cookie: str, create: bool = True) -> None:
+        pass
+
+
+class RoutedWebApplication(WebApplication):
+    def _instantiate_controller(self, type, app):
+        # Only the route map matters here, so skip building real controllers.
+        return object()
+
+
+def _trans_for(path: str, query_string: str = "", script_name: str = "") -> StubGalaxyWebTransaction:
+    app: Any = galaxy_mock.MockApp()
+    app.config.require_login = True
+    app.config.show_welcome_with_login = False
+    app.config.template_cache_path = "/tmp"
+    # The login gate consults these while deciding what bypasses require_login.
+    app.datatypes_registry = Bunch(get_display_sites=lambda name: [], display_applications={})
+
+    webapp = RoutedWebApplication(app)
+    # The two generic routes url_for resolves against -- see buildapp.app_pair.
+    webapp.add_route("/{controller}/{action}", action="index")
+    webapp.add_route("/{action}", controller="root", action="index")
+
+    routes_config = request_config()
+    routes_config.mapper = webapp.mapper
+    routes_config.host = "galaxy.example.org"
+    routes_config.protocol = "https"
+
+    environ = galaxy_mock.buildMockEnviron(PATH_INFO=path, QUERY_STRING=query_string, SCRIPT_NAME=script_name)
+    trans = StubGalaxyWebTransaction(environ, app, webapp, "galaxysession")
+    trans.galaxy_session = cast(GalaxySession, Bunch(user=None))
+    return trans
+
+
+def _login_redirect_for(path: str, query_string: str = "", script_name: str = "") -> str:
+    """Run the require_login gate and return where it sent the browser."""
+    trans = _trans_for(path, query_string, script_name)
+    with pytest.raises(webob.exc.HTTPFound) as caught:
+        trans._ensure_logged_in_user("galaxysession")
+    return caught.value.location
+
+
+def _redirect_param(location: str) -> str:
+    redirect = parse_qs(urlparse(location).query).get("redirect")
+    assert redirect, f"no redirect param carried on login redirect: {location}"
+    return redirect[0]
+
+
+def test_login_redirect_preserves_the_query_string():
+    location = _login_redirect_for(LANDING_PATH, LANDING_QUERY)
+    redirect = _redirect_param(location)
+    assert redirect.startswith(LANDING_PATH)
+    # The bug: only request.path was forwarded, so "?public=true" never made it here
+    # and the landing request was orphaned once the user came back from logging in.
+    assert LANDING_QUERY in redirect, f"query string dropped from login redirect: {redirect}"
+
+
+def test_login_redirect_without_a_query_string_is_unchanged():
+    redirect = _redirect_param(_login_redirect_for(LANDING_PATH))
+    assert redirect == LANDING_PATH
+
+
+def test_login_redirect_is_root_relative_under_a_prefix():
+    """Every consumer re-applies the app root, so it must not be in here already.
+
+    url_for on the way out of the OIDC callback, withPrefix on the local login path, and
+    the client router's `base` all prepend it -- a prefixed destination becomes
+    /galaxy/galaxy/... and 404s.
+    """
+    location = _login_redirect_for(LANDING_PATH, LANDING_QUERY, script_name="/galaxy")
+    redirect = _redirect_param(location)
+    assert redirect == f"{LANDING_PATH}?{LANDING_QUERY}"
+    assert not redirect.startswith("/galaxy"), f"app root leaked into the destination: {redirect}"
+
+
+def test_login_redirect_targets_the_login_entry_point():
+    location = _login_redirect_for(LANDING_PATH, LANDING_QUERY)
+    assert urlparse(location).path == "/login"
+
+
+@pytest.mark.parametrize("path", ["/login", "/login/start"])
+def test_login_routes_are_not_themselves_gated(path):
+    """The whole chain lands on one of these, so gating either one is an infinite loop.
+
+    /login redirects to /login/start, and both have to pass through the require_login
+    check or an anonymous user can never reach a login form at all.
+    """
+    trans = _trans_for(path, "redirect=%2Ftool_landings%2Fabc")
+    # No HTTPFound raised means the request was allowed through.
+    trans._ensure_logged_in_user("galaxysession")
