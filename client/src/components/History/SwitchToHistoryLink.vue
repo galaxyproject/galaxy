@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faArchive, faBurn } from "@fortawesome/free-solid-svg-icons";
+import { faArchive, faBurn, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
@@ -131,6 +131,13 @@ const linkClass = computed(() => {
 
             <FontAwesomeIcon v-if="history.purged" :icon="faBurn" fixed-width />
             <FontAwesomeIcon v-else-if="history.archived" :icon="faArchive" fixed-width />
+
+            <FontAwesomeIcon
+                v-if="!userOwnsHistory(userStore.currentUser, history)"
+                v-g-tooltip.hover
+                title="You do not own this history"
+                :icon="faUsers"
+                fixed-width />
         </component>
     </component>
 </template>
