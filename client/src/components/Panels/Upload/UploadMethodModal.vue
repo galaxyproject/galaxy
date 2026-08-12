@@ -2,7 +2,7 @@
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -75,6 +75,16 @@ function handleModalClosed() {
         emit("cancelled");
     }
 }
+
+watch(
+    () => props.show,
+    (show) => {
+        if (show) {
+            completed.value = false;
+            cancelled.value = false;
+        }
+    },
+);
 </script>
 
 <template>
