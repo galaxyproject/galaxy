@@ -16,7 +16,10 @@ import pytest
 from requests import get
 
 from galaxy.exceptions import ObjectInvalid
-from galaxy.objectstore import persist_extra_files_for_dataset
+from galaxy.objectstore import (
+    DeviceSourceMap,
+    persist_extra_files_for_dataset,
+)
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.caching import (
     CacheTarget,
@@ -502,6 +505,16 @@ def test_distributed_store():
             assert device_source_map
             assert device_source_map.get_device_id("files1") == "primary_disk"
             assert device_source_map.get_device_id("files2") == "primary_disk"
+
+
+def test_device_source_map_user_object_store():
+    """User-defined object stores return their own ID as the device ID."""
+
+    device_map = DeviceSourceMap()
+    user_store_id = "user_objects://abc123"
+    assert device_map.get_device_id(user_store_id) == user_store_id
+    # A non-existent, non-user store still falls back to the default (None).
+    assert device_map.get_device_id("does_not_exist") is None
 
 
 def test_distributed_store_empty_cache_targets():
