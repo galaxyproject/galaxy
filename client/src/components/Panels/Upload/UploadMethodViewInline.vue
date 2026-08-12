@@ -132,6 +132,8 @@ async function handleStartClick() {
         const datasets = await submitPreparedUpload(effectiveHistoryId.value, prepared, (pct) => {
             uploadProgress.value = pct;
         });
+        uploadMethodRef.value?.reset?.();
+        canUpload.value = false;
         emit("uploaded", datasets);
     } catch (uploadError) {
         error.value = errorMessageAsString(uploadError);
