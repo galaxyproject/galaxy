@@ -328,8 +328,6 @@ function initialize() {
     _refresh();
 }
 
-let hasInitialized = false;
-
 /**
  * IDs that the user has explicitly discarded from the grid. Used to ensure that on reconciliation
  * with new `initialElements`, we don't resurrect any elements that the user has explicitly discarded.
@@ -426,18 +424,9 @@ function reconcileWithInitialElements(newInitialElements: HistoryItemSummary[]) 
     _refresh();
 }
 
-watch(
-    () => props.initialElements,
-    (newInitialElements) => {
-        if (!hasInitialized) {
-            hasInitialized = true;
-            initialize();
-        } else {
-            reconcileWithInitialElements(newInitialElements);
-        }
-    },
-    { immediate: true },
-);
+initialize();
+
+watch(() => props.initialElements, reconcileWithInitialElements);
 
 function getRowId(params: GetRowIdParams) {
     return String(params.data.id);
