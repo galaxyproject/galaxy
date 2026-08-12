@@ -22,6 +22,7 @@ from galaxy.datatypes.upload_util import (
 from galaxy.files.models import (
     FilesSourceOptions,
     PartialFilesSourceProperties,
+    RealizedSourceMetadata,
 )
 from galaxy.files.uris import (
     ensure_file_sources,
@@ -517,7 +518,9 @@ def _directory_to_items(directory):
 
 def _has_src_to_name(item) -> Optional[str]:
     # Logic should broadly match logic of _has_src_to_path but not resolve the item
-    # into a path.
+    # into a path. Deliberately does not consult file source metadata the way
+    # _has_src_to_path does - a DRS name would require the very fetch deferral avoids,
+    # so deferred DRS datasets keep the URI basename.
     name = item.get("name")
     src = item.get("src")
     if src == "url":
@@ -564,12 +567,16 @@ def _has_src_to_path(
             extra_props = PartialFilesSourceProperties(**{"http_headers": headers})
             file_source_options = FilesSourceOptions(extra_props=extra_props)
 
+        # Populated by file sources that can report a better name than the URI offers -
+        # a DRS URI's last path segment is typically an opaque identifier.
+        source_metadata: RealizedSourceMetadata = {}
         try:
             path = stream_url_to_file(
                 url,
                 file_sources=upload_config.file_sources,
                 dir=upload_config.working_directory,
                 file_source_opts=file_source_options,
+                metadata_out=source_metadata,
             )
         except Exception as e:
             raise Exception(f"Failed to fetch url {url}. {str(e)}")
@@ -582,7 +589,7 @@ def _has_src_to_path(
                 if hash_value:
                     _handle_hash_validation(hash_function, hash_value, path)
         if name is None:
-            name = url.split("/")[-1]
+            name = source_metadata.get("name") or url.split("/")[-1]
     elif src == "pasted":
         path = stream_to_file(StringIO(item["paste_content"]), dir=upload_config.working_directory)
         if name is None:

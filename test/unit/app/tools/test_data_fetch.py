@@ -5,14 +5,22 @@ from base64 import b64encode
 from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Optional
+from typing import (
+    Any,
+    Optional,
+)
 
 import pytest
+import responses
 
 from galaxy.tools.data_fetch import main
 
 B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
 URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
+
+DRS_OBJECT_ID = "000009a0-5b22-5be5-9217-a26b5c0b03c2"
+DRS_URI = f"drs://drs.example.org/{DRS_OBJECT_ID}"
+DRS_OBJECT_URL = f"https://drs.example.org/ga4gh/drs/v1/objects/{DRS_OBJECT_ID}"
 
 
 @pytest.mark.parametrize(
@@ -88,6 +96,109 @@ def test_simple_uri_get(mock_http_server):
         hda_result = output["elements"][0]
         assert hda_result["state"] == "ok"
         assert hda_result["ext"] == "bed"
+        assert hda_result["name"] == "1.bed"
+
+
+@responses.activate
+def test_drs_uri_named_from_drs_metadata(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed")
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == "sample.bed"
+
+
+@responses.activate
+def test_drs_uri_named_from_drs_metadata_via_access_id(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed", access_id="https")
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == "sample.bed"
+
+
+@responses.activate
+def test_drs_uri_explicit_name_wins(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed")
+    hda_result = _fetch_drs_element(name="user supplied name")
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == "user supplied name"
+
+
+@responses.activate
+def test_drs_uri_without_name_falls_back_to_uri_basename(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server))
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == DRS_OBJECT_ID
+
+
+@pytest.mark.parametrize(
+    "drs_name, expected_name",
+    [
+        ("../../../etc/passwd", "passwd"),
+        ("/etc/passwd", "passwd"),
+        ("..\\..\\windows\\system32", "system32"),
+        ("sample\r\n.bed", "sample.bed"),
+        ("..", DRS_OBJECT_ID),
+        (".", DRS_OBJECT_ID),
+        ("", DRS_OBJECT_ID),
+        ("   ", DRS_OBJECT_ID),
+        ("etc/", DRS_OBJECT_ID),
+        (12345, DRS_OBJECT_ID),
+        ({"value": "sample.bed"}, DRS_OBJECT_ID),
+    ],
+)
+@responses.activate
+def test_drs_uri_name_is_sanitized(mock_http_server, drs_name, expected_name):
+    _mock_drs_object(_bed_content_url(mock_http_server), name=drs_name)
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == expected_name
+
+
+@responses.activate
+def test_drs_uri_overlong_name_is_truncated(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server), name="a" * 300)
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == "a" * 255
+
+
+def _bed_content_url(mock_http_server) -> str:
+    return mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+        file_path="test-data/1.bed",
+    )
+
+
+def _mock_drs_object(content_url: str, name: Any = None, access_id: Optional[str] = None) -> None:
+    """Register mock responses for a DRS object resolving to ``content_url``."""
+    access_method: dict[str, Any] = {"type": "https"}
+    if access_id is not None:
+        access_method["access_id"] = access_id
+        responses.add(responses.GET, f"{DRS_OBJECT_URL}/access/{access_id}", json={"url": content_url})
+    else:
+        access_method["access_url"] = {"url": content_url}
+    drs_object: dict[str, Any] = {"id": DRS_OBJECT_ID, "access_methods": [access_method]}
+    if name is not None:
+        drs_object["name"] = name
+    responses.add(responses.GET, DRS_OBJECT_URL, json=drs_object)
+
+
+def _fetch_drs_element(name: Optional[str] = None) -> dict[str, Any]:
+    element: dict[str, Any] = {"src": "url", "url": DRS_URI}
+    if name is not None:
+        element["name"] = name
+    with _execute_context(allow_localhost=True) as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {"type": "hdas"},
+                    "elements": [element],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        return _unnamed_output(execute_context)["elements"][0]
 
 
 def test_correct_md5():
@@ -420,6 +531,7 @@ def _execute_context(allow_localhost=False):
                         "file_sources": [
                             {"type": "http", "id": "stock_http"},
                             {"type": "base64", "id": "stock_base64"},
+                            {"type": "drs", "id": "stock_drs"},
                         ],
                         "config": {
                             "symlink_allowlist": [],
