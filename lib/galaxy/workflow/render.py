@@ -17,7 +17,6 @@ class WorkflowCanvas:
         self.text = []
         self.in_pos = {}
         self.out_pos = {}
-        self.out_box_pos = {}
         self.widths = {}
         self.max_x = 0
         self.max_y = 0
@@ -63,7 +62,6 @@ class WorkflowCanvas:
         left, top = step.position["left"], step.position["top"]
         x, y = left, top
         order_index = step.order_index
-        self.out_box_pos[order_index] = (x, y)
         max_len = len(module_name) * 1.5
         self.text.append(svgwrite.text.Text(module_name, (x, y + 20), style="font-size:14px"))
         y += 45
@@ -93,8 +91,8 @@ class WorkflowCanvas:
         self.max_y = max(self.max_y, top)
         self.max_width = max(self.max_width, self.widths[order_index])
 
-    def add_connection(self, step_dict, conn, output_dict):
-        in_coords = self.in_pos[step_dict["id"]][conn]
+    def add_connection(self, step_dict, conn, output_dict, in_fallback_pos, out_fallback_pos):
+        in_coords = self.in_pos.get(step_dict["id"], {}).get(conn, in_fallback_pos)
         # out_pos_index will be a step number like 1, 2, 3...
         out_pos_index = output_dict["id"]
         # out_pos_name will be a string like 'o', 'o2', etc.
@@ -114,7 +112,7 @@ class WorkflowCanvas:
             # The output isn't among the upstream module's introspected outputs
             # (e.g. it moved to a different conditional branch). Anchor to the
             # upstream step's box instead of dropping the connection.
-            out_conn_pos = self.out_box_pos.get(out_pos_index, (0, 0))
+            out_conn_pos = out_fallback_pos
         out_width = self.widths.get(output_dict["id"], 0)
         adjusted = (out_conn_pos[0] + out_width, out_conn_pos[1])
         self.text.append(
@@ -147,6 +145,7 @@ class WorkflowCanvas:
 
     def add_steps(self, highlight_errors=False):
         # Only highlight missing tools if displaying in the tool shed.
+        positions_by_id = {step_dict["id"]: step_dict["position"] for step_dict in self.data}
         for step_dict in self.data:
             tool_unavailable = step_dict.get("tool_errors", False)
             if highlight_errors and tool_unavailable:
@@ -155,15 +154,16 @@ class WorkflowCanvas:
                 fill = "#EBD9B2"
             width = self.widths[step_dict["id"]]
             self.add_boxes(step_dict, width, fill)
+            position = step_dict["position"]
+            # Fallback anchors used when a stored connection references an
+            # input/output name the module no longer introspects (e.g. a
+            # conditional branch that's no longer active) - draw the
+            # connection to the step's box instead of dropping it.
+            in_fallback_pos = (position["left"], position["top"] + MARGIN)
             for conn, output_dict in step_dict["input_connections"].items():
-                if conn not in self.in_pos.get(step_dict["id"], {}):
-                    # Input isn't part of the module's introspected inputs (e.g. a
-                    # conditional branch that's no longer active), so it has no
-                    # labeled row to point to. Anchor the connection to the box's
-                    # top-left corner instead of dropping it.
-                    left, top = step_dict["position"]["left"], step_dict["position"]["top"]
-                    self.in_pos.setdefault(step_dict["id"], {})[conn] = (left, top + MARGIN)
-                self.add_connection(step_dict, conn, output_dict)
+                out_position = positions_by_id.get(output_dict["id"], position)
+                out_fallback_pos = (out_position["left"], out_position["top"])
+                self.add_connection(step_dict, conn, output_dict, in_fallback_pos, out_fallback_pos)
 
     def populate_data_for_step(self, step, module_name, module_data_inputs, module_data_outputs, tool_errors=None):
         step_dict = {
