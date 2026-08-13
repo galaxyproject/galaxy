@@ -15,6 +15,7 @@ import { until, useMagicKeys, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
 import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormTextarea } from "bootstrap-vue";
 import type { ZoomTransform } from "d3-zoom";
+import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -245,8 +246,6 @@ const setReadmeHandler = new SetValueActionHandler(
     undoRedoStore,
     (value) => (readme.value = value as string),
     () => {
-        // TODO: Since we are not passings `args` to `showAttributes`, aren't we
-        // not highlighting the readme attribute when it is set? Should we be passing `args` here?
         showAttributes();
         readmeActive.value = true;
     },
@@ -297,17 +296,12 @@ function setLogoUrl(newLogoUrl: string) {
 }
 
 const tags = ref<string[]>(props.workflowTags || []);
-const setTagsHandler = new SetValueActionHandler(
-    undoRedoStore,
-    (value) => (tags.value = structuredClone(value) as string[]),
-    showAttributes,
-    "change tags",
-);
-/** user set tags. queues an undo/redo action */
+/** Updates local `tags` state. **Does not** queue an undo/redo action as the tags are set
+ * instantly in `WorkflowAttributes` via the backend on the workflow without
+ * creating a new version, meaning we don't need to queue an undo/redo action for them.
+ */
 function setTags(newTags: string[]) {
-    setTagsHandler.set(tags.value, newTags);
-    // TODO: Should we add a `hasChanges.value = true;` here? Or is that handled by the `SetValueActionHandler`?
-    // We used to have that here...
+    tags.value = structuredClone(newTags);
 }
 
 // ---------------------------------------------------------------------------
@@ -590,7 +584,7 @@ watch(
 );
 
 // ---------------------------------------------------------------------------
-// Options API methods section:
+// General functions for workflow editor actions
 
 /**
  * Used to block certain actions while the workflow is loading, and show a warning toast to the user.
@@ -1244,8 +1238,7 @@ function onLicense(lc: string) {
 }
 
 function onCreator(cr: Creator[]) {
-    // TODO: Should we check for equality of the creator object/array?
-    if (creator.value != cr) {
+    if (!isEqual(creator.value, cr)) {
         hasChanges.value = true;
         setCreator(cr);
     }
