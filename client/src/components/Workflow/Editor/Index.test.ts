@@ -24,6 +24,7 @@ import SaveChangesModal from "./SaveChangesModal.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import ChangesIndicator from "@/components/Common/ChangesIndicator.vue";
 import ReadmeEditor from "@/components/Workflow/Editor/ReadmeEditor.vue";
 import WorkflowAttributes from "@/components/Workflow/Editor/WorkflowAttributes.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
@@ -43,6 +44,7 @@ const SELECTORS = {
 // ourselves on the shared imported component object before mounting.
 (ActivityBar as unknown as { name?: string }).name = "ActivityBar";
 (WorkflowGraph as unknown as { name?: string }).name = "WorkflowGraph";
+(ChangesIndicator as unknown as { name?: string }).name = "ChangesIndicator";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -78,6 +80,14 @@ function editorStubs() {
             methods: {
                 fitWorkflow() {},
                 setTransform() {},
+            },
+        },
+        // `Index.vue` calls `changesIndicator.value?.flashSavedIndicator()` directly after a
+        // successful save; the default auto-stub doesn't expose it, so `onSave` would throw.
+        ChangesIndicator: {
+            template: "<div />",
+            methods: {
+                flashSavedIndicator() {},
             },
         },
     };
