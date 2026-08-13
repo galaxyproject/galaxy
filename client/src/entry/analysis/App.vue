@@ -39,7 +39,6 @@
             <div id="dd-helper" />
             <Toast ref="toastRef" />
             <ConfirmDialog ref="confirmDialogRef" />
-            <UploadModal ref="uploadModal" />
             <BroadcastsOverlay />
             <DragGhost />
             <template v-if="showMasthead">
@@ -58,7 +57,6 @@ import { getGalaxyInstance } from "@/app";
 import short from "@/components/plugins/short";
 import Toast from "@/components/Toast";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
-import { setGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useRouteQueryBool } from "@/composables/route";
 import { setToastComponentRef } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
@@ -75,7 +73,6 @@ import DragGhost from "@/components/DragGhost.vue";
 import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 import TourRunner from "@/components/Tour/TourRunner.vue";
-import UploadModal from "@/components/Upload/UploadModal.vue";
 import WindowManagerWindow from "@/components/WindowManager/WindowManagerWindow.vue";
 
 export default {
@@ -86,7 +83,6 @@ export default {
         WindowManagerWindow,
         Toast,
         ConfirmDialog,
-        UploadModal,
         BroadcastsOverlay,
         TourRunner,
     },
@@ -105,9 +101,6 @@ export default {
 
         const confirmDialogRef = ref(null);
         setConfirmDialogComponentRef(confirmDialogRef);
-
-        const uploadModal = ref(null);
-        setGlobalUploadModal(uploadModal);
 
         const windowManagerStore = useWindowManagerStore();
 
@@ -170,7 +163,6 @@ export default {
             confirmation,
             toastRef,
             confirmDialogRef,
-            uploadModal,
             currentTheme,
             embedded,
             currentTour,

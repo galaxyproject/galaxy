@@ -49,7 +49,7 @@ type SingleOrMultipleHistoryItems = HistoryOrCollectionItem | HistoryOrCollectio
 
 /**
  * Response types from the data dialog callback.
- * DataOption[] is returned by the beta upload path for fresh uploads.
+ * DataOption[] is returned by the upload modal path for fresh uploads.
  * SingleOrMultipleHistoryItems (HistoryItemSummary and DCESummary) are returned for dataset/collection selection.
  */
 type DialogResponse = DataOption[] | SingleOrMultipleHistoryItems;
@@ -721,7 +721,7 @@ function isInKeepOptions(keepKey: string, newValue: DataOption): boolean {
  * @param response - The response from the data dialog
  */
 function onDataDialogResponse(response: DialogResponse): void {
-    // The data dialog's beta upload path returns DataOption[] directly
+    // The data dialog's upload modal path returns DataOption[] directly
     if (isDataOptionArray(response)) {
         handleUploadedDataOptions(response);
         return;
@@ -1000,13 +1000,13 @@ function onDragEnter(evt: DragEvent) {
         currentHighlighting.value = highlightingState;
         dragTarget.value = evt.target;
         dragData.value = eventData;
-    } else if (props.workflowRun && evt.dataTransfer?.items && workflowTab.value !== "create") {
+    } else if (props.workflowRun && evt.dataTransfer?.items && workflowTab.value !== "upload") {
         // if any item in DataTransfer is a file
         const hasFiles = Array.from(evt.dataTransfer.items).some((item) => item.kind === "file");
         if (hasFiles) {
             currentHighlighting.value = "success";
             $emit("alert", "Drop files in the upload area below to create datasets.");
-            workflowTab.value = "create";
+            workflowTab.value = "upload";
             dragTarget.value = evt.target;
         }
     }
@@ -1274,7 +1274,7 @@ const noOptionsWarningMessage = computed(() => {
             :step-title="props.userDefinedTitle"
             :workflow-tab.sync="workflowTab"
             @focus="$emit('focus')"
-            @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
+            @uploaded-data="handleUploadedDataOptions" />
     </div>
 </template>
 

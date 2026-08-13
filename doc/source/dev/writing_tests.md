@@ -138,7 +138,7 @@ find the right documentation for a given test one wishes to write.
 
           - **Yes**
 
-            Tests that require a custom Galaxy with a very specific 
+            Tests that require a custom Galaxy with a very specific
             configuration are called Galaxy integration tests and are located in
             ``test/integration``.  Checkout [Integration Tests](#integration)
             below for more information.
@@ -215,7 +215,7 @@ pytest -m external_dependency_management test/unit/tool_util/
 
 The Python unit tests are run against each pull request to Galaxy using
 CircleCI. If any of these tests fail, the pull request will be marked
-red. This test suite is moderately prone to having tests fail that are 
+red. This test suite is moderately prone to having tests fail that are
 unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
@@ -242,7 +242,7 @@ GitHub actions workflow definition for these tests is located in
 {#framework}
 ## Tool Framework Tests
 
-A great deal of the complexity and interface exposed to Galaxy plugin 
+A great deal of the complexity and interface exposed to Galaxy plugin
 developers comes in the form of Galaxy tool wrapper definition files.
 Likewise, a lot of the legacy behavior Galaxy needs to maintain is
 maintained for older tool definitions. For this reason, a lot of Galaxy's
@@ -771,10 +771,10 @@ GitHub actions workflow definition for these tests is located in
 
 These tests are located in ``test/integration``. These tests have access
 to all the same API utilities as API tests described above, but can access
-Galaxy internals and may define hooks for configuring Galaxy in certain ways 
+Galaxy internals and may define hooks for configuring Galaxy in certain ways
 during startup.
 
-Galaxy integration tests in some ways are more powerful than API tests - 
+Galaxy integration tests in some ways are more powerful than API tests -
 they can both control Galaxy's configuration and can access Galaxy's
 internals. However, this power comes at a real cost - each test case must
 spin up its own Galaxy server (a relatively expensive operation) and the
@@ -819,9 +819,9 @@ the ``galaxy_test.driver.integration_util`` module (located in
 The ``require_admin_user`` option above tell the test framework that the
 default user configured for API interactions must be an admin user.
 
-This example overrides Galaxy's configuration using the 
+This example overrides Galaxy's configuration using the
 ``handle_galaxy_config_kwds`` class method. This method is called before
-a Galaxy server is created, and is passed the testing server's default 
+a Galaxy server is created, and is passed the testing server's default
 configuration as the ``config`` argument to that class method. This
 ``config`` object is effectively the Python representation of the Galaxy
 configuration file (``galaxy.yml``) used to start the Python server.
@@ -830,7 +830,7 @@ server to do using the same keys. Examples of various ways integration tests
 have modified this dictionary include setting up custom object stores
 (e.g. ``objectstore/test_mixed_store_by.py``),
 setting up non-local job runners (e.g. ``test_cli_runners.py``), setting
-up custom job destinations (e.g. ``test_job_recovery.py``), and configuring 
+up custom job destinations (e.g. ``test_job_recovery.py``), and configuring
 Galaxy for tool shed operations (e.g. ``test_repository_operations.py``).
 
 There may be cases where an integration test is used not to allow
@@ -1192,7 +1192,7 @@ def test_k8s_job(self):
 
 The Integration tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
-red. This test suite is moderately prone to having tests fail that are 
+red. This test suite is moderately prone to having tests fail that are
 unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
@@ -1243,7 +1243,7 @@ They're faster, more reliable, and won't introduce false failures from unrelated
 
 | Scenario | Use | Method |
 |----------|-----|--------|
-| Testing upload form | UI | ``self.perform_upload()`` |
+| Testing upload form | UI | ``self.upload_context("local-file").stage_local_file(...).start()`` |
 | Need dataset for other test | API | ``self.dataset_populator.new_dataset()`` |
 | Testing workflow editor | UI | ``self.workflow_run_open_workflow()`` |
 | Need workflow for invocation test | API | ``self.workflow_populator.run_workflow()`` |
@@ -1281,14 +1281,15 @@ from .framework import (
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 
-class TestMyFeature(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestMyFeature(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
     ensure_registered = True  # Auto-login before each test
 
     @selenium_test
     @managed_history
     def test_something(self):
-        self.perform_upload(self.get_filename("1.sam"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.sam")).start()
         self.history_panel_wait_for_hid_ok(1)
         self.assert_item_summary_includes(1, "28 lines")
 ```
@@ -1317,7 +1318,7 @@ Gets re-executed on test retries and errors are automatically dumped for debuggi
 ```python
 def setup_with_driver(self):
     super().setup_with_driver()
-    self.perform_upload(self.get_filename("fixture.fasta"))
+    self.upload_context("local-file").stage_local_file(self.get_filename("fixture.fasta")).start()
     self.wait_for_history()
 ```
 
@@ -1367,16 +1368,67 @@ The test framework provides specialized methods for common Galaxy operations:
 
 **File Uploads:**
 
+Uploads use the ``upload_context()`` fluent API from the ``UsesUploadActivity`` mixin.
+Add ``UsesUploadActivity`` to your test class inheritance to enable it.
+
 ```python
-# Single file upload
-self.perform_upload(self.get_filename("1.sam"))
-self.perform_upload(self.get_filename("1.sam"), ext="txt", genome="hg18")
+# Single local file upload
+self.upload_context("local-file").stage_local_file(self.get_filename("1.sam")).start()
 
-# Pasted content or URL
-self.perform_upload_of_pasted_content("test data content")
+# Local file with metadata (name, extension, dbkey)
+self.upload_context("local-file").stage_local_file(
+    self.get_filename("1.sam"),
+    {"name": "my_data", "extension": "txt", "dbkey": "hg18"},
+).start()
 
-# Collection uploads
-self.upload_list([self.get_filename("1.tabular")], name="My List")
+# Pasted content
+self.upload_context("paste-content").stage_paste_content("test data content").start()
+
+# Pasted content with metadata
+self.upload_context("paste-content").stage_paste_content(
+    "test data content",
+    {"name": "my_dataset", "extension": "txt"},
+).start()
+
+# Upload from URL (single link)
+self.upload_context("paste-links").stage_paste_link("https://example.com/data.txt").start()
+
+# Upload from multiple URLs with individual metadata
+self.upload_context("paste-links").stage_paste_links([
+    (url1, {"name": "link1", "extension": "tabular"}),
+    (url2, {"name": "link2", "deferred": True}),
+]).start()
+
+# Remote file source (e.g. Posix, FTP)
+self.upload_context("remote-files").stage_remote_file(
+    source_label="Posix", file_label="myfile.txt",
+).start()
+
+# Composite file upload
+self.upload_context("composite-file")
+    .select_composite("velvet")
+    .stage_composite_file_slot(slot=1, file_path=self.get_filename("1.txt"))
+    .stage_composite_paste_slot(slot=2, content="pasted data")
+    .start()
+
+# Data library upload
+self.upload_context("data-library").stage_data_library_dataset(
+    library_label="My Library", dataset_label="My Dataset",
+).start()
+
+# Upload to a list collection
+self.upload_context("local-file")
+    .stage_local_file(self.get_filename("1.txt"))
+    .stage_local_file(self.get_filename("2.txt"))
+    .to_list(name="My List")
+    .start()
+
+# Upload with advanced mode (object store selection, target history)
+self.upload_context("local-file")
+    .set_advanced_mode(True)
+    .stage_local_file(self.get_filename("1.sam"))
+    .select_target_object_store("my_object_store_id")
+    .start()
 ```
 
 **History Panel:**
@@ -1390,10 +1442,10 @@ self.wait_for_history()                            # Wait for all jobs
 **Workflow Execution (via ``RunsWorkflows`` mixin):**
 
 ```python
-class TestWorkflows(SeleniumTestCase, RunsWorkflows):
+class TestWorkflows(SeleniumTestCase, RunsWorkflows, UsesUploadActivity):
     @managed_history
     def test_workflow(self):
-        self.perform_upload(self.get_filename("input.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("input.fasta")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_YAML)
         self.workflow_run_submit()
@@ -1520,7 +1572,7 @@ GALAXY_TEST_END_TO_END_CONFIG=./galaxy_selenium_context.yml ./run_tests.sh -sele
 
 The Selenium tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
-red. This test suite is moderately prone to having tests fail that are 
+red. This test suite is moderately prone to having tests fail that are
 unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
@@ -1595,7 +1647,7 @@ with various options (``ftp_upload_dir``, ``ftp_upload_site``).
 
 The Selenium integration tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
-red. This test suite is moderately prone to having tests fail that are 
+red. This test suite is moderately prone to having tests fail that are
 unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The

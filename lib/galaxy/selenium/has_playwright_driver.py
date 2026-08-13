@@ -985,8 +985,20 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         self._set_element_value(self._unwrap_element(element), value)
 
     def _set_element_value(self, element: ElementHandle, value: str) -> None:
-        """Internal implementation of set_element_value."""
-        self.execute_script(f"arguments[0].value = '{value}';", element)
+        """Internal implementation of set_element_value.
+
+        The value is passed via ``arguments[1]`` (not interpolated into the JS
+        string) so that values containing quotes or other special characters
+        are handled correctly. Both ``input`` and ``change`` events are
+        dispatched so that reactive frameworks (e.g. Vue) detect the change.
+        """
+        self.execute_script(
+            "arguments[0].value = arguments[1];"
+            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
+            "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
+            element,
+            value,
+        )
 
     def execute_script_click(self, element: WebElementProtocol) -> None:
         """

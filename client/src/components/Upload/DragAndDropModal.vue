@@ -8,8 +8,8 @@ import { computed, ref, watch } from "vue";
 
 import { setIframeEvents } from "@/components/Upload/utils";
 import { useFileDrop } from "@/composables/fileDrop";
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToast } from "@/composables/toast";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 
 const modalContentElement = ref(null);
 const { isFileOverDocument, isFileOverDropZone } = useFileDrop({
@@ -27,7 +27,7 @@ const modalClass = computed(() => {
     }
 });
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
+const { openUploadModal } = useUploadMethodModal();
 
 const toast = useToast();
 
@@ -37,9 +37,10 @@ function onDrop(event) {
     console.debug(event.dataTransfer);
 
     if (event.dataTransfer?.files?.length > 0) {
-        openGlobalUploadModal({
-            immediateUpload: true,
-            immediateFiles: event.dataTransfer.files,
+        void openUploadModal({
+            allowedMethods: ["local-file"],
+            hideTips: true,
+            immediateFiles: Array.from(event.dataTransfer.files),
         });
     }
 }
