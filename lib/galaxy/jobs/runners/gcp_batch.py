@@ -22,6 +22,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
 )
 from galaxy.jobs.runners.util.gcp_batch import (
+    compute_gpu_machine_type,
     compute_machine_type,
     CONTAINER_SCRIPT_TEMPLATE,
     convert_cpu_to_milli,
@@ -68,6 +69,9 @@ RUNNER_PARAM_SPECS: dict[str, dict[str, Any]] = {
     # Compute resource configuration (defaults - will be overridden by job requirements)
     "vcpu": dict(map=float, default=1.0),
     "memory_mib": dict(map=int, default=DEFAULT_MEMORY_MIB),
+    # Number of NVIDIA L4 GPUs to attach (0 = none). GPU jobs run on the G2
+    # machine family, which bundles L4 GPUs with fixed vCPU/memory shapes.
+    "gpus": dict(map=int, default=0),
     # Job-specific resource requests (same as Kubernetes runner)
     "requests_cpu": dict(map=str, default=None),
     "requests_memory": dict(map=str, default=None),
@@ -263,6 +267,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "subnet",
             "vcpu",
             "memory_mib",
+            "gpus",
             "use_container",
             "galaxy_user_id",
             "galaxy_group_id",
@@ -392,16 +397,42 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         instance_template = batch_v1.AllocationPolicy.InstancePolicyOrTemplate()
         instance_policy = batch_v1.AllocationPolicy.InstancePolicy()
 
-        # Compute appropriate machine type based on resource requirements
-        machine_type = compute_machine_type(cpu_milli, memory_mib)
+        # Determine GPU requirements. L4 GPUs live on the G2 machine family, so a
+        # GPU job either honors an explicitly configured g2 machine type or selects
+        # the smallest g2 shape satisfying the requested GPU count, cores and memory.
+        gpus = self._get_gpus(params, job_wrapper.get_resource_parameters())
+        configured_machine_type = params.get("machine_type")
+        is_gpu_machine_type = bool(configured_machine_type) and configured_machine_type.startswith("g2-")
+
+        if gpus or is_gpu_machine_type:
+            if is_gpu_machine_type:
+                machine_type = configured_machine_type
+            else:
+                # May raise ValueError if the GPU count / cores / mem cannot be
+                # satisfied; queue_job fails the job with that message.
+                machine_type = compute_gpu_machine_type(gpus, cpu_milli, memory_mib)
+            # For the G2 family the L4 GPUs are bundled with the machine type, so no
+            # accelerators block is set; only the driver install flag is required.
+            instance_template.install_gpu_drivers = True
+            log.debug(
+                "Selected GPU machine type %s (install_gpu_drivers=True) for job %s (requested: %s L4 GPU(s), %d mCPU, %d MiB)",
+                machine_type,
+                job_wrapper.get_id_tag(),
+                gpus or "from machine_type",
+                cpu_milli,
+                memory_mib,
+            )
+        else:
+            # Compute appropriate machine type based on resource requirements
+            machine_type = compute_machine_type(cpu_milli, memory_mib)
+            log.debug(
+                "Selected machine type %s for job %s (requested: %d mCPU, %d MiB)",
+                machine_type,
+                job_wrapper.get_id_tag(),
+                cpu_milli,
+                memory_mib,
+            )
         instance_policy.machine_type = machine_type
-        log.debug(
-            "Selected machine type %s for job %s (requested: %d mCPU, %d MiB)",
-            machine_type,
-            job_wrapper.get_id_tag(),
-            cpu_milli,
-            memory_mib,
-        )
 
         # Use custom VM image if specified
         if params.get("custom_vm_image"):
@@ -550,6 +581,14 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
 
         # Fall back to configured default
         return int(params.get("memory_mib", DEFAULT_MEMORY_MIB))
+
+    def _get_gpus(self, params, resource_params):
+        """Get the number of GPUs requested (0 if none)."""
+        # Galaxy job resource parameter 'gpus' takes precedence over the
+        # destination/runner 'gpus' merged into params by _get_job_params.
+        if resource_params.get("gpus"):
+            return int(resource_params["gpus"])
+        return int(params.get("gpus", 0) or 0)
 
     def _create_container_execution_script(self, job_wrapper, ajs, params, container_image, cpu_milli, memory_mib):
         """Create a script that runs the Galaxy job inside a container with volume mounts."""

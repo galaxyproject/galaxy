@@ -14,6 +14,7 @@ from galaxy.jobs.runners.gcp_batch import (
     RUNNER_PARAM_SPECS,
 )
 from galaxy.jobs.runners.util.gcp_batch import (
+    compute_gpu_machine_type,
     convert_cpu_to_milli,
     convert_duration_to_seconds,
     convert_memory_to_mib,
@@ -429,3 +430,61 @@ class TestGetJobParams:
         params = runner._get_job_params(destination)
 
         assert params["job_id_prefix"] == "from-destination"
+
+
+class TestComputeGpuMachineType:
+    """L4 GPU jobs select the smallest g2-standard shape satisfying gpus/cores/mem."""
+
+    @pytest.mark.parametrize(
+        "gpu_count,cpu_milli,memory_mib,expected",
+        [
+            (1, 32000, 116 * 1024, "g2-standard-32"),  # the image_learner example
+            (1, 1000, 1024, "g2-standard-4"),  # smallest single-GPU shape
+            (1, 8000, 30 * 1024, "g2-standard-8"),
+            (1, 12000, 40 * 1024, "g2-standard-12"),
+            (1, 16000, 64 * 1024, "g2-standard-16"),  # exact fit
+            (1, 1000, 100 * 1024, "g2-standard-32"),  # memory-driven, not cpu-driven
+            (2, 24000, 96 * 1024, "g2-standard-24"),
+            (4, 48000, 192 * 1024, "g2-standard-48"),
+            (8, 96000, 384 * 1024, "g2-standard-96"),
+        ],
+    )
+    def test_selects_expected_machine_type(self, gpu_count, cpu_milli, memory_mib, expected):
+        assert compute_gpu_machine_type(gpu_count, cpu_milli, memory_mib) == expected
+
+    @pytest.mark.parametrize("gpu_count", [3, 5, 6, 7, 16])
+    def test_unsupported_gpu_count_raises(self, gpu_count):
+        with pytest.raises(ValueError, match="not supported"):
+            compute_gpu_machine_type(gpu_count, 4000, 16 * 1024)
+
+    @pytest.mark.parametrize(
+        "gpu_count,cpu_milli,memory_mib",
+        [
+            (1, 64000, 16 * 1024),  # 64 vCPU exceeds the largest single-L4 shape (32)
+            (1, 1000, 200 * 1024),  # 200 GiB exceeds the largest single-L4 shape (128)
+            (2, 32000, 96 * 1024),  # 2 L4 only on g2-standard-24 (24 vCPU) < 32
+        ],
+    )
+    def test_oversize_request_raises(self, gpu_count, cpu_milli, memory_mib):
+        with pytest.raises(ValueError, match="satisfies the requested"):
+            compute_gpu_machine_type(gpu_count, cpu_milli, memory_mib)
+
+
+class TestGetGpus:
+    """GoogleCloudBatchJobRunner._get_gpus resolution."""
+
+    def test_resource_param_wins(self):
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": 1}, {"gpus": 2}) == 2
+
+    def test_params_used_when_no_resource_param(self):
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": 1}, {}) == 1
+
+    def test_defaults_to_zero(self):
+        runner = _make_runner()
+        assert runner._get_gpus({}, {}) == 0
+
+    def test_zero_is_not_overridden_by_falsy_resource_param(self):
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": 0}, {"gpus": 0}) == 0

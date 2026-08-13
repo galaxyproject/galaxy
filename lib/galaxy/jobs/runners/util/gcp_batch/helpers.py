@@ -343,6 +343,75 @@ def compute_machine_type(cpu_milli: int, memory_mib: int, machine_type_family: s
     return machine_type
 
 
+# NVIDIA L4 GPUs are only offered on the G2 (accelerator-optimized) machine family.
+# Each g2-standard shape bundles a fixed number of L4 GPUs with a fixed vCPU/memory
+# allocation, so the requested GPU count constrains the machine type. Entries are
+# (vcpu, memory_mib, l4_gpu_count, machine_type).
+L4_GPU_MACHINE_TYPES = [
+    (4, 16 * 1024, 1, "g2-standard-4"),
+    (8, 32 * 1024, 1, "g2-standard-8"),
+    (12, 48 * 1024, 1, "g2-standard-12"),
+    (16, 64 * 1024, 1, "g2-standard-16"),
+    (32, 128 * 1024, 1, "g2-standard-32"),
+    (24, 96 * 1024, 2, "g2-standard-24"),
+    (48, 192 * 1024, 4, "g2-standard-48"),
+    (96, 384 * 1024, 8, "g2-standard-96"),
+]
+
+# L4 GPU counts offered by the G2 machine family (1, 2, 4, 8).
+SUPPORTED_L4_GPU_COUNTS = sorted({entry[2] for entry in L4_GPU_MACHINE_TYPES})
+
+
+def compute_gpu_machine_type(gpu_count: int, cpu_milli: int, memory_mib: int) -> str:
+    """
+    Select the smallest g2-standard machine type providing the requested number of
+    NVIDIA L4 GPUs and at least the requested vCPU and memory.
+
+    L4 GPUs exist only on the G2 machine family, whose shapes bundle a fixed GPU
+    count with fixed vCPU/memory, so the GPU count determines the candidate shapes
+    and cpu/memory pick among them.
+
+    Args:
+        gpu_count: Number of L4 GPUs requested (must be one of SUPPORTED_L4_GPU_COUNTS)
+        cpu_milli: CPU requirement in milli-cores (1000 = 1 vCPU)
+        memory_mib: Memory requirement in MiB
+
+    Returns:
+        Machine type string (e.g., "g2-standard-32")
+
+    Raises:
+        ValueError: if ``gpu_count`` is not offered by any L4 shape, or if the
+            requested cpu/memory exceeds every shape carrying that GPU count.
+    """
+    cpu_vcpus = max(1, (cpu_milli + 999) // 1000)
+    candidates = sorted(
+        (entry for entry in L4_GPU_MACHINE_TYPES if entry[2] == gpu_count),
+        key=lambda entry: (entry[0], entry[1]),
+    )
+    if not candidates:
+        raise ValueError(
+            f"{gpu_count} L4 GPU(s) is not supported; available L4 GPU counts are "
+            f"{SUPPORTED_L4_GPU_COUNTS} (G2 machine family)."
+        )
+    for vcpu, mem_mib, _count, machine_type in candidates:
+        if vcpu >= cpu_vcpus and mem_mib >= memory_mib:
+            log.debug(
+                "Selected GPU machine type %s for %d L4 GPU(s), %d mCPU, %d MiB",
+                machine_type,
+                gpu_count,
+                cpu_milli,
+                memory_mib,
+            )
+            return machine_type
+    largest_vcpu, largest_mem, _count, largest_machine_type = candidates[-1]
+    raise ValueError(
+        f"No L4 GPU machine type with {gpu_count} GPU(s) satisfies the requested "
+        f"{cpu_vcpus} vCPU / {memory_mib} MiB; the largest available is "
+        f"{largest_machine_type} ({largest_vcpu} vCPU / {largest_mem} MiB). "
+        f"Reduce cores/mem or request a different GPU count."
+    )
+
+
 def sanitize_label_value(value: str | None, max_length: int = 63) -> str:
     """Sanitize a value to be used as a GCP label value."""
     if not value:

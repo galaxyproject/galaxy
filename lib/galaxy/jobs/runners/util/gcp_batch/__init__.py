@@ -4,6 +4,7 @@ from string import Template
 
 from galaxy.util.resources import resource_string
 from .helpers import (
+    compute_gpu_machine_type,
     compute_machine_type,
     convert_cpu_to_milli,
     convert_duration_to_seconds,
@@ -33,6 +34,7 @@ __all__ = (
     "DEFAULT_NFS_MOUNT_PATH",
     "DEFAULT_NFS_PATH",
     "DIRECT_SCRIPT_TEMPLATE",
+    "compute_gpu_machine_type",
     "compute_machine_type",
     "convert_cpu_to_milli",
     "convert_memory_to_mib",
