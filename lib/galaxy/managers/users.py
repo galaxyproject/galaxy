@@ -51,6 +51,7 @@ from galaxy.model.db.user import (
 )
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
+    validate_display_name_str,
     validate_email,
     validate_password,
     validate_preferred_object_store_id,
@@ -218,6 +219,25 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if user.username == new_username:
             return
         user.username = new_username
+        session = self.session()
+        session.add(user)
+        if commit:
+            session.commit()
+
+    def update_display_name(self, user: User, new_display_name: str | None, *, commit: bool = True) -> None:
+        """
+        Update a user's display name after validating it. Raises RequestParameterInvalidException on validation errors.
+
+        Unlike the username this needs no transaction: display names are not unique, so there is nothing to look up.
+        Surrounding whitespace is stripped rather than rejected, and a name that is empty once stripped clears the
+        field - an invisible difference is a poor reason to fail a save.
+        """
+        normalized = (new_display_name or "").strip() or None
+        if message := validate_display_name_str(normalized):
+            raise exceptions.RequestParameterInvalidException(message)
+        if user.display_name == normalized:
+            return
+        user.display_name = normalized
         session = self.session()
         session.add(user)
         if commit:
@@ -737,6 +757,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             [
                 "active",
                 "deleted",
+                "display_name",
                 "is_admin",
                 "nice_total_disk_usage",
                 "preferences",
@@ -816,6 +837,7 @@ class UserDeserializer(base.ModelDeserializer):
         user_deserializers: dict[str, base.Deserializer] = {
             "active": self.default_deserializer,
             "username": self.deserialize_username,
+            "display_name": self.deserialize_display_name,
             "preferred_object_store_id": self.deserialize_preferred_object_store_id,
         }
         self.deserializers.update(user_deserializers)
@@ -830,6 +852,12 @@ class UserDeserializer(base.ModelDeserializer):
         if validation_error:
             raise base.ModelDeserializingError(validation_error)
         return self.default_deserializer(item, key, preferred_object_store_id, **context)
+
+    def deserialize_display_name(self, item, key, display_name, **context):
+        display_name = (display_name or "").strip() or None
+        if validation_error := validate_display_name_str(display_name):
+            raise base.ModelDeserializingError(validation_error)
+        return self.default_deserializer(item, key, display_name, **context)
 
     def deserialize_username(self, item, key, username, trans: ProvidesAppContext | None = None, **context):
         # TODO: validate_publicname requires trans and should(?) raise exceptions

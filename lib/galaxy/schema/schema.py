@@ -303,6 +303,14 @@ UserId = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encode
 UserEmailField = Field(title="Email", description="Email of the user")
 UserDescriptionField = Field(title="Description", description="Description of the user")
 UserNameField = Field(default=..., title="user_name", description="The name of the user.")
+UserDisplayNameField = Field(
+    default=None,
+    title="Display name",
+    description=(
+        "Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier."
+    ),
+    max_length=255,
+)
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
 )
@@ -397,6 +405,7 @@ class AnonUserModel(DiskUsageUserModel):
 
 
 class DetailedUserModel(BaseUserModel, AnonUserModel):
+    display_name: str | None = UserDisplayNameField
     is_admin: bool = Field(default=..., title="Is admin", description="User is admin")
     purged: bool = Field(default=..., title="Purged", description="User is purged")
     preferences: dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
@@ -410,6 +419,7 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 class UserUpdatePayload(Model):
     active: Annotated[bool | None, Field(title="Active", description="User is active")] = None
     username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
+    display_name: Annotated[str | None, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
 
 
