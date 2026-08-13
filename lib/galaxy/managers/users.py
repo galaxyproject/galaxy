@@ -343,6 +343,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Redact user's email and username
         user.email = email_hash
         user.username = uname_hash
+        # The display name is free text and typically holds a real name, so it is
+        # dropped outright - there is nothing here worth keeping a hash of.
+        user.display_name = None
         # Redact user addresses as well
         if self.app.config.redact_user_address_during_deletion:
             stmt = select(UserAddress).where(UserAddress.user_id == user.id)
