@@ -17,6 +17,7 @@ class WorkflowCanvas:
         self.text = []
         self.in_pos = {}
         self.out_pos = {}
+        self.out_box_pos = {}
         self.widths = {}
         self.max_x = 0
         self.max_y = 0
@@ -62,6 +63,7 @@ class WorkflowCanvas:
         left, top = step.position["left"], step.position["top"]
         x, y = left, top
         order_index = step.order_index
+        self.out_box_pos[order_index] = (x, y)
         max_len = len(module_name) * 1.5
         self.text.append(svgwrite.text.Text(module_name, (x, y + 20), style="font-size:14px"))
         y += 45
@@ -97,22 +99,27 @@ class WorkflowCanvas:
         out_pos_index = output_dict["id"]
         # out_pos_name will be a string like 'o', 'o2', etc.
         out_pos_name = output_dict["output_name"]
+        out_conn_pos = None
         if out_pos_index in self.out_pos:
             # out_conn_index_dict will be something like:
             # 7: {'o': (824.5, 618)}
             out_conn_index_dict = self.out_pos[out_pos_index]
             if out_pos_name in out_conn_index_dict:
                 out_conn_pos = out_conn_index_dict[out_pos_name]
-            else:
+            elif out_conn_index_dict:
                 # Take any key / value pair available in out_conn_index_dict.
-                # A problem will result if the dictionary is empty.
-                if out_conn_index_dict:
-                    key = next(iter(out_conn_index_dict.keys()))
-                    out_conn_pos = self.out_pos[out_pos_index][key]
-        adjusted = (out_conn_pos[0] + self.widths[output_dict["id"]], out_conn_pos[1])
+                key = next(iter(out_conn_index_dict.keys()))
+                out_conn_pos = self.out_pos[out_pos_index][key]
+        if out_conn_pos is None:
+            # The output isn't among the upstream module's introspected outputs
+            # (e.g. it moved to a different conditional branch). Anchor to the
+            # upstream step's box instead of dropping the connection.
+            out_conn_pos = self.out_box_pos.get(out_pos_index, (0, 0))
+        out_width = self.widths.get(output_dict["id"], 0)
+        adjusted = (out_conn_pos[0] + out_width, out_conn_pos[1])
         self.text.append(
             svgwrite.shapes.Circle(
-                center=(out_conn_pos[0] + self.widths[output_dict["id"]] - MARGIN, out_conn_pos[1] - MARGIN),
+                center=(out_conn_pos[0] + out_width - MARGIN, out_conn_pos[1] - MARGIN),
                 r=5,
                 fill="#ffffff",
                 stroke="#000000",
@@ -150,9 +157,12 @@ class WorkflowCanvas:
             self.add_boxes(step_dict, width, fill)
             for conn, output_dict in step_dict["input_connections"].items():
                 if conn not in self.in_pos.get(step_dict["id"], {}):
-                    # input isn't part of the module's introspected inputs (e.g. a
-                    # conditional branch that's no longer active) - nothing to draw to.
-                    continue
+                    # Input isn't part of the module's introspected inputs (e.g. a
+                    # conditional branch that's no longer active), so it has no
+                    # labeled row to point to. Anchor the connection to the box's
+                    # top-left corner instead of dropping it.
+                    left, top = step_dict["position"]["left"], step_dict["position"]["top"]
+                    self.in_pos.setdefault(step_dict["id"], {})[conn] = (left, top + MARGIN)
                 self.add_connection(step_dict, conn, output_dict)
 
     def populate_data_for_step(self, step, module_name, module_data_inputs, module_data_outputs, tool_errors=None):
