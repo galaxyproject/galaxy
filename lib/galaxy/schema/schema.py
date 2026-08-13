@@ -436,6 +436,34 @@ class UserUpdatePayload(Model):
     ] = None
 
 
+class UserExtraPreferencesInputs(Model):
+    """Form-builder inputs for the admin-defined extra user preferences.
+
+    The sections come from ``user_preferences_extra_conf.yml``, so their shape is
+    whatever an administrator wrote. Modelling it any further would be fiction.
+    """
+
+    inputs: list[dict[str, Any]] = Field(
+        default_factory=list,
+        title="Inputs",
+        description="One form-builder section per configured group of extra preferences.",
+    )
+
+
+class UserExtraPreferencesPayload(RootModel):
+    """Flat map of ``<section>|<input>`` to value, as produced by the generic form."""
+
+    root: dict[str, Any] = {}
+
+
+class UserExtraPreferencesUpdated(Model):
+    message: str = Field(
+        default=...,
+        title="Message",
+        description="Human readable confirmation that the preferences were saved.",
+    )
+
+
 class UserCreationPayload(Model):
     password: str = Field(default=..., title="user_password", description="The password of the user.")
     email: str = UserEmailField
