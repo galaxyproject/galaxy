@@ -839,8 +839,18 @@ class UserDeserializer(base.ModelDeserializer):
             "username": self.deserialize_username,
             "display_name": self.deserialize_display_name,
             "preferred_object_store_id": self.deserialize_preferred_object_store_id,
+            "email": self.deserialize_email,
         }
         self.deserializers.update(user_deserializers)
+
+    def deserialize_email(self, item, key, email, trans: ProvidesAppContext | None = None, **context):
+        if trans is None:
+            raise base.ModelDeserializingError("Email addresses cannot be changed in this context.")
+        # update_email keeps the private role in sync and honours user_activation_on.
+        # commit=False because ModelDeserializer.deserialize commits once at the end,
+        # which is also what lets update_email roll back if the activation mail fails.
+        self.manager.update_email(trans, item, email, commit=False, send_activation_email=True)
+        return email
 
     def deserialize_preferred_object_store_id(
         self, item: Any, key: Any, val: Any, trans: ProvidesUserContext | None = None, **context
