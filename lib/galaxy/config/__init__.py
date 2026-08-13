@@ -1154,6 +1154,9 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
                     f"Config file ({self.user_preferences_extra_conf_path}) could not be found or is malformed."
                 )
             self.user_preferences_extra = {"preferences": {}}
+        # Lets the client hide the extra preferences entry entirely on instances
+        # that configure none, rather than linking to an empty form.
+        self.has_user_preferences_extra = bool(self.user_preferences_extra.get("preferences"))
 
         # default allow_local_account_creation to false if disable_local_accounts is true
         if "disable_local_accounts" in kwargs and self.disable_local_accounts:
