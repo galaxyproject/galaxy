@@ -63,6 +63,17 @@ VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
 VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
 FILL_CHAR = "-"
 
+# Display name validity parameters
+#
+# Display names are free-form and may contain any script, so the rule is a
+# denylist rather than an allowlist. It covers C0/C1 control characters, the
+# zero-width characters, and the bidirectional formatting characters. The bidi
+# overrides are the reason this check exists: U+202E and friends let a name
+# render as text entirely unrelated to what is stored, which makes a display
+# name a viable impersonation vector wherever it is shown.
+DISPLAY_NAME_MAX_LEN = 255
+INVALID_DISPLAY_NAME_RE = re.compile("[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]")
+
 # Password validity parameters
 PASSWORD_MIN_LEN = 6
 
@@ -97,6 +108,22 @@ def validate_publicname_str(publicname):
         return f"Public name cannot be more than {PUBLICNAME_MAX_LEN} characters in length."
     if not (VALID_PUBLICNAME_RE.match(publicname)):
         return "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
+    return ""
+
+
+def validate_display_name_str(display_name):
+    """Validates a string containing a user's display name.
+
+    Callers are expected to have stripped the value already; an empty display
+    name means "unset" and is accepted here so that clearing the field is not
+    an error.
+    """
+    if not display_name:
+        return ""
+    if len(display_name) > DISPLAY_NAME_MAX_LEN:
+        return f"Display name cannot be more than {DISPLAY_NAME_MAX_LEN} characters in length."
+    if INVALID_DISPLAY_NAME_RE.search(display_name):
+        return "Display name cannot contain control or text-direction characters."
     return ""
 
 
