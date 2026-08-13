@@ -146,12 +146,13 @@ dataset_details:
 
 object_store_details:
   selectors:
-    stored_by_name: '.display-os-by-name'
-    badge_of_type: '.object-store-badge-wrapper [data-badge-type="${type}"]'
-    usage_details: '.quota-usage-bar'
-    usage_bytes: '.quota-usage'
-    usage_percent: '.quota-percent-text'
-    usage_progress: '.quota-usage-bar .progress'
+    _: '[aria-labelledby="dataset-details-heading"]'
+    stored_by_name: '[aria-labelledby="dataset-details-heading"] .display-os-by-name'
+    badge_of_type: '[aria-labelledby="dataset-details-heading"] .object-store-badge-wrapper [data-badge-type="${type}"]'
+    usage_details: '[aria-labelledby="dataset-details-heading"] .quota-usage-bar'
+    usage_bytes: '[aria-labelledby="dataset-details-heading"] .quota-usage'
+    usage_percent: '[aria-labelledby="dataset-details-heading"] .quota-percent-text'
+    usage_progress: '[aria-labelledby="dataset-details-heading"] .quota-usage-bar .progress'
 
 confirm_dialog:
   selectors:
@@ -300,7 +301,7 @@ history_panel:
       option_cards: '[id^="g-card-"][data-source-option-card-id]'
       option_card: '#g-card-${object_store_id}'
       option_card_select: '#g-card-action-select-${object_store_id}'
-      confirm_button: '#modal-select-history-storage-location .btn-primary'
+      confirm_button: '#modal-select-history-storage-location .g-modal-confirm-buttons button:last-child'
 
   selectors:
     _: '#current-history-panel'
@@ -539,7 +540,7 @@ histories:
       make_private: '[data-description="history make private"]'
       permissions_change_required: '[data-description="sharing permissions change required"]'
       permissions_change_required_how: '[data-description="sharing permissions change required how"]'
-      permissions_change_required_ok: '[data-description="sharing permissions change required"] .btn-primary'
+      permissions_change_required_ok: '[data-description="sharing permissions change required"] .g-modal-confirm-buttons button:last-child'
 
     labels:
       unshare: 'Unshare'
@@ -1386,7 +1387,7 @@ libraries:
         selector: '//button[contains(text(), "Import")]'
       import_datasets_cancel_button:
         type: xpath
-        selector: '//button[contains(text(), "Close")]'
+        selector: '//button[contains(text(), "Cancel")]'
       export_to_history_options: '#library-collection-type-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
@@ -1422,7 +1423,7 @@ libraries:
       access_dataset_roles: '.access_dataset_roles .multiselect__tag span'
       private_dataset_icon: '.fa-key'
       open_location_details_btn: '.details-btn'
-      location_details_ok_btn: '#details-modal .btn-primary'
+      location_details_ok_btn: '#details-modal .g-modal-close-button'
 
     labels:
       from_history: 'from History'

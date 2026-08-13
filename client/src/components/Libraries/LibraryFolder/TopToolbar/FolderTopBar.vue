@@ -14,6 +14,7 @@ import {
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import type { LibraryFolderMetadata } from "@/api/libraries";
 import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
@@ -42,7 +43,7 @@ type CollectionElement = {
 };
 
 interface Props {
-    metadata: any;
+    metadata: LibraryFolderMetadata;
     selected: any[];
     folderId: string;
     unselected: any[];

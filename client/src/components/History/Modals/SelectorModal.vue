@@ -106,25 +106,15 @@ function selectHistories() {
 function setFilterValue(newFilter: string, newValue: string) {
     filter.value = HistoriesFilters.setFilterValue(filter.value, newFilter, newValue);
 }
-
-// hacky workaround for popovers in date pickers being cutoff
-// https://github.com/galaxyproject/galaxy/issues/17711
-const modalBodyClasses = computed(() => {
-    return [
-        showAdvanced.value
-            ? "history-selector-modal-body-allow-overflow"
-            : "history-selector-modal-body-prevent-overflow",
-    ];
-});
 </script>
 
 <template>
     <GModal
         ref="modal"
         size="small"
-        fixed-height
+        :overflow-visible="showAdvanced"
+        :fixed-height="!showAdvanced"
         :show.sync="propShowModal"
-        :class="modalBodyClasses"
         :title="localize(title)">
         <BFormGroup :description="localize('Filter histories')">
             <FilterMenu
@@ -175,13 +165,3 @@ const modalBodyClasses = computed(() => {
         </HistoryList>
     </GModal>
 </template>
-
-<style scoped lang="scss">
-.history-selector-modal-body-allow-overflow {
-    overflow: visible;
-}
-
-.history-selector-modal-body-prevent-overflow {
-    overflow: hidden;
-}
-</style>
