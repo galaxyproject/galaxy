@@ -27,7 +27,7 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
 
     def test_extra_prefs_vault_storage(self):
         user = self._setup_user(TEST_USER_EMAIL)
-        url = self.__url("information/inputs", user)
+        url = self.__url("extra_preferences/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
         db_user = self._get_dbuser(app, user)
 
@@ -83,7 +83,7 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
 
     def test_extra_prefs_vault_storage_update_secret(self):
         user = self._setup_user(TEST_USER_EMAIL)
-        url = self.__url("information/inputs", user)
+        url = self.__url("extra_preferences/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
         db_user = self._get_dbuser(app, user)
 
@@ -131,7 +131,7 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
 
     def test_extra_prefs_secret_not_in_vault(self):
         user = self._setup_user(TEST_USER_EMAIL)
-        url = self.__url("information/inputs", user)
+        url = self.__url("extra_preferences/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
         db_user = self._get_dbuser(app, user)
 
@@ -211,6 +211,25 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         # the secret value should be updated in the internal user preferences model
         app.model.session.refresh(db_user)
         assert db_user.extra_preferences["non_vault_test_section|pass"] == "a_new_test_pass"
+
+    def test_legacy_information_inputs_still_serves_extra_prefs(self):
+        # The deprecated endpoint delegates to the same service code, so it has to
+        # keep working until it is removed.
+        user = self._setup_user("vault-legacy-shim@test.gx")
+        legacy_url = self.__url("information/inputs", user)
+
+        put(legacy_url, data=json.dumps({"vaulttestsection|client_id": "legacy_client_id"}))
+
+        response = get(legacy_url).json()
+        section = [section for section in response["inputs"] if section["name"] == "vaulttestsection"][0]
+        client_id = [input for input in section["inputs"] if input["name"] == "client_id"][0]
+        assert client_id["value"] == "legacy_client_id"
+
+        # and the typed endpoint sees the same stored value
+        typed_response = get(self.__url("extra_preferences/inputs", user)).json()
+        typed_section = [section for section in typed_response["inputs"] if section["name"] == "vaulttestsection"][0]
+        typed_client_id = [input for input in typed_section["inputs"] if input["name"] == "client_id"][0]
+        assert typed_client_id["value"] == "legacy_client_id"
 
     def __url(self, action, user):
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))
