@@ -88,6 +88,7 @@ import CustomBuilds from "@/components/User/CustomBuilds.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
+import UserInformation from "@/components/User/UserInformation.vue";
 import UserOidcProfile from "@/components/User/UserOidcProfile.vue";
 import UserPreferences from "@/components/User/UserPreferences.vue";
 import UserPreferencesForm from "@/components/User/UserPreferencesForm.vue";
@@ -676,6 +677,14 @@ export function getRouter(Galaxy) {
                     {
                         path: "user",
                         component: UserPreferences,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        /** Declared before the `user/:formId` catch-all below, which
+                         *  otherwise still matches "information" and would render the
+                         *  generic form instead of this page. */
+                        path: "user/information",
+                        component: UserInformation,
                         redirect: redirectAnon(),
                     },
                     {

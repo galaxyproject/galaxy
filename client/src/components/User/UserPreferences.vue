@@ -15,6 +15,7 @@ import {
     faPerson,
     faRadiation,
     faSignOut,
+    faUser,
     faUsers,
 } from "font-awesome-6";
 import { computed, onMounted, ref } from "vue";
@@ -188,6 +189,13 @@ onMounted(async () => {
                     :icon="faPerson"
                     description="Manage my profile information (username, email, password)."
                     to="/user/oidc-profile" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-information"
+                    :icon="faUser"
+                    :title="localize('Account')"
+                    :description="localize('Edit your email address, username and display name.')"
+                    to="/user/information" />
 
                 <UserPreferencesElement
                     v-for="(link, index) in activePreferences"

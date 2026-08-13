@@ -1,4 +1,4 @@
-import { faFilter, faUnlockAlt, faUser, type IconDefinition } from "font-awesome-6";
+import { faFilter, faUnlockAlt, type IconDefinition } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 
 import { isRegisteredUser } from "@/api";
@@ -6,7 +6,7 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
-export type UserPreferencesKey = "information" | "password" | "toolbox_filters";
+export type UserPreferencesKey = "password" | "toolbox_filters";
 
 interface UserPreference {
     title: string;
@@ -30,20 +30,6 @@ export const getUserPreferencesModel: (user_id?: string) => UserPreferencesModel
     }
 
     return {
-        information: {
-            title: localize("Manage Information"),
-            id: "edit-preferences-information",
-            description:
-                isConfigLoaded.value &&
-                config.value.enable_account_interface &&
-                !config.value.use_remote_user &&
-                !config.value.disable_local_accounts
-                    ? localize("Edit your email, addresses and custom parameters or change your public name.")
-                    : localize("Edit your addresses and custom parameters."),
-            url: `/api/users/${user_id}/information/inputs`,
-            icon: faUser,
-            redirect: "/user",
-        },
         password: {
             title: localize("Change Password"),
             id: "edit-preferences-password",
