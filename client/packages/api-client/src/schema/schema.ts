@@ -26559,6 +26559,11 @@ export interface components {
              */
             display_name?: string | null;
             /**
+             * Email
+             * @description New email address. When `user_activation_on` is set, changing the email deactivates the account and sends an activation link to the new address.
+             */
+            email?: string | null;
+            /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
              */
