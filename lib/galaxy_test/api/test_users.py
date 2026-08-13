@@ -20,6 +20,8 @@ TEST_USER_EMAIL_DELETE_CANCEL_JOBS = "user_for_delete_cancel_jobs_test@bx.psu.ed
 TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
 TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
+TEST_USER_EMAIL_UPDATE = "user_for_email_update_test@bx.psu.edu"
+TEST_USER_EMAIL_UPDATED = "user_for_email_update_test_changed@bx.psu.edu"
 
 
 class TestUsersApi(ApiTestCase):
@@ -151,6 +153,27 @@ class TestUsersApi(ApiTestCase):
         self._assert_status_code_is(update_response, 200)
         update_json = update_response.json()
         assert update_json["username"] == payload["username"]
+
+    @requires_new_user
+    def test_update_email(self):
+        user = self._setup_user(TEST_USER_EMAIL_UPDATE)
+        with self._different_user(email=TEST_USER_EMAIL_UPDATE):
+            update_response = self.__update(user, data={"email": TEST_USER_EMAIL_UPDATED})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["email"] == TEST_USER_EMAIL_UPDATED
+
+    @requires_new_user
+    def test_update_email_invalid(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        other_user = self._setup_user("email_update_conflict@bx.psu.edu")
+        with self._different_user(email=TEST_USER_EMAIL):
+            # malformed
+            update_response = self.__update(user, data={"email": "not-an-email"})
+            self._assert_status_code_is(update_response, 400)
+
+            # already taken by another account
+            update_response = self.__update(user, data={"email": other_user["email"]})
+            self._assert_status_code_is(update_response, 400)
 
     @requires_admin
     @requires_new_user
