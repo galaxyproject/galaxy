@@ -112,6 +112,35 @@ class TestUsersApi(ApiTestCase):
             update_response = self._put(update_url, data=payload, json=True)
             assert_object_id_error(update_response)
 
+    @requires_new_user
+    def test_update_display_name(self):
+        # This suite runs with public profile pages disabled, which is the point:
+        # a display name has to be settable on every instance, not only on the
+        # ones that expose profile pages.
+        user = self._setup_user(TEST_USER_EMAIL)
+        with self._different_user(email=TEST_USER_EMAIL):
+            update_response = self.__update(user, data={"display_name": "Carl von Linné"})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] == "Carl von Linné"
+
+            # surrounding whitespace is stripped rather than rejected
+            update_response = self.__update(user, data={"display_name": "  Carl von Linné  "})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] == "Carl von Linné"
+
+            # an empty display name clears the field
+            update_response = self.__update(user, data={"display_name": ""})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] is None
+
+            # text-direction characters would let the name render as other text
+            update_response = self.__update(user, data={"display_name": "Carl\u202evon Linné"})
+            self._assert_status_code_is(update_response, 400)
+
+            # over the column length
+            update_response = self.__update(user, data={"display_name": "N" * 256})
+            self._assert_status_code_is(update_response, 400)
+
     @requires_admin
     @requires_new_user
     def test_admin_update(self):

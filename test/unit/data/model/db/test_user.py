@@ -88,6 +88,32 @@ def test_username_is_unique(make_user):
         make_user(username="a")
 
 
+def test_display_name_defaults_to_none(make_user):
+    # Verify display_name model definition
+    user = make_user()
+    assert user.display_name is None
+
+
+def test_display_name_round_trips(session, make_user):
+    user = make_user(display_name="Ada Lovelace")
+    session.expire(user)
+    assert user.display_name == "Ada Lovelace"
+
+
+def test_display_name_is_not_unique(make_user):
+    # Deliberately unlike username: display names collide by design, which is
+    # why the username stays reachable everywhere a display name is shown.
+    make_user(display_name="Ada Lovelace")
+    make_user(display_name="Ada Lovelace")
+
+
+def test_display_name_is_truncated_at_column_length(session, make_user):
+    # TrimmedString is a backstop under the validator, not a substitute for it.
+    user = make_user(display_name="N" * 300)
+    session.expire(user)
+    assert user.display_name == "N" * 255
+
+
 def test_cleanup_nonprivate_user_roles(session, make_user_and_role, make_role, make_user_role_association):
     # Create 3 users with private roles
     user1, role_private1 = make_user_and_role(email="user1@foo.com")
