@@ -421,6 +421,19 @@ class UserUpdatePayload(Model):
     username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
     display_name: Annotated[str | None, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
+    # Declared last so that a payload combining it with `active` ends on the
+    # deactivation, not on a stale activation. The admin gate on `active` is the
+    # real protection; this is belt and braces.
+    email: Annotated[
+        str | None,
+        Field(
+            title="Email",
+            description=(
+                "New email address. When `user_activation_on` is set, changing the email deactivates the account "
+                "and sends an activation link to the new address."
+            ),
+        ),
+    ] = None
 
 
 class UserCreationPayload(Model):
