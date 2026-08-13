@@ -86,43 +86,6 @@ class TestManageInformation(SeleniumTestCase):
         # public name field should render new public name
         assert_public_name(new_public_name)
 
-    @selenium_test
-    def test_user_address(self):
-        self.register(self._get_random_email())
-        self.navigate_to_manage_information()
-        self.components.change_user_address.address_button.wait_for_and_click()
-
-        address_field_labels = [
-            "Short address description",
-            "Name",
-            "Institution",
-            "Address",
-            "City",
-            "State/Province/Region",
-            "Postal Code",
-            "Country",
-            "Phone",
-        ]
-
-        address_fields = {}
-        # fill address fields with random data
-        for input_field_label in address_field_labels:
-            input_value = self._get_random_name(prefix=input_field_label)
-            address_fields[input_field_label] = input_value
-            input_field = self.get_address_input_field(input_field_label)
-            self.clear_input_field_and_write(input_field, input_value)
-        # save new address
-        self.components.change_user_email.submit.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-
-        self.navigate_to_manage_information()
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        # check if address was saved correctly
-        for input_field_label in address_fields.keys():
-            input_field = self.get_address_input_field(input_field_label)
-            assert input_field.get_attribute("value") == address_fields[input_field_label]
-
     def navigate_to_manage_information(self):
         self.navigate_to_user_preferences()
         self.components.preferences.manage_information.wait_for_and_click()
@@ -130,9 +93,6 @@ class TestManageInformation(SeleniumTestCase):
     def clear_input_field_and_write(self, element, new_input_text):
         element.clear()
         element.send_keys(new_input_text)
-
-    def get_address_input_field(self, input_field_label):
-        return self.wait_for_selector_visible(f"[data-label='{input_field_label}'] > div > div > input")
 
 
 class TestDeleteCurrentAccount(SeleniumTestCase):

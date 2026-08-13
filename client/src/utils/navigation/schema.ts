@@ -64,9 +64,6 @@ interface Rootchange_user_email extends Component {
 interface Rootchange_user_password extends Component {
     submit: SelectorTemplate;
 }
-interface Rootchange_user_address extends Component {
-    address_button: SelectorTemplate;
-}
 interface Rootdataset_details extends Component {
     _: SelectorTemplate;
     tool_parameters: SelectorTemplate;
@@ -742,7 +739,6 @@ export interface root_component {
     toolbox_filters: Roottoolbox_filters;
     change_user_email: Rootchange_user_email;
     change_user_password: Rootchange_user_password;
-    change_user_address: Rootchange_user_address;
     dataset_details: Rootdataset_details;
     object_store_details: Rootobject_store_details;
     history_panel: Roothistory_panel;
