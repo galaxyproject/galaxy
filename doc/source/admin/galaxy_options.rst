@@ -477,9 +477,14 @@
     process composes its named store with the default
     (``tool_source_database_connection``) store at runtime, with reads
     tried in declared order and writes always landing on the default.
-    Each entry takes a SQLAlchemy ``url`` and an optional ``read_only:
-    true`` flag. For SQLite connection-level read-only, use a SQLite
-    URI with ``mode=ro&uri=true``.
+    Each entry takes either a normal SQLAlchemy ``url`` or an
+    ``external_store_directory`` containing versioned publisher
+    bundles. Galaxy never consults manifests for a normal URL. For an
+    external directory it reads the sidecars and automatically selects
+    the newest cohort compatible with its store/source/index formats
+    and index schema. External stores are always read-only.
+    For SQLite connection-level read-only, use a SQLite URI with
+    ``mode=ro&uri=true``.
     For details see
     https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 :Default: ``None``
@@ -2072,6 +2077,21 @@
 :Description:
     Allow users to manage their account data, change passwords or
     delete their accounts.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_user_addresses``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow users to store postal addresses on their account, through
+    the deprecated /api/users/{id}/information/inputs endpoint.
+    This feature is deprecated and the user_address table will be
+    removed in a future release. Galaxy's own interface no longer
+    offers these addresses, so this option only affects that endpoint;
+    set it to false to stop accepting them ahead of the removal.
 :Default: ``true``
 :Type: bool
 

@@ -620,11 +620,13 @@ galaxy:
   # (``tool_source_database_connection``) store at runtime, with reads
   # tried in declared order and writes always landing on the default.
   # Each entry takes either a normal SQLAlchemy ``url`` or an
-  # ``external_store_directory`` of versioned publisher bundles. Manifests
-  # are ignored for normal URL stores. Galaxy automatically selects the
-  # newest manifest-compatible bundle from an external directory, which is
-  # always read-only. For an explicit SQLite URL, use ``mode=ro&uri=true``
-  # when connection-level read-only behavior is wanted.
+  # ``external_store_directory`` containing versioned publisher bundles.
+  # Galaxy never consults manifests for a normal URL. For an external
+  # directory it reads the sidecars and automatically selects the newest
+  # cohort compatible with its store/source/index formats and index
+  # schema. External stores are always read-only.
+  # For SQLite connection-level read-only, use a SQLite URI with
+  # ``mode=ro&uri=true``.
   # For details see
   # https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
   #tool_source_stores: null
@@ -1399,6 +1401,14 @@ galaxy:
   # Allow users to manage their account data, change passwords or delete
   # their accounts.
   #enable_account_interface: true
+
+  # Allow users to store postal addresses on their account, through the
+  # deprecated /api/users/{id}/information/inputs endpoint.
+  # This feature is deprecated and the user_address table will be
+  # removed in a future release. Galaxy's own interface no longer offers
+  # these addresses, so this option only affects that endpoint; set it
+  # to false to stop accepting them ahead of the removal.
+  #enable_user_addresses: true
 
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this
@@ -3443,3 +3453,4 @@ galaxy:
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
+
