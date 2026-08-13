@@ -131,12 +131,6 @@ change_user_password:
   selectors:
     submit: '#submit:not([aria-disabled])'
 
-change_user_address:
-  selectors:
-    address_button:
-      type: xpath
-      selector: '//span[contains(text(), "Insert Address")]'
-
 dataset_details:
   selectors:
     _: 'table#dataset-details'
