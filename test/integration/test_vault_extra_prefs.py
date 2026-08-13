@@ -1,4 +1,3 @@
-import json
 import os
 from typing import (
     Any,
@@ -27,20 +26,18 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
 
     def test_extra_prefs_vault_storage(self):
         user = self._setup_user(TEST_USER_EMAIL)
-        url = self.__url("information/inputs", user)
+        url = self.__url("extra_preferences/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
         db_user = self._get_dbuser(app, user)
 
         # create some initial data
         put(
             url,
-            data=json.dumps(
-                {
-                    "vaulttestsection|client_id": "hello_client_id",
-                    "vaulttestsection|client_secret": "hello_client_secret",
-                    "vaulttestsection|refresh_token": "a_super_secret_value",
-                }
-            ),
+            json={
+                "vaulttestsection|client_id": "hello_client_id",
+                "vaulttestsection|client_secret": "hello_client_secret",
+                "vaulttestsection|refresh_token": "a_super_secret_value",
+            },
         )
 
         # retrieve saved data
@@ -83,28 +80,24 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
 
     def test_extra_prefs_vault_storage_update_secret(self):
         user = self._setup_user(TEST_USER_EMAIL)
-        url = self.__url("information/inputs", user)
+        url = self.__url("extra_preferences/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
         db_user = self._get_dbuser(app, user)
 
         # write the initial secret value
         put(
             url,
-            data=json.dumps(
-                {
-                    "vaulttestsection|refresh_token": "a_new_secret_value",
-                }
-            ),
+            json={
+                "vaulttestsection|refresh_token": "a_new_secret_value",
+            },
         )
 
         # attempt to overwrite it with placeholder
         put(
             url,
-            data=json.dumps(
-                {
-                    "vaulttestsection|refresh_token": "__SECRET_PLACEHOLDER__",
-                }
-            ),
+            json={
+                "vaulttestsection|refresh_token": "__SECRET_PLACEHOLDER__",
+            },
         )
 
         # value should not have been overwritten
@@ -116,11 +109,9 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         # write a new value
         put(
             url,
-            data=json.dumps(
-                {
-                    "vaulttestsection|refresh_token": "an_updated_secret_value",
-                }
-            ),
+            json={
+                "vaulttestsection|refresh_token": "an_updated_secret_value",
+            },
         )
 
         # value should now be overwritten
@@ -131,19 +122,17 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
 
     def test_extra_prefs_secret_not_in_vault(self):
         user = self._setup_user(TEST_USER_EMAIL)
-        url = self.__url("information/inputs", user)
+        url = self.__url("extra_preferences/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
         db_user = self._get_dbuser(app, user)
 
         # create some initial data
         put(
             url,
-            data=json.dumps(
-                {
-                    "non_vault_test_section|user": "test_user",
-                    "non_vault_test_section|pass": "test_pass",
-                }
-            ),
+            json={
+                "non_vault_test_section|user": "test_user",
+                "non_vault_test_section|pass": "test_pass",
+            },
         )
 
         # retrieve saved data
@@ -172,12 +161,10 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         # changing the text property value should not change the secret property value
         put(
             url,
-            data=json.dumps(
-                {
-                    "non_vault_test_section|user": "a_new_test_user",
-                    "non_vault_test_section|pass": "__SECRET_PLACEHOLDER__",
-                }
-            ),
+            json={
+                "non_vault_test_section|user": "a_new_test_user",
+                "non_vault_test_section|pass": "__SECRET_PLACEHOLDER__",
+            },
         )
 
         response = get(url).json()
@@ -195,12 +182,10 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         # changing the secret value should update the secret value
         put(
             url,
-            data=json.dumps(
-                {
-                    "non_vault_test_section|user": "a_new_test_user",
-                    "non_vault_test_section|pass": "a_new_test_pass",
-                }
-            ),
+            json={
+                "non_vault_test_section|user": "a_new_test_user",
+                "non_vault_test_section|pass": "a_new_test_pass",
+            },
         )
 
         response = get(url).json()
@@ -211,6 +196,25 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         # the secret value should be updated in the internal user preferences model
         app.model.session.refresh(db_user)
         assert db_user.extra_preferences["non_vault_test_section|pass"] == "a_new_test_pass"
+
+    def test_legacy_information_inputs_still_serves_extra_prefs(self):
+        # The deprecated endpoint delegates to the same service code, so it has to
+        # keep working until it is removed.
+        user = self._setup_user("vault-legacy-shim@test.gx")
+        legacy_url = self.__url("information/inputs", user)
+
+        put(legacy_url, json={"vaulttestsection|client_id": "legacy_client_id"})
+
+        response = get(legacy_url).json()
+        section = [section for section in response["inputs"] if section["name"] == "vaulttestsection"][0]
+        client_id = [input for input in section["inputs"] if input["name"] == "client_id"][0]
+        assert client_id["value"] == "legacy_client_id"
+
+        # and the typed endpoint sees the same stored value
+        typed_response = get(self.__url("extra_preferences/inputs", user)).json()
+        typed_section = [section for section in typed_response["inputs"] if section["name"] == "vaulttestsection"][0]
+        typed_client_id = [input for input in typed_section["inputs"] if input["name"] == "client_id"][0]
+        assert typed_client_id["value"] == "legacy_client_id"
 
     def __url(self, action, user):
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))
