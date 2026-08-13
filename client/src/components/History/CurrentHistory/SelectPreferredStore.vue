@@ -31,9 +31,9 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    showModal: {
+    show: {
         type: Boolean,
-        default: false,
+        required: true,
     },
 });
 
@@ -63,8 +63,16 @@ const defaultOptionDescription = computed(() => {
     }
 });
 
+/** Computed toggle that handles showing and hiding the modal */
+const localShowToggle = computed({
+    get: () => props.show,
+    set: (value: boolean) => {
+        emit("update:show", value);
+    },
+});
+
 const emit = defineEmits<{
-    (e: "close"): void;
+    (e: "update:show", value: boolean): void;
     (e: "updated", id: string | null): void;
 }>();
 
@@ -122,7 +130,7 @@ async function modalOk() {
     try {
         await handleSubmit(currentSelectedStoreId.value, currentSelectedStorePrivate.value);
         reset();
-        emit("close");
+        localShowToggle.value = false;
     } catch (e) {
         Toast.error(errorMessageAsString(e), "Failed to update history storage location");
     }
@@ -137,7 +145,7 @@ function reset() {
 <template>
     <GModal
         id="modal-select-history-storage-location"
-        :show="props.showModal"
+        :show.sync="localShowToggle"
         size="small"
         :title="storageLocationTitle"
         ok-text="Change Storage Location"
@@ -146,7 +154,6 @@ function reset() {
         confirm
         :close-on-ok="false"
         @cancel="reset"
-        @close="emit('close')"
         @ok="modalOk">
         <SelectObjectStore
             :show-sub-setting="props.showSubSetting"

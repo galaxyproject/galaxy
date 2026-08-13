@@ -63,7 +63,7 @@ async function mountComponent(preferredObjectStoreId: string | null = null) {
         propsData: {
             preferredObjectStoreId: preferredObjectStoreId,
             history: TEST_HISTORY,
-            showModal: true,
+            show: true,
         },
         localVue,
     });
@@ -142,7 +142,7 @@ describe("SelectPreferredStore.vue", () => {
             propsData: {
                 preferredObjectStoreId: null,
                 history: TEST_HISTORY,
-                showModal: true,
+                show: true,
             },
             localVue,
         });
@@ -161,7 +161,23 @@ describe("SelectPreferredStore.vue", () => {
         await flushPromises();
 
         expect(wrapper.findComponent(GModal).props("show")).toBe(true);
-        expect(wrapper.emitted("close")).toBeFalsy();
+        expect(wrapper.emitted()["update:show"]?.at(-1)?.[0]).not.toBe(false);
         expect(Toast.error).toHaveBeenCalledWith("failed to update", "Failed to update history storage location");
+    });
+
+    it("closes modal on a successful update", async () => {
+        const wrapper = await mountComponent();
+        const galaxyDefaultOption = wrapper.find(
+            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "object_store_2" }).selector,
+        );
+        await galaxyDefaultOption.trigger("click");
+        await flushPromises();
+
+        const okButton = wrapper.find(CONFIRM_BUTTON_SELECTOR);
+        await okButton.trigger("click");
+
+        await flushPromises();
+
+        expect(wrapper.emitted()["update:show"]?.at(-1)?.[0]).toBe(false);
     });
 });
