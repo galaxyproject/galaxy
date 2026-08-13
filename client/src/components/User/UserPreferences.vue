@@ -15,6 +15,7 @@ import {
     faPerson,
     faRadiation,
     faSignOut,
+    faSliders,
     faUser,
     faUsers,
 } from "font-awesome-6";
@@ -64,11 +65,20 @@ const showDeleteAccountModal = ref(false);
 const showDataPrivateModal = ref(false);
 const showThemPickerModal = ref(false);
 
+// The remaining generic-form preferences are placed by hand rather than looped
+// over, because they belong in different groups: the password sits with account
+// and sign-in, toolbox filters with data and tools.
 const activePreferences = computed(() => {
     const userPreferencesEntries = getUserPreferencesModel();
     const enabledPreferences = Object.entries(userPreferencesEntries).filter(([, value]) => !value.disabled);
     return Object.fromEntries(enabledPreferences);
 });
+
+const passwordPreference = computed(() => activePreferences.value.password);
+
+const toolboxFiltersPreference = computed(() => activePreferences.value.toolbox_filters);
+
+const hasExtraPreferences = computed(() => isConfigLoaded.value && Boolean(config.value.has_user_preferences_extra));
 // Show the OIDC profile management widget if local account editing is disabled and OIDC profile is configured
 // through a single provider
 const showOidcProfile = computed<boolean>(() => {
@@ -181,6 +191,8 @@ onMounted(async () => {
         <UserDetailsElement />
 
         <div class="d-flex flex-gapy-1 flex-column">
+            <Heading v-localize h3 size="xs" class="user-preferences-group-heading">Account and sign-in</Heading>
+
             <div class="d-flex flex-wrap mb-4 user-preferences-cards">
                 <UserPreferencesElement
                     v-if="showOidcProfile"
@@ -198,14 +210,32 @@ onMounted(async () => {
                     to="/user/information" />
 
                 <UserPreferencesElement
-                    v-for="(link, index) in activePreferences"
-                    :id="link.id"
-                    :key="index"
-                    :icon="link.icon"
-                    :title="link.title"
-                    :description="link.description"
-                    :to="`/user/${index}`" />
+                    v-if="passwordPreference"
+                    :id="passwordPreference.id"
+                    :icon="passwordPreference.icon"
+                    :title="passwordPreference.title"
+                    :description="passwordPreference.description"
+                    to="/user/password" />
 
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
+                    id="manage-third-party-identities"
+                    :icon="faIdCard"
+                    :title="localize('Manage Third-Party Identities')"
+                    :description="localize('Connect or disconnect access to your third-party identities.')"
+                    to="/user/external_ids" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-api-key"
+                    :icon="faKey"
+                    :title="localize('Manage Galaxy API Key')"
+                    :description="localize('Access your current Galaxy API key or create a new one.')"
+                    to="/user/api_key" />
+            </div>
+
+            <Heading v-localize h3 size="xs" class="user-preferences-group-heading">Sharing and privacy</Heading>
+
+            <div class="d-flex flex-wrap mb-4 user-preferences-cards">
                 <UserPreferencesElement
                     v-if="isConfigLoaded && !config.single_user"
                     id="edit-preferences-permissions"
@@ -217,50 +247,6 @@ onMounted(async () => {
                         )
                     "
                     to="/user/permissions" />
-
-                <UserPreferencesElement
-                    id="edit-preferences-api-key"
-                    :icon="faKey"
-                    :title="localize('Manage Galaxy API Key')"
-                    :description="localize('Access your current Galaxy API key or create a new one.')"
-                    to="/user/api_key" />
-
-                <UserPreferencesElement
-                    id="edit-preferences-credentials"
-                    :icon="faKey"
-                    :title="localize('Manage Your Tools Credentials')"
-                    :description="localize('Manage your tools credentials groups for accessing external services.')"
-                    to="/user/credentials" />
-
-                <UserPreferencesElement
-                    id="edit-preferences-notifications"
-                    :icon="faBell"
-                    :title="localize('Manage Notifications')"
-                    :description="localize('Manage your notification settings.')"
-                    to="/user/notifications/preferences" />
-
-                <UserPreferencesElement
-                    v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
-                    id="manage-third-party-identities"
-                    :icon="faIdCard"
-                    :title="localize('Manage Third-Party Identities')"
-                    :description="localize('Connect or disconnect access to your third-party identities.')"
-                    to="/user/external_ids" />
-
-                <UserPreferencesElement
-                    id="edit-preferences-custom-builds"
-                    :icon="faCubes"
-                    :title="localize('Manage Custom Builds')"
-                    :description="localize('Add or remove custom builds using history datasets.')"
-                    to="/custom_builds" />
-
-                <UserPreferencesElement
-                    v-if="hasThemes"
-                    id="edit-preferences-theme"
-                    :icon="faPalette"
-                    :title="localize('Pick a Color Theme')"
-                    :description="localize('Click here to change the user interface color theme.')"
-                    @click="toggleThemeModal" />
 
                 <UserPreferencesElement
                     v-if="isConfigLoaded && !config.single_user"
@@ -277,7 +263,32 @@ onMounted(async () => {
                     :title="localize('Manage Beacon')"
                     :description="localize('Contribute variants to Beacon')"
                     @click="toggleBeaconModal" />
+            </div>
 
+            <Heading v-localize h3 size="xs" class="user-preferences-group-heading">
+                Appearance and notifications
+            </Heading>
+
+            <div class="d-flex flex-wrap mb-4 user-preferences-cards">
+                <UserPreferencesElement
+                    v-if="hasThemes"
+                    id="edit-preferences-theme"
+                    :icon="faPalette"
+                    :title="localize('Pick a Color Theme')"
+                    :description="localize('Click here to change the user interface color theme.')"
+                    @click="toggleThemeModal" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-notifications"
+                    :icon="faBell"
+                    :title="localize('Manage Notifications')"
+                    :description="localize('Manage your notification settings.')"
+                    to="/user/notifications/preferences" />
+            </div>
+
+            <Heading v-localize h3 size="xs" class="user-preferences-group-heading">Data and tools</Heading>
+
+            <div class="d-flex flex-wrap mb-4 user-preferences-cards">
                 <UserPreferencesElement
                     v-if="isConfigLoaded && config.object_store_allows_id_selection"
                     id="manage-preferred-object-store"
@@ -307,7 +318,46 @@ onMounted(async () => {
                         )
                     "
                     to="/file_source_instances/index" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-credentials"
+                    :icon="faKey"
+                    :title="localize('Manage Your Tools Credentials')"
+                    :description="localize('Manage your tools credentials groups for accessing external services.')"
+                    to="/user/credentials" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-custom-builds"
+                    :icon="faCubes"
+                    :title="localize('Manage Custom Builds')"
+                    :description="localize('Add or remove custom builds using history datasets.')"
+                    to="/custom_builds" />
+
+                <UserPreferencesElement
+                    v-if="toolboxFiltersPreference"
+                    :id="toolboxFiltersPreference.id"
+                    :icon="toolboxFiltersPreference.icon"
+                    :title="toolboxFiltersPreference.title"
+                    :description="toolboxFiltersPreference.description"
+                    to="/user/toolbox_filters" />
             </div>
+
+            <template v-if="hasExtraPreferences">
+                <Heading v-localize h3 size="xs" class="user-preferences-group-heading">Instance settings</Heading>
+
+                <div class="d-flex flex-wrap mb-4 user-preferences-cards">
+                    <UserPreferencesElement
+                        id="edit-preferences-extra"
+                        :icon="faSliders"
+                        :title="localize('Extra Configurations')"
+                        :description="
+                            localize('Settings this Galaxy instance defines, such as external service credentials.')
+                        "
+                        to="/user/extra_preferences" />
+                </div>
+            </template>
+
+            <Heading v-localize h3 size="xs" class="user-preferences-group-heading">Danger zone</Heading>
 
             <div class="d-flex flex-wrap mb-4 user-preferences-cards">
                 <UserPreferencesElement

@@ -39,6 +39,18 @@ vi.mock("@/composables/confirmDialog", () => ({
 const localVue = getLocalVue();
 localVue.use(VueRouter);
 
+const STUBS = {
+    BreadcrumbHeading: true,
+    UserDetailsElement: true,
+    UserPreferencesElement: true,
+    Heading: true,
+    BAlert: true,
+    UserPickTheme: true,
+    UserBeaconSettings: true,
+    UserPreferredObjectStore: true,
+    UserDeletion: true,
+};
+
 describe("UserPreferences.vue", () => {
     const mockPreferences = (passwordDisabled: boolean) => {
         // @ts-expect-error - getUserPreferencesModel is mocked
@@ -77,17 +89,7 @@ describe("UserPreferences.vue", () => {
             localVue,
             router: new VueRouter(),
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            stubs: {
-                BreadcrumbHeading: true,
-                UserDetailsElement: true,
-                UserPreferencesElement: true,
-                Heading: true,
-                BAlert: true,
-                UserPickTheme: true,
-                UserBeaconSettings: true,
-                UserPreferredObjectStore: true,
-                UserDeletion: true,
-            },
+            stubs: STUBS,
         });
 
         expect(wrapper.find("#oidc-profile").exists()).toBe(true);
@@ -110,17 +112,7 @@ describe("UserPreferences.vue", () => {
             localVue,
             router: new VueRouter(),
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            stubs: {
-                BreadcrumbHeading: true,
-                UserDetailsElement: true,
-                UserPreferencesElement: true,
-                Heading: true,
-                BAlert: true,
-                UserPickTheme: true,
-                UserBeaconSettings: true,
-                UserPreferredObjectStore: true,
-                UserDeletion: true,
-            },
+            stubs: STUBS,
         });
 
         expect(wrapper.find("#oidc-profile").exists()).toBe(false);
@@ -148,20 +140,49 @@ describe("UserPreferences.vue", () => {
             localVue,
             router: new VueRouter(),
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            stubs: {
-                BreadcrumbHeading: true,
-                UserDetailsElement: true,
-                UserPreferencesElement: true,
-                Heading: true,
-                BAlert: true,
-                UserPickTheme: true,
-                UserBeaconSettings: true,
-                UserPreferredObjectStore: true,
-                UserDeletion: true,
-            },
+            stubs: STUBS,
         });
 
         expect(wrapper.find("#edit-preferences-password").exists()).toBe(false);
+    });
+
+    it("always offers the account page", async () => {
+        vi.mocked(useConfig).mockReturnValue({
+            config: computed(() => ({ oidc: {}, themes: {} })),
+            isConfigLoaded: computed(() => true),
+        });
+
+        const wrapper = shallowMount(UserPreferences, {
+            localVue,
+            router: new VueRouter(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            stubs: STUBS,
+        });
+
+        expect(wrapper.find("#edit-preferences-information").exists()).toBe(true);
+    });
+
+    it.each([
+        [true, true],
+        [false, false],
+    ])("shows the extra configurations entry when configured: %s", async (configured, expected) => {
+        vi.mocked(useConfig).mockReturnValue({
+            config: computed(() => ({
+                oidc: {},
+                themes: {},
+                has_user_preferences_extra: configured,
+            })),
+            isConfigLoaded: computed(() => true),
+        });
+
+        const wrapper = shallowMount(UserPreferences, {
+            localVue,
+            router: new VueRouter(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            stubs: STUBS,
+        });
+
+        expect(wrapper.find("#edit-preferences-extra").exists()).toBe(expected);
     });
 
     it("shows password preference when allowed", async () => {
@@ -179,17 +200,7 @@ describe("UserPreferences.vue", () => {
             localVue,
             router: new VueRouter(),
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            stubs: {
-                BreadcrumbHeading: true,
-                UserDetailsElement: true,
-                UserPreferencesElement: true,
-                Heading: true,
-                BAlert: true,
-                UserPickTheme: true,
-                UserBeaconSettings: true,
-                UserPreferredObjectStore: true,
-                UserDeletion: true,
-            },
+            stubs: STUBS,
         });
 
         expect(wrapper.find("#edit-preferences-password").exists()).toBe(true);
