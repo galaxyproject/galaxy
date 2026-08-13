@@ -59,4 +59,21 @@ describe("getUserPreferencesModel", () => {
         const prefs = getUserPreferencesModel("user-id");
         expect(prefs.password.disabled).toBe(false);
     });
+
+    it("disables extra preferences when the instance configures none", () => {
+        mockConfig({ has_user_preferences_extra: false, themes: {} });
+
+        const prefs = getUserPreferencesModel("user-id");
+        expect(prefs.extra_preferences.disabled).toBe(true);
+    });
+
+    it("points extra preferences at the typed endpoint when configured", () => {
+        mockConfig({ has_user_preferences_extra: true, themes: {} });
+
+        const prefs = getUserPreferencesModel("user-id");
+        expect(prefs.extra_preferences.disabled).toBe(false);
+        expect(prefs.extra_preferences.url).toBe("/api/users/user-id/extra_preferences/inputs");
+        // The generic form redirects back to the preferences index on save.
+        expect(prefs.extra_preferences.redirect).toBe("/user");
+    });
 });
