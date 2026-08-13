@@ -5,7 +5,7 @@ import { BFormTextarea } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
+import Vue, { nextTick } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -48,29 +48,29 @@ const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
 /**
- * Shared stubs for components `Index.vue` calls methods on directly
- * (`activityBar.value?.isActiveSideBar/setActiveSideBar`, `workflowGraph.value?.fitWorkflow`).
- * `ActivityBar`'s stub renders its `side-panel` slot so `WorkflowAttributes` etc.
- * render underneath it, and tracks the "active" panel reactively so
- * `showAttributes()` can switch it.
- * @returns stubs for `ActivityBar` and `WorkflowGraph` that can be passed to `shallowMount(Index, { stubs: ... })`.
+ * Stub for `ActivityBar`, a component `Index.vue` calls methods on directly
+ * (`activityBar.value?.isActiveSideBar/setActiveSideBar`). Renders its
+ * `side-panel` slot so `WorkflowAttributes` etc. render underneath it, and
+ * tracks the "active" panel reactively so `showAttributes()` can switch it.
  */
+const activityBarStub = Vue.extend({
+    data(): { activeSideBar: string } {
+        return { activeSideBar: "workflow-editor-attributes" };
+    },
+    methods: {
+        isActiveSideBar(this: { activeSideBar: string }, name: string) {
+            return this.activeSideBar === name;
+        },
+        setActiveSideBar(this: { activeSideBar: string }, name: string) {
+            this.activeSideBar = name;
+        },
+    },
+    template: `<div><slot name="side-panel" /></div>`,
+});
+
 function editorStubs() {
     return {
-        ActivityBar: {
-            template: `<div><slot name="side-panel" /></div>`,
-            data(): { activeSideBar: string } {
-                return { activeSideBar: "workflow-editor-attributes" };
-            },
-            methods: {
-                isActiveSideBar(this: { activeSideBar: string }, name: string) {
-                    return this.activeSideBar === name;
-                },
-                setActiveSideBar(this: { activeSideBar: string }, name: string) {
-                    this.activeSideBar = name;
-                },
-            },
-        },
+        ActivityBar: activityBarStub,
         WorkflowGraph: {
             template: "<div />",
             props: ["datatypesMapper"],
@@ -312,6 +312,26 @@ describe("Index", () => {
             wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "new readme");
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("closes the readme editor when leaving the attributes activity, but not for undo-redo", async () => {
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:readme-active", true);
+            await nextTick();
+            expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(true);
+
+            // Switching to the undo-redo activity is the one exception: readme stays open.
+            (wrapper.find(SELECTORS.ACTIVITY_BAR).vm as InstanceType<typeof activityBarStub>).setActiveSideBar(
+                "workflow-undo-redo",
+            );
+            await nextTick();
+            expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(true);
+
+            // Any other activity closes the readme editor.
+            (wrapper.find(SELECTORS.ACTIVITY_BAR).vm as InstanceType<typeof activityBarStub>).setActiveSideBar(
+                "workflow-editor-tools",
+            );
+            await nextTick();
+            expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(false);
         });
 
         it("clears hasChanges after a successful save", async () => {

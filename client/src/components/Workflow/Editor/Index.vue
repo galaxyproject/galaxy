@@ -258,12 +258,13 @@ function setReadme(newReadme: string) {
         setReadmeHandler.set(readme.value, newReadme);
     }
 }
-// If we switch to the report, we want to close the readme editor
-// TODO: Maybe do this for other activities as well? E.g. inputs, tools...
+// The readme editor should only be active while the attributes activity is active,
+// closing it as soon as the user navigates to any other activity. `workflow-undo-redo`
+// is the one exception, since it can be toggled open alongside the attributes panel.
 watch(
-    () => reportActive.value,
-    (newReportActive) => {
-        if (newReportActive) {
+    () => isActiveSideBar("workflow-editor-attributes") || isActiveSideBar("workflow-undo-redo"),
+    (stillEligible) => {
+        if (!stillEligible) {
             readmeActive.value = false;
         }
     },
