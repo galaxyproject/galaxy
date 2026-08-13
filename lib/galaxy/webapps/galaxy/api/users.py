@@ -878,7 +878,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     info_field["cases"].append({"value": info_form["id"], "inputs": info_form["inputs"]})
                 inputs.append(info_field)
 
-            if trans.app.config.enable_account_interface:
+            if trans.app.config.enable_account_interface and trans.app.config.enable_user_addresses:
                 address_inputs = [{"type": "hidden", "name": "id", "hidden": True}]
                 for field in AddressField.fields():
                     address_inputs.append({"type": "text", "name": field[0], "label": field[1], "help": field[2]})
@@ -978,38 +978,41 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         # Update values for extra user preference items
         self.service.save_extra_preferences(trans, user, payload)
 
-        # Update user addresses
-        address_dicts: dict[int, dict[str, Any]] = {}
-        address_count = 0
-        for item in payload:
-            match = re.match(r"^address_(?P<index>\d+)\|(?P<attribute>\S+)", item)
-            if match:
-                groups = match.groupdict()
-                index = int(groups["index"])
-                attribute = groups["attribute"]
-                address_dicts[index] = address_dicts.get(index) or {}
-                address_dicts[index][attribute] = payload[item]
-                address_count = max(address_count, index + 1)
-        user.addresses = []
-        for index in range(0, address_count):
-            d = address_dicts[index]
-            if d.get("id"):
-                try:
-                    user_address = trans.sa_session.get(UserAddress, trans.security.decode_id(d["id"]))
-                except Exception as e:
-                    raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
-            else:
-                user_address = UserAddress()
-                trans.log_event("User address added")
-            for field in AddressField.fields():
-                if str(field[2]).lower() == "required" and not d.get(field[0]):
-                    raise exceptions.ObjectAttributeMissingException(
-                        f"Address {index + 1}: {field[1]} ({field[0]}) required."
-                    )
-                setattr(user_address, field[0], str(d.get(field[0], "")))
-            user_address.user = user
-            user.addresses.append(user_address)
-            trans.sa_session.add(user_address)
+        # Update user addresses. The whole block is gated, not just the parsing:
+        # it rebuilds user.addresses from the payload, so running it while the
+        # feature is off would silently discard whatever is stored.
+        if trans.app.config.enable_user_addresses:
+            address_dicts: dict[int, dict[str, Any]] = {}
+            address_count = 0
+            for item in payload:
+                match = re.match(r"^address_(?P<index>\d+)\|(?P<attribute>\S+)", item)
+                if match:
+                    groups = match.groupdict()
+                    index = int(groups["index"])
+                    attribute = groups["attribute"]
+                    address_dicts[index] = address_dicts.get(index) or {}
+                    address_dicts[index][attribute] = payload[item]
+                    address_count = max(address_count, index + 1)
+            user.addresses = []
+            for index in range(0, address_count):
+                d = address_dicts[index]
+                if d.get("id"):
+                    try:
+                        user_address = trans.sa_session.get(UserAddress, trans.security.decode_id(d["id"]))
+                    except Exception as e:
+                        raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
+                else:
+                    user_address = UserAddress()
+                    trans.log_event("User address added")
+                for field in AddressField.fields():
+                    if str(field[2]).lower() == "required" and not d.get(field[0]):
+                        raise exceptions.ObjectAttributeMissingException(
+                            f"Address {index + 1}: {field[1]} ({field[0]}) required."
+                        )
+                    setattr(user_address, field[0], str(d.get(field[0], "")))
+                user_address.user = user
+                user.addresses.append(user_address)
+                trans.sa_session.add(user_address)
         trans.sa_session.add(user)
         trans.sa_session.commit()
         trans.log_event("User information added")

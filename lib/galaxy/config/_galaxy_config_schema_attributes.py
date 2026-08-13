@@ -159,6 +159,7 @@ class GalaxyAppConfigurationAttributes:
     inactivity_box_content: str
     password_expiration_period: timedelta
     enable_account_interface: bool
+    enable_user_addresses: bool
     session_duration: int
     ga_code: str | None
     plausible_server: str | None
