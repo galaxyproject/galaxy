@@ -11947,6 +11947,11 @@ export interface components {
              */
             deleted: boolean;
             /**
+             * Display name
+             * @description Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier.
+             */
+            display_name?: string | null;
+            /**
              * Email
              * @description Email of the user
              */
@@ -26548,6 +26553,11 @@ export interface components {
              * @description User is active
              */
             active?: boolean | null;
+            /**
+             * Display name
+             * @description Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier.
+             */
+            display_name?: string | null;
             /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
