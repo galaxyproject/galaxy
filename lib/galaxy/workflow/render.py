@@ -149,6 +149,10 @@ class WorkflowCanvas:
             width = self.widths[step_dict["id"]]
             self.add_boxes(step_dict, width, fill)
             for conn, output_dict in step_dict["input_connections"].items():
+                if conn not in self.in_pos.get(step_dict["id"], {}):
+                    # input isn't part of the module's introspected inputs (e.g. a
+                    # conditional branch that's no longer active) - nothing to draw to.
+                    continue
                 self.add_connection(step_dict, conn, output_dict)
 
     def populate_data_for_step(self, step, module_name, module_data_inputs, module_data_outputs, tool_errors=None):
