@@ -43,12 +43,14 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 from dateutil.parser import isoparse
 
 from galaxy.job_execution.compute_environment import (
-    dataset_path_to_extra_path,
     SharedComputeEnvironment,
 )
+from galaxy.tools.actions import get_ext_or_implicit_ext
+from galaxy.util import dataset_path_to_extra_path
 from galaxy.util.crypt4gh import (
     CRYPT4GH_CLEANUP_FAILED_MARKER,
     read_crypt4gh_header,
+    unwrap_crypt4gh_file_ext,
 )
 
 try:
@@ -974,7 +976,7 @@ def collect_declared_crypt4gh_output_targets(
         if _is_discovery_routed_output(tool_output):
             continue
 
-        base_ext = _resolve_base_output_extension(dataset=dataset, tool_output=tool_output)
+        base_ext = _resolve_base_output_extension(dataset=dataset, tool_output=tool_output, job_io=job_io)
         if base_ext is None:
             if _has_output_collectors(tool_output):
                 continue
@@ -1437,7 +1439,7 @@ def _resolve_output_name_for_tool_lookup(*, output_name: str, tool_outputs: Mapp
     return None
 
 
-def _resolve_base_output_extension(*, dataset: Any, tool_output: Any) -> str | None:
+def _resolve_base_output_extension(*, dataset: Any, tool_output: Any, job_io: Any | None = None) -> str | None:
     base_ext = cast(str, getattr(dataset, "ext", "") or "")
     if not base_ext:
         return None
@@ -1445,12 +1447,26 @@ def _resolve_base_output_extension(*, dataset: Any, tool_output: Any) -> str | N
     if base_ext.endswith(".c4gh"):
         base_ext = base_ext[: -len(".c4gh")]
 
-    if base_ext in ("auto", "data", "_sniff_"):
-        declared_ext = getattr(tool_output, "format", None) if tool_output else None
-        if declared_ext and declared_ext not in ("auto", "data", "_sniff_", "input"):
-            return cast(str, declared_ext)
+    declared_ext = getattr(tool_output, "format", None) if tool_output else None
+    if declared_ext and declared_ext not in ("auto", "data", "_sniff_", "input"):
+        return cast(str, declared_ext)
+
+    def _normalize_resolved_ext(ext: str) -> str:
+        return unwrap_crypt4gh_file_ext(ext) or ext
+
+    if base_ext not in ("auto", "data", "_sniff_", "input"):
+        return base_ext
+    if job_io is None:
         return None
-    return base_ext
+
+    metadata_source = getattr(tool_output, "metadata_source", None)
+    if metadata_source:
+        for input_dataset in job_io.get_input_datasets():
+            if getattr(input_dataset, "name", None) == metadata_source:
+                return _normalize_resolved_ext(get_ext_or_implicit_ext(input_dataset))
+        return None
+
+    return None
 
 
 def _ensure_crypt4gh_output_datatype(*, datatypes_registry: Any, base_ext: str) -> str:
