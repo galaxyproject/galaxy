@@ -947,7 +947,11 @@ def handle_uploaded_dataset_file_internal(
                 # User didn't select a type — infer inner type from filename.
                 # Prefer the full original filename so multi-part extensions
                 # like ``somename.bam.c4gh`` are correctly unwrapped.
-                upload_name = uploaded_filename or file_prefix.filename or (f"x.{uploaded_file_ext}" if uploaded_file_ext else None)
+                upload_name = (
+                    uploaded_filename
+                    or file_prefix.filename
+                    or (f"x.{uploaded_file_ext}" if uploaded_file_ext else None)
+                )
                 if upload_name is None:
                     upload_name = ""
                 guessed_ext = infer_crypt4gh_file_ext(
@@ -966,7 +970,12 @@ def handle_uploaded_dataset_file_internal(
                 auto_decompress=file_prefix.auto_decompress,
             )
 
-        if not is_binary and not is_compressed and not is_crypt4gh_upload and (convert_to_posix_lines or convert_spaces_to_tabs):
+        if (
+            not is_binary
+            and not is_compressed
+            and not is_crypt4gh_upload
+            and (convert_to_posix_lines or convert_spaces_to_tabs)
+        ):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
             line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(

@@ -2350,7 +2350,9 @@ class MinimalJobWrapper(HasResourceParameters):
         # This runs after the extended-metadata import so that job.info set
         # here is not overwritten by the import (which carries info: null
         # from the compute side).
-        if getattr(self.app.config, "enable_crypt4gh_transparent_staging", False) and CRYPT4GH_CLEANUP_FAILED_MARKER in (tool_stderr or ""):
+        if getattr(
+            self.app.config, "enable_crypt4gh_transparent_staging", False
+        ) and CRYPT4GH_CLEANUP_FAILED_MARKER in (tool_stderr or ""):
             cleanup_failure_msg = (
                 "Crypt4GH plaintext cleanup failed on compute side — "
                 "plaintext data may remain on the compute node. "
@@ -2365,11 +2367,19 @@ class MinimalJobWrapper(HasResourceParameters):
                     for dataset_assoc in output_dataset_associations:
                         dataset_assoc.dataset.info = cleanup_failure_msg
                 else:
-                    log.warning("(%s) %s (job not failed — crypt4gh_cleanup_failure_is_job_failure is false)", self.get_id_tag(), cleanup_failure_msg)
+                    log.warning(
+                        "(%s) %s (job not failed — crypt4gh_cleanup_failure_is_job_failure is false)",
+                        self.get_id_tag(),
+                        cleanup_failure_msg,
+                    )
             else:
                 # Job is already failing — append the cleanup failure to job.info
                 # and dataset.info so the reason is visible to the user.
-                log.warning("(%s) %s (job already failing from tool/postrun error)", self.get_id_tag(), cleanup_failure_msg)
+                log.warning(
+                    "(%s) %s (job already failing from tool/postrun error)",
+                    self.get_id_tag(),
+                    cleanup_failure_msg,
+                )
                 existing_info = job.info or ""
                 job.info = f"{existing_info}\n{cleanup_failure_msg}" if existing_info else cleanup_failure_msg
                 for dataset_assoc in output_dataset_associations:
