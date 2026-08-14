@@ -13,13 +13,12 @@ from datetime import (
     timezone,
 )
 
+import crypt4gh.header
+import crypt4gh.lib
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.x25519 import (
     X25519PrivateKey,
 )
-
-import crypt4gh.header
-import crypt4gh.lib
 
 DEFAULT_KEYPAIR_ID = "test-compute-keypair-1"
 DEFAULT_EXPIRATION_DAYS = 7
