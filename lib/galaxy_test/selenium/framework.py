@@ -20,8 +20,6 @@ from typing import (
 import requests
 import yaml
 from requests.models import Response
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.common.by import By
 
 from galaxy.selenium import driver_factory
 from galaxy.selenium.axe_results import assert_baseline_accessible
@@ -70,6 +68,8 @@ from galaxy_test.base.populators import (
     stage_inputs,
 )
 from galaxy_test.base.testcase import FunctionalTestCase
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
 
 try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver
