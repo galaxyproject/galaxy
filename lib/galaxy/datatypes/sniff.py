@@ -986,7 +986,11 @@ def handle_uploaded_dataset_file_internal(
                 # User didn't select a type — infer inner type from filename.
                 # Prefer the full original filename so multi-part extensions
                 # like ``somename.bam.c4gh`` are correctly unwrapped.
-                upload_name = uploaded_filename or file_prefix.filename or (f"x.{uploaded_file_ext}" if uploaded_file_ext else None)
+                upload_name = (
+                    uploaded_filename
+                    or file_prefix.filename
+                    or (f"x.{uploaded_file_ext}" if uploaded_file_ext else None)
+                )
                 if upload_name is None:
                     upload_name = ""
                 guessed_ext = infer_crypt4gh_file_ext(
