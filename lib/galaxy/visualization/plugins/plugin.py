@@ -5,9 +5,15 @@ from a query string and render a webpage based on those data.
 
 import logging
 import os
-from typing import Any
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from galaxy.web import url_for
+
+if TYPE_CHECKING:
+    from galaxy.visualization.parameters import VisualizationParameterBundleModel
 
 log = logging.getLogger(__name__)
 
@@ -17,10 +23,19 @@ class VisualizationPlugin:
     A plugin that instantiates resources, serves static files.
     """
 
-    def __init__(self, path: str, name: str, config: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        path: str,
+        name: str,
+        config: dict[str, Any],
+        parameters_schema: dict[str, Any] | None = None,
+        parameter_bundle: "VisualizationParameterBundleModel | None" = None,
+    ) -> None:
         self.path = path
         self.name = name
         self.config = config
+        self.parameters_schema = parameters_schema
+        self.parameter_bundle = parameter_bundle
         self.static_path = os.path.join("/static/plugins/visualizations/", name, "static")
         self._set_logo()
 
@@ -42,6 +57,7 @@ class VisualizationPlugin:
             "tracks": self.config.get("tracks"),
             "settings": self.config.get("settings"),
             "specs": self.config.get("specs"),
+            "parameters_schema": self.parameters_schema,
         }
 
     def _set_logo(self):

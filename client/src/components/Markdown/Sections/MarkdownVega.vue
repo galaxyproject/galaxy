@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
+import { parseBlockContent } from "@/components/Markdown/Utilities/blockContent";
+
 const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
 
 const props = defineProps<{
@@ -13,9 +15,10 @@ const spec = ref({});
 function render() {
     try {
         errorMessage.value = "";
+        const parsed = parseBlockContent(props.content);
         spec.value = {
-            ...JSON.parse(props.content),
-            width: "container",
+            ...parsed,
+            width: parsed.width ?? "container",
         };
     } catch (e: any) {
         errorMessage.value = String(e);
