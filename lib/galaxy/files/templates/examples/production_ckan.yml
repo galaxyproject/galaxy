@@ -4,8 +4,6 @@
   description: |
       [CKAN](https://ckan.org) is an open-source data portal platform for managing and sharing datasets.
       This configuration allows you to connect Galaxy to a CKAN instance of your choice.
-
-      **Note:** Your **registered email address** will be used to create datasets in CKAN.
   variables:
       url:
           label: CKAN instance endpoint (e.g. https://demo.ckan.org)
@@ -32,4 +30,4 @@
       type: ckan
       token: "{{ secrets.token }}"
       writable: "{{ variables.writable }}"
-      endpoint: "{{ variables.url }}"
+      url: "{{ variables.url }}"

@@ -528,7 +528,7 @@ class OmeroFileSourceConfiguration(StrictModel):
 
 class CKANFileSourceTemplateConfiguration(StrictModel):
     type: Literal["ckan"]
-    endpoint: str | TemplateExpansion
+    url: str | TemplateExpansion
     token: str | TemplateExpansion | None = None
     writable: bool | TemplateExpansion = True
     template_start: str | None = None
@@ -537,7 +537,7 @@ class CKANFileSourceTemplateConfiguration(StrictModel):
 
 class CKANFileSourceConfiguration(StrictModel):
     type: Literal["ckan"]
-    endpoint: str
+    url: str
     token: str | None = None
     writable: bool = True
 
