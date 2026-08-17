@@ -254,7 +254,7 @@ social-auth-core==5.1.0
 sortedcontainers==2.4.0
 spython==0.3.14
 sqlalchemy==2.0.51
-sqlparse==0.5.5
+sqlparse==0.6.0
 sse-starlette==3.4.8
 starlette==1.4.1
 starlette-context==0.5.1
