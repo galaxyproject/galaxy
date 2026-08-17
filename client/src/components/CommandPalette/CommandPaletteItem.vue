@@ -57,7 +57,7 @@ const emit = defineEmits<{
 
     .item-icon {
         flex: none;
-        color: var(--color-ebony-clay-500, var(--color-grey-500));
+        color: var(--color-grey-500);
     }
 
     .item-text {
@@ -73,7 +73,7 @@ const emit = defineEmits<{
 
         .item-subtitle {
             font-size: var(--font-size-small);
-            color: var(--color-chicago-500, var(--color-grey-600));
+            color: var(--color-grey-600);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -83,25 +83,15 @@ const emit = defineEmits<{
     .item-enter {
         margin-left: auto;
         font-size: var(--font-size-small);
-        color: var(--color-ebony-clay-600, var(--color-grey-600));
+        color: var(--color-grey-600);
         background: none;
     }
 
     &.active {
-        background-color: var(--color-bay-of-many-100, var(--color-blue-100));
-
-        &::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background-color: var(--color-gold-500, #ffd700);
-        }
+        background-color: var(--color-blue-100);
 
         .item-title {
-            color: var(--color-bay-of-many-900, var(--color-blue-800));
+            color: var(--color-blue-800);
             font-weight: 600;
         }
     }
