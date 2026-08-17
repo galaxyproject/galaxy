@@ -1,6 +1,7 @@
 """Helper functions and constants for GCP Batch runner."""
 
 import logging
+import math
 import re
 from typing import (
     Any,
@@ -360,6 +361,37 @@ L4_GPU_MACHINE_TYPES = [
 
 # L4 GPU counts offered by the G2 machine family (1, 2, 4, 8).
 SUPPORTED_L4_GPU_COUNTS = sorted({entry[2] for entry in L4_GPU_MACHINE_TYPES})
+
+
+def resolve_gpu_count(value: str | int | float | None) -> int:
+    """
+    Normalize a requested GPU quantity to a whole number of physical GPUs.
+
+    ``gpus`` is a TPV scheduling quantity, not a device count: it reaches the runner
+    as a string through destination param interpolation, and real configurations use
+    fractions (``gpus: 0.25``) to mean "a share of a GPU". GCP Batch can only attach
+    whole L4 devices, so any positive request rounds up to the next whole GPU.
+
+    Args:
+        value: the requested quantity (``None``, ``""``, a number, or a numeric string)
+
+    Returns:
+        The number of whole GPUs to attach (0 if nothing was requested)
+
+    Raises:
+        ValueError: if ``value`` is not numeric.
+    """
+    if value is None or value == "":
+        return 0
+    try:
+        gpus = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"Invalid GPU request {value!r}: expected a number of GPUs (e.g. 1, 2, or 0.25).")
+    if not math.isfinite(gpus):
+        raise ValueError(f"Invalid GPU request {value!r}: expected a number of GPUs (e.g. 1, 2, or 0.25).")
+    if gpus <= 0:
+        return 0
+    return math.ceil(gpus)
 
 
 def compute_gpu_machine_type(gpu_count: int, cpu_milli: int, memory_mib: int) -> str:

@@ -35,9 +35,11 @@ from galaxy.jobs.runners.util.gcp_batch import (
     DIRECT_SCRIPT_TEMPLATE,
     parse_docker_volumes_param,
     parse_volumes_param,
+    resolve_gpu_count,
     resolve_max_run_duration,
     sanitize_label_value,
 )
+from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +73,14 @@ RUNNER_PARAM_SPECS: dict[str, dict[str, Any]] = {
     "memory_mib": dict(map=int, default=DEFAULT_MEMORY_MIB),
     # Number of NVIDIA L4 GPUs to attach (0 = none). GPU jobs run on the G2
     # machine family, which bundles L4 GPUs with fixed vCPU/memory shapes.
-    "gpus": dict(map=int, default=0),
+    # Mapped with resolve_gpu_count so a fractional TPV request (gpus: 0.25, "a share
+    # of a GPU") rounds up to a whole device instead of raising, as int() would.
+    "gpus": dict(map=resolve_gpu_count, default=0),
+    # Whether GCP Batch installs the NVIDIA GPU drivers at boot. Set false when the
+    # (custom) VM image already has the L4 drivers baked in to skip the boot-time install.
+    # Mapped with string_as_bool, not bool: config and destination values arrive as
+    # strings, and bool("false") is True.
+    "install_gpu_drivers": dict(map=string_as_bool, default=True),
     # Job-specific resource requests (same as Kubernetes runner)
     "requests_cpu": dict(map=str, default=None),
     "requests_memory": dict(map=str, default=None),
@@ -268,6 +277,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "vcpu",
             "memory_mib",
             "gpus",
+            "install_gpu_drivers",
             "use_container",
             "galaxy_user_id",
             "galaxy_group_id",
@@ -301,10 +311,15 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             job_wrapper.job_destination.params, params, job_wrapper.get_resource_parameters()
         )
 
+        # Determine GPU requirements before building the script: the container has to
+        # be started with --gpus when a GPU was requested, and the same resolved count
+        # selects the machine type below. Resolving it once keeps the two in agreement.
+        gpus = self._get_gpus(params, job_wrapper.get_resource_parameters())
+
         # Create the execution script based on whether we use containers or not
         if params.get("use_container", True):
             execution_script = self._create_container_execution_script(
-                job_wrapper, ajs, params, container_image, cpu_milli, memory_mib
+                job_wrapper, ajs, params, container_image, cpu_milli, memory_mib, gpus
             )
         else:
             execution_script = self._create_direct_execution_script(job_wrapper, ajs, params, cpu_milli, memory_mib)
@@ -397,10 +412,9 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         instance_template = batch_v1.AllocationPolicy.InstancePolicyOrTemplate()
         instance_policy = batch_v1.AllocationPolicy.InstancePolicy()
 
-        # Determine GPU requirements. L4 GPUs live on the G2 machine family, so a
-        # GPU job either honors an explicitly configured g2 machine type or selects
-        # the smallest g2 shape satisfying the requested GPU count, cores and memory.
-        gpus = self._get_gpus(params, job_wrapper.get_resource_parameters())
+        # L4 GPUs live on the G2 machine family, so a GPU job (gpus resolved above)
+        # either honors an explicitly configured g2 machine type or selects the
+        # smallest g2 shape satisfying the requested GPU count, cores and memory.
         configured_machine_type = params.get("machine_type")
         is_gpu_machine_type = bool(configured_machine_type) and configured_machine_type.startswith("g2-")
 
@@ -413,10 +427,14 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
                 machine_type = compute_gpu_machine_type(gpus, cpu_milli, memory_mib)
             # For the G2 family the L4 GPUs are bundled with the machine type, so no
             # accelerators block is set; only the driver install flag is required.
-            instance_template.install_gpu_drivers = True
+            # Batch installs the drivers at boot unless the VM image already has them.
+            # Destination params bypass the runner param spec mapping, so parse here too.
+            install_gpu_drivers = string_as_bool(params.get("install_gpu_drivers", True))
+            instance_template.install_gpu_drivers = install_gpu_drivers
             log.debug(
-                "Selected GPU machine type %s (install_gpu_drivers=True) for job %s (requested: %s L4 GPU(s), %d mCPU, %d MiB)",
+                "Selected GPU machine type %s (install_gpu_drivers=%s) for job %s (requested: %s L4 GPU(s), %d mCPU, %d MiB)",
                 machine_type,
+                install_gpu_drivers,
                 job_wrapper.get_id_tag(),
                 gpus or "from machine_type",
                 cpu_milli,
@@ -488,6 +506,12 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
 
         Uses Galaxy's standard container resolution system. Tools must have
         container requirements configured for containerized execution.
+
+        The finder is passed the destination params, so a GPU tool whose default
+        container is a CPU build can be pointed at a CUDA-enabled image per-tool from
+        TPV with `container_override` / `docker_container_id_override`. That is
+        inherently tool-specific and cannot be decided here: `--gpus all` exposes the
+        device, but only a CUDA-capable image can use it.
         """
         # Use Galaxy's container finder system (same approach as Kubernetes runner)
         container = self._find_container(job_wrapper)
@@ -583,14 +607,21 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         return int(params.get("memory_mib", DEFAULT_MEMORY_MIB))
 
     def _get_gpus(self, params, resource_params):
-        """Get the number of GPUs requested (0 if none)."""
+        """Get the number of whole GPUs requested (0 if none).
+
+        Values arrive as strings (TPV forwards `gpus` through destination param
+        interpolation) and may be fractional, so resolve_gpu_count parses and rounds
+        up rather than assuming an int-parseable device count.
+        """
         # Galaxy job resource parameter 'gpus' takes precedence over the
         # destination/runner 'gpus' merged into params by _get_job_params.
-        if resource_params.get("gpus"):
-            return int(resource_params["gpus"])
-        return int(params.get("gpus", 0) or 0)
+        if resource_gpus := resolve_gpu_count(resource_params.get("gpus")):
+            return resource_gpus
+        return resolve_gpu_count(params.get("gpus"))
 
-    def _create_container_execution_script(self, job_wrapper, ajs, params, container_image, cpu_milli, memory_mib):
+    def _create_container_execution_script(
+        self, job_wrapper, ajs, params, container_image, cpu_milli, memory_mib, gpus=0
+    ):
         """Create a script that runs the Galaxy job inside a container with volume mounts."""
         # Parse volumes from gcp_batch_volumes parameter
         volumes_param = params.get("gcp_batch_volumes")
@@ -625,6 +656,12 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         else:
             docker_user_flag = ""
 
+        # Expose the host GPUs to the container when the job requested any. This is the
+        # analog of Singularity's --nv: without it the job runs blind to the device even
+        # on a correctly provisioned G2 VM with drivers installed. The G2 shapes bundle
+        # every GPU on the VM with the job, so "all" is the right scope.
+        docker_gpu_flag = "--gpus all" if gpus else ""
+
         # Compute galaxy_slots from allocated CPU (at least 1 slot)
         galaxy_slots = max(1, int(cpu_milli / 1000))
 
@@ -639,13 +676,19 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "galaxy_slots": galaxy_slots,
             "galaxy_memory_mb": memory_mib,
             "docker_user_flag": docker_user_flag,
+            "docker_gpu_flag": docker_gpu_flag,
             "docker_volume_args": docker_volume_args,
         }
 
         return CONTAINER_SCRIPT_TEMPLATE.substitute(template_params)
 
     def _create_direct_execution_script(self, job_wrapper, ajs, params, cpu_milli, memory_mib):
-        """Create a script that runs the Galaxy job directly on the VM (without container)."""
+        """Create a script that runs the Galaxy job directly on the VM (without container).
+
+        No GPU-conditional branch is needed here: the job runs on the host, where the L4
+        devices are already visible once the drivers are present (installed at boot by
+        Batch, or baked into a custom VM image). Only the container path needs --gpus.
+        """
         # Parse volumes from gcp_batch_volumes parameter
         volumes_param = params.get("gcp_batch_volumes")
         parsed_volumes = parse_volumes_param(volumes_param) if volumes_param else []

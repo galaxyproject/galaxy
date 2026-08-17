@@ -18,6 +18,7 @@ from .helpers import (
     parse_docker_volumes_param,
     parse_volume_spec,
     parse_volumes_param,
+    resolve_gpu_count,
     resolve_max_run_duration,
     sanitize_label_value,
 )
@@ -40,6 +41,7 @@ __all__ = (
     "convert_memory_to_mib",
     "convert_duration_to_seconds",
     "parse_docker_volumes_param",
+    "resolve_gpu_count",
     "resolve_max_run_duration",
     "parse_volume_spec",
     "parse_volumes_param",

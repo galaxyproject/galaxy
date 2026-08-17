@@ -110,7 +110,7 @@ if [ -d "${nfs_mount_path}" ]; then
 
         echo "=== Starting Container Execution ==="
         # Run the Galaxy job script inside the container with all volume mounts
-        docker run --rm ${docker_user_flag} \
+        docker run --rm ${docker_user_flag} ${docker_gpu_flag} \
             -v "${nfs_mount_path}:${nfs_mount_path}:rw" \
             ${docker_volume_args} \
             -w "$$(dirname ${job_file})" \
