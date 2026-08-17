@@ -98,7 +98,7 @@
                 </div>
                 <div v-else>No content found.</div>
 
-                <GLink v-if="dataContent?.truncated" :href="dataContent?.item_url"> Show More... </GLink>
+                <ExternalLink v-if="dataContent?.truncated" :href="displayUrl"> Show More </ExternalLink>
             </div>
         </BCardBody>
     </BCard>
@@ -118,8 +118,8 @@ import { useDatasetTextContentStore } from "@/stores/datasetTextContentStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import HistoryDatasetAsImage from "@/components/Markdown/Sections/Elements/HistoryDatasetAsImage.vue";
 

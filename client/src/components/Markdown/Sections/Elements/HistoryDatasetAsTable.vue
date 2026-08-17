@@ -5,8 +5,8 @@ import { computed } from "vue";
 import type { TableField } from "@/components/Common/GTable.types";
 import { UrlDataProvider } from "@/components/providers/UrlDataProvider.js";
 
-import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface HistoryDatasetAsTableProps {
@@ -115,7 +115,9 @@ function getItems(textData: string, metaData: any) {
                 </div>
                 <div v-else>No content found.</div>
 
-                <GLink v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </GLink>
+                <ExternalLink v-if="itemContent?.truncated" :href="`/datasets/${props.datasetId}/display`">
+                    Show More
+                </ExternalLink>
             </div>
         </UrlDataProvider>
         <BCardFooter v-if="footer">
