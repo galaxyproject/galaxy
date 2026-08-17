@@ -1,5 +1,4 @@
 import tempfile
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 import pytest
@@ -26,6 +25,7 @@ from galaxy.model.unittest_utils.utils import (
     random_email,
     random_str,
 )
+from galaxy.util import now
 
 
 @pytest.fixture(scope="module")
@@ -86,9 +86,9 @@ def make_user(session):
         kwd.setdefault("username", random_str())
         kwd.setdefault("email", random_email())
         kwd.setdefault("password", random_str())
-        now = datetime.utcnow()
-        kwd.setdefault("create_time", now)
-        kwd.setdefault("update_time", now)
+        created = now()
+        kwd.setdefault("create_time", created)
+        kwd.setdefault("update_time", created)
         kwd.setdefault("external", False)
         kwd.setdefault("deleted", False)
         kwd.setdefault("purged", False)
