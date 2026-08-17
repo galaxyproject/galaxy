@@ -1,13 +1,14 @@
 <script setup lang="ts">
+import { faUndo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ColDef, GetRowIdParams, IRowDragItem, NewValueParams } from "ag-grid-community";
 import { BAlert, BCol, BLink, BRow } from "bootstrap-vue";
 import { getActivePinia } from "pinia";
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import type { components, CreateNewCollectionPayload, HDASummary, HistoryItemSummary } from "@/api";
-import { splitIntoPairedAndUnpaired } from "@/components/Collections/pairing";
 import { useConfirmDialog } from "@/composables/confirmDialog";
-import { Toast } from "@/composables/toast";
+import { useToast } from "@/composables/toast";
 import { useAgGrid } from "@/composables/useAgGrid";
 import { usePairingDatasetTargetsStore } from "@/stores/collectionBuilderItemsStore";
 import localize from "@/utils/localization";
@@ -19,10 +20,16 @@ import {
     useCollectionCreator,
 } from "./common/useCollectionCreator";
 import { usePairingSummary } from "./common/usePairingSummary";
-import { type AutoPairingResult, autoPairWithCommonFilters, guessNameForPair } from "./pairing";
+import {
+    type AutoPairingResult,
+    autoPairWithCommonFilters,
+    guessNameForPair,
+    splitIntoPairedAndUnpaired,
+} from "./pairing";
 
 import AutoPairing from "./common/AutoPairing.vue";
 import PairedOrUnpairedListCreatorHelp from "./PairedOrUnpairedListCreatorHelp.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
 type CollectionElementIdentifier = components["schemas"]["CollectionElementIdentifier"];
@@ -32,6 +39,8 @@ const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this 
 const { confirm } = useConfirmDialog();
 
 const pinia = getActivePinia();
+
+const Toast = useToast();
 
 const pairingTargetsStore = usePairingDatasetTargetsStore();
 
@@ -72,7 +81,6 @@ const emit = defineEmits<{
 
 const currentForwardFilter = ref(props.forwardFilter);
 const currentReverseFilter = ref(props.reverseFilter);
-const activeElements = ref(props.initialElements);
 const { currentSummary, summaryText, autoPair } = usePairingSummary<HistoryItemSummary>(props);
 
 const {
@@ -233,6 +241,23 @@ function checkForDuplicates(refresh: boolean) {
     return anyDuplicated;
 }
 
+// `RowT.id` (and thus AG Grid's `getRowId`) is namespaced by row kind so that a paired row and
+// an unpaired row can never collide on the same id . For e.g. when a pair is split back into a
+// lone survivor, the old pair row and the new unpaired row would otherwise both resolve to
+// the same forward.id, and AG Grid would treat it as an in-place update of the same row node
+// rather than a delete+insert, leaving cell renderers (like the discard button) holding a
+// stale reference to the old paired `datasets` value.
+
+/** Returns a namespaced row ID for an unpaired row. */
+function unpairedRowId(id: string): string {
+    return `single:${id}`;
+}
+
+/** Returns a namespaced row ID for a paired row. */
+function pairedRowId(forwardId: string): string {
+    return `pair:${forwardId}`;
+}
+
 function unpairedRow(item: HistoryItemSummary): RowT {
     let name = item.name || "";
     if (removeExtensions.value) {
@@ -242,11 +267,11 @@ function unpairedRow(item: HistoryItemSummary): RowT {
     if (props.collectionType.endsWith(":paired")) {
         status = "requires_pairing";
     }
-    return { identifier: name || "", datasets: { unpaired: item }, id: item.id, status: status };
+    return { identifier: name || "", datasets: { unpaired: item }, id: unpairedRowId(item.id), status: status };
 }
 
 function pairedRow(item: GenericPair<HistoryItemSummary>): RowT {
-    return { identifier: item.name, datasets: item, id: item.forward.id, status: "ok" };
+    return { identifier: item.name, datasets: item, id: pairedRowId(item.forward.id), status: "ok" };
 }
 
 function syncPairingToRowData(summary: AutoPairingResult<HistoryItemSummary>, rowDataValue: RowT[]) {
@@ -259,12 +284,12 @@ function syncPairingToRowData(summary: AutoPairingResult<HistoryItemSummary>, ro
                 rowDataValue.push(unpairedRow(unpaired));
             }
         } else {
-            for (const unpaired of activeElements.value) {
+            for (const unpaired of props.initialElements) {
                 rowDataValue.push(unpairedRow(unpaired));
             }
         }
     } else {
-        for (const unpaired of activeElements.value) {
+        for (const unpaired of props.initialElements) {
             rowDataValue.push(unpairedRow(unpaired));
         }
     }
@@ -279,19 +304,20 @@ function syncRowDataToRowPairing() {
 }
 
 function initialize() {
+    discardedIds.clear();
     if (currentForwardFilter.value === undefined) {
-        const summary = autoPairWithCommonFilters(activeElements.value, true);
+        const summary = autoPairWithCommonFilters(props.initialElements, true);
         const { forwardFilter, reverseFilter } = summary;
         if (forwardFilter !== undefined && reverseFilter !== undefined) {
             currentSummary.value = summary;
             currentForwardFilter.value = forwardFilter;
             currentReverseFilter.value = reverseFilter;
         } else {
-            autoPair(activeElements.value, "", "", removeExtensions.value);
+            autoPair(props.initialElements, "", "", removeExtensions.value);
         }
     } else {
         autoPair(
-            activeElements.value,
+            props.initialElements,
             currentForwardFilter.value,
             currentReverseFilter.value || "",
             removeExtensions.value,
@@ -299,43 +325,169 @@ function initialize() {
     }
     syncRowDataToRowPairing();
     checkForDuplicates(false);
+    _refresh();
+}
+
+/**
+ * IDs that the user has explicitly discarded from the grid. Used to ensure that on reconciliation
+ * with new `initialElements`, we don't resurrect any elements that the user has explicitly discarded.
+ */
+const discardedIds = new Set<string>();
+
+function knownRowIds(): Set<string> {
+    const ids = new Set<string>();
+    for (const row of rowData.value) {
+        if ("forward" in row.datasets) {
+            ids.add(row.datasets.forward.id);
+            ids.add(row.datasets.reverse.id);
+        } else {
+            ids.add(row.datasets.unpaired.id);
+        }
+    }
+    return ids;
+}
+
+/**
+ * Add rows for `elements` not already present in `rowData` (matched by id), auto-pairing
+ * them against each other using the current (or newly-detected) filters when applicable.
+ */
+function addNewElementsToRowData(elements: HistoryItemSummary[]) {
+    const existingIds = knownRowIds();
+    const newElements = elements.filter((el) => !existingIds.has(el.id) && !discardedIds.has(el.id));
+    if (newElements.length === 0) {
+        return;
+    }
+
+    if (!flatLists.value) {
+        // Filters may not have been detected yet if the creator first initialized with
+        // no elements (e.g. an empty history) so try again now that new elements arrived.
+        if (!currentForwardFilter.value || !currentReverseFilter.value) {
+            const { forwardFilter, reverseFilter } = autoPairWithCommonFilters(newElements, removeExtensions.value);
+            if (forwardFilter !== undefined && reverseFilter !== undefined) {
+                currentForwardFilter.value = forwardFilter;
+                currentReverseFilter.value = reverseFilter;
+            }
+        }
+
+        if (currentForwardFilter.value && currentReverseFilter.value) {
+            const { pairs, unpaired } = splitIntoPairedAndUnpaired(
+                newElements,
+                currentForwardFilter.value,
+                currentReverseFilter.value,
+                removeExtensions.value,
+            );
+            for (const pair of pairs) {
+                rowData.value.push(pairedRow(pair));
+            }
+            for (const el of unpaired) {
+                rowData.value.push(unpairedRow(el));
+            }
+            return;
+        }
+    }
+
+    for (const el of newElements) {
+        rowData.value.push(unpairedRow(el));
+    }
+}
+
+/** Matches the wording ListCollectionCreator/PairCollectionCreator use for the same situation. */
+function toastRemovedFromCollection(...items: HistoryItemSummary[]) {
+    const description = items.map((item) => `${item.hid}: ${item.name}`).join(", ");
+    const invalidMsg = `${description} ${localize("has been removed from the collection")}`;
+    Toast.error(invalidMsg, localize("Invalid element"));
+}
+
+/**
+ * A lesser-severity notice for datasets that disappeared but were never actually headed into
+ * the final collection to begin with (see the `strictPairs` cases below), so "removed from the
+ * collection" would overstate what happened.
+ */
+function toastNoLongerAvailable(item: HistoryItemSummary) {
+    const msg = `${item.hid}: ${item.name} ${localize("is no longer available and was removed from the pairing list")}`;
+    Toast.warning(msg, localize("Dataset unavailable"));
+}
+
+/**
+ * Reconcile `rowData` with a changed `initialElements` without disturbing existing pairs:
+ * add rows for newly-seen elements, drop rows for elements no longer present (splitting
+ * a pair back to unpaired if only one side of it was removed), and leave everything
+ * else (manual or auto pairs, identifiers, etc.) untouched.
+ */
+function reconcileWithInitialElements(newInitialElements: HistoryItemSummary[]) {
+    const validIds = new Set(newInitialElements.map((el) => el.id));
+    const strictPairs = props.collectionType.endsWith(":paired");
+
+    for (const row of [...rowData.value]) {
+        if ("forward" in row.datasets) {
+            const forwardValid = validIds.has(row.datasets.forward.id);
+            const reverseValid = validIds.has(row.datasets.reverse.id);
+            if (!forwardValid && !reverseValid) {
+                // The whole pair vanished; it was headed into the collection either way
+                // One toast for the pair, not one per side
+                onRemove(row.datasets, false, false);
+                toastRemovedFromCollection(row.datasets.forward, row.datasets.reverse);
+            } else if (!forwardValid || !reverseValid) {
+                const survivor = forwardValid ? row.datasets.forward : row.datasets.reverse;
+                onRemove(row.datasets, false, false);
+                rowData.value.push(unpairedRow(survivor));
+                if (strictPairs) {
+                    toastNoLongerAvailable(forwardValid ? row.datasets.reverse : row.datasets.forward);
+                } else {
+                    toastRemovedFromCollection(forwardValid ? row.datasets.reverse : row.datasets.forward);
+                }
+            }
+        } else {
+            if (!validIds.has(row.datasets.unpaired.id)) {
+                onRemove(row.datasets, false, false);
+                if (strictPairs) {
+                    toastNoLongerAvailable(row.datasets.unpaired);
+                } else {
+                    toastRemovedFromCollection(row.datasets.unpaired);
+                }
+            }
+        }
+    }
+
+    addNewElementsToRowData(newInitialElements);
+
+    checkForDuplicates(false);
+    _refresh();
 }
 
 initialize();
+
+watch(() => props.initialElements, reconcileWithInitialElements);
 
 function getRowId(params: GetRowIdParams) {
     return String(params.data.id);
 }
 
 function addUploadedFiles(files: HDASummary[]) {
-    // Any uploaded files are added to workingElements in _elementsSetUp
+    // Any uploaded files are added to initialElements once the history refreshes
     // The user will have to manually select the files to add them to the pair
 
     // Check for validity of uploads
-    const addedFiles = [];
+    const addedFiles: HDASummary[] = [];
     files.forEach((file) => {
         const problem = isElementInvalid(file);
         if (problem) {
             const invalidMsg = `${file.hid}: ${file.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
             Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
         } else {
-            activeElements.value.push(file);
             addedFiles.push(file);
         }
     });
-    if (currentForwardFilter.value === undefined) {
-        // Auto-pairing hasn't paired anything yet - just take all the files and try them...
-        initialize();
-    } else {
-        const summary = splitIntoPairedAndUnpaired(
-            files,
-            currentForwardFilter.value || "",
-            currentReverseFilter.value || "",
-            removeExtensions.value,
+
+    if (addedFiles.length > 0) {
+        const singularDatasetName =
+            addedFiles[0] && addedFiles.length == 1 ? `dataset '${addedFiles[0].name}'` : "datasets";
+
+        Toast.info(
+            `Look for the ${singularDatasetName} in the list below to add them to a pair.`,
+            "Uploaded files added to history",
         );
-        syncPairingToRowData(summary, rowData.value);
     }
-    _refresh();
 }
 
 function updatePairNames() {
@@ -526,8 +678,10 @@ function onPair(firstId: string, secondId: string, pairBy: PairBy) {
     let reverse: HistoryItemSummary | null = null;
 
     const pairDirection = pairDirections[pairBy];
+    const firstRowId = unpairedRowId(firstId);
+    const secondRowId = unpairedRowId(secondId);
     rowData.value.forEach((row, index) => {
-        if (row.id == firstId && "unpaired" in row.datasets) {
+        if (row.id == firstRowId && "unpaired" in row.datasets) {
             firstIndex = index;
             if (pairDirection == "from_1_to_2") {
                 forward = row.datasets.unpaired as HistoryItemSummary;
@@ -535,7 +689,7 @@ function onPair(firstId: string, secondId: string, pairBy: PairBy) {
                 reverse = row.datasets.unpaired as HistoryItemSummary;
             }
         }
-        if (row.id == secondId && "unpaired" in row.datasets) {
+        if (row.id == secondRowId && "unpaired" in row.datasets) {
             secondIndex = index;
             if (pairDirection == "from_1_to_2") {
                 reverse = row.datasets.unpaired as HistoryItemSummary;
@@ -591,11 +745,11 @@ function onPair(firstId: string, secondId: string, pairBy: PairBy) {
 }
 
 function _refresh() {
-    gridApi.value!.setRowData(rowData.value);
+    gridApi.value?.setRowData(rowData.value);
 }
 
 function onUnpair(pair: GenericPair<HistoryItemSummary>) {
-    const targetIndex = onRemove(pair, false) || 0;
+    const targetIndex = onRemove(pair, false, false) || 0;
     rowData.value.splice(targetIndex, 0, unpairedRow(pair.forward), unpairedRow(pair.reverse));
     _refresh();
 }
@@ -623,12 +777,25 @@ function onUnpairedClick(value: UnpairedValue) {
     }
 }
 
-function onRemove(item: GenericPair<HistoryItemSummary> | UnpairedValue, refresh = true) {
-    let rowId = null as string | null;
+/**
+ * Removes an item from the grid, optionally refreshing the grid and discarding the item from future reconciliation.
+ * @param item The item to remove from the grid.
+ * @param refresh Whether to refresh the grid after removal. Defaults to `true`.
+ * @param discard Whether to discard the item from future reconciliation. Defaults to `true`.
+ */
+function onRemove(item: GenericPair<HistoryItemSummary> | UnpairedValue, refresh = true, discard = true) {
+    let rowId: string;
     if ("forward" in item) {
-        rowId = item.forward.id;
+        rowId = pairedRowId(item.forward.id);
+        if (discard) {
+            discardedIds.add(item.forward.id);
+            discardedIds.add(item.reverse.id);
+        }
     } else {
-        rowId = item.unpaired.id;
+        rowId = unpairedRowId(item.unpaired.id);
+        if (discard) {
+            discardedIds.add(item.unpaired.id);
+        }
     }
     let targetIndex = null;
     rowData.value.forEach((row, index) => {
@@ -733,7 +900,7 @@ export default {
             render-extensions-toggle
             :extensions-toggle="removeExtensions"
             :extensions="extensions"
-            collection-type="collectionType"
+            :collection-type="collectionType"
             :no-items="props.initialElements.length == 0 && !props.fromSelection"
             :show-upload="!fromSelection"
             :show-buttons="showButtonsForModal"
@@ -776,6 +943,15 @@ export default {
                             </BAlert>
                         </BCol>
                     </BRow>
+                    <div class="d-flex justify-content-end mb-1">
+                        <GButton
+                            :title="localize('Discard all manual pairing and start over')"
+                            size="small"
+                            @click="initialize">
+                            <FontAwesomeIcon :icon="faUndo" fixed-width />
+                            {{ localize("Reset") }}
+                        </GButton>
+                    </div>
                     <div :style="style" :class="theme">
                         <AgGridVue
                             :row-drag-managed="true"
