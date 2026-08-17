@@ -319,9 +319,12 @@ watchImmediate(isPaletteOpen, async (open) => {
     overflow: hidden;
     box-shadow: 0 18px 50px rgba(33, 37, 50, 0.35);
 
+    background-color: var(--background-color);
+
+    // same backdrop treatment as GModal
     &::backdrop {
-        background-color: var(--color-ebony-clay-950, #212532);
-        opacity: 0.45;
+        background-color: var(--color-blue-800);
+        opacity: 0.33;
     }
 
     .palette-input {
@@ -329,10 +332,10 @@ watchImmediate(isPaletteOpen, async (open) => {
         align-items: center;
         gap: var(--spacing-2);
         padding: var(--spacing-3);
-        background-color: var(--color-ebony-clay-900, #2c3143);
+        border-bottom: 1px solid var(--color-grey-200);
 
         .palette-input-icon {
-            color: var(--color-gold-500, #ffd700);
+            color: var(--color-grey-500);
         }
 
         input {
@@ -340,10 +343,10 @@ watchImmediate(isPaletteOpen, async (open) => {
             border: none;
             outline: none;
             background: transparent;
-            color: var(--color-bay-of-many-100, #edf4fa);
+            color: inherit;
 
             &::placeholder {
-                color: var(--color-ebony-clay-400, var(--color-grey-500));
+                color: var(--color-grey-400);
             }
         }
     }
@@ -358,14 +361,14 @@ watchImmediate(isPaletteOpen, async (open) => {
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: var(--color-ebony-clay-600, var(--color-grey-600));
+            color: var(--color-grey-500);
             padding: var(--spacing-2) var(--spacing-3) var(--spacing-1);
         }
 
         .palette-hint {
             padding: var(--spacing-3);
             text-align: center;
-            color: var(--color-chicago-500, var(--color-grey-600));
+            color: var(--color-grey-600);
         }
     }
 
@@ -373,15 +376,16 @@ watchImmediate(isPaletteOpen, async (open) => {
         display: flex;
         gap: var(--spacing-3);
         padding: var(--spacing-1) var(--spacing-3);
-        background-color: var(--color-ebony-clay-950, #212532);
-        color: var(--color-ebony-clay-400, var(--color-grey-400));
+        background-color: var(--color-grey-100);
+        border-top: 1px solid var(--color-grey-200);
+        color: var(--color-grey-600);
         font-size: var(--font-size-small);
 
         kbd {
-            background-color: var(--color-ebony-clay-800, #3c435c);
-            border: 1px solid var(--color-ebony-clay-700, #4c5574);
+            background-color: var(--background-color);
+            border: 1px solid var(--color-grey-300);
             border-radius: var(--spacing);
-            color: var(--color-ebony-clay-100, #d3d6e2);
+            color: var(--color-grey-600);
             font-size: inherit;
             padding: 0 var(--spacing-1);
         }
