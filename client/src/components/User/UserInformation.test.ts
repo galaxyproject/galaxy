@@ -49,7 +49,6 @@ const EDITABLE_CONFIG = {
 const STUBS = {
     BreadcrumbHeading: true,
     FontAwesomeIcon: true,
-    GLink: true,
     Heading: true,
     LoadingSpan: true,
 };

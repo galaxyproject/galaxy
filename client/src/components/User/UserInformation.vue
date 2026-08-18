@@ -13,7 +13,6 @@ import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GLink from "@/components/BaseComponents/GLink.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -119,7 +118,7 @@ watch(currentUser, resetFromUser, { immediate: true });
             <LoadingSpan message="Loading your account" />
         </BAlert>
 
-        <form v-else @submit.prevent="onSubmit">
+        <form v-else class="user-information" @submit.prevent="onSubmit">
             <BAlert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
             </BAlert>
@@ -131,100 +130,148 @@ watch(currentUser, resetFromUser, { immediate: true });
             </BAlert>
 
             <section class="user-information-section">
-                <Heading v-localize h2 size="sm">Identity</Heading>
+                <div class="user-information-intro">
+                    <Heading v-localize h2 size="sm">Identity</Heading>
 
-                <BFormGroup label-for="display_name" :label="localize('Display name')">
-                    <BFormInput id="display_name" v-model="displayName" :disabled="!canEdit" :placeholder="username" />
+                    <p v-localize class="text-muted">How you are named across Galaxy and in what you share.</p>
+                </div>
 
-                    <small v-localize class="form-text text-muted">
-                        Shown in place of your username across Galaxy. Leave it blank to use your username.
-                    </small>
-                </BFormGroup>
+                <div class="user-information-fields">
+                    <BFormGroup label-for="display_name" :label="localize('Display name')">
+                        <BFormInput
+                            id="display_name"
+                            v-model="displayName"
+                            :disabled="!canEdit"
+                            :placeholder="username" />
 
-                <BFormGroup label-for="username" :label="localize('Username')">
-                    <BFormInput id="username" v-model="username" :disabled="!canEdit" />
-
-                    <small class="form-text text-muted">
-                        <span v-localize>
-                            Signs you in, and appears in the links you share. Lower-case letters, numbers, '.', '_' and
-                            '-' only.
-                        </span>
-
-                        <br />
-
-                        <span class="user-information-example">{{ profilePath }}/w/my-workflow</span>
-                    </small>
-
-                    <BAlert v-if="username !== (currentUser.username ?? '')" show variant="warning" class="mt-2">
-                        <span v-localize>
-                            Changing your username breaks links you have already shared - the old addresses stop
-                            resolving.
-                        </span>
-                    </BAlert>
-                </BFormGroup>
+                        <small v-localize class="form-text text-muted">
+                            Shown in place of your username across Galaxy. Leave it blank to use your username.
+                        </small>
+                    </BFormGroup>
+                </div>
             </section>
 
             <section class="user-information-section">
-                <Heading v-localize h2 size="sm">Sign-in</Heading>
+                <div class="user-information-intro">
+                    <Heading v-localize h2 size="sm">Sign-in</Heading>
 
-                <BFormGroup label-for="email" :label="localize('Email address')">
-                    <BFormInput id="email" v-model="email" type="email" :disabled="!canEdit" />
-
-                    <small v-localize class="form-text text-muted">
-                        Used to sign in and to recover your account.
-                    </small>
-
-                    <BAlert
-                        v-if="config.user_activation_on && email !== currentUser.email"
-                        show
-                        variant="warning"
-                        class="mt-2">
-                        <span v-localize>
-                            Changing your email address deactivates your account until you follow the activation link
-                            sent to the new address.
-                        </span>
-                    </BAlert>
-                </BFormGroup>
-
-                <div v-if="canEdit" class="user-information-link">
-                    <GLink to="/user/password">
-                        <FontAwesomeIcon :icon="faUnlockAlt" />
-                        <span v-localize>Change password</span>
-                    </GLink>
+                    <p v-localize class="text-muted">How you get into your account, and how you get back in.</p>
                 </div>
 
-                <div v-if="showIdentities" class="user-information-link">
-                    <GLink to="/user/external_ids">
-                        <FontAwesomeIcon :icon="faIdCard" />
-                        <span v-localize>Manage third-party identities</span>
-                    </GLink>
+                <div class="user-information-fields">
+                    <BFormGroup label-for="username" :label="localize('Username')">
+                        <BFormInput id="username" v-model="username" :disabled="!canEdit" />
+
+                        <small class="form-text text-muted">
+                            <span v-localize>
+                                Signs you in, and appears in the links you share. Lower-case letters, numbers, '.', '_'
+                                and '-' only.
+                            </span>
+
+                            <br />
+
+                            <span class="user-information-example">{{ profilePath }}/w/my-workflow</span>
+                        </small>
+
+                        <BAlert v-if="username !== (currentUser.username ?? '')" show variant="warning" class="mt-2">
+                            <span v-localize>
+                                Changing your username breaks links you have already shared - the old addresses stop
+                                resolving.
+                            </span>
+                        </BAlert>
+                    </BFormGroup>
+
+                    <BFormGroup label-for="email" :label="localize('Email address')">
+                        <BFormInput id="email" v-model="email" type="email" :disabled="!canEdit" />
+
+                        <small v-localize class="form-text text-muted">
+                            Used to sign in and to recover your account.
+                        </small>
+
+                        <BAlert
+                            v-if="config.user_activation_on && email !== currentUser.email"
+                            show
+                            variant="warning"
+                            class="mt-2">
+                            <span v-localize>
+                                Changing your email address deactivates your account until you follow the activation
+                                link sent to the new address.
+                            </span>
+                        </BAlert>
+                    </BFormGroup>
+
+                    <div class="d-flex flex-gapx-1">
+                        <GButton
+                            v-if="canEdit"
+                            outline
+                            tooltip
+                            title="Change your password"
+                            color="blue"
+                            to="/user/password">
+                            <FontAwesomeIcon :icon="faUnlockAlt" />
+                            <span v-localize>Change password</span>
+                        </GButton>
+
+                        <GButton
+                            v-if="showIdentities"
+                            outline
+                            tooltip
+                            title="Manage your third-party identities"
+                            color="blue"
+                            to="/user/external_ids">
+                            <FontAwesomeIcon :icon="faIdCard" />
+                            <span v-localize>Manage third-party identities</span>
+                        </GButton>
+                    </div>
                 </div>
             </section>
 
-            <div v-if="canEdit" class="d-flex gap-1">
-                <GButton id="submit" color="blue" type="submit" :disabled="!dirty || saving">
-                    <span v-localize>Save</span>
-                </GButton>
+            <div v-if="canEdit" class="user-information-section">
+                <div class="user-information-actions">
+                    <GButton id="cancel" :disabled="!dirty || saving" @click="resetFromUser">
+                        <span v-localize>Cancel</span>
+                    </GButton>
 
-                <GButton id="cancel" :disabled="!dirty || saving" @click="resetFromUser">
-                    <span v-localize>Cancel</span>
-                </GButton>
+                    <GButton id="submit" color="blue" type="submit" :disabled="!dirty || saving">
+                        <span v-localize>Save</span>
+                    </GButton>
+                </div>
             </div>
         </form>
     </div>
 </template>
 
 <style scoped lang="scss">
-.user-information-section {
-    margin-bottom: 1.5rem;
-    max-width: 40rem;
-}
+@import "@/style/scss/_breakpoints.scss";
 
-.user-information-example {
-    font-family: monospace;
-}
+.user-information {
+    container-type: inline-size;
+    container-name: user-information;
+    max-width: 62rem;
 
-.user-information-link {
-    margin-bottom: 0.5rem;
+    .user-information-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+
+        @container user-information (max-width: #{$breakpoint-md}) {
+            gap: 0.5rem;
+        }
+
+        .user-information-intro p {
+            margin-bottom: 0;
+        }
+
+        .user-information-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .user-information-example {
+            font-family: monospace;
+        }
+    }
 }
 </style>
