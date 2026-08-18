@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { faIdCard, faUnlockAlt } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
@@ -12,6 +11,8 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
@@ -138,17 +139,20 @@ watch(currentUser, resetFromUser, { immediate: true });
                 </div>
 
                 <div class="user-information-fields">
-                    <BFormGroup label-for="display_name" :label="localize('Display name')">
-                        <BFormInput
-                            id="display_name"
-                            v-model="displayName"
-                            :disabled="!canEdit"
-                            :placeholder="username" />
+                    <div class="user-information-field">
+                        <GFormLabel :title="localize('Display name')">
+                            <GFormInput
+                                id="display_name"
+                                v-model="displayName"
+                                class="w-100"
+                                :disabled="!canEdit"
+                                :placeholder="username" />
+                        </GFormLabel>
 
                         <small v-localize class="form-text text-muted">
                             Shown in place of your username across Galaxy. Leave it blank to use your username.
                         </small>
-                    </BFormGroup>
+                    </div>
                 </div>
             </section>
 
@@ -160,8 +164,10 @@ watch(currentUser, resetFromUser, { immediate: true });
                 </div>
 
                 <div class="user-information-fields">
-                    <BFormGroup label-for="username" :label="localize('Username')">
-                        <BFormInput id="username" v-model="username" :disabled="!canEdit" />
+                    <div class="user-information-field">
+                        <GFormLabel :title="localize('Username')">
+                            <GFormInput id="username" v-model="username" class="w-100" :disabled="!canEdit" />
+                        </GFormLabel>
 
                         <small class="form-text text-muted">
                             <span v-localize>
@@ -180,10 +186,12 @@ watch(currentUser, resetFromUser, { immediate: true });
                                 resolving.
                             </span>
                         </GAlert>
-                    </BFormGroup>
+                    </div>
 
-                    <BFormGroup label-for="email" :label="localize('Email address')">
-                        <BFormInput id="email" v-model="email" type="email" :disabled="!canEdit" />
+                    <div class="user-information-field">
+                        <GFormLabel :title="localize('Email address')">
+                            <GFormInput id="email" v-model="email" class="w-100" type="email" :disabled="!canEdit" />
+                        </GFormLabel>
 
                         <small v-localize class="form-text text-muted">
                             Used to sign in and to recover your account.
@@ -199,7 +207,7 @@ watch(currentUser, resetFromUser, { immediate: true });
                                 link sent to the new address.
                             </span>
                         </GAlert>
-                    </BFormGroup>
+                    </div>
 
                     <div class="d-flex flex-gapx-1">
                         <GButton
@@ -262,6 +270,12 @@ watch(currentUser, resetFromUser, { immediate: true });
 
         .user-information-intro p {
             margin-bottom: 0;
+        }
+
+        .user-information-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
 
         .user-information-actions {
