@@ -1,6 +1,11 @@
 <template>
     <div class="ui-portlet-section">
-        <div :tabindex="collapsible ? 0 : -1" :class="portletHeaderClasses" @keydown="onKeyDown" @click="onCollapse">
+        <div
+            :tabindex="collapsible ? 0 : -1"
+            class="mb-2"
+            :class="portletHeaderClasses"
+            @keydown="onKeyDown"
+            @click="onCollapse">
             <div class="portlet-operations">
                 <slot name="operations" />
                 <GButton
