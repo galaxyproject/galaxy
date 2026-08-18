@@ -1,9 +1,11 @@
 import logging
 import os
 import shutil
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
+from uuid import uuid4
 
 from galaxy.exceptions import (
     ObjectInvalid,
@@ -24,6 +26,9 @@ from .caching import (
 )
 
 log = logging.getLogger(__name__)
+
+# Size of the chunks pulled from the backing store when tee-streaming an object to a client.
+STREAM_CHUNK_SIZE = 1024 * 1024
 
 
 class CachingConcreteObjectStore(ConcreteObjectStore):
@@ -137,6 +142,62 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         content = data_file.read(count)
         data_file.close()
         return content
+
+    def _get_data_stream(self, obj, **kwargs) -> Iterator[bytes] | None:
+        rel_path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
+        if self._in_cache(cache_path):
+            # Serve the cached copy instead: it supports range requests and X-Accel offload.
+            return None
+        try:
+            chunks = self._stream_remote(rel_path)
+            if chunks is None:
+                return None
+            remote_size = self._get_remote_size(rel_path)
+            if remote_size < 0:
+                # Backends report an unknown size as a negative number. Without it a stream cannot be
+                # checked for truncation, so leave this download to the pull path.
+                return None
+            cache_target = self._cache_shards.get_cache_target(object_id)
+            write_cache = cache_target.fits_in_cache(remote_size)
+        except Exception:
+            log.exception("Failed to open a remote stream for '%s', falling back to pulling into cache", rel_path)
+            return None
+        return self._tee_to_cache(chunks, cache_path, expected_size=remote_size, write_cache=write_cache)
+
+    def _stream_remote(self, rel_path: str) -> Iterator[bytes] | None:
+        """Yield the bytes of the remote object, or None if this backend cannot stream them."""
+        return None
+
+    def _tee_to_cache(
+        self, chunks: Iterator[bytes], cache_path: str, *, expected_size: int, write_cache: bool
+    ) -> Iterator[bytes]:
+        """Yield the remote object's bytes, writing them into the cache on the way past.
+
+        The cache copy is published atomically once the whole object has been streamed, so a client
+        that disconnects (or a stream that errors) never leaves a truncated file behind to be served
+        as if it were complete -- and a stream that ends early is rejected rather than cached, since
+        a short read that raised nothing would otherwise poison the cache. Objects that do not fit
+        in the cache are streamed straight through.
+        """
+        if not write_cache:
+            yield from chunks
+            return
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with self._atomic_download(cache_path, unique_tmp=True) as tmp_path:
+            streamed_size = 0
+            with open(tmp_path, "wb") as tmp_file:
+                for chunk in chunks:
+                    tmp_file.write(chunk)
+                    streamed_size += len(chunk)
+                    yield chunk
+            if streamed_size != expected_size:
+                raise OSError(
+                    f"Streaming '{cache_path}' from the object store returned {streamed_size} bytes, "
+                    f"expected {expected_size}"
+                )
+        fix_permissions(self.config, os.path.dirname(cache_path))
 
     def _exists(self, obj, **kwargs) -> bool:
         in_cache = exists_remotely = False
@@ -423,15 +484,20 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         raise NotImplementedError()
 
     @contextmanager
-    def _atomic_download(self, cache_path):
+    def _atomic_download(self, cache_path, *, unique_tmp: bool = False):
         """Download to a temp file then atomically rename to prevent serving partial files.
 
         Usage::
 
             with self._atomic_download(local_destination) as tmp_path:
                 do_download(tmp_path)
+
+        Pass ``unique_tmp`` when several downloads of the same object can be in flight at once (as
+        with tee-streaming, where every concurrent client opens its own stream): each writes its own
+        temp file, so they cannot truncate each other's, and whichever finishes last publishes a
+        complete copy.
         """
-        tmp_path = cache_path + ".tmp"
+        tmp_path = f"{cache_path}.{uuid4().hex}.tmp" if unique_tmp else f"{cache_path}.tmp"
         try:
             yield tmp_path
             os.rename(tmp_path, cache_path)

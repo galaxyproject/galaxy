@@ -4,6 +4,7 @@ Object Store plugin for the Microsoft Azure Block Blob Storage system
 
 import logging
 import os
+from collections.abc import Iterator
 from datetime import timedelta
 
 try:
@@ -259,6 +260,9 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             kwd["max_concurrency"] = max_concurrency
         with open(local_destination, "wb") as f:
             self._blob_client(rel_path).download_blob().download_to_stream(f, **kwd)
+
+    def _stream_remote(self, rel_path: str) -> Iterator[bytes] | None:
+        return self._blob_client(rel_path).download_blob().chunks()
 
     def _download_directory_into_cache(self, rel_path, cache_path):
         blobs = self._blobs_from(rel_path)

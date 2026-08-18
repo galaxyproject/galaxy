@@ -5,6 +5,7 @@ Object Store plugin for Cloud storage.
 import logging
 import os
 import os.path
+from collections.abc import Iterator
 
 from ._caching_base import CachingConcreteObjectStore
 from ._util import UsesAxel
@@ -259,6 +260,12 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         except Exception:
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
         return False
+
+    def _stream_remote(self, rel_path: str) -> Iterator[bytes] | None:
+        key = self.bucket.objects.get(rel_path)
+        if key is None:
+            return None
+        return key.iter_content()
 
     def _download_directory_into_cache(self, rel_path, cache_path):
         objects = self.bucket.objects.list(prefix=rel_path)
