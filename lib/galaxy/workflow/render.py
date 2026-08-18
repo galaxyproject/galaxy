@@ -91,28 +91,33 @@ class WorkflowCanvas:
         self.max_y = max(self.max_y, top)
         self.max_width = max(self.max_width, self.widths[order_index])
 
-    def add_connection(self, step_dict, conn, output_dict):
-        in_coords = self.in_pos[step_dict["id"]][conn]
+    def add_connection(self, step_dict, conn, output_dict, in_fallback_pos, out_fallback_pos):
+        in_coords = self.in_pos.get(step_dict["id"], {}).get(conn, in_fallback_pos)
         # out_pos_index will be a step number like 1, 2, 3...
         out_pos_index = output_dict["id"]
         # out_pos_name will be a string like 'o', 'o2', etc.
         out_pos_name = output_dict["output_name"]
+        out_conn_pos = None
         if out_pos_index in self.out_pos:
             # out_conn_index_dict will be something like:
             # 7: {'o': (824.5, 618)}
             out_conn_index_dict = self.out_pos[out_pos_index]
             if out_pos_name in out_conn_index_dict:
                 out_conn_pos = out_conn_index_dict[out_pos_name]
-            else:
+            elif out_conn_index_dict:
                 # Take any key / value pair available in out_conn_index_dict.
-                # A problem will result if the dictionary is empty.
-                if out_conn_index_dict:
-                    key = next(iter(out_conn_index_dict.keys()))
-                    out_conn_pos = self.out_pos[out_pos_index][key]
-        adjusted = (out_conn_pos[0] + self.widths[output_dict["id"]], out_conn_pos[1])
+                key = next(iter(out_conn_index_dict.keys()))
+                out_conn_pos = self.out_pos[out_pos_index][key]
+        if out_conn_pos is None:
+            # The output isn't among the upstream module's introspected outputs
+            # (e.g. it moved to a different conditional branch). Anchor to the
+            # upstream step's box instead of dropping the connection.
+            out_conn_pos = out_fallback_pos
+        out_width = self.widths.get(output_dict["id"], 0)
+        adjusted = (out_conn_pos[0] + out_width, out_conn_pos[1])
         self.text.append(
             svgwrite.shapes.Circle(
-                center=(out_conn_pos[0] + self.widths[output_dict["id"]] - MARGIN, out_conn_pos[1] - MARGIN),
+                center=(out_conn_pos[0] + out_width - MARGIN, out_conn_pos[1] - MARGIN),
                 r=5,
                 fill="#ffffff",
                 stroke="#000000",
@@ -140,6 +145,7 @@ class WorkflowCanvas:
 
     def add_steps(self, highlight_errors=False):
         # Only highlight missing tools if displaying in the tool shed.
+        positions_by_id = {step_dict["id"]: step_dict["position"] for step_dict in self.data}
         for step_dict in self.data:
             tool_unavailable = step_dict.get("tool_errors", False)
             if highlight_errors and tool_unavailable:
@@ -148,8 +154,16 @@ class WorkflowCanvas:
                 fill = "#EBD9B2"
             width = self.widths[step_dict["id"]]
             self.add_boxes(step_dict, width, fill)
+            position = step_dict["position"]
+            # Fallback anchors used when a stored connection references an
+            # input/output name the module no longer introspects (e.g. a
+            # conditional branch that's no longer active) - draw the
+            # connection to the step's box instead of dropping it.
+            in_fallback_pos = (position["left"], position["top"] + MARGIN)
             for conn, output_dict in step_dict["input_connections"].items():
-                self.add_connection(step_dict, conn, output_dict)
+                out_position = positions_by_id.get(output_dict["id"], position)
+                out_fallback_pos = (out_position["left"], out_position["top"])
+                self.add_connection(step_dict, conn, output_dict, in_fallback_pos, out_fallback_pos)
 
     def populate_data_for_step(self, step, module_name, module_data_inputs, module_data_outputs, tool_errors=None):
         step_dict = {
