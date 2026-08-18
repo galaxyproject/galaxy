@@ -200,7 +200,10 @@ describe("PageEditorView", () => {
             expect(wrapper.findComponent(PageDisplayToolbar).exists()).toBe(false);
         });
 
-        it("does not clear editor state on unmount in displayOnly mode", async () => {
+        it("still clears editor state (not $reset) on unmount in displayOnly mode", async () => {
+            // HistoryPageView.vue's v-else-if chain only ever renders one of
+            // PageEditorView (edit) or PageDisplayOnly (view) at a time, so its unmount
+            // (e.g. navigating away from a preview) must clear state same as edit mode does.
             setupLoadedPage(HISTORY_ID);
             const store = usePageEditorStore();
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID, displayOnly: true });
@@ -208,7 +211,7 @@ describe("PageEditorView", () => {
 
             wrapper.destroy();
             expect(store.$reset).not.toHaveBeenCalled();
-            expect(store.clearCurrentPage).not.toHaveBeenCalled();
+            expect(store.clearCurrentPage).toHaveBeenCalled();
         });
     });
 
