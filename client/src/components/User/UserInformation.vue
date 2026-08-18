@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { faIdCard, faUnlockAlt } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
@@ -12,6 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -114,20 +115,20 @@ watch(currentUser, resetFromUser, { immediate: true });
     <div>
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <BAlert v-if="!isRegisteredUser(currentUser)" show>
+        <GAlert v-if="!isRegisteredUser(currentUser)" show>
             <LoadingSpan message="Loading your account" />
-        </BAlert>
+        </GAlert>
 
         <form v-else class="user-information" @submit.prevent="onSubmit">
-            <BAlert v-if="errorMessage" show variant="danger">
+            <GAlert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
-            </BAlert>
+            </GAlert>
 
-            <BAlert v-if="!canEdit" show variant="info">
+            <GAlert v-if="!canEdit" show variant="info">
                 <span v-localize>
                     Your account details are managed outside Galaxy on this instance, so they cannot be edited here.
                 </span>
-            </BAlert>
+            </GAlert>
 
             <section class="user-information-section">
                 <div class="user-information-intro">
@@ -173,12 +174,12 @@ watch(currentUser, resetFromUser, { immediate: true });
                             <span class="user-information-example">{{ profilePath }}/w/my-workflow</span>
                         </small>
 
-                        <BAlert v-if="username !== (currentUser.username ?? '')" show variant="warning" class="mt-2">
+                        <GAlert v-if="username !== (currentUser.username ?? '')" show variant="warning" class="mt-2">
                             <span v-localize>
                                 Changing your username breaks links you have already shared - the old addresses stop
                                 resolving.
                             </span>
-                        </BAlert>
+                        </GAlert>
                     </BFormGroup>
 
                     <BFormGroup label-for="email" :label="localize('Email address')">
@@ -188,7 +189,7 @@ watch(currentUser, resetFromUser, { immediate: true });
                             Used to sign in and to recover your account.
                         </small>
 
-                        <BAlert
+                        <GAlert
                             v-if="config.user_activation_on && email !== currentUser.email"
                             show
                             variant="warning"
@@ -197,7 +198,7 @@ watch(currentUser, resetFromUser, { immediate: true });
                                 Changing your email address deactivates your account until you follow the activation
                                 link sent to the new address.
                             </span>
-                        </BAlert>
+                        </GAlert>
                     </BFormGroup>
 
                     <div class="d-flex flex-gapx-1">
