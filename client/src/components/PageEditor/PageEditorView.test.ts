@@ -11,7 +11,7 @@ import type { HistoryPageDetails, PageRevisionDetails, PageRevisionSummary } fro
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import GModal from "../BaseComponents/GModal.vue";
-import SaveChangesModal from "../Workflow/Editor/SaveChangesModal.vue";
+import SaveChangesModal from "../Common/SaveChangesModal.vue";
 import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
 import PageEditorView from "./PageEditorView.vue";
@@ -29,8 +29,6 @@ vi.mock("@/composables/config", () => ({
 }));
 
 const mockPush = vi.fn().mockResolvedValue(undefined);
-const mockOnBeforeRouteLeave = vi.fn();
-const mockOnBeforeRouteUpdate = vi.fn();
 vi.mock("vue-router/composables", () => ({
     useRouter: vi.fn(() => ({
         push: mockPush,
@@ -38,21 +36,7 @@ vi.mock("vue-router/composables", () => ({
     useRoute: vi.fn(() => ({
         params: {},
     })),
-    onBeforeRouteLeave: (guard: unknown) => mockOnBeforeRouteLeave(guard),
-    onBeforeRouteUpdate: (guard: unknown) => mockOnBeforeRouteUpdate(guard),
 }));
-
-/** Simulates vue-router invoking a captured onBeforeRouteLeave/onBeforeRouteUpdate guard. */
-function callGuard(mockRegister: typeof mockOnBeforeRouteLeave, toFullPath: string) {
-    const guard = mockRegister.mock.calls[mockRegister.mock.calls.length - 1]?.[0] as (
-        to: { fullPath: string },
-        from: unknown,
-        next: (arg?: false) => void,
-    ) => void;
-    const next = vi.fn();
-    guard({ fullPath: toFullPath }, {}, next);
-    return next;
-}
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: vi.fn(() => ({
@@ -190,107 +174,19 @@ describe("PageEditorView", () => {
         });
     });
 
-    describe("Unsaved changes guard", () => {
-        let wrapper: Wrapper<Vue>;
-        let store: ReturnType<typeof usePageEditorStore>;
-
-        beforeEach(async () => {
-            store = setupLoadedPage(HISTORY_ID);
-            wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
-            await flushPromises();
-        });
-
-        function makeDirty() {
+    describe("SaveChangesModal wiring", () => {
+        it("passes hasChanges and onSave through to SaveChangesModal", async () => {
+            const store = setupLoadedPage(HISTORY_ID);
             vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
-        }
+            const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
+            await flushPromises();
 
-        it("lets navigation through when there are no unsaved changes", () => {
-            const next = callGuard(mockOnBeforeRouteLeave, "/pages/list");
-
-            expect(next).toHaveBeenCalledWith();
-            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
-        });
-
-        it("blocks navigation and opens SaveChangesModal when there are unsaved changes", async () => {
-            makeDirty();
-            const next = callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await nextTick();
-
-            expect(next).toHaveBeenCalledWith(false);
             const modal = wrapper.findComponent(SaveChangesModal);
-            expect(modal.props("showModal")).toBe(true);
-            expect(modal.props("navUrl")).toBe("/pages/list");
-        });
+            expect(modal.props("hasChanges")).toBe(true);
+            expect(typeof modal.props("onSave")).toBe("function");
 
-        it("blocks in-editor navigation (onBeforeRouteUpdate) the same way", async () => {
-            makeDirty();
-            const next = callGuard(mockOnBeforeRouteUpdate, "/pages/editor?id=page-1&displayOnly=true");
-            await nextTick();
-
-            expect(next).toHaveBeenCalledWith(false);
-            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(true);
-        });
-
-        it("Save proceeds: saves the page then navigates to the pending URL", async () => {
-            makeDirty();
-            callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await nextTick();
-
-            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/pages/list", true, false, false);
-            await flushPromises();
-
+            await modal.props("onSave")();
             expect(store.savePage).toHaveBeenCalled();
-            expect(mockPush).toHaveBeenCalledWith("/pages/list");
-            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
-        });
-
-        it("Don't Save proceeds: discards changes and navigates without saving", async () => {
-            makeDirty();
-            callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await nextTick();
-
-            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/pages/list", false, true, false);
-            await flushPromises();
-
-            expect(store.savePage).not.toHaveBeenCalled();
-            expect(mockPush).toHaveBeenCalledWith("/pages/list");
-        });
-
-        it("keeps guarding subsequent navigation after a rejected router.push", async () => {
-            // We expect a rejection here, but we want to silence the console.error so it doesn't fail the test.
-            const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-            makeDirty();
-            mockPush.mockRejectedValueOnce(new Error("push failed"));
-            callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await nextTick();
-
-            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/pages/list", false, true, false);
-            await flushPromises();
-
-            expect(consoleErrorSpy).toHaveBeenCalled();
-
-            // bypassGuard must be reset even though the push rejected, so the next
-            // navigation attempt is still protected instead of silently passing through.
-            const next = callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await nextTick();
-
-            expect(next).toHaveBeenCalledWith(false);
-            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(true);
-
-            consoleErrorSpy.mockRestore();
-        });
-
-        it("Cancel: closes the modal and does not navigate", async () => {
-            makeDirty();
-            callGuard(mockOnBeforeRouteLeave, "/pages/list");
-            await nextTick();
-
-            wrapper.findComponent(SaveChangesModal).vm.$emit("update:show-modal", false);
-            await flushPromises();
-
-            expect(store.savePage).not.toHaveBeenCalled();
-            expect(mockPush).not.toHaveBeenCalled();
         });
     });
 

@@ -7,7 +7,6 @@ import { useRouter } from "vue-router/composables";
 
 import { PAGE_LABELS } from "@/components/Page/constants";
 import { useConfirmDialog } from "@/composables/confirmDialog.js";
-import { useSaveChangesModal } from "@/composables/useSaveChangesModal";
 import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type PageEditorMode, usePageEditorStore } from "@/stores/pageEditorStore";
@@ -15,7 +14,7 @@ import { useUserStore } from "@/stores/userStore.js";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
-import SaveChangesModal from "../Workflow/Editor/SaveChangesModal.vue";
+import SaveChangesModal from "../Common/SaveChangesModal.vue";
 import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
 import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
@@ -73,23 +72,15 @@ const isOwnedPage = computed(() => userStore.matchesCurrentUsername(store.curren
 
 const showPermissions = ref(false);
 
-const { showSaveChangesModal, pendingNavUrl, handleSaveChangesProceed } = useSaveChangesModal(
-    computed(() => store.isDirty),
-    () => store.savePage(),
-    router,
-);
-
 onMounted(async () => {
     store.mode = editorMode.value;
     if (props.historyId) {
         store.setCurrentContext(props.historyId);
     }
     await store.loadPage(props.pageId);
-    window.addEventListener("beforeunload", handleBeforeUnload);
 });
 
 onUnmounted(() => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
     if (!props.displayOnly) {
         // Clear editor-scoped state but leave store.error alone so a save failure
         // remains visible across the transient unmount/remount that error-state
@@ -114,17 +105,6 @@ function handleBack() {
         router.push(`/histories/${props.historyId}/pages`);
     } else {
         router.push("/pages/list");
-    }
-}
-
-/**
- * If the page is dirty, prompt the user before leaving the page via non-internal navigation
- * (e.g., closing the tab, refreshing page or navigating to a different site).
- */
-function handleBeforeUnload(event: BeforeUnloadEvent) {
-    if (store.isDirty) {
-        event.preventDefault();
-        event.returnValue = "";
     }
 }
 
@@ -199,11 +179,7 @@ function handleRevisionRestore(revisionId: string) {
 
 <template>
     <div class="page-editor-view d-flex flex-column h-100" data-description="page editor view">
-        <SaveChangesModal
-            :show-modal.sync="showSaveChangesModal"
-            :nav-url="pendingNavUrl"
-            :append-version="false"
-            @on-proceed="handleSaveChangesProceed" />
+        <SaveChangesModal :has-changes="store.isDirty" :on-save="() => store.savePage()" />
 
         <BAlert v-if="store.error" variant="danger" show dismissible @dismissed="store.error = null">
             {{ store.error }}
