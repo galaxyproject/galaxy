@@ -1183,6 +1183,8 @@ export default {
                 return;
             }
 
+            this.showSaveChangesModal = false;
+
             if (appendVersion && this.version !== undefined) {
                 url += `&version=${this.version}`;
             }
