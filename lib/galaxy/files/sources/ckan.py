@@ -109,7 +109,11 @@ class CKANRDMFilesSource(RDMFilesSource):
             return cast(list[AnyRemoteEntry], datasets), total_hits
         dataset_id = self.get_container_id_from_path(path)
         files = self.repository.get_files_in_container(context, dataset_id, write_intent, query)
-        return cast(list[AnyRemoteEntry], files), len(files)
+        # CKAN embeds the resources in package_show and has no endpoint that pages through them,
+        # so the requested page is cut out here instead of in CKAN
+        start = offset or 0
+        end = start + limit if limit is not None else None
+        return cast(list[AnyRemoteEntry], files[start:end]), len(files)
 
     def _realize_to(
         self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
