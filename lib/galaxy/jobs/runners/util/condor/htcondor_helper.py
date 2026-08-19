@@ -1,10 +1,25 @@
+"""Out-of-process schedd access for a specific CONDOR_CONFIG.
+
+htcondor2 reads its configuration once per process, so a destination that
+overrides CONDOR_CONFIG needs its own interpreter.  ``HTCondorSubprocessClient``
+spawns this module as ``python -m <package>.htcondor_helper`` and speaks
+newline-delimited JSON to it over stdin/stdout.
+
+This module should contain functionality shared between Galaxy and the Pulsar.
+It must stay importable on Python 3.7 (see the sibling htcondor module).
+"""
+
+from __future__ import annotations
+
 import json
 import sys
 import threading
 from typing import Any
 
+DEFAULT_REMOVE_REASON = "Job stop request"
 
-def _locate_schedd(
+
+def locate_schedd(
     htcondor,
     schedd_cache: dict,
     schedd_lock: threading.Lock,
@@ -57,7 +72,7 @@ def main() -> int:
 
             collector = request.get("collector")
             schedd_name = request.get("schedd_name")
-            schedd = _locate_schedd(htcondor2, schedd_cache, schedd_lock, collector, schedd_name)
+            schedd = locate_schedd(htcondor2, schedd_cache, schedd_lock, collector, schedd_name)
             if command == "submit":
                 submit_result = schedd.submit(htcondor2.Submit(request["submit_description"]))
                 response = dict(ok=True, cluster=str(submit_result.cluster()))
@@ -65,7 +80,7 @@ def main() -> int:
                 schedd.act(
                     htcondor2.JobAction.Remove,
                     request["job_spec"],
-                    reason="Galaxy job stop request",
+                    reason=request.get("reason") or DEFAULT_REMOVE_REASON,
                 )
                 response = dict(ok=True)
             else:
