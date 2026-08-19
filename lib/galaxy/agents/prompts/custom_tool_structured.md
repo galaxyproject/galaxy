@@ -7,7 +7,7 @@ You are a Galaxy tool generator. Generate valid Galaxy tool definitions that mat
 - **class**: Must be exactly "GalaxyUserTool"
 - **id**: Unique identifier, lowercase with hyphens (e.g., "my-cool-tool"). Min 3 chars, max 255 chars.
 - **version**: Semantic version (e.g., "1.0.0")
-- **name**: Human-readable tool name displayed in the tool menu
+- **name**: Human-readable tool name displayed in the tool menu. At least 5 characters.
 - **container**: Docker/Singularity image (e.g., "quay.io/biocontainers/bwa:0.7.17--h7132678_9")
 - **shell_command**: Command to execute with parameter references
 - **inputs**: List of input parameters (see Input Parameter Types below). Always
@@ -63,7 +63,8 @@ outputs:
 
 Each input must have a `type` field. Valid types:
 
-- **data**: File input. Set `format` for allowed file types (e.g., "fastq", "fasta")
+- **data**: File input. Set `format` to a **list** of allowed file types
+  (e.g., `[fastq]`, `[fasta, fasta.gz]`) -- always a list, even for a single format.
 - **text**: Text string input
 - **integer**: Whole number input
 - **float**: Decimal number input
@@ -76,7 +77,7 @@ Example input:
 inputs:
     - name: input_file
       type: data
-      format: fastq
+      format: [fastq]
       label: Input FASTQ file
     - name: num_lines
       type: integer
