@@ -834,12 +834,28 @@ function onAnnotation(nodeId: string, newAnnotation: string) {
     }
 }
 
+/** Refreshes the version list for the current `id`. `versions` is derived from `id`,
+ * so it has to be refetched whenever the editor switches to a different workflow. */
+async function refreshVersions() {
+    try {
+        versions.value = await getVersions(id.value);
+        version.value = versions.value[versions.value.length - 1]?.version ?? null;
+    } catch (e) {
+        // A missing version list shouldn't block the user from working on the workflow.
+        console.error("Failed to fetch workflow versions:", e);
+    }
+}
+
 async function routeToWorkflow(workflowId: string) {
     // map scoped stores to existing stores, before updating the id
     const { addScopePointer } = useScopePointerStore();
     addScopePointer(workflowId, id.value);
 
     id.value = workflowId;
+
+    // Callers clear `hasChanges` before routing, so the `onSave()` below short-circuits
+    // and never refreshes these. Do it here, where the id actually changes.
+    await refreshVersions();
 
     if (await onSave()) {
         hasChanges.value = false;
@@ -888,15 +904,6 @@ async function onCreate(): Promise<boolean> {
         emit("skipNextReload");
 
         await routeToWorkflow(createdId);
-
-        try {
-            versions.value = await getVersions(id.value);
-            version.value = versions.value[versions.value.length - 1]?.version ?? null;
-        } catch (e) {
-            // If fetching versions fails, we don't want to block the user from using the workflow.
-            // Just log the error and continue.
-            console.error("Failed to fetch versions after creating workflow:", e);
-        }
 
         Toast.success(message);
     } catch (e) {
