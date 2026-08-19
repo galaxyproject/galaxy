@@ -4262,6 +4262,22 @@ appropriate command line variable.
 <param name="interval_file" type="data" format="interval" label="near intervals in"/>
 ```
 
+In the command block or configfiles ``$interval_file`` will be replaced by the
+internal file name which has a ``.dat`` extension. Sometimes this is a problem, e.g. 
+if file extensions are used to distinguish file types or if the file name
+should represent a sample name.
+
+In this case typically symlink to the file are created where the name of the symlink can be
+constructed from properties of the dataset, e.g.
+``element_identifier`` (the collection identifier/dataset name), 
+``safe_element_identifier`` (same, but characters other than alphanumerical characters, '-', '_', and '.' that are harmful on commandlines are replaced by ``_``), 
+``ext`` (the Galaxy datatype of the dataset). 
+So one can for instance 
+
+```bash
+ln -s '$interval_file' '${interval_file.safe_element_identifier}.${interval_file.ext}'
+```
+
 The following demonstrates a ``param`` which may accept multiple files and
 multiple formats.
 
