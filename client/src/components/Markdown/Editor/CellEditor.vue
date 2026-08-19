@@ -1,8 +1,8 @@
 <template>
     <div class="h-100 px-4 mx-auto">
+        <CellAdd class="p-1" @click="onAdd(0, $event)"><i>Insert Cell Above</i></CellAdd>
+        <hr class="solid m-0" />
         <div v-for="(cell, cellIndex) in cells" :key="cellIndex" ref="cellRefs">
-            <CellAdd @click="onAdd(cellIndex, $event)" />
-            <hr class="solid m-0" />
             <CellWrapper
                 :cell-index="cellIndex"
                 :cell-total="cells.length"
@@ -11,6 +11,7 @@
                 :labels="labels"
                 :name="cell.name"
                 :toggle="cell.toggle"
+                @add-after="onAdd(cellIndex + 1, $event)"
                 @configure="onConfigure(cellIndex)"
                 @change="onChange(cellIndex, $event)"
                 @clone="onClone(cellIndex)"
@@ -19,7 +20,6 @@
                 @toggle="onToggle(cellIndex)" />
             <hr class="solid m-0" />
         </div>
-        <CellAdd @click="onAdd(cells.length, $event)" />
     </div>
 </template>
 

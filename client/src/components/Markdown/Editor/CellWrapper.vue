@@ -1,12 +1,21 @@
 <template>
     <div tabindex="0" role="presentation" @mouseenter="hover = true" @mouseleave="hover = false">
         <div class="d-flex">
-            <ButtonPlain class="d-flex" :class="{ 'cell-wrapper-hover': hover }" @click="$emit('toggle')">
-                <div class="align-self-end">
-                    <CellButton v-if="toggle" title="Collapse" :icon="faAngleDoubleUp" />
-                    <CellButton v-else title="Expand" :icon="faAngleDoubleDown" />
-                </div>
-            </ButtonPlain>
+            <div class="d-flex flex-column justify-content-end px-1" :class="{ 'cell-wrapper-hover': hover }">
+                <GButtonGroup vertical class="py-1">
+                    <GButton
+                        transparent
+                        color="blue"
+                        icon-only
+                        tooltip
+                        tooltip-placement="right"
+                        :title="toggle ? 'Collapse' : 'Expand'"
+                        @click="$emit('toggle')">
+                        <FontAwesomeIcon :icon="toggle ? faAngleDoubleUp : faAngleDoubleDown" fixed-width />
+                    </GButton>
+                    <CellAdd title="Insert After" @click="$emit('add-after', $event)" />
+                </GButtonGroup>
+            </div>
             <SectionWrapper
                 class="m-2 w-100"
                 :name="name"
@@ -15,13 +24,19 @@
                 @change="$emit('change', $event)" />
         </div>
         <div v-if="toggle" class="d-flex">
-            <div class="d-flex flex-column" :class="{ 'cell-wrapper-hover': hover }">
-                <CellButton
+            <GButtonGroup vertical class="py-1 px-1" :class="{ 'cell-wrapper-hover': hover }">
+                <GButton
                     v-if="configurable"
+                    transparent
+                    color="blue"
+                    icon-only
+                    tooltip
+                    tooltip-placement="right"
                     title="Attach Data"
-                    :icon="faPaperclip"
-                    :active="configure"
-                    @click="$emit('configure')" />
+                    :pressed="configure"
+                    @click="$emit('configure')">
+                    <FontAwesomeIcon :icon="faPaperclip" fixed-width />
+                </GButton>
                 <CellAction
                     :name="name"
                     :cell-index="cellIndex"
@@ -31,7 +46,7 @@
                     @configure="$emit('configure')"
                     @delete="$emit('delete')"
                     @move="$emit('move', $event)" />
-            </div>
+            </GButtonGroup>
             <div class="w-100 position-relative">
                 <hr v-if="!configure" class="solid m-0" />
                 <component
@@ -61,16 +76,18 @@
 
 <script setup lang="ts">
 import { faAngleDoubleDown, faAngleDoubleUp, faPaperclip } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
 import type { WorkflowLabel } from "./types";
 
 import CellAction from "./CellAction.vue";
-import CellButton from "./CellButton.vue";
+import CellAdd from "./CellAdd.vue";
 import ConfigureGalaxy from "./Configurations/ConfigureGalaxy.vue";
 import ConfigureVisualization from "./Configurations/ConfigureVisualization.vue";
 import ConfigureVitessce from "./Configurations/ConfigureVitessce.vue";
-import ButtonPlain from "@/components/Common/ButtonPlain.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import SectionWrapper from "@/components/Markdown/Sections/SectionWrapper.vue";
 
 const CellCode = () => import("./CellCode.vue");
@@ -87,7 +104,7 @@ const props = defineProps<{
     toggle?: boolean;
 }>();
 
-const emit = defineEmits(["change", "clone", "configure", "delete", "move", "toggle"]);
+const emit = defineEmits(["add-after", "change", "clone", "configure", "delete", "move", "toggle"]);
 
 const hover = ref(false);
 
