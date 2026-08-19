@@ -421,7 +421,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
     @property
     def safe_element_identifier(self) -> str | None:
-        return = sanitize_for_filename(
+        return sanitize_for_filename(
                 self.element_identifier,
                 valid_filename_chars = set(string.ascii_letters + string.digits + "-_."),
             ).lstrip("-.")
