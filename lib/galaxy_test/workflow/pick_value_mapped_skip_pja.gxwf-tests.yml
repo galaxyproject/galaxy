@@ -1,0 +1,66 @@
+- doc: |
+    Test that PJAs are NOT applied to skipped elements of a mapped over
+    pick_value output. With the branch skipped, every element of the picked
+    collection is a skipped placeholder and must retain expression.json for
+    downstream skip detection, despite the ChangeDatatypeAction.
+  job:
+    input_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "line1"
+          filetype: bed
+        - identifier: el2
+          class: File
+          contents: "line2"
+          filetype: bed
+    when: false
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list
+      element_count: 2
+      elements:
+        el1:
+          class: File
+          ftype: expression.json
+        el2:
+          class: File
+          ftype: expression.json
+- doc: |
+    Test that the same PJA still applies to real elements. With the branch
+    active nothing is skipped, so every element gets the new datatype.
+  job:
+    input_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "line1"
+          filetype: bed
+        - identifier: el2
+          class: File
+          contents: "line2"
+          filetype: bed
+    when: true
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list
+      element_count: 2
+      elements:
+        el1:
+          class: File
+          ftype: txt
+          asserts:
+            - that: has_text
+              text: "line1"
+        el2:
+          class: File
+          ftype: txt
+          asserts:
+            - that: has_text
+              text: "line2"

@@ -2108,9 +2108,8 @@ class PickValueModule(WorkflowModule):
         """Check if a replacement value represents a skipped/null output."""
         if value is NO_REPLACEMENT:
             return True
-        if isinstance(value, model.HistoryDatasetAssociation):
-            if value.extension == "expression.json" and value.blurb == "skipped":
-                return True
+        if isinstance(value, model.DatasetInstance):
+            return value.is_skipped
         return False
 
     def _pick_from_replacements(self, trans: "ProvidesHistoryContext", invocation_step, mode, replacements):
