@@ -75,9 +75,9 @@ const isLoading = computed(() => invocationLoading.value || workflowLoading.valu
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const workflowId = computed(() => invocation.value && getStoredWorkflowIdByInstanceId(invocation.value.workflow_id));
-const compact = computed(() => Boolean(args.value?.compact));
+const compact = computed(() => args.value?.compact !== undefined && args.value.compact !== "false");
 const showColumnHeaders = computed(() => {
-    return args.value?.show_column_headers !== undefined ? Boolean(args.value.show_column_headers) : true;
+    return args.value?.show_column_headers !== undefined ? args.value.show_column_headers !== "false" : true;
 });
 
 async function fetchWorkflow() {
