@@ -1,5 +1,5 @@
 <template>
-    <div class="h-100 w-75 mx-auto">
+    <div class="h-100 px-4 mx-auto">
         <div v-for="(cell, cellIndex) in cells" :key="cellIndex" ref="cellRefs">
             <CellAdd @click="onAdd(cellIndex, $event)" />
             <hr class="solid m-0" />
