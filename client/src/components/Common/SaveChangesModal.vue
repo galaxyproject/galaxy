@@ -82,11 +82,11 @@ async function proceed(url: string, forceSave: boolean, ignoreChanges: boolean) 
             await props.onSave();
         } catch (e) {
             Toast.error(errorMessageAsString(e));
-            busy.value = false;
             closeModal();
             return;
         }
     } else if (!ignoreChanges) {
+        busy.value = false;
         return;
     }
 
@@ -102,12 +102,14 @@ async function proceed(url: string, forceSave: boolean, ignoreChanges: boolean) 
         // proceed), so nothing further to recover in the UI, just avoid an unhandled rejection.
     } finally {
         bypassGuard = false;
-        busy.value = false;
     }
 }
 
+/** Closes the modal and resets all state, ready for the next guard trigger. */
 function closeModal() {
     showModal.value = false;
+    busy.value = false;
+    pendingNavUrl.value = "";
 }
 
 function dontSave() {
