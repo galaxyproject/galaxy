@@ -5,13 +5,14 @@
                 <GButtonGroup vertical class="py-1">
                     <GButton
                         transparent
+                        :pressed="toggle"
                         color="blue"
                         icon-only
                         tooltip
                         tooltip-placement="right"
-                        :title="toggle ? 'Collapse' : 'Expand'"
+                        :title="toggle ? 'Collapse Editor' : 'Edit Cell'"
                         @click="$emit('toggle')">
-                        <FontAwesomeIcon :icon="toggle ? faAngleDoubleUp : faAngleDoubleDown" fixed-width />
+                        <FontAwesomeIcon :icon="toggle ? faAngleDoubleUp : faEdit" fixed-width />
                     </GButton>
                     <CellAdd title="Insert After" @click="$emit('add-after', $event)" />
                 </GButtonGroup>
@@ -75,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { faAngleDoubleDown, faAngleDoubleUp, faPaperclip } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDoubleUp, faEdit, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
