@@ -1,3 +1,4 @@
+from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -44,7 +45,7 @@ def _service_for_display(
     dataset_instance.datatype.is_archive_download.return_value = is_archive
     dataset_instance.datatype.download_content_disposition.return_value = 'attachment; filename="Galaxy1.txt"'
     dataset_instance.datatype.display_data.return_value = ("display-data", {})
-    service.hda_manager.get_accessible.return_value = dataset_instance
+    cast(MagicMock, service.hda_manager).get_accessible.return_value = dataset_instance
 
     trans = MagicMock()
     trans.app.object_store.get_data_stream.return_value = data_stream

@@ -62,6 +62,7 @@ BOTO3_TINY_CACHE_CONFIG = string.Template("""
 
 
 class TeeStreamingIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+    object_store_config: string.Template
     container_name: str
     object_store_cache_path: str
 
