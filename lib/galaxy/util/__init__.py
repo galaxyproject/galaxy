@@ -775,11 +775,11 @@ def sanitize_param(value, valid_characters=valid_chars, character_map=mapped_cha
 
 
 def sanitize_for_filename(
-    text,
-    default=None,
-    valid_filename_chars=set(string.ascii_letters + string.digits + "_."),
-    invalid_filenames=["", ".", ".."],
-):
+    text: str,
+    default: Optional[str] = None,
+    valid_filename_chars: set[str] = set(string.ascii_letters + string.digits + "_."),
+    invalid_filenames: list[str] = ["", ".", ".."],
+) -> str:
     """
     Restricts the characters that are allowed in a filename portion; Returns default value or a unique id string if result is not a valid name.
     Method is overly aggressive to minimize possible complications, but a maximum length is not considered.
