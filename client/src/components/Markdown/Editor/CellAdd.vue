@@ -1,10 +1,24 @@
 <template>
     <div>
-        <GButton ref="buttonRef" transparent color="blue" icon-only tooltip tooltip-placement="right" :title="title">
+        <GButton
+            ref="buttonRef"
+            transparent
+            color="blue"
+            icon-only
+            tooltip
+            tooltip-placement="right"
+            :title="title"
+            :pressed="popperRef?.visible">
             <FontAwesomeIcon :icon="faPlus" fixed-width />
             <slot></slot>
         </GButton>
-        <Popper v-if="buttonRef" :reference-el="buttonRef.$el" trigger="click" placement="right" mode="light">
+        <Popper
+            v-if="buttonRef"
+            ref="popperRef"
+            :reference-el="buttonRef.$el"
+            trigger="click"
+            placement="right"
+            mode="light">
             <DelayedInput class="p-1" :delay="100" placeholder="Search" @change="query = $event" />
             <div class="cell-dropdown overflow-auto">
                 <div v-if="Object.keys(filteredTemplates).length > 0">
@@ -62,6 +76,7 @@ defineEmits<{
 }>();
 
 const buttonRef = ref();
+const popperRef = ref();
 const query = ref("");
 const visualizations: Ref<Array<TemplateEntry>> = ref([]);
 
