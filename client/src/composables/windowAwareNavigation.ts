@@ -11,6 +11,7 @@
  *    intercepts and opens it as a floating frame.
  * 3. When inactive: push the *inline* URL plainly.
  */
+import type VueRouter from "vue-router";
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
@@ -27,6 +28,11 @@ interface FrameOrPageOptions {
     force?: boolean;
 }
 
+/** Pushes to router ignoring errors if we want for a specific reason. */
+export function pushIgnoringNavFailure(router: VueRouter, url: string): void {
+    router.push(url).catch(() => {});
+}
+
 export function useWindowAwareNavigation() {
     const router = useRouter();
 
@@ -38,14 +44,14 @@ export function useWindowAwareNavigation() {
                 options.force = true;
             }
             // @ts-ignore - monkeypatched router accepts {title}; drop with migration.
-            router.push(framedUrl, options);
+            router.push(framedUrl, options).catch(() => {});
         } else {
             const target = inlineUrl ?? framedUrl;
             if (force) {
                 // @ts-ignore - monkeypatched router accepts {force}; drop with migration.
-                router.push(target, { force: true });
+                router.push(target, { force: true }).catch(() => {});
             } else {
-                router.push(target);
+                router.push(target).catch(() => {});
             }
         }
     }
