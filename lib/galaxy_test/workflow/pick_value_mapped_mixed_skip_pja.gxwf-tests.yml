@@ -1,0 +1,29 @@
+- doc: |
+    Test that a PJA discriminates between skipped and real elements within a
+    single mapped over pick_value output. The per-element booleans skip one
+    branch job and run the other, so the picked collection holds one skipped
+    placeholder and one real output. Only the real one may get the new
+    datatype - the placeholder must keep expression.json.
+  job:
+    boolean_input_files:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: runs
+          class: File
+          contents: "true"
+        - identifier: skips
+          class: File
+          contents: "false"
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list
+      element_count: 2
+      elements:
+        runs:
+          class: File
+          ftype: txt
+        skips:
+          class: File
+          ftype: expression.json
