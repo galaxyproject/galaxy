@@ -992,6 +992,28 @@ def test_get_data_stream_concurrent_streams_do_not_corrupt_cache():
 
 
 @patch_object_stores_to_skip_initialize
+def test_atomic_download_concurrent_downloads_do_not_share_a_temp_file():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        cache_path = _cache_path_for(object_store, dataset)
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+
+        # Two downloads of the same uncached object overlap: sharing one temp file lets the second
+        # truncate what the first is still writing, publishing a corrupt object into the cache.
+        with object_store._atomic_download(cache_path) as first_tmp:
+            with object_store._atomic_download(cache_path) as second_tmp:
+                assert first_tmp != second_tmp
+                with open(second_tmp, "wb") as f:
+                    f.write(b"a complete object")
+            with open(first_tmp, "wb") as f:
+                f.write(b"a complete object")
+
+        with open(cache_path, "rb") as f:
+            assert f.read() == b"a complete object"
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
 def test_stream_remote_boto3_reads_object_body_in_chunks():
     with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
         body = MagicMock()

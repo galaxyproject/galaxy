@@ -185,7 +185,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             yield from chunks
             return
         os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-        with self._atomic_download(cache_path, unique_tmp=True) as tmp_path:
+        with self._atomic_download(cache_path) as tmp_path:
             streamed_size = 0
             with open(tmp_path, "wb") as tmp_file:
                 for chunk in chunks:
@@ -484,7 +484,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         raise NotImplementedError()
 
     @contextmanager
-    def _atomic_download(self, cache_path, *, unique_tmp: bool = False):
+    def _atomic_download(self, cache_path):
         """Download to a temp file then atomically rename to prevent serving partial files.
 
         Usage::
@@ -492,12 +492,13 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             with self._atomic_download(local_destination) as tmp_path:
                 do_download(tmp_path)
 
-        Pass ``unique_tmp`` when several downloads of the same object can be in flight at once (as
-        with tee-streaming, where every concurrent client opens its own stream): each writes its own
-        temp file, so they cannot truncate each other's, and whichever finishes last publishes a
-        complete copy.
+        The temp file is unique per download because several downloads of the same object can be in
+        flight at once -- two clients downloading an uncached object, or a pull racing a stream. A
+        shared temp name lets one truncate what another is still writing and then publish the result
+        as a complete object; with one temp file each they cannot interfere, and whichever finishes
+        last publishes a complete copy.
         """
-        tmp_path = f"{cache_path}.{uuid4().hex}.tmp" if unique_tmp else f"{cache_path}.tmp"
+        tmp_path = f"{cache_path}.{uuid4().hex}.tmp"
         try:
             yield tmp_path
             os.rename(tmp_path, cache_path)
