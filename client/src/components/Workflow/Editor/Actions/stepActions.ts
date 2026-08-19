@@ -366,6 +366,10 @@ export class CopyStepAction extends UndoRedoAction {
         // A cloned step must get its own uuid; keeping the source step's uuid
         // produces a "Duplicate step UUID" error when saving the workflow.
         delete this.step.uuid;
+        // `cloneStepWithUniqueLabel` deep-clones `workflow_outputs` too, so each output's
+        // uuid must be stripped the same way, or saving fails with "Duplicate workflow
+        // output UUID" instead.
+        this.step.workflow_outputs?.forEach((workflowOutput) => delete workflowOutput.uuid);
     }
 
     get name() {

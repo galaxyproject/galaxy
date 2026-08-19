@@ -170,7 +170,7 @@ describe("Index", () => {
             expect(stateStore.hasChanges).toBeFalsy();
         });
 
-        it("assigns a fresh id and uuid when cloning a step", async () => {
+        it("assigns a fresh id and uuid when cloning a step, including its workflow_outputs", async () => {
             await flushPromises();
 
             const stepStore = useWorkflowStepStore("workflow_id");
@@ -186,6 +186,7 @@ describe("Index", () => {
                 outputs: [],
                 position: { left: 0, top: 0 },
                 uuid: "11111111-1111-1111-1111-111111111111",
+                workflow_outputs: [{ output_name: "out1", uuid: "22222222-2222-2222-2222-222222222222" }],
             });
 
             wrapper.find(SELECTORS.WORKFLOW_GRAPH).vm.$emit("onClone", String(sourceStep.id));
@@ -198,6 +199,10 @@ describe("Index", () => {
             // the workflow fails with "Duplicate step UUID ... in request."
             expect(clonedStep.uuid).not.toBe(sourceStep.uuid);
             expect(clonedStep.label).not.toBe(sourceStep.label);
+
+            // Nor may it keep its workflow_outputs' uuids, otherwise saving fails with
+            // "Duplicate workflow output UUID ... in request." instead.
+            expect(clonedStep.workflow_outputs?.[0]?.uuid).not.toBe(sourceStep.workflow_outputs?.[0]?.uuid);
         });
 
         it("routes to download URL and respects Galaxy prefix", async () => {
