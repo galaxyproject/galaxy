@@ -50,7 +50,8 @@ localVue.use(PiniaVuePlugin);
 /**
  * Stub for `ActivityBar`, a component `Index.vue` calls methods on directly
  * (`activityBar.value?.isActiveSideBar/setActiveSideBar`). Renders its
- * `side-panel` slot so `WorkflowAttributes` etc. render underneath it, and
+ * `side-panel` slot, passing `isActiveSideBar` as the `is-active-side-bar`
+ * scoped slot prop, so `WorkflowAttributes` etc. render underneath it, and
  * tracks the "active" panel reactively so `showAttributes()` can switch it.
  */
 const activityBarStub = Vue.extend({
@@ -65,7 +66,7 @@ const activityBarStub = Vue.extend({
             this.activeSideBar = name;
         },
     },
-    template: `<div><slot name="side-panel" /></div>`,
+    template: `<div><slot name="side-panel" :is-active-side-bar="isActiveSideBar" /></div>`,
 });
 
 function editorStubs() {

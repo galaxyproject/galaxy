@@ -138,7 +138,7 @@ const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 // Activity bar and sidebar state
 const activityBar = ref<InstanceType<typeof ActivityBar> | null>(null);
 function isActiveSideBar(activityBarId: string) {
-    return activityBar.value?.isActiveSideBar(activityBarId);
+    return Boolean(activityBar.value?.isActiveSideBar(activityBarId));
 }
 const reportActive = computed(() => isActiveSideBar("workflow-editor-report"));
 
@@ -1337,17 +1337,15 @@ initializeWorkflowEditor();
             :header-icon="faSitemap"
             header-title="Editor"
             @activityClicked="onActivityClicked">
-            <template v-slot:side-panel>
-                <ToolPanel v-if="isActiveSideBar('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
-                <SearchPanel
-                    v-else-if="isActiveSideBar('workflow-editor-search')"
-                    @result-clicked="onHighlightRegion" />
+            <template v-slot:side-panel="{ isActiveSideBar: isActive }">
+                <ToolPanel v-if="isActive('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
+                <SearchPanel v-else-if="isActive('workflow-editor-search')" @result-clicked="onHighlightRegion" />
                 <InputPanel
-                    v-else-if="isActiveSideBar('workflow-editor-inputs')"
+                    v-else-if="isActive('workflow-editor-inputs')"
                     :inputs="inputs"
                     @insertModule="onInsertModule" />
                 <WorkflowLint
-                    v-else-if="isActiveSideBar('workflow-best-practices')"
+                    v-else-if="isActive('workflow-best-practices')"
                     :lint-data="lintData"
                     :steps="steps"
                     :has-changes="hasChanges"
@@ -1359,15 +1357,15 @@ initializeWorkflowEditor();
                     "
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
-                <UndoRedoStack v-else-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
+                <UndoRedoStack v-else-if="isActive('workflow-undo-redo')" :store-id="id" />
                 <WorkflowPanel
-                    v-else-if="isActiveSideBar('workflow-editor-workflows')"
+                    v-else-if="isActive('workflow-editor-workflows')"
                     :current-workflow-id="id"
                     @insertWorkflow="onInsertWorkflow"
                     @insertWorkflowSteps="onInsertWorkflowSteps"
                     @createWorkflow="createNewWorkflow" />
                 <WorkflowAttributes
-                    v-else-if="isActiveSideBar('workflow-editor-attributes')"
+                    v-else-if="isActive('workflow-editor-attributes')"
                     :id="id"
                     :tags="tags"
                     :highlight.sync="highlightAttribute"
@@ -1392,7 +1390,7 @@ initializeWorkflowEditor();
                     @update:logoUrlCurrent="setLogoUrl"
                     @update:helpCurrent="setHelp" />
                 <UserToolPanel
-                    v-if="isActiveSideBar('workflow-editor-user-defined-tools')"
+                    v-if="isActive('workflow-editor-user-defined-tools')"
                     :in-workflow-editor="true"
                     in-panel
                     @onInsertTool="onInsertTool" />
