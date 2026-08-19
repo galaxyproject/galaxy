@@ -778,7 +778,7 @@ def sanitize_for_filename(
     text,
     default=None,
     valid_filename_chars=set(string.ascii_letters + string.digits + "_."),
-    invalid_filenames=["", ".", ".."]
+    invalid_filenames=["", ".", ".."],
 ):
     """
     Restricts the characters that are allowed in a filename portion; Returns default value or a unique id string if result is not a valid name.
