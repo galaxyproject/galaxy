@@ -838,6 +838,17 @@ def _write_user_log(cjs):
         handle.write("1")
 
 
+class _FakeClock:
+    """Drives a job state's escalation grace periods without sleeping."""
+
+    def __init__(self, cjs):
+        self.now = 0.0
+        cjs.clock = lambda: self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
 def _set_job_events(fake_htcondor, cjs, event_names):
     fake_htcondor.JobEventLog.set_events(
         cjs.user_log,
@@ -1216,7 +1227,7 @@ def test_stopped_or_deleted_jobs_are_not_submitted(fake_instance, fake_htcondor,
 
     assert _records(fake_instance) == []
     assert runner.monitor_queue.empty()
-    assert runner._client_cache == {}
+    assert runner._clients.clients() == []
 
 
 @pytest.mark.parametrize(
@@ -1281,7 +1292,7 @@ def test_runner_shutdown_terminates_all_helpers(fake_instance, fake_htcondor, ru
         )
     )
 
-    clients = list(runner._client_cache.values())
+    clients = runner._clients.clients()
     processes = [client._process for client in clients if getattr(client, "_process", None) is not None]
     assert len(processes) == 2
     assert all(process.poll() is None for process in processes)
@@ -1489,39 +1500,34 @@ def test_recover_with_completed_event_log(fake_instance, fake_htcondor, runner_f
 
 
 def test_transient_status_error_retries_before_failing(fake_instance, fake_htcondor, runner_factory, monkeypatch):
-    """Transient errors from _summarize_event_log keep the job watched for
-    MAX_STATUS_ERROR_COUNT-1 cycles, then fail it on the final error."""
-    from galaxy.jobs.runners import htcondor as htcondor_module
+    """Transient errors from _summarize_event_log keep the job watched until they
+    have persisted for STATUS_ERROR_GRACE_SECONDS, then fail it."""
+    from galaxy.jobs.runners.util.condor.htcondor import STATUS_ERROR_GRACE_SECONDS
 
     runner = runner_factory()
     job_wrapper = _job_wrapper(fake_instance, 1, dict(htcondor_config="/tmp/condor-transient-err"))
     cjs = _watch_job(runner, job_wrapper)
     _write_user_log(cjs)
-
-    call_count = 0
+    clock = _FakeClock(cjs)
 
     def always_raise(c):
-        nonlocal call_count
-        call_count += 1
         raise OSError("simulated NFS timeout")
 
     monkeypatch.setattr(runner, "_summarize_event_log", always_raise)
 
-    max_count = htcondor_module.MAX_STATUS_ERROR_COUNT
-
-    # First MAX_STATUS_ERROR_COUNT-1 errors: job stays in watched, nothing queued.
-    for i in range(max_count - 1):
+    # Polling faster than the grace period must not escalate, however many times.
+    for i in range(20):
+        clock.advance(STATUS_ERROR_GRACE_SECONDS / 40)
         runner.check_watched_items()
         assert len(runner.watched) == 1, f"job should still be watched after error {i + 1}"
         assert runner.work_queue.empty(), f"no failure should be queued after error {i + 1}"
-        assert cjs.status_error_count == i + 1
 
-    # Final error: job is failed.
+    # Once the errors have persisted past the grace period, the job is failed.
+    clock.advance(STATUS_ERROR_GRACE_SECONDS)
     runner.check_watched_items()
     assert len(runner.watched) == 0
     method, job_state_record = runner.work_queue.get_nowait()
     assert method == runner.fail_job
-    assert job_state_record.status_error_count == max_count
 
 
 def test_held_job_escalates_to_failure_after_max_count(fake_instance, fake_htcondor, runner_factory):
@@ -1721,7 +1727,7 @@ def _set_job_events_with_classads(fake_htcondor, cjs, events):
 
 
 def test_transient_status_error_resets_on_success(fake_instance, fake_htcondor, runner_factory, monkeypatch):
-    """A transient error followed by a successful check resets status_error_count to 0."""
+    """A transient error followed by a successful check restarts the grace period."""
     runner = runner_factory()
     job_wrapper = _job_wrapper(fake_instance, 1, dict(htcondor_config="/tmp/condor-err-reset"))
     cjs = _watch_job(runner, job_wrapper)
@@ -1739,14 +1745,14 @@ def test_transient_status_error_resets_on_success(fake_instance, fake_htcondor, 
 
     monkeypatch.setattr(runner, "_summarize_event_log", fail_once)
 
-    # Cycle 1: error — counter goes to 1
+    # Cycle 1: error — the grace period starts.
     runner.check_watched_items()
-    assert cjs.status_error_count == 1
+    assert cjs.status_error_since is not None
     assert len(runner.watched) == 1
 
-    # Cycle 2: success — counter must reset to 0
+    # Cycle 2: success — the grace period must be cleared.
     runner.check_watched_items()
-    assert cjs.status_error_count == 0
+    assert cjs.status_error_since is None
     assert len(runner.watched) == 1  # no terminal event yet, stays watched
 
 
@@ -1809,10 +1815,10 @@ def test_held_job_max_count_zero_disables_escalation(fake_instance, fake_htcondo
     ],
 )
 def test_inprocess_client_evicts_stale_schedd_on_error(fake_instance, fake_htcondor, operation, failing_method):
-    """_HTCondorInProcessClient evicts the cached Schedd when submit or remove raises."""
-    from galaxy.jobs.runners.htcondor import _HTCondorInProcessClient
+    """HTCondorInProcessClient evicts the cached Schedd when submit or remove raises."""
+    from galaxy.jobs.runners.util.condor.htcondor import HTCondorInProcessClient
 
-    client = _HTCondorInProcessClient(fake_htcondor)
+    client = HTCondorInProcessClient(fake_htcondor)
 
     class FailingSchedd:
         def submit(self, *a, **k):
@@ -2017,9 +2023,9 @@ def test_sigkill_on_user_stopped_job_finishes_not_oom(fake_instance, fake_htcond
 
 def test_subprocess_client_restarts_after_helper_crash(fake_instance, fake_htcondor):
     """The subprocess client spawns a fresh helper process when the old one dies unexpectedly."""
-    from galaxy.jobs.runners.htcondor import _HTCondorSubprocessClient
+    from galaxy.jobs.runners.util.condor.htcondor import HTCondorSubprocessClient
 
-    client = _HTCondorSubprocessClient("/tmp/condor-subprocess-restart")
+    client = HTCondorSubprocessClient("/tmp/condor-subprocess-restart")
     try:
         # First submit triggers process spawn.
         client.submit("universe = vanilla\ngetenv = true\nnotification = NEVER\nqueue", None, None)
@@ -2047,11 +2053,11 @@ def test_subprocess_client_restarts_after_helper_crash(fake_instance, fake_htcon
 
 
 def test_normalize_condor_config_expands_and_resolves(tmp_path):
-    from galaxy.jobs.runners.htcondor import _normalize_condor_config
+    from galaxy.jobs.runners.util.condor.htcondor import normalize_condor_config
 
     config_path = tmp_path / "condor.cfg"
     config_path.touch()
-    result = _normalize_condor_config(str(config_path))
+    result = normalize_condor_config(str(config_path))
     assert result == os.path.realpath(str(config_path))
     assert "~" not in result
 
@@ -2101,41 +2107,41 @@ def test_held_while_running_clears_running_flag(fake_instance, fake_htcondor, ru
 
 
 def test_locate_schedd_no_collector_no_name_returns_local_schedd(fake_htcondor):
-    """_locate_schedd with no collector and no schedd_name uses Schedd() directly."""
+    """locate_schedd with no collector and no schedd_name uses Schedd() directly."""
     import threading
 
-    from galaxy.jobs.runners.htcondor_helper import _locate_schedd
+    from galaxy.jobs.runners.util.condor.htcondor_helper import locate_schedd
 
     cache: dict = {}
     lock = threading.Lock()
-    schedd = _locate_schedd(fake_htcondor, cache, lock, None, None)
+    schedd = locate_schedd(fake_htcondor, cache, lock, None, None)
     assert schedd is not None
     assert (None, None) in cache
     assert cache[(None, None)] is schedd
 
 
 def test_locate_schedd_caches_and_returns_same_object(fake_htcondor):
-    """_locate_schedd returns the same object on a second call (cache hit)."""
+    """locate_schedd returns the same object on a second call (cache hit)."""
     import threading
 
-    from galaxy.jobs.runners.htcondor_helper import _locate_schedd
+    from galaxy.jobs.runners.util.condor.htcondor_helper import locate_schedd
 
     cache: dict = {}
     lock = threading.Lock()
-    first = _locate_schedd(fake_htcondor, cache, lock, None, None)
-    second = _locate_schedd(fake_htcondor, cache, lock, None, None)
+    first = locate_schedd(fake_htcondor, cache, lock, None, None)
+    second = locate_schedd(fake_htcondor, cache, lock, None, None)
     assert first is second
 
 
 def test_locate_schedd_with_collector_and_name(fake_htcondor):
-    """_locate_schedd with a collector and explicit schedd_name locates via the collector."""
+    """locate_schedd with a collector and explicit schedd_name locates via the collector."""
     import threading
 
-    from galaxy.jobs.runners.htcondor_helper import _locate_schedd
+    from galaxy.jobs.runners.util.condor.htcondor_helper import locate_schedd
 
     cache: dict = {}
     lock = threading.Lock()
-    schedd = _locate_schedd(fake_htcondor, cache, lock, "collector:9618", "schedd@host")
+    schedd = locate_schedd(fake_htcondor, cache, lock, "collector:9618", "schedd@host")
     assert schedd is not None
     assert ("collector:9618", "schedd@host") in cache
 
@@ -2194,9 +2200,9 @@ def test_htcondor_params_runner_default_used_when_destination_omits_params(
 # ---------------------------------------------------------------------------
 
 
-def test_missing_event_log_escalates_to_failure_after_max_count(fake_instance, fake_htcondor, runner_factory):
-    """A job whose event log is absent for MAX_MISSING_LOG_COUNT consecutive cycles is failed."""
-    from galaxy.jobs.runners import htcondor as htcondor_module
+def test_missing_event_log_escalates_to_failure_after_grace_period(fake_instance, fake_htcondor, runner_factory):
+    """A job whose event log stays absent past MISSING_LOG_GRACE_SECONDS is failed."""
+    from galaxy.jobs.runners.util.condor.htcondor import MISSING_LOG_GRACE_SECONDS
 
     runner = runner_factory()
     job_wrapper = _job_wrapper(
@@ -2208,41 +2214,44 @@ def test_missing_event_log_escalates_to_failure_after_max_count(fake_instance, f
     cjs = _watch_job(runner, job_wrapper)
     # Deliberately do NOT write the user log — simulates a log that was never created or was lost.
     assert not os.path.exists(cjs.user_log)
+    clock = _FakeClock(cjs)
 
-    max_count = htcondor_module.MAX_MISSING_LOG_COUNT
-
-    for i in range(max_count - 1):
+    # Polling faster than the grace period must not escalate, however many times.
+    for i in range(20):
+        clock.advance(MISSING_LOG_GRACE_SECONDS / 40)
         runner.check_watched_items()
-        assert len(runner.watched) == 1, f"job should still be watched after absent-log cycle {i + 1}"
-        assert runner.work_queue.empty(), f"no failure should be queued after cycle {i + 1}"
-        assert cjs.missing_log_count == i + 1
+        assert len(runner.watched) == 1, f"job should still be watched after absent-log poll {i + 1}"
+        assert runner.work_queue.empty(), f"no failure should be queued after poll {i + 1}"
 
-    # Final cycle: escalates to failure.
+    # Once the log has been absent past the grace period, the job is failed.
+    clock.advance(MISSING_LOG_GRACE_SECONDS)
     runner.check_watched_items()
     assert len(runner.watched) == 0
     method, job_state_record = runner.work_queue.get_nowait()
     assert method == runner.fail_job
     assert "event log" in job_state_record.fail_message.lower()
-    assert job_state_record.missing_log_count == max_count
 
 
-def test_missing_log_count_resets_when_log_appears(fake_instance, fake_htcondor, runner_factory):
-    """missing_log_count resets to 0 as soon as the event log becomes available."""
+def test_missing_log_grace_period_resets_when_log_appears(fake_instance, fake_htcondor, runner_factory):
+    """The missing-log grace period is cleared as soon as the event log becomes available."""
+    from galaxy.jobs.runners.util.condor.htcondor import MISSING_LOG_GRACE_SECONDS
+
     runner = runner_factory()
     job_wrapper = _job_wrapper(fake_instance, 1, dict(htcondor_config="/tmp/condor-log-reappears"))
     cjs = _watch_job(runner, job_wrapper)
     assert not os.path.exists(cjs.user_log)
+    clock = _FakeClock(cjs)
 
     # Two cycles with no log.
     runner.check_watched_items()
-    assert cjs.missing_log_count == 1
+    assert cjs.missing_log_since is not None
+    clock.advance(MISSING_LOG_GRACE_SECONDS / 2)
     runner.check_watched_items()
-    assert cjs.missing_log_count == 2
 
-    # Log appears — counter resets and job stays watched (no terminal event yet).
+    # Log appears — the grace period resets and job stays watched (no terminal event yet).
     _write_user_log(cjs)
     runner.check_watched_items()
-    assert cjs.missing_log_count == 0
+    assert cjs.missing_log_since is None
     assert len(runner.watched) == 1
 
 
@@ -2262,9 +2271,9 @@ def test_missing_log_count_resets_when_log_appears(fake_instance, fake_htcondor,
     ],
 )
 def test_parse_memory_mb_valid(value, expected_mb):
-    from galaxy.jobs.runners.htcondor import _parse_memory_mb
+    from galaxy.jobs.runners.util.condor.htcondor import parse_memory_mb
 
-    assert _parse_memory_mb(value) == expected_mb
+    assert parse_memory_mb(value) == expected_mb
 
 
 @pytest.mark.parametrize(
@@ -2276,9 +2285,9 @@ def test_parse_memory_mb_valid(value, expected_mb):
     ],
 )
 def test_parse_memory_mb_unparseable_returns_none(value):
-    from galaxy.jobs.runners.htcondor import _parse_memory_mb
+    from galaxy.jobs.runners.util.condor.htcondor import parse_memory_mb
 
-    assert _parse_memory_mb(value) is None
+    assert parse_memory_mb(value) is None
 
 
 # ---------------------------------------------------------------------------
@@ -2298,9 +2307,9 @@ def test_parse_memory_mb_unparseable_returns_none(value):
     ],
 )
 def test_parse_walltime_seconds_valid(value, expected_seconds):
-    from galaxy.jobs.runners.htcondor import _parse_walltime_seconds
+    from galaxy.jobs.runners.util.condor.htcondor import parse_walltime_seconds
 
-    assert _parse_walltime_seconds(value) == expected_seconds
+    assert parse_walltime_seconds(value) == expected_seconds
 
 
 @pytest.mark.parametrize(
@@ -2312,9 +2321,9 @@ def test_parse_walltime_seconds_valid(value, expected_seconds):
     ],
 )
 def test_parse_walltime_seconds_invalid_returns_none(value):
-    from galaxy.jobs.runners.htcondor import _parse_walltime_seconds
+    from galaxy.jobs.runners.util.condor.htcondor import parse_walltime_seconds
 
-    assert _parse_walltime_seconds(value) is None
+    assert parse_walltime_seconds(value) is None
 
 
 def test_request_walltime_adds_periodic_hold(fake_instance, fake_htcondor, runner_factory):
@@ -2430,12 +2439,12 @@ def test_subprocess_client_times_out_on_hung_helper(fake_instance, fake_htcondor
     and marks the process as dead so the next call spawns a fresh helper."""
     import select as _select
 
-    from galaxy.jobs.runners.htcondor import (
-        _HTCondorSubprocessClient,
+    from galaxy.jobs.runners.util.condor.htcondor import (
         HTCONDOR_HELPER_TIMEOUT,
+        HTCondorSubprocessClient,
     )
 
-    client = _HTCondorSubprocessClient("/tmp/condor-timeout-test")
+    client = HTCondorSubprocessClient("/tmp/condor-timeout-test")
 
     # Patch select.select to simulate a timeout (no file descriptors ready).
     def fake_select(rlist, wlist, xlist, timeout):
