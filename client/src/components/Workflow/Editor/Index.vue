@@ -889,6 +889,15 @@ async function onCreate(): Promise<boolean> {
 
         await routeToWorkflow(createdId);
 
+        try {
+            versions.value = await getVersions(id.value);
+            version.value = versions.value[versions.value.length - 1]?.version ?? null;
+        } catch (e) {
+            // If fetching versions fails, we don't want to block the user from using the workflow.
+            // Just log the error and continue.
+            console.error("Failed to fetch versions after creating workflow:", e);
+        }
+
         Toast.success(message);
     } catch (e) {
         onWorkflowError("Creating workflow failed", errorMessageAsString(e, "Please contact an administrator."));
