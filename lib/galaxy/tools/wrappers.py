@@ -422,10 +422,9 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     @property
     def safe_element_identifier(self) -> str | None:
         return sanitize_for_filename(
-                self.element_identifier,
-                valid_filename_chars = set(string.ascii_letters + string.digits + "-_."),
-            ).lstrip("-.")
-
+            self.element_identifier,
+            valid_filename_chars = set(string.ascii_letters + string.digits + "-_."),
+        ).lstrip("-.")
 
     @property
     def element_identifier(self) -> str:
@@ -732,10 +731,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     @property
     def safe_element_identifier(self) -> str | None:
         return sanitize_for_filename(
-                self.name,
-                valid_filename_chars = set(string.ascii_letters + string.digits + "-_."),
-            ).lstrip("-")       
-        
+            self.name,
+            valid_filename_chars = set(string.ascii_letters + string.digits + "-_."),
+        ).lstrip("-")    
 
     @property
     def element_identifier(self) -> str | None:
