@@ -44,12 +44,14 @@ function buttonsDisabled(wrapper: Wrapper<Vue>) {
 
 describe("SaveChangesModal reusable component", () => {
     let onSave: ReturnType<typeof vi.fn>;
+    let onDiscard: ReturnType<typeof vi.fn>;
     let push: typeof mockPush;
     let wrapper: Wrapper<Vue>;
 
     beforeEach(() => {
         vi.clearAllMocks();
         onSave = vi.fn().mockResolvedValue(undefined);
+        onDiscard = vi.fn();
         push = mockPush;
         push.mockResolvedValue(undefined);
 
@@ -58,6 +60,7 @@ describe("SaveChangesModal reusable component", () => {
             propsData: {
                 hasChanges: false,
                 onSave,
+                onDiscard,
             },
         }) as Wrapper<Vue>;
     });
@@ -117,6 +120,19 @@ describe("SaveChangesModal reusable component", () => {
         await flushPromises();
 
         expect(onSave).not.toHaveBeenCalled();
+        expect(onDiscard).toHaveBeenCalled();
+        expect(push).toHaveBeenCalledWith("/pages/list");
+    });
+
+    it("Don't Save without an onDiscard still navigates", async () => {
+        await wrapper.setProps({ onDiscard: undefined });
+        await makeDirty();
+        callGuard(mockOnBeforeRouteLeave, "/pages/list");
+        await nextTick();
+
+        await footerButtons(wrapper).at(1)!.vm.$emit("click");
+        await flushPromises();
+
         expect(push).toHaveBeenCalledWith("/pages/list");
     });
 

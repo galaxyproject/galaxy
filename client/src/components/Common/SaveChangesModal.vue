@@ -28,6 +28,8 @@ interface Props {
     hasChanges: boolean;
     /** Saves the pending changes. A rejected promise is caught and Toasted as an error */
     onSave: () => Promise<unknown>;
+    /** Reverts the pending changes, for "Don't Save". Without it they are merely navigated away from */
+    onDiscard?: () => void;
 }
 
 const props = defineProps<Props>();
@@ -85,9 +87,8 @@ async function proceed(url: string, forceSave: boolean, ignoreChanges: boolean) 
             closeModal();
             return;
         }
-    } else if (!ignoreChanges) {
-        busy.value = false;
-        return;
+    } else if (ignoreChanges) {
+        props.onDiscard?.();
     }
 
     closeModal();

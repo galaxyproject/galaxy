@@ -175,7 +175,7 @@ describe("PageEditorView", () => {
     });
 
     describe("SaveChangesModal wiring", () => {
-        it("passes hasChanges and onSave through to SaveChangesModal", async () => {
+        it("passes hasChanges, onSave and onDiscard through to SaveChangesModal", async () => {
             const store = setupLoadedPage(HISTORY_ID);
             vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
@@ -187,6 +187,9 @@ describe("PageEditorView", () => {
 
             await modal.props("onSave")();
             expect(store.savePage).toHaveBeenCalled();
+
+            modal.props("onDiscard")();
+            expect(store.discardChanges).toHaveBeenCalled();
         });
     });
 

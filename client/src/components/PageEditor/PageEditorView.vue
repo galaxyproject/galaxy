@@ -174,7 +174,10 @@ function handleRevisionRestore(revisionId: string) {
 
 <template>
     <div class="page-editor-view d-flex flex-column h-100" data-description="page editor view">
-        <SaveChangesModal :has-changes="store.isDirty" :on-save="() => store.savePage()" />
+        <SaveChangesModal
+            :has-changes="store.isDirty"
+            :on-save="() => store.savePage()"
+            :on-discard="() => store.discardChanges()" />
 
         <BAlert v-if="store.error" variant="danger" show dismissible @dismissed="store.error = null">
             {{ store.error }}
