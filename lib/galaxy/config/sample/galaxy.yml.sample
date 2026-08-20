@@ -3052,7 +3052,7 @@ galaxy:
   # (`/api/jobs`) when available. The client falls back to the legacy
   # `/api/tools` endpoint when this is disabled, when Celery is not
   # enabled, or when the tool does not provide a typed parameter schema.
-  #enable_tool_requests: false
+  #enable_tool_requests: true
 
   # Configuration options passed to Celery.
   # To refer to a task by name, use the template `galaxy.foo` where
