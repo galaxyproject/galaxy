@@ -21,12 +21,19 @@ def test_resubmission_count_comes_from_the_job_not_the_working_directory():
     assert properties[RESUBMISSION_COUNT_KEY] == 2
 
 
-def test_a_job_that_was_never_resubmitted_records_no_metric():
+def test_a_job_that_was_never_resubmitted_still_records_a_zero():
     plugin = CorePlugin()
 
     properties = plugin.collect(FakeJob(42, resubmission_count=0), "/job-directory")
 
-    assert RESUBMISSION_COUNT_KEY not in properties
+    assert properties[RESUBMISSION_COUNT_KEY] == 0
+
+
+def test_a_zero_count_is_recorded_but_not_displayed():
+    plugin = CorePlugin()
+
+    assert plugin.formatter is not None
+    assert plugin.formatter.format(RESUBMISSION_COUNT_KEY, 0) is None
 
 
 def test_resubmission_metric_formatting_and_safety():

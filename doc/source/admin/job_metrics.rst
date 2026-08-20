@@ -52,10 +52,13 @@ zone library and can be listed with the following command:
     python3 -c 'import zoneinfo; list(map(print, sorted(zoneinfo.available_timezones())))'
 
 The core plugin also records ``resubmission_count``, the number of Galaxy-level job
-resubmission events, on jobs that were resubmitted at least once. Jobs that ran once do not
-carry the metric at all, so a missing value reads as zero; the execution attempt number is
-``resubmission_count + 1``. The count comes from the persisted job state history rather than
-the working directory, so it survives a resubmission clearing or recreating that directory.
+resubmission events, on every job; the execution attempt number is ``resubmission_count + 1``.
+The count comes from the persisted job state history rather than the working directory, so it
+survives a resubmission clearing or recreating that directory.
+
+It is recorded for every job but only *displayed* when it is non-zero, since almost no job is
+ever resubmitted and a zero would otherwise appear on every job's metrics panel. The value is
+stored either way, so queries and reports see a uniform metric.
 
 This counts both configured ``resubmit`` rules and runner-triggered resubmissions such as
 Slurm node-failure recovery. It does not count scheduler-internal requeues that Galaxy never

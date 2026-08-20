@@ -91,8 +91,11 @@ class JobMetrics:
             self.default_job_instrumenter = NULL_JOB_INSTRUMENTER
         self.job_instrumenters = collections.defaultdict(lambda: self.default_job_instrumenter)
 
-    def format(self, plugin: str, key: str, value: Any) -> formatting.FormattedMetric:
-        """Find :class:`formatting.JobMetricFormatter` corresponding to instrumented plugin value."""
+    def format(self, plugin: str, key: str, value: Any) -> formatting.FormattedMetric | None:
+        """Find :class:`formatting.JobMetricFormatter` corresponding to instrumented plugin value.
+
+        None means the plugin recorded this metric but does not want it displayed.
+        """
         if plugin in self.plugin_classes:
             plugin_class = self.plugin_classes[plugin]
             formatter = plugin_class.formatter
@@ -102,9 +105,12 @@ class JobMetrics:
         return formatter.format(key, value)
 
     def dictifiable_metrics(self, raw_metrics: list[RawMetric], allowed_safety: Safety) -> list[DictifiableMetric]:
-        def raw_to_dictifiable(raw_metric: RawMetric) -> DictifiableMetric:
+        def raw_to_dictifiable(raw_metric: RawMetric) -> DictifiableMetric | None:
             metric_name, metric_value, metric_plugin = raw_metric
-            title, value = self.format(metric_plugin, metric_name, metric_value)
+            formatted = self.format(metric_plugin, metric_name, metric_value)
+            if formatted is None:
+                return None
+            title, value = formatted
             configured_plugin = self.default_job_instrumenter.get_configured_plugin(metric_plugin)
             if configured_plugin is not None:
                 safety = configured_plugin.safety(metric_name)
@@ -122,7 +128,7 @@ class JobMetrics:
                 safety,
             )
 
-        metrics = map(raw_to_dictifiable, raw_metrics)
+        metrics = (m for m in map(raw_to_dictifiable, raw_metrics) if m is not None)
         return [m for m in metrics if m.safety.value >= allowed_safety.value]
 
     def set_destination_conf_file(self, destination_id: str, conf_file: str) -> None:

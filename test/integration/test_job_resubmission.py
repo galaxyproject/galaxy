@@ -81,8 +81,8 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
         assert resubmission_metric["value"] == str(expected_count)
         assert int(resubmission_metric["raw_value"]) == expected_count
 
-    def _assert_no_resubmission_metric(self, history_id):
-        """A job that ran once carries no resubmission metric at all - absence reads as zero."""
+    def _assert_resubmission_metric_not_displayed(self, history_id):
+        """A count of zero is recorded, but the formatter keeps it out of what the API returns."""
         job_metrics = self._job_metrics(history_id)
         assert not [metric for metric in job_metrics if metric["name"] == "resubmission_count"]
 
@@ -116,7 +116,7 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
                 },
                 history_id=history_id,
             )
-            self._assert_no_resubmission_metric(history_id)
+            self._assert_resubmission_metric_not_displayed(history_id)
 
     def test_walltime_resubmission(self):
         with self.dataset_populator.test_history() as history_id:

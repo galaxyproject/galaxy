@@ -42,13 +42,17 @@ class CorePluginFormatter(JobMetricFormatter):
             self.tz = zoneinfo.ZoneInfo(timezone)
             self.strftime_format = "%Y-%m-%d %H:%M:%S %Z (%z)"
 
-    def format(self, key: str, value: Any) -> FormattedMetric:
+    def format(self, key: str, value: Any) -> FormattedMetric | None:
         if key == CONTAINER_ID:
             return FormattedMetric("Container ID", value)
         if key == CONTAINER_TYPE:
             return FormattedMetric("Container Type", value)
         value = int(value)
         if key == RESUBMISSION_COUNT_KEY:
+            if not value:
+                # Recorded on every job so the metric means the same thing everywhere, but a
+                # count of zero describes almost every job and is not worth a row in the UI.
+                return None
             return FormattedMetric("Resubmission Count", f"{value}")
         if key == GALAXY_SLOTS_KEY:
             return FormattedMetric("Cores Allocated", f"{value}")
@@ -108,11 +112,7 @@ class CorePlugin(InstrumentPlugin):
 
     def collect(self, job: ProvidesJobMetricsContext, job_directory: str) -> dict[str, Any]:
         properties = self.job_properties(job.id, job_directory)
-        resubmission_count = job.resubmission_count
-        if resubmission_count:
-            # Recorded only when it happened. The overwhelming majority of jobs never get
-            # resubmitted, and a zero for every one of them is a row per job that says nothing.
-            properties[RESUBMISSION_COUNT_KEY] = resubmission_count
+        properties[RESUBMISSION_COUNT_KEY] = job.resubmission_count
         return properties
 
     def get_container_file_path(self, job_directory):
