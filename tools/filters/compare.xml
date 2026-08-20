@@ -5,8 +5,8 @@
     <requirement type="package" version="5.3.1">gawk</requirement>
   </requirements>
   <command><![CDATA[
-    sort -t \$'\t' -k '${field1},${field1}' '$input1' > 1 &&
-    sort -t \$'\t' -k '${field2},${field2}' '$input2' > 2 &&
+    sort -t \$'\t' -k '${field1},${field1}' '$input1' --buffer-size="\$GALAXY_MEMORY_MB_PER_SLOT"M  --parallel="\${GALAXY_SLOTS:-1}" > 1 &&
+    sort -t \$'\t' -k '${field2},${field2}' '$input2' --buffer-size="\$GALAXY_MEMORY_MB_PER_SLOT"M  --parallel="\${GALAXY_SLOTS:-1}" > 2 &&
     join --nocheck-order -t \$'\t'
       #if $mode == "V":
         -v 1
