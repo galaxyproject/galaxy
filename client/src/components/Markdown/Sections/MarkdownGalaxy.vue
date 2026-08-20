@@ -1,5 +1,5 @@
 <script setup>
-import { BAlert, BLink } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
@@ -34,6 +34,7 @@ import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 import VisualizationWrapper from "./VisualizationWrapper.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowInvocationInputs from "@/components/WorkflowInvocationState/WorkflowInvocationInputs.vue";
 import WorkflowInvocationOutputs from "@/components/WorkflowInvocationState/WorkflowInvocationOutputs.vue";
@@ -148,9 +149,17 @@ watch(
         <b>{{ name }}</b>
     </BAlert>
     <div v-else>
-        <BLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
+        <Heading
+            v-if="isCollapsible"
+            class="my-2"
+            h2
+            separator
+            size="text"
+            inline
+            :collapse="!toggle ? 'closed' : 'open'"
+            @click="toggle = !toggle">
             {{ args.collapse }}
-        </BLink>
+        </Heading>
         <GCollapse :visible="isVisible">
             <TextContent
                 v-if="name == 'generate_galaxy_version'"

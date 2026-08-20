@@ -8,6 +8,7 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
 import MountTarget from "./MarkdownGalaxy.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 const { server, http } = useServerMock();
 
@@ -104,11 +105,11 @@ describe("MarkdownContainer", () => {
         expect(nolink.exists()).toBe(false);
         const collapse = "Click here to expand/collapse";
         await wrapper.setProps({ content: `generate_galaxy_version(collapse="${collapse}")` });
-        const link = wrapper.find("a");
-        expect(link.text()).toBe(collapse);
+        const heading = wrapper.findComponent(Heading);
+        expect(heading.text()).toBe(collapse);
         const container = wrapper.find(".g-collapse");
         expect(container.classes()).not.toContain("g-collapse-open");
-        await link.trigger("click");
+        await heading.vm.$emit("click");
         expect(container.classes()).toContain("g-collapse-open");
     });
 
