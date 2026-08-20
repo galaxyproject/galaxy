@@ -1,4 +1,4 @@
-<tool id="comp1" name="Compare two Datasets" version="1.0.2" profile="24.2">
+<tool id="comp1" name="Compare two Datasets" version="1.0.3" profile="24.2">
   <description>to find common or distinct rows</description>
   <requirements>
     <requirement type="package" version="8.31">coreutils</requirement>
