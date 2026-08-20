@@ -58,7 +58,16 @@ survives a resubmission clearing or recreating that directory.
 
 It is recorded for every job but only *displayed* when it is non-zero, since almost no job is
 ever resubmitted and a zero would otherwise appear on every job's metrics panel. The value is
-stored either way, so queries and reports see a uniform metric.
+stored either way, so queries and reports see a uniform metric. Set the optional
+``show_zero_resubmissions`` option (default: ``false``) to display it on every job:
+
+.. code-block:: yaml
+
+    - type: core
+      show_zero_resubmissions: true
+
+Display options are read from the default metrics configuration rather than a per-destination
+one, because metrics are rendered without reference to the destination the job ran on.
 
 This counts both configured ``resubmit`` rules and runner-triggered resubmissions such as
 Slurm node-failure recovery. It does not count scheduler-internal requeues that Galaxy never

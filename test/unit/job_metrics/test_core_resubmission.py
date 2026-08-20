@@ -1,5 +1,6 @@
 """The core plugin's resubmission_count metric."""
 
+from galaxy.job_metrics import JobMetrics
 from galaxy.job_metrics.instrumenters.core import (
     CorePlugin,
     RESUBMISSION_COUNT_KEY,
@@ -34,6 +35,26 @@ def test_a_zero_count_is_recorded_but_not_displayed():
 
     assert plugin.formatter is not None
     assert plugin.formatter.format(RESUBMISSION_COUNT_KEY, 0) is None
+
+
+def test_show_zero_resubmissions_displays_the_zero():
+    plugin = CorePlugin(show_zero_resubmissions="true")
+
+    assert plugin.formatter is not None
+    assert plugin.formatter.format(RESUBMISSION_COUNT_KEY, 0) == ("Resubmission Count", "0")
+
+
+def test_show_zero_resubmissions_reaches_display_from_the_metrics_configuration():
+    """An XML attribute arrives as a string, and has to travel to the formatter that renders."""
+    job_metrics = JobMetrics(conf_dict=[{"type": "core", "show_zero_resubmissions": "true"}])
+
+    assert job_metrics.format("core", RESUBMISSION_COUNT_KEY, 0) == ("Resubmission Count", "0")
+
+
+def test_zero_resubmissions_stays_hidden_by_default_through_the_configuration():
+    job_metrics = JobMetrics(conf_dict=[{"type": "core"}])
+
+    assert job_metrics.format("core", RESUBMISSION_COUNT_KEY, 0) is None
 
 
 def test_resubmission_metric_formatting_and_safety():

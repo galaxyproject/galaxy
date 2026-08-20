@@ -95,13 +95,20 @@ class JobMetrics:
         """Find :class:`formatting.JobMetricFormatter` corresponding to instrumented plugin value.
 
         None means the plugin recorded this metric but does not want it displayed.
+
+        Asks the configured plugin first, the way the safety lookup below does, so that display
+        options an admin set travel from the metrics configuration to the rendered metric. The
+        default instrumenter is the one consulted: rendering happens without knowing which
+        destination the job ran on.
         """
-        if plugin in self.plugin_classes:
-            plugin_class = self.plugin_classes[plugin]
-            formatter = plugin_class.formatter
-        else:
+        formatter = None
+        configured_plugin = self.default_job_instrumenter.get_configured_plugin(plugin)
+        if configured_plugin is not None:
+            formatter = configured_plugin.formatter
+        if formatter is None and plugin in self.plugin_classes:
+            formatter = self.plugin_classes[plugin].formatter
+        if formatter is None:
             formatter = DEFAULT_FORMATTER
-        assert formatter
         return formatter.format(key, value)
 
     def dictifiable_metrics(self, raw_metrics: list[RawMetric], allowed_safety: Safety) -> list[DictifiableMetric]:

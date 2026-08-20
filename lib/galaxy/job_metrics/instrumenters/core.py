@@ -8,6 +8,8 @@ from typing import (
     Any,
 )
 
+from galaxy.util import asbool
+
 from . import (
     InstrumentPlugin,
     ProvidesJobMetricsContext,
@@ -32,9 +34,10 @@ RESUBMISSION_COUNT_KEY = "resubmission_count"
 
 
 class CorePluginFormatter(JobMetricFormatter):
-    def __init__(self, timezone: str | None):
+    def __init__(self, timezone: str | None, show_zero_resubmissions: bool = False):
         self.tz: zoneinfo.ZoneInfo | None = None
         self.strftime_format = "%Y-%m-%d %H:%M:%S"
+        self.show_zero_resubmissions = show_zero_resubmissions
         self.__init_tz(timezone)
 
     def __init_tz(self, timezone: str | None):
@@ -49,7 +52,7 @@ class CorePluginFormatter(JobMetricFormatter):
             return FormattedMetric("Container Type", value)
         value = int(value)
         if key == RESUBMISSION_COUNT_KEY:
-            if not value:
+            if not value and not self.show_zero_resubmissions:
                 # Recorded on every job so the metric means the same thing everywhere, but a
                 # count of zero describes almost every job and is not worth a row in the UI.
                 return None
@@ -76,11 +79,14 @@ class CorePlugin(InstrumentPlugin):
     default_safety = Safety.SAFE
 
     def __init__(self, **kwargs):
-        self.__init_formatter(kwargs.get("timezone"))
-
-    def __init_formatter(self, timezone: str | None):
+        self.formatter = CorePluginFormatter(
+            kwargs.get("timezone"),
+            show_zero_resubmissions=asbool(kwargs.get("show_zero_resubmissions", False)),
+        )
         if CorePlugin.formatter is None:
-            CorePlugin.formatter = CorePluginFormatter(timezone)
+            # Class-level fallback, for formatting metrics recorded by a plugin that is no
+            # longer in the metrics configuration and so has no instance to ask.
+            CorePlugin.formatter = self.formatter
 
     def pre_execute_instrument(self, job_directory: str) -> list[str]:
         commands = []
