@@ -9,7 +9,6 @@ from typing import (
 )
 
 from galaxy.util import asbool
-
 from . import (
     InstrumentPlugin,
     ProvidesJobMetricsContext,
