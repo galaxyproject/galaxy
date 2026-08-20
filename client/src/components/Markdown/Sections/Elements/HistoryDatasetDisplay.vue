@@ -226,7 +226,7 @@ onMounted(() => {
 });
 </script>
 
-<style>
+<style scoped>
 .embedded-dataset {
     height: 10rem;
 }
