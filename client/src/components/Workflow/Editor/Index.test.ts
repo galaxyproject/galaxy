@@ -50,6 +50,9 @@ type IndexComponent = Vue & {
     saveAsAnnotation: string | null;
     services: { createWorkflow: ReturnType<typeof vi.fn> } | null;
     routeToWorkflow: () => Promise<void>;
+    showSaveChangesModal: boolean;
+    onSave: () => Promise<boolean>;
+    onNavigate: (url: string, forceSave?: boolean, ignoreChanges?: boolean, appendVersion?: boolean) => Promise<void>;
 };
 
 describe("Index", () => {
@@ -203,6 +206,35 @@ describe("Index", () => {
 
         expect(vm.saveAsName).toBeNull();
         expect(vm.saveAsAnnotation).toBeNull();
+    });
+
+    describe("unsaved changes modal", () => {
+        beforeEach(async () => {
+            // Same route as the "prevents navigation only if hasChanges" test: the name
+            // watcher is what reliably propagates to the component under createTestingPinia.
+            wrapper.vm.name = "trigger change";
+            await wrapper.vm.$nextTick();
+        });
+
+        it("opens on an intercepted navigation and stays open", async () => {
+            await wrapper.vm.onNavigate("/workflows/list");
+
+            expect(wrapper.vm.showSaveChangesModal).toBe(true);
+        });
+
+        it("closes when the save it asked for fails", async () => {
+            const vm = wrapper.vm;
+            await vm.onNavigate("/workflows/list");
+            expect(vm.showSaveChangesModal).toBe(true);
+
+            // Save button: re-enters onNavigate with forceSave. The modal latches `busy` on
+            // click and only clears it when it is shown again, so leaving it open here
+            // disables Cancel/Don't Save/Save with no way back but the close icon.
+            vi.spyOn(vm, "onSave").mockResolvedValue(false);
+            await vm.onNavigate("/workflows/list", true, false, false);
+
+            expect(vm.showSaveChangesModal).toBe(false);
+        });
     });
 
     it("prevents navigation only if hasChanges", async () => {
