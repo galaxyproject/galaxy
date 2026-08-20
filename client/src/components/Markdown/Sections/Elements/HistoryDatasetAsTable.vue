@@ -58,23 +58,26 @@ function getFields(metaData: any): TableField[] {
 function getItems(textData: string, metaData: any) {
     const tableData: Record<string, string>[] = [];
     const delimiter: string = metaData.metadata_delimiter || "\t";
-    const comments: number = metaData.metadata_comment_lines || 0;
     const lines = textData.split("\n");
-    lines.forEach((line: string, i: number) => {
-        if (i >= comments) {
-            const tabs = line.split(delimiter);
-            const rowData: Record<string, string> = {};
-            let hasData = false;
-            tabs.forEach((cellData: string, j: number) => {
-                const cellDataTrimmed = cellData.trim();
-                if (cellDataTrimmed) {
-                    hasData = true;
-                }
-                rowData[j] = cellDataTrimmed;
-            });
-            if (hasData) {
-                tableData.push(rowData);
+    lines.forEach((line: string) => {
+        // Galaxy counts blank lines and `#`-prefixed lines as "comment lines" (see
+        // tabular.py's set_meta), so skip them the same way instead of slicing off
+        // a fixed number of lines from the start.
+        if (!line || line.startsWith("#")) {
+            return;
+        }
+        const tabs = line.split(delimiter);
+        const rowData: Record<string, string> = {};
+        let hasData = false;
+        tabs.forEach((cellData: string, j: number) => {
+            const cellDataTrimmed = cellData.trim();
+            if (cellDataTrimmed) {
+                hasData = true;
             }
+            rowData[j] = cellDataTrimmed;
+        });
+        if (hasData) {
+            tableData.push(rowData);
         }
     });
     return tableData;
