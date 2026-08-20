@@ -1,8 +1,8 @@
 <tool id="comp1" name="Compare two Datasets" version="1.0.3" profile="24.2">
   <description>to find common or distinct rows</description>
   <requirements>
-    <requirement type="package" version="8.31">coreutils</requirement>
-    <requirement type="package" version="5.3.1">gawk</requirement>
+    <requirement type="package" version="9.11">coreutils</requirement>
+    <requirement type="package" version="5.4.1">gawk</requirement>
   </requirements>
   <command><![CDATA[
     if sort -c -t \$'\t' -k '${field1},${field1}' '$input1'  2>/dev/null; then
