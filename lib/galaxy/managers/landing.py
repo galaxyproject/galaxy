@@ -103,10 +103,9 @@ class LandingRequestManager:
         ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
         tool = get_tool_from_toolbox(self.app.toolbox, ref, user=None)
         landing_request_state = LandingRequestToolState(request_state or {})
-        # __DATA_FETCH__ validates its request at the API layer and stores request_json as an
-        # object; it now has a parameter schema but its landing payload must not be strictly
-        # re-decoded here. Other tools decode normally.
-        if tool.parameters is not None and tool.id != FETCH_TOOL_ID:
+        # Okay this is a hack until tool request API commit is merged, tools don't yet have a parameter
+        # schema - so we can't do this properly.
+        if tool.parameters is not None:
             parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
             internal_landing_request_state = landing_decode(
                 landing_request_state, parameter_bundle, self.security.decode_id

@@ -94,6 +94,7 @@ from galaxy.tool_util.parameters import (
     input_models_for_pages,
     JobInternalToolState,
     RequestInternalDereferencedToolState,
+    UnmodelableToolInputs,
 )
 from galaxy.tool_util.parser import (
     get_tool_source,
@@ -1747,6 +1748,10 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         try:
             parameters = input_models_for_pages(pages, self.profile)
             self.parameters = parameters
+        except UnmodelableToolInputs as e:
+            # Expected for the upload tools rather than a failure. Leaving parameters unset keeps
+            # every consumer on the path it already takes for a tool without a parameter schema.
+            log.debug("No parameter model for tool '%s': %s", self.id, e)
         except Exception:
             log.warning("Failed to generate parameter models for tool '%s'", self.id, exc_info=True)
         if pages.inputs_defined:
