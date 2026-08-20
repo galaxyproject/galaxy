@@ -10,7 +10,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "insertModule", id: string, name: string, state: WorkflowInput["stateOverwrites"]): void;
+    (e: "insertModule", id: WorkflowInput["moduleId"], name: string, state: WorkflowInput["stateOverwrites"]): void;
 }>();
 </script>
 
