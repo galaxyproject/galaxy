@@ -1,12 +1,14 @@
 """Tests for dispatching post job actions to step outputs with no job."""
 
 import logging
-from types import SimpleNamespace
-from unittest.mock import Mock
 
 from galaxy.job_execution.actions.post import (
     ActionBox,
     DefaultJobAction,
+)
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    PostJobAction,
 )
 
 
@@ -41,13 +43,10 @@ def test_mapped_over_output_actions_are_supported():
 
 
 def _dispatch(action_type, step_outputs):
-    pja = Mock(
-        action_type=action_type,
-        output_name="",
-        workflow_step_id=1,
-        action_arguments={"newname": "renamed"},
-    )
-    ActionBox.execute_on_mapped_over(Mock(), Mock(), pja, {}, step_outputs)
+    # No trans or session - a step output with no job is already in the history, so
+    # the actions that run here only touch the output they are handed.
+    pja = PostJobAction(action_type, output_name="", action_arguments={"newname": "renamed"})
+    ActionBox.execute_on_mapped_over(None, None, pja, {}, step_outputs)
 
 
 def _warnings(caplog):
@@ -62,7 +61,7 @@ def test_unsupported_action_warns_instead_of_running(caplog):
 
 def test_supported_action_still_runs(caplog):
     """The rename has to actually reach the output, not just avoid the warning."""
-    output = SimpleNamespace(name="original")
+    output = HistoryDatasetAssociation(name="original")
     _dispatch("RenameDatasetAction", {"output": output})
     assert output.name == "renamed"
     assert _warnings(caplog) == []
