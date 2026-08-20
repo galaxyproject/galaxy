@@ -35,7 +35,10 @@ from .safety import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.job_metrics.instrumenters import InstrumentPlugin
+    from galaxy.job_metrics.instrumenters import (
+        InstrumentPlugin,
+        ProvidesJobMetricsContext,
+    )
     from galaxy.util import Element
 
 log = logging.getLogger(__name__)
@@ -143,8 +146,8 @@ class JobMetrics:
             job_instrumenter = NULL_JOB_INSTRUMENTER
         self.job_instrumenters[destination_id] = job_instrumenter
 
-    def collect_properties(self, destination_id, job_id, job_directory):
-        return self.job_instrumenters[destination_id].collect_properties(job_id, job_directory)
+    def collect_properties(self, destination_id, job: "ProvidesJobMetricsContext", job_directory):
+        return self.job_instrumenters[destination_id].collect_properties(job, job_directory)
 
     def __plugins_dict(self):
         import galaxy.job_metrics.instrumenters
@@ -162,7 +165,7 @@ class JobInstrumenterI(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def collect_properties(self, job_id, job_directory: str) -> dict[str, Any]:
+    def collect_properties(self, job: "ProvidesJobMetricsContext", job_directory: str) -> dict[str, Any]:
         return {}
 
     @abstractmethod
@@ -177,7 +180,7 @@ class NullJobInstrumenter(JobInstrumenterI):
     def post_execute_commands(self, job_directory):
         return None
 
-    def collect_properties(self, job_id, job_directory):
+    def collect_properties(self, job, job_directory):
         return {}
 
     def get_configured_plugin(self, plugin_type: str):
@@ -221,11 +224,11 @@ class JobInstrumenter(JobInstrumenterI):
                 log.exception("Failed to generate post-execute commands for plugin %s", plugin)
         return "\n".join(c for c in commands if c)
 
-    def collect_properties(self, job_id, job_directory):
+    def collect_properties(self, job, job_directory):
         per_plugin_properties = {}
         for plugin in self.plugins:
             try:
-                properties = plugin.job_properties(job_id, job_directory)
+                properties = plugin.collect(job, job_directory)
                 if properties:
                     per_plugin_properties[plugin.plugin_type] = properties
             except FileNotFoundError as e:

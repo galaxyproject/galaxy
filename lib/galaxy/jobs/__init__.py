@@ -2464,9 +2464,7 @@ class MinimalJobWrapper(HasResourceParameters):
             except Exception:
                 log.exception("Could not recover job metrics")
                 return
-        per_plugin_properties = self.app.job_metrics.collect_properties(
-            job.destination_id, self.job_id, job_metrics_directory
-        )
+        per_plugin_properties = self.app.job_metrics.collect_properties(job.destination_id, job, job_metrics_directory)
         if per_plugin_properties:
             log.info(
                 f"Collecting metrics for {type(has_metrics).__name__} {getattr(has_metrics, 'id', None)} in {job_metrics_directory}"
