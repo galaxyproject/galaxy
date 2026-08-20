@@ -5,6 +5,7 @@ import { computed } from "vue";
 import type { TableField } from "@/components/Common/GTable.types";
 import { UrlDataProvider } from "@/components/providers/UrlDataProvider.js";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -38,15 +39,7 @@ const metaUrl = computed(() => {
     return `/api/datasets/${props.datasetId}`;
 });
 
-const expanded = false;
-
-const contentClass = computed(() => {
-    if (expanded) {
-        return "embedded-dataset-expanded";
-    } else {
-        return "embedded-dataset";
-    }
-});
+const contentClass = computed(() => (props.compact ? "embedded-dataset" : "embedded-dataset-expanded"));
 
 function getFields(metaData: any): TableField[] {
     const fields: TableField[] = [];
@@ -89,14 +82,14 @@ function getItems(textData: string, metaData: any) {
 </script>
 
 <template>
-    <BCard :no-body="props.compact">
-        <BCardTitle v-if="title">
+    <BCard :no-body="props.compact" class="my-1">
+        <BCardTitle v-if="title" class="p-2">
             <b>{{ title }}</b>
         </BCardTitle>
 
         <UrlDataProvider v-slot="{ result: itemContent, loading, error }" :url="itemUrl">
             <LoadingSpan v-if="loading" message="Loading Dataset" />
-            <div v-else-if="error">{{ error }}</div>
+            <GAlert v-else-if="error" variant="danger">{{ error }}</GAlert>
             <div v-else :class="contentClass">
                 <div v-if="itemContent.item_data">
                     <UrlDataProvider
@@ -107,7 +100,9 @@ function getItems(textData: string, metaData: any) {
                         <GTable
                             v-else
                             :hide-header="!props.showColumnHeaders"
+                            :compact="props.compact"
                             striped
+                            show-empty
                             hover
                             :fields="getFields(metaData)"
                             :items="getItems(itemContent.item_data, metaData)" />
