@@ -35,7 +35,7 @@ def test_job_metrics_format_core():
 
 def test_job_metrics_format_resubmission():
     _assert_format(
-        "resubmission",
+        "core",
         "resubmission_count",
         2,
         assert_title="Resubmission Count",

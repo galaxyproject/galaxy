@@ -8,7 +8,10 @@ from typing import (
     Any,
 )
 
-from . import InstrumentPlugin
+from . import (
+    InstrumentPlugin,
+    ProvidesJobMetricsContext,
+)
 from ..formatting import (
     FormattedMetric,
     JobMetricFormatter,
@@ -25,6 +28,7 @@ END_EPOCH_KEY = "end_epoch"
 RUNTIME_SECONDS_KEY = "runtime_seconds"
 CONTAINER_ID = "container_id"
 CONTAINER_TYPE = "container_type"
+RESUBMISSION_COUNT_KEY = "resubmission_count"
 
 
 class CorePluginFormatter(JobMetricFormatter):
@@ -44,6 +48,8 @@ class CorePluginFormatter(JobMetricFormatter):
         if key == CONTAINER_TYPE:
             return FormattedMetric("Container Type", value)
         value = int(value)
+        if key == RESUBMISSION_COUNT_KEY:
+            return FormattedMetric("Resubmission Count", f"{value}")
         if key == GALAXY_SLOTS_KEY:
             return FormattedMetric("Cores Allocated", f"{value}")
         elif key == GALAXY_MEMORY_MB_KEY:
@@ -98,6 +104,15 @@ class CorePlugin(InstrumentPlugin):
             properties[START_EPOCH_KEY] = start
             properties[END_EPOCH_KEY] = end
             properties[RUNTIME_SECONDS_KEY] = end - start
+        return properties
+
+    def collect(self, job: ProvidesJobMetricsContext, job_directory: str) -> dict[str, Any]:
+        properties = self.job_properties(job.id, job_directory)
+        resubmission_count = job.resubmission_count
+        if resubmission_count:
+            # Recorded only when it happened. The overwhelming majority of jobs never get
+            # resubmitted, and a zero for every one of them is a row per job that says nothing.
+            properties[RESUBMISSION_COUNT_KEY] = resubmission_count
         return properties
 
     def get_container_file_path(self, job_directory):
