@@ -72,6 +72,8 @@ const isOwnedPage = computed(() => userStore.matchesCurrentUsername(store.curren
 
 const showPermissions = ref(false);
 
+const saveChangesModal = ref<{ guardNavigation: (navigate: () => void) => void } | null>(null);
+
 onMounted(async () => {
     store.mode = editorMode.value;
     if (props.historyId) {
@@ -116,11 +118,10 @@ function handlePreview() {
         inlineUrl = `/pages/editor?id=${props.pageId}&displayOnly=true`;
     }
 
-    pushToFrameOrPage({
-        framedUrl,
-        inlineUrl,
-        title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
-    });
+    const title = `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`;
+    // With the window manager active this opens a frame rather than navigating, so the
+    // router guards never see it -- ask the modal directly.
+    saveChangesModal.value?.guardNavigation(() => pushToFrameOrPage({ framedUrl, inlineUrl, title }));
 }
 
 async function handleEdit() {
@@ -175,6 +176,7 @@ function handleRevisionRestore(revisionId: string) {
 <template>
     <div class="page-editor-view d-flex flex-column h-100" data-description="page editor view">
         <SaveChangesModal
+            ref="saveChangesModal"
             :has-changes="store.isDirty"
             :on-save="() => store.savePage()"
             :on-discard="() => store.discardChanges()" />

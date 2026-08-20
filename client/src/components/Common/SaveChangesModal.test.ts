@@ -34,6 +34,10 @@ function callGuard(mockRegister: typeof mockOnBeforeRouteLeave, toFullPath: stri
 
 const localVue = getLocalVue();
 
+interface GuardExpose {
+    guardNavigation: (navigate: () => void) => void;
+}
+
 function footerButtons(wrapper: Wrapper<Vue>) {
     return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton).wrappers;
 }
@@ -187,6 +191,63 @@ describe("SaveChangesModal reusable component", () => {
         expect(next).toHaveBeenCalledWith(false);
         expect(wrapper.findComponent(GModal).props("show")).toBe(true);
         expect(buttonsDisabled(wrapper)).toEqual([false, false, false]);
+    });
+
+    describe("guardNavigation", () => {
+        it("runs a navigation the router cannot see straight away when there is nothing to lose", () => {
+            const navigate = vi.fn();
+
+            (wrapper.vm as unknown as GuardExpose).guardNavigation(navigate);
+
+            expect(navigate).toHaveBeenCalled();
+            expect(wrapper.findComponent(GModal).props("show")).toBe(false);
+        });
+
+        it("prompts first when there are changes, then runs it once saved", async () => {
+            const navigate = vi.fn();
+            await makeDirty();
+
+            (wrapper.vm as unknown as GuardExpose).guardNavigation(navigate);
+            await nextTick();
+
+            expect(navigate).not.toHaveBeenCalled();
+            expect(wrapper.findComponent(GModal).props("show")).toBe(true);
+
+            await footerButtons(wrapper).at(2)!.vm.$emit("click");
+            await flushPromises();
+
+            expect(onSave).toHaveBeenCalled();
+            expect(navigate).toHaveBeenCalled();
+            // It is not a route change, so nothing should have been pushed.
+            expect(push).not.toHaveBeenCalled();
+        });
+
+        it("discards and runs it on Don't Save", async () => {
+            const navigate = vi.fn();
+            await makeDirty();
+
+            (wrapper.vm as unknown as GuardExpose).guardNavigation(navigate);
+            await nextTick();
+            await footerButtons(wrapper).at(1)!.vm.$emit("click");
+            await flushPromises();
+
+            expect(onSave).not.toHaveBeenCalled();
+            expect(onDiscard).toHaveBeenCalled();
+            expect(navigate).toHaveBeenCalled();
+        });
+
+        it("drops it on Cancel", async () => {
+            const navigate = vi.fn();
+            await makeDirty();
+
+            (wrapper.vm as unknown as GuardExpose).guardNavigation(navigate);
+            await nextTick();
+            await footerButtons(wrapper).at(0)!.vm.$emit("click");
+            await flushPromises();
+
+            expect(navigate).not.toHaveBeenCalled();
+            expect(wrapper.findComponent(GModal).props("show")).toBe(false);
+        });
     });
 
     describe("beforeunload", () => {

@@ -29,6 +29,8 @@ vi.mock("@/composables/config", () => ({
 }));
 
 const mockPush = vi.fn().mockResolvedValue(undefined);
+/** Stands in for the modal's exposed guard; runs the navigation straight through by default. */
+const mockGuardNavigation = vi.fn((navigate: () => void) => navigate());
 vi.mock("vue-router/composables", () => ({
     useRouter: vi.fn(() => ({
         push: mockPush,
@@ -74,11 +76,19 @@ const PAGE_ID = "page-1";
 let pinia: Pinia;
 
 function mountComponent(propsData: { pageId: string; historyId?: string; displayOnly?: boolean }) {
-    return shallowMount(PageEditorView as object, {
+    const wrapper = shallowMount(PageEditorView as object, {
         localVue,
         propsData,
         pinia,
     });
+    // shallowMount replaces the modal with a stub, which has none of its exposed methods.
+    // A `stubs` entry can't supply one either -- those are keyed by registered name, and a
+    // <script setup> child is resolved from a setup binding instead. So hang it on the stub.
+    const modal = wrapper.findComponent(SaveChangesModal);
+    if (modal.exists()) {
+        (modal.vm as unknown as Record<string, unknown>)["guardNavigation"] = mockGuardNavigation;
+    }
+    return wrapper;
 }
 
 function setupLoadedPage(historyId?: string) {
@@ -140,6 +150,14 @@ describe("PageEditorView", () => {
             wrapper.findComponent(PageDisplayToolbar).vm.$emit("preview");
 
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/${PAGE_ID}?displayOnly=true`);
+        });
+
+        it("Preview goes through the unsaved-changes guard", async () => {
+            // With the window manager on, previewing opens a frame instead of navigating, so
+            // the router guard never sees it -- the modal has to be asked directly.
+            wrapper.findComponent(PageDisplayToolbar).vm.$emit("preview");
+
+            expect(mockGuardNavigation).toHaveBeenCalledWith(expect.any(Function));
         });
 
         it("back button navigates to history pages list", async () => {
