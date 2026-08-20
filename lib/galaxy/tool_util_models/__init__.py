@@ -552,6 +552,17 @@ class BaseTestOutputModel(StrictModel):
             ),
         ),
     ] = None
+    visible: Annotated[
+        bool | None,
+        Field(
+            title="Visible",
+            description=(
+                "If specified, this value is checked against whether the corresponding output is shown "
+                "in the history. Use to test outputs a tool or workflow is expected to hide, for "
+                "instance via a `HideDatasetAction` post job action."
+            ),
+        ),
+    ] = None
     sort: Annotated[
         bool | None,
         Field(
