@@ -5,7 +5,7 @@ import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "@te
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
@@ -19,6 +19,13 @@ const { server, http } = useServerMock();
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 const pinia = createPinia();
+
+vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
+    const { ref } = await import("vue");
+    return {
+        useUserLocalStorageFromHashId: (_key, initialValue) => ref(initialValue),
+    };
+});
 
 describe("ToolForm", () => {
     let wrapper;
@@ -110,5 +117,23 @@ describe("ToolForm", () => {
         await flushPromises();
 
         expect(userStore.recentTools).toEqual(["tool_id"]);
+    });
+    it("shows an error alert when tool submission returns an error message", async () => {
+        const errorMessage = "New identifier [duplicate] appears twice in resulting collection.";
+        server.use(
+            http.untyped.post("/api/tools", () => {
+                return HttpResponse.json({ err_msg: errorMessage }, { status: 400 });
+            }),
+        );
+        await flushPromises();
+        await wrapper.setData({ formData: {} });
+
+        const button = wrapper.find("[data-description='run tool button']");
+        await button.trigger("click");
+        await flushPromises();
+
+        expect(wrapper.vm.showError).toBe(true);
+        expect(wrapper.vm.errorMessage).toBe(errorMessage);
+        expect(wrapper.text()).toContain(errorMessage);
     });
 });
