@@ -5,13 +5,13 @@
     <requirement type="package" version="5.4.1">gawk</requirement>
   </requirements>
   <command><![CDATA[
-    if sort -c -t \$'\t' -k '${field1},${field1}' '$input1'  2>/dev/null; then
+    if sort -C -t \$'\t' -k '${field1},${field1}' '$input1'; then
       ln -s '$input1' input1;
     else
       sort -t \$'\t' -k '${field1},${field1}' '$input1' \${GALAXY_MEMORY_MB:+--buffer-size="\${GALAXY_MEMORY_MB}M"}  --parallel="\${GALAXY_SLOTS:-1}" > input1;
     fi
     &&
-    if sort -c -t \$'\t' -k '${field2},${field2}' '$input2'  2>/dev/null; then
+    if sort -C -t \$'\t' -k '${field2},${field2}' '$input2'; then
       ln -s '$input2' input2;
     else
       sort -t \$'\t' -k '${field2},${field2}' '$input2' \${GALAXY_MEMORY_MB:+--buffer-size="\${GALAXY_MEMORY_MB}M"}  --parallel="\${GALAXY_SLOTS:-1}" > input2;
