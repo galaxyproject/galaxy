@@ -12,10 +12,14 @@
  * 3. When inactive: push the *inline* URL plainly.
  */
 import type VueRouter from "vue-router";
+import type { RawLocation } from "vue-router";
+import { isNavigationFailure } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
 import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
+import { Toast } from "@/composables/toast";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 interface FrameOrPageOptions {
     /** URL to push when the window manager is active. Typically carries ``?displayOnly=true``/``?embed=true``. */
@@ -28,9 +32,25 @@ interface FrameOrPageOptions {
     force?: boolean;
 }
 
-/** Pushes to router ignoring errors if we want for a specific reason. */
-export function pushIgnoringNavFailure(router: VueRouter, url: string): void {
-    router.push(url).catch(() => {});
+/**
+ * Pushes without treating a cancelled navigation as an error.
+ *
+ * A guard answering ``next(false)`` rejects the push, and so does re-pushing the current
+ * route; neither is a failure worth surfacing. Anything else is, so it is reported rather
+ * than dropped. The monkeypatched push (``entry/analysis/router-push.js``) also returns
+ * nothing at all when the window manager takes the navigation or a confirmation is
+ * declined, so there is not always a promise to attach to.
+ */
+export function pushIgnoringNavCancel(router: VueRouter, location: RawLocation, options?: RouterPushOptions): void {
+    const pushed: Promise<unknown> | undefined = options
+        ? // @ts-ignore - monkeypatched router accepts a second options argument; drop with migration.
+          router.push(location, options)
+        : router.push(location);
+    pushed?.catch((error) => {
+        if (!isNavigationFailure(error)) {
+            Toast.error(errorMessageAsString(error), "Navigation failed");
+        }
+    });
 }
 
 export function useWindowAwareNavigation() {
@@ -43,16 +63,10 @@ export function useWindowAwareNavigation() {
             if (force) {
                 options.force = true;
             }
-            // @ts-ignore - monkeypatched router accepts {title}; drop with migration.
-            router.push(framedUrl, options).catch(() => {});
+            pushIgnoringNavCancel(router, framedUrl, options);
         } else {
             const target = inlineUrl ?? framedUrl;
-            if (force) {
-                // @ts-ignore - monkeypatched router accepts {force}; drop with migration.
-                router.push(target, { force: true }).catch(() => {});
-            } else {
-                router.push(target).catch(() => {});
-            }
+            pushIgnoringNavCancel(router, target, force ? { force: true } : undefined);
         }
     }
 

@@ -7,7 +7,7 @@ import { useRouter } from "vue-router/composables";
 
 import { PAGE_LABELS } from "@/components/Page/constants";
 import { useConfirmDialog } from "@/composables/confirmDialog.js";
-import { pushIgnoringNavFailure, useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
+import { pushIgnoringNavCancel, useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type PageEditorMode, usePageEditorStore } from "@/stores/pageEditorStore";
 import { useUserStore } from "@/stores/userStore.js";
@@ -95,11 +95,11 @@ watch(
 
 function handleBack() {
     if (props.invocationId) {
-        pushIgnoringNavFailure(router, `/workflows/invocations/${props.invocationId}/reports`);
+        pushIgnoringNavCancel(router, `/workflows/invocations/${props.invocationId}/reports`);
     } else if (props.historyId) {
-        pushIgnoringNavFailure(router, `/histories/${props.historyId}/pages`);
+        pushIgnoringNavCancel(router, `/histories/${props.historyId}/pages`);
     } else {
-        pushIgnoringNavFailure(router, "/pages/list");
+        pushIgnoringNavCancel(router, "/pages/list");
     }
 }
 
@@ -151,9 +151,9 @@ async function handleEdit() {
 
     if (editingPageId) {
         if (props.historyId) {
-            pushIgnoringNavFailure(router, `/histories/${props.historyId}/pages/${editingPageId}`);
+            pushIgnoringNavCancel(router, `/histories/${props.historyId}/pages/${editingPageId}`);
         } else {
-            pushIgnoringNavFailure(router, `/pages/editor?id=${editingPageId}`);
+            pushIgnoringNavCancel(router, `/pages/editor?id=${editingPageId}`);
         }
     }
 }
