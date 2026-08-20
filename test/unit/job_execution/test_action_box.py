@@ -1,5 +1,6 @@
 """Tests for dispatching post job actions to step outputs with no job."""
 
+import inspect
 import logging
 
 from galaxy.job_execution.actions.post import (
@@ -22,7 +23,12 @@ def _all_action_classes():
 
 
 def _implements_mapped_over(action_class):
-    return action_class.execute_on_mapped_over.__func__ is not DefaultJobAction.execute_on_mapped_over.__func__
+    # getattr_static rather than a plain attribute read - it hands back the classmethod
+    # object itself, so __func__ reaches the underlying function to compare identity.
+    def underlying(cls):
+        return inspect.getattr_static(cls, "execute_on_mapped_over").__func__
+
+    return underlying(action_class) is not underlying(DefaultJobAction)
 
 
 def test_supports_mapped_over_matches_implementation():
