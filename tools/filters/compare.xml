@@ -8,13 +8,13 @@
     if sort -c -t \$'\t' -k '${field1},${field1}' '$input1'  2>/dev/null; then
       ln -s '$input1' input1;
     else
-      sort -t \$'\t' -k '${field1},${field1}' '$input1' --buffer-size="\$GALAXY_MEMORY_MB_PER_SLOT"M  --parallel="\${GALAXY_SLOTS:-1}" > input1;
+      sort -t \$'\t' -k '${field1},${field1}' '$input1' \${GALAXY_MEMORY_MB:+--buffer-size="\${GALAXY_MEMORY_MB}M"}  --parallel="\${GALAXY_SLOTS:-1}" > input1;
     fi
     &&
     if sort -c -t \$'\t' -k '${field2},${field2}' '$input2'  2>/dev/null; then
       ln -s '$input2' input2;
     else
-      sort -t \$'\t' -k '${field2},${field2}' '$input2' --buffer-size="\$GALAXY_MEMORY_MB_PER_SLOT"M  --parallel="\${GALAXY_SLOTS:-1}" > input2;
+      sort -t \$'\t' -k '${field2},${field2}' '$input2' \${GALAXY_MEMORY_MB:+--buffer-size="\${GALAXY_MEMORY_MB}M"}  --parallel="\${GALAXY_SLOTS:-1}" > input2;
     fi
     &&
     join --nocheck-order -t \$'\t'
