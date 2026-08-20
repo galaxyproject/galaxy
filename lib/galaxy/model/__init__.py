@@ -1819,6 +1819,14 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         return self.state == Job.states.RUNNING
 
     @property
+    def resubmission_count(self) -> int:
+        """How many times Galaxy resubmitted this job.
+
+        A job that ran once reports 0, so the execution attempt number is this plus one.
+        """
+        return sum(1 for state in self.state_history if state.state == Job.states.RESUBMITTED)
+
+    @property
     def finished(self):
         return self.state in self.finished_states
 
