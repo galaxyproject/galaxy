@@ -1209,6 +1209,38 @@ steps:
         assert "picktag" in pjas["TagDatasetActionoutput"]["action_arguments"]["tags"]
 
     @selenium_test
+    def test_pick_value_hides_actions_needing_a_job(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+""")
+        editor = self.components.workflow_editor
+        # A pick_value step has no job for these to act on, so they are not offered.
+        # Select it first - the panel a selected node opens covers the nodes to its right.
+        editor.node._(label="pick").wait_for_and_click()
+        # The rest of the section still renders, otherwise the assertions below would
+        # pass on a form that simply had not loaded.
+        editor.configure_output(output="output").wait_for_visible()
+        editor.email_notification.assert_absent()
+        editor.output_cleanup.assert_absent()
+        # A tool step does run a job, so it still gets both.
+        editor.node._(label="branch_a").wait_for_and_click()
+        editor.email_notification.wait_for_visible()
+        editor.output_cleanup.wait_for_visible()
+
+    @selenium_test
     def test_pick_value_compact_on_disconnect(self):
         self.open_in_workflow_editor("""
 class: GalaxyWorkflow
