@@ -22,7 +22,7 @@ from galaxy.objectstore import (
     persist_extra_files_for_dataset,
 )
 from galaxy.objectstore._caching_base import (
-    closing_stream,
+    RemoteDataStream,
     STREAM_CHUNK_SIZE,
 )
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
@@ -830,7 +830,7 @@ def _leftover_temp_files(cache_path):
 
 def _remote_stream(chunks, on_close=None):
     """Build what `_stream_remote` returns: an open read, plus the call that releases it."""
-    return closing_stream(iter(chunks), on_close or (lambda: None))
+    return RemoteDataStream(iter(chunks), on_close or (lambda: None))
 
 
 @patch_object_stores_to_skip_initialize

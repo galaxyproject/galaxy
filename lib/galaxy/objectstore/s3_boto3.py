@@ -32,7 +32,6 @@ from galaxy.util import asbool
 from galaxy.util.s3_checksum import s3_checksum_config_kwargs
 from ._caching_base import (
     CachingConcreteObjectStore,
-    closing_stream,
     RemoteDataStream,
     STREAM_CHUNK_SIZE,
 )
@@ -343,7 +342,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
 
     def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
         body = self._client.get_object(Bucket=self.bucket, Key=rel_path)["Body"]
-        return closing_stream(body.iter_chunks(chunk_size=STREAM_CHUNK_SIZE), body.close)
+        return RemoteDataStream(body.iter_chunks(chunk_size=STREAM_CHUNK_SIZE), body.close)
 
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:

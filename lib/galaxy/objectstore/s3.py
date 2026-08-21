@@ -19,7 +19,6 @@ except ImportError:
 from galaxy.util import string_as_bool
 from ._caching_base import (
     CachingConcreteObjectStore,
-    closing_stream,
     RemoteDataStream,
     STREAM_CHUNK_SIZE,
 )
@@ -339,7 +338,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             return None
         # fast=True: a client that hung up should not make Galaxy read the rest of the object off
         # the wire before the connection can be released.
-        return closing_stream(iter(lambda: key.read(STREAM_CHUNK_SIZE), b""), lambda: key.close(fast=True))
+        return RemoteDataStream(iter(lambda: key.read(STREAM_CHUNK_SIZE), b""), lambda: key.close(fast=True))
 
     def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
         """

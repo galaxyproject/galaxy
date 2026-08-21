@@ -3,6 +3,7 @@ import os
 import shutil
 from collections.abc import (
     Callable,
+    Generator,
     Iterator,
 )
 from contextlib import (
@@ -67,14 +68,10 @@ class RemoteDataStream(AbstractContextManager[Iterator[bytes]]):
             self._close()
 
 
-def closing_stream(chunks: Iterator[bytes], close: Callable[[], None]) -> RemoteDataStream:
-    return RemoteDataStream(chunks, close)
-
-
 class _ClosingIterator(Iterator[bytes]):
     """An iterator whose owner can release resources before the first ``next`` call."""
 
-    def __init__(self, iterator: Iterator[bytes], close: Callable[[], None]) -> None:
+    def __init__(self, iterator: Generator[bytes, None, None], close: Callable[[], None]) -> None:
         self.iterator = iterator
         self._close = close
         self._closed = False
@@ -92,9 +89,9 @@ class _ClosingIterator(Iterator[bytes]):
         if not self._closed:
             self._closed = True
             try:
-                close_iterator = getattr(self.iterator, "close", None)
-                if callable(close_iterator):
-                    close_iterator()
+                # Unwinds the tee: whatever the generator was part way through -- a temp file, the
+                # ``with`` around the remote read -- gets its cleanup run.
+                self.iterator.close()
             finally:
                 self._close()
 
@@ -244,8 +241,8 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         """Open a read of the remote object, or None if this backend cannot stream it.
 
         The context manager owns the read: leaving it releases the connection whether the client took
-        every byte, hung up part way, or the stream errored. :func:`closing_stream` builds one from a
-        chunk iterator and the SDK call that releases it.
+        every byte, hung up part way, or the stream errored: build one from a chunk iterator and the
+        SDK call that releases it.
         """
         return None
 
@@ -256,7 +253,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         *,
         expected_size: int,
         write_cache: bool,
-    ) -> Iterator[bytes]:
+    ) -> Generator[bytes, None, None]:
         """Yield the remote object's bytes, writing them into the cache on the way past.
 
         The cache copy is published atomically once the whole object has been streamed, so a client

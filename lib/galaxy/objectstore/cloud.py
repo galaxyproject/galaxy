@@ -8,7 +8,6 @@ import os.path
 
 from ._caching_base import (
     CachingConcreteObjectStore,
-    closing_stream,
     RemoteDataStream,
 )
 from ._util import UsesAxel
@@ -272,7 +271,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         # cloudbridge promises an iterable and nothing more, and what it hands back differs per
         # provider -- a wrapper around the S3 body, a swift generator, a BytesIO -- so release it
         # only if it knows how.
-        return closing_stream(iter(content), getattr(content, "close", lambda: None))
+        return RemoteDataStream(iter(content), getattr(content, "close", lambda: None))
 
     def _download_directory_into_cache(self, rel_path, cache_path):
         objects = self.bucket.objects.list(prefix=rel_path)
