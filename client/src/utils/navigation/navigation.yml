@@ -758,6 +758,11 @@ tool_form:
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_checkbox_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="checkbox"]'
     parameter_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
+    parameter_select_trigger: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect__select'
+    parameter_select_option:
+      type: xpath
+      selector: >
+        //div[@id='form-element-${parameter}']//li[contains(@class, 'multiselect__element') and normalize-space()="${label}"]//*[contains(@class, 'multiselect__option')]
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
     parameter_data_input_single: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Single dataset"]'
@@ -1080,7 +1085,7 @@ workflow_editor:
     step_when:
       type: xpath
       selector: >
-       //div[@id='form-element-__conditional']//input
+       //div[@id='form-element-__conditional']
     param_type_form: '#parameter_definition\|parameter_type'
     configure_output:
       type: xpath

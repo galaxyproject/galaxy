@@ -1,0 +1,32 @@
+class: GalaxyWorkflow
+doc: |
+  Presence-gate a tool parameter nested inside a tool conditional, addressed with
+  chained bracket access. Connection names stay pipe-prefixed; the expression walks tool state.
+inputs:
+  fallback:
+    type: data
+  maybe:
+    type: data
+    optional: true
+outputs:
+  out:
+    outputSource: pick/output
+steps:
+  gated:
+    tool_id: format_source_in_conditional
+    tool_state:
+      cond:
+        select: no_extra_nesting
+    in:
+      cond|input1:
+        source: maybe
+    when: $(inputs["cond"]["input1"] !== null)
+  pick:
+    type: pick_value
+    in:
+      input_0:
+        source: gated/output1
+      input_1:
+        source: fallback
+    state:
+      mode: first_non_null

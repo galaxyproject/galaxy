@@ -1,0 +1,42 @@
+class: GalaxyWorkflow
+doc: |
+  Twin dispatch. Tool state is frozen per step, so running a tool in two different
+  shapes needs two steps with complementary gates. A non-tool-parameter data
+  connection acts as a pure presence probe, letting the negative branch reference an
+  input it does not consume.
+inputs:
+  base:
+    type: data
+  maybe:
+    type: data
+    optional: true
+outputs:
+  out:
+    outputSource: pick/output
+steps:
+  when_present:
+    tool_id: cat
+    in:
+      input1:
+        source: maybe
+      probe:
+        source: maybe
+    when: $(inputs.probe !== null)
+  when_absent:
+    tool_id: cat
+    in:
+      input1:
+        source: base
+      probe:
+        source: maybe
+    when: $(inputs.probe === null)
+  pick:
+    type: pick_value
+    in:
+      input_0:
+        source: when_present/out_file1
+      input_1:
+        source: when_absent/out_file1
+    state:
+      # Fails unless exactly one twin ran, which is what makes the inverse gate testable.
+      mode: the_only_non_null

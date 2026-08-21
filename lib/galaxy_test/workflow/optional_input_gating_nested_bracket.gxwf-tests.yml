@@ -1,0 +1,32 @@
+- doc: |
+    Optional input supplied - chained bracket access into nested tool state resolves the
+    connected parameter, the gate evaluates true, and the gated step runs.
+  job:
+    fallback:
+      class: File
+      contents: "FALLBACK"
+      filetype: tabular
+    maybe:
+      class: File
+      contents: "PROVIDED"
+      filetype: tabular
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "PROVIDED"
+- doc: |
+    Optional input omitted - chained bracket access yields null, the gate evaluates false,
+    and the step nested in a tool conditional is skipped.
+  job:
+    fallback:
+      class: File
+      contents: "FALLBACK"
+      filetype: tabular
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "FALLBACK"

@@ -9,8 +9,12 @@ import {
     type DataOutput,
     type DataStepInput,
     getCombinedStepInputs,
+    normalizeConnectionOutputLinks,
     type ParameterOutput,
     type ParameterStepInput,
+    presenceGateInputPath,
+    presenceGateIsSpellable,
+    type Step,
     type TerminalSource,
 } from "@/stores/workflowStepStore";
 import type { Connection, ConnectionId } from "@/stores/workflowStoreTypes";
@@ -23,6 +27,7 @@ import {
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
 import { applyCompaction, computePickValueCompaction, reverseCompaction } from "./pickValueCompact";
+import { expressionGuardsInputPresence, expressionReferencesInput } from "./whenExpression";
 
 export const NO_COLLECTION_TYPE_INFORMATION_MESSAGE =
     "No collection type or collection type source defined - this is fine but may lead to less intuitive connection logic.";
@@ -222,6 +227,7 @@ class BaseInputTerminal extends Terminal {
     datatypes: InputTerminalInputs["datatypes"];
     optional: InputTerminalInputs["optional"];
     localMapOver: CollectionTypeDescriptor;
+    private presenceGateAssumed = false;
 
     constructor(attr: InputTerminalArgs) {
         super(attr);
@@ -236,6 +242,79 @@ class BaseInputTerminal extends Terminal {
         } else {
             this.localMapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
         }
+    }
+    /**
+     * Evaluate acceptance as though the step were already gated on this input.
+     *
+     * A drop cannot authorize itself: at drop time there is no `when` yet, so the rule
+     * that would allow the connection has nothing to read. This answers whether writing
+     * the gate is the remedy, or whether the connection is refused for other reasons.
+     */
+    canAcceptWithPresenceGate(other: BaseOutputTerminal): ConnectionAcceptable {
+        const step = this.stores.stepStore.getStep(this.stepId);
+        if (!step || (step.type !== "tool" && step.type !== "subworkflow")) {
+            return new ConnectionAcceptable(false, "This step type cannot run conditionally.");
+        }
+        if (!presenceGateIsSpellable(step, this.name)) {
+            return new ConnectionAcceptable(false, "No presence gate can be written for this input.");
+        }
+        if (step.when) {
+            // Writing one here would replace a condition the author already chose.
+            return new ConnectionAcceptable(false, "This step already has a condition.");
+        }
+        this.presenceGateAssumed = true;
+        try {
+            return this.canAccept(other);
+        } finally {
+            this.presenceGateAssumed = false;
+        }
+    }
+    /**
+     * True when the editor can treat this input as presence-gated.
+     *
+     * Generated gates are decisive. Hand-written gates follow the analyzer's permissive
+     * policy: accept a reference unless it is known to run while the input is absent.
+     */
+    isPresenceGated(other?: BaseOutputTerminal): boolean {
+        if (this.presenceGateAssumed) {
+            return true;
+        }
+        const step = this.stores.stepStore.getStep(this.stepId);
+        if (!step?.when) {
+            return false;
+        }
+        const isSynthesizedGatePort = !step.inputs?.some((input) => input.name === this.name);
+        const inputPath = presenceGateInputPath(step, this.name);
+        if (!inputPath) {
+            return false;
+        }
+        if (isSynthesizedGatePort) {
+            // Nothing consumes a gate probe, so an inverse gate is as valid as a positive one.
+            return expressionReferencesInput(step.when, inputPath);
+        }
+        if (expressionGuardsInputPresence(step.when, inputPath)) {
+            return true;
+        }
+        return other ? this.gatedThroughSharedSource(step, other) : false;
+    }
+    /**
+     * The twin dispatch shape: the gate names a different input of this step, but one fed
+     * solely by the output being attached. Apply the same presence-gate decision to that
+     * probe, because it and this input become absent together.
+     */
+    private gatedThroughSharedSource(step: Step, other: BaseOutputTerminal): boolean {
+        return Object.entries(step.input_connections ?? {}).some(([name, links]) => {
+            const inputPath = presenceGateInputPath(step, name);
+            if (name === this.name || !inputPath || !expressionGuardsInputPresence(step.when, inputPath)) {
+                return false;
+            }
+            const linkArray = normalizeConnectionOutputLinks(links);
+            // A second source could keep the probe present while `other` is absent, so
+            // only a single-source probe establishes the twin relationship.
+            return (
+                linkArray.length === 1 && linkArray[0]!.id === other.stepId && linkArray[0]!.output_name === other.name
+            );
+        });
     }
     connect(other: BaseOutputTerminal): void {
         super.connect(other);
@@ -375,7 +454,7 @@ class BaseInputTerminal extends Terminal {
         return producesAcceptableDatatype(this.datatypesMapper, this.datatypes, other.datatypes);
     }
     _producesAcceptableDatatypeAndOptionalness(other: BaseOutputTerminal) {
-        if (!this.optional && !this.multiple && other.optional) {
+        if (!this.optional && !this.multiple && other.optional && !this.isPresenceGated(other)) {
             return new ConnectionAcceptable(false, "Cannot connect an optional output to a non-optional input");
         }
         return this._producesAcceptableDatatype(other);
@@ -582,7 +661,7 @@ export class InputParameterTerminal extends BaseInputTerminal {
         const effectiveThisType = this.effectiveType(this.type);
         const otherType = ("type" in other && other.type) || "data";
         const effectiveOtherType = this.effectiveType(otherType);
-        if (!this.optional && other.optional) {
+        if (!this.optional && other.optional && !this.isPresenceGated(other)) {
             return new ConnectionAcceptable(false, `Cannot attach an optional output to a required parameter`);
         }
         const canAccept = effectiveThisType === effectiveOtherType;

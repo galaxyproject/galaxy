@@ -1,0 +1,33 @@
+- doc: |
+    Optional input supplied - the presence gate evaluates true, the gated step runs,
+    and pick_value takes the gated output over the fallback.
+  job:
+    fallback:
+      class: File
+      contents: "FALLBACK"
+      filetype: txt
+    maybe:
+      class: File
+      contents: "PROVIDED"
+      filetype: txt
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "PROVIDED"
+- doc: |
+    Optional input omitted - the presence gate evaluates false, the gated step is
+    skipped, and pick_value falls back. An optional workflow input may feed a
+    required tool data parameter as long as a presence gate guards the step.
+  job:
+    fallback:
+      class: File
+      contents: "FALLBACK"
+      filetype: txt
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "FALLBACK"

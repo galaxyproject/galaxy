@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import GENERATED_PRESENCE_CONDITIONS from "./generated_presence_conditions.yml";
 import EXPRESSION_SPECIFICATIONS from "./when_expression_spec.yml";
-import { analyzeInputReferences, expressionReferencesInput } from "./whenExpression";
+import {
+    analyzeInputReferences,
+    classifyWhenInputIsNull,
+    expressionGuardsInputPresence,
+    expressionReferencesInput,
+    type NullBehavior,
+    presenceGateExpression,
+} from "./whenExpression";
 import type { InputPath } from "./workflowInputPath";
 
 type InputTarget = string | InputPath;
@@ -10,6 +18,8 @@ interface ExpressionExpectations {
     static_paths?: InputPath[];
     dynamic?: boolean;
     references_input?: boolean;
+    null_behavior?: NullBehavior;
+    guards_presence?: boolean;
 }
 
 interface ExpressionSpecification {
@@ -19,7 +29,14 @@ interface ExpressionSpecification {
     expect: ExpressionExpectations;
 }
 
+interface GeneratedConditionSpecification {
+    doc: string;
+    input: InputTarget;
+    expression: string;
+}
+
 const EXPRESSIONS = EXPRESSION_SPECIFICATIONS as ExpressionSpecification[];
+const GENERATED_CONDITIONS = GENERATED_PRESENCE_CONDITIONS as GeneratedConditionSpecification[];
 
 function requireInput(specification: ExpressionSpecification): InputTarget {
     if (specification.input === undefined) {
@@ -48,12 +65,41 @@ describe("when expression specification", () => {
                     expected.references_input,
                 );
             }
+            if (expected.null_behavior !== undefined) {
+                expect(classifyWhenInputIsNull(expression, requireInput(specification))).toBe(expected.null_behavior);
+            }
+            if (expected.guards_presence !== undefined) {
+                expect(expressionGuardsInputPresence(expression, requireInput(specification))).toBe(
+                    expected.guards_presence,
+                );
+            }
+        });
+    }
+});
+
+describe("generated presence conditions", () => {
+    for (const specification of GENERATED_CONDITIONS) {
+        it(specification.doc, () => {
+            const expression = presenceGateExpression(specification.input);
+            expect(expression).toBe(specification.expression);
+            expect(expressionReferencesInput(expression, specification.input)).toBe(true);
+            expect(classifyWhenInputIsNull(expression, specification.input)).toBe("false-when-null");
+            expect(expressionGuardsInputPresence(expression, specification.input)).toBe(true);
         });
     }
 });
 
 describe("analyzer failure boundaries", () => {
-    it("reports no references when no expression is present", () => {
+    it("returns conservative answers when no expression is present", () => {
         expect(expressionReferencesInput(undefined, "input1")).toBe(false);
+        expect(expressionGuardsInputPresence(undefined, "input1")).toBe(false);
+        expect(classifyWhenInputIsNull(undefined, "input1")).toBe("unknown");
+    });
+
+    it("survives an expression deep enough to exhaust the stack", () => {
+        const deep = `$(${"(".repeat(20000)}inputs.a${")".repeat(20000)} !== null)`;
+        expect(() => classifyWhenInputIsNull(deep, "a")).not.toThrow();
+        expect(classifyWhenInputIsNull(deep, "a")).toBe("unknown");
+        expect(() => expressionGuardsInputPresence(deep, "a")).not.toThrow();
     });
 });

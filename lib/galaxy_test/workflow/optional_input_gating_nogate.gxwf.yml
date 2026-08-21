@@ -1,0 +1,18 @@
+class: GalaxyWorkflow
+doc: |
+  Control for the presence-gating fixtures. Identical topology to
+  optional_input_gating_toplevel minus the gate: an omitted optional input is not
+  implicitly skipped, it fails tool parameter validation.
+inputs:
+  maybe:
+    type: data
+    optional: true
+outputs:
+  out:
+    outputSource: consumer/out_file1
+steps:
+  consumer:
+    tool_id: cat
+    in:
+      input1:
+        source: maybe

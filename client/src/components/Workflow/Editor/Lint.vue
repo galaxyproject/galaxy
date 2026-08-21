@@ -16,6 +16,7 @@ import {
     fixDisconnectedInput,
     fixUnlabeledOutputs,
     fixUntypedParameter,
+    hasGatedSteps,
     isStateForInputOrOutput,
 } from "./modules/linting";
 import type { DisconnectedInputState, LintState, UntypedParameterState } from "./modules/lintingTypes";
@@ -52,9 +53,12 @@ const {
     unlabeledOutputs,
     untypedParameterWarnings,
     disconnectedInputs,
+    danglingGates,
     duplicateLabels,
     missingMetadata,
 } = toRefs(props.lintData);
+
+const showGateSection = computed(() => hasGatedSteps(props.steps));
 
 /** Renders the celebratory reaction when all critical and non-critical best practice issues are resolved. */
 const showSuccessReaction = computed(
@@ -231,6 +235,16 @@ async function onRefactor() {
             @onMouseOver="onHighlight"
             @onClick="onFixDisconnectedInput"
             @onSaveRequested="saveChanges(false)" />
+        <LintSection
+            v-if="showGateSection"
+            data-description="linting conditional gates"
+            high-priority
+            success-message="Every conditional step reads inputs that are connected."
+            warning-message="Some conditional steps read an input that nothing is connected to. Such a step is skipped
+                on every run, or fails while its condition is evaluated. Connect the input or change the condition:"
+            :warning-items="danglingGates"
+            @onMouseOver="onHighlight"
+            @onClick="openAndFocus" />
         <LintSection
             v-if="hasInputSteps"
             data-description="linting input metadata"

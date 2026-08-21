@@ -8,13 +8,16 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 
 import {
+    getDanglingGates,
     getDisconnectedInputs,
     getDuplicateLabels,
     getMissingMetadata,
     getUnlabeledOutputs,
     getUntypedParameters,
+    hasGatedSteps,
 } from "./linting";
 import type {
+    DanglingGateState,
     DisconnectedInputState,
     DuplicateLabelState,
     MetadataLintState,
@@ -36,6 +39,7 @@ export interface LintData {
     untypedParameters: Ref<UntypedParameters | undefined>;
     untypedParameterWarnings: Ref<UntypedParameterState[]>;
     disconnectedInputs: Ref<DisconnectedInputState[]>;
+    danglingGates: Ref<DanglingGateState[]>;
     duplicateLabels: Ref<DuplicateLabelState[]>;
     unlabeledOutputs: Ref<UnlabeledOuputState[]>;
     missingMetadata: Ref<MetadataLintState[]>;
@@ -55,6 +59,7 @@ export function useLintData(
     const untypedParameters = ref<UntypedParameters>();
     const untypedParameterWarnings = ref<UntypedParameterState[]>([]);
     const disconnectedInputs = ref<DisconnectedInputState[]>([]);
+    const danglingGates = ref<DanglingGateState[]>([]);
     const duplicateLabels = ref<DuplicateLabelState[]>([]);
     const unlabeledOutputs = ref<UnlabeledOuputState[]>([]);
     const missingMetadata = ref<MetadataLintState[]>([]);
@@ -65,6 +70,7 @@ export function useLintData(
                 untypedParameters.value = getUntypedWorkflowParameters(steps.value);
                 untypedParameterWarnings.value = getUntypedParameters(untypedParameters.value);
                 disconnectedInputs.value = getDisconnectedInputs(steps.value, datatypesMapper.value, workflowStores);
+                danglingGates.value = getDanglingGates(steps.value);
                 duplicateLabels.value = getDuplicateLabels(steps.value, workflowStores);
                 unlabeledOutputs.value = getUnlabeledOutputs(steps.value);
                 missingMetadata.value = getMissingMetadata(steps.value);
@@ -131,6 +137,12 @@ export function useLintData(
             priority: "high",
         },
         {
+            name: "danglingGates",
+            exists: hasGatedSteps(steps.value),
+            resolved: danglingGates.value.length === 0,
+            priority: "high",
+        },
+        {
             name: "missingMetadata",
             exists: hasInputSteps.value,
             resolved: missingMetadata.value.length === 0,
@@ -189,6 +201,7 @@ export function useLintData(
         untypedParameters,
         untypedParameterWarnings,
         disconnectedInputs,
+        danglingGates,
         duplicateLabels,
         unlabeledOutputs,
         missingMetadata,

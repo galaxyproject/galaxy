@@ -1,0 +1,32 @@
+- doc: |
+    Optional repeat input supplied - indexed access resolves the connected repeat
+    parameter, the gate evaluates true, and the step runs.
+  job:
+    fallback:
+      class: File
+      contents: "FALLBACK"
+      filetype: tabular
+    maybe:
+      class: File
+      contents: "PROVIDED"
+      filetype: tabular
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "PROVIDED"
+- doc: |
+    Optional repeat input omitted - indexed access yields null, the gate evaluates
+    false, and the repeat-bearing tool step is skipped.
+  job:
+    fallback:
+      class: File
+      contents: "FALLBACK"
+      filetype: tabular
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "FALLBACK"

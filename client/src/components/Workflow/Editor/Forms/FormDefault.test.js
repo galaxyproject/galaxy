@@ -1,3 +1,5 @@
+import "@/composables/__mocks__/filter";
+
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
@@ -5,6 +7,9 @@ import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import FormDefault from "./FormDefault.vue";
+
+// The conditional gate control renders FormSelect, which spawns a filter web worker.
+vi.mock("@/composables/filter");
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

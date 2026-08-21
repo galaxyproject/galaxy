@@ -5,6 +5,8 @@
     static_paths: [[cond, input1]] # Statically resolved paths read from `inputs`.
     dynamic: false # Whether some `inputs` access cannot be resolved statically.
     references_input: true # Whether the expression reads the declared `input`.
+    null_behavior: false-when-null # Expression truthiness when that input is null.
+    guards_presence: true # Whether it prevents running when the input is absent.
 
 - doc: Chained bracket access identifies a nested input
   expression: '$(inputs["cond"]["input1"])'
@@ -31,6 +33,7 @@
     static_paths: [["cond|input1"]]
     dynamic: false
     references_input: false
+    guards_presence: false
 
 - doc: A numeric bracket identifies an item inside a repeat
   expression: $(inputs.queries[0].input2)
@@ -39,6 +42,8 @@
     static_paths: [[queries, 0, input2]]
     dynamic: false
     references_input: true
+    null_behavior: false-when-null
+    guards_presence: true
 
 - doc: Every root input access is collected
   expression: $(inputs.a && inputs.b)
@@ -71,6 +76,8 @@
     static_paths: []
     dynamic: true
     references_input: true
+    null_behavior: unknown
+    guards_presence: true
 
 - doc: A bare inputs reference cannot be resolved statically
   expression: $(Object.keys(inputs).length)
@@ -94,6 +101,8 @@
   input: cond|input1
   expect:
     references_input: true
+    null_behavior: false-when-null
+    guards_presence: true
 
 - doc: A condition on a nested property also references its ancestor connection
   expression: $(inputs.cond.input1 !== null)
@@ -101,23 +110,87 @@
   expect:
     references_input: true
 
+- doc: A loose null check also handles an absent nested input
+  expression: '$(inputs["cond"]["input1"] != null)'
+  input: cond|input1
+  expect:
+    null_behavior: false-when-null
+    guards_presence: true
+
+- doc: Double negation is false when the input is absent
+  expression: $(!!inputs.cond.input1)
+  input: cond|input1
+  expect:
+    null_behavior: false-when-null
+    guards_presence: true
+
+- doc: A presence check remains safe when combined with another condition using and
+  expression: $(inputs.cond.input1 !== null && inputs.force)
+  input: cond|input1
+  expect:
+    null_behavior: false-when-null
+    guards_presence: true
+
+- doc: An inverse presence condition is true when the input is absent
+  expression: $(inputs.cond.input1 === null)
+  input: cond|input1
+  expect:
+    null_behavior: true-when-null
+    guards_presence: false
+
+- doc: A loose inverse presence condition is true when the input is absent
+  expression: $(inputs.cond.input1 == null)
+  input: cond|input1
+  expect:
+    null_behavior: true-when-null
+
+- doc: Negating the input is true when it is absent
+  expression: $(!inputs.cond.input1)
+  input: cond|input1
+  expect:
+    null_behavior: true-when-null
+
+- doc: An inverse condition remains true when combined with another condition using or
+  expression: $(inputs.cond.input1 === null || inputs.force)
+  input: cond|input1
+  expect:
+    null_behavior: true-when-null
+    guards_presence: false
+
 - doc: An unsupported helper call is handled permissively
   expression: $(helper(inputs.cond.input1))
   input: cond|input1
   expect:
     references_input: true
+    null_behavior: unknown
+    guards_presence: true
+
+- doc: A presence check combined with or cannot prove what happens when the input is absent
+  expression: $(inputs.cond.input1 !== null || inputs.force)
+  input: cond|input1
+  expect:
+    null_behavior: unknown
+
+- doc: A JavaScript block is not treated as a simple condition body
+  expression: '${ return inputs.cond.input1 !== null; }'
+  input: cond|input1
+  expect:
+    null_behavior: unknown
 
 - doc: A condition on another input does not reference the target
   expression: $(inputs.other !== null)
   input: cond|input1
   expect:
     references_input: false
+    null_behavior: unknown
+    guards_presence: false
 
 - doc: Similar property names are compared as complete path segments
   expression: $(inputs.cond.input10 !== null)
   input: cond|input1
   expect:
     references_input: false
+    guards_presence: false
 
 - doc: Similar top-level names are compared as complete path segments
   expression: $(inputs.input10 !== null)
@@ -130,18 +203,72 @@
   input: reference
   expect:
     references_input: true
+    null_behavior: unknown
+    guards_presence: true
+
+- doc: Strictly comparing a property of an absent input is also indeterminate
+  expression: '$(inputs.reference.format === "x")'
+  input: reference
+  expect:
+    null_behavior: unknown
 
 - doc: Optional chaining to a property produces undefined when the input is absent
   expression: $(inputs.reference?.format !== null)
   input: reference
   expect:
     references_input: true
+    null_behavior: true-when-null
+    guards_presence: false
+
+- doc: Optional chaining can explicitly detect undefined
+  expression: $(inputs.reference?.format === undefined)
+  input: reference
+  expect:
+    null_behavior: true-when-null
+
+- doc: Optional chaining does not produce null when the input is absent
+  expression: $(inputs.reference?.format === null)
+  input: reference
+  expect:
+    null_behavior: false-when-null
+
+- doc: Cross-type loose comparisons remain unknown
+  expression: "$(1 == '1' && inputs.cond.input1 === null)"
+  input: cond|input1
+  expect:
+    null_behavior: unknown
 
 - doc: An unrelated cross-type comparison prevents a presence condition from being proven
   expression: '$(inputs.a !== null || 0 == "")'
   input: a
   expect:
     references_input: true
+    null_behavior: unknown
+    guards_presence: true
+
+- doc: Same-type loose equality with null is understood
+  expression: $(inputs.a == null)
+  input: a
+  expect:
+    null_behavior: true-when-null
+
+- doc: Same-type loose inequality with null is understood
+  expression: $(inputs.a != null)
+  input: a
+  expect:
+    null_behavior: false-when-null
+
+- doc: Logical or yields its surviving operand
+  expression: $((inputs.a || inputs.a) !== null)
+  input: a
+  expect:
+    null_behavior: false-when-null
+
+- doc: Logical and yields its surviving operand
+  expression: $((inputs.a && inputs.a) === null)
+  input: a
+  expect:
+    null_behavior: true-when-null
 
 - doc: Optional chaining through a nested group still identifies the input
   expression: $(inputs.cond?.input1 === null)
@@ -149,6 +276,7 @@
   expect:
     static_paths: [[cond, input1]]
     references_input: true
+    null_behavior: true-when-null
 
 - doc: Input-like text inside a regular expression is ignored while real code is retained
   expression: $(/inputs.zzz/.test(inputs.a))
@@ -164,8 +292,60 @@
     dynamic: false
     references_input: false
 
+- doc: An inverse condition is recognized after an indeterminate or operand
+  expression: $(inputs.force || inputs.a === null)
+  input: a
+  expect:
+    null_behavior: true-when-null
+    guards_presence: false
+
+- doc: A known false left branch does not obscure an inverse condition
+  expression: $((inputs.force && false) || inputs.a === null)
+  input: a
+  expect:
+    null_behavior: true-when-null
+
+- doc: Known truthiness is not mistaken for the exact boolean true
+  expression: $((inputs.force || true) === true && inputs.a === null)
+  input: a
+  expect:
+    null_behavior: unknown
+
+- doc: Known falsiness is not mistaken for the exact boolean false
+  expression: $((inputs.force && false) === false && inputs.a === null)
+  input: a
+  expect:
+    null_behavior: unknown
+
+- doc: A semicolon after the condition body is harmless
+  expression: $(inputs.a === null);
+  input: a
+  expect:
+    null_behavior: true-when-null
+    guards_presence: false
+
+- doc: A trailing comment after the condition body is harmless
+  expression: $(inputs.a === null) // trailing
+  input: a
+  expect:
+    null_behavior: true-when-null
+
+- doc: A truncated condition remains unknown
+  expression: $(inputs.a === null
+  input: a
+  expect:
+    null_behavior: unknown
+
+- doc: Extra code after the condition body remains unknown
+  expression: $(inputs.a === null)) extra
+  input: a
+  expect:
+    null_behavior: unknown
+
 - doc: An empty expression references and protects no input
   expression: ''
   input: input1
   expect:
     references_input: false
+    null_behavior: unknown
+    guards_presence: false

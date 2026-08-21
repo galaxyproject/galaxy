@@ -1,0 +1,35 @@
+class: GalaxyWorkflow
+doc: |
+  Presence-gate a tool parameter nested inside the first repeat instance. The
+  flattened connection name is queries_0|input2, while the expression follows the
+  tool-state list as inputs.queries[0].input2.
+inputs:
+  fallback:
+    type: data
+  maybe:
+    type: data
+    optional: true
+outputs:
+  out:
+    outputSource: pick/output
+steps:
+  gated:
+    tool_id: cat1
+    tool_state:
+      queries:
+        - input2: null
+    in:
+      input1:
+        source: fallback
+      queries_0|input2:
+        source: maybe
+    when: $(inputs.queries[0].input2 !== null)
+  pick:
+    type: pick_value
+    in:
+      input_0:
+        source: gated/out_file1
+      input_1:
+        source: fallback
+    state:
+      mode: first_non_null

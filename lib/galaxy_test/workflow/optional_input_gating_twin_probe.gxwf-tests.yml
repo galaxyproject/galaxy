@@ -1,0 +1,33 @@
+- doc: |
+    Optional input supplied - the probe is non-null, so the copy that consumes the
+    dataset runs and its twin is skipped.
+  job:
+    base:
+      class: File
+      contents: "BASE"
+      filetype: txt
+    maybe:
+      class: File
+      contents: "PROVIDED"
+      filetype: txt
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "PROVIDED"
+- doc: |
+    Optional input omitted - the probe is null, so the inverse gate fires and the copy
+    that never consumes the dataset runs. A probe carries a dataset into the
+    expression context without being a tool parameter.
+  job:
+    base:
+      class: File
+      contents: "BASE"
+      filetype: txt
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "BASE"

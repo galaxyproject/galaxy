@@ -1,0 +1,27 @@
+- doc: |
+    Optional input supplied - an ungated step consuming it runs normally. Nothing
+    about the connection itself is rejected.
+  job:
+    maybe:
+      class: File
+      contents: "PROVIDED"
+      filetype: txt
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "PROVIDED"
+- doc: |
+    Optional input omitted with no gate - the invocation fails rather than skipping the
+    step. This is what proves the skip in the gated fixtures comes from the when
+    expression rather than from implicit null propagation. The harness only checks that
+    something failed, so the reason is not asserted here.
+  expect_failure: true
+  job: {}
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_text
+          text: "PROVIDED"

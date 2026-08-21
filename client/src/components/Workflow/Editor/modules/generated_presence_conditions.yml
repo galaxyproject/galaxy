@@ -1,0 +1,24 @@
+# Inputs and the presence-checking expressions that should be generated for them.
+- doc: A top-level identifier uses dot access
+  input: input1
+  expression: $(inputs.input1 !== null)
+
+- doc: A nested connection follows each pipe-delimited segment
+  input: cond|input1
+  expression: $(inputs.cond.input1 !== null)
+
+- doc: A non-identifier top-level name uses bracket access
+  input: segment-with-dashes
+  expression: '$(inputs["segment-with-dashes"] !== null)'
+
+- doc: A non-identifier nested name uses bracket access
+  input: cond|has-dash
+  expression: '$(inputs.cond["has-dash"] !== null)'
+
+- doc: A numeric-looking property name remains a quoted property
+  input: 0|input1
+  expression: '$(inputs["0"].input1 !== null)'
+
+- doc: A resolved repeat path uses a numeric index
+  input: [queries, 0, input2]
+  expression: $(inputs.queries[0].input2 !== null)

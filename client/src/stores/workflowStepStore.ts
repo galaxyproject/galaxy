@@ -3,8 +3,14 @@ import { computed, del, ref, set } from "vue";
 import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
-import { expressionReferencesInput } from "@/components/Workflow/Editor/modules/whenExpression";
-import { resolveConnectionNameToInputPath } from "@/components/Workflow/Editor/modules/workflowInputPath";
+import {
+    BOOLEAN_GATE_INPUT_NAME,
+    expressionReferencesInput,
+} from "@/components/Workflow/Editor/modules/whenExpression";
+import {
+    type InputPath,
+    resolveConnectionNameToInputPath,
+} from "@/components/Workflow/Editor/modules/workflowInputPath";
 import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 
@@ -140,6 +146,13 @@ export interface ConnectionOutputLink {
     input_subworkflow_step_id?: number;
 }
 
+/** Normalize the persisted single-or-array connection shape for read-only traversal. */
+export function normalizeConnectionOutputLinks(
+    links: ConnectionOutputLink | ConnectionOutputLink[] | undefined,
+): readonly ConnectionOutputLink[] {
+    return Array.isArray(links) ? links : links ? [links] : [];
+}
+
 export interface WorkflowOutputs {
     [index: string]: {
         stepId: number;
@@ -160,6 +173,31 @@ export type WorkflowStepStore = ReturnType<typeof useWorkflowStepStore>;
 export function getCombinedStepInputs(step: Step, stepStore: WorkflowStepStore): InputTerminalSource[] {
     const extraInputs = stepStore.getStepExtraInputs(step.id);
     return [...extraInputs, ...step.inputs];
+}
+
+/**
+ * True when the value arriving on this input can be absent at run time, either because
+ * every source output is optional or because every source step is itself gated.
+ */
+export function connectedInputCanBeAbsent(step: Step, inputName: string, stepStore: WorkflowStepStore): boolean {
+    const links = step.input_connections?.[inputName];
+    if (!links) {
+        return false;
+    }
+    const linkArray = normalizeConnectionOutputLinks(links);
+    if (linkArray.length === 0) {
+        return false;
+    }
+    return linkArray.every((link) => {
+        const sourceStep = stepStore.getStep(link.id);
+        if (!sourceStep) {
+            return false;
+        }
+        if (sourceStep.when) {
+            return true;
+        }
+        return Boolean(sourceStep.outputs.find((output) => output.name === link.output_name)?.optional);
+    });
 }
 
 export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (workflowId) => {
@@ -246,7 +284,8 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
             stepToConnections(step).forEach((connection) => connectionStore.addConnection(connection));
         }
 
-        stepExtraInputs.value[step.id] = findStepExtraInputs(step);
+        refreshStepExtraInputs(step);
+        refreshGatePortsReadingSource(step.id);
 
         if (select) {
             stateStore.setStepMultiSelected(step.id, true);
@@ -277,12 +316,33 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
     }
 
     function updateStep(step: Step) {
+        const previousStep = steps.value[step.id.toString()];
         const workflow_outputs = step.workflow_outputs?.filter((workflowOutput) =>
             step.outputs.find((output) => workflowOutput.output_name == output.name),
         );
 
-        steps.value[step.id.toString()] = Object.freeze({ ...step, workflow_outputs });
-        stepExtraInputs.value[step.id] = findStepExtraInputs(step);
+        const updatedStep = Object.freeze({ ...step, workflow_outputs });
+        steps.value[step.id.toString()] = updatedStep;
+        refreshStepExtraInputs(updatedStep);
+
+        // A probe terminal mirrors its source's effective output shape. Recompute
+        // downstream gate ports only when that shape may have changed, so frequent
+        // updates to unrelated fields (notably position) avoid a full workflow scan.
+        if (!previousStep || gatePortSourceShapeChanged(previousStep, updatedStep)) {
+            refreshGatePortsReadingSource(updatedStep.id);
+        }
+    }
+
+    function refreshStepExtraInputs(step: Step) {
+        stepExtraInputs.value[step.id] = findStepExtraInputs(step, steps.value);
+    }
+
+    function refreshGatePortsReadingSource(sourceStepId: number) {
+        Object.values(steps.value).forEach((candidate) => {
+            if (candidate.id !== sourceStepId && stepReadsSource(candidate, sourceStepId)) {
+                refreshStepExtraInputs(candidate);
+            }
+        });
     }
 
     function updateStepValue<K extends keyof Step>(stepId: number, key: K, value: Step[K]) {
@@ -450,6 +510,22 @@ function makeConnection(inputId: number, inputName: string, outputId: number, ou
     };
 }
 
+/** Fields on a source step that determine the shape of a synthesized gate port. */
+function gatePortSourceShapeChanged(previousStep: Step, updatedStep: Step): boolean {
+    return (
+        previousStep.outputs !== updatedStep.outputs ||
+        previousStep.when !== updatedStep.when ||
+        previousStep.post_job_actions !== updatedStep.post_job_actions
+    );
+}
+
+/** True when any input connection on `step` comes from the named source step. */
+function stepReadsSource(step: Step, sourceStepId: number): boolean {
+    return Object.values(step.input_connections ?? {}).some((links) => {
+        return normalizeConnectionOutputLinks(links).some((link) => link.id === sourceStepId);
+    });
+}
+
 function stepToConnections(step: Step): Connection[] {
     const connections: Connection[] = [];
 
@@ -458,10 +534,7 @@ function stepToConnections(step: Step): Connection[] {
             if (outputArray === undefined) {
                 return;
             }
-            if (!Array.isArray(outputArray)) {
-                outputArray = [outputArray];
-            }
-            outputArray.forEach((output) => {
+            normalizeConnectionOutputLinks(outputArray).forEach((output) => {
                 const connection = makeConnection(step.id, inputName, output.id, output.output_name);
                 const connectionInput = step.inputs.find((input) => input.name == inputName);
                 if (connectionInput && "input_subworkflow_step_id" in connectionInput) {
@@ -475,28 +548,109 @@ function stepToConnections(step: Step): Connection[] {
     return connections;
 }
 
-function findStepExtraInputs(step: Step) {
+function findStepExtraInputs(step: Step, steps: Steps): InputTerminalSource[] {
     const extraInputs: InputTerminalSource[] = [];
     if (step.when === undefined) {
         return extraInputs;
     }
-    Object.keys(step.input_connections).forEach((inputName) => {
+    Object.keys(step.input_connections ?? {}).forEach((inputName) => {
         if (step.inputs.find((input) => input.name === inputName)) {
             return;
         }
-        const inputPath = resolveConnectionNameToInputPath(inputName, step.tool_state);
+        const inputPath = presenceGateInputPath(step, inputName);
         if (!inputPath || !expressionReferencesInput(step.when, inputPath)) {
             return;
         }
-        extraInputs.push({
+        extraInputs.push(gatePortTerminalSource(step, inputName, steps));
+    });
+    return extraInputs;
+}
+
+/**
+ * True when a connection name can be spelled as a JavaScript path into `inputs`.
+ *
+ * A conditional maps segment for segment, while a repeat connection such as
+ * `queries_0|input2` maps to `inputs.queries[0].input2`. Walk tool state so `_0`
+ * can be distinguished from a literal property suffix and ambiguous names declined.
+ */
+export function presenceGateIsSpellable(step: Step, inputName: string): boolean {
+    return presenceGateInputPath(step, inputName) !== null;
+}
+
+/** The actual `inputs` expression path for a connected input, when unambiguous. */
+export function presenceGateInputPath(step: Step, inputName: string): InputPath | null {
+    return resolveConnectionNameToInputPath(inputName, step.tool_state);
+}
+
+/**
+ * Shape a synthesized gate port after whatever feeds it.
+ *
+ * A probe carries a value into the expression and nothing consumes it, so its terminal
+ * has to accept what the source produces. Optionality matters as much as type: a probe
+ * fed by an optional input is otherwise a required parameter terminal, and the editor
+ * refuses the very connection the gate depends on.
+ */
+function gatePortTerminalSource(step: Step, inputName: string, steps: Steps): InputTerminalSource {
+    if (inputName === BOOLEAN_GATE_INPUT_NAME) {
+        // `when` is a convention with a fixed meaning: the gate's own boolean.
+        return {
             name: inputName,
+            label: inputName,
+            multiple: false,
             optional: false,
             input_type: "parameter",
             type: "boolean",
-            multiple: false,
-            label: inputName,
             extensions: [],
-        });
-    });
-    return extraInputs;
+        };
+    }
+    const links = step.input_connections[inputName];
+    const link = normalizeConnectionOutputLinks(links)[0];
+    const sourceStep = link ? steps[link.id.toString()] : undefined;
+    const output = sourceStep?.outputs.find((candidate) => candidate.name === link?.output_name);
+    const base = {
+        name: inputName,
+        label: inputName,
+        multiple: Boolean(output && isParameterOutput(output) && output.multiple),
+        optional: Boolean(output?.optional) || Boolean(sourceStep?.when),
+    };
+    if (!output || isParameterOutput(output)) {
+        return {
+            ...base,
+            input_type: "parameter",
+            type: output?.type ?? "boolean",
+            extensions: [],
+        };
+    }
+    if (isCollectionOutput(output)) {
+        return {
+            ...base,
+            input_type: "dataset_collection",
+            collection_types: output.collection_type ? [output.collection_type] : [],
+            fields: [],
+            column_definitions: null,
+            extensions: effectiveOutputExtensions(sourceStep, output),
+        };
+    }
+    return {
+        ...base,
+        input_type: "dataset",
+        extensions: effectiveOutputExtensions(sourceStep, output),
+    };
+}
+
+function effectiveOutputExtensions(sourceStep: Step | undefined, output: DataOutput | CollectionOutput): string[] {
+    const changeDatatype = sourceStep?.post_job_actions?.[`ChangeDatatypeAction${output.name}`];
+    if (changeDatatype) {
+        const newtype = changeDatatype.action_arguments.newtype;
+        return newtype ? [newtype] : [];
+    }
+    return output.extensions ?? [];
+}
+
+function isParameterOutput(output: OutputTerminalSource): output is ParameterOutput {
+    return "parameter" in output && Boolean(output.parameter);
+}
+
+function isCollectionOutput(output: OutputTerminalSource): output is CollectionOutput {
+    return "collection" in output && Boolean(output.collection);
 }

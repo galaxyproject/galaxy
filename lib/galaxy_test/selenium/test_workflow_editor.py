@@ -36,6 +36,11 @@ from .framework import (
     UsesWorkflowAssertions,
 )
 
+# Gate modes offered by FormConditional.vue.
+GATE_MODE_NONE = "Always run this step"
+GATE_MODE_BOOLEAN = "Run when a boolean parameter is true"
+GATE_MODE_INPUT_PROVIDED = "Run when an input is provided"
+
 CHIPSEQ_COLUMNS = [
     ColumnDefinition(
         "Condition",
@@ -950,26 +955,12 @@ steps:
         workflow = self.workflow_populator.download_workflow(workflow_id)
         return workflow
 
-    def _pick_value_select_mode(self, label):
-        mode_selector = "div.ui-form-element[id='form-element-mode']"
-        container = self.wait_for_selector(mode_selector)
-        trigger = container.find_element(By.CSS_SELECTOR, ".multiselect__select")
-        trigger.click()
+    def _select_form_option(self, form_element_id, label):
+        """Pick an option by label from a FormElement select."""
+        tool_form = self.components.tool_form
+        tool_form.parameter_select_trigger(parameter=form_element_id).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        js = """
-            var label = arguments[0];
-            var container = document.querySelector('#form-element-mode');
-            var items = container.querySelectorAll('.multiselect__element');
-            for (var i = 0; i < items.length; i++) {
-                if (items[i].textContent.trim() === label) {
-                    items[i].querySelector('.multiselect__option').click();
-                    return true;
-                }
-            }
-            return false;
-        """
-        result = self.execute_script(js, label)
-        assert result, f"Mode option '{label}' not found"
+        tool_form.parameter_select_option(parameter=form_element_id, label=label).wait_for_and_click()
 
     @selenium_test
     def test_pick_value_add_from_palette(self):
@@ -985,7 +976,7 @@ steps:
         editor = self.components.workflow_editor
         node = editor.node._(label="Pick Value")
         node.wait_for_and_click()
-        self._pick_value_select_mode("All non-null (as collection)")
+        self._select_form_option("mode", "All non-null (as collection)")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
@@ -1108,7 +1099,7 @@ steps:
         editor = self.components.workflow_editor
         pick_node = editor.node._(label="pick")
         pick_node.wait_for_and_click()
-        self._pick_value_select_mode("All non-null (as collection)")
+        self._select_form_option("mode", "All non-null (as collection)")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
@@ -1300,14 +1291,14 @@ steps:
         conditional_node.input_terminal(name="input").wait_for_present()
         # Assert no when input before making step conditional
         conditional_node.input_terminal(name="when").wait_for_absent()
-        conditional_toggle = editor.step_when.wait_for_present()
-        self.move_to_and_click(conditional_toggle)
-        # Toggling conditional should cause when input to appear
+        editor.step_when.wait_for_present()
+        self._select_form_option("__conditional", GATE_MODE_BOOLEAN)
+        # Choosing the boolean gate should cause the when input to appear
         conditional_node.input_terminal(name="when").wait_for_present()
-        self.move_to_and_click(conditional_toggle)
-        # Toggling conditional should cause when input to disappear
+        self._select_form_option("__conditional", GATE_MODE_NONE)
+        # Clearing the gate should cause the when input to disappear
         conditional_node.input_terminal(name="when").wait_for_absent()
-        self.move_to_and_click(conditional_toggle)
+        self._select_form_option("__conditional", GATE_MODE_BOOLEAN)
         conditional_node.input_terminal(name="when").wait_for_present()
         # Output connection should be invalid, as output from conditional step is potentially null
         self.assert_connection_invalid("conditional_step#out_file1", "downstream_step#input1")
@@ -1331,6 +1322,62 @@ steps:
         save_button.wait_for_visible()
         # TODO: hook up best practice panel, disable save when "when" not connected
         # assert save_button.has_class("g-disabled")
+
+    @selenium_test
+    def test_editor_gate_step_on_optional_input(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  fallback: data
+  maybe:
+    type: data
+    optional: true
+steps:
+  gated:
+    tool_id: cat
+    in:
+      input1: maybe
+""")
+        editor = self.components.workflow_editor
+        # Without a gate, an optional input feeding a required parameter is a real problem.
+        self.assert_connection_invalid("maybe#output", "gated#input1")
+        editor.node._(label="gated").wait_for_and_click()
+        self._select_form_option("__conditional", GATE_MODE_INPUT_PROVIDED)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_connection_valid("maybe#output", "gated#input1")
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        gated_step = [s for s in workflow["steps"].values() if s.get("label") == "gated"][0]
+        assert gated_step["when"] == "$(inputs.input1 !== null)"
+
+    @selenium_test
+    def test_editor_twin_dispatch_connections_valid(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  base: data
+  maybe:
+    type: data
+    optional: true
+steps:
+  when_present:
+    tool_id: cat
+    in:
+      input1: maybe
+      probe: maybe
+    when: $(inputs.probe !== null)
+  when_absent:
+    tool_id: cat
+    in:
+      input1: base
+      probe: maybe
+    when: $(inputs.probe === null)
+""")
+        # The gate names `probe`, but `input1` is fed by the same optional input and is
+        # equally unreachable while it is absent. Neither connection is broken.
+        self.assert_connection_valid("maybe#output", "when_present#probe")
+        self.assert_connection_valid("maybe#output", "when_present#input1")
+        self.assert_connection_valid("maybe#output", "when_absent#probe")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
@@ -1895,6 +1942,11 @@ steps:
     def assert_connection_invalid(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         self.components.workflow_editor.connector_invalid_for(source_id=source_id, sink_id=sink_id).wait_for_present()
+
+    def assert_connection_valid(self, source, sink):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        self.components.workflow_editor.connector_invalid_for(source_id=source_id, sink_id=sink_id).wait_for_absent()
+        self.assert_connected(source, sink)
 
     def assert_not_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)

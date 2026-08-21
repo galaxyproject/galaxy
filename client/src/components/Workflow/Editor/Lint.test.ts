@@ -117,3 +117,65 @@ describe("Lint", () => {
         expect(actions[2].action_type).toBe("remove_unlabeled_workflow_outputs");
     });
 });
+
+describe("Lint conditional gates", () => {
+    function mountLint(when: string | undefined, inputConnections: Record<string, unknown>): Wrapper<Vue> {
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+        setActivePinia(pinia);
+
+        const gatedSteps = {
+            ...(JSON.parse(JSON.stringify(steps)) as Steps),
+            3: {
+                id: 3,
+                name: "Concatenate datasets",
+                label: "gated",
+                type: "tool",
+                content_id: "cat1",
+                inputs: [],
+                outputs: [],
+                input_connections: inputConnections,
+                position: { left: 0, top: 0 },
+                tool_state: {},
+                workflow_outputs: [],
+                when,
+            },
+        } as unknown as Steps;
+        const gatedStepsRef = ref(gatedSteps);
+
+        const wrapper = mount(Lint as object, {
+            propsData: {
+                lintData: useLintData(ref("1"), gatedStepsRef, ref(testDatatypesMapper)),
+                steps: gatedSteps,
+                datatypesMapper: testDatatypesMapper,
+                hasChanges: false,
+            },
+            localVue,
+            pinia,
+            provide: { workflowId: "mock-workflow" },
+        });
+
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        Object.values(gatedSteps).map((step) => stepStore.addStep(step));
+        return wrapper;
+    }
+
+    function sectionStatus(wrapper: Wrapper<Vue>): string | void {
+        return wrapper.find("[data-description='linting conditional gates']").attributes("data-lint-status");
+    }
+
+    it("says nothing when no step is gated", () => {
+        const wrapper = mountLint(undefined, {});
+        expect(wrapper.find("[data-description='linting conditional gates']").exists()).toBe(false);
+    });
+
+    it("passes when a gate reads a connected input", () => {
+        const wrapper = mountLint("$(inputs.when)", { when: { id: 0, output_name: "output" } });
+        expect(sectionStatus(wrapper)).toBe("ok");
+    });
+
+    it("warns when a gate reads an input nothing is connected to", () => {
+        const wrapper = mountLint("$(inputs.when)", {});
+        expect(sectionStatus(wrapper)).toBe("warning");
+        expect(wrapper.find("[data-description='linting conditional gates']").text()).toContain("when");
+    });
+});

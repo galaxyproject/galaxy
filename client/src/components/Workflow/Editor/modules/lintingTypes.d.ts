@@ -19,6 +19,14 @@ export interface DisconnectedInputState extends LintStateBase {
     name: string;
 }
 
+/** Lint state for a `when` expression that reads an input nothing is connected to */
+export interface DanglingGateState extends LintStateBase {
+    autofix: false;
+    highlightType: "input";
+    inputName: string;
+    name: string;
+}
+
 /** Lint state for duplicate label issues */
 export interface DuplicateLabelState extends LintStateBase {
     highlightType: "output";
@@ -48,6 +56,7 @@ export interface UntypedParameterState extends LintStateBase {
 
 /** Union type for all linting states */
 export type LintState =
+    | DanglingGateState
     | DisconnectedInputState
     | DuplicateLabelState
     | MetadataLintState

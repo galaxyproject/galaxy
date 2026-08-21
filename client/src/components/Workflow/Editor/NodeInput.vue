@@ -20,12 +20,14 @@ import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import {
     ConnectionAcceptable,
     type InputTerminals,
-    type OutputCollectionTerminal,
+    type OutputTerminals,
     terminalFactory,
 } from "@/components/Workflow/Editor/modules/terminals";
+import { presenceGateExpression } from "@/components/Workflow/Editor/modules/whenExpression";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { getConnectionId } from "@/stores/workflowConnectionStore";
-import type { InputTerminalSource } from "@/stores/workflowStepStore";
+import { type InputTerminalSource, presenceGateInputPath } from "@/stores/workflowStepStore";
 
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
@@ -92,7 +94,8 @@ const position = useRelativePosition(
 );
 
 const stores = useWorkflowStores();
-const { connectionStore, stateStore } = stores;
+const { connectionStore, stateStore, stepStore } = stores;
+const { confirm } = useConfirmDialog();
 const hasTerminals = ref(false);
 watchEffect(() => {
     hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
@@ -110,9 +113,28 @@ const invalidConnectionReasons = computed(() =>
 
 const { draggingTerminal } = storeToRefs(stateStore);
 
+interface DropAssessment {
+    acceptance: ConnectionAcceptable;
+    requiresPresenceGate: boolean;
+}
+
+function assessDrop(droppedTerminal: OutputTerminals): DropAssessment {
+    const directAcceptance = terminal.value.canAccept(droppedTerminal);
+    if (directAcceptance.canAccept) {
+        return { acceptance: directAcceptance, requiresPresenceGate: false };
+    }
+    const gatedAcceptance = terminal.value.canAcceptWithPresenceGate(droppedTerminal);
+    if (gatedAcceptance.canAccept) {
+        return { acceptance: gatedAcceptance, requiresPresenceGate: true };
+    }
+    return { acceptance: directAcceptance, requiresPresenceGate: false };
+}
+
+const dragAssessment = computed(() => (draggingTerminal.value ? assessDrop(draggingTerminal.value) : null));
+
 const canAccept = computed(() => {
-    if (draggingTerminal.value) {
-        return terminal.value.canAccept(draggingTerminal.value);
+    if (dragAssessment.value) {
+        return dragAssessment.value.acceptance;
     } else {
         const firstReason = invalidConnectionReasons.value[0];
         if (firstReason) {
@@ -141,8 +163,13 @@ watch([endX, endY], ([x, y]) => {
 });
 
 const isDragging = inject("isDragging");
-const reason = computed(() => canAccept.value?.reason ?? undefined);
 const label = computed(() => props.input.label || props.input.name);
+const reason = computed(() => {
+    if (dragAssessment.value?.requiresPresenceGate) {
+        return `Drop to connect and run this step only when ${label.value} is provided.`;
+    }
+    return canAccept.value?.reason ?? undefined;
+});
 const hasConnections = computed(() => connections.value.length > 0);
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "input-data-row"];
@@ -170,7 +197,7 @@ function onRemove() {
     connections.forEach((connection) => terminal.value.disconnect(connection));
 }
 
-function onDrop(event: DragEvent) {
+async function onDrop(event: DragEvent) {
     if (!event.dataTransfer) {
         return;
     }
@@ -181,13 +208,50 @@ function onDrop(event: DragEvent) {
         stepOut.output,
         props.datatypesMapper,
         stores,
-    ) as OutputCollectionTerminal;
+    ) as OutputTerminals;
 
     showTooltip.value = false;
 
-    if (terminal.value.canAccept(droppedTerminal).canAccept) {
-        terminal.value.connect(droppedTerminal);
+    const assessment = assessDrop(droppedTerminal);
+    if (!assessment.acceptance.canAccept) {
+        return;
     }
+    if (!assessment.requiresPresenceGate) {
+        terminal.value.connect(droppedTerminal);
+        return;
+    }
+    await offerPresenceGate(droppedTerminal);
+}
+
+/** The dropped value may be absent, and only a gate makes that safe. Offer to write one. */
+async function offerPresenceGate(droppedTerminal: OutputTerminals) {
+    const confirmed = await confirm(
+        `${label.value} may arrive empty, and this step requires it. Run this step only when ${label.value} is provided?`,
+        { title: "Run this step conditionally?", okText: "Run only when provided" },
+    );
+    if (!confirmed) {
+        return;
+    }
+    const step = stepStore.getStep(props.stepId);
+    const inputPath = step && presenceGateInputPath(step, props.input.name);
+    if (!inputPath) {
+        return;
+    }
+
+    stores.undoRedoStore
+        .action()
+        .onRun(() => {
+            // Raw, because the surrounding action is what makes this one undo step.
+            terminal.value.makeConnection(droppedTerminal);
+            terminal.value.setDefaultMapOver(droppedTerminal);
+            stepStore.updateStepValue(props.stepId, "when", presenceGateExpression(inputPath));
+        })
+        .onUndo(() => {
+            stepStore.updateStepValue(props.stepId, "when", undefined);
+            terminal.value.dropConnection(droppedTerminal);
+        })
+        .setName("gate step on input")
+        .apply();
 }
 
 const draggedOver = ref(false);
