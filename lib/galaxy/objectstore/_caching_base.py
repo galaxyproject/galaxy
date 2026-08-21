@@ -18,7 +18,10 @@ from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
 )
-from galaxy.objectstore import ConcreteObjectStore
+from galaxy.objectstore import (
+    ConcreteObjectStore,
+    DataStream,
+)
 from galaxy.util import (
     directory_hash_id,
     unlink,
@@ -208,7 +211,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         data_file.close()
         return content
 
-    def _get_data_stream(self, obj, **kwargs) -> Iterator[bytes] | None:
+    def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         rel_path = self._construct_path(obj, **kwargs)
         object_id = self._get_object_id(obj)
         cache_path = self._get_cache_path(rel_path, object_id)

@@ -4,7 +4,6 @@ API operations on the contents of a history dataset.
 
 import logging
 import os
-from collections.abc import Iterator
 from enum import Enum
 from typing import (
     Any,
@@ -52,7 +51,10 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     resolve_job_markdown,
 )
-from galaxy.objectstore import ObjectStoreAuth
+from galaxy.objectstore import (
+    DataStream,
+    ObjectStoreAuth,
+)
 from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
@@ -716,7 +718,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         to_ext: str | None,
         offset: int | None,
         ck_size: int | None,
-    ) -> tuple[Iterator[bytes], dict[str, str]] | None:
+    ) -> tuple[DataStream, dict[str, str]] | None:
         """Proxy a whole-file download straight from the backing store, warming the cache on the way.
 
         Returns None -- meaning the caller should pull the object into the cache and serve it from
@@ -744,9 +746,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         try:
             trans.log_event(f"Download dataset id: {str(dataset_instance.id)}")
         except BaseException:
-            close_stream = getattr(stream, "close", None)
-            if callable(close_stream):
-                close_stream()
+            stream.close()
             raise
         return stream, headers
 

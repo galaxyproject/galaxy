@@ -79,6 +79,21 @@ USER_OBJECTS_SCHEME = "user_objects://"
 log = logging.getLogger(__name__)
 
 
+class DataStream(Protocol):
+    """A stream of an object's bytes that owns the read it came from.
+
+    A consumer that does not exhaust the stream must ``close()`` it: the bytes may be arriving over a
+    connection the backing store holds open, and dropping the last reference only releases it
+    whenever the garbage collector gets there.
+    """
+
+    def __iter__(self) -> Iterator[bytes]: ...
+
+    def __next__(self) -> bytes: ...
+
+    def close(self) -> None: ...
+
+
 @dataclass(frozen=True)
 class ObjectStoreAuth:
     user: User | None = None
@@ -345,7 +360,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_data_stream(self, obj) -> Iterator[bytes] | None:
+    def get_data_stream(self, obj) -> DataStream | None:
         """Return an iterator over the bytes of `obj` read straight from the backing store.
 
         Lets a caller start sending bytes to a client without first pulling the whole object into the
@@ -725,10 +740,10 @@ class BaseObjectStore(ObjectStore):
         # Stores that don't support direct download (or haven't opted in) get this no-op default.
         return None
 
-    def get_data_stream(self, obj) -> Iterator[bytes] | None:
+    def get_data_stream(self, obj) -> DataStream | None:
         return self._invoke("get_data_stream", obj)
 
-    def _get_data_stream(self, obj, **kwargs) -> Iterator[bytes] | None:
+    def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         # Stores that cannot stream their objects remotely (e.g. disk) get this no-op default.
         return None
 
@@ -1348,7 +1363,7 @@ class NestedObjectStore(BaseObjectStore):
             content_type=content_type,
         )
 
-    def _get_data_stream(self, obj, **kwargs) -> Iterator[bytes] | None:
+    def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         """For the first backend that has this `obj`, stream it from that backend."""
         return self._call_method("_get_data_stream", obj, None, False, **kwargs)
 
