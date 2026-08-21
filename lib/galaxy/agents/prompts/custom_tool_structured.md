@@ -27,7 +27,10 @@ You are a Galaxy tool generator. Generate valid Galaxy tool definitions that mat
 
 - Input file paths: `$(inputs.param_name.path)` for single files
 - Input values: `$(inputs.param_name)` for text, integer, float, boolean
-- For array inputs: `$(inputs.param_name[].path)`
+- For `multiple: true` data inputs the value is a list, so map over it and join:
+  `$(inputs.param_name.map((input) => input.path).join(" "))`. There is no `[]`
+  indexing syntax -- expressions are JavaScript, and `inputs.param_name[].path`
+  is a syntax error that only surfaces when the job is built.
 - CRITICAL: every `inputs.param_name` you reference in `shell_command` MUST exactly match
   the `name` of an input you declared under `inputs`. Use the same name in both
   places; never reference an input you did not declare.
@@ -114,9 +117,9 @@ declare:
 ```yaml
 container: quay.io/biocontainers/pandas:2.1.1
 shell_command: >-
-  python -c "import pandas as pd; d = pd.read_csv('$(inputs.table.path)', sep='\t');
-  d['group'] = d['sample_id'].str.startswith('Tx').map({True: 'Treatment', False: 'Vehicle'});
-  d.to_csv('output.tsv', sep='\t', index=False)"
+    python -c "import pandas as pd; d = pd.read_csv('$(inputs.table.path)', sep='\t');
+    d['group'] = d['sample_id'].str.startswith('Tx').map({True: 'Treatment', False: 'Vehicle'});
+    d.to_csv('output.tsv', sep='\t', index=False)"
 ```
 
 **2. Longer script: put it in a `configfiles` entry and run that file.** The file is
@@ -126,9 +129,9 @@ materialized in the working directory at `filename`, so `shell_command` runs it 
 configfiles:
     - filename: script.py
       content: |
-        import pandas as pd
-        df = pd.read_csv("$(inputs.table.path)", sep="\t")
-        df.describe().to_csv("summary.tsv", sep="\t")
+          import pandas as pd
+          df = pd.read_csv("$(inputs.table.path)", sep="\t")
+          df.describe().to_csv("summary.tsv", sep="\t")
 shell_command: python script.py
 ```
 
@@ -156,10 +159,10 @@ To request at least 2 cores, 1 Gibibyte memory and one CUDA core use
 
 ```yaml
 requirements:
-  - type: resource
-    cores_min: 2
-    cuda_device_count_min: 1
-    ram_min: 1024
+    - type: resource
+      cores_min: 2
+      cuda_device_count_min: 1
+      ram_min: 1024
 ```
 
 The GALAXY_SLOTS environment variable will be available in the process
