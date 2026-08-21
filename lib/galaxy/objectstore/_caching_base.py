@@ -1,15 +1,27 @@
 import logging
 import os
 import shutil
-from contextlib import contextmanager
+from collections.abc import (
+    Callable,
+    Generator,
+    Iterator,
+)
+from contextlib import (
+    AbstractContextManager,
+    contextmanager,
+)
 from datetime import datetime
 from typing import Any
+from uuid import uuid4
 
 from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
 )
-from galaxy.objectstore import ConcreteObjectStore
+from galaxy.objectstore import (
+    ConcreteObjectStore,
+    DataStream,
+)
 from galaxy.util import (
     directory_hash_id,
     unlink,
@@ -24,6 +36,67 @@ from .caching import (
 )
 
 log = logging.getLogger(__name__)
+
+# Size of the chunks pulled from the backing store when tee-streaming an object to a client.
+STREAM_CHUNK_SIZE = 1024 * 1024
+
+
+class RemoteDataStream(AbstractContextManager[Iterator[bytes]]):
+    """Pair an open read of a remote object with the call that releases it.
+
+    Backends hand back the SDK's own close rather than leaving it to the chunk iterator, because
+    closing the iterator is not the same thing: botocore's ``iter_chunks`` is a plain generator over
+    ``StreamingBody.read``, so closing it ends the loop but leaves the HTTP response open and its
+    connection out of the pool. Abandoning a read part way is the normal case on this path, not the
+    rare one -- it exists for large downloads, which are the ones clients cancel.
+    """
+
+    def __init__(self, chunks: Iterator[bytes], close: Callable[[], None]) -> None:
+        self.chunks = chunks
+        self._close = close
+        self._closed = False
+
+    def __enter__(self) -> Iterator[bytes]:
+        if self._closed:
+            raise RuntimeError("Cannot consume a closed remote data stream")
+        return self.chunks
+
+    def __exit__(self, *_args: Any) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Release the read even if its chunks were never consumed."""
+        if not self._closed:
+            self._closed = True
+            self._close()
+
+
+class _ClosingIterator(Iterator[bytes]):
+    """An iterator whose owner can release resources before the first ``next`` call."""
+
+    def __init__(self, iterator: Generator[bytes, None, None], close: Callable[[], None]) -> None:
+        self.iterator = iterator
+        self._close = close
+        self._closed = False
+
+    def __next__(self) -> bytes:
+        if self._closed:
+            raise StopIteration
+        try:
+            return next(self.iterator)
+        except BaseException:
+            self.close()
+            raise
+
+    def close(self) -> None:
+        if not self._closed:
+            self._closed = True
+            try:
+                # Unwinds the tee: whatever the generator was part way through -- a temp file, the
+                # ``with`` around the remote read -- gets its cleanup run.
+                self.iterator.close()
+            finally:
+                self._close()
 
 
 class CachingConcreteObjectStore(ConcreteObjectStore):
@@ -137,6 +210,79 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         content = data_file.read(count)
         data_file.close()
         return content
+
+    def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
+        rel_path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
+        if self._in_cache(cache_path):
+            # Serve the cached copy instead: it supports range requests and X-Accel offload.
+            return None
+        try:
+            remote_size = self._get_remote_size(rel_path)
+            if remote_size < 0:
+                # Backends report an unknown size as a negative number. Without it a stream cannot be
+                # checked for truncation, so leave this download to the pull path.
+                return None
+            cache_target = self._cache_shards.get_cache_target(object_id)
+            write_cache = cache_target.fits_in_cache(remote_size)
+            # Opening the remote read comes last: everything that can decide against streaming has
+            # already decided, so no bail-out below leaves an open connection with no owner.
+            stream = self._stream_remote(rel_path)
+            if stream is None:
+                return None
+        except Exception:
+            log.exception("Failed to open a remote stream for '%s', falling back to pulling into cache", rel_path)
+            return None
+        iterator = self._tee_to_cache(stream, cache_path, expected_size=remote_size, write_cache=write_cache)
+        # The generator above does not enter ``stream`` until its first next() call. Give the
+        # response an explicit close that owns the already-open remote read even if the client goes
+        # away while response headers are being sent and the generator is never started.
+        return _ClosingIterator(iterator, stream.close)
+
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
+        """Open a read of the remote object, or None if this backend cannot stream it.
+
+        The context manager owns the read: leaving it releases the connection whether the client took
+        every byte, hung up part way, or the stream errored: build one from a chunk iterator and the
+        SDK call that releases it.
+        """
+        return None
+
+    def _tee_to_cache(
+        self,
+        stream: RemoteDataStream,
+        cache_path: str,
+        *,
+        expected_size: int,
+        write_cache: bool,
+    ) -> Generator[bytes, None, None]:
+        """Yield the remote object's bytes, writing them into the cache on the way past.
+
+        The cache copy is published atomically once the whole object has been streamed, so a client
+        that disconnects (or a stream that errors) never leaves a truncated file behind to be served
+        as if it were complete -- and a stream that ends early is rejected rather than cached, since
+        a short read that raised nothing would otherwise poison the cache. Objects that do not fit
+        in the cache are streamed straight through.
+        """
+        with stream as chunks:
+            if not write_cache:
+                yield from chunks
+                return
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            with self._atomic_download(cache_path) as tmp_path:
+                streamed_size = 0
+                with open(tmp_path, "wb") as tmp_file:
+                    for chunk in chunks:
+                        tmp_file.write(chunk)
+                        streamed_size += len(chunk)
+                        yield chunk
+                if streamed_size != expected_size:
+                    raise OSError(
+                        f"Streaming '{cache_path}' from the object store returned {streamed_size} bytes, "
+                        f"expected {expected_size}"
+                    )
+            fix_permissions(self.config, os.path.dirname(cache_path))
 
     def _exists(self, obj, **kwargs) -> bool:
         in_cache = exists_remotely = False
@@ -430,8 +576,14 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
 
             with self._atomic_download(local_destination) as tmp_path:
                 do_download(tmp_path)
+
+        The temp file is unique per download because several downloads of the same object can be in
+        flight at once -- two clients downloading an uncached object, or a pull racing a stream. A
+        shared temp name lets one truncate what another is still writing and then publish the result
+        as a complete object; with one temp file each they cannot interfere, and whichever finishes
+        last publishes a complete copy.
         """
-        tmp_path = cache_path + ".tmp"
+        tmp_path = f"{cache_path}.{uuid4().hex}.tmp"
         try:
             yield tmp_path
             os.rename(tmp_path, cache_path)

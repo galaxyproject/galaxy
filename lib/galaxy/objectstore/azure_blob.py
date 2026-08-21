@@ -17,7 +17,10 @@ except ImportError:
     BlobServiceClient = None  # type: ignore[assignment,unused-ignore,misc]
 
 from galaxy.util import now
-from ._caching_base import CachingConcreteObjectStore
+from ._caching_base import (
+    CachingConcreteObjectStore,
+    RemoteDataStream,
+)
 from .caching import (
     CacheShardManager,
     CacheTarget,
@@ -259,6 +262,11 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             kwd["max_concurrency"] = max_concurrency
         with open(local_destination, "wb") as f:
             self._blob_client(rel_path).download_blob().download_to_stream(f, **kwd)
+
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
+        # Nothing to release: the downloader pulls each chunk with its own ranged request rather
+        # than holding one response open, and exposes no close of its own.
+        return RemoteDataStream(self._blob_client(rel_path).download_blob().chunks(), lambda: None)
 
     def _download_directory_into_cache(self, rel_path, cache_path):
         blobs = self._blobs_from(rel_path)
