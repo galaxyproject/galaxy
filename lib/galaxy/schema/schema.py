@@ -47,6 +47,15 @@ from galaxy.schema.fields import (
     literal_to_value,
     ModelClassField,
 )
+from galaxy.schema.states import (
+    DatasetCollectionPopulatedState,
+    DatasetSourceTransformActionType,
+    DatasetSourceTransformActionTypeLiteral as DatasetSourceTransformActionTypeLiteral,
+    DatasetState,
+    DatasetValidatedState,
+    JobState,
+    ToolRequestState,
+)
 from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (
     OffsetNaiveDatetime,
@@ -84,31 +93,6 @@ OptionalNumberT = int | float | None
 TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
 
 
-class DatasetState(str, Enum):
-    NEW = "new"
-    UPLOAD = "upload"
-    QUEUED = "queued"
-    RUNNING = "running"
-    OK = "ok"
-    EMPTY = "empty"
-    ERROR = "error"
-    PAUSED = "paused"
-    SETTING_METADATA = "setting_metadata"
-    FAILED_METADATA = "failed_metadata"
-    # Non-deleted, non-purged datasets that don't have physical files.
-    # These shouldn't have objectstores attached -
-    # 'deferred' can be materialized for jobs using
-    # attached DatasetSource objects but 'discarded'
-    # cannot (e.g. imported histories). These should still
-    # be able to have history contents associated (normal HDAs?)
-    DEFERRED = "deferred"
-    DISCARDED = "discarded"
-
-    @classmethod
-    def values(self):
-        return self.__members__.values()
-
-
 # Create dictionary for ElementsStatesDict using class syntax
 class ElementsStatesDict(TypedDict, total=False):
     # Add fields for each DatasetState value
@@ -124,42 +108,6 @@ class ElementsStatesDict(TypedDict, total=False):
     failed_metadata: NotRequired[int]
     deferred: NotRequired[int]
     discarded: NotRequired[int]
-
-
-class JobState(str, Enum):
-    NEW = "new"
-    RESUBMITTED = "resubmitted"
-    UPLOAD = "upload"
-    WAITING = "waiting"
-    QUEUED = "queued"
-    RUNNING = "running"
-    FINISHING = "finishing"
-    OK = "ok"
-    ERROR = "error"
-    FAILED = "failed"
-    PAUSED = "paused"
-    DELETING = "deleting"
-    DELETED = "deleted"
-    STOPPING = "stop"
-    STOPPED = "stopped"
-    SKIPPED = "skipped"
-
-
-class DatasetCollectionPopulatedState(str, Enum):
-    NEW = "new"  # New dataset collection, unpopulated elements
-    OK = "ok"  # Collection elements populated (HDAs may or may not have errors)
-    FAILED = "failed"  # some problem populating state, won't be populated
-
-
-# we use TypedDicts in the model layer and I don't know how to type with that enum
-# in the dict - it doesn't have the enum value magic that pydantic has.
-DatasetSourceTransformActionTypeLiteral = Literal["to_posix_lines", "spaces_to_tabs", "datatype_groom"]
-
-
-class DatasetSourceTransformActionType(str, Enum):
-    TO_POSIX_LINES = "to_posix_lines"
-    SPACES_TO_TABLES = "spaces_to_tabs"
-    DATATYPE_GROOM = "datatype_groom"
 
 
 # Generic and common Field annotations that can be reused across models
@@ -798,12 +746,6 @@ HdaLddaField = Field(
     title="HDA or LDDA",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
 )
-
-
-class DatasetValidatedState(str, Enum):
-    UNKNOWN = "unknown"
-    INVALID = "invalid"
-    OK = "ok"
 
 
 class DatasetHash(Model):
@@ -4191,12 +4133,6 @@ ArchivedHistoryDetailed.model_rebuild()
 CustomArchivedHistoryView.model_rebuild()
 
 ToolRequestIdField = Field(title="ID", description="Encoded ID of the role")
-
-
-class ToolRequestState(str, Enum):
-    NEW = "new"
-    SUBMITTED = "submitted"
-    FAILED = "failed"
 
 
 class ToolRequestStateMessage(Model):

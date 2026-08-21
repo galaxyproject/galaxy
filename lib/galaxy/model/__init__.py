@@ -176,19 +176,19 @@ from galaxy.objectstore.templates import (
     ObjectStoreTemplate,
     template_to_configuration as object_store_template_to_configuration,
 )
-from galaxy.schema.invocation import (
-    InvocationCancellationUserRequest,
-    InvocationState,
-    InvocationStepState,
-)
+from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import (
+    InvocationsStateCounts,
+    MAX_ANNOTATION_SIZE,
+)
+from galaxy.schema.states import (
     DatasetCollectionPopulatedState,
     DatasetSourceTransformActionTypeLiteral,
     DatasetState,
     DatasetValidatedState,
-    InvocationsStateCounts,
+    InvocationState,
+    InvocationStepState,
     JobState,
-    MAX_ANNOTATION_SIZE,
     ToolRequestState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel

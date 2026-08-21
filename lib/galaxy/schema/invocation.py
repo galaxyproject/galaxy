@@ -43,6 +43,10 @@ from galaxy.schema.schema import (
     UpdateTimeField,
     WithModelClass,
 )
+from galaxy.schema.states import (
+    InvocationState,
+    InvocationStepState,
+)
 from .workflows import (
     INPUTS_BY_DESCRIPTION,
     PreferredIntermediateObjectStoreIdField,
@@ -325,25 +329,6 @@ InvocationMessageResponseUnion = TypeAliasType("InvocationMessageResponseUnion",
 class InvocationMessageResponseModel(RootModel):
     root: InvocationMessageResponseUnion
     model_config = ConfigDict(from_attributes=True)
-
-
-class InvocationState(str, Enum):
-    NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
-    REQUIRES_MATERIALIZATION = "requires_materialization"  # an otherwise NEW or READY workflow that requires inputs to be materialized (undeferred)
-    READY = "ready"  # Workflow ready for another iteration of scheduling.
-    SCHEDULED = "scheduled"  # Workflow has been scheduled.
-    CANCELLED = "cancelled"
-    CANCELLING = "cancelling"  # invocation scheduler will cancel job in next iteration.
-    FAILED = "failed"
-    COMPLETED = "completed"  # All jobs have reached terminal states (ok, error, deleted, skipped, paused, stopped)
-
-
-class InvocationStepState(str, Enum):
-    NEW = "new"  # Brand new workflow invocation step
-    READY = "ready"  # Workflow invocation step ready for another iteration of scheduling.
-    SCHEDULED = "scheduled"  # Workflow invocation step has been scheduled.
-    # CANCELLED = 'cancelled',  TODO: implement and expose
-    # FAILED = 'failed',  TODO: implement and expose
 
 
 class InvocationStepOutput(Model):

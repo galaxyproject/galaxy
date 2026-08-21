@@ -22,6 +22,7 @@ from json import (
 from tempfile import mkdtemp
 from types import TracebackType
 from typing import (
+    Annotated,
     Any,
     cast,
     Literal,
@@ -34,6 +35,7 @@ from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     ConfigDict,
 )
 from rocrate.model.computationalworkflow import (
@@ -96,10 +98,8 @@ from galaxy.schema.bco.util import (
     get_contributors,
     write_to_file,
 )
-from galaxy.schema.schema import (
-    DatasetStateField,
-    ModelStoreFormat,
-)
+from galaxy.schema.schema import ModelStoreFormat
+from galaxy.schema.states import DatasetState
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -182,8 +182,14 @@ class ImportDiscardedDataType(Enum):
     FORCE = "force"
 
 
+DatasetStateImportField = Annotated[
+    DatasetState,
+    BeforeValidator(lambda value: "discarded" if value == "deleted" else value),
+]
+
+
 class DatasetAttributeImportModel(BaseModel):
-    state: DatasetStateField | None = None
+    state: DatasetStateImportField | None = None
     external_filename: str | None = None
     _extra_files_path: str | None = None
     file_size: int | None = None

@@ -3,10 +3,18 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
+from galaxy.schema.invocation import InvocationState as SchemaInvocationState
 from galaxy.schema.schema import (
+    DatasetState as SchemaDatasetState,
     DatasetStateField,
+    JobState as SchemaJobState,
     OAuth2State,
     TAG_ITEM_PATTERN,
+)
+from galaxy.schema.states import (
+    DatasetState,
+    InvocationState,
+    JobState,
 )
 from galaxy.schema.tasks import (
     GenerateInvocationDownload,
@@ -16,6 +24,12 @@ from galaxy.schema.tasks import (
 TEST_GALAXY_URL = "http://usegalaxy.org"
 TEST_USER_ID = 1
 TEST_INVOCATION_ID = 5
+
+
+def test_model_states_are_reexported_from_schema_modules():
+    assert SchemaDatasetState is DatasetState
+    assert SchemaJobState is JobState
+    assert SchemaInvocationState is InvocationState
 
 
 def test_task_schema():
