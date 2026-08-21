@@ -3,6 +3,8 @@ import { computed, del, ref, set } from "vue";
 import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import { expressionReferencesInput } from "@/components/Workflow/Editor/modules/whenExpression";
+import { resolveConnectionNameToInputPath } from "@/components/Workflow/Editor/modules/workflowInputPath";
 import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 
@@ -475,21 +477,26 @@ function stepToConnections(step: Step): Connection[] {
 
 function findStepExtraInputs(step: Step) {
     const extraInputs: InputTerminalSource[] = [];
-    if (step.when !== undefined) {
-        Object.keys(step.input_connections).forEach((inputName) => {
-            if (!step.inputs.find((input) => input.name === inputName) && step.when?.includes(inputName)) {
-                const terminalSource = {
-                    name: inputName,
-                    optional: false,
-                    input_type: "parameter" as const,
-                    type: "boolean" as const,
-                    multiple: false,
-                    label: inputName,
-                    extensions: [],
-                };
-                extraInputs.push(terminalSource);
-            }
-        });
+    if (step.when === undefined) {
+        return extraInputs;
     }
+    Object.keys(step.input_connections).forEach((inputName) => {
+        if (step.inputs.find((input) => input.name === inputName)) {
+            return;
+        }
+        const inputPath = resolveConnectionNameToInputPath(inputName, step.tool_state);
+        if (!inputPath || !expressionReferencesInput(step.when, inputPath)) {
+            return;
+        }
+        extraInputs.push({
+            name: inputName,
+            optional: false,
+            input_type: "parameter",
+            type: "boolean",
+            multiple: false,
+            label: inputName,
+            extensions: [],
+        });
+    });
     return extraInputs;
 }
