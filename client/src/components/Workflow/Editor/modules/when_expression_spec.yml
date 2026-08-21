@@ -1,0 +1,171 @@
+- doc: Dot access identifies a nested input
+  expression: $(inputs.cond.input1)
+  input: cond|input1
+  expect:
+    static_paths: [[cond, input1]] # Statically resolved paths read from `inputs`.
+    dynamic: false # Whether some `inputs` access cannot be resolved statically.
+    references_input: true # Whether the expression reads the declared `input`.
+
+- doc: Chained bracket access identifies a nested input
+  expression: '$(inputs["cond"]["input1"])'
+  expect:
+    static_paths: [[cond, input1]]
+    dynamic: false
+
+- doc: Mixed dot and bracket access identifies a nested input
+  expression: '$(inputs.cond["input1"])'
+  expect:
+    static_paths: [[cond, input1]]
+    dynamic: false
+
+- doc: Single-quoted bracket access identifies a nested input
+  expression: "$(inputs['cond'].input1)"
+  expect:
+    static_paths: [[cond, input1]]
+    dynamic: false
+
+- doc: A literal pipe belongs to one property and does not name a nested connection
+  expression: '$(inputs["cond|input1"] !== null)'
+  input: cond|input1
+  expect:
+    static_paths: [["cond|input1"]]
+    dynamic: false
+    references_input: false
+
+- doc: A numeric bracket identifies an item inside a repeat
+  expression: $(inputs.queries[0].input2)
+  input: [queries, 0, input2]
+  expect:
+    static_paths: [[queries, 0, input2]]
+    dynamic: false
+    references_input: true
+
+- doc: Every root input access is collected
+  expression: $(inputs.a && inputs.b)
+  expect:
+    static_paths: [[a], [b]]
+    dynamic: false
+
+- doc: Input-like text inside a string literal is ignored
+  expression: '$(inputs.a === "inputs.b")'
+  expect:
+    static_paths: [[a]]
+    dynamic: false
+
+- doc: Input-like text inside comments is ignored
+  expression: $(inputs.a /* inputs.b */ !== null) // inputs.c
+  expect:
+    static_paths: [[a]]
+    dynamic: false
+
+- doc: A property named inputs is not mistaken for another root access
+  expression: $(inputs.inputs.a)
+  expect:
+    static_paths: [[inputs, a]]
+    dynamic: false
+
+- doc: A computed property cannot be resolved statically
+  expression: $(inputs[name] !== null)
+  input: cond|input1
+  expect:
+    static_paths: []
+    dynamic: true
+    references_input: true
+
+- doc: A bare inputs reference cannot be resolved statically
+  expression: $(Object.keys(inputs).length)
+  expect:
+    static_paths: []
+    dynamic: true
+
+- doc: A template literal is treated as dynamic
+  expression: '$(`${inputs.a}` !== null)'
+  expect:
+    dynamic: true
+
+- doc: The static prefix of a computed property is retained
+  expression: $(inputs.cond[name])
+  expect:
+    static_paths: [[cond]]
+    dynamic: true
+
+- doc: A nested presence condition is false when its input is absent
+  expression: $(inputs.cond.input1 !== null)
+  input: cond|input1
+  expect:
+    references_input: true
+
+- doc: A condition on a nested property also references its ancestor connection
+  expression: $(inputs.cond.input1 !== null)
+  input: cond
+  expect:
+    references_input: true
+
+- doc: An unsupported helper call is handled permissively
+  expression: $(helper(inputs.cond.input1))
+  input: cond|input1
+  expect:
+    references_input: true
+
+- doc: A condition on another input does not reference the target
+  expression: $(inputs.other !== null)
+  input: cond|input1
+  expect:
+    references_input: false
+
+- doc: Similar property names are compared as complete path segments
+  expression: $(inputs.cond.input10 !== null)
+  input: cond|input1
+  expect:
+    references_input: false
+
+- doc: Similar top-level names are compared as complete path segments
+  expression: $(inputs.input10 !== null)
+  input: input1
+  expect:
+    references_input: false
+
+- doc: Reading a property of an absent input has indeterminate behavior
+  expression: '$(inputs.reference.format != "bwa_mem2_index")'
+  input: reference
+  expect:
+    references_input: true
+
+- doc: Optional chaining to a property produces undefined when the input is absent
+  expression: $(inputs.reference?.format !== null)
+  input: reference
+  expect:
+    references_input: true
+
+- doc: An unrelated cross-type comparison prevents a presence condition from being proven
+  expression: '$(inputs.a !== null || 0 == "")'
+  input: a
+  expect:
+    references_input: true
+
+- doc: Optional chaining through a nested group still identifies the input
+  expression: $(inputs.cond?.input1 === null)
+  input: cond|input1
+  expect:
+    static_paths: [[cond, input1]]
+    references_input: true
+
+- doc: Input-like text inside a regular expression is ignored while real code is retained
+  expression: $(/inputs.zzz/.test(inputs.a))
+  expect:
+    static_paths: [[a]]
+    dynamic: false
+
+- doc: Input-like text inside both a regular expression and a string is ignored
+  expression: $(/inputs.zzz/.test('inputs.a'))
+  input: a
+  expect:
+    static_paths: []
+    dynamic: false
+    references_input: false
+
+- doc: An empty expression references and protects no input
+  expression: ''
+  input: input1
+  expect:
+    references_input: false
