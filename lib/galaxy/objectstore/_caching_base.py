@@ -1,8 +1,14 @@
 import logging
 import os
 import shutil
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import (
+    Callable,
+    Iterator,
+)
+from contextlib import (
+    AbstractContextManager,
+    contextmanager,
+)
 from datetime import datetime
 from typing import Any
 from uuid import uuid4
@@ -29,6 +35,22 @@ log = logging.getLogger(__name__)
 
 # Size of the chunks pulled from the backing store when tee-streaming an object to a client.
 STREAM_CHUNK_SIZE = 1024 * 1024
+
+
+@contextmanager
+def closing_stream(chunks: Iterator[bytes], close: Callable[[], None]) -> Iterator[Iterator[bytes]]:
+    """Pair an open read of a remote object with the call that releases it.
+
+    Backends hand back the SDK's own close rather than leaving it to the chunk iterator, because
+    closing the iterator is not the same thing: botocore's ``iter_chunks`` is a plain generator over
+    ``StreamingBody.read``, so closing it ends the loop but leaves the HTTP response open and its
+    connection out of the pool. Abandoning a read part way is the normal case on this path, not the
+    rare one -- it exists for large downloads, which are the ones clients cancel.
+    """
+    try:
+        yield chunks
+    finally:
+        close()
 
 
 class CachingConcreteObjectStore(ConcreteObjectStore):
@@ -151,9 +173,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             # Serve the cached copy instead: it supports range requests and X-Accel offload.
             return None
         try:
-            chunks = self._stream_remote(rel_path)
-            if chunks is None:
-                return None
             remote_size = self._get_remote_size(rel_path)
             if remote_size < 0:
                 # Backends report an unknown size as a negative number. Without it a stream cannot be
@@ -161,17 +180,32 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 return None
             cache_target = self._cache_shards.get_cache_target(object_id)
             write_cache = cache_target.fits_in_cache(remote_size)
+            # Opening the remote read comes last: everything that can decide against streaming has
+            # already decided, so no bail-out below leaves an open connection with no owner.
+            stream = self._stream_remote(rel_path)
+            if stream is None:
+                return None
         except Exception:
             log.exception("Failed to open a remote stream for '%s', falling back to pulling into cache", rel_path)
             return None
-        return self._tee_to_cache(chunks, cache_path, expected_size=remote_size, write_cache=write_cache)
+        return self._tee_to_cache(stream, cache_path, expected_size=remote_size, write_cache=write_cache)
 
-    def _stream_remote(self, rel_path: str) -> Iterator[bytes] | None:
-        """Yield the bytes of the remote object, or None if this backend cannot stream them."""
+    def _stream_remote(self, rel_path: str) -> AbstractContextManager[Iterator[bytes]] | None:
+        """Open a read of the remote object, or None if this backend cannot stream it.
+
+        The context manager owns the read: leaving it releases the connection whether the client took
+        every byte, hung up part way, or the stream errored. :func:`closing_stream` builds one from a
+        chunk iterator and the SDK call that releases it.
+        """
         return None
 
     def _tee_to_cache(
-        self, chunks: Iterator[bytes], cache_path: str, *, expected_size: int, write_cache: bool
+        self,
+        stream: AbstractContextManager[Iterator[bytes]],
+        cache_path: str,
+        *,
+        expected_size: int,
+        write_cache: bool,
     ) -> Iterator[bytes]:
         """Yield the remote object's bytes, writing them into the cache on the way past.
 
@@ -181,23 +215,24 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         a short read that raised nothing would otherwise poison the cache. Objects that do not fit
         in the cache are streamed straight through.
         """
-        if not write_cache:
-            yield from chunks
-            return
-        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-        with self._atomic_download(cache_path) as tmp_path:
-            streamed_size = 0
-            with open(tmp_path, "wb") as tmp_file:
-                for chunk in chunks:
-                    tmp_file.write(chunk)
-                    streamed_size += len(chunk)
-                    yield chunk
-            if streamed_size != expected_size:
-                raise OSError(
-                    f"Streaming '{cache_path}' from the object store returned {streamed_size} bytes, "
-                    f"expected {expected_size}"
-                )
-        fix_permissions(self.config, os.path.dirname(cache_path))
+        with stream as chunks:
+            if not write_cache:
+                yield from chunks
+                return
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            with self._atomic_download(cache_path) as tmp_path:
+                streamed_size = 0
+                with open(tmp_path, "wb") as tmp_file:
+                    for chunk in chunks:
+                        tmp_file.write(chunk)
+                        streamed_size += len(chunk)
+                        yield chunk
+                if streamed_size != expected_size:
+                    raise OSError(
+                        f"Streaming '{cache_path}' from the object store returned {streamed_size} bytes, "
+                        f"expected {expected_size}"
+                    )
+            fix_permissions(self.config, os.path.dirname(cache_path))
 
     def _exists(self, obj, **kwargs) -> bool:
         in_cache = exists_remotely = False

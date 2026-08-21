@@ -6,6 +6,7 @@ from collections.abc import (
     Callable,
     Iterator,
 )
+from contextlib import AbstractContextManager
 from typing import (
     Any,
     Literal,
@@ -35,6 +36,7 @@ from galaxy.util import asbool
 from galaxy.util.s3_checksum import s3_checksum_config_kwargs
 from ._caching_base import (
     CachingConcreteObjectStore,
+    closing_stream,
     STREAM_CHUNK_SIZE,
 )
 from .caching import (
@@ -342,9 +344,9 @@ class S3ObjectStore(CachingConcreteObjectStore):
             log.exception("Failed to download file from S3")
         return False
 
-    def _stream_remote(self, rel_path: str) -> Iterator[bytes] | None:
+    def _stream_remote(self, rel_path: str) -> AbstractContextManager[Iterator[bytes]] | None:
         body = self._client.get_object(Bucket=self.bucket, Key=rel_path)["Body"]
-        return body.iter_chunks(chunk_size=STREAM_CHUNK_SIZE)
+        return closing_stream(body.iter_chunks(chunk_size=STREAM_CHUNK_SIZE), body.close)
 
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:

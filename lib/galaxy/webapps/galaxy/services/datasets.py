@@ -727,9 +727,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         is_archive = datatype.is_archive_download(trans.app.datatypes_registry, dataset_instance.extension)
         if not is_direct_download_candidate(filename, to_ext, False, offset, ck_size, is_archive):
             return None
-        stream = trans.app.object_store.get_data_stream(dataset_instance.dataset)
-        if stream is None:
-            return None
         headers = {
             # Force octet-stream so Safari doesn't append mime extensions to the filename.
             "content-type": "application/octet-stream",
@@ -739,6 +736,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         if size:
             # Known up front from the store's metadata, so clients still get a progress bar.
             headers["Content-Length"] = str(size)
+        # Opened last so that nothing between here and the response can fail with a read already in
+        # flight: an open stream is only released once something starts consuming it.
+        stream = trans.app.object_store.get_data_stream(dataset_instance.dataset)
+        if stream is None:
+            return None
         trans.log_event(f"Download dataset id: {str(dataset_instance.id)}")
         return stream, headers
 

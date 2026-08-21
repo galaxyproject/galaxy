@@ -20,6 +20,7 @@ from galaxy.objectstore import (
     ObjectStoreAuth,
     persist_extra_files_for_dataset,
 )
+from galaxy.objectstore._caching_base import closing_stream
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.caching import (
     CacheTarget,
@@ -823,12 +824,17 @@ def _leftover_temp_files(cache_path):
     return [name for name in os.listdir(cache_dir) if name.endswith(".tmp")]
 
 
+def _remote_stream(chunks, on_close=None):
+    """Build what `_stream_remote` returns: an open read, plus the call that releases it."""
+    return closing_stream(iter(chunks), on_close or (lambda: None))
+
+
 @patch_object_stores_to_skip_initialize
 def test_get_data_stream_tees_remote_bytes_into_cache():
     with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
         with (
-            patch.object(object_store, "_stream_remote", return_value=iter([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
             patch.object(object_store, "_get_remote_size", return_value=12),
         ):
             stream = object_store.get_data_stream(dataset)
@@ -846,7 +852,7 @@ def test_get_data_stream_discards_partial_cache_when_client_disconnects():
     with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
         with (
-            patch.object(object_store, "_stream_remote", return_value=iter([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
             patch.object(object_store, "_get_remote_size", return_value=12),
         ):
             stream = object_store.get_data_stream(dataset)
@@ -870,7 +876,7 @@ def test_get_data_stream_discards_partial_cache_when_remote_read_fails():
             raise OSError("connection reset by the object store")
 
         with (
-            patch.object(object_store, "_stream_remote", return_value=failing_chunks()),
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream(failing_chunks())),
             patch.object(object_store, "_get_remote_size", return_value=12),
         ):
             stream = object_store.get_data_stream(dataset)
@@ -889,7 +895,7 @@ def test_get_data_stream_bypasses_cache_when_object_is_bigger_than_cache():
         dataset = MockDataset(1)
         one_terabyte = 1024**4
         with (
-            patch.object(object_store, "_stream_remote", return_value=iter([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
             patch.object(object_store, "_get_remote_size", return_value=one_terabyte),
         ):
             stream = object_store.get_data_stream(dataset)
@@ -907,7 +913,7 @@ def test_get_data_stream_does_not_cache_a_truncated_object():
         dataset = MockDataset(1)
         # The store says the object is 12 bytes but the stream ends after 6.
         with (
-            patch.object(object_store, "_stream_remote", return_value=iter([b"chunk1"])),
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1"])),
             patch.object(object_store, "_get_remote_size", return_value=12),
         ):
             stream = object_store.get_data_stream(dataset)
@@ -927,10 +933,90 @@ def test_get_data_stream_returns_none_when_remote_size_is_unknown():
         # Backends report an unknown size as a negative number; without a size there is nothing to
         # check a streamed object against, so fall back to pulling it into the cache.
         with (
-            patch.object(object_store, "_stream_remote", return_value=iter([b"chunk1"])),
+            patch.object(object_store, "_stream_remote") as stream_remote,
             patch.object(object_store, "_get_remote_size", return_value=-1),
         ):
             assert object_store.get_data_stream(MockDataset(1)) is None
+            # Deciding against streaming after opening the read would strand the connection: nobody
+            # owns it once None is returned in its place.
+            stream_remote.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_does_not_open_a_read_it_cannot_hand_over():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        # Same reason, for the other way the decision can go wrong: a size lookup that raises.
+        with (
+            patch.object(object_store, "_stream_remote") as stream_remote,
+            patch.object(object_store, "_get_remote_size", side_effect=OSError("no such key")),
+        ):
+            assert object_store.get_data_stream(MockDataset(1)) is None
+            stream_remote.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_when_the_client_disconnects():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream([b"chunk1", b"chunk2"], on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            assert next(stream) == b"chunk1"
+            stream.close()
+            # An abandoned read has to hand its connection back, or a cancelled download costs one
+            # from the pool for as long as the store keeps the response open.
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_when_it_errors():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+
+        def failing_chunks():
+            yield b"chunk1"
+            raise OSError("connection reset by the object store")
+
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream(failing_chunks(), on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            with pytest.raises(OSError):
+                b"".join(stream)
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_when_it_is_not_cached():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+        one_terabyte = 1024**4
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream([b"chunk1", b"chunk2"], on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=one_terabyte),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            # The bigger-than-cache path skips the tee entirely; it still owns the read.
+            assert b"".join(stream) == b"chunk1chunk2"
+            assert closed == [True]
 
 
 @patch_object_stores_to_skip_initialize
@@ -973,7 +1059,9 @@ def test_get_data_stream_concurrent_streams_do_not_corrupt_cache():
     with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
         dataset = MockDataset(1)
         with (
-            patch.object(object_store, "_stream_remote", side_effect=lambda rel_path: iter([b"chunk1", b"chunk2"])),
+            patch.object(
+                object_store, "_stream_remote", side_effect=lambda rel_path: _remote_stream([b"chunk1", b"chunk2"])
+            ),
             patch.object(object_store, "_get_remote_size", return_value=12),
         ):
             first = object_store.get_data_stream(dataset)
@@ -1021,12 +1109,29 @@ def test_stream_remote_boto3_reads_object_body_in_chunks():
         object_store._client = MagicMock()
         object_store._client.get_object.return_value = {"Body": body}
 
-        chunks = object_store._stream_remote("000/dataset_1.dat")
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert list(chunks) == [b"chunk1", b"chunk2"]
 
-        assert list(chunks) == [b"chunk1", b"chunk2"]
         _, call_kwargs = object_store._client.get_object.call_args
         assert call_kwargs["Bucket"] == object_store.bucket
         assert call_kwargs["Key"] == "000/dataset_1.dat"
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_boto3_closes_the_response_body_not_just_the_chunk_iterator():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        body = MagicMock()
+        # botocore builds iter_chunks as a plain generator over StreamingBody.read, so closing it
+        # ends the loop and leaves the response -- and its pooled connection -- open.
+        body.iter_chunks.return_value = iter([b"chunk1", b"chunk2"])
+        object_store._client = MagicMock()
+        object_store._client.get_object.return_value = {"Body": body}
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert next(chunks) == b"chunk1"
+            body.close.assert_not_called()
+
+        body.close.assert_called_once_with()
 
 
 @patch_object_stores_to_skip_initialize
@@ -1035,9 +1140,9 @@ def test_stream_remote_azure_reads_blob_in_chunks():
         blob_client = MagicMock()
         blob_client.download_blob.return_value.chunks.return_value = iter([b"chunk1", b"chunk2"])
         with patch.object(object_store, "_blob_client", return_value=blob_client) as blob_client_for:
-            chunks = object_store._stream_remote("000/dataset_1.dat")
+            with object_store._stream_remote("000/dataset_1.dat") as chunks:
+                assert list(chunks) == [b"chunk1", b"chunk2"]
 
-            assert list(chunks) == [b"chunk1", b"chunk2"]
             blob_client_for.assert_called_once_with("000/dataset_1.dat")
 
 
@@ -1045,14 +1150,17 @@ def test_stream_remote_azure_reads_blob_in_chunks():
 def test_stream_remote_cloud_reads_object_content_in_chunks():
     with TestConfig(get_example("cloud_aws_simple.yml")) as (directory, object_store):
         key = MagicMock()
-        key.iter_content.return_value = iter([b"chunk1", b"chunk2"])
+        content = MagicMock()
+        content.__iter__.return_value = iter([b"chunk1", b"chunk2"])
+        key.iter_content.return_value = content
         object_store.bucket = MagicMock()
         object_store.bucket.objects.get.return_value = key
 
-        chunks = object_store._stream_remote("000/dataset_1.dat")
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert list(chunks) == [b"chunk1", b"chunk2"]
 
-        assert list(chunks) == [b"chunk1", b"chunk2"]
         object_store.bucket.objects.get.assert_called_once_with("000/dataset_1.dat")
+        content.close.assert_called_once_with()
 
 
 @patch_object_stores_to_skip_initialize
