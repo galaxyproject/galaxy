@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from galaxy.exceptions import InternalServerError
 from galaxy.webapps.galaxy.services.datasets import (
     DatasetsService,
     is_direct_download_candidate,
@@ -68,6 +69,27 @@ def test_display_streams_whole_file_download_from_object_store():
     assert headers["Content-Length"] == "7"
     # A forward-only stream cannot answer range requests, so it must not claim it can.
     assert "accept-ranges" not in headers
+
+
+def test_display_closes_object_store_stream_when_logging_fails():
+    class ClosableBody:
+        def __init__(self):
+            self.closed = False
+
+        def __iter__(self):
+            return iter([b"data"])
+
+        def close(self):
+            self.closed = True
+
+    body = ClosableBody()
+    service, trans, _ = _service_for_display(data_stream=body)
+    trans.log_event.side_effect = RuntimeError("could not log download")
+
+    with pytest.raises(InternalServerError):
+        service.display(trans, 1, to_ext="txt", allow_stream=True)
+
+    assert body.closed is True
 
 
 def test_display_omits_content_length_when_object_store_size_is_unknown():

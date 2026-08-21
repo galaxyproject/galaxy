@@ -10,6 +10,10 @@ objects, and assert the sessions are closed *before* the first body byte.
 
 from types import SimpleNamespace
 
+import pytest
+from starlette.requests import ClientDisconnect
+from starlette.responses import StreamingResponse
+
 from galaxy.webapps.base.api import (
     GalaxyFileResponse,
     GalaxyStreamingResponse,
@@ -118,6 +122,59 @@ async def test_streaming_no_app_bound_is_noop(monkeypatch):
     messages: list = []
     await response.stream_response(await _collect(messages))
     assert any(m["type"] == "http.response.body" for m in messages)
+
+
+async def test_streaming_closes_sync_body_when_client_disconnects_before_first_chunk(monkeypatch):
+    _install_fake_app(monkeypatch, app_present=False)
+
+    class ClosableBody:
+        def __init__(self):
+            self.closed = False
+
+        def __iter__(self):
+            return iter([b"data"])
+
+        def close(self):
+            self.closed = True
+
+    body = ClosableBody()
+    response = GalaxyStreamingResponse(body)
+
+    async def send(_message):
+        # ASGI 2.4 reports a disconnect as an OSError from send. This happens while Starlette is
+        # sending http.response.start, before it advances the synchronous body iterator.
+        raise OSError("client disconnected")
+
+    async def receive():
+        return {"type": "http.disconnect"}
+
+    with pytest.raises(ClientDisconnect):
+        await response({"type": "http", "method": "GET", "asgi": {"spec_version": "2.4"}}, receive, send)
+
+    assert body.closed is True
+
+
+def test_streaming_closes_sync_body_when_response_construction_fails(monkeypatch):
+    class ClosableBody:
+        def __init__(self):
+            self.closed = False
+
+        def __iter__(self):
+            return iter([b"data"])
+
+        def close(self):
+            self.closed = True
+
+    body = ClosableBody()
+
+    def fail_to_construct(*_args, **_kwargs):
+        raise RuntimeError("could not construct response")
+
+    monkeypatch.setattr(StreamingResponse, "__init__", fail_to_construct)
+    with pytest.raises(RuntimeError, match="could not construct response"):
+        GalaxyStreamingResponse(body)
+
+    assert body.closed is True
 
 
 async def test_file_response_releases_before_response_start(monkeypatch, tmp_path):

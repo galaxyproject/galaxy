@@ -980,6 +980,26 @@ def test_get_data_stream_releases_the_remote_read_when_the_client_disconnects():
 
 
 @patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_before_the_first_chunk():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream([b"chunk1", b"chunk2"], on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            stream.close()
+            # A client can disappear while response headers are being sent, before Starlette asks
+            # the iterator for its first chunk. The already-open read must still be released.
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
 def test_get_data_stream_releases_the_remote_read_when_it_errors():
     with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
         closed = []

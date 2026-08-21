@@ -37,8 +37,7 @@ log = logging.getLogger(__name__)
 STREAM_CHUNK_SIZE = 1024 * 1024
 
 
-@contextmanager
-def closing_stream(chunks: Iterator[bytes], close: Callable[[], None]) -> Iterator[Iterator[bytes]]:
+class RemoteDataStream(AbstractContextManager[Iterator[bytes]]):
     """Pair an open read of a remote object with the call that releases it.
 
     Backends hand back the SDK's own close rather than leaving it to the chunk iterator, because
@@ -47,10 +46,57 @@ def closing_stream(chunks: Iterator[bytes], close: Callable[[], None]) -> Iterat
     connection out of the pool. Abandoning a read part way is the normal case on this path, not the
     rare one -- it exists for large downloads, which are the ones clients cancel.
     """
-    try:
-        yield chunks
-    finally:
-        close()
+
+    def __init__(self, chunks: Iterator[bytes], close: Callable[[], None]) -> None:
+        self.chunks = chunks
+        self._close = close
+        self._closed = False
+
+    def __enter__(self) -> Iterator[bytes]:
+        if self._closed:
+            raise RuntimeError("Cannot consume a closed remote data stream")
+        return self.chunks
+
+    def __exit__(self, *_args: Any) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Release the read even if its chunks were never consumed."""
+        if not self._closed:
+            self._closed = True
+            self._close()
+
+
+def closing_stream(chunks: Iterator[bytes], close: Callable[[], None]) -> RemoteDataStream:
+    return RemoteDataStream(chunks, close)
+
+
+class _ClosingIterator(Iterator[bytes]):
+    """An iterator whose owner can release resources before the first ``next`` call."""
+
+    def __init__(self, iterator: Iterator[bytes], close: Callable[[], None]) -> None:
+        self.iterator = iterator
+        self._close = close
+        self._closed = False
+
+    def __next__(self) -> bytes:
+        if self._closed:
+            raise StopIteration
+        try:
+            return next(self.iterator)
+        except BaseException:
+            self.close()
+            raise
+
+    def close(self) -> None:
+        if not self._closed:
+            self._closed = True
+            try:
+                close_iterator = getattr(self.iterator, "close", None)
+                if callable(close_iterator):
+                    close_iterator()
+            finally:
+                self._close()
 
 
 class CachingConcreteObjectStore(ConcreteObjectStore):
@@ -188,9 +234,13 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         except Exception:
             log.exception("Failed to open a remote stream for '%s', falling back to pulling into cache", rel_path)
             return None
-        return self._tee_to_cache(stream, cache_path, expected_size=remote_size, write_cache=write_cache)
+        iterator = self._tee_to_cache(stream, cache_path, expected_size=remote_size, write_cache=write_cache)
+        # The generator above does not enter ``stream`` until its first next() call. Give the
+        # response an explicit close that owns the already-open remote read even if the client goes
+        # away while response headers are being sent and the generator is never started.
+        return _ClosingIterator(iterator, stream.close)
 
-    def _stream_remote(self, rel_path: str) -> AbstractContextManager[Iterator[bytes]] | None:
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
         """Open a read of the remote object, or None if this backend cannot stream it.
 
         The context manager owns the read: leaving it releases the connection whether the client took
@@ -201,7 +251,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
 
     def _tee_to_cache(
         self,
-        stream: AbstractContextManager[Iterator[bytes]],
+        stream: RemoteDataStream,
         cache_path: str,
         *,
         expected_size: int,

@@ -741,7 +741,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         stream = trans.app.object_store.get_data_stream(dataset_instance.dataset)
         if stream is None:
             return None
-        trans.log_event(f"Download dataset id: {str(dataset_instance.id)}")
+        try:
+            trans.log_event(f"Download dataset id: {str(dataset_instance.id)}")
+        except BaseException:
+            close_stream = getattr(stream, "close", None)
+            if callable(close_stream):
+                close_stream()
+            raise
         return stream, headers
 
     def display(

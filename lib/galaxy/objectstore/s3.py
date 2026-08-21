@@ -5,8 +5,6 @@ Object Store plugin for the Amazon Simple Storage Service (S3)
 import logging
 import os
 import time
-from collections.abc import Iterator
-from contextlib import AbstractContextManager
 from datetime import datetime
 
 try:
@@ -22,6 +20,7 @@ from galaxy.util import string_as_bool
 from ._caching_base import (
     CachingConcreteObjectStore,
     closing_stream,
+    RemoteDataStream,
     STREAM_CHUNK_SIZE,
 )
 from ._util import UsesAxel
@@ -334,7 +333,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self._bucket.name)
         return False
 
-    def _stream_remote(self, rel_path: str) -> AbstractContextManager[Iterator[bytes]] | None:
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
         key = self._bucket.get_key(rel_path)
         if key is None:
             return None

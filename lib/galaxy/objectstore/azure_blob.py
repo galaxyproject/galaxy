@@ -4,11 +4,6 @@ Object Store plugin for the Microsoft Azure Block Blob Storage system
 
 import logging
 import os
-from collections.abc import Iterator
-from contextlib import (
-    AbstractContextManager,
-    nullcontext,
-)
 from datetime import timedelta
 
 try:
@@ -22,7 +17,11 @@ except ImportError:
     BlobServiceClient = None  # type: ignore[assignment,unused-ignore,misc]
 
 from galaxy.util import now
-from ._caching_base import CachingConcreteObjectStore
+from ._caching_base import (
+    CachingConcreteObjectStore,
+    closing_stream,
+    RemoteDataStream,
+)
 from .caching import (
     CacheShardManager,
     CacheTarget,
@@ -265,10 +264,10 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
         with open(local_destination, "wb") as f:
             self._blob_client(rel_path).download_blob().download_to_stream(f, **kwd)
 
-    def _stream_remote(self, rel_path: str) -> AbstractContextManager[Iterator[bytes]] | None:
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
         # Nothing to release: the downloader pulls each chunk with its own ranged request rather
         # than holding one response open, and exposes no close of its own.
-        return nullcontext(self._blob_client(rel_path).download_blob().chunks())
+        return closing_stream(self._blob_client(rel_path).download_blob().chunks(), lambda: None)
 
     def _download_directory_into_cache(self, rel_path, cache_path):
         blobs = self._blobs_from(rel_path)

@@ -5,12 +5,11 @@ Object Store plugin for Cloud storage.
 import logging
 import os
 import os.path
-from collections.abc import Iterator
-from contextlib import AbstractContextManager
 
 from ._caching_base import (
     CachingConcreteObjectStore,
     closing_stream,
+    RemoteDataStream,
 )
 from ._util import UsesAxel
 from .caching import (
@@ -265,7 +264,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
         return False
 
-    def _stream_remote(self, rel_path: str) -> AbstractContextManager[Iterator[bytes]] | None:
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
         key = self.bucket.objects.get(rel_path)
         if key is None:
             return None
