@@ -7,6 +7,7 @@ from tempfile import (
     mkstemp,
 )
 from unittest.mock import (
+    call,
     MagicMock,
     patch,
 )
@@ -20,7 +21,10 @@ from galaxy.objectstore import (
     ObjectStoreAuth,
     persist_extra_files_for_dataset,
 )
-from galaxy.objectstore._caching_base import closing_stream
+from galaxy.objectstore._caching_base import (
+    closing_stream,
+    STREAM_CHUNK_SIZE,
+)
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.caching import (
     CacheTarget,
@@ -1161,6 +1165,34 @@ def test_stream_remote_cloud_reads_object_content_in_chunks():
 
         object_store.bucket.objects.get.assert_called_once_with("000/dataset_1.dat")
         content.close.assert_called_once_with()
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_s3_reads_key_in_chunks():
+    # boto2 backs both aws_s3 and generic_s3; #19255 reports generic_s3 truncating 4GB downloads to
+    # 3GB, which the tee's size check turns into a failure instead of a corrupt file.
+    with TestConfig(S3_TEST_CONFIG_YAML) as (directory, object_store):
+        key = MagicMock()
+        key.read.side_effect = [b"chunk1", b"chunk2", b""]
+        object_store._bucket = MagicMock()
+        object_store._bucket.get_key.return_value = key
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert list(chunks) == [b"chunk1", b"chunk2"]
+
+        object_store._bucket.get_key.assert_called_once_with("000/dataset_1.dat")
+        assert key.read.call_args_list == [call(STREAM_CHUNK_SIZE)] * 3
+        # fast=True, or releasing an abandoned key would first read the rest of the object.
+        key.close.assert_called_once_with(fast=True)
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_s3_returns_none_for_a_missing_key():
+    with TestConfig(S3_TEST_CONFIG_YAML) as (directory, object_store):
+        object_store._bucket = MagicMock()
+        object_store._bucket.get_key.return_value = None
+
+        assert object_store._stream_remote("000/dataset_1.dat") is None
 
 
 @patch_object_stores_to_skip_initialize
