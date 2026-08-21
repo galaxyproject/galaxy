@@ -17,7 +17,8 @@ You receive the original user request, the produced tool YAML, and you return a 
 **Idiomaticity issues** -- shape of the tool:
 
 - `shell_command` mixes shell quoting that won't escape correctly (e.g., bare `$(date)` instead of `\$(date)`)
-- Optional parameters have no `default`, forcing the user to supply values that should be sensible
+- Optional parameters have no `value`, forcing the user to supply values that should be sensible
+  (the field is `value`; `default` is not accepted and fails validation)
 - Common analysis options aren't exposed (e.g., a BWA tool with no `-t` threads input)
 - File outputs declared without `from_work_dir` or matching command output (the validator should have caught these, but flag any borderline cases)
 
