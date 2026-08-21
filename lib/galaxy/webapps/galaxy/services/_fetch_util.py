@@ -177,6 +177,13 @@ def validate_and_normalize_targets(trans: ProvidesUserContext, payload, set_inte
                 item["in_place"] = run_as_real_user
             item["purge_source"] = True
 
+        # Ensure DRS URL for drs_bundle
+        if item.get("elements_from") == "drs_bundle":
+            if item.get("src") != "url":
+                raise RequestParameterInvalidException("elements_from='drs_bundle' requires src='url'")
+            if not item.get("url", "").startswith("drs://"):
+                raise RequestParameterInvalidException("elements_from='drs_bundle' requires a drs:// URL")
+
         # Small disagreement with traditional uploads - we purge less by default since whether purging
         # happens varies based on upload options in non-obvious ways.
         # https://github.com/galaxyproject/galaxy/issues/5361

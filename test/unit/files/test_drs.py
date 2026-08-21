@@ -16,6 +16,7 @@ from galaxy.files import (
     ProvidesFileSourcesTransaction,
     ProvidesFileSourcesUserContext,
 )
+from galaxy.schema.drs import DrsObject
 from ._util import (
     assert_realizes_as,
     assert_realizes_contains,
@@ -26,6 +27,32 @@ from ._util import (
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "drs_file_sources_conf.yml")
 DRS_OIDC_FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "drs_oidc_file_sources_conf.yml")
+
+
+def test_drs_object_accepts_bundle_schema_variants():
+    """
+    Test DrsObject allows bundles (which have missing
+    access_methods and self_uri fields) to be parsed.
+    """
+    drs_object = DrsObject.model_validate(
+        {
+            "id": "bundle-1",
+            "name": "bundle",
+            "size": 5,
+            "created_time": "2024-01-01T00:00:00Z",
+            "version": 7,
+            "checksums": [{"checksum": None, "type": None}],
+            "contents": [{"name": "leaf.txt", "id": "leaf"}],
+        }
+    )
+
+    assert drs_object.self_uri is None
+    assert drs_object.access_methods is None
+    assert drs_object.version == "7"
+    assert drs_object.checksums[0].checksum is None
+    assert drs_object.checksums[0].type is None
+    assert drs_object.contents
+    assert drs_object.contents[0].name == "leaf.txt"
 
 
 def test_provides_file_sources_user_context_oidc_access_tokens():

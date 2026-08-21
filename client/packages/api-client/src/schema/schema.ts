@@ -8880,7 +8880,7 @@ export interface components {
              * Checksum
              * @description The hex-string encoded checksum for the data
              */
-            checksum: string;
+            checksum: string | null;
             /**
              * Type
              * @description The digest method used to create the checksum.
@@ -8888,7 +8888,7 @@ export interface components {
              *     GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future. Until then, if implementers do choose such an algorithm (e.g. because it's implemented by their storage provider), they SHOULD use an existing standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`, or `sha1`.
              * @example sha-256
              */
-            type: string;
+            type: string | null;
         };
         /** Citation */
         Citation: {
@@ -12259,7 +12259,7 @@ export interface components {
              *     The intent of this field is to make DRS objects self-contained, and therefore easier for clients to store and pass around.  For example, if you arrive at this DRS JSON by resolving a compact identifier-based DRS URI, the `self_uri` presents you with a hostname and properly encoded DRS ID for use in subsequent `access` endpoint calls.
              * @example drs://drs.example.org/314159
              */
-            self_uri: string;
+            self_uri?: string | null;
             /**
              * Size
              * @description For blobs, the blob size in bytes.
@@ -12323,7 +12323,7 @@ export interface components {
          * ElementsFromType
          * @enum {string}
          */
-        ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
+        ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory" | "drs_bundle";
         /** ElementsStatesDict */
         ElementsStatesDict: {
             /** Deferred */

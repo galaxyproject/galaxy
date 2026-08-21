@@ -407,6 +407,52 @@ def test_hdca_failed_expansion():
         assert "Expected bagit.txt does not exist" in output["error_message"]
 
 
+def test_hdca_drs_bundle_expansion_dispatch(monkeypatch):
+    """
+    Test drs_bundle is expanded to a list of elements.
+    """
+    calls = []
+
+    def mock_drs_bundle_to_items(upload_config, target):
+        calls.append((upload_config, target.copy()))
+        return [
+            {
+                "src": "url",
+                "url": "drs://example.org/leaf",
+                "name": "leaf.txt",
+                "ext": "auto",
+                "deferred": True,
+            }
+        ]
+
+    monkeypatch.setattr("galaxy.tools.data_fetch.drs_bundle_to_items", mock_drs_bundle_to_items)
+
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdca",
+                    },
+                    "collection_type": "list",
+                    "elements_from": "drs_bundle",
+                    "src": "url",
+                    "url": "drs://example.org/bundle",
+                }
+            ],
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+
+    assert len(calls) == 1
+    assert calls[0][1]["elements_from"] == "drs_bundle"
+    assert "elements_from" not in output
+    assert "elements_from" not in output["elements"][0]
+    assert output["elements"][0]["name"] == "leaf.txt"
+    assert output["elements"][0]["state"] == "deferred"
+    assert output["elements"][0]["sources"][0]["source_uri"] == "drs://example.org/leaf"
+
+
 @contextmanager
 def _execute_context(allow_localhost=False):
     job_directory = mkdtemp()

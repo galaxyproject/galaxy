@@ -181,6 +181,24 @@ def test_recursive_archive():
     FetchDataPayload(**recursive_archive_payload)
 
 
+def test_drs_bundle_elements_from():
+    """
+    Test drs_bundle is allowed as elements_from.
+    """
+    FetchDataPayload(
+        targets=[
+            {
+                "destination": {"type": "hdca"},
+                "collection_type": "list",
+                "elements_from": "drs_bundle",
+                "src": "url",
+                "url": "drs://example.org/bundle",
+            }
+        ],
+        history_id=HISTORY_ID,
+    )
+
+
 def test_recursive_archive_form_like_data():
     payload = deepcopy(recursive_archive_payload)
     payload["targets"] = dumps(payload["targets"])

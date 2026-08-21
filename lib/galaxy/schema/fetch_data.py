@@ -41,6 +41,7 @@ class ElementsFromType(str, Enum):
     bagit = "bagit"
     bagit_archive = "bagit_archive"
     directory = "directory"
+    drs_bundle = "drs_bundle"
 
 
 AutoDecompressField = Field(False, description=HELP_TERMS.get_term("galaxy.dataFetch.auto_decompress"))

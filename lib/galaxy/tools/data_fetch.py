@@ -27,6 +27,7 @@ from galaxy.files.uris import (
     stream_to_file,
     stream_url_to_file,
 )
+from galaxy.tools.data_fetch_utils import drs_bundle_to_items
 from galaxy.util import (
     in_directory,
     safe_makedirs,
@@ -110,6 +111,8 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             elif elements_from == "directory":
                 _, elements_from_path, _ = _has_src_to_path(upload_config, target_or_item, is_dataset=False)
                 items = _directory_to_items(elements_from_path)
+            elif elements_from == "drs_bundle":
+                items = drs_bundle_to_items(upload_config, target_or_item)
             else:
                 raise Exception(f"Unknown elements from type encountered [{elements_from}]")
 

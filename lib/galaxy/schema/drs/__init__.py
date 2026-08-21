@@ -111,8 +111,8 @@ class Error(BaseModel):
 
 
 class Checksum(BaseModel):
-    checksum: str = Field(..., description="The hex-string encoded checksum for the data")
-    type: str = Field(
+    checksum: Optional[str] = Field(..., description="The hex-string encoded checksum for the data")
+    type: Optional[str] = Field(
         ...,
         description="The digest method used to create the checksum.\nThe value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg[IANA Named Information Hash Algorithm Registry]. Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].\nGA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future. Until then, if implementers do choose such an algorithm (e.g. because it's implemented by their storage provider), they SHOULD use an existing standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`, or `sha1`.",
         examples=["sha-256"],
@@ -202,8 +202,8 @@ class DrsObject(BaseModel):
         None,
         description="A string that can be used to name a `DrsObject`.\nThis string is made up of uppercase and lowercase letters, decimal digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].",
     )
-    self_uri: str = Field(
-        ...,
+    self_uri: Optional[str] = Field(
+        None,
         description="A drs:// hostname-based URI, as defined in the DRS documentation, that tells clients how to access this object.\nThe intent of this field is to make DRS objects self-contained, and therefore easier for clients to store and pass around.  For example, if you arrive at this DRS JSON by resolving a compact identifier-based DRS URI, the `self_uri` presents you with a hostname and properly encoded DRS ID for use in subsequent `access` endpoint calls.",
         examples=["drs://drs.example.org/314159"],
     )
@@ -222,6 +222,7 @@ class DrsObject(BaseModel):
     version: Optional[str] = Field(
         None,
         description="A string representing a version.\n(Some systems may use checksum, a RFC3339 timestamp, or an incrementing version number.)",
+        coerce_numbers_to_str=True,
     )
     mime_type: Optional[str] = Field(
         None, description="A string providing the mime-type of the `DrsObject`.", examples=["application/json"]

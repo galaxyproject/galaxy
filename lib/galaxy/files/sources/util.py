@@ -16,6 +16,7 @@ from galaxy.files.models import (
     PartialFilesSourceProperties,
 )
 from galaxy.files.uris import stream_url_to_file
+from galaxy.schema.drs import DrsObject
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
@@ -80,7 +81,7 @@ def retry_and_get(get_url: str, retry_options: RetryOptions, headers: dict | Non
         retry_after = retry_options.override_retry_after or float(response.headers["Retry-After"])
         time.sleep(retry_after)
         retry_options.retry_times -= 1
-        return retry_and_get(get_url, retry_options)
+        return retry_and_get(get_url, retry_options, headers=headers)
     else:
         return response
 
@@ -316,6 +317,48 @@ def resolve_compact_identifier_to_url(drs_uri: str, resolver: CompactIdentifierR
     return resolved_url
 
 
+def drs_uri_to_object_url(drs_uri: str, force_http: bool = False) -> str:
+    """Resolve a DRS URI to the corresponding DRS object metadata endpoint."""
+    if not drs_uri.startswith("drs://"):
+        raise ValueError(f"Unknown scheme for drs_uri {drs_uri}")
+
+    rest_of_drs_uri = drs_uri[len("drs://") :]
+
+    # Try compact identifier first (prefix:accession format)
+    if ":" in rest_of_drs_uri:
+        try:
+            get_url = resolve_compact_identifier_to_url(drs_uri)
+            log.info(f"Resolved compact identifier DRS URI {drs_uri} to {get_url}")
+            return get_url
+        except ValueError as e:
+            # If compact identifier resolution fails and we have "/", try legacy format
+            if "/" in rest_of_drs_uri:
+                log.debug(f"Compact identifier resolution failed for {drs_uri}, trying legacy format: {e}")
+            else:
+                raise ValueError(f"Failed to resolve compact identifier DRS URI {drs_uri}: {str(e)}")
+
+    # Fall back to legacy hostname format
+    if "/" in rest_of_drs_uri:
+        netspec, object_id = rest_of_drs_uri.split("/", 1)
+        scheme = "http" if force_http else "https"
+        return f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
+
+    raise ValueError(f"Invalid DRS URI format: {drs_uri}")
+
+
+def get_drs_object(
+    drs_uri: str,
+    force_http: bool = False,
+    retry_options: Optional[RetryOptions] = None,
+    headers: Optional[dict] = None,
+) -> DrsObject:
+    """Fetch and validate DRS object metadata for a DRS URI."""
+    get_url = drs_uri_to_object_url(drs_uri, force_http=force_http)
+    response = retry_and_get(get_url, retry_options or RetryOptions(), headers=headers)
+    response.raise_for_status()
+    return DrsObject.model_validate(response.json())
+
+
 def fetch_drs_to_file(
     drs_uri: str,
     target_path: StrPath,
@@ -326,35 +369,7 @@ def fetch_drs_to_file(
     fetch_url_allowlist: list[IpAllowedListEntryT] | None = None,
 ):
     """Fetch contents of drs:// URI to a target path."""
-    if not drs_uri.startswith("drs://"):
-        raise ValueError(f"Unknown scheme for drs_uri {drs_uri}")
-
-    rest_of_drs_uri = drs_uri[len("drs://") :]
-
-    # Try compact identifier first (prefix:accession format)
-    get_url = None
-    if ":" in rest_of_drs_uri:
-        try:
-            get_url = resolve_compact_identifier_to_url(drs_uri)
-            log.info(f"Resolved compact identifier DRS URI {drs_uri} to {get_url}")
-        except ValueError as e:
-            # If compact identifier resolution fails and we have "/", try legacy format
-            if "/" in rest_of_drs_uri:
-                log.debug(f"Compact identifier resolution failed for {drs_uri}, trying legacy format: {e}")
-                get_url = None
-            else:
-                raise ValueError(f"Failed to resolve compact identifier DRS URI {drs_uri}: {str(e)}")
-
-    # Fall back to legacy format if compact identifier failed
-    if get_url is None:
-        if "/" in rest_of_drs_uri:
-            netspec, object_id = rest_of_drs_uri.split("/", 1)
-            scheme = "https"
-            if force_http:
-                scheme = "http"
-            get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
-        else:
-            raise ValueError(f"Invalid DRS URI format: {drs_uri}")
+    get_url = drs_uri_to_object_url(drs_uri, force_http=force_http)
     response = retry_and_get(get_url, retry_options or RetryOptions(), headers=headers)
     response.raise_for_status()
     response_object = response.json()
