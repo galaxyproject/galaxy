@@ -9,6 +9,7 @@ import os.path
 from ._caching_base import (
     CachingConcreteObjectStore,
     RemoteDataStream,
+    STREAM_CHUNK_SIZE,
 )
 from ._util import UsesAxel
 from .caching import (
@@ -267,7 +268,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         key = self.bucket.objects.get(rel_path)
         if key is None:
             return None
-        content = key.iter_content()
+        content = key.iter_content(chunk_size=STREAM_CHUNK_SIZE)
         # cloudbridge promises an iterable and nothing more, and what it hands back differs per
         # provider -- a wrapper around the S3 body, a swift generator, a BytesIO -- so release it
         # only if it knows how.

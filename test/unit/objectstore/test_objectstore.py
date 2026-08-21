@@ -1184,6 +1184,9 @@ def test_stream_remote_cloud_reads_object_content_in_chunks():
             assert list(chunks) == [b"chunk1", b"chunk2"]
 
         object_store.bucket.objects.get.assert_called_once_with("000/dataset_1.dat")
+        # Chunk size is the caller's to set (cloudbridge >= 4.4.0); left to the provider it was
+        # 4 KiB on AWS, which costs a threadpool hop per 4 KiB of a multi-GB download.
+        key.iter_content.assert_called_once_with(chunk_size=STREAM_CHUNK_SIZE)
         content.close.assert_called_once_with()
 
 
