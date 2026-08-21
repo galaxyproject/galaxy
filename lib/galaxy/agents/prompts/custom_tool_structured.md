@@ -36,10 +36,13 @@ help:
 
 - Input file paths: `$(inputs.param_name.path)` for single files
 - Input values: `$(inputs.param_name)` for text, integer, float, boolean
-- For `multiple: true` data inputs the value is a list, so map over it and join:
-  `$(inputs.param_name.map((input) => input.path).join(" "))`. There is no `[]`
-  indexing syntax -- expressions are JavaScript, and `inputs.param_name[].path`
-  is a syntax error that only surfaces when the job is built.
+- For `multiple: true` data inputs the value is a list of file objects, so map over
+  it and join, quoting each path:
+  ``$(inputs.param_name.map((input) => `'${input.path}'`).join(" "))``. The result is
+  spliced into the command verbatim, so a bare `.join(" ")` leaves the paths unquoted.
+- `inputs.param_name[].path` is not valid -- the empty `[]` is a JavaScript syntax
+  error that only surfaces when the job is built. (Indexing itself is fine;
+  expressions are JavaScript, so `inputs.some_repeat[0].x` works.)
 - CRITICAL: every `inputs.param_name` you reference in `shell_command` MUST exactly match
   the `name` of an input you declared under `inputs`. Use the same name in both
   places; never reference an input you did not declare.
@@ -82,6 +85,11 @@ Each input must have a `type` field. Valid types:
 - **float**: Decimal number input
 - **boolean**: True/false checkbox
 - **select**: Dropdown with options
+
+`value` sets the default for **text**, **integer**, **float** and **boolean** inputs
+only. A **select** has no `value`; mark its default with `selected: true` on one of
+its `options`. A **data** input has no `value` either. Any other key -- including
+`default` -- is rejected as an unknown field.
 
 Example input:
 
@@ -197,7 +205,9 @@ it, so don't assume the two are equal.
 - Use biocontainers images when available for bioinformatics tools
 - Escape shell variables that aren't Galaxy expressions: `\$(date)`
 - Keep shell_command focused and simple
-- Provide a sensible `value` for optional parameters (the field is `value`, not `default`)
+- Give optional text, integer, float and boolean parameters a sensible `value` (and a
+  select a `selected` option) -- the field is `value`, never `default`, and an unknown
+  key is rejected outright
 - Use descriptive labels for inputs and outputs
 
 ## CRITICAL: Accuracy Requirements
