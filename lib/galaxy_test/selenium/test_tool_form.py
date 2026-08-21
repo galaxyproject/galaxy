@@ -157,6 +157,52 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
+    def test_repeat_cloning(self):
+        self.home()
+        self.tool_open("text_repeat")
+
+        def assert_input_order(inputs: list[str]):
+            for index, input_value in enumerate(inputs):
+                parameter_input = self.components.tool_form.parameter_input(parameter=f"the_repeat_{index}|texttest")
+                assert parameter_input.wait_for_value() == input_value
+
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_0|texttest", "Text A")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_1|texttest", "Text B")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_2|texttest", "Text C")
+
+        # Validate for: order of insertion
+        self.components.tool_form.repeat_clone(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text A", "Text B", "Text B", "Text C"])
+
+        # Validate for: deep copy, not a "shared reference"
+        self.tool_set_value("the_repeat_2|texttest", "Cloned Text B")
+        assert_input_order(["Text A", "Text B", "Cloned Text B", "Text C"])
+
+        # Validate for: deep copy independence holds in both directions
+        self.tool_set_value("the_repeat_1|texttest", "Edited Text B")
+        assert_input_order(["Text A", "Edited Text B", "Cloned Text B", "Text C"])
+
+        # Job parameters are recorded server-side, so this assertion is independent of the live form.
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+
+        details = [d.text for d in self._get_dataset_tool_parameters(1)]
+        assert details == [
+            "texttest",
+            "Text A",
+            "texttest",
+            "Edited Text B",
+            "texttest",
+            "Cloned Text B",
+            "texttest",
+            "Text C",
+        ]
+
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
     def test_rerun(self):
         self._run_environment_test_tool()
         self.history_panel_wait_for_hid_ok(1)

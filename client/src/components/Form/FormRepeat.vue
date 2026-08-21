@@ -43,6 +43,12 @@ const deleteTooltip = computed(() => {
         : localize(`Click to delete ${props.input.title || "Repeat"} fields`);
 });
 
+const cloneTooltip = computed(() => {
+    return maxRepeats.value
+        ? localize(`Maximum number of ${props.input.title || "Repeat"} fields reached`)
+        : localize(`Click to clone ${props.input.title || "Repeat"} fields`);
+});
+
 const props = defineProps({
     input: {
         type: Object as PropType<Input>,
@@ -65,6 +71,7 @@ const props = defineProps({
 const emit = defineEmits<{
     (e: "insert"): void;
     (e: "delete", index: number): void;
+    (e: "clone", index: number): void;
     (e: "swap", a: number, b: number): void;
 }>();
 
@@ -74,6 +81,10 @@ function onInsert() {
 
 function onDelete(index: number) {
     emit("delete", index);
+}
+
+function onClone(index: number) {
+    emit("clone", index);
 }
 
 function getPrefix(index: number) {
@@ -102,8 +113,8 @@ async function swap(index: number, swapWith: number, direction: "up" | "down") {
     }
 }
 
-/** get a uid for the up/down button */
-function getButtonId(index: number, direction: "up" | "down") {
+/** get a uid for the up/down/clone button */
+function getButtonId(index: number, direction: "up" | "down" | "clone") {
     const prefix = getPrefix(index);
     return `${prefix}_${direction}`;
 }
@@ -133,10 +144,14 @@ const { keyObject } = useKeyedObjects();
                     :num-elements="props.input.cache?.length || 0"
                     :up-button-id="getButtonId(cacheId, 'up')"
                     :down-button-id="getButtonId(cacheId, 'down')"
+                    :clone-button-id="getButtonId(cacheId, 'clone')"
                     :delete-tooltip="deleteTooltip"
+                    :clone-tooltip="cloneTooltip"
                     :can-delete="minRepeats"
+                    :can-clone="!maxRepeats"
                     @swap-up="() => swap(cacheId, cacheId - 1, 'up')"
                     @swap-down="() => swap(cacheId, cacheId + 1, 'down')"
+                    @clone="() => onClone(cacheId)"
                     @delete="() => onDelete(cacheId)" />
             </template>
 
