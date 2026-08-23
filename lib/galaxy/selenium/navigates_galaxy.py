@@ -2818,6 +2818,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         else:
             container_elem = container_selector_or_elem
         trigger_elem = container_elem.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        self.scroll_into_view(trigger_elem)
         trigger_elem.click()
         try:
             text_input = container_elem.find_element(By.CSS_SELECTOR, "input[class='multiselect__input']")

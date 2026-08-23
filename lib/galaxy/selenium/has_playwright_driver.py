@@ -972,7 +972,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """Internal implementation of scroll_into_view."""
         # Playwright has a built-in scroll_into_view_if_needed, but for consistency
         # with Selenium implementation, we'll use JavaScript
-        self.execute_script("arguments[0].scrollIntoView(true);", element)
+        self.execute_script('arguments[0].scrollIntoView({block: "center", inline: "nearest"});', element)
 
     def set_element_value(self, element: WebElementProtocol, value: str) -> None:
         """

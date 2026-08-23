@@ -502,7 +502,7 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         Args:
             element: The element to scroll into view
         """
-        self.execute_script("arguments[0].scrollIntoView(true);", element)
+        self.execute_script('arguments[0].scrollIntoView({block: "center", inline: "nearest"});', element)
 
     def set_element_value(self, element: WebElement, value: str) -> None:
         """
