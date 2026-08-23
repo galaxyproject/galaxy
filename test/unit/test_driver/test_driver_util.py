@@ -13,6 +13,32 @@ def test_attempt_ports():
     assert port >= 8000 and port <= 10000
 
 
+def test_launch_server_accepts_built_galaxy_web_app(monkeypatch):
+    galaxy_app = Mock(config=Mock(galaxy_url_prefix="/"))
+    asgi_app = Mock()
+    server = Mock()
+    thread = Mock()
+    web_app = Mock(galaxy_app=galaxy_app, asgi_app=asgi_app)
+
+    monkeypatch.setattr(driver_util, "explicitly_configured_host_and_port", lambda *args: ("127.0.0.1", None))
+    monkeypatch.setattr(driver_util, "attempt_ports", lambda port: "8123")
+    uvicorn_serve = Mock(return_value=(server, "8123", thread))
+    monkeypatch.setattr(driver_util, "uvicorn_serve", uvicorn_serve)
+    wait_for_target = Mock()
+    monkeypatch.setattr(driver_util, "set_and_wait_for_http_target", wait_for_target)
+
+    wrapper = driver_util.launch_server(
+        galaxy_config={},
+        webapp_bundle_factory=lambda: web_app,
+    )
+
+    uvicorn_serve.assert_called_once_with(asgi_app, host="127.0.0.1", port="8123")
+    wait_for_target.assert_called_once_with("GALAXY", "127.0.0.1", "8123", url_prefix="/")
+    assert wrapper.app is galaxy_app
+    assert wrapper._server is server
+    assert wrapper._thread is thread
+
+
 def _gx_app(new_file_path: str) -> Mock:
     # Spell out every setting caching_fast_app_factory reads: an unset Mock attribute is
     # a truthy Mock, which sends the factory down the uncached path.
