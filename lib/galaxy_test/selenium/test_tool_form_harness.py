@@ -3,6 +3,9 @@ reusing tool test definitions (XML <tests> blocks) for inputs and output
 verification.
 """
 
+import json
+import os
+
 import pytest
 
 from galaxy.util.unittest_utils import skip_unless_environ
@@ -13,7 +16,7 @@ from .framework import (
     SeleniumTestCase,
 )
 
-TOOL_TESTS = [
+DEFAULT_TOOL_TESTS = [
     ("environment_variables", 0),
     ("gx_int", 0),
     ("gx_float", 0),
@@ -94,6 +97,26 @@ TOOL_TESTS = [
     ("tool_provided_metadata_7", 0),
     ("tool_provided_metadata_10", 0),
 ]
+
+
+def _tool_tests():
+    """The (tool_id, test_index) pairs to drive.
+
+    Defaults to the framework tools above. `GALAXY_TEST_TOOL_FORM_TESTS` overrides that with
+    a JSON list of pairs, or a path to a file containing one, so an external caller can point
+    the harness at its own tools -- shed tools installed elsewhere, for instance -- without
+    editing this file.
+    """
+    spec = os.environ.get("GALAXY_TEST_TOOL_FORM_TESTS")
+    if not spec:
+        return DEFAULT_TOOL_TESTS
+    if os.path.exists(spec):
+        with open(spec) as fh:
+            spec = fh.read()
+    return [(str(tool_id), int(test_index)) for tool_id, test_index in json.loads(spec)]
+
+
+TOOL_TESTS = _tool_tests()
 
 
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
