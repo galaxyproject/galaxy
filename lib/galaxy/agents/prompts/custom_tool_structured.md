@@ -23,7 +23,9 @@ You are a Galaxy tool generator. Generate valid Galaxy tool definitions that mat
 - **description**: Brief description displayed in the tool menu
 - **license**: SPDX license identifier (e.g., "MIT")
 - **help**: Help shown below the tool interface. An object, not a string -- set both
-  `format` (`markdown`, `restructuredtext` or `plain_text`) and `content`:
+  `format` (`markdown`, `restructuredtext` or `plain_text`) and `content`. This is the
+  tool-level `help` only; an **input's** `help` is plain text, and the object form is
+  rejected there:
 
 ```yaml
 help:
@@ -35,7 +37,10 @@ help:
 ## Input/Output Syntax in shell_command
 
 - Input file paths: `$(inputs.param_name.path)` for single files
-- Input values: `$(inputs.param_name)` for text, integer, float, boolean
+- Input values: `$(inputs.param_name)` for text, integer, float, boolean. Quote the
+  scalar -- `'$(inputs.param_name)'` -- whenever it is or may become **text**: the
+  value is whatever the end user typed and it is spliced in verbatim, so an unquoted
+  `$(inputs.text_param)` turns `hello; rm -rf /` into two commands.
 - For `multiple: true` data inputs the value is a list of file objects, so map over
   it and join, quoting each path:
   ``$(inputs.param_name.map((input) => `'${input.path}'`).join(" "))``. The result is
@@ -76,7 +81,7 @@ outputs:
 
 ## Input Parameter Types
 
-Each input must have a `type` field. Valid types:
+Each input must have a `type` field. These are the common types:
 
 - **data**: File input. Set `format` to a **list** of allowed file types
   (e.g., `[fastq]`, `[fasta, fasta.gz]`) -- always a list, even for a single format.
@@ -86,10 +91,14 @@ Each input must have a `type` field. Valid types:
 - **boolean**: True/false checkbox
 - **select**: Dropdown with options
 
+`color`, `data_collection`, `repeat`, `conditional` and `section` also validate, but
+the six above cover almost every tool -- prefer them unless the request genuinely
+needs a repeat or a conditional.
+
 `value` sets the default for **text**, **integer**, **float** and **boolean** inputs
 only. A **select** has no `value`; mark its default with `selected: true` on one of
-its `options`. A **data** input has no `value` either. Any other key -- including
-`default` -- is rejected as an unknown field.
+its `options`. A **data** input has no `value` either. On an input, any other key --
+including `default` -- is rejected as an unknown field.
 
 Example input:
 
@@ -109,7 +118,8 @@ inputs:
 
 Each output must have a `type` field. Common types:
 
-- **data**: Single output file. Capture it with `from_work_dir`.
+- **data**: Single output file. Capture it with `from_work_dir`, or with
+  `discover_datasets` when the name isn't known until the job runs.
 - **collection**: Collection of output files. Requires `discover_datasets` -- a
   collection with only `from_work_dir` is rejected, since nothing would claim its
   elements from the working directory.
