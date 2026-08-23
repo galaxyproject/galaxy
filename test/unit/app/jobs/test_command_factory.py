@@ -103,6 +103,21 @@ class TestCommandFactory(TestCase):
         self.job_wrapper.galaxy_lib_dir = None
         package_command = self.__command()
         assert "galaxy-remote-tool-eval" in package_command
+        assert '"$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py' not in package_command
+
+    def test_remote_tool_eval_command_for_pulsar_defers_to_remote_layout(self):
+        self.include_work_dir_outputs = False
+        self.job_wrapper.remote_command_line = True
+        pulsar_params = {"pulsar_version": "0.15.0"}
+
+        source_command = self.__command(remote_command_params=pulsar_params)
+        self.job_wrapper.galaxy_lib_dir = None
+        package_command = self.__command(remote_command_params=pulsar_params)
+
+        # Pulsar sets GALAXY_LIB itself, so the command cannot depend on this Galaxy's lib dir.
+        assert source_command == package_command
+        assert 'if [ "$GALAXY_LIB" != "None" ]' in source_command
+        assert '"$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py; else galaxy-remote-tool-eval; fi' in source_command
 
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
