@@ -14,6 +14,8 @@ import sys
 import tempfile
 import threading
 import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     Any,
@@ -893,10 +895,9 @@ def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
     FastAPI app across repeated embedded-server launches in the same
     Python process.
 
-    Single injection point: this callable is passed to ``launch_server``
-    via its ``init_fast_app`` parameter. Production ``launch_server``
-    callers (outside the test driver) keep using the default
-    uncached ``init_galaxy_fast_app``.
+    Single injection point: ``GalaxyTestDriver`` passes this callable to
+    ``build_galaxy_web_app`` as its ``init_fast_app``. Other callers keep
+    using the default uncached ``init_galaxy_fast_app``.
 
     Falls back to a fresh build when the topology differs from the
     cached shell (non-default ``galaxy_url_prefix`` or MCP enabled),
@@ -917,14 +918,23 @@ def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
     return existing
 
 
+@dataclass(frozen=True)
+class WebAppBundle:
+    """The application objects ``launch_server`` needs to serve an embedded server."""
+
+    app: Any
+    asgi_app: FastAPI
+
+    @classmethod
+    def from_galaxy_web_app(cls, web_app: GalaxyWebApp) -> "WebAppBundle":
+        return cls(app=web_app.galaxy_app, asgi_app=web_app.asgi_app)
+
+
 def launch_server(
-    app_factory=None,
-    webapp_factory=None,
+    webapp_bundle_factory: Callable[[], WebAppBundle],
     prefix=DEFAULT_CONFIG_PREFIX,
     galaxy_config=None,
     config_object=None,
-    init_fast_app=init_galaxy_fast_app,
-    webapp_bundle_factory=None,
 ):
     name = prefix.lower()
     host, port = explicitly_configured_host_and_port(prefix, config_object)
@@ -950,25 +960,11 @@ def launch_server(
         gravity_wrapper.wait_for_server()
         return gravity_wrapper
 
-    if webapp_bundle_factory is None:
-        assert app_factory is not None
-        assert webapp_factory is not None
-        app = app_factory()
-        wsgi_webapp = webapp_factory(
-            galaxy_config["global_conf"],
-            app=app,
-            use_translogger=False,
-            static_enabled=True,
-            register_shutdown_at_exit=False,
-        )
-        asgi_app = init_fast_app(wsgi_webapp, app)
-    else:
-        web_app = webapp_bundle_factory()
-        app = web_app.galaxy_app
-        asgi_app = web_app.asgi_app
+    web_app = webapp_bundle_factory()
+    app = web_app.app
     url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
 
-    server, port, thread = uvicorn_serve(asgi_app, host=host, port=port)
+    server, port, thread = uvicorn_serve(web_app.asgi_app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
     log.debug(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
     return EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)
@@ -1121,12 +1117,13 @@ class GalaxyTestDriver(TestDriver):
             custom_init_fast_app = getattr(config_object, "init_fast_app", None)
             if custom_init_fast_app is not None:
                 init_fast_app = custom_init_fast_app
-            launch_kwargs: dict[str, Any] = dict(
-                webapp_bundle_factory=lambda: self.build_galaxy_web_app(galaxy_config, init_fast_app=init_fast_app),
+            server_wrapper = launch_server(
+                lambda: WebAppBundle.from_galaxy_web_app(
+                    self.build_galaxy_web_app(galaxy_config, init_fast_app=init_fast_app)
+                ),
                 galaxy_config=galaxy_config,
                 config_object=config_object,
             )
-            server_wrapper = launch_server(**launch_kwargs)
             self.server_wrappers.append(server_wrapper)
         else:
             log.info(f"Functional tests will be run against test external Galaxy server {self.external_galaxy}")
