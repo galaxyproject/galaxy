@@ -39,6 +39,7 @@ TOOL_TESTS = [
     ("gx_repeat_boolean", 0),
     ("gx_repeat_data", 0),
     ("multi_repeats", 0),
+    ("multi_repeats", 2),
     ("simple_constructs", 0),
     ("multi_output", 0),
     ("output_format", 0),

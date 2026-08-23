@@ -147,7 +147,9 @@ const { keyObject } = useKeyedObjects();
 
         <GButton v-if="!props.sustainRepeats" tooltip :title="buttonTooltip" :disabled="maxRepeats" @click="onInsert">
             <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-            <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
+            <span data-description="repeat insert" :data-repeat-name="props.input.name"
+                >Insert {{ props.input.title || "Repeat" }}</span
+            >
         </GButton>
     </div>
 </template>
