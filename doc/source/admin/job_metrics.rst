@@ -53,8 +53,6 @@ zone library and can be listed with the following command:
 
 The core plugin also records ``resubmission_count``, the number of Galaxy-level job
 resubmission events, on every job; the execution attempt number is ``resubmission_count + 1``.
-The count comes from the persisted job state history rather than the working directory, so it
-survives a resubmission clearing or recreating that directory.
 
 It is recorded for every job but only *displayed* when it is non-zero, since almost no job is
 ever resubmitted and a zero would otherwise appear on every job's metrics panel. The value is
