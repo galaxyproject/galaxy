@@ -62,6 +62,17 @@ export const authoringHelpSections: AuthoringHelpSection[] = HELP.sections.flatM
     return [resolvedSection, ...nestedSections];
 });
 
+const authoringHelpSectionIds = new Set(authoringHelpSections.map((section) => section.id));
+
+export function linkedAuthoringHelpSection(href: string): string | undefined {
+    if (!href.startsWith("#") && !href.includes("authoring-help#")) {
+        return undefined;
+    }
+    const hash = href.slice(href.indexOf("#") + 1);
+    const sectionId = decodeURIComponent(hash);
+    return authoringHelpSectionIds.has(sectionId) ? sectionId : undefined;
+}
+
 export const authoringHelpGroups: AuthoringHelpGroup[] = [
     {
         id: "reference",
