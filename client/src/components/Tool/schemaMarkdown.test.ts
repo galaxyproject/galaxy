@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { authoringHelpSections } from "./authoringHelp";
-import { TOOL_PROPERTY_HELP_SECTIONS, withMarkdownDescriptions } from "./schemaMarkdown";
+import { TOOL_SOURCE_SCHEMA_URI, withMarkdownDescriptions } from "./schemaMarkdown";
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 
 describe("schema Markdown descriptions", () => {
+    it("keeps the schema identity used by the YAML worker", () => {
+        expect(TOOL_SOURCE_SCHEMA_URI).toBe("https://schema.galaxyproject.org/customTool.json");
+    });
+
     it("preserves inline code in nested schema descriptions", () => {
         const schema = {
             description: "Use `shell_command`.",
@@ -21,7 +24,7 @@ describe("schema Markdown descriptions", () => {
             markdownDescription: "Use `shell_command`.",
             properties: {
                 inputs: {
-                    markdownDescription: expect.stringContaining("Reference `$(inputs.input_name)`."),
+                    markdownDescription: "Reference `$(inputs.input_name)`.",
                 },
             },
         });
@@ -53,30 +56,7 @@ describe("schema Markdown descriptions", () => {
                 shell_command: {
                     markdownDescription: expect.stringContaining("`$(inputs.input_name)`"),
                 },
-                inputs: {
-                    markdownDescription: expect.stringContaining("[Authoring documentation](#parameters)"),
-                },
-                outputs: {
-                    markdownDescription: expect.stringContaining("[Authoring documentation](#outputs)"),
-                },
             },
         });
-    });
-
-    it("links parameter and output definitions to their matching reference sections", () => {
-        const result = withMarkdownDescriptions(TOOL_SOURCE_SCHEMA);
-        const definitions = result.$defs as unknown as Record<string, { markdownDescription?: string }>;
-
-        expect(definitions.YamlIntegerParameter?.markdownDescription).toContain("(#parameter-integer)");
-        expect(definitions.IncomingToolOutputDataset?.markdownDescription).toContain("(#output-data)");
-    });
-
-    it("defines documentation targets for every top-level tool property", () => {
-        const sectionIds = new Set(authoringHelpSections.map((section) => section.id));
-
-        expect(Object.keys(TOOL_SOURCE_SCHEMA.properties).every((name) => TOOL_PROPERTY_HELP_SECTIONS[name])).toBe(
-            true,
-        );
-        expect(Object.values(TOOL_PROPERTY_HELP_SECTIONS).every((sectionId) => sectionIds.has(sectionId))).toBe(true);
     });
 });
