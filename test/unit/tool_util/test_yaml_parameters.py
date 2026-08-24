@@ -370,6 +370,30 @@ def test_each_parameter_type_publishes_one_valid_example():
         assert f"inputs.{examples[0]['name']}" in shell_command
 
 
+def test_each_output_type_publishes_one_valid_example():
+    schema = UserToolSource.model_json_schema()
+    definitions = schema["$defs"]
+    output_schema = schema["properties"]["outputs"]["items"]
+    mapping = output_schema["discriminator"]["mapping"]
+
+    assert set(mapping) == {"boolean", "collection", "data", "float", "integer", "text"}
+    for output_type, reference in mapping.items():
+        definition = definitions[reference.rsplit("/", 1)[-1]]
+        examples = definition.get("examples", [])
+        assert len(examples) == 1, f"{output_type} must publish exactly one canonical output example"
+        tool = UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "name": "Output example",
+                "version": "0.1",
+                "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+                "shell_command": "true",
+                "outputs": examples,
+            }
+        )
+        assert tool.outputs[0].type == output_type
+
+
 def test_editor_tool_source_schema_matches_pydantic_model():
     schema_path = (
         PROJECT_ROOT

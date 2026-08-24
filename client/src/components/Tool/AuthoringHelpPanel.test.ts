@@ -58,6 +58,21 @@ describe("AuthoringHelpPanel", () => {
         expect(parameterSection.text()).toContain('include_header="$(inputs.include_header)"');
     });
 
+    it("nests output types under outputs", async () => {
+        const wrapper = mount(AuthoringHelpPanel as object);
+        const outputToggle = wrapper.find('[data-description="toggle help section outputs"]');
+        const dataOutputToggle = wrapper.find('[data-description="toggle help section output-data"]');
+
+        await outputToggle.trigger("click");
+
+        expect(wrapper.find('#outputs a[href="#output-data"]').exists()).toBe(true);
+        expect(wrapper.find("#output-data").classes()).toContain("authoring-help-section-nested");
+
+        await dataOutputToggle.trigger("click");
+        expect(wrapper.find("#output-data").text()).toContain("from_work_dir");
+        expect(wrapper.find("#output-data").text()).toContain("result.txt");
+    });
+
     it("expands structured fields linked from the tool definition", async () => {
         const wrapper = mount(AuthoringHelpPanel as object);
         const toolDefinitionToggle = wrapper.find('[data-description="toggle help section tool-format"]');

@@ -13,10 +13,10 @@
 # relative path; the editor rewrites it to an absolute docs.galaxyproject.org
 # URL.
 #
-# A section with `parameter_types: true` expands into one section per input type.
-# Its `{{parameter_type_index}}` marker becomes a linked index. Both consumers
-# build those sections from ToolSourceSchema.json, whose examples come from the
-# Pydantic parameter models.
+# Sections with `parameter_types: true` or `output_types: true` expand into one
+# section per schema type. Their index markers become linked tables. Both
+# consumers build those sections from ToolSourceSchema.json, whose examples
+# come from the Pydantic models.
 #
 # Per-field facts (units, required shapes) belong on the pydantic models
 # instead: those reach the OpenAPI schema, the generated TypeScript client and
@@ -140,21 +140,17 @@ sections:
   - id: outputs
     title: Outputs
     kind: reference
+    output_types: true
     body: |
       Each output declares a `type` and a `name`. Dataset outputs identify the
       produced file with `from_work_dir`; collection outputs use
       `discover_datasets`. Scalar output types are `text`, `integer`, `float`,
       and `boolean`.
 
-      ```yaml
-      outputs:
-        - name: result
-          type: data
-          format: txt
-          from_work_dir: result.txt
-        - name: match_count
-          type: integer
-      ```
+      {{output_type_index}}
+
+      Each type below has a field table and a minimal example generated from
+      the schema used by the editor and OpenAPI.
 
   - id: help-content
     title: Tool help

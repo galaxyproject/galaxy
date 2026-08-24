@@ -126,6 +126,20 @@ class IncomingToolOutputDataset(
         NotRequired[str],
     ]
 ):
+    """A dataset collected from a file produced in the job working directory."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "result",
+                    "type": "data",
+                    "format": "txt",
+                    "from_work_dir": "result.txt",
+                }
+            ]
+        }
+    )
     name: Annotated[
         Optional[str], Field(description="Parameter name. Used when referencing parameter in workflows.")
     ] = None
@@ -173,6 +187,20 @@ class ToolOutputCollection(GenericToolOutputCollection[bool, str]): ...
 
 
 class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool], NotRequired[str]]):
+    """A dataset collection populated by discovering files produced by the command."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "results",
+                    "type": "collection",
+                    "collection_type": "list",
+                    "discover_datasets": [{"pattern": "(?P<name>.+)\\.txt", "format": "txt"}],
+                }
+            ]
+        }
+    )
     name: Annotated[
         Optional[str], Field(description="Parameter name. Used when referencing parameter in workflows.")
     ] = None
@@ -217,18 +245,30 @@ class IncomingToolOutputSimple(GenericToolOutputSimple[NotRequired[bool], str]):
 
 
 class IncomingToolOutputText(IncomingToolOutputSimple):
+    """A text value emitted as a workflow-visible scalar output."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "message", "type": "text"}]})
     type: Literal["text"]
 
 
 class IncomingToolOutputInteger(IncomingToolOutputSimple):
+    """An integer value emitted as a workflow-visible scalar output."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "match_count", "type": "integer"}]})
     type: Literal["integer"]
 
 
 class IncomingToolOutputFloat(IncomingToolOutputSimple):
+    """A floating-point value emitted as a workflow-visible scalar output."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "score", "type": "float"}]})
     type: Literal["float"]
 
 
 class IncomingToolOutputBoolean(IncomingToolOutputSimple):
+    """A boolean value emitted as a workflow-visible scalar output."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "matched", "type": "boolean"}]})
     type: Literal["boolean"]
 
 

@@ -49,6 +49,28 @@ describe("user-defined tool authoring help", () => {
         }
     });
 
+    it("builds one navigable reference entry per output schema example", () => {
+        const definitions = TOOL_SOURCE_SCHEMA.$defs as Record<string, unknown>;
+        const mapping = TOOL_SOURCE_SCHEMA.properties.outputs.items.discriminator.mapping;
+        const outputSections = authoringHelpSections.filter((section) => section.id.startsWith("output-"));
+        const outputIndex = authoringHelpSections.find((section) => section.id === "outputs");
+
+        expect(outputSections.map((section) => section.id)).toEqual(
+            Object.keys(mapping).map((outputType) => `output-${outputType}`),
+        );
+        for (const section of outputSections) {
+            const outputType = section.id.replace("output-", "");
+            const definitionName = mapping[outputType as keyof typeof mapping].split("/").at(-1)!;
+            const definition = definitions[definitionName] as { examples: Array<Record<string, unknown>> };
+            const yamlExample = section.body.match(/```yaml\n([\s\S]+?)\n```/)?.[1];
+
+            expect(outputIndex?.body).toContain(`](#${section.id})`);
+            expect(section.parentId).toBe("outputs");
+            expect(section.body).toContain(`Add this \`${outputType}\` output under \`outputs\``);
+            expect(parse(yamlExample!).outputs[0]).toEqual(definition.examples[0]);
+        }
+    });
+
     it("resolves Galaxy documentation links for the editor", () => {
         const input = "[Tool schema](gxdoc:dev/schema.md)";
 
