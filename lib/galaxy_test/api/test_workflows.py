@@ -7074,9 +7074,6 @@ test_data:
 
             assert subworkflow_step is not None, "No subworkflow step found"
             subworkflow_invocation_id = subworkflow_step["subworkflow_invocation_id"]
-            # The parent can be marked completed a beat before the completion monitor
-            # gets to the subworkflow invocation, so wait for that one on its own.
-            self.workflow_populator.wait_for_invocation_and_completion(subworkflow_invocation_id)
             subworkflow_invocation = self.workflow_populator.get_invocation(
                 subworkflow_invocation_id, step_details=True
             )
