@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import localize from "@/utils/localization";
 
@@ -23,6 +23,16 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const busy = ref(false);
+
+// Reset `busy` whenever the modal reopens
+watch(
+    () => props.showModal,
+    (showModal) => {
+        if (showModal) {
+            busy.value = false;
+        }
+    },
+);
 
 const emit = defineEmits<{
     /** Proceed with or without saving the changes */
@@ -53,7 +63,6 @@ function dontSave() {
 
 function saveChanges() {
     busy.value = true;
-    closeModal();
     emit("on-proceed", props.navUrl, true, false, props.appendVersion);
 }
 </script>
