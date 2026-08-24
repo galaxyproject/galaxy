@@ -14,6 +14,7 @@ from typing import (
     get_args,
     Optional,
     TYPE_CHECKING,
+    TypeAlias,
     Union,
 )
 
@@ -165,13 +166,27 @@ class ConditionalStepWhen(BooleanToolParameter):
     pass
 
 
+ExpressionJsonValue: TypeAlias = Union[None, bool, int, float, str, list, dict]
+
+# Values accepted while connecting workflow outputs and defaults to tool inputs.
+StepInputReplacement: TypeAlias = Union[
+    NoReplacement,
+    model.HistoryItem,
+    model.DatasetCollectionElement,
+    PromoteCollectionElementToCollectionAdapter,
+    ExpressionJsonValue,
+]
+
+
 # Workflow schedulers may temporarily see a just-written expression.json as missing
 # or empty on shared filesystems. Bound retries by dataset update time so permanently
 # malformed datasets eventually fail.
 EXPRESSION_JSON_GRACE_PERIOD_SECONDS = 60
 
 
-def read_expression_json(dataset_instance: model.DatasetInstance, step: Optional[WorkflowStep] = None):
+def read_expression_json(
+    dataset_instance: model.DatasetInstance, step: Optional[WorkflowStep] = None
+) -> ExpressionJsonValue:
     """Return the value stored in an ``expression.json`` dataset.
 
     With a workflow step, delay a recent missing or invalid dataset and fail once its
@@ -207,7 +222,9 @@ def read_expression_json(dataset_instance: model.DatasetInstance, step: Optional
         )
 
 
-def replace_expression_json_dataset(replacement, step: Optional[WorkflowStep] = None):
+def replace_expression_json_dataset(
+    replacement: StepInputReplacement, step: Optional[WorkflowStep] = None
+) -> StepInputReplacement:
     """Resolve a non-data parameter connected to an ``expression.json`` output to its value.
 
     Anything not backed by an ``expression.json`` dataset is returned unchanged.
@@ -670,9 +687,9 @@ class WorkflowModule:
         for input_dict in all_inputs:
             name = input_dict["name"]
             data = progress.replacement_for_input(self.trans, step, input_dict)
-            can_map_over = hasattr(data, "collection") and data.collection.allow_implicit_mapping
-
-            if not can_map_over:
+            if not isinstance(data, (model.DatasetCollectionInstance, model.DatasetCollectionElement)):
+                continue
+            if not data.collection.allow_implicit_mapping:
                 continue
 
             is_data_param = input_dict["input_type"] == "dataset"
@@ -741,9 +758,7 @@ class WorkflowModule:
                     collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
                 continue
 
-            if data is not NO_REPLACEMENT:
-                collections_to_match.add(name, data)
-                continue
+            collections_to_match.add(name, data)
 
         known_input_names = {input_dict["name"] for input_dict in all_inputs}
 
@@ -2855,9 +2870,7 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name: str, **kwargs):
                 input_dict = all_inputs_by_name[prefixed_name]
 
-                replacement: Union[model.Dataset, NoReplacement, PromoteCollectionElementToCollectionAdapter] = (
-                    NO_REPLACEMENT
-                )
+                replacement: StepInputReplacement = NO_REPLACEMENT
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     replacement = iteration_elements[prefixed_name]  # noqa: B023
                     # When mapping flat collections over paired_or_unpaired via
