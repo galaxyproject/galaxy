@@ -5,8 +5,6 @@ import os
 import string
 import tempfile
 
-# This is for the tool shed application.
-from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 from galaxy_test.driver import driver_util
 from tool_shed.test.base.api_util import get_admin_api_key
 from tool_shed.webapp import buildapp as toolshedbuildapp
@@ -209,8 +207,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
 
             # ---- Run galaxy webserver ------------------------------------------------------
             galaxy_server_wrapper = driver_util.launch_server(
-                app_factory=lambda: driver_util.build_galaxy_app(kwargs),
-                webapp_factory=galaxy_app_factory,
+                webapp_bundle_factory=lambda: driver_util.build_galaxy_web_app(kwargs),
                 galaxy_config=kwargs,
             )
             log.info(f"Galaxy tests will be run against {galaxy_server_wrapper.host}:{galaxy_server_wrapper.port}")
