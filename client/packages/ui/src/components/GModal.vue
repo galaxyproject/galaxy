@@ -8,12 +8,7 @@ import { watchImmediate } from "@vueuse/core";
 import { faXmark } from "font-awesome-6";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
-import {
-    type ComponentColor,
-    type ComponentSize,
-    type ComponentSizeClassList,
-    prefix,
-} from "./componentVariants";
+import { type ComponentColor, type ComponentSize, type ComponentSizeClassList, prefix } from "./componentVariants";
 import { useUid } from "../composables/uid";
 
 import GButton from "./GButton.vue";
