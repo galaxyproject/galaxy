@@ -1,4 +1,5 @@
 import RAW_AUTHORING_HELP from "./authoringHelp.yml";
+import { buildParameterTypeReference } from "./authoringHelpParameters";
 
 /** Editor adapter for the shared guidance in `authoringHelp.yml`. */
 
@@ -6,6 +7,7 @@ export interface AuthoringHelpSection {
     id: string;
     title: string;
     kind: "reference" | "faq";
+    parentId?: string;
     body: string;
 }
 
@@ -18,7 +20,7 @@ export interface AuthoringHelpGroup {
 interface RawAuthoringHelp {
     title: string;
     intro: string;
-    sections: AuthoringHelpSection[];
+    sections: Array<AuthoringHelpSection & { parameter_types?: boolean }>;
 }
 
 const HELP = RAW_AUTHORING_HELP as RawAuthoringHelp;
@@ -29,6 +31,7 @@ const DOCS_BASE = "https://docs.galaxyproject.org/en/master/";
 // `[text](gxdoc:dev/schema.md)`, so the same string can resolve to a relative
 // path in the generated Sphinx page and to an absolute URL here.
 const GXDOC_LINK = /\]\(gxdoc:([^)]+)\)/g;
+const PARAMETER_TYPE_INDEX = "{{parameter_type_index}}";
 
 export function resolveDocLinks(text: string): string {
     return text.replace(GXDOC_LINK, (_match, target: string) => {
@@ -40,10 +43,16 @@ export const authoringHelpTitle: string = HELP.title;
 
 export const authoringHelpIntro: string = resolveDocLinks(HELP.intro);
 
-export const authoringHelpSections: AuthoringHelpSection[] = HELP.sections.map((section) => ({
-    ...section,
-    body: resolveDocLinks(section.body),
-}));
+const parameterTypeReference = buildParameterTypeReference();
+
+export const authoringHelpSections: AuthoringHelpSection[] = HELP.sections.flatMap((rawSection) => {
+    const { parameter_types: hasParameterTypes, ...section } = rawSection;
+    const resolvedSection = {
+        ...section,
+        body: resolveDocLinks(section.body).replace(PARAMETER_TYPE_INDEX, parameterTypeReference.index),
+    };
+    return hasParameterTypes ? [resolvedSection, ...parameterTypeReference.sections] : [resolvedSection];
+});
 
 export const authoringHelpGroups: AuthoringHelpGroup[] = [
     {
