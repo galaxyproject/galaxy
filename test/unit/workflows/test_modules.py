@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 from typing import (
     Any,
     NamedTuple,
@@ -11,9 +12,13 @@ import pytest
 
 from galaxy import model
 from galaxy.managers.workflows import WorkflowContentsManager
+from galaxy.schema.invocation import FailureReason
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
-from galaxy.util import bunch
+from galaxy.util import (
+    bunch,
+    now,
+)
 from galaxy.workflow import modules
 from .workflow_support import (
     MockTrans,
@@ -310,6 +315,103 @@ def test_to_cwl_dataset_collection_element():
     result = modules.to_cwl(dce_outer, [], model.WorkflowStep())
     assert result[0]["class"] == "File"
     assert result[0]["basename"] == "inner"
+
+
+def _expression_json_hda(path, content: Optional[str], seconds_since_updated: int = 0):
+    hda = model.HistoryDatasetAssociation(extension="expression.json", create_dataset=True, flush=False)
+    hda.id = 1
+    assert hda.dataset is not None
+    hda.dataset.state = model.Dataset.states.OK
+    if content is not None:
+        path.write_text(content)
+    hda.dataset.external_filename = str(path)
+    hda.update_time = now() - timedelta(seconds=seconds_since_updated)
+    return hda
+
+
+def _workflow_step():
+    step = model.WorkflowStep()
+    step.id = 1
+    return step
+
+
+def test_to_cwl_expression_json(tmp_path):
+    hda = _expression_json_hda(tmp_path / "expression.json", '"abs(c3)>0.5"')
+    assert modules.to_cwl(hda, [], _workflow_step()) == "abs(c3)>0.5"
+
+
+def test_to_cwl_expression_json_empty_file_recently_updated_delays(tmp_path):
+    hda = _expression_json_hda(tmp_path / "expression.json", "")
+    with pytest.raises(modules.DelayedWorkflowEvaluation) as exc_info:
+        modules.to_cwl(hda, [], _workflow_step())
+    assert "could not be read" in exc_info.value.why
+
+
+def test_to_cwl_expression_json_malformed_fails_after_grace_period(tmp_path):
+    hda = _expression_json_hda(
+        tmp_path / "expression.json",
+        "{not json",
+        seconds_since_updated=modules.EXPRESSION_JSON_GRACE_PERIOD_SECONDS + 1,
+    )
+    step = _workflow_step()
+    with pytest.raises(modules.FailWorkflowEvaluation) as exc_info:
+        modules.to_cwl(hda, [], step)
+    why = exc_info.value.why
+    assert why.reason == FailureReason.unexpected_failure
+    assert why.workflow_step_id == step.id
+    assert "dataset 1" in why.details
+
+
+def test_to_cwl_expression_json_missing_file_fails_after_grace_period(tmp_path):
+    hda = _expression_json_hda(
+        tmp_path / "expression.json", None, seconds_since_updated=modules.EXPRESSION_JSON_GRACE_PERIOD_SECONDS + 1
+    )
+    with pytest.raises(modules.FailWorkflowEvaluation) as exc_info:
+        modules.to_cwl(hda, [], _workflow_step())
+    why = exc_info.value.why
+    assert why.reason == FailureReason.unexpected_failure
+    # Invocation details must not expose the dataset path.
+    assert str(tmp_path) not in why.details
+
+
+def test_read_expression_json_without_update_time_fails_immediately(tmp_path):
+    hda = _expression_json_hda(tmp_path / "expression.json", "")
+    hda.update_time = None
+    with pytest.raises(modules.FailWorkflowEvaluation) as exc_info:
+        modules.read_expression_json(hda, _workflow_step())
+    assert exc_info.value.why.reason == FailureReason.unexpected_failure
+
+
+def test_read_expression_json_does_not_swallow_other_os_errors(tmp_path):
+    a_directory = tmp_path / "expression.json"
+    a_directory.mkdir()
+    hda = _expression_json_hda(a_directory, None)
+    with pytest.raises(IsADirectoryError):
+        modules.read_expression_json(hda, _workflow_step())
+
+
+def test_read_expression_json_without_step_reraises_read_error(tmp_path):
+    hda = _expression_json_hda(tmp_path / "expression.json", "")
+    with pytest.raises(json.JSONDecodeError):
+        modules.read_expression_json(hda)
+
+
+def test_replace_expression_json_dataset(tmp_path):
+    hda = _expression_json_hda(tmp_path / "expression.json", "0.5")
+    assert modules.replace_expression_json_dataset(hda, _workflow_step()) == 0.5
+
+
+def test_replace_expression_json_dataset_collection_element(tmp_path):
+    hda = _expression_json_hda(tmp_path / "expression.json", "true")
+    collection = model.DatasetCollection(collection_type="list")
+    element = model.DatasetCollectionElement(collection=collection, element_identifier="true", element=hda)
+    assert modules.replace_expression_json_dataset(element, _workflow_step()) is True
+
+
+def test_replace_expression_json_dataset_leaves_other_replacements_unchanged():
+    hda = model.HistoryDatasetAssociation(extension="txt", create_dataset=True, flush=False)
+    assert modules.replace_expression_json_dataset(hda, _workflow_step()) is hda
+    assert modules.replace_expression_json_dataset("a string", _workflow_step()) == "a string"
 
 
 class MapOverTestCase(NamedTuple):

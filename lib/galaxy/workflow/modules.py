@@ -62,6 +62,7 @@ from galaxy.schema.invocation import (
     InvocationFailureStepInputDeleted,
     InvocationFailureWhenNotBoolean,
     InvocationFailureWorkflowParameterInvalid,
+    InvocationUnexpectedFailure,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser import get_input_source
@@ -164,6 +165,63 @@ class ConditionalStepWhen(BooleanToolParameter):
     pass
 
 
+# Workflow schedulers may temporarily see a just-written expression.json as missing
+# or empty on shared filesystems. Bound retries by dataset update time so permanently
+# malformed datasets eventually fail.
+EXPRESSION_JSON_GRACE_PERIOD_SECONDS = 60
+
+
+def read_expression_json(dataset_instance: model.DatasetInstance, step: Optional[WorkflowStep] = None):
+    """Return the value stored in an ``expression.json`` dataset.
+
+    With a workflow step, delay a recent missing or invalid dataset and fail once its
+    grace period elapses. Other read errors, and all errors without a step, propagate
+    unchanged.
+    """
+    try:
+        with open(dataset_instance.get_file_name()) as f:
+            # safe_loads preserves non-container JSON values as their source text.
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        if step is None:
+            # Job-side callers do not handle workflow-control exceptions.
+            raise
+        # str(e) can contain the dataset path, keep that out of the invocation message.
+        problem = e.msg if isinstance(e, json.JSONDecodeError) else "file not found"
+        details = f"Contents of expression.json dataset {dataset_instance.id} could not be read: {problem}"
+        log.exception("%s. Dataset was last updated at %s.", details, dataset_instance.update_time)
+        # A dataset without a known update time counts as old, so that a permanently
+        # unreadable dataset can never delay the invocation indefinitely.
+        recently_updated = (
+            dataset_instance.update_time is not None
+            and dataset_instance.seconds_since_updated < EXPRESSION_JSON_GRACE_PERIOD_SECONDS
+        )
+        if recently_updated:
+            raise DelayedWorkflowEvaluation(why=details)
+        raise FailWorkflowEvaluation(
+            why=InvocationUnexpectedFailure(
+                reason=FailureReason.unexpected_failure,
+                details=details,
+                workflow_step_id=step.id,
+            )
+        )
+
+
+def replace_expression_json_dataset(replacement, step: Optional[WorkflowStep] = None):
+    """Resolve a non-data parameter connected to an ``expression.json`` output to its value.
+
+    Anything not backed by an ``expression.json`` dataset is returned unchanged.
+    """
+    dataset_instance: Optional[model.DatasetInstance] = None
+    if isinstance(replacement, model.DatasetCollectionElement):
+        dataset_instance = replacement.hda
+    elif isinstance(replacement, model.DatasetInstance):
+        dataset_instance = replacement
+    if dataset_instance is not None and dataset_instance.extension == "expression.json":
+        return read_expression_json(dataset_instance, step=step)
+    return replacement
+
+
 def to_cwl(
     value, hda_references, step: Optional[WorkflowStep] = None, compute_environment: Optional[ComputeEnvironment] = None
 ):
@@ -196,9 +254,7 @@ def to_cwl(
                     )
                 )
         if value.ext == "expression.json":
-            with open(value.get_file_name()) as f:
-                # OUR safe_loads won't work, will not load numbers, etc...
-                return json.load(f)
+            return read_expression_json(value, step=step)
         else:
             hda_references.append(value)
             properties = {
@@ -2824,14 +2880,7 @@ class ToolModule(WorkflowModule):
                 if replacement is not NO_REPLACEMENT:
                     if not isinstance(input, BaseDataToolParameter):
                         # Probably a parameter that can be replaced
-                        dataset_instance: Optional[model.DatasetInstance] = None
-                        if isinstance(replacement, model.DatasetCollectionElement):
-                            dataset_instance = replacement.hda
-                        elif isinstance(replacement, model.DatasetInstance):
-                            dataset_instance = replacement
-                        if dataset_instance and dataset_instance.extension == "expression.json":
-                            with open(dataset_instance.get_file_name()) as f:
-                                replacement = json.load(f)
+                        replacement = replace_expression_json_dataset(replacement, step)
                     found_replacement_keys.add(prefixed_name)  # noqa: B023
 
                     # bool cast should be fine, can only have true/false on ConditionalStepWhen
