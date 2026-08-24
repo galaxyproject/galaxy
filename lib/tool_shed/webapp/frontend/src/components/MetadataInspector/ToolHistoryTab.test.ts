@@ -105,7 +105,7 @@ describe("ToolHistoryTab", () => {
                 props: { metadata: fixtureMetadata },
             })
 
-            const revButtons = wrapper.findAll(".q-btn")
+            const revButtons = wrapper.findAll("button")
             const revButton = revButtons.find((btn) => btn.text().includes("Rev"))
             expect(revButton).toBeTruthy()
 

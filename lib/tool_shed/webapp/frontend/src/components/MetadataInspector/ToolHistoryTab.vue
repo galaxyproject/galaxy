@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons"
 import { computed, ref } from "vue"
 import MetadataJsonViewer from "./MetadataJsonViewer.vue"
 import type { components } from "@/schema"
@@ -94,14 +97,10 @@ function toggleTool(toolId: string) {
                         <div class="row items-center q-gutter-sm">
                             <span class="text-weight-medium">{{ ver.version }}</span>
                             <q-badge color="grey-6">[{{ ver.numericRevision }}]</q-badge>
-                            <q-btn
-                                flat
-                                dense
-                                size="sm"
-                                icon="sym_r_arrow_forward"
-                                :label="`Rev ${ver.numericRevision}`"
-                                @click="emit('goToRevision', ver.revision)"
-                            />
+                            <GButton size="small" transparent @click="emit('goToRevision', ver.revision)">
+                                <FontAwesomeIcon :icon="faArrowRight" class="q-mr-xs" />
+                                Rev {{ ver.numericRevision }}
+                            </GButton>
                         </div>
                     </template>
 

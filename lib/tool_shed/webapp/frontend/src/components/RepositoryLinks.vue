@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCopy } from "@fortawesome/free-solid-svg-icons"
 import { computed } from "vue"
 import { copyAndNotify } from "@/util"
 import { components } from "@/schema"
@@ -27,16 +30,22 @@ const dev_url = computed(() => props.repository.remote_repository_url)
     <p v-if="currentRevision">
         <q-icon name="link" size="md" class="q-pl-xs q-pr-md" />
         <a class="text-primary text-bold" :href="link">{{ link }}</a>
-        <q-btn size="sm" class="q-px-sm" flat dense icon="content_copy" @click="copyLink(link)" />
+        <GButton icon-only transparent aria-label="Copy link" @click="copyLink(link)">
+            <FontAwesomeIcon :icon="faCopy" />
+        </GButton>
     </p>
     <p v-if="homepage">
         <q-icon name="home" size="md" class="q-pl-xs q-pr-md" />
         <a class="text-primary text-bold" :href="homepage">{{ homepage }}</a>
-        <q-btn size="sm" class="q-px-sm" flat dense icon="content_copy" @click="copyLink(homepage)" />
+        <GButton icon-only transparent aria-label="Copy link" @click="copyLink(homepage)">
+            <FontAwesomeIcon :icon="faCopy" />
+        </GButton>
     </p>
     <p v-if="dev_url">
         <q-icon name="code" size="md" class="q-pl-xs q-pr-md" />
         <a class="text-primary text-bold" :href="dev_url">{{ dev_url }}</a>
-        <q-btn size="sm" class="q-px-sm" flat dense icon="content_copy" @click="copyLink(dev_url)" />
+        <GButton icon-only transparent aria-label="Copy link" @click="copyLink(dev_url)">
+            <FontAwesomeIcon :icon="faCopy" />
+        </GButton>
     </p>
 </template>

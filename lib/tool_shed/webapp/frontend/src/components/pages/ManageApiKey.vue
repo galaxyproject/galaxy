@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCopy, faTrash, faArrowsRotate } from "@fortawesome/free-solid-svg-icons"
 import { ref, computed } from "vue"
 import PageContainer from "@/components/PageContainer.vue"
 import { ToolShedApi } from "@/schema"
@@ -74,15 +77,15 @@ void init()
         <div>
             <q-input class="q-pa-lg" v-model="apiKey" readonly filled style="max-width: 450px">
                 <template #append>
-                    <q-avatar>
-                        <q-btn flat dense icon="content_copy" @click="copyKey" />
-                    </q-avatar>
-                    <q-avatar>
-                        <q-btn flat dense icon="delete" @click="deleteKey" />
-                    </q-avatar>
-                    <q-avatar>
-                        <q-btn flat dense icon="refresh" @click="recreateKey" />
-                    </q-avatar>
+                    <GButton icon-only transparent aria-label="Copy API key" @click="copyKey">
+                        <FontAwesomeIcon :icon="faCopy" />
+                    </GButton>
+                    <GButton icon-only transparent aria-label="Deactivate API key" @click="deleteKey">
+                        <FontAwesomeIcon :icon="faTrash" />
+                    </GButton>
+                    <GButton icon-only transparent aria-label="Regenerate API key" @click="recreateKey">
+                        <FontAwesomeIcon :icon="faArrowsRotate" />
+                    </GButton>
                 </template>
             </q-input>
         </div>

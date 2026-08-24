@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons"
 import { copyAndNotify, notify } from "@/util"
 
 import { exportFile } from "quasar"
@@ -28,8 +31,12 @@ const props = defineProps<ConfigFileContentsProps>()
         <q-card-section class="q-pt-xs">
             <div class="text-overline">
                 {{ name }}
-                <q-btn size="sm" flat dense icon="content_copy" @click="copyContents" />
-                <q-btn size="sm" flat dense icon="download" @click="downloadContents" />
+                <GButton icon-only transparent aria-label="Copy contents" @click="copyContents">
+                    <FontAwesomeIcon :icon="faCopy" />
+                </GButton>
+                <GButton icon-only transparent aria-label="Download" @click="downloadContents">
+                    <FontAwesomeIcon :icon="faDownload" />
+                </GButton>
             </div>
             <preformatted-content :contents="contents" />
         </q-card-section>
