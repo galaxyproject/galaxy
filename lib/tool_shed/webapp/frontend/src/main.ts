@@ -10,6 +10,8 @@ import "@quasar/extras/material-symbols-rounded/material-symbols-rounded.css"
 // import "@quasar/extras/material-icons-outlined/material-icons-outlined.css"
 // import "@quasar/extras/material-symbols-outlined/material-symbols-outlined.css"
 import "quasar/src/css/index.sass"
+// galaxy-ui component token contract (--color-*/--spacing-* custom properties)
+import "@galaxyproject/galaxy-ui/tokens.css"
 import router from "@/router"
 import { createPinia } from "pinia"
 
