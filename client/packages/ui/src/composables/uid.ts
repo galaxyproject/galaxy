@@ -1,11 +1,12 @@
 import { computed, unref } from "vue";
+import type { Ref } from "vue";
 
-var idCounter = 0;
+let idCounter = 0;
 
 /**
  * Returns a page-unique id with and optional reactive prefix
  */
-export function useUid(prefix = "") {
+export function useUid(prefix: string | Ref<string> = "") {
     const id = idCounter;
     idCounter += 1;
 
