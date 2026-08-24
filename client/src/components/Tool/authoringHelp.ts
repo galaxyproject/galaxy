@@ -1,5 +1,6 @@
 import RAW_AUTHORING_HELP from "./authoringHelp.yml";
 import { buildOutputTypeReference, buildParameterTypeReference } from "./authoringHelpTypes";
+import { TOOL_SOURCE_SCHEMA_URI } from "./schemaMarkdown";
 
 /** Editor adapter for the shared guidance in `authoringHelp.yml`. */
 
@@ -65,6 +66,9 @@ export const authoringHelpSections: AuthoringHelpSection[] = HELP.sections.flatM
 const authoringHelpSectionIds = new Set(authoringHelpSections.map((section) => section.id));
 
 export function linkedAuthoringHelpSection(href: string): string | undefined {
+    if (href === TOOL_SOURCE_SCHEMA_URI) {
+        return "tool-format";
+    }
     if (!href.startsWith("#") && !href.includes("authoring-help#")) {
         return undefined;
     }
