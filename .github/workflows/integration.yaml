@@ -45,6 +45,11 @@ jobs:
       - name: Install packages
         # ffmpeg: ffprobe needed by media datatypes
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
+      - name: Create the CNI config directory minikube's none driver expects
+        # The action chmods /etc/cni/net.d without creating it, and current
+        # runner images no longer ship the directory. See
+        # https://github.com/medyagh/setup-minikube/issues/835
+        run: sudo mkdir -p /etc/cni/net.d
       - name: Setup Minikube
         uses: medyagh/setup-minikube@latest
         with:
