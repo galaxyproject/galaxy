@@ -1,6 +1,10 @@
 from typing import Optional
 
 from galaxy import exceptions
+from galaxy.model import (
+    DatasetCollectionElement,
+    HistoryDatasetCollectionAssociation,
+)
 from galaxy.util import bunch
 from .structure import (
     get_collection,
@@ -9,6 +13,58 @@ from .structure import (
 )
 
 CANNOT_MATCH_ERROR_MESSAGE = "Cannot match collection types."
+
+
+def _dataset_collection_key(dataset_collection) -> tuple[str, int]:
+    collection_id = getattr(dataset_collection, "id", None)
+    if collection_id is not None:
+        return ("id", collection_id)
+    return ("object", id(dataset_collection))
+
+
+def mapped_collection_provenance(collection_instance) -> set[tuple[str, int]]:
+    """Return the identities of the collections this instance was mapped from.
+
+    Includes the collection itself, whatever it was copied from, and the inputs
+    of any implicit collection creation that produced it. Implicit collections
+    have the same element identifiers in the same order as the collections
+    mapped over to create them, so two instances sharing an identity here can be
+    matched up element by element.
+    """
+    provenance = set()
+    pending = [collection_instance]
+    visited = set()
+    while pending:
+        current = pending.pop()
+        current_object_id = id(current)
+        if current_object_id in visited:
+            continue
+        visited.add(current_object_id)
+
+        adapting = getattr(current, "adapting", None)
+        if adapting is not None:
+            pending.append(adapting)
+
+        if isinstance(current, DatasetCollectionElement):
+            if current.collection is not None:
+                provenance.add(_dataset_collection_key(current.collection))
+            if current.child_collection is not None:
+                provenance.add(_dataset_collection_key(current.child_collection))
+        elif isinstance(current, HistoryDatasetCollectionAssociation):
+            if current.collection is not None:
+                provenance.add(_dataset_collection_key(current.collection))
+            copied_from = current.copied_from_history_dataset_collection_association
+            if copied_from is not None:
+                pending.append(copied_from)
+            pending.extend(
+                implicit_input.input_dataset_collection
+                for implicit_input in current.implicit_input_collections
+                if implicit_input.input_dataset_collection is not None
+            )
+        elif (collection := getattr(current, "collection", None)) is not None:
+            provenance.add(_dataset_collection_key(collection))
+
+    return provenance
 
 
 class CollectionsToMatch:
@@ -95,6 +151,24 @@ class MatchingCollections:
 
     def is_mapped_over(self, input_name):
         return input_name in self.collections
+
+    def is_aligned_with(self, other: "MatchingCollections") -> bool:
+        """Whether these collections match ``other`` element by element.
+
+        True when the two matches share a collection they were mapped from,
+        which means the same element identifiers in the same order. Only linked
+        collections are considered - they share one structure and have already
+        passed ``compatible_shape``, so a match on any one of them holds for all
+        of them. Callers use this before moving positionally indexed state such
+        as ``when_values`` from one match to the other.
+        """
+        other_provenance = set().union(
+            *(mapped_collection_provenance(collection) for collection in other.collections.values())
+        )
+        return any(
+            other_provenance.intersection(mapped_collection_provenance(collection))
+            for collection in self.collections.values()
+        )
 
     @staticmethod
     def for_collections(collections_to_match, collection_type_descriptions) -> Optional["MatchingCollections"]:

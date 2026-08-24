@@ -627,8 +627,15 @@ class WorkflowModule:
         if collection_info:
             if progress.subworkflow_collection_info:
                 # We've mapped over a subworkflow. Slices of the invocation might be conditional
-                # and progress.subworkflow_collection_info.when_values holds the appropriate when_values
-                collection_info.when_values = progress.subworkflow_collection_info.when_values
+                # and progress.subworkflow_collection_info.when_values holds the appropriate when_values.
+                inherited_when_values = progress.subworkflow_collection_info.when_values
+                if inherited_when_values:
+                    if not collection_info.is_aligned_with(progress.subworkflow_collection_info):
+                        raise exceptions.MessageException(
+                            "This step maps over a collection that cannot be matched up element by element "
+                            "with the collection mapped over the conditional subworkflow containing it."
+                        )
+                    collection_info.when_values = inherited_when_values
             else:
                 # The invocation is not mapped over, but it might still be conditional.
                 # Multiplication and linking should be handled by slice_collection()
@@ -931,15 +938,18 @@ class SubWorkflowModule(WorkflowModule):
                         progress, step, execution_state={}, extra_step_state=extra_step_state
                     )
                 )
+
+        # A subworkflow without a condition has no conditional state, not one None per mapped element.
+        conditional_values = when_values if any(value is not None for value in when_values) else None
         if collection_info:
-            collection_info.when_values = when_values
+            collection_info.when_values = conditional_values
 
         subworkflow_invoker = progress.subworkflow_invoker(
             trans,
             step,
             use_cached_job=use_cached_job,
             subworkflow_collection_info=collection_info,
-            when_values=when_values,
+            when_values=conditional_values,
         )
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow

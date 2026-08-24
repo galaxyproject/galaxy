@@ -1,3 +1,4 @@
+from galaxy import model
 from galaxy.model.dataset_collections import (
     matching,
     query,
@@ -111,6 +112,47 @@ def test_query_always_direct_match_if_no_collection_type_on_input_specified():
     q = query.HistoryQuery.from_collection_types([], TYPE_DESCRIPTION_FACTORY)
     assert q.can_map_over(list_of_lists) is False
     assert q.direct_match(list_of_lists) is True
+
+
+def test_alignment_accepts_same_collection():
+    source = real_collection_instance(1)
+
+    assert matched(source).is_aligned_with(matched(source))
+
+
+def test_alignment_accepts_implicit_output_lineage():
+    source = real_collection_instance(1)
+    derived = real_collection_instance(2)
+    derived.add_implicit_input_collection("input", source)
+
+    assert matched(derived).is_aligned_with(matched(source))
+
+
+def test_alignment_rejects_independent_collection():
+    source = real_collection_instance(1)
+    independent = real_collection_instance(2)
+
+    assert not matched(independent).is_aligned_with(matched(source))
+
+
+def test_alignment_is_symmetric():
+    source = real_collection_instance(1)
+    derived = real_collection_instance(2)
+    derived.add_implicit_input_collection("input", source)
+
+    assert matched(source).is_aligned_with(matched(derived))
+
+
+def real_collection_instance(collection_id):
+    """A persisted-looking HDCA - alignment keys off DatasetCollection identity."""
+    collection = model.DatasetCollection(id=collection_id, collection_type="list")
+    return model.HistoryDatasetCollectionAssociation(collection=collection)
+
+
+def matched(collection_instance):
+    matching_collections = matching.MatchingCollections()
+    matching_collections.collections["input"] = collection_instance
+    return matching_collections
 
 
 def assert_can_match(*items):

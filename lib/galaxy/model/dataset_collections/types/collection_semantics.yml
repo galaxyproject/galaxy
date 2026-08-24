@@ -1249,6 +1249,68 @@
             framework_test: "collection_semantics_cat_sample_sheet_0"
         workflow_editor: "accepts sample_sheet -> sample_sheet connection"
 
+- doc: "## Subworkflows"
+- doc: |
+    A collection can be mapped over a data input of a subworkflow step the same way
+    it is mapped over a data input of a tool. Unlike a tool though, this does not run
+    the subworkflow once per element of that collection. The collection is handed to
+    the subworkflow's input step and the child workflow runs as a single invocation -
+    the mapping is applied inside it, step by step.
+
+    Each step of the child workflow maps over the collections connected to its own
+    inputs, exactly as it would in a top-level workflow. A step consuming the mapped
+    input maps over that collection and produces implicit collections matching it. A
+    step with nothing mapped over its own inputs inherits the outer mapping instead,
+    so it still runs once per element of the collection mapped over the subworkflow.
+
+    Steps inside the subworkflow that map over different collections stay
+    independent; the subworkflow introduces no extra dimensionality. If a step maps
+    over a collection connected to a collection input of the subworkflow, its outputs
+    match only that collection. It is not multiplied by the collection mapped over the
+    subworkflow and the two are not matched up element by element, so they need not
+    even have the same number of elements.
+
+    A subworkflow step can also be conditional, with a ``when`` expression evaluated
+    once per element of the collection mapped over it. Those per-element conditions
+    travel with that mapping. A step inside the subworkflow that maps over the same
+    collection - or over an implicit collection created from it, which has the same
+    element identifiers in the same order - skips the same elements. A step that maps
+    over an unrelated collection has no such correspondence, and Galaxy fails the
+    invocation rather than pairing conditions with elements they do not describe.
+
+- example:
+    label: UNCONDITIONAL_SUBWORKFLOW_INDEPENDENT_LOCAL_MAPPING
+    assumptions:
+    - datasets: ["a_1,...,a_m", "b_1,...,b_n"]
+    - tool:
+        in: {i: dataset}
+        out: {o: dataset}
+    - collections:
+        A: [list, {a1: a_1, ..., am: a_m}]
+        B: [list, {b1: b_1, ..., bn: b_n}]
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: B}
+        produces:
+            o:
+                type: collection
+                collection_type: list
+                elements:
+                    b1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: b_1}}}
+                        output: o
+                    "...": {type: ellipsis}
+                    bn:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: b_n}}}
+                        output: o
+    tests:
+        workflow_runtime:
+            framework_test: "subworkflow_mapping_per_step_0"
+
 - doc: "## Type Compatibility Algebra"
 - doc: |
     This section is for implementers. It describes the three operations that

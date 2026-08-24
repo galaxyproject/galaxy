@@ -1118,3 +1118,160 @@ $$tool(i=C) \rightarrow \left\{o: \text{dataset}\right\}$$
 
 
 
+## Subworkflows
+
+A collection can be mapped over a data input of a subworkflow step the same way
+it is mapped over a data input of a tool. Unlike a tool though, this does not run
+the subworkflow once per element of that collection. The collection is handed to
+the subworkflow's input step and the child workflow runs as a single invocation -
+the mapping is applied inside it, step by step.
+
+Each step of the child workflow maps over the collections connected to its own
+inputs, exactly as it would in a top-level workflow. A step consuming the mapped
+input maps over that collection and produces implicit collections matching it. A
+step with nothing mapped over its own inputs inherits the outer mapping instead,
+so it still runs once per element of the collection mapped over the subworkflow.
+
+Steps inside the subworkflow that map over different collections stay
+independent; the subworkflow introduces no extra dimensionality. If a step maps
+over a collection connected to a collection input of the subworkflow, its outputs
+match only that collection. It is not multiplied by the collection mapped over the
+subworkflow and the two are not matched up element by element, so they need not
+even have the same number of elements.
+
+A subworkflow step can also be conditional, with a ``when`` expression evaluated
+once per element of the collection mapped over it. Those per-element conditions
+travel with that mapping. A step inside the subworkflow that maps over the same
+collection - or over an implicit collection created from it, which has the same
+element identifiers in the same order - skips the same elements. A step that maps
+over an unrelated collection has no such correspondence, and Galaxy fails the
+invocation rather than pairing conditions with elements they do not describe.
+
+
+(UNCONDITIONAL_SUBWORKFLOW_INDEPENDENT_LOCAL_MAPPING)=
+<details><summary>Examples</summary>
+
+:::{admonition} Example: `UNCONDITIONAL_SUBWORKFLOW_INDEPENDENT_LOCAL_MAPPING`
+:class: note
+
+Assuming,
+
+* $ a_1,...,a_m $, $ b_1,...,b_n $ are datasets
+* $ tool \text{ is } (i: \text{ dataset }) \Rightarrow \{ o: \text{ dataset } \} $
+* $ A $ is $ \text{CollectionInstance<}\text{list},\left\{ \text{ a1 }=a_1, ..., \text{ am }=a_m \right\}\text{>} $
+* $ B $ is $ \text{CollectionInstance<}\text{list},\left\{ \text{ b1 }=b_1, ..., \text{ bn }=b_n \right\}\text{>} $
+
+
+then
+
+$$tool(i=\text{mapOver}(B)) \mapsto \left\{o: \text{collection}<\text{list},\left\{\text{b1}=tool(i=b_1)[o],...,\text{bn}=tool(i=b_n)[o]\right\}>\right\}$$
+
+:::
+
+
+
+</details><br>
+
+
+
+## Type Compatibility Algebra
+
+This section is for implementers. It describes the three operations that
+answer "do these collection types fit together?" — used at workflow
+editor connection time and at runtime when sibling inputs are matched
+under a common map-over.
+
+### The lattice
+
+The base types form a small subtype lattice:
+
+```
+list                paired_or_unpaired
+ |                    |
+sample_sheet         paired
+```
+
+Edges are subtype relations. A `sample_sheet` value carries column
+metadata that a `list` does not, so it can be substituted where a
+`list` is required (information is preserved); the reverse is not safe.
+A `paired` value always has two elements; `paired_or_unpaired` admits
+1 or 2, so a `paired` can be substituted where `paired_or_unpaired` is
+required, but not the reverse.
+
+Nesting composes. `list:paired_or_unpaired` is a supertype of both
+`list:paired` and `list` (the latter via the "single-dataset wrapped
+as unpaired" interpretation), so it has two incomparable subtypes.
+
+### Three operations
+
+| Operation | Symmetry | Question | Used at |
+|---|---|---|---|
+| `accepts(other)` | Asymmetric | Does an input slot of type `self` accept an output of type `other`? | Workflow-editor edge validation |
+| `compatible(other)` | Symmetric | Do `self` and `other` match such that they could drive a common map-over over sibling inputs of one tool? | Sibling-matching: matching sibling HDCAs / sibling map-over states under a common mapping |
+| `can_map_over(other)` | Asymmetric | Does `self` have proper subcollections of type `other` — i.e. can `self` be mapped over to feed an `other` slot? | Connection-time map-over decisions; runtime `effective_collection_type` arithmetic |
+
+Conventions: `input_type.accepts(output_type)` for direct edges;
+`output_type.can_map_over(input_type)` for map-over. `accepts` and
+`can_map_over` differ in that `accepts` is the direct-edge case
+where ranks already align, while `can_map_over` is the strict nesting
+case where the output has *more* rank than the input. `compatible`
+is symmetric and either side may go first.
+
+`compatible(a, b)` is implemented as `a.accepts(b) or b.accepts(a)`.
+
+### Where each is used
+
+- `accepts` is called at single-edge validation: connecting one output
+  to one input. The asymmetry between input and output sides matters
+  here. Examples: `connection_types.can_match`,
+  `query.HistoryQuery.direct_match`, and the workflow-editor input
+  attachment paths in `terminals.ts`.
+
+- `compatible` is called when two collections must drive a common
+  map-over as siblings. Neither side is the input slot; both are
+  concrete shapes (observed HDCA shapes at runtime, sibling map-over
+  states at connection time). Order of arrival must not change the
+  answer. Examples: Python `Tree.compatible_shape` (matching.py,
+  execute.py) and the `mappingConstraints` checks in `terminals.ts`.
+
+- `can_map_over` is called when deciding whether an output of higher
+  rank can drive a map-over into a lower-rank input — for instance, a
+  `list:paired` output feeding a `paired` input by iterating the outer
+  list. The Python and TypeScript names match
+  (`can_map_over` / `canMapOver`) because it is the same operational
+  question in both layers.
+
+Routing a sibling-matching question through `accepts` instead of
+`compatible` produces order-dependent behavior — which sibling input
+arrived first changes whether the workflow validates. This was a real
+bug in earlier revisions of both the Python and TypeScript code.
+
+### Worked examples
+
+- `paired.accepts(paired_or_unpaired)` is `False`. A 1-element
+  paired_or_unpaired output cannot be connected to an input slot
+  that strictly requires a pair. Test: `test_paired_accepts_relation`.
+
+- `paired.compatible(paired_or_unpaired)` is `True`. If both observed
+  sibling collections happen to align in cardinality, they match for
+  sibling iteration; cardinality checking happens later at the
+  children level. Test:
+  `test_paired_and_paired_or_unpaired_match_symmetric`.
+
+- `sample_sheet.accepts(list)` is `False`; `list.accepts(sample_sheet)`
+  is `True`. Tests:
+  `test_sample_sheet_accepts_relation`, workflow editor
+  `"rejects list -> sample_sheet connection (asymmetry)"`.
+
+- `sample_sheet.compatible(list)` and `list.compatible(sample_sheet)`
+  are both `True`. Tests: `test_compatible`,
+  `test_tree_compatible_shape_sample_sheet_list_symmetric`.
+
+### Cross-language synchronization
+
+The Python implementation lives in
+`lib/galaxy/model/dataset_collections/type_description.py`. The
+TypeScript implementation lives in
+`client/src/components/Workflow/Editor/modules/collectionTypeDescription.ts`.
+Both must stay in sync; method names and conventions are identical.
+
