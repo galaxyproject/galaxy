@@ -62,6 +62,17 @@ ResourceRequirementValue = Union[int, float, str, None]
 
 
 class ResourceRequirement(ToolSourceBaseModel):
+    """A tool's compute resource request.
+
+    Galaxy itself enforces only ``timelimit``. The remaining fields are metadata
+    attached to the tool for the deployment's job destination logic (job
+    configuration rules or TPV) to act on, so whether a request has any effect
+    depends on how the instance is configured. Notably ``cores_min`` does not by
+    itself set ``$GALAXY_SLOTS``, which comes from the resource manager's actual
+    allocation. Use numbers or numeric strings. Other strings are reserved for
+    expressions, which are not evaluated yet and are currently ignored.
+    """
+
     type: Literal["resource"]
     cores_min: Annotated[
         ResourceRequirementValue, Field(description=f"{cores_min_description}\n{cores_description}")
@@ -71,14 +82,47 @@ class ResourceRequirement(ToolSourceBaseModel):
     ] = None
     ram_min: Annotated[ResourceRequirementValue, Field(description=f"{ram_min_description}\n{ram_description}")] = 256
     ram_max: Annotated[ResourceRequirementValue, Field(description=f"{ram_max_description}\n{ram_description}")] = None
-    tmpdir_min: ResourceRequirementValue = None
-    tmpdir_max: ResourceRequirementValue = None
-    cuda_version_min: ResourceRequirementValue = None
-    cuda_compute_capability: ResourceRequirementValue = None
-    gpu_memory_min: ResourceRequirementValue = None
-    cuda_device_count_min: ResourceRequirementValue = None
-    cuda_device_count_max: ResourceRequirementValue = None
-    shm_size: ResourceRequirementValue = None
+    tmpdir_min: Annotated[
+        ResourceRequirementValue,
+        Field(
+            description="Minimum reserved temporary directory space, in mebibytes (2**20)."
+        ),
+    ] = None
+    tmpdir_max: Annotated[
+        ResourceRequirementValue,
+        Field(
+            description="Maximum reserved temporary directory space, in mebibytes (2**20)."
+        ),
+    ] = None
+    cuda_version_min: Annotated[
+        ResourceRequirementValue,
+        Field(description="Minimum CUDA runtime version required, e.g. 11.2."),
+    ] = None
+    cuda_compute_capability: Annotated[
+        ResourceRequirementValue,
+        Field(description="Minimum CUDA compute capability required, e.g. 7.5."),
+    ] = None
+    gpu_memory_min: Annotated[
+        ResourceRequirementValue,
+        Field(description="Minimum GPU memory required, in mebibytes (2**20)."),
+    ] = None
+    cuda_device_count_min: Annotated[
+        ResourceRequirementValue,
+        Field(description="Minimum number of GPUs to reserve."),
+    ] = None
+    cuda_device_count_max: Annotated[
+        ResourceRequirementValue,
+        Field(description="Maximum number of GPUs to reserve."),
+    ] = None
+    shm_size: Annotated[
+        ResourceRequirementValue,
+        Field(
+            description=(
+                "Size of /dev/shm to request as `<number><unit>`. The optional unit can be `b` (bytes), "
+                "`k` (kilobytes), `m` (megabytes), or `g` (gigabytes); without a unit, the value is bytes."
+            )
+        ),
+    ] = None
     timelimit: Annotated[
         ResourceRequirementValue,
         Field(description="Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded."),
