@@ -13,6 +13,11 @@
 # relative path; the editor rewrites it to an absolute docs.galaxyproject.org
 # URL.
 #
+# A section with `parameter_types: true` expands into one section per input type.
+# Its `{{parameter_type_index}}` marker becomes a linked index. Both consumers
+# build those sections from ToolSourceSchema.json, whose examples come from the
+# Pydantic parameter models.
+#
 # Per-field facts (units, required shapes) belong on the pydantic models
 # instead: those reach the OpenAPI schema, the generated TypeScript client and
 # the editor's hover help from one place. Keep this file for the prose that is
@@ -22,9 +27,7 @@ title: Authoring User-Defined Tools
 
 intro: |
   User-defined tools let a user register a containerized command as a Galaxy
-  tool without administrator privileges. This page is the authoring reference:
-  the tool format, how expressions are evaluated, how to choose a container,
-  how to ask for compute resources, and how to check the result.
+  tool without administrator privileges.
 
 sections:
   - id: tool-format
@@ -34,7 +37,7 @@ sections:
       A user-defined tool is a YAML document. `class: GalaxyUserTool` selects
       the restricted schema, `container` names the image the command runs in,
       and `shell_command` is the command itself, with inputs referenced as
-      `$(inputs.NAME)` for scalar values and `$(inputs.NAME.path)` for files.
+      `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files.
 
       | Field | Details | Required |
       | --- | --- | --- |
@@ -45,13 +48,13 @@ sections:
       | `description` | Short text displayed after the tool name. | No |
       | `container` | Fully qualified container image reference used as the entire execution environment. | Yes |
       | `shell_command` | Command to execute, with inputs referenced through expressions. | Yes |
-      | `configfiles` | Files Galaxy writes into the job working directory before running the command. | No |
-      | `inputs` | Input parameters shown on the tool form. | No |
-      | `outputs` | Datasets and collections Galaxy claims after the command finishes. | No |
-      | `requirements` | JavaScript helpers and compute-resource requests. | No |
-      | `help` | Longer help text shown below the tool form. | No |
-      | `tests` | Tool test declarations. | No |
-      | `citations`, `license`, `edam_operations`, `edam_topics`, `xrefs` | Publication and ontology metadata. | No |
+      | [`configfiles`](#configfiles) | Templated files Galaxy writes into the job working directory. Use them for scripts and other substantial command logic. | No |
+      | [`inputs`](#parameters) | Input parameters shown on the tool form. | No |
+      | [`outputs`](#outputs) | Datasets and collections Galaxy claims after the command finishes. | No |
+      | [`requirements`](#resource-requirements) | JavaScript helpers and compute-resource requests. | No |
+      | [`help`](#help-content) | Longer help text shown below the tool form. | No |
+      | [`tests`](#testing) | Tool test declarations. | No |
+      | [`citations`](#citations-metadata), `license`, [`edam_operations`](#citations-metadata), [`edam_topics`](#citations-metadata), [`xrefs`](#citations-metadata) | Publication and ontology metadata. | No |
       | `profile` | Galaxy tool profile controlling versioned tool behavior. | No |
 
       ```yaml
@@ -90,67 +93,109 @@ sections:
       `discover_datasets`. An output that declares neither is rejected, because
       nothing would ever be claimed from the working directory.
 
+  - id: configfiles
+    title: Config files
+    kind: reference
+    body: |
+      Galaxy writes each config file into the job working directory before it
+      runs `shell_command`. The file content supports the same sandboxed
+      ECMAScript expressions as the command.
+
+      | Field | Details | Default | Required |
+      | --- | --- | --- | --- |
+      | `filename` | Name of the file in the job working directory. | — | No |
+      | `content` | File contents, including any input expressions. | — | Yes |
+      | `name` | Internal name for the config file. | — | No |
+      | `eval_engine` | Template engine; user-defined tools use `ecmascript`. | `ecmascript` | No |
+
+      ```yaml
+      configfiles:
+        - filename: message.txt
+          content: |
+            Selected motif: $(inputs.motif)
+      shell_command: cat message.txt
+      ```
+
   - id: parameters
     title: Input parameters
     kind: reference
+    parameter_types: true
     body: |
       The YAML authoring layer exposes a deliberately narrow subset of Galaxy's
       parameter model. The JSON schema published to the editor is generated from
       this subset and rejects unknown fields, so an unsupported attribute fails
       at parse time rather than being silently ignored.
 
-      All input parameters share these fields:
+      {{parameter_type_index}}
 
-      | Field | Details | Required |
-      | --- | --- | --- |
-      | `name` | Identifier used by `$(inputs.NAME)` expressions. | Yes |
-      | `type` | One of the supported leaf or structural types below. | Yes |
-      | `label` | Label displayed on the tool form. Defaults to `name`. | No |
-      | `help` | Help text displayed with the form field. | No |
-      | `optional` | Whether the user may leave the input unset. Defaults to `false`. | No |
-
-      Leaf types add the following fields:
-
-      | Type | Additional fields | Details |
-      | --- | --- | --- |
-      | `boolean` | `value` | Boolean default value. |
-      | `integer` | `value`, `min`, `max`, `validators` | Supports `in_range` validators. |
-      | `float` | `value`, `min`, `max`, `validators` | Supports `in_range` validators. |
-      | `text` | `value`, `area`, `validators` | Supports `length`, `regex`, and `empty_field` validators. |
-      | `select` | `options`, `multiple`, `validators` | `options` is required and must contain at least one static option; supports `no_options` validators. |
-      | `color` | `value` | Color value used as the default. |
-      | `data` | `format`, `multiple` | `format` defaults to `data`; `multiple` accepts a list of datasets. |
-      | `data_collection` | `collection_type`, `format` | Restricts the accepted collection structure and member datatype. |
-
-      The structural groups `conditional`, `repeat` and `section` are supported
-      and recurse into that leaf set.
-
-      ```yaml
-      inputs:
-        - name: greeting
-          type: select
-          options:
-            - { label: Hi, value: hi, selected: true }
-            - { label: Hello, value: hello, selected: false }
-        - name: count
-          type: integer
-          value: 1
-          min: 1
-          max: 10
-        - name: extras
-          type: repeat
-          min: 0
-          parameters:
-            - name: input_file
-              type: data
-              format: txt
-      ```
+      Each type below has its own field table and example. These are generated
+      from the same Pydantic schema used by the editor and OpenAPI.
 
       Types that exist in the XML tool vocabulary but are rejected here:
       `hidden`, `drill_down`, `data_column`, `genomebuild`, `group_tag`,
       `baseurl`, `rules`, `directory`. XML-only fields such as `truevalue`,
       `falsevalue`, `argument`, `is_dynamic` and `parameter_type` are likewise
       rejected on any parameter.
+
+  - id: outputs
+    title: Outputs
+    kind: reference
+    body: |
+      Each output declares a `type` and a `name`. Dataset outputs identify the
+      produced file with `from_work_dir`; collection outputs use
+      `discover_datasets`. Scalar output types are `text`, `integer`, `float`,
+      and `boolean`.
+
+      ```yaml
+      outputs:
+        - name: result
+          type: data
+          format: txt
+          from_work_dir: result.txt
+        - name: match_count
+          type: integer
+      ```
+
+  - id: help-content
+    title: Tool help
+    kind: reference
+    body: |
+      Tool help is rendered below the input form. Declare its format and
+      content together.
+
+      | Field | Details | Required |
+      | --- | --- | --- |
+      | `format` | One of `markdown`, `restructuredtext`, or `plain_text`. | Yes |
+      | `content` | Help shown to the user. | Yes |
+
+      ```yaml
+      help:
+        format: markdown
+        content: |
+          Finds lines containing the selected motif.
+      ```
+
+  - id: citations-metadata
+    title: Citations and metadata
+    kind: reference
+    body: |
+      Use `citations` for publications describing the wrapped tool, `license`
+      for the wrapper license, EDAM identifiers for topics and operations, and
+      `xrefs` for identifiers in other registries.
+
+      ```yaml
+      citations:
+        - type: doi
+          content: 10.1093/bioinformatics/bts611
+      license: MIT
+      edam_topics:
+        - topic_0102
+      edam_operations:
+        - operation_0308
+      xrefs:
+        - type: bio.tools
+          value: example_tool
+      ```
 
   - id: expressions
     title: Expression syntax
@@ -163,8 +208,8 @@ sections:
 
       | Form | Details | Example |
       | --- | --- | --- |
-      | `$( ... )` | Parameter reference or single expression. | `$(inputs.threads)`, `$(inputs.query.path)` |
-      | `${ ... }` | Function body that must return a value. | `${ return inputs.threads * 2 }` |
+      | `$( ... )` | Parameter reference or single expression. | `$(inputs.num_lines)`, `$(inputs.query.path)` |
+      | `${ ... }` | Function body that must return a value. | `${ return inputs.num_lines * 2 }` |
 
       Substituted values are inserted literally; Galaxy does **not** shell-quote
       them. Quote any substitution that can contain spaces yourself, as
@@ -212,18 +257,28 @@ sections:
     title: How should I structure a command?
     kind: faq
     body: |
-      Evaluate each input once into a shell variable at the top of the command,
-      then use plain, unbraced shell variables below. Note `"$threads"` rather
-      than `"${threads}"`: the expression evaluator would interpret the braced
-      form before the shell runs.
+      Keep `shell_command` to a short invocation. When a command needs a script,
+      put it in `configfiles`; each file's `content` is evaluated with the same
+      expression syntax as `shell_command`. Within a shell script, evaluate each
+      input once into a variable and use plain, unbraced shell variables below.
+
+      CPU allocation is not a tool input: declare it with a
+      [resource requirement](#resource-requirements) and pass the allocated
+      `$GALAXY_SLOTS` value to the program.
 
       ```yaml
-      shell_command: |
-        threads="$(inputs.threads)"
-        query='$(inputs.query.path)'
-        db='$(inputs.database.path)'
+      requirements:
+        - type: resource
+          cores_min: 4
+      configfiles:
+        - filename: run.sh
+          content: |
+            set -eu
+            query='$(inputs.query.path)'
+            db='$(inputs.database.path)'
 
-        foldseek easy-search "$query" "$db" result.m8 tmp --threads "$threads"
+            foldseek easy-search "$query" "$db" result.m8 tmp --threads "$GALAXY_SLOTS"
+      shell_command: sh run.sh
       ```
 
       User-defined tool commands run under `set -e`, so the first failing
@@ -351,7 +406,7 @@ sections:
       - **Schema validation.** Unknown keys are rejected anywhere in the
         document, so a misspelled or XML-only field fails immediately rather
         than being ignored.
-      - **Cross-field validation.** Every `$(inputs.NAME)` referenced from
+      - **Cross-field validation.** Every `$(inputs.input_name)` referenced from
         `shell_command` or a config file must correspond to a declared input,
         and every output must declare where its bytes come from.
       - **Linting.** Creating or editing a tool runs Galaxy's tool linters and

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parse } from "yaml";
 
 import {
     authoringHelpGroups,
@@ -7,6 +8,7 @@ import {
     authoringHelpTitle,
     resolveDocLinks,
 } from "./authoringHelp";
+import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 
 describe("user-defined tool authoring help", () => {
     it("loads the shared help content", () => {
@@ -16,6 +18,35 @@ describe("user-defined tool authoring help", () => {
         expect(new Set(authoringHelpSections.map((section) => section.id)).size).toBe(authoringHelpSections.length);
         expect(authoringHelpGroups.map((group) => group.title)).toEqual(["Reference", "Common questions"]);
         expect(authoringHelpGroups.every((group) => group.sections.length > 0)).toBe(true);
+    });
+
+    it("builds one navigable reference entry per parameter schema example", () => {
+        const definitions = TOOL_SOURCE_SCHEMA.$defs as Record<string, unknown>;
+        const mapping = TOOL_SOURCE_SCHEMA.$defs.YamlGalaxyToolParameter.discriminator.mapping;
+        const parameterSections = authoringHelpSections.filter((section) => section.id.startsWith("parameter-"));
+        const parameterIndex = authoringHelpSections.find((section) => section.id === "parameters");
+
+        expect(parameterSections.map((section) => section.id)).toEqual(
+            Object.keys(mapping).map((parameterType) => `parameter-${parameterType}`),
+        );
+        for (const section of parameterSections) {
+            const parameterType = section.id.replace("parameter-", "");
+            const definitionName = mapping[parameterType as keyof typeof mapping].split("/").at(-1)!;
+            const definition = definitions[definitionName] as {
+                examples: Array<Record<string, unknown>>;
+                "x-shell-command": string;
+            };
+            const yamlExamples = [...section.body.matchAll(/```yaml\n([\s\S]+?)\n```/g)].map((match) => match[1]);
+            const inputExample = yamlExamples[0];
+            const shellCommandExample = yamlExamples[1];
+
+            expect(parameterIndex?.body).toContain(`](#${section.id})`);
+            expect(section.parentId).toBe("parameters");
+            expect(yamlExamples).toHaveLength(2);
+            expect(section.body).toContain(`Add this \`${parameterType}\` parameter under \`inputs\``);
+            expect(parse(inputExample!).inputs[0]).toEqual(definition.examples[0]);
+            expect(parse(shellCommandExample!).shell_command.trim()).toBe(definition["x-shell-command"]);
+        }
     });
 
     it("resolves Galaxy documentation links for the editor", () => {

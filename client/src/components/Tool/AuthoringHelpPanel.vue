@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 
 import { authoringHelpGroups, authoringHelpIntro, authoringHelpTitle } from "./authoringHelp";
 import { highlightAuthoringCode } from "./authoringHelpHighlight";
@@ -11,6 +11,7 @@ import Heading from "@/components/Common/Heading.vue";
 import ToolHelpMarkdown from "@/components/Tool/ToolHelpMarkdown.vue";
 
 const expanded = ref<string[]>([]);
+const panel = ref<HTMLElement>();
 
 function isExpanded(id: string): boolean {
     return expanded.value.includes(id);
@@ -23,10 +24,35 @@ function toggle(id: string) {
         expanded.value = [...expanded.value, id];
     }
 }
+
+async function expandLinkedSection(event: MouseEvent) {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+        return;
+    }
+    const link = target.closest<HTMLAnchorElement>('a[href^="#"]');
+    const sectionId = link?.hash.slice(1);
+    const linkedSection = Array.from(panel.value?.querySelectorAll<HTMLElement>(".authoring-help-section") ?? []).find(
+        (section) => section.id === sectionId,
+    );
+    if (!linkedSection || !sectionId) {
+        return;
+    }
+
+    event.preventDefault();
+    if (!isExpanded(sectionId)) {
+        expanded.value = [...expanded.value, sectionId];
+    }
+    await nextTick();
+    linkedSection.scrollIntoView?.({ block: "start" });
+}
+
+onMounted(() => panel.value?.addEventListener("click", expandLinkedSection));
+onBeforeUnmount(() => panel.value?.removeEventListener("click", expandLinkedSection));
 </script>
 
 <template>
-    <div class="authoring-help-panel">
+    <div ref="panel" class="authoring-help-panel">
         <Heading h2 inline size="sm" class="mb-2">{{ authoringHelpTitle }}</Heading>
 
         <ToolHelpMarkdown
@@ -37,7 +63,12 @@ function toggle(id: string) {
         <section v-for="group in authoringHelpGroups" :key="group.id" class="authoring-help-group">
             <Heading h3 size="xs" class="authoring-help-group-title">{{ group.title }}</Heading>
 
-            <div v-for="section in group.sections" :key="section.id" class="authoring-help-section">
+            <div
+                v-for="section in group.sections"
+                :id="section.id"
+                :key="section.id"
+                class="authoring-help-section"
+                :class="{ 'authoring-help-section-nested': section.parentId }">
                 <GButton
                     transparent
                     size="small"
@@ -58,7 +89,9 @@ function toggle(id: string) {
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
 .authoring-help-panel {
     margin: 0 auto;
     max-width: 60rem;
@@ -79,8 +112,13 @@ function toggle(id: string) {
     margin-bottom: 0.25rem;
 }
 
+.authoring-help-section-nested {
+    margin-left: 1rem;
+}
+
 .authoring-help-body {
     padding-left: 1.5rem;
+    overflow-x: auto;
 }
 
 .authoring-help-body :deep(pre),
@@ -89,7 +127,44 @@ function toggle(id: string) {
 }
 
 .authoring-help-body :deep(table) {
-    display: block;
-    overflow-x: auto;
+    width: 100%;
+    margin: 0.75rem 0 1rem;
+    border: 1px solid $border-color;
+    border-collapse: collapse;
+}
+
+.authoring-help-body :deep(th),
+.authoring-help-body :deep(td) {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid $border-color;
+    text-align: left;
+    vertical-align: top;
+}
+
+.authoring-help-body :deep(th) {
+    background: $table-heading-bg;
+    font-weight: 600;
+}
+
+.authoring-help-body :deep(tbody tr:nth-child(odd)) {
+    background: $table-bg-accent;
+}
+
+.authoring-help-body :deep(td code) {
+    display: inline-block;
+    padding: 0.1rem 0.3rem;
+    border: 1px solid $border-color;
+    background: $body-bg;
+    color: $code-color;
+    white-space: nowrap;
+}
+
+.authoring-help-body :deep(th:first-child) {
+    width: 10rem;
+}
+
+.authoring-help-body :deep(th:nth-last-child(-n + 2)) {
+    width: 6rem;
+    white-space: nowrap;
 }
 </style>
