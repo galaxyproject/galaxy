@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { faArrowAltCircleUp, faLightbulb, faSave } from "@fortawesome/free-regular-svg-icons";
+import { faBookOpen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
@@ -22,7 +23,10 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 import { setupMonaco } from "./YamlJs";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
+import AuthoringHelpPanel from "@/components/Tool/AuthoringHelpPanel.vue";
+import CustomToolEditorWorkspace from "@/components/Tool/CustomToolEditorWorkspace.vue";
 
 // Configure Monaco environment with worker factory before loading
 self.MonacoEnvironment = {
@@ -146,6 +150,7 @@ async function importFromUrl() {
 }
 
 const generating = ref(false);
+const showDocumentation = ref(false);
 
 async function generateViaLLM() {
     const userPrompt = prompt("Describe the tool you would like to build");
@@ -194,49 +199,89 @@ async function generateViaLLM() {
 </script>
 
 <template>
-    <div>
+    <div class="custom-tool-editor">
         <b-alert v-if="errorMsg" variant="danger" show dismissible>
             {{ errorMsg.err_msg }}
         </b-alert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
-            <b-button
-                variant="secondary"
-                size="m"
+            <GButton
+                outline
+                icon-only
+                tooltip
+                size="large"
                 title="Generate via AI"
+                disabled-title="Generating via AI"
+                aria-label="Generate via AI"
                 data-description="Generate via AI"
                 :disabled="generating"
-                @click="generateViaLLM"
-                ><FontAwesomeIcon :icon="faLightbulb"
-            /></b-button>
-            <b-button
-                variant="secondary"
-                size="m"
+                @click="generateViaLLM">
+                <FontAwesomeIcon :icon="faLightbulb" />
+            </GButton>
+            <GButton
+                outline
+                icon-only
+                tooltip
+                size="large"
                 title="Import from URL"
+                aria-label="Import from URL"
                 data-description="Import from a URL"
-                @click="importFromUrl"
-                ><FontAwesomeIcon :icon="faArrowAltCircleUp"
-            /></b-button>
-            <b-button
-                variant="primary"
-                size="m"
+                @click="importFromUrl">
+                <FontAwesomeIcon :icon="faArrowAltCircleUp" />
+            </GButton>
+            <GButton
+                outline
+                icon-only
+                tooltip
+                size="large"
+                title="Documentation"
+                aria-label="Documentation"
+                aria-controls="custom-tool-documentation-panel"
+                :aria-expanded="showDocumentation ? 'true' : 'false'"
+                data-description="toggle tool documentation"
+                :pressed="showDocumentation"
+                @click="showDocumentation = !showDocumentation">
+                <FontAwesomeIcon :icon="faBookOpen" />
+            </GButton>
+            <GButton
+                color="blue"
+                icon-only
+                tooltip
+                size="large"
                 title="Save Custom Tool"
+                aria-label="Save Custom Tool"
                 data-description="save custom tool"
-                @click="saveTool"
-                ><FontAwesomeIcon :icon="faSave"
-            /></b-button>
+                @click="saveTool">
+                <FontAwesomeIcon :icon="faSave" />
+            </GButton>
         </div>
-        <VueMonacoEditor
-            v-model="yamlRepresentation"
-            language="yaml-with-js"
-            default-path="tool.yml"
-            :options="{
-                quickSuggestions: {
-                    other: true,
-                    comments: false,
-                    strings: true,
-                },
-            }">
-        </VueMonacoEditor>
+        <CustomToolEditorWorkspace :documentation-visible="showDocumentation">
+            <template v-slot:editor>
+                <VueMonacoEditor
+                    v-model="yamlRepresentation"
+                    language="yaml-with-js"
+                    default-path="tool.yml"
+                    :options="{
+                        quickSuggestions: {
+                            other: true,
+                            comments: false,
+                            strings: true,
+                        },
+                    }">
+                </VueMonacoEditor>
+            </template>
+            <template v-slot:documentation>
+                <AuthoringHelpPanel class="p-3" />
+            </template>
+        </CustomToolEditorWorkspace>
     </div>
 </template>
+
+<style scoped>
+.custom-tool-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+</style>
