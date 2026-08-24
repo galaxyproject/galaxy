@@ -160,14 +160,25 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     requirements: Annotated[
         Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]],
         Field(
-            description="A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images."
+            description=(
+                "A list of requirements needed to execute this tool. These can be javascript expressions or "
+                "resource requirements. Container requirements listed here are not read by the YAML tool parser; "
+                "set the top-level `container` key instead."
+            )
         ),
     ] = []
     shell_command: Annotated[
         str,
         Field(
             title="shell_command",
-            description="A string that contains the command to be executed. Parameters can be referenced inside $().",
+            description=(
+                "A string that contains the command to be executed. Reference inputs inside $() as "
+                "$(inputs.NAME) for scalar values and $(inputs.NAME.path) for files; ${ ... } evaluates a "
+                "JavaScript function body that must return a value. Substituted values are not shell-quoted, "
+                "so quote them yourself. Because $( and ${ are consumed by the expression evaluator, shell "
+                "command substitution and braced parameter expansion do not reach the shell: escape them as "
+                "\\$( and \\${, and prefer unbraced variables such as $GALAXY_SLOTS."
+            ),
             examples=["head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt"],
         ),
     ]
@@ -296,7 +307,17 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
 
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     container: Annotated[
-        str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
+        str,
+        Field(
+            description=(
+                "Container image to use for this tool, as a fully qualified registry/repository:tag string. "
+                "This image is the tool's entire execution environment, so every command used by shell_command "
+                "must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself "
+                "for Singularity and Apptainer destinations. An unqualified name is resolved against the "
+                "container runtime's own default registry (Docker Hub), which is rarely what you want."
+            ),
+            examples=["quay.io/biocontainers/python:3.13"],
+        ),
     ]
     # Required here (it's optional on the base for stored/legacy rows). Galaxy's
     # linter rejects a versionless tool, so forcing it into the structured-output
