@@ -4,13 +4,12 @@ import { configureMonacoYaml } from "monaco-yaml";
 import { extractEmbeddedJs } from "./extractEmbeddedJs";
 import { monarchConfig } from "./MonarchYamlJs";
 import { fetchAndConvertSchemaToInterface } from "./runTimeModel";
-import { withMarkdownDescriptions } from "./schemaMarkdown";
+import { TOOL_SOURCE_SCHEMA_URI, withMarkdownDescriptions } from "./schemaMarkdown";
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 import { buildProviderFunctions } from "./yaml";
 
 const LANG = "yaml-with-js";
 const EDITOR_TOOL_SOURCE_SCHEMA = withMarkdownDescriptions(TOOL_SOURCE_SCHEMA);
-export const TOOL_SOURCE_SCHEMA_URI = "authoring-help#tool-format";
 
 // Lazy-initialized monaco reference - set when setupMonaco is called
 let monacoInstance: MonacoEditor | null = null;

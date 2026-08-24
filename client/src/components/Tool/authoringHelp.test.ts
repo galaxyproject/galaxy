@@ -86,6 +86,7 @@ describe("user-defined tool authoring help", () => {
     });
 
     it("recognizes embedded authoring-reference links", () => {
+        expect(linkedAuthoringHelpSection("https://schema.galaxyproject.org/customTool.json")).toBe("tool-format");
         expect(linkedAuthoringHelpSection("#outputs")).toBe("outputs");
         expect(linkedAuthoringHelpSection("authoring-help#parameter-data")).toBe("parameter-data");
         expect(linkedAuthoringHelpSection("/authoring-help#output-collection")).toBe("output-collection");
