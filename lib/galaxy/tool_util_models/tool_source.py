@@ -137,7 +137,10 @@ class JavascriptRequirement(ToolSourceBaseModel):
                 str,
                 Field(
                     title="expression_lib",
-                    description="Provide Javascript/ECMAScript 5.1 code here that will be available for expressions inside the `shell_command` field.",
+                    description=(
+                        "Provide Javascript/ECMAScript 5.1 code here that will be available for expressions "
+                        "inside `shell_command` and `configfiles[*].content`."
+                    ),
                     examples=[r"""function pickValue() {
     if (inputs.conditional_parameter.test_parameter == "a") {
         return inputs.conditional_parameter.integer_parameter

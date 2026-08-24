@@ -7,6 +7,9 @@ Covers:
   that backs ``/api/unprivileged_tools/runtime_model``.
 """
 
+import json
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -27,7 +30,10 @@ from galaxy.tool_util_models.parameters import (
     SelectParameterModel,
     ToolParameterBundleModel,
 )
+from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util_models.yaml_parameters import YamlGalaxyToolParameter
+
+PROJECT_ROOT = Path(__file__).parents[3]
 
 
 def _validate(input_dict):
@@ -333,6 +339,85 @@ _BLACKLIST_SUBSTRINGS = (
 )
 
 
+def test_each_parameter_type_publishes_one_valid_example():
+    schema = UserToolSource.model_json_schema()
+    definitions = schema["$defs"]
+    mapping = definitions["YamlGalaxyToolParameter"]["discriminator"]["mapping"]
+
+    assert set(mapping) == {
+        "boolean",
+        "color",
+        "conditional",
+        "data",
+        "data_collection",
+        "float",
+        "integer",
+        "repeat",
+        "section",
+        "select",
+        "text",
+    }
+    for parameter_type, reference in mapping.items():
+        definition = definitions[reference.rsplit("/", 1)[-1]]
+        examples = definition.get("examples", [])
+        assert len(examples) == 1, (
+            f"{parameter_type} must publish exactly one canonical example"
+        )
+        parameter = YamlGalaxyToolParameter.model_validate(examples[0])
+        assert parameter.root.type == parameter_type
+        shell_command = definition.get("x-shell-command")
+        assert shell_command, f"{parameter_type} must publish a shell command example"
+        assert f"inputs.{examples[0]['name']}" in shell_command
+
+
+def test_editor_tool_source_schema_matches_pydantic_model():
+    schema_path = (
+        PROJECT_ROOT
+        / "client"
+        / "src"
+        / "components"
+        / "Tool"
+        / "ToolSourceSchema.json"
+    )
+    published_schema = json.loads(schema_path.read_text())
+
+    assert published_schema == UserToolSource.model_json_schema()
+
+
+def test_structured_tool_fields_publish_editor_hover_help():
+    properties = UserToolSource.model_json_schema()["properties"]
+
+    for field_name in (
+        "configfiles",
+        "requirements",
+        "inputs",
+        "outputs",
+        "citations",
+        "edam_operations",
+        "edam_topics",
+        "xrefs",
+        "help",
+        "tests",
+    ):
+        assert properties[field_name].get("description"), (
+            f"{field_name} has no editor hover help"
+        )
+
+
+def test_unprivileged_tool_api_schema_includes_parameter_examples():
+    definitions = DynamicUnprivilegedToolCreatePayload.model_json_schema()["$defs"]
+    mapping = definitions["YamlGalaxyToolParameter"]["discriminator"]["mapping"]
+
+    for parameter_type, reference in mapping.items():
+        definition = definitions[reference.rsplit("/", 1)[-1]]
+        assert definition.get("examples"), (
+            f"{parameter_type} example missing from API schema"
+        )
+        assert definition.get("x-shell-command"), (
+            f"{parameter_type} shell command example missing from API schema"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Step 6: runtimeify enforces the v1 parameter allowlist for YAML-origin tools
 # ---------------------------------------------------------------------------
@@ -363,8 +448,6 @@ def test_authoring_view_drops_tests_and_shrinks_schema():
     test-assertion DSL (~70% of the full schema). This is what keeps the
     structured-output schema small; guard against `tests` creeping back onto the
     shared base (which would silently re-inflate it)."""
-    import json
-
     assert "tests" not in UserToolSourceAuthoringView.model_fields
     assert "tests" in UserToolSource.model_fields
     # A produced view is a strict subset and promotes to a full UserToolSource.
