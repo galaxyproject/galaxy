@@ -10,6 +10,7 @@ import { buildProviderFunctions } from "./yaml";
 
 const LANG = "yaml-with-js";
 const EDITOR_TOOL_SOURCE_SCHEMA = withMarkdownDescriptions(TOOL_SOURCE_SCHEMA);
+export const TOOL_SOURCE_SCHEMA_URI = "authoring-help#tool-format";
 
 // Lazy-initialized monaco reference - set when setupMonaco is called
 let monacoInstance: MonacoEditor | null = null;
@@ -89,7 +90,7 @@ export async function setupMonaco(monaco: MonacoEditor) {
                 // The following schema will be applied
                 schema: EDITOR_TOOL_SOURCE_SCHEMA,
                 // And the URI will be linked to as the source.
-                uri: "https://schema.galaxyproject.org/customTool.json",
+                uri: TOOL_SOURCE_SCHEMA_URI,
             },
         ],
     });
@@ -102,7 +103,7 @@ export async function setupMonaco(monaco: MonacoEditor) {
                 // The following schema will be applied
                 schema: EDITOR_TOOL_SOURCE_SCHEMA,
                 // And the URI will be linked to as the source.
-                uri: "https://schema.galaxyproject.org/customTool.json",
+                uri: TOOL_SOURCE_SCHEMA_URI,
             },
         ],
     });

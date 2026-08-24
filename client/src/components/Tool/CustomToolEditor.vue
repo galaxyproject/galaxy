@@ -9,7 +9,7 @@ import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 import yamlWorker from "monaco-yaml/yaml.worker?worker";
-import { nextTick, onUnmounted, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 import { parse, stringify } from "yaml";
 
@@ -21,6 +21,7 @@ import {
 } from "@/api";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
+import { linkedAuthoringHelpSection } from "./authoringHelp";
 import { setupMonaco } from "./YamlJs";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -51,6 +52,7 @@ const unprivilegedToolStore = useUnprivilegedToolStore();
 const router = useRouter();
 
 const disposeConfig = ref<() => void>();
+const editorRoot = ref<HTMLElement>();
 watch(
     monacoRef,
     () => {
@@ -65,7 +67,9 @@ watch(
     { immediate: true },
 );
 
+onMounted(() => editorRoot.value?.addEventListener("click", openAuthoringHelpLink));
 onUnmounted(() => {
+    editorRoot.value?.removeEventListener("click", openAuthoringHelpLink);
     disposeConfig.value!();
     unload();
 });
@@ -151,6 +155,27 @@ async function importFromUrl() {
 
 const generating = ref(false);
 const showDocumentation = ref(false);
+const authoringHelpPanel = ref<InstanceType<typeof AuthoringHelpPanel>>();
+
+async function openAuthoringHelpLink(event: MouseEvent) {
+    if (event.defaultPrevented) {
+        return;
+    }
+    const target = event.target;
+    if (!(target instanceof Element)) {
+        return;
+    }
+    const link = target.closest<HTMLAnchorElement>("a[href]");
+    const sectionId = link ? linkedAuthoringHelpSection(link.getAttribute("href") ?? "") : undefined;
+    if (!sectionId) {
+        return;
+    }
+
+    event.preventDefault();
+    showDocumentation.value = true;
+    await nextTick();
+    await authoringHelpPanel.value?.openSection(sectionId);
+}
 
 async function generateViaLLM() {
     const userPrompt = prompt("Describe the tool you would like to build");
@@ -199,7 +224,7 @@ async function generateViaLLM() {
 </script>
 
 <template>
-    <div class="custom-tool-editor">
+    <div ref="editorRoot" class="custom-tool-editor">
         <b-alert v-if="errorMsg" variant="danger" show dismissible>
             {{ errorMsg.err_msg }}
         </b-alert>
@@ -271,7 +296,7 @@ async function generateViaLLM() {
                 </VueMonacoEditor>
             </template>
             <template v-slot:documentation>
-                <AuthoringHelpPanel class="p-3" />
+                <AuthoringHelpPanel ref="authoringHelpPanel" class="p-3" />
             </template>
         </CustomToolEditorWorkspace>
     </div>
