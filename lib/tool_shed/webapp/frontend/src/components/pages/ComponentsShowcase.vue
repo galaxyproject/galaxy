@@ -4,6 +4,7 @@ import LoadingDiv from "@/components/LoadingDiv.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import ComponentShowcase from "@/components/ComponentShowcase.vue"
 import ComponentShowcaseExample from "@/components/ComponentShowcaseExample.vue"
+import { GButton, GCheckbox, GHeading, GLink } from "@galaxyproject/galaxy-ui"
 import RecentlyCreatedRepositories from "@/components/RecentlyCreatedRepositories.vue"
 import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryActions from "@/components/RepositoryActions.vue"
@@ -99,6 +100,40 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
 <template>
     <page-container>
         This page is only meant for tool shed developers. It demonstrates common widgets and styles in isolation.
+
+        <component-showcase title="Galaxy UI (galaxy-ui package)">
+            <component-showcase-example title="GButton colors">
+                <GButton color="blue">Blue</GButton>
+                <GButton color="green">Green</GButton>
+                <GButton color="red">Red</GButton>
+                <GButton>Default</GButton>
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="GButton variants">
+                <GButton color="blue" outline>Outline</GButton>
+                <GButton color="blue" transparent>Transparent</GButton>
+                <GButton color="blue" pill>Pill</GButton>
+                <GButton color="blue" disabled disabled-title="Disabled example">Disabled</GButton>
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="GButton sizes">
+                <GButton color="blue" size="small">Small</GButton>
+                <GButton color="blue" size="medium">Medium</GButton>
+                <GButton color="blue" size="large">Large</GButton>
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="GHeading">
+                <GHeading h2 size="md" separator>Section heading</GHeading>
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="GLink">
+                <GLink href="https://galaxyproject.org">External link</GLink>
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="GCheckbox">
+                <GCheckbox>Labeled checkbox</GCheckbox>
+            </component-showcase-example>
+        </component-showcase>
 
         <component-showcase title="LoadingDiv">
             <component-showcase-example title="default">
