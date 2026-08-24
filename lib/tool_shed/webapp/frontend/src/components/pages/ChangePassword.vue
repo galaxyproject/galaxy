@@ -5,6 +5,7 @@ import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { ToolShedApi } from "@/schema"
 import { errorMessageAsString } from "@/util"
 import ErrorBanner from "@/components/ErrorBanner.vue"
+import { GButton } from "@galaxyproject/galaxy-ui"
 import router from "@/router"
 
 const current = ref("")
@@ -46,7 +47,7 @@ function dismiss() {
                     type="password"
                     label="Re-enter New Password"
                 />
-                <q-btn unelevated color="primary" size="lg" class="full-width" label="Change Password" type="submit" />
+                <GButton color="blue" size="large" class="full-width" type="submit">Change Password</GButton>
             </q-form>
         </q-card-section>
     </modal-form>
