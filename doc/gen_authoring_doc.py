@@ -18,6 +18,7 @@ import yaml
 # relative to doc/source/dev/; the editor resolves the same token to an absolute
 # docs.galaxyproject.org URL.
 GXDOC_LINK = re.compile(r"\]\(gxdoc:([^)]+)\)")
+OUTPUT_TYPE_INDEX = "{{output_type_index}}"
 PARAMETER_TYPE_INDEX = "{{parameter_type_index}}"
 TOOL_SCHEMA_PATH = (
     Path(__file__).resolve().parents[1]
@@ -67,6 +68,40 @@ def _property_default(prop: dict) -> str:
     return f"`{json.dumps(prop['default'], separators=(',', ':'))}`"
 
 
+def _field_table(definition: dict) -> list[str]:
+    required = set(definition.get("required", []))
+    return [
+        "| Field | Details | Default | Required |",
+        "| --- | --- | --- | --- |",
+        *[
+            f"| `{name}` | {_property_details(prop)} | {_property_default(prop)} | "
+            f"{'Yes' if name in required else 'No'} |"
+            for name, prop in definition.get("properties", {}).items()
+        ],
+    ]
+
+
+def _schema_example(type_name: str, definition: dict) -> dict:
+    examples = definition.get("examples", [])
+    if not examples:
+        raise ValueError(f"Schema '{type_name}' has no example.")
+    return examples[0]
+
+
+def _reference_index(label: str, prefix: str, sections: list[dict]) -> str:
+    return "\n".join(
+        [
+            f"| {label} | Details |",
+            "| --- | --- |",
+            *[
+                f"| [`{section['id'].removeprefix(f'{prefix}-')}`](#{section['id']}) | "
+                f"{_markdown_cell(section['body'].splitlines()[0])} |"
+                for section in sections
+            ],
+        ]
+    )
+
+
 def _build_parameter_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
     definitions = tool_schema["$defs"]
     mapping = definitions["YamlGalaxyToolParameter"]["discriminator"]["mapping"]
@@ -74,23 +109,15 @@ def _build_parameter_type_reference(tool_schema: dict) -> tuple[str, list[dict]]
     for parameter_type, reference in mapping.items():
         definition_name = reference.rsplit("/", 1)[-1]
         definition = definitions[definition_name]
-        examples = definition.get("examples", [])
-        if not examples:
-            raise ValueError(f"Parameter schema '{parameter_type}' has no example.")
+        example = _schema_example(parameter_type, definition)
         shell_command = definition.get("x-shell-command")
         if not shell_command:
             raise ValueError(
                 f"Parameter schema '{parameter_type}' has no shell command example."
             )
-        required = set(definition.get("required", []))
-        rows = [
-            f"| `{name}` | {_property_details(prop)} | {_property_default(prop)} | "
-            f"{'Yes' if name in required else 'No'} |"
-            for name, prop in definition.get("properties", {}).items()
-        ]
         example_yaml = "inputs:\n" + textwrap.indent(
             yaml.safe_dump(
-                [examples[0]],
+                [example],
                 allow_unicode=True,
                 sort_keys=False,
             ).rstrip(),
@@ -107,9 +134,7 @@ def _build_parameter_type_reference(tool_schema: dict) -> tuple[str, list[dict]]
                 [
                     description,
                     "",
-                    "| Field | Details | Default | Required |",
-                    "| --- | --- | --- | --- |",
-                    *rows,
+                    *_field_table(definition),
                     "",
                     f"Add this `{parameter_type}` parameter under `inputs`:",
                     "",
@@ -126,30 +151,61 @@ def _build_parameter_type_reference(tool_schema: dict) -> tuple[str, list[dict]]
             ),
         }
         sections.append(section)
-    index = "\n".join(
-        [
-            "| Parameter type | Details |",
-            "| --- | --- |",
-            *[
-                f"| [`{section['id'].removeprefix('parameter-')}`](#{section['id']}) | "
-                f"{_markdown_cell(section['body'].splitlines()[0])} |"
-                for section in sections
-            ],
-        ]
-    )
-    return index, sections
+    return _reference_index("Parameter type", "parameter", sections), sections
+
+
+def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
+    definitions = tool_schema["$defs"]
+    mapping = tool_schema["properties"]["outputs"]["items"]["discriminator"]["mapping"]
+    sections = []
+    for output_type, reference in mapping.items():
+        definition_name = reference.rsplit("/", 1)[-1]
+        definition = definitions[definition_name]
+        example = _schema_example(output_type, definition)
+        example_yaml = "outputs:\n" + textwrap.indent(
+            yaml.safe_dump([example], allow_unicode=True, sort_keys=False).rstrip(),
+            "  ",
+        )
+        description = definition.get("description", "").replace("``", "`").strip()
+        sections.append(
+            {
+                "id": f"output-{output_type}",
+                "title": f"{output_type} output",
+                "kind": "reference",
+                "parent_id": "outputs",
+                "body": "\n".join(
+                    [
+                        description,
+                        "",
+                        *_field_table(definition),
+                        "",
+                        f"Add this `{output_type}` output under `outputs`:",
+                        "",
+                        "```yaml",
+                        example_yaml,
+                        "```",
+                    ]
+                ),
+            }
+        )
+    return _reference_index("Output type", "output", sections), sections
 
 
 def render(help_data: dict, tool_schema: dict) -> str:
     parameter_index, parameter_sections = _build_parameter_type_reference(tool_schema)
+    output_index, output_sections = _build_output_type_reference(tool_schema)
     sections = []
     for raw_section in help_data["sections"]:
         section = dict(raw_section)
         has_parameter_types = section.pop("parameter_types", False)
+        has_output_types = section.pop("output_types", False)
         section["body"] = section["body"].replace(PARAMETER_TYPE_INDEX, parameter_index)
+        section["body"] = section["body"].replace(OUTPUT_TYPE_INDEX, output_index)
         sections.append(section)
         if has_parameter_types:
             sections.extend(parameter_sections)
+        if has_output_types:
+            sections.extend(output_sections)
     parts = [
         GENERATED_HEADER,
         f"# {help_data['title']}",
