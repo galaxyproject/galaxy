@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import { ToolShedApi } from "@/schema"
@@ -70,15 +71,9 @@ async function onRegister() {
                     label="Username"
                     name="username"
                 />
-                <q-btn
-                    unelevated
-                    color="primary"
-                    size="lg"
-                    class="full-width"
-                    label="Register"
-                    type="submit"
-                    name="create_user_button"
-                />
+                <GButton color="blue" size="large" class="full-width" type="submit" name="create_user_button">
+                    Register
+                </GButton>
             </q-form>
         </q-card-section>
         <q-card-section class="text-center q-pa-none">

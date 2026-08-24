@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import { ToolShedApi } from "@/schema"
 import type { components } from "@/schema"
@@ -112,7 +113,9 @@ function clearPreview() {
                                 @click="applyReset"
                                 :loading="loading"
                             />
-                            <q-btn flat label="New Preview" @click="clearPreview" class="q-ml-sm" :disable="loading" />
+                            <GButton transparent class="q-ml-sm" :disabled="loading" @click="clearPreview">
+                                New Preview
+                            </GButton>
                         </div>
                     </div>
                 </q-card-section>

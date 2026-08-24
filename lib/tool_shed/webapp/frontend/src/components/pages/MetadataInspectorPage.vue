@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
 import { ref, computed } from "vue"
 import { storeToRefs } from "pinia"
 import { useRepositoryStore } from "@/stores"
@@ -76,7 +77,7 @@ function onResetComplete() {
                 </template>
                 {{ totalInvalidTools }} invalid tool(s) found across revisions.
                 <template #action>
-                    <q-btn flat label="View in Revisions" @click="activeTab = 'revisions'" />
+                    <GButton transparent class="text-white" @click="activeTab = 'revisions'">View in Revisions</GButton>
                 </template>
             </q-banner>
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
 import { computed, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { ToolShedApi, components } from "@/schema"
@@ -53,7 +54,7 @@ async function onResetPassword() {
 
 <template>
     <page-container>
-        <q-btn label="Re-index search" @click="onIndex" />
+        <GButton @click="onIndex">Re-index search</GButton>
         <div v-if="searchResults">
             {{ searchResults }}
         </div>
@@ -80,7 +81,7 @@ async function onResetPassword() {
                 label="Re-enter New Password"
                 name="confirm"
             />
-            <q-btn unelevated color="primary" label="Reset Password" type="submit" name="reset_password_button" />
+            <GButton color="blue" type="submit" name="reset_password_button">Reset Password</GButton>
         </q-form>
     </page-container>
 </template>

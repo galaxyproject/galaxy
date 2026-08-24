@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { useAuthStore } from "@/stores"
@@ -33,15 +34,7 @@ async function onLogin() {
         <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="login" type="text" label="Username / Email" name="login" />
         <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="password" type="password" label="Password" name="password" />
         <q-card-actions class="q-px-md">
-            <q-btn
-                unelevated
-                color="primary"
-                size="lg"
-                class="full-width"
-                label="Login"
-                type="submit"
-                name="login_button"
-            />
+            <GButton color="blue" size="large" class="full-width" type="submit" name="login_button">Login</GButton>
         </q-card-actions>
     </q-form>
 </template>

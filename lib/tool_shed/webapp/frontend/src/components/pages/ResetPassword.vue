@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import { useRoute } from "vue-router"
 import ModalForm from "@/components/ModalForm.vue"
@@ -61,15 +62,9 @@ function dismiss() {
                     label="Re-enter New Password"
                     name="confirm"
                 />
-                <q-btn
-                    unelevated
-                    color="primary"
-                    size="lg"
-                    class="full-width"
-                    label="Set Password"
-                    type="submit"
-                    name="set_password_button"
-                />
+                <GButton color="blue" size="large" class="full-width" type="submit" name="set_password_button"
+                    >Set Password</GButton
+                >
             </q-form>
         </q-card-section>
         <q-card-section class="text-center q-pa-none">

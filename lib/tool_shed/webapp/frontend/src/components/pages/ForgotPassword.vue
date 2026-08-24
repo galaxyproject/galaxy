@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GButton } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
@@ -43,15 +44,9 @@ function dismiss() {
                     Enter the email address of your account and we will send you a link to choose a new password.
                 </p>
                 <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="email" type="email" label="E-Mail" name="email" />
-                <q-btn
-                    unelevated
-                    color="primary"
-                    size="lg"
-                    class="full-width"
-                    label="Send Reset Link"
-                    type="submit"
-                    name="reset_password_button"
-                />
+                <GButton color="blue" size="large" class="full-width" type="submit" name="reset_password_button"
+                    >Send Reset Link</GButton
+                >
             </q-form>
         </q-card-section>
         <q-card-section class="text-center q-pa-none">
