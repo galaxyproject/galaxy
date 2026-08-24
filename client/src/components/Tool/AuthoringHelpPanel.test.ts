@@ -92,4 +92,19 @@ describe("AuthoringHelpPanel", () => {
         expect(outputToggle.attributes("aria-expanded")).toBe("true");
         expect(wrapper.find("#outputs .authoring-help-body").exists()).toBe(true);
     });
+
+    it("opens a section programmatically for editor hover links", async () => {
+        const wrapper = mount(AuthoringHelpPanel as object);
+        const outputToggle = wrapper.find('[data-description="toggle help section output-data"]');
+
+        expect(outputToggle.attributes("aria-expanded")).toBe("false");
+        expect(
+            await (wrapper.vm as unknown as { openSection: (id: string) => Promise<boolean> }).openSection(
+                "output-data",
+            ),
+        ).toBe(true);
+        await wrapper.vm.$nextTick();
+
+        expect(outputToggle.attributes("aria-expanded")).toBe("true");
+    });
 });

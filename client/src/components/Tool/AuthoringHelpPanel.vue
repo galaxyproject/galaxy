@@ -25,6 +25,20 @@ function toggle(id: string) {
     }
 }
 
+async function openSection(sectionId: string): Promise<boolean> {
+    const section = authoringHelpGroups.flatMap((group) => group.sections).find((section) => section.id === sectionId);
+    const linkedSection = Array.from(panel.value?.querySelectorAll<HTMLElement>(".authoring-help-section") ?? []).find(
+        (element) => element.id === sectionId,
+    );
+    if (!section || !linkedSection) {
+        return false;
+    }
+    expanded.value = [...new Set([...expanded.value, ...(section.parentId ? [section.parentId] : []), sectionId])];
+    await nextTick();
+    linkedSection.scrollIntoView?.({ block: "start" });
+    return true;
+}
+
 async function expandLinkedSection(event: MouseEvent) {
     const target = event.target;
     if (!(target instanceof Element)) {
@@ -32,20 +46,14 @@ async function expandLinkedSection(event: MouseEvent) {
     }
     const link = target.closest<HTMLAnchorElement>('a[href^="#"]');
     const sectionId = link?.hash.slice(1);
-    const linkedSection = Array.from(panel.value?.querySelectorAll<HTMLElement>(".authoring-help-section") ?? []).find(
-        (section) => section.id === sectionId,
-    );
-    if (!linkedSection || !sectionId) {
-        return;
+    const hasSection = authoringHelpGroups.some((group) => group.sections.some((section) => section.id === sectionId));
+    if (sectionId && hasSection) {
+        event.preventDefault();
+        await openSection(sectionId);
     }
-
-    event.preventDefault();
-    if (!isExpanded(sectionId)) {
-        expanded.value = [...expanded.value, sectionId];
-    }
-    await nextTick();
-    linkedSection.scrollIntoView?.({ block: "start" });
 }
+
+defineExpose({ openSection });
 
 onMounted(() => panel.value?.addEventListener("click", expandLinkedSection));
 onBeforeUnmount(() => panel.value?.removeEventListener("click", expandLinkedSection));

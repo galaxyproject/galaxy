@@ -6,6 +6,7 @@ import {
     authoringHelpIntro,
     authoringHelpSections,
     authoringHelpTitle,
+    linkedAuthoringHelpSection,
     resolveDocLinks,
 } from "./authoringHelp";
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
@@ -82,5 +83,13 @@ describe("user-defined tool authoring help", () => {
         for (const section of authoringHelpSections) {
             expect(section.body).not.toContain("gxdoc:");
         }
+    });
+
+    it("recognizes embedded authoring-reference links", () => {
+        expect(linkedAuthoringHelpSection("#outputs")).toBe("outputs");
+        expect(linkedAuthoringHelpSection("authoring-help#parameter-data")).toBe("parameter-data");
+        expect(linkedAuthoringHelpSection("/authoring-help#output-collection")).toBe("output-collection");
+        expect(linkedAuthoringHelpSection("#missing")).toBeUndefined();
+        expect(linkedAuthoringHelpSection("https://example.org/#outputs")).toBeUndefined();
     });
 });
