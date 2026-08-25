@@ -729,7 +729,7 @@ gx_select_multiple:
   request_valid:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
-  # ugh... but these aren't optional...
+  # multiple selects are optional by default
   - parameter: null
   - {}
   request_invalid:
@@ -754,7 +754,6 @@ gx_select_multiple:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
   - {}  # could come in linked...
-  # ... hmmm? this should maybe be invalid right?
   - parameter: null
   job_internal_valid:
   - parameter: ["--ex1"]
@@ -819,6 +818,18 @@ gx_select_no_options_validation:
   - {}
   job_runtime_valid:
   - parameter: "--ex1"
+  job_runtime_invalid:
+  - {}
+
+gx_select_multiple_no_options_validation:
+  job_internal_valid:
+  - parameter: ["--ex1"]
+  - parameter: null
+  job_internal_invalid:
+  - {}
+  job_runtime_valid:
+  - parameter: ["--ex1"]
+  - parameter: null
   job_runtime_invalid:
   - {}
 
