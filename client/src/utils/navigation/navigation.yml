@@ -1251,6 +1251,23 @@ custom_tools:
       selector: 'save custom tool'
       type: data-description
     tool_link: "#g-card-custom-tool-${tool_uuid}"
+    documentation_button:
+      selector: 'toggle tool documentation'
+      type: data-description
+    documentation_panel: '#custom-tool-documentation-panel'
+    documentation_content: '[aria-label="Tool documentation"]'
+    editor_pane: '[aria-label="Tool editor"]'
+    documentation_expand_button:
+      selector: 'toggle expanded documentation'
+      type: data-description
+    help_section_toggle:
+      selector: 'toggle help section ${section_id}'
+      type: data-description
+    help_section: '#${section_id}'
+    help_section_link: '#${section_id} a[href="#${target_id}"]'
+    example: '#${section_id} .authoring-code-example'
+    example_label: '#${section_id} .authoring-code-example-label'
+    example_copy_button: '#${section_id} .authoring-code-example-copy'
 
 admin:
   allowlist:
