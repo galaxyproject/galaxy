@@ -3,6 +3,7 @@
 import json
 import re
 import subprocess
+import sys
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,7 @@ PROJECT_ROOT = Path(__file__).parents[3]
 HELP_PATH = (
     PROJECT_ROOT / "client" / "src" / "components" / "Tool" / "authoringHelp.yml"
 )
+HELP_GENERATOR_PATH = PROJECT_ROOT / "doc" / "gen_authoring_doc.py"
 FENCED_BLOCK = re.compile(r"```(?P<language>\w+)\n(?P<source>.*?)\n```", re.DOTALL)
 INPUT_REFERENCE = re.compile(r"inputs\.([A-Za-z_][A-Za-z0-9_]*)(\.path)?")
 KNOWN_FENCE_LANGUAGES = {"console", "json", "yaml"}
@@ -59,7 +61,15 @@ PARAMETER_RUNTIME_INPUTS: dict[str, Any] = {
 
 
 def _help_data() -> dict[str, Any]:
-    return yaml.safe_load(HELP_PATH.read_text())
+    help_data = yaml.safe_load(HELP_PATH.read_text())
+    quick_start = yaml.safe_dump(
+        UserToolSource.model_json_schema()["examples"][0], sort_keys=False
+    ).rstrip()
+    for section in help_data["sections"]:
+        section["body"] = section["body"].replace(
+            "{{quick_start_example}}", quick_start
+        )
+    return help_data
 
 
 def _blocks(language: str) -> list[tuple[str, str]]:
@@ -113,7 +123,9 @@ def _supply_fragment_context(tool_dict: dict[str, Any]) -> None:
 def _tool_from_fragment(section_id: str, source: str) -> UserToolSource:
     fragment = yaml.safe_load(source)
     tool_dict = (
-        fragment if section_id == "tool-format" else {**deepcopy(BASE_TOOL), **fragment}
+        fragment
+        if section_id in {"quick-start", "tool-format"}
+        else {**deepcopy(BASE_TOOL), **fragment}
     )
     _supply_fragment_context(tool_dict)
     return UserToolSource.model_validate(tool_dict)
@@ -162,6 +174,20 @@ def test_all_documentation_fences_are_recognized_and_closed() -> None:
             f"unclosed code fence in {section['id']}"
         )
         assert {match.group("language") for match in matches} <= KNOWN_FENCE_LANGUAGES
+
+
+def test_generated_documentation_resolves_schema_sections() -> None:
+    result = subprocess.run(
+        [sys.executable, str(HELP_GENERATOR_PATH), str(HELP_PATH)],
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    assert "{{" not in result.stdout
+    assert "### Quick start" in result.stdout
+    assert "#### Validators" in result.stdout
+    assert "##### regex validator" in result.stdout
 
 
 @pytest.mark.parametrize(

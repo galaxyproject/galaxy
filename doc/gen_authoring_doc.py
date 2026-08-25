@@ -13,13 +13,21 @@ from pathlib import Path
 
 import yaml
 
+
+class _IndentedSafeDumper(yaml.SafeDumper):
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, False)
+
+
 # Bodies link to other Galaxy docs with `gxdoc:<source path>` so they can render
 # both here and in the editor. In the generated page the target is a path
 # relative to doc/source/dev/; the editor resolves the same token to an absolute
 # docs.galaxyproject.org URL.
 GXDOC_LINK = re.compile(r"\]\(gxdoc:([^)]+)\)")
+QUICK_START_EXAMPLE = "{{quick_start_example}}"
 OUTPUT_TYPE_INDEX = "{{output_type_index}}"
 PARAMETER_TYPE_INDEX = "{{parameter_type_index}}"
+VALIDATOR_TYPE_INDEX = "{{validator_type_index}}"
 TOOL_SCHEMA_PATH = (
     Path(__file__).resolve().parents[1]
     / "client"
@@ -68,13 +76,18 @@ def _property_default(prop: dict) -> str:
     return f"`{json.dumps(prop['default'], separators=(',', ':'))}`"
 
 
+def _field_name(name: str) -> str:
+    return "[`validators`](#validators)" if name == "validators" else f"`{name}`"
+
+
 def _field_table(definition: dict) -> list[str]:
     required = set(definition.get("required", []))
     return [
         "| Field | Details | Default | Required |",
         "| --- | --- | --- | --- |",
         *[
-            f"| `{name}` | {_property_details(prop)} | {_property_default(prop)} | "
+            f"| {_field_name(name)} | "
+            f"{_property_details(prop)} | {_property_default(prop)} | "
             f"{'Yes' if name in required else 'No'} |"
             for name, prop in definition.get("properties", {}).items()
         ],
@@ -129,7 +142,7 @@ def _build_parameter_type_reference(tool_schema: dict) -> tuple[str, list[dict]]
             "id": f"parameter-{parameter_type}",
             "title": f"{parameter_type} parameter",
             "kind": "reference",
-            "parent_id": "parameters",
+            "parentId": "parameters",
             "body": "\n".join(
                 [
                     description,
@@ -172,7 +185,7 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
                 "id": f"output-{output_type}",
                 "title": f"{output_type} output",
                 "kind": "reference",
-                "parent_id": "outputs",
+                "parentId": "outputs",
                 "body": "\n".join(
                     [
                         description,
@@ -191,21 +204,104 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
     return _reference_index("Output type", "output", sections), sections
 
 
+def _build_validator_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
+    sections = []
+    for definition_name, definition in tool_schema["$defs"].items():
+        if not definition_name.endswith("ParameterValidatorModel"):
+            continue
+        validator_type = definition.get("properties", {}).get("type", {}).get("const")
+        if not validator_type:
+            continue
+        example = _schema_example(validator_type, definition)
+        example_yaml = "validators:\n" + textwrap.indent(
+            yaml.safe_dump([example], allow_unicode=True, sort_keys=False).rstrip(),
+            "  ",
+        )
+        description = definition.get("description", "").replace("``", "`").strip()
+        sections.append(
+            {
+                "id": f"validator-{validator_type}",
+                "title": f"{validator_type} validator",
+                "kind": "reference",
+                "parentId": "validators",
+                "body": "\n".join(
+                    [
+                        description,
+                        "",
+                        *_field_table(definition),
+                        "",
+                        "Add this rule to a supported parameter's `validators` list:",
+                        "",
+                        "```yaml",
+                        example_yaml,
+                        "```",
+                    ]
+                ),
+            }
+        )
+    return _reference_index("Validator type", "validator", sections), sections
+
+
+def _heading_level(section: dict, sections_by_id: dict[str, dict]) -> int:
+    level = 3
+    parent_id = section.get("parentId")
+    while parent_id:
+        level += 1
+        parent_id = sections_by_id.get(parent_id, {}).get("parentId")
+    return level
+
+
+def _order_quick_start_value(value):
+    if isinstance(value, list):
+        return [_order_quick_start_value(item) for item in value]
+    if isinstance(value, dict):
+        priority = [field for field in ("name", "type") if field in value]
+        remaining = [field for field in value if field not in priority]
+        return {
+            field: _order_quick_start_value(value[field])
+            for field in [*priority, *remaining]
+        }
+    return value
+
+
 def render(help_data: dict, tool_schema: dict) -> str:
     parameter_index, parameter_sections = _build_parameter_type_reference(tool_schema)
     output_index, output_sections = _build_output_type_reference(tool_schema)
+    validator_index, validator_sections = _build_validator_type_reference(tool_schema)
+    quick_start_examples = tool_schema.get("examples", [])
+    if not quick_start_examples:
+        raise ValueError("The user tool schema has no quick-start example.")
+    field_order = tool_schema.get("x-field-order", quick_start_examples[0].keys())
+    ordered_example = {
+        field: _order_quick_start_value(quick_start_examples[0][field])
+        for field in field_order
+        if field in quick_start_examples[0]
+    }
+    quick_start_example = yaml.dump(
+        ordered_example,
+        Dumper=_IndentedSafeDumper,
+        allow_unicode=True,
+        sort_keys=False,
+        width=10_000,
+    ).rstrip()
     sections = []
     for raw_section in help_data["sections"]:
         section = dict(raw_section)
         has_parameter_types = section.pop("parameter_types", False)
         has_output_types = section.pop("output_types", False)
+        has_validator_types = section.pop("validator_types", False)
+        section["body"] = section["body"].replace(QUICK_START_EXAMPLE, quick_start_example)
         section["body"] = section["body"].replace(PARAMETER_TYPE_INDEX, parameter_index)
         section["body"] = section["body"].replace(OUTPUT_TYPE_INDEX, output_index)
+        section["body"] = section["body"].replace(VALIDATOR_TYPE_INDEX, validator_index)
         sections.append(section)
         if has_parameter_types:
             sections.extend(parameter_sections)
         if has_output_types:
             sections.extend(output_sections)
+        if has_validator_types:
+            sections.extend(validator_sections)
+    sections_by_id = {section["id"]: section for section in sections}
     parts = [
         GENERATED_HEADER,
         f"# {help_data['title']}",
@@ -222,7 +318,7 @@ def render(help_data: dict, tool_schema: dict) -> str:
                 continue
             parts.append(f'<span id="{section["id"]}"></span>')
             parts.append("")
-            heading = "####" if section.get("parent_id") else "###"
+            heading = "#" * _heading_level(section, sections_by_id)
             parts.append(f"{heading} {section['title']}")
             parts.append("")
             parts.append(resolve_links(section["body"].rstrip()))

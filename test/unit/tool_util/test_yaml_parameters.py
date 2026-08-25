@@ -18,6 +18,7 @@ from galaxy.tool_util_models import (
     UserToolSource,
     UserToolSourceAuthoringView,
 )
+from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ConditionalParameterModel,
@@ -30,7 +31,6 @@ from galaxy.tool_util_models.parameters import (
     SelectParameterModel,
     ToolParameterBundleModel,
 )
-from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util_models.yaml_parameters import YamlGalaxyToolParameter
 
 PROJECT_ROOT = Path(__file__).parents[3]
@@ -394,6 +394,16 @@ def test_each_output_type_publishes_one_valid_example():
         assert tool.outputs[0].type == output_type
 
 
+def test_user_tool_schema_publishes_one_valid_quick_start_example():
+    examples = UserToolSource.model_json_schema().get("examples", [])
+
+    assert len(examples) == 1
+    tool = UserToolSource.model_validate(examples[0])
+    assert tool.class_ == "GalaxyUserTool"
+    assert tool.inputs[0].root.name == "input_file"
+    assert tool.outputs[0].name == "output_file"
+
+
 def test_each_validator_type_publishes_one_valid_example():
     definitions = UserToolSource.model_json_schema()["$defs"]
     validator_definitions = {
@@ -459,9 +469,12 @@ def test_structured_tool_fields_publish_editor_hover_help():
         )
 
 
-def test_unprivileged_tool_api_schema_includes_parameter_examples():
+def test_unprivileged_tool_api_schema_includes_authoring_examples():
     definitions = DynamicUnprivilegedToolCreatePayload.model_json_schema()["$defs"]
     mapping = definitions["YamlGalaxyToolParameter"]["discriminator"]["mapping"]
+    api_examples = definitions["UserToolSource"].get("examples")
+
+    assert api_examples == UserToolSource.model_json_schema().get("examples")
 
     for parameter_type, reference in mapping.items():
         definition = definitions[reference.rsplit("/", 1)[-1]]

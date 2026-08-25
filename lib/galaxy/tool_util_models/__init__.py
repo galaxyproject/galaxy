@@ -329,6 +329,29 @@ class CondaPackage(BaseModel):
     version: Optional[str] = None
 
 
+_USER_TOOL_SOURCE_FIELD_ORDER: Tuple[str, ...] = (
+    "class_",
+    "id",
+    "name",
+    "version",
+    "description",
+    "container",
+    "requirements",
+    "shell_command",
+    "configfiles",
+    "inputs",
+    "outputs",
+    "citations",
+    "license",
+    "profile",
+    "edam_operations",
+    "edam_topics",
+    "xrefs",
+    "help",
+    "tests",
+)
+
+
 # Schema-narrowed view of ``UserToolSource`` for LLM tool authoring.
 #
 # This is the *parent* of ``UserToolSource`` and carries every field and
@@ -391,27 +414,7 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     # Field declaration order puts subclass fields (class_, container) after
     # parent ones, which serializes them at the end. Re-order on dump so the
     # YAML the tool editor renders leads with identity + runtime.
-    _CANONICAL_FIELD_ORDER: ClassVar[Tuple[str, ...]] = (
-        "class_",
-        "id",
-        "name",
-        "version",
-        "description",
-        "container",
-        "requirements",
-        "shell_command",
-        "configfiles",
-        "inputs",
-        "outputs",
-        "citations",
-        "license",
-        "profile",
-        "edam_operations",
-        "edam_topics",
-        "xrefs",
-        "help",
-        "tests",
-    )
+    _CANONICAL_FIELD_ORDER: ClassVar[Tuple[str, ...]] = _USER_TOOL_SOURCE_FIELD_ORDER
 
     @field_validator("container", mode="after")
     @classmethod
@@ -454,6 +457,41 @@ class UserToolSource(UserToolSourceAuthoringView):
     uses the slimmer ``UserToolSourceAuthoringView`` parent; ``tests`` is added
     back here so direct authors and stored rows can still carry tests.
     """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "x-field-order": [
+                "class",
+                *[field for field in _USER_TOOL_SOURCE_FIELD_ORDER if field != "class_"],
+            ],
+            "examples": [
+                {
+                    "class": "GalaxyUserTool",
+                    "id": "remove_comments",
+                    "name": "Remove Comment Lines",
+                    "version": "0.1.0",
+                    "description": "from a text file",
+                    "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+                    "shell_command": "grep -v '^#' '$(inputs.input_file.path)' > output.txt || test \"$?\" = 1",
+                    "inputs": [
+                        {
+                            "name": "input_file",
+                            "type": "data",
+                            "format": ["txt"],
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "name": "output_file",
+                            "type": "data",
+                            "format_source": "input_file",
+                            "from_work_dir": "output.txt",
+                        }
+                    ],
+                }
+            ]
+        }
+    )
 
     # ``version`` is required (inherited from UserToolSourceAuthoringView). A stored
     # row that predates the requirement won't validate; ``lift_user_tool_source``

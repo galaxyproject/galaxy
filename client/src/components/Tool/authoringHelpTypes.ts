@@ -31,6 +31,8 @@ interface ToolSourceJsonSchema {
     $defs: Record<string, JsonSchemaDefinition> & {
         YamlGalaxyToolParameter: DiscriminatedSchema;
     };
+    examples?: Record<string, unknown>[];
+    "x-field-order"?: string[];
     properties: {
         outputs: {
             items: DiscriminatedSchema;
@@ -44,6 +46,36 @@ interface TypeReference {
 }
 
 const SCHEMA = TOOL_SOURCE_SCHEMA as ToolSourceJsonSchema;
+
+function orderQuickStartValue(value: unknown): unknown {
+    if (Array.isArray(value)) {
+        return value.map(orderQuickStartValue);
+    }
+    if (value && typeof value === "object") {
+        const fields = value as Record<string, unknown>;
+        const fieldOrder = [
+            "name",
+            "type",
+            ...Object.keys(fields).filter((field) => !["name", "type"].includes(field)),
+        ];
+        return Object.fromEntries(
+            fieldOrder.filter((field) => field in fields).map((field) => [field, orderQuickStartValue(fields[field])]),
+        );
+    }
+    return value;
+}
+
+export function buildQuickStartExample(): string {
+    const example = SCHEMA.examples?.[0];
+    if (!example) {
+        throw new Error("The user tool schema has no quick-start example.");
+    }
+    const fieldOrder = SCHEMA["x-field-order"] ?? Object.keys(example);
+    const orderedExample = Object.fromEntries(
+        fieldOrder.filter((field) => field in example).map((field) => [field, orderQuickStartValue(example[field])]),
+    );
+    return stringify(orderedExample, { lineWidth: 0 }).trim();
+}
 
 function schemaDefinitionName(reference: string): string {
     return reference.split("/").at(-1) ?? "";
