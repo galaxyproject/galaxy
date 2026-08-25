@@ -12,9 +12,26 @@ import ToolHelpMarkdown from "@/components/Tool/ToolHelpMarkdown.vue";
 
 const expanded = ref<string[]>([]);
 const panel = ref<HTMLElement>();
+const sections = authoringHelpGroups.flatMap((group) => group.sections);
+const sectionsById = new Map(sections.map((section) => [section.id, section]));
 
 function isExpanded(id: string): boolean {
     return expanded.value.includes(id);
+}
+
+function isVisible(id: string): boolean {
+    const parentId = sectionsById.get(id)?.parentId;
+    return !parentId || (isExpanded(parentId) && isVisible(parentId));
+}
+
+function sectionPath(sectionId: string): string[] {
+    const path: string[] = [];
+    let currentId: string | undefined = sectionId;
+    while (currentId) {
+        path.unshift(currentId);
+        currentId = sectionsById.get(currentId)?.parentId;
+    }
+    return path;
 }
 
 function toggle(id: string) {
@@ -26,16 +43,15 @@ function toggle(id: string) {
 }
 
 async function openSection(sectionId: string): Promise<boolean> {
-    const section = authoringHelpGroups.flatMap((group) => group.sections).find((section) => section.id === sectionId);
+    if (!sectionsById.has(sectionId)) {
+        return false;
+    }
+    expanded.value = [...new Set([...expanded.value, ...sectionPath(sectionId)])];
+    await nextTick();
     const linkedSection = Array.from(panel.value?.querySelectorAll<HTMLElement>(".authoring-help-section") ?? []).find(
         (element) => element.id === sectionId,
     );
-    if (!section || !linkedSection) {
-        return false;
-    }
-    expanded.value = [...new Set([...expanded.value, ...(section.parentId ? [section.parentId] : []), sectionId])];
-    await nextTick();
-    linkedSection.scrollIntoView?.({ block: "start" });
+    linkedSection?.scrollIntoView?.({ block: "start" });
     return true;
 }
 
@@ -75,6 +91,7 @@ onBeforeUnmount(() => panel.value?.removeEventListener("click", expandLinkedSect
                 v-for="section in group.sections"
                 :id="section.id"
                 :key="section.id"
+                v-show="isVisible(section.id)"
                 class="authoring-help-section"
                 :class="{ 'authoring-help-section-nested': section.parentId }">
                 <GButton
@@ -165,6 +182,22 @@ onBeforeUnmount(() => panel.value?.removeEventListener("click", expandLinkedSect
     background: $body-bg;
     color: $code-color;
     white-space: nowrap;
+}
+
+.authoring-help-body :deep(td a) {
+    color: $brand-primary;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.authoring-help-body :deep(td a code) {
+    color: inherit;
+    border-color: currentColor;
+}
+
+.authoring-help-body :deep(td a:hover code) {
+    background: rgba($brand-primary, 0.08);
 }
 
 .authoring-help-body :deep(th:first-child) {

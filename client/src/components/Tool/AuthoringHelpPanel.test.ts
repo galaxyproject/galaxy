@@ -31,20 +31,25 @@ describe("AuthoringHelpPanel", () => {
     it("links the parameter index to each parameter section", async () => {
         const wrapper = mount(AuthoringHelpPanel as object);
         const parameterToggle = wrapper.find('[data-description="toggle help section parameters"]');
+        const booleanSection = wrapper.find("#parameter-boolean");
+
+        expect(booleanSection.isVisible()).toBe(false);
 
         await parameterToggle.trigger("click");
 
         const booleanLink = wrapper.find('a[href="#parameter-boolean"]');
         expect(booleanLink.exists()).toBe(true);
         expect(booleanLink.attributes("target")).toBeUndefined();
-        expect(wrapper.find("#parameter-boolean").exists()).toBe(true);
-        expect(wrapper.find("#parameter-boolean").classes()).toContain("authoring-help-section-nested");
+        expect(booleanSection.isVisible()).toBe(true);
+        expect(booleanSection.classes()).toContain("authoring-help-section-nested");
     });
 
     it("shows defaults and shell command usage for parameter types", async () => {
         const wrapper = mount(AuthoringHelpPanel as object);
+        const parameterToggle = wrapper.find('[data-description="toggle help section parameters"]');
         const booleanToggle = wrapper.find('[data-description="toggle help section parameter-boolean"]');
 
+        await parameterToggle.trigger("click");
         await booleanToggle.trigger("click");
 
         const parameterSection = wrapper.find("#parameter-boolean");
@@ -63,14 +68,37 @@ describe("AuthoringHelpPanel", () => {
         const outputToggle = wrapper.find('[data-description="toggle help section outputs"]');
         const dataOutputToggle = wrapper.find('[data-description="toggle help section output-data"]');
 
+        expect(wrapper.find("#output-data").isVisible()).toBe(false);
         await outputToggle.trigger("click");
 
         expect(wrapper.find('#outputs a[href="#output-data"]').exists()).toBe(true);
         expect(wrapper.find("#output-data").classes()).toContain("authoring-help-section-nested");
+        expect(wrapper.find("#output-data").isVisible()).toBe(true);
 
         await dataOutputToggle.trigger("click");
         expect(wrapper.find("#output-data").text()).toContain("from_work_dir");
         expect(wrapper.find("#output-data").text()).toContain("result.txt");
+    });
+
+    it("nests validator types under input parameters", async () => {
+        const wrapper = mount(AuthoringHelpPanel as object);
+        const parameterToggle = wrapper.find('[data-description="toggle help section parameters"]');
+        const validatorsToggle = wrapper.find('[data-description="toggle help section validators"]');
+        const regexToggle = wrapper.find('[data-description="toggle help section validator-regex"]');
+
+        expect(wrapper.find("#validators").isVisible()).toBe(false);
+        expect(wrapper.find("#validator-regex").isVisible()).toBe(false);
+
+        await parameterToggle.trigger("click");
+        expect(wrapper.find("#validators").isVisible()).toBe(true);
+        expect(wrapper.find("#validator-regex").isVisible()).toBe(false);
+
+        await validatorsToggle.trigger("click");
+        expect(wrapper.find('#validators a[href="#validator-regex"]').exists()).toBe(true);
+        expect(wrapper.find("#validator-regex").isVisible()).toBe(true);
+
+        await regexToggle.trigger("click");
+        expect(wrapper.find("#validator-regex").text()).toContain("^[ACGT]+$");
     });
 
     it("expands structured fields linked from the tool definition", async () => {
@@ -91,6 +119,7 @@ describe("AuthoringHelpPanel", () => {
         expect(clickEvent.defaultPrevented).toBe(true);
         expect(outputToggle.attributes("aria-expanded")).toBe("true");
         expect(wrapper.find("#outputs .authoring-help-body").exists()).toBe(true);
+        expect(wrapper.find("#output-data").isVisible()).toBe(true);
     });
 
     it("opens a section programmatically for editor hover links", async () => {
@@ -106,5 +135,6 @@ describe("AuthoringHelpPanel", () => {
         await wrapper.vm.$nextTick();
 
         expect(outputToggle.attributes("aria-expanded")).toBe("true");
+        expect(wrapper.find("#output-data").isVisible()).toBe(true);
     });
 });
