@@ -2,6 +2,7 @@ import RAW_AUTHORING_HELP from "./authoringHelp.yml";
 import {
     buildOutputTypeReference,
     buildParameterTypeReference,
+    buildQuickStartExample,
     buildValidatorTypeReference,
 } from "./authoringHelpTypes";
 import { TOOL_SOURCE_SCHEMA_URI } from "./schemaMarkdown";
@@ -38,6 +39,7 @@ const DOCS_BASE = "https://docs.galaxyproject.org/en/master/";
 // `[text](gxdoc:dev/schema.md)`, so the same string can resolve to a relative
 // path in the generated Sphinx page and to an absolute URL here.
 const GXDOC_LINK = /\]\(gxdoc:([^)]+)\)/g;
+const QUICK_START_EXAMPLE = "{{quick_start_example}}";
 const OUTPUT_TYPE_INDEX = "{{output_type_index}}";
 const PARAMETER_TYPE_INDEX = "{{parameter_type_index}}";
 const VALIDATOR_TYPE_INDEX = "{{validator_type_index}}";
@@ -55,6 +57,7 @@ export const authoringHelpIntro: string = resolveDocLinks(HELP.intro);
 const parameterTypeReference = buildParameterTypeReference();
 const outputTypeReference = buildOutputTypeReference();
 const validatorTypeReference = buildValidatorTypeReference();
+const quickStartExample = buildQuickStartExample();
 
 export const authoringHelpSections: AuthoringHelpSection[] = HELP.sections.flatMap((rawSection) => {
     const {
@@ -66,6 +69,7 @@ export const authoringHelpSections: AuthoringHelpSection[] = HELP.sections.flatM
     const resolvedSection = {
         ...section,
         body: resolveDocLinks(section.body)
+            .replace(QUICK_START_EXAMPLE, quickStartExample)
             .replace(PARAMETER_TYPE_INDEX, parameterTypeReference.index)
             .replace(OUTPUT_TYPE_INDEX, outputTypeReference.index)
             .replace(VALIDATOR_TYPE_INDEX, validatorTypeReference.index),

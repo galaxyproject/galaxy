@@ -48,7 +48,7 @@ source/dev/run_tests_help.txt: ../run_tests.sh
 source/dev/schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tool_util/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects lxml in environment)
 	python parse_gx_xsd.py schema_template.md ../lib/galaxy/tool_util/xsd/galaxy.xsd > $@
 
-source/dev/user_defined_tools_authoring.md: gen_authoring_doc.py ../client/src/components/Tool/authoringHelp.yml ## Build the user-defined tool authoring page from the help content the tool editor renders
+source/dev/user_defined_tools_authoring.md: gen_authoring_doc.py ../client/src/components/Tool/authoringHelp.yml ../client/src/components/Tool/ToolSourceSchema.json ## Build the user-defined tool authoring page from the help content the tool editor renders
 	python gen_authoring_doc.py ../client/src/components/Tool/authoringHelp.yml > $@
 
 source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config/__init__.py

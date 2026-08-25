@@ -13,10 +13,9 @@
 # relative path; the editor rewrites it to an absolute docs.galaxyproject.org
 # URL.
 #
-# Sections with `parameter_types: true` or `output_types: true` expand into one
-# section per schema type. Their index markers become linked tables. Both
-# consumers build those sections from ToolSourceSchema.json, whose examples
-# come from the Pydantic models.
+# Schema markers and sections with `parameter_types`, `output_types`, or
+# `validator_types` are rendered from ToolSourceSchema.json. Its examples come
+# from the Pydantic models.
 #
 # Per-field facts (units, required shapes) belong on the pydantic models
 # instead: those reach the OpenAPI schema, the generated TypeScript client and
@@ -30,6 +29,17 @@ intro: |
   tool without administrator privileges.
 
 sections:
+  - id: quick-start
+    title: Quick start
+    kind: reference
+    body: |
+      Paste this definition into the editor. It accepts a text dataset and
+      writes a copy without lines beginning with `#`.
+
+      ```yaml
+      {{quick_start_example}}
+      ```
+
   - id: tool-format
     title: Tool definition
     kind: reference
@@ -56,26 +66,6 @@ sections:
       | [`tests`](#testing) | Tool test declarations. | No |
       | [`citations`](#citations-metadata), `license`, [`edam_operations`](#citations-metadata), [`edam_topics`](#citations-metadata), [`xrefs`](#citations-metadata) | Publication and ontology metadata. | No |
       | `profile` | Galaxy tool profile controlling versioned tool behavior. | No |
-
-      ```yaml
-      class: GalaxyUserTool
-      id: remove_comments_user_defined
-      version: "0.1"
-      name: Remove Comment Lines
-      description: from a text file
-      container: quay.io/biocontainers/grep:3.4--hf43ccf4_4
-      shell_command: |
-        grep -v '^#' '$(inputs.input_file.path)' > output.txt || test "$?" = 1
-      inputs:
-        - name: input_file
-          type: data
-          format: txt
-      outputs:
-        - name: output1
-          type: data
-          format_source: input_file
-          from_work_dir: output.txt
-      ```
 
       Compared with an equivalent [Galaxy XML tool](gxdoc:dev/schema.md), three
       things differ:
