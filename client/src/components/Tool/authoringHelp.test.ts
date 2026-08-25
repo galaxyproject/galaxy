@@ -6,6 +6,7 @@ import {
     authoringHelpIntro,
     authoringHelpSections,
     authoringHelpTitle,
+    linkSchemaKeys,
     linkedAuthoringHelpSection,
     resolveDocLinks,
 } from "./authoringHelp";
@@ -115,6 +116,26 @@ describe("user-defined tool authoring help", () => {
         const input = "[Tool schema](gxdoc:dev/schema.md)";
 
         expect(resolveDocLinks(input)).toBe("[Tool schema](https://docs.galaxyproject.org/en/master/dev/schema.html)");
+    });
+
+    it("links schema keys outside code fences", () => {
+        const input = [
+            "Use `shell_command` with [`inputs`](#parameters).",
+            "",
+            "```yaml",
+            "shell_command: echo ok",
+            "```",
+        ].join("\n");
+
+        expect(linkSchemaKeys(input)).toBe(
+            [
+                "Use [`shell_command` #](#expressions) with [`inputs` #](#parameters).",
+                "",
+                "```yaml",
+                "shell_command: echo ok",
+                "```",
+            ].join("\n"),
+        );
     });
 
     it("does not leave unresolved documentation links in rendered content", () => {
