@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import AuthoringHelpPanel from "./AuthoringHelpPanel.vue";
 
@@ -21,6 +21,7 @@ describe("AuthoringHelpPanel", () => {
         expect(wrapper.find(".authoring-help-body").exists()).toBe(true);
         expect(wrapper.find("code.hljs.language-yaml").exists()).toBe(true);
         expect(wrapper.find("code .hljs-attr").exists()).toBe(true);
+        expect(wrapper.find(".authoring-code-example-label").text()).toBe("Example");
 
         await quickStartToggle.trigger("click");
 
@@ -29,6 +30,18 @@ describe("AuthoringHelpPanel", () => {
 
         await toolDefinitionToggle.trigger("click");
         expect(wrapper.findAll("th").wrappers.map((header) => header.text())).toEqual(["Field", "Details", "Required"]);
+    });
+
+    it("copies an example", async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+        const wrapper = mount(AuthoringHelpPanel as object);
+
+        await wrapper.find('[data-description="toggle help section quick-start"]').trigger("click");
+        const expected = wrapper.find(".authoring-code-example code").element.textContent;
+        await wrapper.find(".authoring-code-example-copy").trigger("click");
+
+        expect(writeText).toHaveBeenCalledWith(expected);
     });
 
     it("links the parameter index to each parameter section", async () => {

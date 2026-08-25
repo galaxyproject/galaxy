@@ -17,5 +17,13 @@ export function highlightAuthoringCode(code: string, language: string): string {
         return "";
     }
     const highlightedCode = hljs.highlight(code, { language, ignoreIllegals: true }).value;
-    return `<pre><code class="hljs language-${language}">${highlightedCode}</code></pre>`;
+    return [
+        '<div class="authoring-code-example">',
+        '<div class="authoring-code-example-header">',
+        '<span class="authoring-code-example-label">Example</span>',
+        '<button type="button" class="authoring-code-example-copy" aria-label="Copy example">Copy</button>',
+        "</div>",
+        `<pre><code class="hljs language-${language}">${highlightedCode}</code></pre>`,
+        "</div>",
+    ].join("");
 }
