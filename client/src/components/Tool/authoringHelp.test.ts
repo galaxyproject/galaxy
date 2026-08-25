@@ -72,6 +72,37 @@ describe("user-defined tool authoring help", () => {
         }
     });
 
+    it("builds one navigable reference entry per validator schema example", () => {
+        const definitions = TOOL_SOURCE_SCHEMA.$defs as Record<
+            string,
+            {
+                examples?: Array<Record<string, unknown>>;
+                properties?: { type?: { const?: string } };
+            }
+        >;
+        const validatorDefinitions = Object.entries(definitions).filter(([name]) =>
+            name.endsWith("ParameterValidatorModel"),
+        );
+        const validatorSections = authoringHelpSections.filter((section) => section.id.startsWith("validator-"));
+        const validatorIndex = authoringHelpSections.find((section) => section.id === "validators");
+
+        expect(validatorSections.map((section) => section.id)).toEqual(
+            validatorDefinitions.map(([, definition]) => `validator-${definition.properties?.type?.const}`),
+        );
+        for (const section of validatorSections) {
+            const validatorType = section.id.replace("validator-", "");
+            const definition = validatorDefinitions.find(
+                ([, definition]) => definition.properties?.type?.const === validatorType,
+            )?.[1];
+            const yamlExample = section.body.match(/```yaml\n([\s\S]+?)\n```/)?.[1];
+
+            expect(definition?.examples).toHaveLength(1);
+            expect(validatorIndex?.body).toContain(`](#${section.id})`);
+            expect(section.parentId).toBe("validators");
+            expect(parse(yamlExample!).validators[0]).toEqual(definition?.examples?.[0]);
+        }
+    });
+
     it("resolves Galaxy documentation links for the editor", () => {
         const input = "[Tool schema](gxdoc:dev/schema.md)";
 

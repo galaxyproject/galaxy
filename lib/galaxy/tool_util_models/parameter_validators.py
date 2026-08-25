@@ -158,11 +158,13 @@ class ExpressionParameterValidatorModel(StaticValidatorModel):
 
 
 class RegexParameterValidatorModel(StaticValidatorModel):
-    """Check if a regular expression **matches** the value, i.e. appears
-    at the beginning of the value. To enforce a match of the complete value use
-    ``$`` at the end of the expression. The expression is given is the content
-    of the validator tag. Note that for ``selects`` each option is checked
-    separately."""
+    """Require a regular expression to match from the start of the value.
+
+    End the expression with ``$`` to require a full-value match. Each option of
+    a select parameter is checked separately.
+    """
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "regex", "expression": "^[ACGT]+$"}]})
 
     type: Literal["regex"] = "regex"
     negate: Negate = NEGATE_DEFAULT
@@ -188,6 +190,10 @@ class RegexParameterValidatorModel(StaticValidatorModel):
 
 
 class InRangeParameterValidatorModel(StaticValidatorModel):
+    """Require a numeric value to fall within the configured bounds."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "in_range", "min": 0, "max": 1}]})
+
     type: Literal["in_range"] = "in_range"
     min: Optional[Union[float, int]] = None
     max: Optional[Union[float, int]] = None
@@ -224,6 +230,10 @@ class InRangeParameterValidatorModel(StaticValidatorModel):
 
 
 class LengthParameterValidatorModel(StaticValidatorModel):
+    """Require a text value to have a length within the configured bounds."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "length", "min": 1, "max": 20}]})
+
     type: Literal["length"] = "length"
     min: Optional[int] = None
     max: Optional[int] = None
@@ -291,6 +301,10 @@ class UnspecifiedBuildParameterValidatorModel(ParameterValidatorModel):
 
 
 class NoOptionsParameterValidatorModel(StaticValidatorModel):
+    """Reject a select parameter when it has no available options."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "no_options"}]})
+
     type: Literal["no_options"] = "no_options"
     negate: Negate = NEGATE_DEFAULT
 
@@ -307,6 +321,10 @@ class NoOptionsParameterValidatorModel(StaticValidatorModel):
 
 
 class EmptyFieldParameterValidatorModel(StaticValidatorModel):
+    """Require a parameter value to be present unless the rule is negated."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "empty_field"}]})
+
     type: Literal["empty_field"] = "empty_field"
     negate: Negate = NEGATE_DEFAULT
 
