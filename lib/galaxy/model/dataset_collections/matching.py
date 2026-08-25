@@ -46,8 +46,8 @@ def mapped_collection_provenance(collection_instance) -> set[tuple[str, int]]:
             pending.append(adapting)
 
         if isinstance(current, DatasetCollectionElement):
-            if current.collection is not None:
-                provenance.add(_dataset_collection_key(current.collection))
+            # Matching a DCE operates on its contained child collection. The
+            # parent records where the element lives, not what is mapped over.
             if current.child_collection is not None:
                 provenance.add(_dataset_collection_key(current.child_collection))
         elif isinstance(current, HistoryDatasetCollectionAssociation):

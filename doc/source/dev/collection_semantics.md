@@ -1147,6 +1147,11 @@ element identifiers in the same order - skips the same elements. A step that map
 over an unrelated collection has no such correspondence, and Galaxy fails the
 invocation rather than pairing conditions with elements they do not describe.
 
+In the formal example below, ``A`` is mapped over a data input of the containing
+subworkflow, while ``tool`` is a step inside that subworkflow connected only to
+``B``. The equation intentionally shows the inner step: its result is shaped by
+``B``, not ``A``.
+
 
 (UNCONDITIONAL_SUBWORKFLOW_INDEPENDENT_LOCAL_MAPPING)=
 <details><summary>Examples</summary>
