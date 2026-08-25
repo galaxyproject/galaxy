@@ -239,7 +239,7 @@ def test_documented_commands_and_configfiles_evaluate(section_id: str, source: s
 
 
 def test_documented_expression_forms_evaluate() -> None:
-    runtime_inputs = {"num_lines": 10, "query": {"path": "/tmp/query.txt"}}
+    runtime_inputs: CWLObjectType = {"num_lines": 10, "query": {"path": "/tmp/query.txt"}}
 
     assert _do_eval("$(inputs.num_lines)", runtime_inputs) == 10
     assert _do_eval("$(inputs.query.path)", runtime_inputs) == "/tmp/query.txt"

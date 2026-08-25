@@ -420,7 +420,7 @@ def test_each_validator_type_publishes_one_valid_example():
         for name, definition in definitions.items()
         if name.endswith("ParameterValidatorModel")
     }
-    parameter_examples = {
+    parameter_examples: dict[str, dict[str, Any]] = {
         "empty_field": {"name": "value", "type": "text"},
         "in_range": {"name": "value", "type": "integer"},
         "length": {"name": "value", "type": "text"},
@@ -441,7 +441,7 @@ def test_each_validator_type_publishes_one_valid_example():
             "validators": examples,
         }
         validated = YamlGalaxyToolParameter.model_validate(parameter)
-        assert validated.root.validators[0].type == validator_type
+        assert validated.root.model_dump()["validators"][0]["type"] == validator_type
 
 
 @pytest.mark.skipif(
