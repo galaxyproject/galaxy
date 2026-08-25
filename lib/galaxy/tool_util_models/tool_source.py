@@ -64,13 +64,11 @@ ResourceRequirementValue = Union[int, float, str, None]
 class ResourceRequirement(ToolSourceBaseModel):
     """A tool's compute resource request.
 
-    Galaxy itself enforces only ``timelimit``. The remaining fields are metadata
-    attached to the tool for the deployment's job destination logic (job
-    configuration rules or TPV) to act on, so whether a request has any effect
-    depends on how the instance is configured. Notably ``cores_min`` does not by
-    itself set ``$GALAXY_SLOTS``, which comes from the resource manager's actual
-    allocation. Use numbers or numeric strings. Other strings are reserved for
-    expressions, which are not evaluated yet and are currently ignored.
+    Set the minimum resources needed to run the job and, when useful, an upper
+    limit. Galaxy exposes the allocated CPU count to the command as
+    ``$GALAXY_SLOTS``. Use numbers or numeric strings. Other strings are
+    reserved for expressions, which are not evaluated yet and are currently
+    ignored.
     """
 
     type: Literal["resource"]

@@ -365,34 +365,12 @@ sections:
       | `shm_size` | Requested `/dev/shm` size, optionally suffixed with `b`, `k`, `m`, or `g`. | No |
       | `timelimit` | Maximum runtime in seconds. Galaxy terminates the job if it is exceeded. | No |
 
+      Pass `$GALAXY_SLOTS` to threaded programs; Galaxy sets it to the number
+      of CPU cores allocated to the job.
+
       Use numbers or numeric strings. Other strings are reserved for runtime
       expressions; expression evaluation for resource requirements is not
       implemented yet, so those values are currently ignored.
-
-  - id: resources
-    title: Why did my resource request have no effect?
-    kind: faq
-    body: |
-      A resource declaration describes what the tool needs; most fields do not
-      allocate hardware by themselves. Two details are easy to get wrong:
-
-      - **Galaxy itself enforces only `timelimit`.** Every other field is
-        metadata attached to the tool for the deployment's job-destination logic
-        to act on. Whether a request has any effect depends entirely on how the
-        instance's job configuration is set up, and an instance with no GPU
-        destination cannot satisfy a GPU request no matter how it is written.
-      - **`cores_min` does not by itself set `$GALAXY_SLOTS`.**
-        `$GALAXY_SLOTS` is set in the job script from the resource manager's
-        actual allocation, or from the destination's configuration. It tracks
-        `cores_min` only when the destination is configured to derive its core
-        count from the tool's request.
-
-      What a particular server does with a resource request is that server's
-      policy. Some public servers publish a convention that lets authors pick a
-      resource profile, for example by using a particular prefix in the tool
-      `id`. Such a convention is that instance's policy rather than part of the
-      tool format, and it does not transfer to another server. Check your
-      instance's user documentation or support channel.
 
   - id: validation
     title: What does Galaxy check for me?
