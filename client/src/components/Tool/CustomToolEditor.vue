@@ -52,7 +52,6 @@ const unprivilegedToolStore = useUnprivilegedToolStore();
 const router = useRouter();
 
 const disposeConfig = ref<() => void>();
-const editorRoot = ref<HTMLElement>();
 watch(
     monacoRef,
     () => {
@@ -67,9 +66,9 @@ watch(
     { immediate: true },
 );
 
-onMounted(() => editorRoot.value?.addEventListener("click", openAuthoringHelpLink));
+onMounted(() => document.addEventListener("click", openAuthoringHelpLink, { capture: true }));
 onUnmounted(() => {
-    editorRoot.value?.removeEventListener("click", openAuthoringHelpLink);
+    document.removeEventListener("click", openAuthoringHelpLink, { capture: true });
     disposeConfig.value!();
     unload();
 });
@@ -166,12 +165,14 @@ async function openAuthoringHelpLink(event: MouseEvent) {
         return;
     }
     const link = target.closest<HTMLAnchorElement>("a[href]");
-    const sectionId = link ? linkedAuthoringHelpSection(link.getAttribute("href") ?? "") : undefined;
+    const href = link?.dataset.href ?? link?.getAttribute("href") ?? "";
+    const sectionId = linkedAuthoringHelpSection(href);
     if (!sectionId) {
         return;
     }
 
     event.preventDefault();
+    event.stopPropagation();
     showDocumentation.value = true;
     await nextTick();
     await authoringHelpPanel.value?.openSection(sectionId);
@@ -224,7 +225,7 @@ async function generateViaLLM() {
 </script>
 
 <template>
-    <div ref="editorRoot" class="custom-tool-editor">
+    <div class="custom-tool-editor">
         <b-alert v-if="errorMsg" variant="danger" show dismissible>
             {{ errorMsg.err_msg }}
         </b-alert>
