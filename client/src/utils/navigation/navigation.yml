@@ -771,6 +771,7 @@ tool_form:
     parameter_drilldown_option: 'div.ui-form-element[id="form-element-${parameter}"] #drilldown-option-${value}'
 
     repeat_insert: '[data-description="repeat insert"]'
+    repeat_insert_named: '[data-description="repeat insert"][data-repeat-name="${name}"]'
     repeat_move_up: '#${parameter}_up'
     repeat_move_down: '#${parameter}_down'
     repeat_clone: '#${parameter}_clone'

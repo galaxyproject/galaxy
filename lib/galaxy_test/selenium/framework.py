@@ -980,7 +980,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
     def _add_repeat_instances(self, repeat_name: str, count: int):
         for _ in range(count):
-            self.components.tool_form.repeat_insert.wait_for_and_click()
+            self.components.tool_form.repeat_insert_named(name=repeat_name).wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
 
     def _expand_collapsed_sections(self):
