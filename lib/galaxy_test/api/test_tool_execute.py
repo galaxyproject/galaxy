@@ -785,6 +785,7 @@ def test_select_optional_null_by_default(required_tools: list[RequiredTool], too
 
 @requires_tool_id("gx_select_multiple")
 @requires_tool_id("gx_select_multiple_optional")
+@requires_tool_id("gx_select_multiple_no_options_validation")
 def test_select_multiple_does_not_select_first_by_default(
     required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs
 ):
@@ -798,6 +799,17 @@ def test_select_multiple_does_not_select_first_by_default(
         required_tool.execute().with_inputs(null_parameter).assert_has_single_job.with_output(
             "output"
         ).with_contents_stripped("None")
+
+
+@requires_tool_id("gx_genomebuild_multiple")
+def test_genomebuild_multiple_is_optional_by_default(
+    required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    # genomebuild is a SelectToolParameter subclass, so multiple implies optional here too
+    for inputs in [tool_input_format.when.any({}), tool_input_format.when.any({"parameter": None})]:
+        required_tool.execute().with_inputs(inputs).assert_has_single_job.with_output("output").with_contents_stripped(
+            "parameter: None"
+        )
 
 
 @requires_tool_id("gx_select_multiple_one_default")
