@@ -403,6 +403,37 @@ def test_each_output_type_publishes_one_valid_example():
         assert tool.outputs[0].type == output_type
 
 
+def test_each_validator_type_publishes_one_valid_example():
+    definitions = UserToolSource.model_json_schema()["$defs"]
+    validator_definitions = {
+        definition["properties"]["type"]["const"]: definition
+        for name, definition in definitions.items()
+        if name.endswith("ParameterValidatorModel")
+    }
+    parameter_examples = {
+        "empty_field": {"name": "value", "type": "text"},
+        "in_range": {"name": "value", "type": "integer"},
+        "length": {"name": "value", "type": "text"},
+        "no_options": {
+            "name": "value",
+            "type": "select",
+            "options": [{"label": "A", "value": "a"}],
+        },
+        "regex": {"name": "value", "type": "text"},
+    }
+
+    assert set(validator_definitions) == set(parameter_examples)
+    for validator_type, definition in validator_definitions.items():
+        examples = definition.get("examples", [])
+        assert len(examples) == 1, f"{validator_type} must publish exactly one canonical validator example"
+        parameter = {
+            **parameter_examples[validator_type],
+            "validators": examples,
+        }
+        validated = YamlGalaxyToolParameter.model_validate(parameter)
+        assert validated.root.validators[0].type == validator_type
+
+
 @pytest.mark.skipif(
     tuple(int(part) for part in pydantic.VERSION.split(".")[:2]) < (2, 11),
     reason="the published schema is a snapshot of pydantic >= 2.11 JSON schema rendering",
