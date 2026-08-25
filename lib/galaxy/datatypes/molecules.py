@@ -661,9 +661,7 @@ class OBFS(Binary):
             description = composite_file.get("description")
             if description:
                 rval.append(
-                    '<li><a href="{}" type="application/binary">{} ({})</a></li>'.format(
-                        composite_name, composite_name, description
-                    )
+                    f'<li><a href="{composite_name}" type="application/binary">{composite_name} ({description})</a></li>'
                 )
             else:
                 rval.append(f'<li><a href="{composite_name}" type="application/binary">{composite_name}</a></li>')
