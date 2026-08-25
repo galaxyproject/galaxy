@@ -106,7 +106,10 @@ from galaxy.tools.evaluation import (
     ToolEvaluator,
     UserToolEvaluator,
 )
-from galaxy.tools.parameters import params_to_json_internal
+from galaxy.tools.parameters import (
+    collect_directory_uris,
+    params_to_json_internal,
+)
 from galaxy.util import (
     parse_xml_string,
     RWXRWXRWX,
@@ -1081,6 +1084,22 @@ class MinimalJobWrapper(HasResourceParameters):
         if authnz_manager and trans.user:
             authnz_manager.refresh_expiring_oidc_tokens(trans, trans.user)
 
+    def _referenced_file_source_uris(self, job: Job) -> set[str] | None:
+        """Return required URIs, or ``None`` when action discovery is incomplete."""
+        uris: set[str] = set()
+        if self.tool is not None:
+            tool_action = self.tool.tool_action
+            if not tool_action.has_complete_file_source_uri_discovery():
+                return None
+            param_dict = self.get_param_dict(job)
+            uris.update(collect_directory_uris(self.tool.inputs, param_dict))
+            uris.update(tool_action.iter_referenced_file_source_uris(param_dict))
+        for input_association in job.input_datasets + job.input_library_datasets:
+            dataset = input_association.dataset
+            if dataset is not None and dataset.has_deferred_data and dataset.dataset is not None:
+                uris.update(dataset.dataset.source_uris)
+        return uris
+
     @property
     def job_io(self) -> JobIO:
         if self._job_io is None:
@@ -1088,6 +1107,7 @@ class MinimalJobWrapper(HasResourceParameters):
             work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
             user_context = ProvidesFileSourcesUserContext(work_request)
             self._refresh_oidc_tokens_for_job(work_request)
+            referenced_uris = self._referenced_file_source_uris(job)
             tool_source = self.tool.tool_source.to_string() if self.tool else None
             tool_dir = self.tool.tool_dir if self.tool else None
             self._job_io = JobIO(
@@ -1106,7 +1126,11 @@ class MinimalJobWrapper(HasResourceParameters):
                 new_file_path=self.app.config.new_file_path,
                 builds_file_path=self.app.config.builds_file_path,
                 len_file_path=self.app.config.len_file_path,
-                file_sources_dict=self.app.file_sources.to_dict(for_serialization=True, user_context=user_context),
+                file_sources_dict=self.app.file_sources.to_dict(
+                    for_serialization=True,
+                    user_context=user_context,
+                    referenced_uris=referenced_uris,
+                ),
                 user_context=user_context,
                 check_job_script_integrity=self.app.config.check_job_script_integrity,
                 check_job_script_integrity_count=self.app.config.check_job_script_integrity_count,
@@ -1240,15 +1264,18 @@ class MinimalJobWrapper(HasResourceParameters):
         return os.path.abspath(os.path.join(self.working_directory, "outputs", COMMAND_VERSION_FILENAME))
 
     def __prepare_upload_paramfile(self, job):
-        """Special case paramfile handling for the upload tool. Copies the paramfile to the working directory"""
+        """Copy the upload paramfile into the working directory and use the stable path."""
         new = os.path.join(self.working_directory, "upload_params.json")
-        param_file_path = json.loads(next(iter(param.value for param in job.parameters if param.name == "paramfile")))
-        try:
-            shutil.copy2(param_file_path, new)
-        except OSError as exc:
-            # It won't exist at the old path if setup was interrupted and tried again later
-            if exc.errno != errno.ENOENT or not os.path.exists(new):
-                raise
+        paramfile_parameter = next(iter(param for param in job.parameters if param.name == "paramfile"))
+        param_file_path = json.loads(paramfile_parameter.value)
+        if param_file_path != new:
+            try:
+                shutil.copy2(param_file_path, new)
+            except OSError as exc:
+                # It won't exist at the old path if setup was interrupted and tried again later
+                if exc.errno != errno.ENOENT or not os.path.exists(new):
+                    raise
+            paramfile_parameter.value = json.dumps(new)
 
     def prepare(self, compute_environment=None):
         """
@@ -1413,7 +1440,9 @@ class MinimalJobWrapper(HasResourceParameters):
         return tool_evaluator
 
     def _fix_output_permissions(self):
-        for path in [dp.real_path for dp in self.job_io.get_mutable_output_fnames()]:
+        if self._job_io is None:
+            return
+        for path in [dp.real_path for dp in self._job_io.get_mutable_output_fnames()]:
             if os.path.exists(path):
                 util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
 
