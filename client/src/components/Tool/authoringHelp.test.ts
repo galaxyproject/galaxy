@@ -21,6 +21,14 @@ describe("user-defined tool authoring help", () => {
         expect(authoringHelpGroups.every((group) => group.sections.length > 0)).toBe(true);
     });
 
+    it("renders the schema quick-start example", () => {
+        const quickStart = authoringHelpSections.find((section) => section.id === "quick-start");
+        const yamlExample = quickStart?.body.match(/```yaml\n([\s\S]+?)\n```/)?.[1];
+
+        expect(TOOL_SOURCE_SCHEMA.examples).toHaveLength(1);
+        expect(parse(yamlExample!)).toEqual(TOOL_SOURCE_SCHEMA.examples[0]);
+    });
+
     it("builds one navigable reference entry per parameter schema example", () => {
         const definitions = TOOL_SOURCE_SCHEMA.$defs as Record<string, unknown>;
         const mapping = TOOL_SOURCE_SCHEMA.$defs.YamlGalaxyToolParameter.discriminator.mapping;
