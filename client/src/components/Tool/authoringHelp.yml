@@ -137,6 +137,17 @@ sections:
       `falsevalue`, `argument`, `is_dynamic` and `parameter_type` are likewise
       rejected on any parameter.
 
+  - id: validators
+    title: Validators
+    kind: reference
+    parentId: parameters
+    validator_types: true
+    body: |
+      Validators reject parameter values before a job starts. Each parameter
+      type's field table lists the validators it supports.
+
+      {{validator_type_index}}
+
   - id: outputs
     title: Outputs
     kind: reference

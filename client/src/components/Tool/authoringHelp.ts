@@ -1,5 +1,9 @@
 import RAW_AUTHORING_HELP from "./authoringHelp.yml";
-import { buildOutputTypeReference, buildParameterTypeReference } from "./authoringHelpTypes";
+import {
+    buildOutputTypeReference,
+    buildParameterTypeReference,
+    buildValidatorTypeReference,
+} from "./authoringHelpTypes";
 import { TOOL_SOURCE_SCHEMA_URI } from "./schemaMarkdown";
 
 /** Editor adapter for the shared guidance in `authoringHelp.yml`. */
@@ -21,7 +25,9 @@ export interface AuthoringHelpGroup {
 interface RawAuthoringHelp {
     title: string;
     intro: string;
-    sections: Array<AuthoringHelpSection & { output_types?: boolean; parameter_types?: boolean }>;
+    sections: Array<
+        AuthoringHelpSection & { output_types?: boolean; parameter_types?: boolean; validator_types?: boolean }
+    >;
 }
 
 const HELP = RAW_AUTHORING_HELP as RawAuthoringHelp;
@@ -34,6 +40,7 @@ const DOCS_BASE = "https://docs.galaxyproject.org/en/master/";
 const GXDOC_LINK = /\]\(gxdoc:([^)]+)\)/g;
 const OUTPUT_TYPE_INDEX = "{{output_type_index}}";
 const PARAMETER_TYPE_INDEX = "{{parameter_type_index}}";
+const VALIDATOR_TYPE_INDEX = "{{validator_type_index}}";
 
 export function resolveDocLinks(text: string): string {
     return text.replace(GXDOC_LINK, (_match, target: string) => {
@@ -47,18 +54,26 @@ export const authoringHelpIntro: string = resolveDocLinks(HELP.intro);
 
 const parameterTypeReference = buildParameterTypeReference();
 const outputTypeReference = buildOutputTypeReference();
+const validatorTypeReference = buildValidatorTypeReference();
 
 export const authoringHelpSections: AuthoringHelpSection[] = HELP.sections.flatMap((rawSection) => {
-    const { output_types: hasOutputTypes, parameter_types: hasParameterTypes, ...section } = rawSection;
+    const {
+        output_types: hasOutputTypes,
+        parameter_types: hasParameterTypes,
+        validator_types: hasValidatorTypes,
+        ...section
+    } = rawSection;
     const resolvedSection = {
         ...section,
         body: resolveDocLinks(section.body)
             .replace(PARAMETER_TYPE_INDEX, parameterTypeReference.index)
-            .replace(OUTPUT_TYPE_INDEX, outputTypeReference.index),
+            .replace(OUTPUT_TYPE_INDEX, outputTypeReference.index)
+            .replace(VALIDATOR_TYPE_INDEX, validatorTypeReference.index),
     };
     const nestedSections = [
         ...(hasParameterTypes ? parameterTypeReference.sections : []),
         ...(hasOutputTypes ? outputTypeReference.sections : []),
+        ...(hasValidatorTypes ? validatorTypeReference.sections : []),
     ];
     return [resolvedSection, ...nestedSections];
 });

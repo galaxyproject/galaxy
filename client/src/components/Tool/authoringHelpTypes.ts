@@ -4,9 +4,11 @@ import type { AuthoringHelpSection } from "./authoringHelp";
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 
 interface JsonSchemaProperty {
+    $ref?: string;
     const?: unknown;
     default?: unknown;
     description?: string;
+    items?: JsonSchemaProperty;
     type?: string;
     anyOf?: JsonSchemaProperty[];
 }
@@ -70,10 +72,14 @@ function propertyDefault(property: JsonSchemaProperty): string {
     return property.default === undefined ? "—" : `\`${JSON.stringify(property.default)}\``;
 }
 
+function fieldName(name: string): string {
+    return name === "validators" ? "[`validators`](#validators)" : `\`${name}\``;
+}
+
 function fieldTable(definition: JsonSchemaDefinition): string[] {
     const required = new Set(definition.required ?? []);
     const fields = Object.entries(definition.properties ?? {}).map(([name, property]) => {
-        return `| \`${name}\` | ${propertyDetails(property)} | ${propertyDefault(property)} | ${required.has(name) ? "Yes" : "No"} |`;
+        return `| ${fieldName(name)} | ${propertyDetails(property)} | ${propertyDefault(property)} | ${required.has(name) ? "Yes" : "No"} |`;
     });
     return ["| Field | Details | Default | Required |", "| --- | --- | --- | --- |", ...fields];
 }
@@ -173,4 +179,40 @@ export function buildOutputTypeReference(): TypeReference {
         };
     });
     return { index: referenceIndex("Output type", "output", sections), sections };
+}
+
+export function buildValidatorTypeReference(): TypeReference {
+    const definitions = SCHEMA.$defs as Record<string, JsonSchemaDefinition>;
+    const sections = Object.entries(definitions).flatMap(([definitionName, definition]) => {
+        if (!definitionName.endsWith("ParameterValidatorModel")) {
+            return [];
+        }
+        const validatorType = definition.properties?.type?.const;
+        if (typeof validatorType !== "string") {
+            return [];
+        }
+        const example = schemaExample(validatorType, definition);
+        const exampleYaml = stringify({ validators: [example] }, { lineWidth: 0 }).trim();
+        const description = definition.description?.replaceAll("``", "`").trim() ?? "";
+        return [
+            {
+                id: `validator-${validatorType}`,
+                title: `${validatorType} validator`,
+                kind: "reference" as const,
+                parentId: "validators",
+                body: [
+                    description,
+                    "",
+                    ...fieldTable(definition),
+                    "",
+                    "Add this rule to a supported parameter's `validators` list:",
+                    "",
+                    "```yaml",
+                    exampleYaml,
+                    "```",
+                ].join("\n"),
+            },
+        ];
+    });
+    return { index: referenceIndex("Validator type", "validator", sections), sections };
 }
