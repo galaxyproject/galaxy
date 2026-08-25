@@ -174,6 +174,7 @@ __all__ = [
     "extract_structured_output",
     "extract_usage_info",
     "GalaxyAgentDependencies",
+    "is_url_reachable",
     "MAX_HISTORY_MESSAGES",
     "normalize_llm_text",
     "SimpleGalaxyAgent",
@@ -291,6 +292,16 @@ def normalize_llm_text(text: str) -> str:
     normalized = normalized.replace("\\t", "\t")
     normalized = normalized.strip()
     return normalized
+
+
+def is_url_reachable(url: str) -> bool:
+    import requests
+
+    try:
+        response = requests.head(url, allow_redirects=True, timeout=5)
+        return 200 <= response.status_code < 400
+    except requests.RequestException:
+        return False
 
 
 class AgentType:
