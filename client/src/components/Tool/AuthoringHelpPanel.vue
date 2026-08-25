@@ -184,19 +184,18 @@ onBeforeUnmount(() => panel.value?.removeEventListener("click", expandLinkedSect
     white-space: nowrap;
 }
 
-.authoring-help-body :deep(td a) {
+.authoring-help-body :deep(a[href^="#"]:has(code)) {
     color: $brand-primary;
     font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 0.15em;
+    text-decoration: none;
 }
 
-.authoring-help-body :deep(td a code) {
-    color: inherit;
-    border-color: currentColor;
+.authoring-help-body :deep(a[href^="#"] code) {
+    color: $code-color;
 }
 
-.authoring-help-body :deep(td a:hover code) {
+.authoring-help-body :deep(a[href^="#"]:hover code) {
+    border-color: $brand-primary;
     background: rgba($brand-primary, 0.08);
 }
 

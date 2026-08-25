@@ -28,13 +28,30 @@ QUICK_START_EXAMPLE = "{{quick_start_example}}"
 OUTPUT_TYPE_INDEX = "{{output_type_index}}"
 PARAMETER_TYPE_INDEX = "{{parameter_type_index}}"
 VALIDATOR_TYPE_INDEX = "{{validator_type_index}}"
+SCHEMA_KEY_SECTIONS = {
+    "class": "tool-format",
+    "container": "containers-reference",
+    "shell_command": "expressions",
+    "configfiles": "configfiles",
+    "inputs": "parameters",
+    "outputs": "outputs",
+    "requirements": "resource-requirements",
+    "validators": "validators",
+    "from_work_dir": "outputs",
+    "discover_datasets": "outputs",
+    "help": "help-content",
+    "tests": "testing",
+    "citations": "citations-metadata",
+    "license": "citations-metadata",
+    "profile": "tool-format",
+    "edam_operations": "citations-metadata",
+    "edam_topics": "citations-metadata",
+    "xrefs": "citations-metadata",
+}
+LINKED_SCHEMA_KEY = re.compile(r"\[`([a-z_]+)`\]\(#[^)]+\)")
+INLINE_SCHEMA_KEY = re.compile(r"`([a-z_]+)`")
 TOOL_SCHEMA_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "client"
-    / "src"
-    / "components"
-    / "Tool"
-    / "ToolSourceSchema.json"
+    Path(__file__).resolve().parents[1] / "client" / "src" / "components" / "Tool" / "ToolSourceSchema.json"
 )
 
 GENERATED_HEADER = """<!--
@@ -47,6 +64,36 @@ editor's help panel renders. Edit that file, not this one.
 
 def resolve_links(text: str) -> str:
     return GXDOC_LINK.sub(lambda m: f"](../{m.group(1)})", text)
+
+
+def link_schema_keys(text: str) -> str:
+    lines = []
+    in_fence = False
+    for line in text.splitlines():
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+        elif not in_fence:
+            line = LINKED_SCHEMA_KEY.sub(
+                lambda match: (
+                    match.group(0).replace("`]", "` #]") if match.group(1) in SCHEMA_KEY_SECTIONS else match.group(0)
+                ),
+                line,
+            )
+
+            def replace_key(match: re.Match, source: str = line) -> str:
+                key = match.group(1)
+                section = SCHEMA_KEY_SECTIONS.get(key)
+                if not section:
+                    return match.group(0)
+                before = source[match.start() - 1] if match.start() else ""
+                after = source[match.end() :]
+                if before == "[" or after.startswith(" #]("):
+                    return match.group(0)
+                return f"[`{key}` #](#{section})"
+
+            line = INLINE_SCHEMA_KEY.sub(replace_key, line)
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def _markdown_cell(value: str) -> str:
@@ -64,9 +111,7 @@ def _property_details(prop: dict) -> str:
         if prop.get("type"):
             types.append(prop["type"])
         if types:
-            details.append(
-                "Type: " + " or ".join(f"`{type_name}`" for type_name in types) + "."
-            )
+            details.append("Type: " + " or ".join(f"`{type_name}`" for type_name in types) + ".")
     return _markdown_cell(" ".join(details) or "No additional constraints.")
 
 
@@ -125,9 +170,7 @@ def _build_parameter_type_reference(tool_schema: dict) -> tuple[str, list[dict]]
         example = _schema_example(parameter_type, definition)
         shell_command = definition.get("x-shell-command")
         if not shell_command:
-            raise ValueError(
-                f"Parameter schema '{parameter_type}' has no shell command example."
-            )
+            raise ValueError(f"Parameter schema '{parameter_type}' has no shell command example.")
         example_yaml = "inputs:\n" + textwrap.indent(
             yaml.safe_dump(
                 [example],
@@ -257,10 +300,7 @@ def _order_quick_start_value(value):
     if isinstance(value, dict):
         priority = [field for field in ("name", "type") if field in value]
         remaining = [field for field in value if field not in priority]
-        return {
-            field: _order_quick_start_value(value[field])
-            for field in [*priority, *remaining]
-        }
+        return {field: _order_quick_start_value(value[field]) for field in [*priority, *remaining]}
     return value
 
 
@@ -306,7 +346,7 @@ def render(help_data: dict, tool_schema: dict) -> str:
         GENERATED_HEADER,
         f"# {help_data['title']}",
         "",
-        resolve_links(help_data["intro"].rstrip()),
+        link_schema_keys(resolve_links(help_data["intro"].rstrip())),
         "",
     ]
     groups = (("reference", "Reference"), ("faq", "Common questions"))
@@ -321,7 +361,7 @@ def render(help_data: dict, tool_schema: dict) -> str:
             heading = "#" * _heading_level(section, sections_by_id)
             parts.append(f"{heading} {section['title']}")
             parts.append("")
-            parts.append(resolve_links(section["body"].rstrip()))
+            parts.append(link_schema_keys(resolve_links(section["body"].rstrip())))
             parts.append("")
     return "\n".join(parts) + "\n"
 

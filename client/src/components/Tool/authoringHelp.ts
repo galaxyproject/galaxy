@@ -43,6 +43,28 @@ const QUICK_START_EXAMPLE = "{{quick_start_example}}";
 const OUTPUT_TYPE_INDEX = "{{output_type_index}}";
 const PARAMETER_TYPE_INDEX = "{{parameter_type_index}}";
 const VALIDATOR_TYPE_INDEX = "{{validator_type_index}}";
+const SCHEMA_KEY_SECTIONS: Record<string, string> = {
+    class: "tool-format",
+    container: "containers-reference",
+    shell_command: "expressions",
+    configfiles: "configfiles",
+    inputs: "parameters",
+    outputs: "outputs",
+    requirements: "resource-requirements",
+    validators: "validators",
+    from_work_dir: "outputs",
+    discover_datasets: "outputs",
+    help: "help-content",
+    tests: "testing",
+    citations: "citations-metadata",
+    license: "citations-metadata",
+    profile: "tool-format",
+    edam_operations: "citations-metadata",
+    edam_topics: "citations-metadata",
+    xrefs: "citations-metadata",
+};
+const LINKED_SCHEMA_KEY = /\[`([a-z_]+)`\]\(#[^)]+\)/g;
+const INLINE_SCHEMA_KEY = /`([a-z_]+)`/g;
 
 export function resolveDocLinks(text: string): string {
     return text.replace(GXDOC_LINK, (_match, target: string) => {
@@ -50,9 +72,34 @@ export function resolveDocLinks(text: string): string {
     });
 }
 
+export function linkSchemaKeys(text: string): string {
+    let inFence = false;
+    return text
+        .split("\n")
+        .map((line) => {
+            if (line.trimStart().startsWith("```")) {
+                inFence = !inFence;
+                return line;
+            }
+            if (inFence) {
+                return line;
+            }
+            const markedLinks = line.replace(LINKED_SCHEMA_KEY, (match, key: string) => {
+                return SCHEMA_KEY_SECTIONS[key] ? match.replace("`]", "` #]") : match;
+            });
+            return markedLinks.replace(INLINE_SCHEMA_KEY, (match, key: string, offset: number, source: string) => {
+                const section = SCHEMA_KEY_SECTIONS[key];
+                const alreadyLinked =
+                    source[offset - 1] === "[" || source.slice(offset + match.length).startsWith(" #](");
+                return section && !alreadyLinked ? `[\`${key}\` #](#${section})` : match;
+            });
+        })
+        .join("\n");
+}
+
 export const authoringHelpTitle: string = HELP.title;
 
-export const authoringHelpIntro: string = resolveDocLinks(HELP.intro);
+export const authoringHelpIntro: string = linkSchemaKeys(resolveDocLinks(HELP.intro));
 
 const parameterTypeReference = buildParameterTypeReference();
 const outputTypeReference = buildOutputTypeReference();
@@ -68,11 +115,13 @@ export const authoringHelpSections: AuthoringHelpSection[] = HELP.sections.flatM
     } = rawSection;
     const resolvedSection = {
         ...section,
-        body: resolveDocLinks(section.body)
-            .replace(QUICK_START_EXAMPLE, quickStartExample)
-            .replace(PARAMETER_TYPE_INDEX, parameterTypeReference.index)
-            .replace(OUTPUT_TYPE_INDEX, outputTypeReference.index)
-            .replace(VALIDATOR_TYPE_INDEX, validatorTypeReference.index),
+        body: linkSchemaKeys(
+            resolveDocLinks(section.body)
+                .replace(QUICK_START_EXAMPLE, quickStartExample)
+                .replace(PARAMETER_TYPE_INDEX, parameterTypeReference.index)
+                .replace(OUTPUT_TYPE_INDEX, outputTypeReference.index)
+                .replace(VALIDATOR_TYPE_INDEX, validatorTypeReference.index),
+        ),
     };
     const nestedSections = [
         ...(hasParameterTypes ? parameterTypeReference.sections : []),

@@ -158,6 +158,8 @@ def test_generated_documentation_resolves_schema_sections() -> None:
     assert "### Quick start" in result.stdout
     assert "#### Validators" in result.stdout
     assert "##### regex validator" in result.stdout
+    assert "[`shell_command` #](#expressions)" in result.stdout
+    assert "shell_command: grep" in result.stdout
 
 
 @pytest.mark.parametrize(
