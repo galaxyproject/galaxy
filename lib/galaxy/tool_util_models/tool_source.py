@@ -82,15 +82,11 @@ class ResourceRequirement(ToolSourceBaseModel):
     ram_max: Annotated[ResourceRequirementValue, Field(description=f"{ram_max_description}\n{ram_description}")] = None
     tmpdir_min: Annotated[
         ResourceRequirementValue,
-        Field(
-            description="Minimum reserved temporary directory space, in mebibytes (2**20)."
-        ),
+        Field(description="Minimum reserved temporary directory space, in mebibytes (2**20)."),
     ] = None
     tmpdir_max: Annotated[
         ResourceRequirementValue,
-        Field(
-            description="Maximum reserved temporary directory space, in mebibytes (2**20)."
-        ),
+        Field(description="Maximum reserved temporary directory space, in mebibytes (2**20)."),
     ] = None
     cuda_version_min: Annotated[
         ResourceRequirementValue,

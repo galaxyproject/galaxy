@@ -9,6 +9,7 @@ Covers:
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
@@ -360,9 +361,7 @@ def test_each_parameter_type_publishes_one_valid_example():
     for parameter_type, reference in mapping.items():
         definition = definitions[reference.rsplit("/", 1)[-1]]
         examples = definition.get("examples", [])
-        assert len(examples) == 1, (
-            f"{parameter_type} must publish exactly one canonical example"
-        )
+        assert len(examples) == 1, f"{parameter_type} must publish exactly one canonical example"
         parameter = YamlGalaxyToolParameter.model_validate(examples[0])
         assert parameter.root.type == parameter_type
         shell_command = definition.get("x-shell-command")
@@ -411,7 +410,7 @@ def test_each_validator_type_publishes_one_valid_example():
         for name, definition in definitions.items()
         if name.endswith("ParameterValidatorModel")
     }
-    parameter_examples = {
+    parameter_examples: dict[str, dict[str, Any]] = {
         "empty_field": {"name": "value", "type": "text"},
         "in_range": {"name": "value", "type": "integer"},
         "length": {"name": "value", "type": "text"},
@@ -432,18 +431,11 @@ def test_each_validator_type_publishes_one_valid_example():
             "validators": examples,
         }
         validated = YamlGalaxyToolParameter.model_validate(parameter)
-        assert validated.root.validators[0].type == validator_type
+        assert validated.root.model_dump()["validators"][0]["type"] == validator_type
 
 
 def test_editor_tool_source_schema_matches_pydantic_model():
-    schema_path = (
-        PROJECT_ROOT
-        / "client"
-        / "src"
-        / "components"
-        / "Tool"
-        / "ToolSourceSchema.json"
-    )
+    schema_path = PROJECT_ROOT / "client" / "src" / "components" / "Tool" / "ToolSourceSchema.json"
     published_schema = json.loads(schema_path.read_text())
 
     assert published_schema == UserToolSource.model_json_schema()
@@ -464,9 +456,7 @@ def test_structured_tool_fields_publish_editor_hover_help():
         "help",
         "tests",
     ):
-        assert properties[field_name].get("description"), (
-            f"{field_name} has no editor hover help"
-        )
+        assert properties[field_name].get("description"), f"{field_name} has no editor hover help"
 
 
 def test_unprivileged_tool_api_schema_includes_authoring_examples():
@@ -478,12 +468,8 @@ def test_unprivileged_tool_api_schema_includes_authoring_examples():
 
     for parameter_type, reference in mapping.items():
         definition = definitions[reference.rsplit("/", 1)[-1]]
-        assert definition.get("examples"), (
-            f"{parameter_type} example missing from API schema"
-        )
-        assert definition.get("x-shell-command"), (
-            f"{parameter_type} shell command example missing from API schema"
-        )
+        assert definition.get("examples"), f"{parameter_type} example missing from API schema"
+        assert definition.get("x-shell-command"), f"{parameter_type} shell command example missing from API schema"
 
 
 # ---------------------------------------------------------------------------

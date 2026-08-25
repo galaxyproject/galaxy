@@ -85,15 +85,9 @@ class _YamlParamBase(BaseModel):
         str,
         Field(description="Identifier used to reference this input from expressions."),
     ]
-    label: Annotated[
-        Optional[str], Field(description="Label displayed on the tool form.")
-    ] = None
-    help: Annotated[
-        Optional[str], Field(description="Help text displayed with the input.")
-    ] = None
-    optional: Annotated[
-        bool, Field(description="Whether the user may leave this input unset.")
-    ] = False
+    label: Annotated[Optional[str], Field(description="Label displayed on the tool form.")] = None
+    help: Annotated[Optional[str], Field(description="Help text displayed with the input.")] = None
+    optional: Annotated[bool, Field(description="Whether the user may leave this input unset.")] = False
 
 
 def _common_internal_kwargs(yaml_param: "_YamlParamBase") -> dict:
@@ -126,9 +120,7 @@ class YamlBooleanParameter(_YamlParamBase):
     value: Annotated[Optional[bool], Field(description="Default value.")] = False
 
     def to_internal(self) -> BooleanParameterModel:
-        return BooleanParameterModel(
-            type="boolean", value=self.value, **_common_internal_kwargs(self)
-        )
+        return BooleanParameterModel(type="boolean", value=self.value, **_common_internal_kwargs(self))
 
 
 class YamlIntegerParameter(_YamlParamBase):
@@ -228,17 +220,11 @@ class YamlTextParameter(_YamlParamBase):
     )
 
     type: Literal["text"]
-    value: Optional[str] = Field(
-        default=None, alias="value", description="Default value."
-    )
-    area: Annotated[
-        bool, Field(description="Whether to display a multiline text area.")
-    ] = False
+    value: Optional[str] = Field(default=None, alias="value", description="Default value.")
+    area: Annotated[bool, Field(description="Whether to display a multiline text area.")] = False
     validators: Annotated[
         List[YamlTextValidators],
-        Field(
-            description="Additional validation rules; supports `length`, `regex`, and `empty_field`."
-        ),
+        Field(description="Additional validation rules; supports `length`, `regex`, and `empty_field`."),
     ] = []
 
     def to_internal(self) -> TextParameterModel:
@@ -276,9 +262,7 @@ class YamlSelectParameter(_YamlParamBase):
         List[YamlLabelValue],
         Field(min_length=1, description="Static choices shown to the user."),
     ]
-    multiple: Annotated[
-        bool, Field(description="Whether the user may select several options.")
-    ] = False
+    multiple: Annotated[bool, Field(description="Whether the user may select several options.")] = False
     validators: Annotated[
         List[YamlSelectValidators],
         Field(description="Additional validation rules; supports `no_options`."),
@@ -312,14 +296,10 @@ class YamlColorParameter(_YamlParamBase):
     )
 
     type: Literal["color"]
-    value: Annotated[
-        Optional[str], Field(description="Default color in hexadecimal notation.")
-    ] = None
+    value: Annotated[Optional[str], Field(description="Default color in hexadecimal notation.")] = None
 
     def to_internal(self) -> ColorParameterModel:
-        return ColorParameterModel(
-            type="color", value=self.value, **_common_internal_kwargs(self)
-        )
+        return ColorParameterModel(type="color", value=self.value, **_common_internal_kwargs(self))
 
 
 def _split_format(v):
@@ -348,14 +328,10 @@ class YamlDataParameter(_YamlParamBase):
     )
 
     type: Literal["data"]
-    format: Annotated[
-        List[str], Field(description="Accepted Galaxy datatype extensions.")
-    ] = ["data"]
+    format: Annotated[List[str], Field(description="Accepted Galaxy datatype extensions.")] = ["data"]
     multiple: Annotated[
         bool,
-        Field(
-            description="Set true to accept several datasets (a list) for this input instead of one."
-        ),
+        Field(description="Set true to accept several datasets (a list) for this input instead of one."),
     ] = False
     # NOTE: `min`/`max` (the min/max number of selected datasets) are intentionally
     # NOT exposed here. They only have meaning for a `multiple` input and the runtime
@@ -393,10 +369,8 @@ class YamlDataCollectionParameter(_YamlParamBase):
                     "format": ["fastqsanger"],
                 }
             ],
-            "x-shell-command": (
-                "forward='$(inputs.reads.elements.forward.path)'\n"
-                "reverse='$(inputs.reads.elements.reverse.path)'"
-            ),
+            "x-shell-command": """forward='$(inputs.reads.elements.forward.path)'
+reverse='$(inputs.reads.elements.reverse.path)'""",
         }
     )
 
@@ -425,9 +399,7 @@ class YamlDataCollectionParameter(_YamlParamBase):
         )
 
 
-YamlConditionalTestParameter = Annotated[
-    Union[YamlBooleanParameter, YamlSelectParameter], Field(discriminator="type")
-]
+YamlConditionalTestParameter = Annotated[Union[YamlBooleanParameter, YamlSelectParameter], Field(discriminator="type")]
 
 
 class YamlConditionalWhen(BaseModel):
@@ -463,17 +435,12 @@ class YamlConditionalParameter(_YamlParamBase):
                         {"discriminator": "fast", "parameters": []},
                         {
                             "discriminator": "sensitive",
-                            "parameters": [
-                                {"name": "iterations", "type": "integer", "value": 3}
-                            ],
+                            "parameters": [{"name": "iterations", "type": "integer", "value": 3}],
                         },
                     ],
                 }
             ],
-            "x-shell-command": (
-                'mode="$(inputs.search_options.mode)"\n'
-                'iterations="$(inputs.search_options.iterations)"'
-            ),
+            "x-shell-command": 'mode="$(inputs.search_options.mode)"\niterations="$(inputs.search_options.iterations)"',
         }
     )
 
@@ -520,14 +487,10 @@ class YamlRepeatParameter(_YamlParamBase):
                     "label": "Additional files",
                     "min": 0,
                     "max": 3,
-                    "parameters": [
-                        {"name": "input_file", "type": "data", "format": ["txt"]}
-                    ],
+                    "parameters": [{"name": "input_file", "type": "data", "format": ["txt"]}],
                 }
             ],
-            "x-shell-command": (
-                "files='$(inputs.extra_files.map((item) => item.input_file.path).join(\" \"))'"
-            ),
+            "x-shell-command": ("files='$(inputs.extra_files.map((item) => item.input_file.path).join(\" \"))'"),
         }
     )
 
@@ -536,12 +499,8 @@ class YamlRepeatParameter(_YamlParamBase):
         List["YamlGalaxyToolParameter"],
         Field(description="Inputs contained in each repetition."),
     ] = []
-    min: Annotated[
-        Optional[int], Field(description="Minimum number of repetitions.")
-    ] = None
-    max: Annotated[
-        Optional[int], Field(description="Maximum number of repetitions.")
-    ] = None
+    min: Annotated[Optional[int], Field(description="Minimum number of repetitions.")] = None
+    max: Annotated[Optional[int], Field(description="Maximum number of repetitions.")] = None
 
     def to_internal(self) -> RepeatParameterModel:
         return RepeatParameterModel(
