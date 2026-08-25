@@ -45,7 +45,7 @@ sections:
     kind: reference
     body: |
       A user-defined tool is a YAML document. `class: GalaxyUserTool` selects
-      the restricted schema, `container` names the image the command runs in,
+      the restricted schema, `container` is shorthand for the image the command runs in,
       and `shell_command` is the command itself, with inputs referenced as
       `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files.
 
@@ -56,7 +56,7 @@ sections:
       | `name` | Name displayed in the tool menu. | Yes |
       | `version` | Version of this wrapper. Change it when behavior or the container changes. | Yes |
       | `description` | Short text displayed after the tool name. | No |
-      | `container` | Fully qualified container image reference used as the entire execution environment. | Yes |
+      | `container` | Shorthand for a single Docker container requirement. | No* |
       | `shell_command` | Command to execute, with inputs referenced through expressions. | Yes |
       | [`configfiles`](#configfiles) | Templated files Galaxy writes into the job working directory. Use them for scripts and other substantial command logic. | No |
       | [`inputs`](#parameters) | Input parameters shown on the tool form. | No |
@@ -67,13 +67,17 @@ sections:
       | [`citations`](#citations-metadata), `license`, [`edam_operations`](#citations-metadata), [`edam_topics`](#citations-metadata), [`xrefs`](#citations-metadata) | Publication and ontology metadata. | No |
       | `profile` | Galaxy tool profile controlling versioned tool behavior. | No |
 
+      \* A container is required, but it may be declared with either
+      top-level `container` or a container entry under `requirements`.
+
       Compared with an equivalent [Galaxy XML tool](gxdoc:dev/schema.md), three
       things differ:
 
       - `class: GalaxyUserTool` is required, and selects the restricted
         `UserToolSource` schema.
-      - A container is required. XML tools may resolve dependencies through
-        Conda; user-defined tools always run in the image named by `container`.
+      - A container is required, either through top-level `container` or a
+        container entry under `requirements`. XML tools may instead resolve
+        dependencies through Conda.
       - The command lives under `shell_command` and is templated with sandboxed
         JavaScript expressions rather than Cheetah, so it has no access to the
         Galaxy database or filesystem.
@@ -285,8 +289,8 @@ sections:
     title: Why is a command missing from the container?
     kind: faq
     body: |
-      `container` is required, and the image it names is the only environment
-      the command gets. Every binary, interpreter and library referenced by
+      The selected container image is the only environment the command gets.
+      Every binary, interpreter and library referenced by
       `shell_command`, including utilities used to sort, reformat or rename
       outputs, has to already exist in that image.
 
@@ -326,10 +330,20 @@ sections:
       writing the prefix yourself produces a doubled `docker://docker://...`
       identifier.
 
-      Container requirements written as `requirements: [{type: container, ...}]`
-      are accepted by the schema but are not read by the YAML tool parser. The
-      top-level `container` key is the only way a user-defined tool selects its
-      image.
+      The top-level key is shorthand for a single Docker container requirement.
+      The equivalent explicit form is useful when selecting another supported
+      container type:
+
+      ```yaml
+      requirements:
+        - type: container
+          container:
+            type: singularity
+            container_id: oras://example.org/image:tag
+      ```
+
+      A tool must use one of these forms. If both are present, the top-level
+      `container` takes precedence.
 
       Which container types are usable on a given server, and whether images are
       converted and cached ahead of time, depends on that server. Check the
