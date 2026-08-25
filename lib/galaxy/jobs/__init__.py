@@ -1084,13 +1084,16 @@ class MinimalJobWrapper(HasResourceParameters):
         if authnz_manager and trans.user:
             authnz_manager.refresh_expiring_oidc_tokens(trans, trans.user)
 
-    def _referenced_file_source_uris(self, job: Job) -> set[str]:
-        """Return the file source URIs needed to execute this job."""
+    def _referenced_file_source_uris(self, job: Job) -> set[str] | None:
+        """Return required URIs, or ``None`` when action discovery is incomplete."""
         uris: set[str] = set()
         if self.tool is not None:
+            tool_action = self.tool.tool_action
+            if not tool_action.has_complete_file_source_uri_discovery():
+                return None
             param_dict = self.get_param_dict(job)
             uris.update(collect_directory_uris(self.tool.inputs, param_dict))
-            uris.update(self.tool.tool_action.iter_referenced_file_source_uris(param_dict))
+            uris.update(tool_action.iter_referenced_file_source_uris(param_dict))
         for input_association in job.input_datasets + job.input_library_datasets:
             dataset = input_association.dataset
             if dataset is not None and dataset.has_deferred_data and dataset.dataset is not None:
@@ -1437,7 +1440,9 @@ class MinimalJobWrapper(HasResourceParameters):
         return tool_evaluator
 
     def _fix_output_permissions(self):
-        for path in [dp.real_path for dp in self.job_io.get_mutable_output_fnames()]:
+        if self._job_io is None:
+            return
+        for path in [dp.real_path for dp in self._job_io.get_mutable_output_fnames()]:
             if os.path.exists(path):
                 util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
 

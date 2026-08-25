@@ -99,6 +99,11 @@ class ToolAction:
     """
 
     produces_real_jobs: bool
+    file_source_uri_discovery_complete = False
+
+    def has_complete_file_source_uri_discovery(self) -> bool:
+        """Return whether this concrete action has audited URI discovery."""
+        return type(self).__dict__.get("file_source_uri_discovery_complete", False)
 
     def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
         """Yield file source URIs embedded in action-specific parameters."""
@@ -146,6 +151,7 @@ class DefaultToolAction(ToolAction):
     """Default tool action is to run an external command"""
 
     produces_real_jobs: bool = True
+    file_source_uri_discovery_complete = True
 
     def _collect_input_datasets(
         self,

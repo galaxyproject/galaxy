@@ -41,6 +41,7 @@ class ImportHistoryToolAction(ToolAction):
     """Tool action used for importing a history to an archive."""
 
     produces_real_jobs: bool = True
+    file_source_uri_discovery_complete = True
 
     def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
         if param_dict.get("__ARCHIVE_TYPE__") == "url":
@@ -124,6 +125,7 @@ class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive."""
 
     produces_real_jobs: bool = True
+    file_source_uri_discovery_complete = True
 
     def execute(
         self,

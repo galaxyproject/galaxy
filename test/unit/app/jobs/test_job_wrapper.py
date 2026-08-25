@@ -156,7 +156,10 @@ class MockTool:
         self.tmp_target = None
         self.tool_source = Bunch(to_string=lambda: "")
         self.inputs = {}
-        self.tool_action = SimpleNamespace(iter_referenced_file_source_uris=lambda param_dict: ())
+        self.tool_action = SimpleNamespace(
+            has_complete_file_source_uri_discovery=lambda: True,
+            iter_referenced_file_source_uris=lambda param_dict: (),
+        )
 
     def params_from_strings(self, param_dict):
         return param_dict
@@ -209,8 +212,11 @@ class MockObjectStore:
         return None
 
 
-def _minimal_wrapper(param_dict=None, inputs=None, action_uris=()):
-    tool_action = SimpleNamespace(iter_referenced_file_source_uris=lambda param_dict: action_uris)
+def _minimal_wrapper(param_dict=None, inputs=None, action_uris=(), action_discovery_complete=True):
+    tool_action = SimpleNamespace(
+        has_complete_file_source_uri_discovery=lambda: action_discovery_complete,
+        iter_referenced_file_source_uris=lambda param_dict: action_uris,
+    )
     return SimpleNamespace(
         tool=SimpleNamespace(inputs=inputs or {}, tool_action=tool_action),
         get_param_dict=lambda job: param_dict or {},
@@ -244,6 +250,11 @@ def test_referenced_file_source_uris_empty_for_job_without_sources():
     assert MinimalJobWrapper._referenced_file_source_uris(_minimal_wrapper(), _job_with_file_source_inputs()) == set()
 
 
+def test_referenced_file_source_uris_unknown_for_unaudited_action():
+    wrapper = _minimal_wrapper(action_discovery_complete=False)
+    assert MinimalJobWrapper._referenced_file_source_uris(wrapper, _job_with_file_source_inputs()) is None
+
+
 def test_referenced_file_source_uris_adds_regular_and_library_input_sources():
     regular_src = f"gxuserfiles://{uuid4().hex}/regular.txt"
     library_src = f"gxuserfiles://{uuid4().hex}/library.txt"
@@ -261,3 +272,15 @@ def test_referenced_file_source_uris_ignores_materialized_input_sources():
     hda = SimpleNamespace(has_deferred_data=False, dataset=SimpleNamespace(source_uris=[source]))
     job = _job_with_file_source_inputs(input_datasets=[SimpleNamespace(dataset=hda)])
     assert MinimalJobWrapper._referenced_file_source_uris(_minimal_wrapper(), job) == set()
+
+
+def test_fix_output_permissions_does_not_initialize_job_io():
+    class WrapperWithoutJobIO:
+        _job_io = None
+
+        @property
+        def job_io(self):
+            raise AssertionError("job_io should not be initialized during failure cleanup")
+
+    wrapper = cast(MinimalJobWrapper, WrapperWithoutJobIO())
+    MinimalJobWrapper._fix_output_permissions(wrapper)

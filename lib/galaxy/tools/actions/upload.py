@@ -3,7 +3,10 @@ import logging
 import os
 from collections.abc import Iterable
 
-from galaxy.exceptions import RequestParameterMissingException
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    RequestParameterMissingException,
+)
 from galaxy.job_execution.output_collect import copy_collection_metadata_from_target_dict
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
@@ -40,6 +43,7 @@ log = logging.getLogger(__name__)
 
 class BaseUploadToolAction(ToolAction):
     produces_real_jobs = True
+    file_source_uri_discovery_complete = False
 
     def execute(
         self,
@@ -88,17 +92,24 @@ class BaseUploadToolAction(ToolAction):
 
 
 class UploadToolAction(BaseUploadToolAction):
+    file_source_uri_discovery_complete = True
+
     def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
         paramfile = param_dict.get("paramfile")
         if not isinstance(paramfile, str):
-            return
+            raise RequestParameterInvalidException("Legacy upload job is missing its paramfile")
         with open(paramfile) as f:
             upload_params = json.load(f)
+        if not isinstance(upload_params, list):
+            raise RequestParameterInvalidException("Legacy upload paramfile must contain a list")
         for upload_param in upload_params:
+            if not isinstance(upload_param, dict):
+                raise RequestParameterInvalidException("Legacy upload paramfile entries must be objects")
             if upload_param.get("type") == "url":
                 path = upload_param.get("path")
-                if isinstance(path, str) and path:
-                    yield path
+                if not isinstance(path, str) or not path:
+                    raise RequestParameterInvalidException("Legacy URL upload entry is missing its path")
+                yield path
 
     def _setup_job(
         self, tool, trans: ProvidesHistoryContext, incoming, dataset_upload_inputs, history, preferred_object_store_id
@@ -126,6 +137,8 @@ class UploadToolAction(BaseUploadToolAction):
 
 
 class FetchUploadToolAction(BaseUploadToolAction):
+    file_source_uri_discovery_complete = True
+
     def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
         return iter_fetch_request_urls(param_dict)
 
