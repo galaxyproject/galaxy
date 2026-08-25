@@ -173,6 +173,9 @@ async function openAuthoringHelpLink(event: MouseEvent) {
 
     event.preventDefault();
     event.stopPropagation();
+    target
+        .closest<HTMLElement>(".monaco-hover")
+        ?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", keyCode: 27, bubbles: true }));
     showDocumentation.value = true;
     await nextTick();
     await authoringHelpPanel.value?.openSection(sectionId);
