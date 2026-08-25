@@ -3,6 +3,8 @@ import { faChevronDown, faChevronRight } from "@fortawesome/free-solid-svg-icons
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 
+import { copy } from "@/utils/clipboard";
+
 import { authoringHelpGroups, authoringHelpIntro, authoringHelpTitle } from "./authoringHelp";
 import { highlightAuthoringCode } from "./authoringHelpHighlight";
 
@@ -69,10 +71,28 @@ async function expandLinkedSection(event: MouseEvent) {
     }
 }
 
+function copyExample(event: MouseEvent) {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+        return;
+    }
+    const button = target.closest<HTMLButtonElement>(".authoring-code-example-copy");
+    const code = button?.closest(".authoring-code-example")?.querySelector("code")?.textContent;
+    if (button && code !== undefined) {
+        copy(code, "Example copied to clipboard.");
+    }
+}
+
 defineExpose({ openSection });
 
-onMounted(() => panel.value?.addEventListener("click", expandLinkedSection));
-onBeforeUnmount(() => panel.value?.removeEventListener("click", expandLinkedSection));
+onMounted(() => {
+    panel.value?.addEventListener("click", expandLinkedSection);
+    panel.value?.addEventListener("click", copyExample);
+});
+onBeforeUnmount(() => {
+    panel.value?.removeEventListener("click", expandLinkedSection);
+    panel.value?.removeEventListener("click", copyExample);
+});
 </script>
 
 <template>
@@ -89,9 +109,9 @@ onBeforeUnmount(() => panel.value?.removeEventListener("click", expandLinkedSect
 
             <div
                 v-for="section in group.sections"
+                v-show="isVisible(section.id)"
                 :id="section.id"
                 :key="section.id"
-                v-show="isVisible(section.id)"
                 class="authoring-help-section"
                 :class="{ 'authoring-help-section-nested': section.parentId }">
                 <GButton
@@ -149,6 +169,49 @@ onBeforeUnmount(() => panel.value?.removeEventListener("click", expandLinkedSect
 .authoring-help-body :deep(pre),
 .authoring-help-intro :deep(pre) {
     overflow-x: auto;
+}
+
+.authoring-help-body :deep(.authoring-code-example) {
+    margin: 0.75rem 0 1rem;
+    overflow: hidden;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-base;
+    background: $body-bg;
+}
+
+.authoring-help-body :deep(.authoring-code-example-header) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 0.6rem;
+    border-bottom: 1px solid $border-color;
+    background: $table-heading-bg;
+}
+
+.authoring-help-body :deep(.authoring-code-example-label) {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.authoring-help-body :deep(.authoring-code-example-copy) {
+    padding: 0.15rem 0.45rem;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-base;
+    background: $body-bg;
+    color: $text-color;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.authoring-help-body :deep(.authoring-code-example-copy:hover) {
+    border-color: $brand-primary;
+    color: $brand-primary;
+}
+
+.authoring-help-body :deep(.authoring-code-example pre) {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
 }
 
 .authoring-help-body :deep(table) {
