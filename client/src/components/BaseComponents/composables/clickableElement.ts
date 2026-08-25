@@ -5,6 +5,7 @@ export interface ClickableProps {
     to?: string;
     href?: string;
     disabled?: boolean;
+    inline?: boolean;
 }
 
 /**
@@ -21,7 +22,7 @@ export function useClickableElement(props: ClickableProps) {
             return "button" as const;
         } else if (props.to) {
             return RouterLink;
-        } else if (props.href) {
+        } else if (props.href || props.inline) {
             return "a" as const;
         } else {
             return "button" as const;

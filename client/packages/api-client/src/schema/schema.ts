@@ -13673,10 +13673,10 @@ export interface components {
              */
             uploaded_hids: number[];
             /**
-             * Use Datasets
-             * @description Indicates whether the tour should use (and wait for) datasets.
+             * Uses Input Data
+             * @description Indicates whether the tour should use (and wait for) dataset/collection inputs to be uploaded.
              */
-            use_datasets: boolean;
+            uses_input_data: boolean;
         };
         /** GenomeBuildParameterModel */
         GenomeBuildParameterModel: {
@@ -21168,6 +21168,12 @@ export interface components {
              */
             model_store_format: components["schemas"]["ModelStoreFormat"];
         };
+        /**
+         * Prerequisite
+         * @description Available prerequisite operations that can be tried when a step fails due to an element not being interactable.
+         * @enum {string}
+         */
+        Prerequisite: "ensure_history_panel_open" | "ensure_tool_panel_open" | "ensure_upload_open";
         /** QuotaDetails */
         QuotaDetails: {
             /**
@@ -21721,7 +21727,7 @@ export interface components {
             | "in_use_state";
         /**
          * Requirement
-         * @description Available types of job sources (model classes) that produce dataset collections.
+         * @description Requirements that must be met for a tour to be runnable. The client lets the user know if any of the requirements are not met.
          * @enum {string}
          */
         Requirement: "logged_in" | "new_history" | "admin";
@@ -25148,6 +25154,16 @@ export interface components {
              * @description Elements that receive a click() event before the step is shown
              */
             preclick?: boolean | string[] | null;
+            /**
+             * Prerequisites
+             * @description Prerequisite operations that can be tried when a step fails due to an element not being interactable
+             */
+            prerequisites?: components["schemas"]["Prerequisite"][] | null;
+            /**
+             * Stops autoplay
+             * @description If true, the step stops autoplaying the tour until the user clicks the next button. Typically set for steps that require a user action
+             */
+            stops_autoplay?: boolean | null;
             /**
              * Text-insert
              * @description Text to insert if element is a text box (e.g. tool search or upload)

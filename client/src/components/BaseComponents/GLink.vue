@@ -35,6 +35,8 @@ const props = defineProps<{
     thin?: boolean;
     /** Makes the link unselectable */
     unselectable?: boolean;
+    /** Forces inline display, useful when rendered inside a paragraph for example */
+    inline?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -133,6 +135,9 @@ const linkElementRef = useResolveElement(linkRef);
         text-decoration: underline;
         color: var(--color-grey-500) !important;
         cursor: default;
+    }
+    &:not(.g-disabled) {
+        cursor: pointer;
     }
 
     &.g-unselectable {

@@ -19,6 +19,7 @@ steps:
       postclick: true
 
     - component: upload_activity.method_card(method_id=paste-links)
+      prerequisites: ["ensure_upload_open"]
       intro: "Select the Paste Links method to upload data via URL."
       preclick: true
 
@@ -35,9 +36,11 @@ steps:
       postclick: true
 
     - component: history_panel
+      prerequisites: ["ensure_history_panel_open"]
       intro: "This is your history. It contains our matrix being uploaded."
 
     - element: "#current-history-panel div.content-item .display-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "Displaying the dataset will show the dataset preview as well as additional options."
       postclick: true
 

@@ -14,6 +14,7 @@ import { ref } from "vue";
 
 import { getTourData, type TourRequirements, type TourStep } from "@/api/tours";
 import { Toast } from "@/composables/toast";
+import { useTourPrerequisites } from "@/composables/tourPrerequisites";
 import { useTourStore } from "@/stores/tourStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -32,6 +33,8 @@ const emit = defineEmits(["end-tour"]);
 
 const tourStore = useTourStore();
 const { toolGeneratedTours } = storeToRefs(tourStore);
+
+const { tourPrerequisites } = useTourPrerequisites();
 
 const steps = ref<TourStep[]>([]);
 const requirements = ref<TourRequirements>([]);
@@ -70,8 +73,24 @@ async function initialize() {
 
 initialize();
 
+/** Runs all prerequisites defined on a step */
+function runPrerequisites(step: TourStep) {
+    for (const prereq of step.prerequisites ?? []) {
+        if (tourPrerequisites[prereq]) {
+            tourPrerequisites[prereq]();
+        }
+    }
+}
+
 /** Performs any pre-step clicking and text insertion for the provided step. */
 async function onBefore(step: TourStep): Promise<void> {
+    // Run prerequisites before waiting for the element, since the element
+    // may not exist in the DOM at all until the prerequisite runs (e.g. a
+    // closed panel that isn't rendered until it's opened).
+    if (step.prerequisites?.length) {
+        runPrerequisites(step);
+    }
+
     // Wait for element before continuing tour
     if (step.element) {
         await waitForElement(step.element, ATTEMPTS);
@@ -93,6 +112,9 @@ async function onNext(step: TourStep): Promise<void> {
     let postclick = step.postclick;
     if (postclick === true && step.element) {
         postclick = [step.element];
+    }
+    if (step.prerequisites?.length) {
+        runPrerequisites(step);
     }
     doClick(postclick);
 }
