@@ -190,9 +190,8 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
         Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]],
         Field(
             description=(
-                "A list of requirements needed to execute this tool. These can be javascript expressions or "
-                "resource requirements. Container requirements listed here are not read by the YAML tool parser; "
-                "set the top-level `container` key instead."
+                "JavaScript helpers, compute resource requests, and container requirements needed to execute this "
+                "tool. The top-level `container` key is shorthand for a single Docker container requirement."
             )
         ),
     ] = []
@@ -215,9 +214,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     outputs: UserToolOutputs = []
     citations: Annotated[
         Optional[List[Citation]],
-        Field(
-            description="DOI or BibTeX references for publications describing the wrapped tool."
-        ),
+        Field(description="DOI or BibTeX references for publications describing the wrapped tool."),
     ] = None
     license: Annotated[
         Optional[str],
@@ -236,9 +233,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     ] = None
     xrefs: Annotated[
         Optional[List[XrefDict]],
-        Field(
-            description="External registry identifiers, each with a registry `type` and identifier `value`."
-        ),
+        Field(description="External registry identifiers, each with a registry `type` and identifier `value`."),
     ] = None
     profile: Optional[float] = None
     help: Annotated[
@@ -374,7 +369,7 @@ _USER_TOOL_SOURCE_FIELD_ORDER: Tuple[str, ...] = (
 class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     """A Galaxy user-defined tool: a containerized shell command wrapped with typed inputs and outputs.
 
-    Provide the tool's identity (``id``, ``name``, ``version``), a ``container``
+    Provide the tool's identity (``id``, ``name``, ``version``), a container
     image to run in, and a ``shell_command`` that references inputs as
     ``$(inputs.input_name)`` for scalar values or ``$(inputs.input_name.path)`` for files.
     Declare every referenced input under ``inputs`` and every produced file under
@@ -383,10 +378,11 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
 
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     container: Annotated[
-        str,
+        Optional[str],
         Field(
             description=(
-                "Container image to use for this tool, as a fully qualified registry/repository:tag string. "
+                "Shorthand for a single Docker container requirement, as a fully qualified "
+                "registry/repository:tag string. "
                 "This image is the tool's entire execution environment, so every command used by shell_command "
                 "must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself "
                 "for Singularity and Apptainer destinations. An unqualified name is resolved against the "
@@ -394,7 +390,7 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
             ),
             examples=["quay.io/biocontainers/python:3.13"],
         ),
-    ]
+    ] = None
     # Required here (it's optional on the base for stored/legacy rows). Galaxy's
     # linter rejects a versionless tool, so forcing it into the structured-output
     # ``required`` set stops the model dropping it -- notably on a retry, where the
@@ -418,13 +414,25 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
 
     @field_validator("container", mode="after")
     @classmethod
-    def _reject_blank_container(cls, value: str) -> str:
-        if not value or not value.strip():
+    def _reject_blank_container(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and not value.strip():
             raise PydanticCustomError(
                 "dynamic_tool.blank_container",
                 "container must not be empty",
             )
         return value
+
+    @model_validator(mode="after")
+    def _require_container(self) -> "UserToolSourceAuthoringView":
+        has_container_requirement = any(
+            isinstance(requirement, ContainerRequirement) for requirement in self.requirements or []
+        )
+        if not self.container and not has_container_requirement:
+            raise PydanticCustomError(
+                "dynamic_tool.container_required",
+                "set container or add a container requirement",
+            )
+        return self
 
     @model_serializer(mode="wrap")
     def _canonical_order(self, handler: SerializerFunctionWrapHandler, info: Any):
@@ -489,7 +497,7 @@ class UserToolSource(UserToolSourceAuthoringView):
                         }
                     ],
                 }
-            ]
+            ],
         }
     )
 

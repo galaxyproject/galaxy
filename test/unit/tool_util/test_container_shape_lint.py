@@ -3,6 +3,7 @@
 from copy import deepcopy
 
 import pytest
+from pydantic import ValidationError
 
 from galaxy.tool_util.lint import (
     get_lint_context_for_tool_source,
@@ -76,3 +77,61 @@ def test_lint_user_tool_source_surfaces_container_shape_failure():
     bullets = lint_user_tool_source(user_tool)
     assert any("does not match a recognized shape" in b for b in bullets)
     assert any(b.startswith(f"{ContainerImageShape.name()}:") for b in bullets)
+
+
+def test_user_tool_source_accepts_container_requirement():
+    source = _doc(
+        container=None,
+        requirements=[
+            {
+                "type": "container",
+                "container": {"type": "docker", "container_id": "busybox"},
+            }
+        ],
+    )
+    tool = UserToolSource.model_validate(source)
+    assert tool.container is None
+
+
+def test_user_tool_source_requires_a_container_form():
+    source = _doc(container=None)
+    with pytest.raises(ValidationError, match="set container or add a container requirement"):
+        UserToolSource.model_validate(source)
+
+
+def test_parser_reads_container_requirement():
+    tool_source = YamlToolSource(
+        _doc(
+            container=None,
+            requirements=[
+                {
+                    "type": "container",
+                    "container": {
+                        "type": "singularity",
+                        "container_id": "oras://example.org/image:tag",
+                    },
+                }
+            ],
+        )
+    )
+    _, containers, _, _, _ = tool_source.parse_requirements()
+    assert len(containers) == 1
+    assert containers[0].type == "singularity"
+    assert containers[0].identifier == "oras://example.org/image:tag"
+
+
+def test_top_level_container_takes_precedence_over_requirement():
+    tool_source = YamlToolSource(
+        _doc(
+            container="quay.io/biocontainers/python:3.13",
+            requirements=[
+                {
+                    "type": "container",
+                    "container": {"type": "docker", "container_id": "busybox:latest"},
+                }
+            ],
+        )
+    )
+    _, containers, _, _, _ = tool_source.parse_requirements()
+    assert len(containers) == 1
+    assert containers[0].identifier == "quay.io/biocontainers/python:3.13"

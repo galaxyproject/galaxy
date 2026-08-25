@@ -170,7 +170,15 @@ class YamlToolSource(ToolSource):
         elif containers:
             containers = containers
         else:
-            containers = []
+            containers = [
+                {
+                    "identifier": requirement["container"]["container_id"],
+                    "type": requirement["container"]["type"],
+                    "explicit": True,
+                }
+                for requirement in mixed_requirements
+                if requirement.get("type") == "container"
+            ]
         return requirements.parse_requirements_from_lists(
             software_requirements=[r for r in mixed_requirements if r.get("type") == "package"],
             containers=containers,
