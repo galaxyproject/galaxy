@@ -74,7 +74,11 @@ class CorePlugin(InstrumentPlugin):
     """
 
     plugin_type = "core"
-    formatter = None
+    # Class-level fallback, for formatting metrics recorded by a plugin that is no longer in
+    # the metrics configuration and so has no instance to ask. Deliberately left unconfigured
+    # rather than borrowed from an instance: which instance is built first is an accident of
+    # destination ordering, and should not decide how those metrics render.
+    formatter = CorePluginFormatter(None)
     default_safety = Safety.SAFE
 
     def __init__(self, **kwargs):
@@ -82,10 +86,6 @@ class CorePlugin(InstrumentPlugin):
             kwargs.get("timezone"),
             show_zero_resubmissions=asbool(kwargs.get("show_zero_resubmissions", False)),
         )
-        if CorePlugin.formatter is None:
-            # Class-level fallback, for formatting metrics recorded by a plugin that is no
-            # longer in the metrics configuration and so has no instance to ask.
-            CorePlugin.formatter = self.formatter
 
     def pre_execute_instrument(self, job_directory: str) -> list[str]:
         commands = []

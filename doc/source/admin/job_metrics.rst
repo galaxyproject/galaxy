@@ -53,11 +53,13 @@ zone library and can be listed with the following command:
 
 The core plugin also records ``resubmission_count``, the number of Galaxy-level job
 resubmission events, on every job; the execution attempt number is ``resubmission_count + 1``.
+It counts configured ``resubmit`` rules and runner-triggered resubmissions such as Slurm
+node-failure recovery, but not scheduler-internal requeues Galaxy never observes -- a
+deployment that lets HTCondor requeue on its own will not see those here.
 
-It is recorded for every job but only *displayed* when it is non-zero, since almost no job is
-ever resubmitted and a zero would otherwise appear on every job's metrics panel. The value is
-stored either way, so queries and reports see a uniform metric. Set the optional
-``show_zero_resubmissions`` option (default: ``false``) to display it on every job:
+It is recorded on every job but only *displayed* when it is non-zero, since a zero would
+otherwise appear on every job's metrics panel. Set ``show_zero_resubmissions`` (default:
+``false``) to display it everywhere:
 
 .. code-block:: yaml
 
@@ -67,15 +69,10 @@ stored either way, so queries and reports see a uniform metric. Set the optional
 Display options are read from the default metrics configuration rather than a per-destination
 one, because metrics are rendered without reference to the destination the job ran on.
 
-This counts both configured ``resubmit`` rules and runner-triggered resubmissions such as
-Slurm node-failure recovery. It does not count scheduler-internal requeues that Galaxy never
-observes -- a deployment that resubmits outside Galaxy, for instance by letting HTCondor
-requeue on its own, will not see those reflected here.
-
-Because the underlying state history is retained regardless, the same question can be asked
-retroactively of jobs that finished before this metric existed by querying
-``job_state_history`` directly; the metric exists so the count can be aggregated alongside
-runtime and memory.
+Only jobs that finish after this metric ships record it, so it is absent from the metrics
+panel of older jobs rather than shown as zero. The state history it counts is retained
+regardless, so the same question can still be asked of those jobs by querying
+``job_state_history`` directly.
 
 cpuinfo
 ~~~~~~~

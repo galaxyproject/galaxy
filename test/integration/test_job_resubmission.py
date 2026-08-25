@@ -1,6 +1,7 @@
 """Integration tests for the job resubmission."""
 
 import os
+from decimal import Decimal
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -79,7 +80,9 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
         assert resubmission_metric["plugin"] == "core"
         assert resubmission_metric["title"] == "Resubmission Count"
         assert resubmission_metric["value"] == str(expected_count)
-        assert int(resubmission_metric["raw_value"]) == expected_count
+        # raw_value is the metric's numeric column rendered as a string, so its shape follows
+        # the database: PostgreSQL yields "1.0000000" for a count of one. Compare numerically.
+        assert Decimal(resubmission_metric["raw_value"]) == expected_count
 
     def _assert_resubmission_metric_not_displayed(self, history_id):
         """A count of zero is recorded, but the formatter keeps it out of what the API returns."""

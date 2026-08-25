@@ -63,3 +63,26 @@ def test_resubmission_metric_formatting_and_safety():
     assert plugin.formatter is not None
     assert plugin.formatter.format(RESUBMISSION_COUNT_KEY, 1) == ("Resubmission Count", "1")
     assert plugin.safety(RESUBMISSION_COUNT_KEY) == Safety.SAFE
+
+
+def test_the_class_fallback_formatter_is_stable_and_unconfigured():
+    """The class formatter renders metrics from a core plugin no longer in the configuration.
+
+    It must not inherit display options from whichever instance happened to be constructed
+    first: with destination-only configurations that would let destination ordering decide
+    how historical metrics render.
+    """
+    plugin = CorePlugin(show_zero_resubmissions="true")
+
+    assert plugin.formatter is not None
+    assert plugin.formatter.format(RESUBMISSION_COUNT_KEY, 0) == ("Resubmission Count", "0")
+    assert CorePlugin.formatter is not plugin.formatter
+    assert CorePlugin.formatter is not None
+    assert CorePlugin.formatter.format(RESUBMISSION_COUNT_KEY, 0) is None
+
+
+def test_a_core_metric_still_formats_when_core_is_not_configured():
+    """An admin who drops core from the configuration should not turn old metrics into raw keys."""
+    job_metrics = JobMetrics(conf_dict=[{"type": "env"}])
+
+    assert job_metrics.format("core", RESUBMISSION_COUNT_KEY, 3) == ("Resubmission Count", "3")
