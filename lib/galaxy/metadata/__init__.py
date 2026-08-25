@@ -197,7 +197,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             )
 
             outputs[name] = {
-                "filename_override": _get_filename_override(output_fnames, dataset.get_file_name()),
+                "filename_override": _get_filename_override(output_fnames, dataset.get_file_name(sync_cache=False)),
                 "validate": validate_outputs,
                 "object_store_store_by": dataset.dataset.store_by,
                 "id": dataset.id,
