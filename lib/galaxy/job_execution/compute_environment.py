@@ -10,11 +10,7 @@ from typing import (
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job
-
-
-def dataset_path_to_extra_path(path: str) -> str:
-    base_path = path[0 : -len(".dat")]
-    return f"{base_path}_files"
+from galaxy.util import dataset_path_to_extra_path
 
 
 class ComputeEnvironment(metaclass=ABCMeta):

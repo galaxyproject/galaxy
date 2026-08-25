@@ -47,6 +47,10 @@ from galaxy.schema.tasks import (
     PurgeDatasetsTaskRequest,
 )
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util.crypt4gh import (
+    preserve_crypt4gh_inner_file_ext,
+    validate_crypt4gh_compute_metadata,
+)
 from galaxy.util.hash_util import memory_bound_hexdigest
 
 log = logging.getLogger(__name__)
@@ -562,6 +566,11 @@ class DatasetAssociationManager(
         assert dataset_assoc.dataset
         path = dataset_assoc.dataset.get_file_name()
         datatype = sniff.guess_ext(path, self.app.datatypes_registry.sniff_order)
+        datatype = preserve_crypt4gh_inner_file_ext(
+            datatype,
+            current_ext=dataset_assoc.extension,
+            metadata_inner_ext=getattr(dataset_assoc.metadata, "crypt4gh_inner_ext", None),
+        )
         self.app.datatypes_registry.change_datatype(dataset_assoc, datatype)
         session.commit()
         self.set_metadata(trans, dataset_assoc)
@@ -868,22 +877,24 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         super().add_deserializers()
         deletable.PurgableDeserializerMixin.add_deserializers(self)
 
-        self.deserializers.update(
-            {
-                "name": self.deserialize_basestring,
-                "info": self.deserialize_basestring,
-                "datatype": self.deserialize_datatype,
-            }
-        )
+        dataset_deserializers: dict[str, base.Deserializer] = {
+            "name": self.deserialize_basestring,
+            "info": self.deserialize_basestring,
+            "datatype": self.deserialize_datatype,
+            "metadata": self.deserialize_metadata,
+        }
+        self.deserializers.update(dataset_deserializers)
         self.deserializable_keyset.update(self.deserializers.keys())
 
     # TODO: untested
-    def deserialize_metadata(self, dataset_assoc, metadata_key, metadata_dict, **context):
+    def deserialize_metadata(self, item, key, val, **context):
         """ """
+        metadata_key = key
+        metadata_dict = val
         self.validate.matches_type(metadata_key, metadata_dict, dict)
         returned = {}
-        for key, val in metadata_dict.items():
-            returned[key] = self.deserialize_metadatum(dataset_assoc, key, val, **context)
+        for metadata_name, metadata_val in metadata_dict.items():
+            returned[metadata_name] = self.deserialize_metadatum(item, metadata_name, metadata_val, **context)
         return returned
 
     def deserialize_metadatum(self, dataset_assoc, key, val, **context):
@@ -894,6 +905,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         if metadata_specification.get("readonly"):
             return
         unwrapped_val = metadata_specification.unwrap(val)
+        validate_crypt4gh_compute_metadata(dataset_assoc, key, unwrapped_val)
         setattr(dataset_assoc.metadata, key, unwrapped_val)
         # ...?
         return unwrapped_val

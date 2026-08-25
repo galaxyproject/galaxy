@@ -661,11 +661,26 @@ class BaseJobRunner:
                     tool_stdout = ""
                     tool_stderr = "Job cancelled"
                 else:
-                    # Should we instead just move on ?
-                    # In the end the only consequence here is that we won't be able to determine
-                    # if the job failed for known tool reasons (check_tool_output).
-                    # OTOH I don't know if this can even be reached
-                    # Deal with it if we ever get reports about this.
+                    # tool_stdout/tool_stderr are missing — this can happen when
+                    # remote_tool_eval.py fails and the && chain prevents cd working, so the
+                    # shell redirection creates files at the wrong path.  Surface
+                    # the remote_tool_eval traceback as a job-level error (not a
+                    # tool error) since the tool never actually ran.
+                    eval_traceback_path = os.path.join(
+                        job_wrapper.working_directory, "metadata", "outputs_populated", "traceback.txt"
+                    )
+                    if os.path.exists(eval_traceback_path):
+                        with open(eval_traceback_path) as tb:
+                            eval_traceback = tb.read()
+                        job_wrapper.fail(
+                            f"Job setup failed during remote_tool_eval:\n{eval_traceback}",
+                            tool_stdout="",
+                            tool_stderr="",
+                            exit_code=exit_code,
+                            job_stdout=job_stdout,
+                            job_stderr=job_stderr,
+                        )
+                        return
                     raise
 
             check_output_detected_state = job_wrapper.check_tool_output(

@@ -1,10 +1,13 @@
 import json
 import os
 import shutil
+import sys
 import tempfile
 import traceback
 from collections.abc import Callable
 from typing import (
+    Any,
+    cast,
     NamedTuple,
 )
 
@@ -26,6 +29,14 @@ from galaxy.tools import (
     create_tool_from_representation,
     evaluation,
 )
+from galaxy.tools.crypt4gh_remote_execution import (
+    build_crypt4gh_postrun_command,
+    build_crypt4gh_remote_compute_environment,
+    collect_declared_crypt4gh_output_targets,
+    collect_discovery_crypt4gh_output_specs,
+    Crypt4GHRemoteExecutionError,
+    should_run_crypt4gh_remote_execution,
+)
 from galaxy.tools.data import (
     from_dict,
     ToolDataTableManager,
@@ -43,6 +54,14 @@ class ToolAppConfig(NamedTuple):
     root: str
     is_admin_user: Callable
     admin_users: list = []
+
+
+class Crypt4GHGateConfig(NamedTuple):
+    enable_crypt4gh_transparent_staging: bool = False
+    outputs_to_working_directory: bool = True
+    metadata_strategy: str = "extended"
+    crypt4gh_reencryption_service_url: str | None = None
+    tool_evaluation_strategy: str | None = "remote"
 
 
 class ToolApp(MinimalToolApp):
@@ -117,10 +136,80 @@ def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY) -> None:
     tool_evaluator = evaluation.RemoteToolEvaluator(
         app=app, tool=tool, job=job_io.job, local_working_directory=WORKING_DIRECTORY
     )
-    tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job_io.job))
+
+    destination_params = dict(job_io.job.destination_params or {})
+    crypt4gh_config = cast(dict, job_io.crypt4gh_config or {})
+    reencryption_service_url = str(crypt4gh_config.get("reencryption_service_url") or "").strip()
+    crypt4gh_gate_config = Crypt4GHGateConfig(
+        enable_crypt4gh_transparent_staging=bool(crypt4gh_config.get("enable_crypt4gh_transparent_staging", False)),
+        crypt4gh_reencryption_service_url=reencryption_service_url or None,
+    )
+
+    crypt4gh_active = False
+    crypt4gh_output_targets: list[dict[str, object]] = []
+    crypt4gh_discovery_specs: list[dict[str, object]] = []
+    crypt4gh_compute_public_key = ""
+    crypt4gh_compute_keypair_id = ""
+    crypt4gh_compute_keypair_expiration_date = None
+
+    if reencryption_service_url and should_run_crypt4gh_remote_execution(
+        job_io=job_io,
+        app_config=cast(Any, crypt4gh_gate_config),
+        destination_params=destination_params,
+        provided_metadata_style=tool.provided_metadata_style,
+    ):
+        crypt4gh_compute_environment = build_crypt4gh_remote_compute_environment(
+            job_io=job_io,
+            job=job_io.job,
+            working_directory=WORKING_DIRECTORY,
+            reencryption_service_url=reencryption_service_url,
+        )
+        tool_evaluator.set_compute_environment(compute_environment=crypt4gh_compute_environment)
+        crypt4gh_active = True
+        crypt4gh_compute_public_key = str(crypt4gh_compute_environment.compute_public_key or "")
+        crypt4gh_compute_keypair_id = str(crypt4gh_compute_environment.compute_keypair_id or "")
+        crypt4gh_compute_keypair_expiration_date = crypt4gh_compute_environment.compute_keypair_expiration_date
+
+        if not crypt4gh_compute_public_key or not crypt4gh_compute_keypair_id:
+            raise Crypt4GHRemoteExecutionError(
+                "Crypt4GH compute environment did not return compute key context required for output finalization"
+            )
+
+        crypt4gh_output_targets = collect_declared_crypt4gh_output_targets(
+            job_io=job_io,
+            tool_outputs=tool.outputs,
+            datatypes_registry=datatypes_registry,
+            working_directory=WORKING_DIRECTORY,
+        )
+        crypt4gh_discovery_specs = collect_discovery_crypt4gh_output_specs(
+            job_io=job_io,
+            tool_outputs=tool.outputs,
+            datatypes_registry=datatypes_registry,
+            working_directory=WORKING_DIRECTORY,
+        )
+    else:
+        tool_evaluator.set_compute_environment(
+            compute_environment=SharedComputeEnvironment(job_io=job_io, job=job_io.job)
+        )
+
     with open(os.path.join(WORKING_DIRECTORY, "tool_script.sh"), "a") as out:
         command_line, version_command_line, extra_filenames, environment_variables, *_ = tool_evaluator.build()
-        out.write(f"{version_command_line or ''}{command_line}")
+        tool_command = f"{version_command_line or ''}{command_line}"
+        if crypt4gh_active:
+            galaxy_json_path = os.path.join(WORKING_DIRECTORY, "working", "galaxy.json")
+            tool_command = build_crypt4gh_postrun_command(
+                tool_command=tool_command,
+                output_targets=crypt4gh_output_targets,
+                discovery_specs=crypt4gh_discovery_specs,
+                galaxy_json_path=galaxy_json_path,
+                working_directory=WORKING_DIRECTORY,
+                reencryption_service_url=reencryption_service_url,
+                compute_public_key=crypt4gh_compute_public_key,
+                compute_keypair_id=crypt4gh_compute_keypair_id,
+                compute_keypair_expiration_date=crypt4gh_compute_keypair_expiration_date,
+                python_executable=sys.executable,
+            )
+        out.write(tool_command)
 
 
 if __name__ == "__main__":

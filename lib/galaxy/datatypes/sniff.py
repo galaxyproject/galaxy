@@ -37,6 +37,12 @@ from galaxy.util.checkers import (
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
+from galaxy.util.crypt4gh import (
+    check_crypt4gh,
+    infer_crypt4gh_file_ext,
+    is_crypt4gh_file_ext,
+    wrap_crypt4gh_file_ext,
+)
 from galaxy.util.path import StrPath
 
 try:
@@ -591,6 +597,8 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
 
 
 def guess_ext_from_file_name(fname, registry, requested_ext="auto"):
+    if is_crypt4gh_file_ext(fname):
+        return infer_crypt4gh_file_ext(fname, registry, requested_ext=requested_ext)
     if requested_ext != "auto":
         return requested_ext
     return registry.get_datatype_from_filename(fname).file_ext
@@ -910,6 +918,7 @@ def handle_uploaded_dataset_file_internal(
     check_content: bool = True,
     is_binary: bool | None = None,
     uploaded_file_ext: str | None = None,
+    uploaded_filename: str | None = None,
     convert_to_posix_lines: bool | None = None,
     convert_spaces_to_tabs: bool | None = None,
 ) -> HandleUploadedDatasetFileInternalResponse:
@@ -932,7 +941,28 @@ def handle_uploaded_dataset_file_internal(
 
         is_binary = file_prefix.binary
         guessed_ext = ext
-        if ext in AUTO_DETECT_EXTENSIONS:
+        is_crypt4gh_upload = check_crypt4gh(converted_path)
+        if is_crypt4gh_upload:
+            if ext in AUTO_DETECT_EXTENSIONS:
+                # User didn't select a type — infer inner type from filename.
+                # Prefer the full original filename so multi-part extensions
+                # like ``somename.bam.c4gh`` are correctly unwrapped.
+                upload_name = (
+                    uploaded_filename
+                    or file_prefix.filename
+                    or (f"x.{uploaded_file_ext}" if uploaded_file_ext else None)
+                )
+                if upload_name is None:
+                    upload_name = ""
+                guessed_ext = infer_crypt4gh_file_ext(
+                    upload_name,
+                    datatypes_registry,
+                    requested_ext=ext,
+                )
+            else:
+                # User selected a type — wrap it with crypt4gh.
+                guessed_ext = wrap_crypt4gh_file_ext(ext)
+        elif ext in AUTO_DETECT_EXTENSIONS:
             # TODO: skip this if we haven't actually converted the dataset
             guessed_ext = guess_ext(
                 converted_path,
@@ -940,7 +970,12 @@ def handle_uploaded_dataset_file_internal(
                 auto_decompress=file_prefix.auto_decompress,
             )
 
-        if not is_binary and not is_compressed and (convert_to_posix_lines or convert_spaces_to_tabs):
+        if (
+            not is_binary
+            and not is_compressed
+            and not is_crypt4gh_upload
+            and (convert_to_posix_lines or convert_spaces_to_tabs)
+        ):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
             line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(
@@ -951,7 +986,7 @@ def handle_uploaded_dataset_file_internal(
                     os.unlink(converted_path)
                 assert _converted_path
                 converted_path = _converted_path
-            if ext in AUTO_DETECT_EXTENSIONS:
+            if ext in AUTO_DETECT_EXTENSIONS and not is_crypt4gh_upload:
                 ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order)
         else:
             ext = guessed_ext

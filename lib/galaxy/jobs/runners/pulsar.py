@@ -40,10 +40,7 @@ from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 from sqlalchemy import select
 
 from galaxy import model
-from galaxy.job_execution.compute_environment import (
-    ComputeEnvironment,
-    dataset_path_to_extra_path,
-)
+from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
 from galaxy.jobs.job_destination import JobDestination
@@ -58,6 +55,7 @@ from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetColl
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import (
+    dataset_path_to_extra_path,
     galaxy_directory,
     specs,
     string_as_bool_or_none,

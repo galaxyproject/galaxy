@@ -71,6 +71,7 @@ from galaxy.job_execution.setup import (
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.mapper import (
     JobMappingException,
+    JobNotReadyException,
     JobRunnerMapper,
 )
 from galaxy.jobs.runners import (
@@ -101,6 +102,10 @@ from galaxy.tool_util.output_checker import (
     DETECTED_JOB_STATE,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tools.crypt4gh_remote_execution import (
+    Crypt4GHRemoteExecutionError,
+    verify_crypt4gh_pre_success_output_evidence,
+)
 from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
@@ -114,6 +119,11 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.crypt4gh import (
+    assert_crypt4gh_job_readiness,
+    cleanup_crypt4gh_plaintext_artifacts,
+    CRYPT4GH_CLEANUP_FAILED_MARKER,
+)
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.path import external_chown
 from galaxy.util.xml_macros import load
@@ -137,6 +147,27 @@ DEFAULT_LOCAL_WORKERS = 4
 
 DEFAULT_CLEANUP_JOB = "always"
 VALID_TOOL_CLASSES = ["local", "requires_galaxy", "user_defined"]
+
+
+def _extract_crypt4gh_cleanup_traceback(stderr: str) -> str:
+    """Extract the Python traceback emitted by the Crypt4GH cleanup one-liner.
+
+    The cleanup step runs ``python -c '...'`` whose traceback (if it raises)
+    is captured as part of *stderr*.  This returns the traceback block — from
+    ``Traceback (most recent call last):`` up to and including the final
+    exception line — or an empty string if none is found.
+    """
+    marker = "Traceback (most recent call last):"
+    idx = stderr.find(marker)
+    if idx == -1:
+        return ""
+    # The traceback ends at the first blank line after the exception line,
+    # or at the CRYPT4GH_CLEANUP_FAILED_MARKER line, whichever comes first.
+    end = stderr.find(CRYPT4GH_CLEANUP_FAILED_MARKER, idx)
+    if end == -1:
+        end = len(stderr)
+    block = stderr[idx:end].rstrip()
+    return block
 
 
 class ResubmitConfigDict(TypedDict, total=False):
@@ -1115,6 +1146,10 @@ class MinimalJobWrapper(HasResourceParameters):
                 tool_source_class=type(self.tool.tool_source).__name__ if self.tool else None,
                 tool_dir=tool_dir,
                 is_task=self.is_task,
+                crypt4gh_config={
+                    "reencryption_service_url": self.app.config.crypt4gh_reencryption_service_url,
+                    "enable_crypt4gh_transparent_staging": self.app.config.enable_crypt4gh_transparent_staging,
+                },
             )
         return self._job_io
 
@@ -1781,6 +1816,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def enqueue(self):
         job = self.get_job()
+        self._assert_crypt4gh_job_readiness(job)
         # Change to queued state before handing to worker thread so the runner won't pick it up again
         if self.is_task:
             self.change_state(Job.states.QUEUED, flush=False, job=job)
@@ -1795,6 +1831,47 @@ class MinimalJobWrapper(HasResourceParameters):
         if job.state == model.Job.states.PAUSED:
             return False
         return True
+
+    def _assert_crypt4gh_job_readiness(self, job: Job) -> None:
+        """Fail-closed readiness guard for Crypt4GH-wrapped input datasets.
+
+        Fails the job with an actionable error message if any Crypt4GH-wrapped input
+        is missing required compute metadata or has an expired or invalid encryption key.
+        """
+        # Skip the check for metadata tools, because those tools
+        # only read dataset metadata and should not require recrypt.
+        if job.tool_id == "__SET_METADATA__":
+            return
+        errors = assert_crypt4gh_job_readiness(job)
+        if errors:
+            error_message = "Crypt4GH job readiness check failed:\n" + "\n".join(errors)
+            log.warning("(%s) %s", job.id, error_message)
+            self.fail(error_message)
+            raise JobNotReadyException(error_message)
+
+    def _verify_crypt4gh_outputs(self, job: Job, output_dataset_associations) -> str | None:
+        """Fail-closed verification that Crypt4GH outputs are properly encrypted.
+
+        Returns an error message string if verification fails, or None if
+        outputs are valid or Crypt4GH staging is not active for this job.
+
+        This runs in :meth:`finish` after all outputs are discovered and
+        before ``set_final_state``, so a failure here flips the job to
+        ERROR and the existing ERROR-state handling applies.
+        """
+        if not getattr(self.app.config, "enable_crypt4gh_transparent_staging", False):
+            return None
+        if job.tool_id == "__SET_METADATA__":
+            return None
+
+        try:
+            verify_crypt4gh_pre_success_output_evidence(
+                working_directory=self.working_directory,
+                output_dataset_associations=output_dataset_associations,
+            )
+        except Crypt4GHRemoteExecutionError as exc:
+            return str(exc)
+        return None
 
     def _pause_job_if_over_quota(self, job):
         quota_source_map = self.app.object_store.get_quota_source_map()
@@ -2150,6 +2227,25 @@ class MinimalJobWrapper(HasResourceParameters):
         else:
             final_job_state = job.states.ERROR
 
+        if (
+            getattr(self.app.config, "enable_crypt4gh_transparent_staging", False)
+            and tool_stderr
+            and CRYPT4GH_CLEANUP_FAILED_MARKER in tool_stderr
+        ):
+            cleanup_traceback = _extract_crypt4gh_cleanup_traceback(tool_stderr)
+            if cleanup_traceback:
+                existing_traceback = job.traceback or ""
+                job.traceback = (
+                    f"{existing_traceback}\n{cleanup_traceback}" if existing_traceback else cleanup_traceback
+                )
+                tool_stderr = tool_stderr.replace(cleanup_traceback, "").strip()
+                job.set_streams(
+                    job.tool_stdout,
+                    tool_stderr,
+                    job_stdout=job_stdout,
+                    job_stderr=job_stderr,
+                )
+
         if not extended_metadata and self.outputs_to_working_directory and not self.__link_file_check():
             # output will be moved by job if metadata_strategy is extended_metadata, so skip moving here
             for dataset_path in self.job_io.get_output_fnames():
@@ -2242,6 +2338,66 @@ class MinimalJobWrapper(HasResourceParameters):
                 ):
                     # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = Dataset.states.OK
+
+        # Fail-closed: detect compute-side Crypt4GH plaintext cleanup failures
+        # reported via the stderr marker emitted by the shell wrapper.
+        # The cleanup step always runs (even on tool/postrun failure), so the
+        # marker can appear alongside other errors.  When the job would
+        # otherwise succeed, a cleanup failure flips it to ERROR.  When the
+        # job is already failing, we still surface the cleanup failure in the
+        # job info so users know plaintext artifacts may remain.
+        #
+        # This runs after the extended-metadata import so that job.info set
+        # here is not overwritten by the import (which carries info: null
+        # from the compute side).
+        if getattr(
+            self.app.config, "enable_crypt4gh_transparent_staging", False
+        ) and CRYPT4GH_CLEANUP_FAILED_MARKER in (tool_stderr or ""):
+            cleanup_failure_msg = (
+                "Crypt4GH plaintext cleanup failed on compute side — "
+                "plaintext data may remain on the compute node. "
+                "Contact the compute site administrator."
+            )
+            if final_job_state == job.states.OK:
+                if getattr(self.app.config, "crypt4gh_cleanup_failure_is_job_failure", False):
+                    log.warning("(%s) %s", self.get_id_tag(), cleanup_failure_msg)
+                    final_job_state = job.states.ERROR
+                    job.info = cleanup_failure_msg
+                    # Surface the message on output datasets so users see it in the history
+                    for dataset_assoc in output_dataset_associations:
+                        dataset_assoc.dataset.info = cleanup_failure_msg
+                else:
+                    log.warning(
+                        "(%s) %s (job not failed — crypt4gh_cleanup_failure_is_job_failure is false)",
+                        self.get_id_tag(),
+                        cleanup_failure_msg,
+                    )
+            else:
+                # Job is already failing — append the cleanup failure to job.info
+                # and dataset.info so the reason is visible to the user.
+                log.warning(
+                    "(%s) %s (job already failing from tool/postrun error)",
+                    self.get_id_tag(),
+                    cleanup_failure_msg,
+                )
+                existing_info = job.info or ""
+                job.info = f"{existing_info}\n{cleanup_failure_msg}" if existing_info else cleanup_failure_msg
+                for dataset_assoc in output_dataset_associations:
+                    ds = dataset_assoc.dataset
+                    existing_ds_info = ds.info or ""
+                    ds.info = f"{existing_ds_info}\n{cleanup_failure_msg}" if existing_ds_info else cleanup_failure_msg
+
+        # Fail-closed: verify Crypt4GH outputs before allowing success.
+        # Placed here so that if verification flips final_job_state to ERROR,
+        # the existing ERROR-state handling below runs naturally.
+        if final_job_state == job.states.OK:
+            crypt4gh_verify_error = self._verify_crypt4gh_outputs(job, output_dataset_associations)
+            if crypt4gh_verify_error:
+                log.warning("(%s) Crypt4GH output verification failed: %s", self.get_id_tag(), crypt4gh_verify_error)
+                final_job_state = job.states.ERROR
+                job.info = crypt4gh_verify_error
+                for dataset_assoc in output_dataset_associations:
+                    dataset_assoc.dataset.info = crypt4gh_verify_error
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
@@ -2425,6 +2581,28 @@ class MinimalJobWrapper(HasResourceParameters):
                 JobWorkingDirectory(job, self.object_store).delete()
         except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
+
+        # Deterministic Crypt4GH plaintext cleanup — runs on both success and
+        # failure paths.  The _crypt directory is a subdirectory of the job
+        # working directory, so the object-store delete above would eventually
+        # remove it; this explicit step provides fail-closed semantics so
+        # cleanup failures can be surfaced for sensitive deployments.
+        if getattr(self.app.config, "enable_crypt4gh_transparent_staging", False):
+            try:
+                cleanup_crypt4gh_plaintext_artifacts(working_directory=self.working_directory)
+            except Exception:
+                cleanup_msg = (
+                    "Crypt4GH plaintext cleanup failed — "
+                    "plaintext data may remain on the compute node. "
+                    "Contact the compute site administrator."
+                )
+                log.exception("(%d) %s", self.job_id, cleanup_msg)
+                if getattr(self.app.config, "crypt4gh_cleanup_failure_is_job_failure", False):
+                    job = self.get_job()
+                    existing_info = job.info or ""
+                    job.info = f"{existing_info}\n{cleanup_msg}" if existing_info else cleanup_msg
+                    self.sa_session.add(job)
+                    self.sa_session.commit()
 
     def _collect_metrics(self, has_metrics, job_metrics_directory=None):
         job = has_metrics.get_job()

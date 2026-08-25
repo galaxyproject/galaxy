@@ -93,6 +93,7 @@ from galaxy.util import (
     galaxy_directory,
     now,
 )
+from galaxy.util.crypt4gh import preserve_crypt4gh_inner_file_ext
 from galaxy.util.custom_logging import get_logger
 from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 
@@ -264,6 +265,11 @@ def change_datatype(
     if datatype == "auto":
         path = dataset_instance.dataset.get_file_name()
         datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
+        datatype = preserve_crypt4gh_inner_file_ext(
+            datatype,
+            current_ext=dataset_instance.extension,
+            metadata_inner_ext=getattr(dataset_instance.metadata, "crypt4gh_inner_ext", None),
+        )
     datatypes_registry.change_datatype(dataset_instance, datatype)
     sa_session.commit()
     set_metadata(hda_manager, ldda_manager, sa_session, dataset_id, model_class)

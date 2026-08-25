@@ -45,6 +45,10 @@ classifiers = [
 keywords = ["Galaxy"]
 
 [project.optional-dependencies]
+crypt4gh = [
+    "crypt4gh",
+    "aiohttp",
+]
 cwl = [
     "cwl-utils",
     "cwltool>=3.1.20230624081518",
