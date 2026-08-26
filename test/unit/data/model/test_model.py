@@ -3,6 +3,8 @@ from uuid import (
     uuid4,
 )
 
+import pytest
+
 from galaxy import model
 
 
@@ -79,3 +81,55 @@ def test_resubmission_count_counts_resubmitted_state_history_entries():
     _record_state(job, model.Job.states.RESUBMITTED)
     _record_state(job, model.Job.states.OK)
     assert job.resubmission_count == 2
+
+
+@pytest.fixture(scope="module")
+def init_model(engine):
+    """Create model objects in the engine's database."""
+    model.mapper_registry.metadata.create_all(engine)
+
+
+def _job_with_output_dataset(session, make_job, make_hda):
+    """A persisted job whose single output dataset is linked back via Dataset.job_id.
+
+    ``update_output_states`` finds outputs through ``dataset.job_id``, so that column -
+    not just the JobToOutputDatasetAssociation - has to be set for the update to bite.
+    """
+    job = make_job()
+    dataset = model.Dataset()
+    dataset.job_id = job.id
+    session.add(dataset)
+    session.commit()
+    hda = make_hda(dataset=dataset, name="output1")
+    assoc = model.JobToOutputDatasetAssociation(name="out_file1", dataset=hda)
+    job.output_datasets.append(assoc)
+    session.add(assoc)
+    session.commit()
+    return job, dataset
+
+
+def _updated_dataset_state(session, job, dataset, job_state):
+    job.state = job_state
+    session.commit()
+    job.update_output_states(supports_skip_locked=False)
+    session.expire_all()
+    return session.get(model.Dataset, dataset.id).state
+
+
+def test_update_output_states_maps_finishing_to_setting_metadata(session, make_job, make_hda):
+    """Regression test: "finishing" is a Job state but not a Dataset state.
+
+    Persisting it verbatim leaves an invalid dataset state behind, which blows up the
+    history state-count serializers and makes the history read as errored.
+    """
+    job, dataset = _job_with_output_dataset(session, make_job, make_hda)
+    state = _updated_dataset_state(session, job, dataset, model.Job.states.FINISHING)
+    assert state == model.Dataset.states.SETTING_METADATA
+    assert state != model.Job.states.FINISHING
+
+
+def test_update_output_states_passes_through_unmapped_states(session, make_job, make_hda):
+    """States shared by both vocabularies must still propagate verbatim."""
+    job, dataset = _job_with_output_dataset(session, make_job, make_hda)
+    state = _updated_dataset_state(session, job, dataset, model.Job.states.RUNNING)
+    assert state == model.Dataset.states.RUNNING
