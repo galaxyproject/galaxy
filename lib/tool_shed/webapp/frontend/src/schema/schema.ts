@@ -1992,7 +1992,7 @@ export interface components {
         }
         /**
          * EmptyFieldParameterValidatorModel
-         * @description Require a parameter value to be present unless the rule is negated.
+         * @description Require a value that is neither an empty string nor null.
          * @example {
          *       "type": "empty_field"
          *     }
@@ -2000,13 +2000,18 @@ export interface components {
         EmptyFieldParameterValidatorModel: {
             /**
              * Implicit
+             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
+             * @description Require the value to be empty or null instead.
              * @default false
              */
             negate: boolean
@@ -2028,10 +2033,14 @@ export interface components {
             expression: string
             /**
              * Implicit
+             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
@@ -2054,50 +2063,67 @@ export interface components {
         FilePatternDatasetCollectionDescription: {
             /**
              * Assign Primary Output
+             * @description Whether the first matching file replaces the primary dataset output.
              * @default false
              */
             assign_primary_output: boolean
-            /** Directory */
+            /**
+             * Directory
+             * @description Directory to search, relative to the job working directory.
+             */
             directory?: string | null
             /**
              * Discover Via
+             * @description Discover datasets by matching files produced by the command.
              * @default pattern
              * @constant
              */
             discover_via: "pattern"
-            /** Format */
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned to each discovered dataset.
+             */
             format?: string | null
             /**
              * Match Relative Path
+             * @description Whether `pattern` matches each file's relative path instead of only its filename.
              * @default false
              */
             match_relative_path: boolean
-            /** Pattern */
+            /**
+             * Pattern
+             * @description Regular expression matched against produced filenames. Named groups such as `name`, `designation`, `ext`, and `dbkey` set discovered dataset metadata.
+             */
             pattern: string
             /**
              * Recurse
+             * @description Whether to search recursively below `directory`.
              * @default false
              */
             recurse: boolean
             /**
              * Sort Comp
+             * @description Whether the sort key is compared as text or as a number.
              * @default lexical
              * @enum {string}
              */
             sort_comp: "lexical" | "numeric"
             /**
              * Sort Key
+             * @description Discovered metadata used to order matching files.
              * @default filename
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey"
             /**
              * Sort Reverse
+             * @description Whether to reverse the discovered dataset order.
              * @default false
              */
             sort_reverse: boolean
             /**
              * Visible
+             * @description Whether discovered datasets are visible in the history.
              * @default false
              */
             visible: boolean
@@ -2382,7 +2408,7 @@ export interface components {
         ImageType: "Docker" | "Singularity" | "Conda"
         /**
          * InRangeParameterValidatorModel
-         * @description Require a numeric value to fall within the configured bounds.
+         * @description Require a numeric value to fall within optional lower and upper bounds.
          * @example {
          *       "max": 1,
          *       "min": 0,
@@ -2392,27 +2418,40 @@ export interface components {
         InRangeParameterValidatorModel: {
             /**
              * Exclude Max
+             * @description Whether a value equal to `max` is rejected.
              * @default false
              */
             exclude_max: boolean
             /**
              * Exclude Min
+             * @description Whether a value equal to `min` is rejected.
              * @default false
              */
             exclude_min: boolean
             /**
              * Implicit
+             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
              * @default false
              */
             implicit: boolean
-            /** Max */
+            /**
+             * Max
+             * @description Maximum accepted value; omit for no upper bound.
+             */
             max?: number | null
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
-            /** Min */
+            /**
+             * Min
+             * @description Minimum accepted value; omit for no lower bound.
+             */
             min?: number | null
             /**
              * Negate
+             * @description Reject values inside the configured range instead of values outside it.
              * @default false
              */
             negate: boolean
@@ -2516,7 +2555,7 @@ export interface components {
         }
         /**
          * LengthParameterValidatorModel
-         * @description Require a text value to have a length within the configured bounds.
+         * @description Require the number of characters in a text value to fall within optional bounds.
          * @example {
          *       "max": 20,
          *       "min": 1,
@@ -2526,17 +2565,28 @@ export interface components {
         LengthParameterValidatorModel: {
             /**
              * Implicit
+             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
              * @default false
              */
             implicit: boolean
-            /** Max */
+            /**
+             * Max
+             * @description Maximum accepted number of characters; omit for no upper bound.
+             */
             max?: number | null
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
-            /** Min */
+            /**
+             * Min
+             * @description Minimum accepted number of characters; omit for no lower bound.
+             */
             min?: number | null
             /**
              * Negate
+             * @description Reject values whose length is inside the configured range instead of outside it.
              * @default false
              */
             negate: boolean
@@ -2556,7 +2606,7 @@ export interface components {
         }
         /**
          * NoOptionsParameterValidatorModel
-         * @description Reject a select parameter when it has no available options.
+         * @description Require a select parameter to have at least one available option.
          * @example {
          *       "type": "no_options"
          *     }
@@ -2564,13 +2614,18 @@ export interface components {
         NoOptionsParameterValidatorModel: {
             /**
              * Implicit
+             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
+             * @description Require the select parameter to have no available options instead.
              * @default false
              */
             negate: boolean
@@ -2634,17 +2689,25 @@ export interface components {
          *     }
          */
         RegexParameterValidatorModel: {
-            /** Expression */
+            /**
+             * Expression
+             * @description Regular expression matched from the start of the value. Add `$` at the end to require a complete-value match.
+             */
             expression: string
             /**
              * Implicit
+             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
+             * @description Reject matching values instead of values that do not match.
              * @default false
              */
             negate: boolean
@@ -3725,13 +3788,22 @@ export interface components {
         }
         /** ToolOutputCollection */
         ToolOutputCollection: {
-            /** Collection Type */
+            /**
+             * Collection Type
+             * @description Collection structure, such as `list`, `paired`, or a nested type such as `list:paired`.
+             */
             collection_type?: string | null
             /** Collection Type From Rules */
             collection_type_from_rules?: string | null
-            /** Collection Type Source */
+            /**
+             * Collection Type Source
+             * @description Input collection whose structure determines this output collection's type.
+             */
             collection_type_source?: string | null
-            /** Discover Datasets */
+            /**
+             * Discover Datasets
+             * @description Rules used to discover and populate collection elements from produced files.
+             */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
@@ -3753,7 +3825,10 @@ export interface components {
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: string
-            /** Structured Like */
+            /**
+             * Structured Like
+             * @description Input collection whose element identifiers and nesting this output mirrors.
+             */
             structured_like?: string | null
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -3763,7 +3838,10 @@ export interface components {
         }
         /** ToolOutputDataset */
         ToolOutputDataset: {
-            /** Discover Datasets */
+            /**
+             * Discover Datasets
+             * @description Rules for discovering additional datasets produced by the command.
+             */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
@@ -3889,30 +3967,41 @@ export interface components {
         ToolProvidedMetadataDatasetCollection: {
             /**
              * Assign Primary Output
+             * @description Whether the first matching file replaces the primary dataset output.
              * @default false
              */
             assign_primary_output: boolean
-            /** Directory */
+            /**
+             * Directory
+             * @description Directory to search, relative to the job working directory.
+             */
             directory?: string | null
             /**
              * Discover Via
+             * @description Read discovered dataset details from the tool-provided metadata file.
              * @constant
              */
             discover_via: "tool_provided_metadata"
-            /** Format */
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned to each discovered dataset.
+             */
             format?: string | null
             /**
              * Match Relative Path
+             * @description Whether `pattern` matches each file's relative path instead of only its filename.
              * @default false
              */
             match_relative_path: boolean
             /**
              * Recurse
+             * @description Whether to search recursively below `directory`.
              * @default false
              */
             recurse: boolean
             /**
              * Visible
+             * @description Whether discovered datasets are visible in the history.
              * @default false
              */
             visible: boolean

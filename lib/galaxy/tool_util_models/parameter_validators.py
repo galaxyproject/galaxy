@@ -89,12 +89,18 @@ class ParameterValidatorModel(StrictModel):
     type: ValidatorType
     message: Annotated[
         Optional[str],
+        Field(description="Error message shown when validation fails; `%s` is replaced with the rejected value."),
         ValidationArgument(
             """The error message displayed on the tool form if validation fails. A placeholder string ``%s`` will be repaced by the ``value``"""
         ),
     ] = None
     # track validators setup by other input parameters and not validation explicitly
-    implicit: bool = False
+    implicit: Annotated[
+        bool,
+        Field(
+            description="Whether Galaxy added this validator automatically rather than the tool author declaring it."
+        ),
+    ] = False
     _static: bool = PrivateAttr(False)
     _deprecated: bool = PrivateAttr(False)
     # validators must be explicitly set as 'safe' to operate as user-defined workflow parameters or to be used
@@ -167,8 +173,20 @@ class RegexParameterValidatorModel(StaticValidatorModel):
     model_config = ConfigDict(json_schema_extra={"examples": [{"type": "regex", "expression": "^[ACGT]+$"}]})
 
     type: Literal["regex"] = "regex"
-    negate: Negate = NEGATE_DEFAULT
-    expression: Annotated[str, ValidationArgument("Regular expression to validate against.", xml_body=True)]
+    negate: Annotated[
+        Negate,
+        Field(description="Reject matching values instead of values that do not match."),
+    ] = NEGATE_DEFAULT
+    expression: Annotated[
+        str,
+        Field(
+            description=(
+                "Regular expression matched from the start of the value. Add `$` at the end to require a "
+                "complete-value match."
+            )
+        ),
+        ValidationArgument("Regular expression to validate against.", xml_body=True),
+    ]
     _safe: bool = PrivateAttr(True)
 
     @property
@@ -190,16 +208,31 @@ class RegexParameterValidatorModel(StaticValidatorModel):
 
 
 class InRangeParameterValidatorModel(StaticValidatorModel):
-    """Require a numeric value to fall within the configured bounds."""
+    """Require a numeric value to fall within optional lower and upper bounds."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"type": "in_range", "min": 0, "max": 1}]})
 
     type: Literal["in_range"] = "in_range"
-    min: Optional[Union[float, int]] = None
-    max: Optional[Union[float, int]] = None
-    exclude_min: bool = False
-    exclude_max: bool = False
-    negate: Negate = NEGATE_DEFAULT
+    min: Annotated[
+        Optional[Union[float, int]],
+        Field(description="Minimum accepted value; omit for no lower bound."),
+    ] = None
+    max: Annotated[
+        Optional[Union[float, int]],
+        Field(description="Maximum accepted value; omit for no upper bound."),
+    ] = None
+    exclude_min: Annotated[
+        bool,
+        Field(description="Whether a value equal to `min` is rejected."),
+    ] = False
+    exclude_max: Annotated[
+        bool,
+        Field(description="Whether a value equal to `max` is rejected."),
+    ] = False
+    negate: Annotated[
+        Negate,
+        Field(description="Reject values inside the configured range instead of values outside it."),
+    ] = NEGATE_DEFAULT
     _safe: bool = PrivateAttr(True)
 
     def statically_validate(self, value: Any):
@@ -230,14 +263,23 @@ class InRangeParameterValidatorModel(StaticValidatorModel):
 
 
 class LengthParameterValidatorModel(StaticValidatorModel):
-    """Require a text value to have a length within the configured bounds."""
+    """Require the number of characters in a text value to fall within optional bounds."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"type": "length", "min": 1, "max": 20}]})
 
     type: Literal["length"] = "length"
-    min: Optional[int] = None
-    max: Optional[int] = None
-    negate: Negate = NEGATE_DEFAULT
+    min: Annotated[
+        Optional[int],
+        Field(description="Minimum accepted number of characters; omit for no lower bound."),
+    ] = None
+    max: Annotated[
+        Optional[int],
+        Field(description="Maximum accepted number of characters; omit for no upper bound."),
+    ] = None
+    negate: Annotated[
+        Negate,
+        Field(description="Reject values whose length is inside the configured range instead of outside it."),
+    ] = NEGATE_DEFAULT
     _safe: bool = PrivateAttr(True)
 
     def statically_validate(self, value: Any):
@@ -301,12 +343,15 @@ class UnspecifiedBuildParameterValidatorModel(ParameterValidatorModel):
 
 
 class NoOptionsParameterValidatorModel(StaticValidatorModel):
-    """Reject a select parameter when it has no available options."""
+    """Require a select parameter to have at least one available option."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"type": "no_options"}]})
 
     type: Literal["no_options"] = "no_options"
-    negate: Negate = NEGATE_DEFAULT
+    negate: Annotated[
+        Negate,
+        Field(description="Require the select parameter to have no available options instead."),
+    ] = NEGATE_DEFAULT
 
     @staticmethod
     def no_options_validate(value: Any, validator: "ValidatorDescription"):
@@ -321,12 +366,15 @@ class NoOptionsParameterValidatorModel(StaticValidatorModel):
 
 
 class EmptyFieldParameterValidatorModel(StaticValidatorModel):
-    """Require a parameter value to be present unless the rule is negated."""
+    """Require a value that is neither an empty string nor null."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"type": "empty_field"}]})
 
     type: Literal["empty_field"] = "empty_field"
-    negate: Negate = NEGATE_DEFAULT
+    negate: Annotated[
+        Negate,
+        Field(description="Require the value to be empty or null instead."),
+    ] = NEGATE_DEFAULT
 
     @staticmethod
     def empty_validate(value: Any, validator: "ValidatorDescription"):

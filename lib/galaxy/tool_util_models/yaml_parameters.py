@@ -410,7 +410,7 @@ class YamlConditionalWhen(BaseModel):
 
 
 class YamlConditionalParameter(_YamlParamBase):
-    """Inputs selected by the value of a boolean or select test parameter."""
+    """A control input that selects which nested inputs are displayed and supplied to the command."""
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -476,7 +476,7 @@ class YamlConditionalParameter(_YamlParamBase):
 
 
 class YamlRepeatParameter(_YamlParamBase):
-    """A group of inputs the user may add several times."""
+    """A group the user may add multiple times, with ``parameters`` defining one repeated entry."""
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -497,7 +497,7 @@ class YamlRepeatParameter(_YamlParamBase):
     type: Literal["repeat"]
     parameters: Annotated[
         List["YamlGalaxyToolParameter"],
-        Field(description="Inputs contained in each repetition."),
+        Field(description="Inputs that make up one repeated entry."),
     ] = []
     min: Annotated[Optional[int], Field(description="Minimum number of repetitions.")] = None
     max: Annotated[Optional[int], Field(description="Maximum number of repetitions.")] = None
@@ -513,7 +513,7 @@ class YamlRepeatParameter(_YamlParamBase):
 
 
 class YamlSectionParameter(_YamlParamBase):
-    """A labeled group of related inputs."""
+    """Related inputs that users can expand or collapse to reduce form complexity."""
 
     model_config = ConfigDict(
         json_schema_extra={
