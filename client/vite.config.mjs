@@ -52,16 +52,18 @@ export default defineConfig(({ command }) => ({
     base: "./",
     resolve: {
         tsconfigPaths: true,
-        // In dev, resolve @galaxyproject/* workspace packages directly to
-        // source so edits trigger HMR without a rebuild. Production builds
-        // use the packages' published dist/ via their package.json exports.
-        ...(command === "serve"
-            ? {
-                  alias: {
-                      "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts"),
-                  },
-              }
-            : {}),
+        alias: {
+            // galaxy-ui is internal-only (no library build) and always
+            // resolved from source -- the main client consumes the .vue
+            // files directly through @vitejs/plugin-vue2.
+            "@galaxyproject/galaxy-ui": resolve(__dirname, "packages/ui/src/index.ts"),
+            // galaxy-api-client has a real tsup dist/ build and production
+            // uses that via package.json exports. During `vite serve` we
+            // resolve to source so edits trigger HMR without a rebuild.
+            ...(command === "serve"
+                ? { "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts") }
+                : {}),
+        },
     },
     define: {
         // Make jQuery available globally for plugins and legacy code

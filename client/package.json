@@ -173,11 +173,12 @@
     "test:ui": "vitest --ui",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "eslint-precommit": "eslint -c .eslintrc.js --quiet --ext .js,.vue,.ts src",
-    "eslint": "eslint -c .eslintrc.js --ext .js,.vue,.ts src",
+    "eslint-precommit": "eslint -c .eslintrc.js --quiet --ext .js,.vue,.ts src packages/ui/src",
+    "eslint": "eslint -c .eslintrc.js --ext .js,.vue,.ts src packages/ui/src",
     "type-check": "vue-tsc --noEmit"
   },
   "devDependencies": {
+    "@galaxyproject/galaxy-ui": "workspace:*",
     "@modyfi/vite-plugin-yaml": "^1.1.1",
     "@pinia/testing": "0.1.5",
     "@rollup/plugin-inject": "^5.0.5",
