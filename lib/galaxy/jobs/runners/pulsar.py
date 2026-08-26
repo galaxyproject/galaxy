@@ -812,7 +812,36 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             self.fail_job(job_state, message=GENERIC_REMOTE_ERROR, exception=True)
             log.exception("failure finishing job %d", job_wrapper.job_id)
             return
-        if not PulsarJobRunner.__remote_metadata(client):
+        self._complete_staged_job(
+            job_wrapper,
+            tool_stdout,
+            tool_stderr,
+            exit_code,
+            job_stdout=job_stdout,
+            job_stderr=job_stderr,
+            remote_metadata_directory=remote_metadata_directory,
+            handle_metadata_externally=not PulsarJobRunner.__remote_metadata(client),
+        )
+
+    def _complete_staged_job(
+        self,
+        job_wrapper,
+        tool_stdout,
+        tool_stderr,
+        exit_code,
+        job_stdout=None,
+        job_stderr=None,
+        remote_metadata_directory=None,
+        handle_metadata_externally=True,
+    ):
+        """Set metadata and finish the job, once outputs are already staged back.
+
+        Split out of ``finish_job`` so recovery can redo just this part. By the time it
+        runs, ``pulsar_finish_job`` has staged the outputs down and - under the default
+        ``cleanup_job: always`` - already deleted the remote job, so re-entering
+        ``finish_job`` would query a job Pulsar no longer has.
+        """
+        if handle_metadata_externally:
             # we need an actual exit code file in the job working directory to detect job errors in the metadata script
             with open(
                 os.path.join(job_wrapper.working_directory, f"galaxy_{job_wrapper.job_id}.ec"), "w"
@@ -834,6 +863,44 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=job_metrics_directory)
+
+    def _finish_staged_job(self, job_state):
+        """Redo the tail of ``finish_job`` for a job interrupted during external metadata.
+
+        Runs on the work queue rather than inline in ``recover()``, because
+        ``_handle_metadata_externally`` blocks on the celery result and ``recover()`` is
+        called while the handler is still starting up.
+
+        The remote job is already gone, so the inputs ``finish()`` needs come back off the
+        working directory: the exit code file written immediately before the metadata step,
+        and the tool streams staged down with the outputs. ``job_stdout``/``job_stderr``
+        came from the Pulsar status response and are not persisted locally, so they are
+        left unset - the job record loses the job script's streams, but not the tool's.
+        """
+        job_wrapper = job_state.job_wrapper
+        working_directory = job_wrapper.working_directory
+        exit_code_path = os.path.join(working_directory, f"galaxy_{job_wrapper.job_id}.ec")
+        try:
+            with open(exit_code_path) as exit_code_file:
+                exit_code = int(exit_code_file.read().strip())
+        except Exception:
+            # Written just before the metadata step, so its absence means the job was
+            # interrupted earlier than FINISHING implies - finishing on a guessed exit
+            # code would be worse than failing loudly.
+            log.exception("(%s) Cannot recover FINISHING job, no exit code at %s", job_wrapper.job_id, exit_code_path)
+            job_wrapper.fail("Unable to recover job interrupted while setting metadata", exception=True)
+            return
+        tool_stdout = self.__read_staged_stream(working_directory, "tool_stdout")
+        tool_stderr = self.__read_staged_stream(working_directory, "tool_stderr")
+        self._complete_staged_job(job_wrapper, tool_stdout, tool_stderr, exit_code)
+
+    @staticmethod
+    def __read_staged_stream(working_directory, name):
+        try:
+            with open(os.path.join(working_directory, "outputs", name)) as stream:
+                return unicodify(stream.read(), strip_null=True)
+        except Exception:
+            return ""
 
     def check_pid(self, pid):
         try:
@@ -904,8 +971,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
         if state == model.Job.states.FINISHING:
-            log.debug(f"(Pulsar/{job.id}) is in FINISHING state, re-running finish_job for recovery")
-            self.mark_as_finished(job_state)
+            log.debug(f"(Pulsar/{job.id}) is in FINISHING state, re-running external metadata for recovery")
+            self.work_queue.put((self._finish_staged_job, job_state))
         elif state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
             log.debug(f"(Pulsar/{job.id}) is still in {state} state, adding to the Pulsar queue")
             job_state.old_state = state if state != model.Job.states.STOPPED else model.Job.states.RUNNING
