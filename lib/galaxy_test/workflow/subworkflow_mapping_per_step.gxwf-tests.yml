@@ -1,0 +1,57 @@
+- doc: |
+    Two elements are mapped over the subworkflow and three are connected to its
+    collection input, so the outputs come back as flat lists of two and three
+    elements rather than being multiplied or matched up element by element.
+  job:
+    outer_mapping_source:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: X
+          class: File
+          contents: "from_X"
+        - identifier: Y
+          class: File
+          contents: "from_Y"
+    inner_mapping_source:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: P
+          class: File
+          contents: "P_content"
+        - identifier: Q
+          class: File
+          contents: "Q_content"
+        - identifier: R
+          class: File
+          contents: "R_content"
+  outputs:
+    inherited_mapping_output:
+      class: Collection
+      collection_type: list
+      elements:
+        X:
+          asserts:
+          - that: has_text
+            text: "from_X"
+        Y:
+          asserts:
+          - that: has_text
+            text: "from_Y"
+    local_mapping_output:
+      class: Collection
+      collection_type: list
+      elements:
+        P:
+          asserts:
+          - that: has_text
+            text: "P_content"
+        Q:
+          asserts:
+          - that: has_text
+            text: "Q_content"
+        R:
+          asserts:
+          - that: has_text
+            text: "R_content"
