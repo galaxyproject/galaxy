@@ -46,6 +46,45 @@ def test_stream_to_open_named_file_compatibility(tmp_path):
         os.fstat(fd)
 
 
+def test_filesystem_safe_string():
+    assert util.filesystem_safe_string(".sample/data") == "sample_data"
+    assert util.filesystem_safe_string("café") == "café"
+    assert util.filesystem_safe_string("...") == "_"
+    assert util.filesystem_safe_string("a" * 256).endswith("..")
+    assert len(util.filesystem_safe_string("a" * 256)) == 255
+
+
+@pytest.mark.parametrize(
+    ("identifier", "expected"),
+    [
+        ("Plain HDA", "Plain_HDA"),
+        ("../etc/passwd", "_etc_passwd"),
+        ("..\\etc\\passwd", "_etc_passwd"),
+        (".", "_"),
+        ("..", "_"),
+        ("...", "_"),
+        ("---", "_"),
+        (".-.", "_"),
+        ("café", "caf_"),
+        ("NUL", "_NUL"),
+        ("CON.txt", "_CON.txt"),
+        ("name.", "name"),
+        ("x\x00y", "xy"),
+        ("x\ny", "x_y"),
+    ],
+)
+def test_safe_filename_component(identifier, expected):
+    assert util.safe_filename_component(identifier) == expected
+    assert util.safe_filename_component(identifier) == expected
+
+
+def test_safe_filename_component_is_bounded_but_not_unique():
+    assert util.safe_filename_component("a/b") == util.safe_filename_component("a:b") == "a_b"
+    safe_identifier = util.safe_filename_component("a" * 255, max_len=20)
+    assert safe_identifier == f"{'a' * 18}__"
+    assert len(safe_identifier) == 20
+
+
 def test_parse_xml_string():
     section = util.parse_xml_string(SECTION_XML)
     _verify_section(section)
