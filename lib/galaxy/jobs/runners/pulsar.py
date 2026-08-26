@@ -1231,8 +1231,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 galaxy_job_id = remote_job_id
             assert isinstance(self.app.job_manager.job_handler.job_queue, JobHandlerQueue)
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(galaxy_job_id)
-            if full_status["status"] in ("complete", "cancelled"):
+            if full_status["status"] in ("complete", "cancelled") and job.handler != self.app.config.server_name:
+                # Claim the job: startup recovery only picks up jobs whose handler is this
+                # server, and the terminal message arrived here rather than at the old owner.
+                # Commit now - the finish work runs on another thread with its own session.
                 job.handler = self.app.config.server_name
+                self.sa_session.commit()
             job_state = self._job_state(job, job_wrapper)
             self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
         except Exception:
