@@ -56,14 +56,7 @@ else:
 
 
 def _retry_on_connection_error(func):
-    """Retry an iRODS operation on a transient connection error.
-
-    Covers the idempotent reads (_get_remote_size / _exists_remotely / _download),
-    _push_to_storage (create/put both pass the iRODS FORCE_FLAG, so a retried
-    upload just overwrites whatever the interrupted attempt left behind), and
-    _delete (already treats "object not found" as success, so a retry after a
-    partial delete is safe).
-    """
+    """Retry an iRODS operation on a transient connection error."""
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
