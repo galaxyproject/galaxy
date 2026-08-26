@@ -56,6 +56,21 @@ class TestCustomTools(SeleniumTestCase):
             self.open_tool_editor()
             custom_tools = self.components.custom_tools
 
+            editor_source = custom_tools.editor_content.wait_for_text().replace("\N{NO-BREAK SPACE}", " ")
+            assert "class: GalaxyUserTool" in editor_source
+            assert "name: Remove Comment Lines" in editor_source
+            assert "from_work_dir: output.txt" in editor_source
+
+            with self.accept_alert():
+                custom_tools.clear_button.wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+            cleared_source = custom_tools.editor_content.wait_for_text().replace("\N{NO-BREAK SPACE}", " ")
+            assert "class: GalaxyUserTool" in cleared_source
+            assert 'version: "0.1.0"' in cleared_source
+            assert "inputs: []" in cleared_source
+            assert "outputs: []" in cleared_source
+            assert "Remove Comment Lines" not in cleared_source
+
             documentation_button = custom_tools.documentation_button.wait_for_visible()
             assert documentation_button.get_attribute("aria-expanded") == "false"
             custom_tools.documentation_button.wait_for_and_click()
