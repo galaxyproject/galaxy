@@ -164,16 +164,22 @@ def test_generated_documentation_resolves_schema_sections() -> None:
     assert "#### Validators" in result.stdout
     assert "#### regex validator" in result.stdout
     assert "[`regex` #](#validator-regex)" in result.stdout
+    assert "Use this validator on a compatible input:" in result.stdout
+    assert "name: motif" in result.stdout
+    assert "validators:" in result.stdout
     assert "[`shell_command` #](#expressions)" in result.stdout
     assert "[`discover_datasets` #](#discover-datasets)" in result.stdout
-    assert "(output-data-format-source)=" in result.stdout
-    assert "(output-data-metadata-source)=" in result.stdout
-    assert "##### format_source" in result.stdout
-    assert "##### metadata_source" in result.stdout
-    assert "`format_source` can be used to assign" in result.stdout
-    assert "`metadata_source` can be used to copy" in result.stdout
-    assert "[`format_source` #](#output-data-format-source)" in result.stdout
-    assert "[`metadata_source` #](#output-data-metadata-source)" in result.stdout
+    output_attribute_fields = {
+        "collection": ["collection_type", "collection_type_source", "structured_like"],
+        "data": ["format", "format_source", "metadata_source", "from_work_dir", "precreate_directory"],
+    }
+    for output_type, fields in output_attribute_fields.items():
+        for field in fields:
+            section_id = f"output-{output_type}-{field.replace('_', '-')}"
+            assert f"({section_id})=" in result.stdout
+            assert f"##### {field}" in result.stdout
+            assert f"`{field}` can be used" in result.stdout
+            assert f"[`{field}` #](#{section_id})" in result.stdout
     assert "format_source: reads" in result.stdout
     assert "metadata_source: intervals" in result.stdout
     assert "name: reads" in result.stdout

@@ -53,7 +53,6 @@ const SCHEMA_KEY_SECTIONS: Record<string, string> = {
     outputs: "outputs",
     requirements: "resource-requirements",
     validators: "validators",
-    from_work_dir: "outputs",
     discover_datasets: "discover-datasets",
     help: "help-content",
     tests: "testing",

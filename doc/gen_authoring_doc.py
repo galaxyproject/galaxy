@@ -38,7 +38,6 @@ SCHEMA_KEY_SECTIONS = {
     "outputs": "outputs",
     "requirements": "resource-requirements",
     "validators": "validators",
-    "from_work_dir": "outputs",
     "discover_datasets": "discover-datasets",
     "help": "help-content",
     "tests": "testing",
@@ -127,23 +126,19 @@ def _property_default(prop: dict) -> str:
     return f"`{json.dumps(prop['default'], separators=(',', ':'))}`"
 
 
-def _field_name(name: str) -> str:
-    field_reference_sections = {
-        "validators": "validators",
-        "format_source": "output-data-format-source",
-        "metadata_source": "output-data-metadata-source",
-    }
+def _field_name(name: str, field_reference_sections: dict[str, str]) -> str:
     section_id = field_reference_sections.get(name)
     return f"[`{name}` #](#{section_id})" if section_id else f"`{name}`"
 
 
-def _field_table(definition: dict) -> list[str]:
+def _field_table(definition: dict, field_reference_sections: dict[str, str] | None = None) -> list[str]:
+    field_reference_sections = field_reference_sections or {"validators": "validators"}
     required = set(definition.get("required", []))
     return [
         "| Field | Details | Default | Required |",
         "| --- | --- | --- | --- |",
         *[
-            f"| {_field_name(name)} | "
+            f"| {_field_name(name, field_reference_sections)} | "
             f"{_property_details(name, prop)} | {_property_default(prop)} | "
             f"{'Yes' if name in required else 'No'} |"
             for name, prop in definition.get("properties", {}).items()
@@ -236,8 +231,15 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
             "  ",
         )
         description = definition.get("description", "").replace("``", "`").strip()
+        output_section_id = f"output-{output_type}"
+        usage_examples = definition.get("x-usage-examples", [])
+        field_reference_sections = {
+            usage_example["field"]: f"{output_section_id}-{usage_example['field'].replace('_', '-')}"
+            for usage_example in usage_examples
+        }
+        field_reference_sections["discover_datasets"] = "discover-datasets"
         output_section = {
-            "id": f"output-{output_type}",
+            "id": output_section_id,
             "title": f"{output_type} output",
             "kind": "detailed-reference",
             "parentId": "output-types-reference",
@@ -245,7 +247,7 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
                 [
                     description,
                     "",
-                    *_field_table(definition),
+                    *_field_table(definition, field_reference_sections),
                     "",
                     f"Add this `{output_type}` output under `outputs`:",
                     "",
@@ -257,7 +259,7 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
         }
         output_type_sections.append(output_section)
         sections.append(output_section)
-        for usage_example in definition.get("x-usage-examples", []):
+        for usage_example in usage_examples:
             usage_definition = usage_example["definition"]
             field_order = ["inputs", "shell_command", "outputs", *usage_definition]
             ordered_usage_definition = {
@@ -298,9 +300,11 @@ def _build_validator_type_reference(tool_schema: dict) -> tuple[str, list[dict]]
         validator_type = definition.get("properties", {}).get("type", {}).get("const")
         if not validator_type:
             continue
-        example = _schema_example(validator_type, definition)
-        example_yaml = "validators:\n" + textwrap.indent(
-            yaml.safe_dump([example], allow_unicode=True, sort_keys=False).rstrip(),
+        parameter_example = definition.get("x-parameter-example")
+        if not parameter_example:
+            raise ValueError(f"Validator schema '{validator_type}' has no parameter usage example.")
+        example_yaml = "inputs:\n" + textwrap.indent(
+            yaml.safe_dump([parameter_example], allow_unicode=True, sort_keys=False).rstrip(),
             "  ",
         )
         description = definition.get("description", "").replace("``", "`").strip()
@@ -316,7 +320,7 @@ def _build_validator_type_reference(tool_schema: dict) -> tuple[str, list[dict]]
                         "",
                         *_field_table(definition),
                         "",
-                        "Add this rule to a supported parameter's `validators` list:",
+                        "Use this validator on a compatible input:",
                         "",
                         "```yaml",
                         example_yaml,
