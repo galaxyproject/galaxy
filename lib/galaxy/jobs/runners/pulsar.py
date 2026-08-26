@@ -254,6 +254,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     default_build_pulsar_app = False
     use_mq = False
     poll = True
+    recovers_finishing_jobs = True
     client_manager_kwargs: dict[str, Any] = {}
 
     def __init__(self, app, nworkers, **kwds):
