@@ -161,8 +161,8 @@ export function buildParameterTypeReference(): TypeReference {
         return {
             id: `parameter-${parameterType}`,
             title: `${parameterType} parameter`,
-            kind: "reference" as const,
-            parentId: "parameters",
+            kind: "detailed-reference" as const,
+            parentId: "parameter-types-reference",
             body: [
                 description,
                 "",
@@ -195,8 +195,8 @@ export function buildOutputTypeReference(): TypeReference {
         return {
             id: `output-${outputType}`,
             title: `${outputType} output`,
-            kind: "reference" as const,
-            parentId: "outputs",
+            kind: "detailed-reference" as const,
+            parentId: "output-types-reference",
             body: [
                 description,
                 "",
@@ -230,8 +230,8 @@ export function buildValidatorTypeReference(): TypeReference {
             {
                 id: `validator-${validatorType}`,
                 title: `${validatorType} validator`,
-                kind: "reference" as const,
-                parentId: "validators",
+                kind: "detailed-reference" as const,
+                parentId: "validator-types-reference",
                 body: [
                     description,
                     "",

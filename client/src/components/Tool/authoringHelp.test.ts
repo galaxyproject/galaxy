@@ -21,6 +21,7 @@ describe("user-defined tool authoring help", () => {
         expect(authoringHelpGroups.map((group) => group.title)).toEqual([
             "Getting Started",
             "Reference",
+            "Detailed reference",
             "Common questions",
         ]);
         expect(authoringHelpGroups.every((group) => group.sections.length > 0)).toBe(true);
@@ -38,7 +39,9 @@ describe("user-defined tool authoring help", () => {
     it("builds one navigable reference entry per parameter schema example", () => {
         const definitions = TOOL_SOURCE_SCHEMA.$defs as Record<string, unknown>;
         const mapping = TOOL_SOURCE_SCHEMA.$defs.YamlGalaxyToolParameter.discriminator.mapping;
-        const parameterSections = authoringHelpSections.filter((section) => section.id.startsWith("parameter-"));
+        const parameterSections = authoringHelpSections.filter(
+            (section) => section.parentId === "parameter-types-reference",
+        );
         const parameterIndex = authoringHelpSections.find((section) => section.id === "parameters");
 
         expect(parameterSections.map((section) => section.id)).toEqual(
@@ -57,7 +60,8 @@ describe("user-defined tool authoring help", () => {
 
             expect(parameterIndex?.body).toContain(`](#${section.id})`);
             expect(parameterIndex?.body).toContain(`\` #](#${section.id})`);
-            expect(section.parentId).toBe("parameters");
+            expect(section.kind).toBe("detailed-reference");
+            expect(section.parentId).toBe("parameter-types-reference");
             expect(yamlExamples).toHaveLength(2);
             expect(section.body).toContain(`Add this \`${parameterType}\` parameter under \`inputs\``);
             expect(parse(inputExample!).inputs[0]).toEqual(definition.examples[0]);
@@ -68,7 +72,7 @@ describe("user-defined tool authoring help", () => {
     it("builds one navigable reference entry per output schema example", () => {
         const definitions = TOOL_SOURCE_SCHEMA.$defs as Record<string, unknown>;
         const mapping = TOOL_SOURCE_SCHEMA.properties.outputs.items.discriminator.mapping;
-        const outputSections = authoringHelpSections.filter((section) => section.id.startsWith("output-"));
+        const outputSections = authoringHelpSections.filter((section) => section.parentId === "output-types-reference");
         const outputIndex = authoringHelpSections.find((section) => section.id === "outputs");
 
         expect(Object.keys(mapping)).toEqual(["collection", "data"]);
@@ -84,7 +88,8 @@ describe("user-defined tool authoring help", () => {
 
             expect(outputIndex?.body).toContain(`](#${section.id})`);
             expect(outputIndex?.body).toContain(`\` #](#${section.id})`);
-            expect(section.parentId).toBe("outputs");
+            expect(section.kind).toBe("detailed-reference");
+            expect(section.parentId).toBe("output-types-reference");
             expect(section.body).toContain(`Add this \`${outputType}\` output under \`outputs\``);
             expect(parse(yamlExample!).outputs[0]).toEqual(definition.examples[0]);
         }
@@ -101,7 +106,9 @@ describe("user-defined tool authoring help", () => {
         const validatorDefinitions = Object.entries(definitions).filter(([name]) =>
             name.endsWith("ParameterValidatorModel"),
         );
-        const validatorSections = authoringHelpSections.filter((section) => section.id.startsWith("validator-"));
+        const validatorSections = authoringHelpSections.filter(
+            (section) => section.parentId === "validator-types-reference",
+        );
         const validatorIndex = authoringHelpSections.find((section) => section.id === "validators");
 
         expect(validatorSections.map((section) => section.id)).toEqual(
@@ -117,7 +124,8 @@ describe("user-defined tool authoring help", () => {
             expect(definition?.examples).toHaveLength(1);
             expect(validatorIndex?.body).toContain(`](#${section.id})`);
             expect(validatorIndex?.body).toContain(`\` #](#${section.id})`);
-            expect(section.parentId).toBe("validators");
+            expect(section.kind).toBe("detailed-reference");
+            expect(section.parentId).toBe("validator-types-reference");
             expect(parse(yamlExample!).validators[0]).toEqual(definition?.examples?.[0]);
         }
     });
@@ -164,8 +172,18 @@ describe("user-defined tool authoring help", () => {
         const dataParameter = authoringHelpSections.find((section) => section.id === "parameter-data");
 
         expect(outputs?.body).toContain("[`discover_datasets` #](#discover-datasets)");
-        expect(discovery?.parentId).toBe("outputs");
+        expect(discovery?.parentId).toBeUndefined();
+        const detailedReference = authoringHelpGroups.find((group) => group.id === "detailed-reference")?.sections;
+        expect(detailedReference?.filter((section) => !section.parentId).map((section) => section.id)).toEqual([
+            "parameter-types-reference",
+            "validator-types-reference",
+            "output-types-reference",
+            "discover-datasets",
+        ]);
         expect(discovery?.body).toContain("[Datatypes page](/datatypes)");
+        expect(discovery?.body).toContain("matching filenames");
+        expect(discovery?.body).not.toContain("tool-provided metadata");
+        expect(discovery?.body).not.toContain("galaxy.json");
         expect(dataParameter?.body).toContain("Accepted Galaxy datatype extensions");
         expect(authoringHelpSections.find((section) => section.id === "parameters")?.body).toContain(
             "[Datatypes page](/datatypes)",

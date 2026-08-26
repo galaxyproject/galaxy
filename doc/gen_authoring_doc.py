@@ -186,8 +186,8 @@ def _build_parameter_type_reference(tool_schema: dict) -> tuple[str, list[dict]]
         section = {
             "id": f"parameter-{parameter_type}",
             "title": f"{parameter_type} parameter",
-            "kind": "reference",
-            "parentId": "parameters",
+            "kind": "detailed-reference",
+            "parentId": "parameter-types-reference",
             "body": "\n".join(
                 [
                     description,
@@ -229,8 +229,8 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
             {
                 "id": f"output-{output_type}",
                 "title": f"{output_type} output",
-                "kind": "reference",
-                "parentId": "outputs",
+                "kind": "detailed-reference",
+                "parentId": "output-types-reference",
                 "body": "\n".join(
                     [
                         description,
@@ -267,8 +267,8 @@ def _build_validator_type_reference(tool_schema: dict) -> tuple[str, list[dict]]
             {
                 "id": f"validator-{validator_type}",
                 "title": f"{validator_type} validator",
-                "kind": "reference",
-                "parentId": "validators",
+                "kind": "detailed-reference",
+                "parentId": "validator-types-reference",
                 "body": "\n".join(
                     [
                         description,
@@ -354,6 +354,7 @@ def render(help_data: dict, tool_schema: dict) -> str:
     groups = (
         ("getting-started", "Getting Started"),
         ("reference", "Reference"),
+        ("detailed-reference", "Detailed reference"),
         ("faq", "Common questions"),
     )
     for kind, title in groups:

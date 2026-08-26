@@ -56,17 +56,21 @@ describe("AuthoringHelpPanel", () => {
         const booleanLink = wrapper.find('a[href="#parameter-boolean"]');
         expect(booleanLink.exists()).toBe(true);
         expect(booleanLink.attributes("target")).toBeUndefined();
+        expect(booleanSection.isVisible()).toBe(false);
+
+        booleanLink.element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+        await wrapper.vm.$nextTick();
+
         expect(booleanSection.isVisible()).toBe(true);
         expect(booleanSection.classes()).toContain("authoring-help-section-nested");
     });
 
     it("shows defaults and shell command usage for parameter types", async () => {
         const wrapper = mount(AuthoringHelpPanel as object);
-        const parameterToggle = wrapper.find('[data-description="toggle help section parameters"]');
-        const booleanToggle = wrapper.find('[data-description="toggle help section parameter-boolean"]');
 
-        await parameterToggle.trigger("click");
-        await booleanToggle.trigger("click");
+        await (wrapper.vm as unknown as { openSection: (id: string) => Promise<boolean> }).openSection(
+            "parameter-boolean",
+        );
 
         const parameterSection = wrapper.find("#parameter-boolean");
         expect(parameterSection.findAll("th").wrappers.map((header) => header.text())).toEqual([
@@ -89,6 +93,9 @@ describe("AuthoringHelpPanel", () => {
 
         expect(wrapper.find('#outputs a[href="#output-data"]').exists()).toBe(true);
         expect(wrapper.find("#output-data").classes()).toContain("authoring-help-section-nested");
+        expect(wrapper.find("#output-data").isVisible()).toBe(false);
+
+        await wrapper.find('[data-description="toggle help section output-types-reference"]').trigger("click");
         expect(wrapper.find("#output-data").isVisible()).toBe(true);
 
         await dataOutputToggle.trigger("click");
@@ -111,6 +118,9 @@ describe("AuthoringHelpPanel", () => {
 
         await validatorsToggle.trigger("click");
         expect(wrapper.find('#validators a[href="#validator-regex"]').exists()).toBe(true);
+        expect(wrapper.find("#validator-regex").isVisible()).toBe(false);
+
+        await wrapper.find('[data-description="toggle help section validator-types-reference"]').trigger("click");
         expect(wrapper.find("#validator-regex").isVisible()).toBe(true);
 
         await regexToggle.trigger("click");
@@ -135,6 +145,12 @@ describe("AuthoringHelpPanel", () => {
         expect(clickEvent.defaultPrevented).toBe(true);
         expect(outputToggle.attributes("aria-expanded")).toBe("true");
         expect(wrapper.find("#outputs .authoring-help-body").exists()).toBe(true);
+        expect(wrapper.find("#output-data").isVisible()).toBe(false);
+
+        const dataOutputLink = wrapper.find('#outputs a[href="#output-data"]');
+        dataOutputLink.element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+        await wrapper.vm.$nextTick();
+
         expect(wrapper.find("#output-data").isVisible()).toBe(true);
     });
 
