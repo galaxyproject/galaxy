@@ -67,7 +67,7 @@ function setEnableSse(enabled: boolean): void {
     // trip so the component reads it on mount.
     useConfigStore().setConfiguration({ enable_sse_updates: enabled } as never);
     // The refresh button is gated on ``currentUser``; without a logged-in
-    // user the BButtonGroup that contains it is never rendered.
+    // user the GButtonGroup that contains it is never rendered.
     useUserStore().currentUser = { id: "user-1", email: "u@example.com" } as RegisteredUser;
 }
 
