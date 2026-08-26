@@ -157,8 +157,7 @@ class UnprivilegedToolsApi:
         "/api/unprivileged_tools",
         summary="Create a user-defined tool.",
         description=(
-            "Creates a tool owned by the calling user from a `GalaxyUserTool` representation. Requires the "
-            "`Custom Tool Execution` role and `enable_beta_tool_formats` in the Galaxy configuration. The "
+            "Creates a tool owned by the calling user from a `GalaxyUserTool` representation. The "
             "representation is validated and linted before it is stored, and a failure is returned as a 400 "
             "listing each problem. See the authoring reference at "
             "https://docs.galaxyproject.org/en/master/dev/user_defined_tools_authoring.html for the tool format, "
