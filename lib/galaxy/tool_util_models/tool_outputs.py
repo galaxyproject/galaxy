@@ -147,7 +147,6 @@ class GenericToolOutputDataset(
                 "Data or collection input whose datatype extension this output inherits. Use this when the command "
                 "preserves the input representation, such as filtering reads without changing their format."
             ),
-            examples=["reads"],
         ),
     ] = None
     metadata_source: Annotated[
@@ -157,7 +156,6 @@ class GenericToolOutputDataset(
                 "Single dataset input whose datatype-specific metadata this output copies as defaults. Use this when "
                 "the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments."
             ),
-            examples=["intervals"],
         ),
     ] = None
     discover_datasets: Annotated[
@@ -286,6 +284,72 @@ class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool]
 
 class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
     """A user-defined tool dataset discovered only from files inside the job working directory."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "result",
+                    "type": "data",
+                    "format": "txt",
+                    "from_work_dir": "result.txt",
+                }
+            ],
+            "x-usage-examples": [
+                {
+                    "title": "Inherit a datatype with `format_source`",
+                    "description": (
+                        "The command keeps the input representation, so Galaxy assigns the output the selected "
+                        "input dataset's datatype."
+                    ),
+                    "definition": {
+                        "inputs": [
+                            {
+                                "name": "reads",
+                                "type": "data",
+                                "format": ["fastq", "fastqsanger"],
+                            }
+                        ],
+                        "shell_command": "head -n 400 '$(inputs.reads.path)' > first.fastq",
+                        "outputs": [
+                            {
+                                "name": "first_reads",
+                                "type": "data",
+                                "format_source": "reads",
+                                "from_work_dir": "first.fastq",
+                            }
+                        ],
+                    },
+                },
+                {
+                    "title": "Copy datatype metadata with `metadata_source`",
+                    "description": (
+                        "The command keeps interval column assignments that Galaxy cannot infer from the produced file, "
+                        "so the output copies those datatype-specific settings from the input dataset."
+                    ),
+                    "definition": {
+                        "inputs": [
+                            {
+                                "name": "intervals",
+                                "type": "data",
+                                "format": ["interval"],
+                            }
+                        ],
+                        "shell_command": "awk '$3 > $2' '$(inputs.intervals.path)' > filtered.interval",
+                        "outputs": [
+                            {
+                                "name": "filtered_intervals",
+                                "type": "data",
+                                "format": "interval",
+                                "metadata_source": "intervals",
+                                "from_work_dir": "filtered.interval",
+                            }
+                        ],
+                    },
+                },
+            ],
+        }
+    )
 
     # Pydantic intentionally narrows this authoring model's accepted schema.
     discover_datasets: Annotated[

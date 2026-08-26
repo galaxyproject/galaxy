@@ -3856,7 +3856,6 @@ export interface components {
             /**
              * Format Source
              * @description Data or collection input whose datatype extension this output inherits. Use this when the command preserves the input representation, such as filtering reads without changing their format.
-             * @example reads
              */
             format_source?: string | null
             /**
@@ -3877,7 +3876,6 @@ export interface components {
             /**
              * Metadata Source
              * @description Single dataset input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
-             * @example intervals
              */
             metadata_source?: string | null
             /**
