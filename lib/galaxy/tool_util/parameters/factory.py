@@ -246,10 +246,10 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             )
         elif param_type == "select":
             # Function... example in devteam cummeRbund.
-            optional = input_source.parse_optional()
             dynamic_options_config = input_source.parse_dynamic_options()
             is_static = dynamic_options_config is None
             multiple = input_source.get_bool("multiple", False)
+            optional = input_source.parse_optional(multiple)
             options: list[LabelValue] | None = None
             if is_static:
                 options = []

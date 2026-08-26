@@ -1,6 +1,8 @@
 """Integration tests for realtime tools."""
 
+import json
 import os
+import subprocess
 from typing import (
     Any,
 )
@@ -24,13 +26,30 @@ from .test_containerized_jobs import (
     disable_dependency_resolution,
     DOCKERIZED_JOB_CONFIG_FILE,
 )
+from .test_kubernetes_runner import (
+    job_config as kubernetes_job_config,
+    KubeSetupConfigTuple,
+    persistent_volume,
+    persistent_volume_claim,
+    TOOL_DIR,
+)
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_docker_job_conf.yml")
+# The Kubernetes runner builds ingress hosts as "<subdomain>.<interactivetools_proxy_host>".
+# Nothing connects to this host - the entry point is only inspected through the API and
+# through the ingress object the runner created - but it has to be a valid DNS name.
+KUBERNETES_PROXY_HOST = "interactivetool.test.invalid"
 
 
 class AbstractTestCases:
-    class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
+    class BaseInteractiveToolsTestCase(ContainerizedIntegrationTestCase):
+        """Configuration and helpers shared by interactive tool test cases.
+
+        Holds no tests itself so that deployments which cannot reach an
+        interactive tool through a proxy can still reuse the helpers.
+        """
+
         dataset_populator: DatasetPopulator
         framework_tool_and_types = True
         container_type = "docker"
@@ -89,6 +108,7 @@ class AbstractTestCases:
             api_asserts.assert_status_code_is(entry_points_response, 200)
             return entry_points_response.json()
 
+    class BaseInteractiveToolsIntegrationTestCase(BaseInteractiveToolsTestCase):
         def test_simple_execution(self, history_id: str) -> None:
             response_dict = self.dataset_populator.run_tool("interactivetool_simple", {}, history_id)
             assert "jobs" in response_dict, response_dict
@@ -219,3 +239,87 @@ class TestKubeInteractiveToolsRemoteProxyIntegration(AbstractTestCases.BaseInter
 
         set_infrastucture_url(config)
         disable_dependency_resolution(config)
+
+
+@integration_util.skip_unless_kubernetes()
+class TestKubernetesNativeInteractiveToolsIntegration(AbstractTestCases.BaseInteractiveToolsTestCase):
+    """Interactive tools submitted through ``KubernetesJobRunner`` itself.
+
+    ``TestKubeInteractiveToolsRemoteProxyIntegration`` covers interactive tools on
+    Kubernetes via Pulsar, so it never touches this runner. It also needs an
+    externally started gx-it-proxy to reach the tool over HTTP, which is why it is
+    skipped in CI. This case asserts only what the runner is responsible for -
+    configuring the entry points and creating a matching ingress - so it needs no
+    proxy and can run wherever a cluster is available.
+    """
+
+    jobs_directory: str
+    persistent_volume_claims: list[KubeSetupConfigTuple]
+    persistent_volumes: list[KubeSetupConfigTuple]
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
+        volumes = [
+            (cls.jobs_directory, "it-jobs-directory-volume", "it-jobs-directory-claim"),
+            (TOOL_DIR, "it-tool-directory-volume", "it-tool-directory-claim"),
+        ]
+        cls.persistent_volumes = []
+        cls.persistent_volume_claims = []
+        for path, volume, claim in volumes:
+            volume_obj = persistent_volume(path, volume)
+            volume_obj.setup()
+            cls.persistent_volumes.append(volume_obj)
+            claim_obj = persistent_volume_claim(volume, claim)
+            claim_obj.setup()
+            cls.persistent_volume_claims.append(claim_obj)
+        super().handle_galaxy_config_kwds(config)
+        config["jobs_directory"] = cls.jobs_directory
+        config["file_path"] = cls.jobs_directory
+        config["job_config_file"] = kubernetes_job_config(
+            cls.jobs_directory,
+            jobs_directory_claim="it-jobs-directory-claim",
+            tool_directory_claim="it-tool-directory-claim",
+        ).path
+        config["default_job_shell"] = "/bin/sh"
+        config["interactivetools_proxy_host"] = KUBERNETES_PROXY_HOST
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        for claim in cls.persistent_volume_claims:
+            claim.teardown()
+        for volume in cls.persistent_volumes:
+            volume.teardown()
+        super().tearDownClass()
+
+    @staticmethod
+    def ingress_for_tool(tool_id: str) -> dict[str, Any]:
+        ingresses = json.loads(subprocess.check_output(["kubectl", "get", "ingress", "-o", "json"]))["items"]
+        matching = [
+            i
+            for i in ingresses
+            if (i["metadata"].get("annotations") or {}).get("app.galaxyproject.org/tool_id") == tool_id
+        ]
+        assert len(matching) == 1, f"Expected exactly one ingress for {tool_id}, got {matching}"
+        return matching[0]
+
+    def test_entry_point_and_ingress(self, history_id: str) -> None:
+        response_dict = self.dataset_populator.run_tool("interactivetool_simple", {}, history_id)
+        job_id = response_dict["jobs"][0]["id"]
+        entry_points = self.wait_on_entry_points_active(job_id)
+        assert len(entry_points) == 1
+
+        # interactivetool_simple declares requires_domain, so the runner routes it by
+        # host and the ingress path stays at the root.
+        ingress = self.ingress_for_tool("interactivetool_simple")
+        rules = ingress["spec"]["rules"]
+        assert len(rules) == 1, rules
+        assert rules[0]["host"].endswith(f".{KUBERNETES_PROXY_HOST}"), rules[0]["host"]
+        paths = rules[0]["http"]["paths"]
+        assert len(paths) == 1, paths
+        assert paths[0]["path"] == "/", paths[0]
+
+        # Stop the entry point so the tool container does not outlive the test.
+        stop_response = self.dataset_populator._delete(f'entry_points/{entry_points[0]["id"]}')
+        stop_response.raise_for_status()
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)

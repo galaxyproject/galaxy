@@ -47,7 +47,8 @@ chronos-python==1.2.1
 pykube-ng==23.6.0
 
 # Cloud object store
-cloudbridge
+# 4.4.0 makes iter_content take a chunk_size, which the object store sets when streaming.
+cloudbridge>=4.4.0
 
 # Synnefo / Pithos+ object store client
 kamaki

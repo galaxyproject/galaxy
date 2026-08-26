@@ -1,6 +1,7 @@
 """Integration tests for the job resubmission."""
 
 import os
+from decimal import Decimal
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -61,9 +62,32 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
         config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
         config["job_runner_monitor_sleep"] = 1
         config["job_handler_monitor_sleep"] = 1
+        # Deliberately just the default: resubmission_count rides along with core.
         config["job_metrics"] = [{"type": "core"}]
         # Can't set job_metrics_config_file to None as default location will be used otherwise
         config["job_metrics_config_file"] = "xxx.xml"
+
+    def _job_metrics(self, history_id):
+        jobs = self.dataset_populator.history_jobs(history_id=history_id)
+        assert len(jobs) == 1
+        job_metrics = self.dataset_populator._get(f"/api/jobs/{jobs[0]['id']}/metrics").json()
+        assert job_metrics
+        return job_metrics
+
+    def _assert_resubmission_count(self, history_id, expected_count):
+        job_metrics = self._job_metrics(history_id)
+        resubmission_metric = next(metric for metric in job_metrics if metric["name"] == "resubmission_count")
+        assert resubmission_metric["plugin"] == "core"
+        assert resubmission_metric["title"] == "Resubmission Count"
+        assert resubmission_metric["value"] == str(expected_count)
+        # raw_value is the metric's numeric column rendered as a string, so its shape follows
+        # the database: PostgreSQL yields "1.0000000" for a count of one. Compare numerically.
+        assert Decimal(resubmission_metric["raw_value"]) == expected_count
+
+    def _assert_resubmission_metric_not_displayed(self, history_id):
+        """A count of zero is recorded, but the formatter keeps it out of what the API returns."""
+        job_metrics = self._job_metrics(history_id)
+        assert not [metric for metric in job_metrics if metric["name"] == "resubmission_count"]
 
     def test_retry_tools_have_resource_params(self):
         tool_show = self._get("tools/simple_constructs", data=dict(io_details=True)).json()
@@ -95,15 +119,15 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
                 },
                 history_id=history_id,
             )
-            jobs = self.dataset_populator.history_jobs(history_id=history_id)
-            assert len(jobs) == 1
-            job_metrics = self.dataset_populator._get(f"/api/jobs/{jobs[0]['id']}/metrics").json()
-            assert job_metrics
+            self._assert_resubmission_metric_not_displayed(history_id)
 
     def test_walltime_resubmission(self):
-        self._assert_job_passes(
-            resource_parameters={"test_name": "test_walltime_resubmission", "failure_state": "walltime_reached"}
-        )
+        with self.dataset_populator.test_history() as history_id:
+            self._assert_job_passes(
+                resource_parameters={"test_name": "test_walltime_resubmission", "failure_state": "walltime_reached"},
+                history_id=history_id,
+            )
+            self._assert_resubmission_count(history_id, 1)
 
     def test_memory_resubmission(self):
         self._assert_job_passes(
@@ -162,6 +186,18 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
                 "failure_state": "walltime_reached",
             }
         )
+
+    def test_multiple_resubmissions_are_counted_after_working_directory_reset(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._assert_job_fails(
+                resource_parameters={
+                    "test_name": "test_condition_attempt",
+                    "initial_target_environment": "fail_two_attempts",
+                    "failure_state": "unknown_error",
+                },
+                history_id=history_id,
+            )
+            self._assert_resubmission_count(history_id, 2)
 
     def test_condition_seconds_running(self):
         self._assert_job_passes(

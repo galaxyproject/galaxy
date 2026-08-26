@@ -898,7 +898,13 @@ class DynamicOptions:
         # No processor description at hand here, so path columns fall back to the naming convention.
         path_headers = get_path_headers(None, table_name)
         table_entries = {}
-        for value in hda._metadata["data_tables"][table_name]:
+        entries = hda._metadata["data_tables"][table_name]
+        if isinstance(entries, dict):
+            # Some data managers record a single entry as a bare dict rather than
+            # a one-element list (e.g. motus); iterating that dict would yield its
+            # column names. Normalize so both shapes are consumable.
+            entries = [entries]
+        for value in entries:
             # Key entries by dbkey when the table has one; otherwise fall back to
             # the ``value`` column so tables without a dbkey column (e.g. motus,
             # dada2_species) are still consumable from a data-manager bundle.

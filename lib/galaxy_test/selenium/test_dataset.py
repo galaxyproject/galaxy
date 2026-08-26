@@ -5,13 +5,27 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 TEST_ANNOTATION = "my cool annotation"
 TEST_INFO = "my cool info"
 
 
-class TestDataset(SeleniumTestCase):
+class TestDataset(UsesUploadActivity, SeleniumTestCase):
     ensure_registered = True
+
+    def _upload_single_file(self, test_path, ext=None):
+        before_latest_history_item = self.latest_history_entry()
+        uploader = self.upload_context("local-file")
+        item = uploader.stage_local_file(test_path)
+        if ext is not None:
+            item.set_extension(ext)
+        uploader._start_and_wait_for_uploaded_hids()
+        after_latest_history_item = self.latest_history_entry()
+        assert after_latest_history_item
+        if before_latest_history_item is not None:
+            assert before_latest_history_item.id != after_latest_history_item.id
+        return after_latest_history_item
 
     @selenium_test
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -19,7 +33,7 @@ class TestDataset(SeleniumTestCase):
     def test_history_dataset_display_text(self):
         original_name = "1.txt"
 
-        history_entry = self.perform_single_upload(self.get_filename(original_name))
+        history_entry = self._upload_single_file(self.get_filename(original_name))
         hid = history_entry.hid
         self.wait_for_history()
         self.history_panel_wait_for_hid_ok(hid)
@@ -38,7 +52,7 @@ class TestDataset(SeleniumTestCase):
         original_name = "1.txt"
         new_name = "newname.txt"
 
-        history_entry = self.perform_single_upload(self.get_filename(original_name))
+        history_entry = self._upload_single_file(self.get_filename(original_name))
         hid = history_entry.hid
         self.wait_for_history()
         self.history_panel_wait_for_hid_ok(hid)
@@ -61,7 +75,7 @@ class TestDataset(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_history_dataset_update_annotation_and_info(self):
-        history_entry = self.perform_single_upload(self.get_filename("1.txt"))
+        history_entry = self._upload_single_file(self.get_filename("1.txt"))
         hid = history_entry.hid
         self.wait_for_history()
         self.history_panel_wait_for_hid_ok(hid)
@@ -92,7 +106,7 @@ class TestDataset(SeleniumTestCase):
     def test_history_dataset_auto_detect_datatype(self):
         expected_datatype = "txt"
         provided_datatype = "tabular"
-        history_entry = self.perform_single_upload(self.get_filename("1.txt"), ext=provided_datatype)
+        history_entry = self._upload_single_file(self.get_filename("1.txt"), ext=provided_datatype)
         hid = history_entry.hid
         self.wait_for_history()
         self.history_panel_wait_for_hid_ok(hid)

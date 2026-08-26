@@ -1008,120 +1008,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def hover_over(self, target):
         self.hover(target)
 
-    def perform_single_upload(self, test_path, **kwd) -> HistoryEntry:
-        before_latest_history_item = self.latest_history_entry()
-        self._perform_upload(test_path=test_path, **kwd)
-        after_latest_history_item = self.latest_history_entry()
-        assert after_latest_history_item
-        if before_latest_history_item is not None:
-            assert before_latest_history_item.id != after_latest_history_item.id
-        return after_latest_history_item
-
-    def perform_upload(self, test_path, **kwd):
-        self._perform_upload(test_path=test_path, **kwd)
-
-    def perform_upload_of_pasted_content(self, paste_data, **kwd):
-        self._perform_upload(paste_data=paste_data, **kwd)
-
-    def _perform_upload(
-        self,
-        test_path=None,
-        paste_data=None,
-        ext=None,
-        genome=None,
-        ext_all=None,
-        genome_all=None,
-        deferred=None,
-        on_current_page=False,
-    ):
-        if not on_current_page:
-            self.home()
-        self.upload_start_click()
-
-        self.upload_set_footer_extension(ext_all)
-        self.upload_set_footer_genome(genome_all)
-
-        if test_path:
-            self.upload_queue_local_file(test_path)
-        else:
-            assert paste_data is not None
-            if isinstance(paste_data, dict):
-                for name, value in paste_data.items():
-                    self.upload_paste_data(value)
-                    name_input = self.wait_for_selector("div#regular .upload-row:last-of-type .upload-title")
-                    name_input.clear()
-                    name_input.send_keys(name)
-            else:
-                self.upload_paste_data(paste_data)
-
-        if ext is not None:
-            self.wait_for_selector_visible(".upload-extension")
-            self.select_set_value(".upload-extension", ext)
-
-        if genome is not None:
-            self.wait_for_selector_visible(".upload-genome")
-            self.select_set_value(".upload-genome", genome)
-
-        if deferred is not None:
-            upload = self.components.upload
-            upload.settings_button(n=0).wait_for_and_click()
-            upload.settings.wait_for_visible()
-            setting = upload.setting_deferred.wait_for_visible()
-            classes = setting.get_attribute("class").split(" ")
-            if deferred is True and "fa-check-square-o" not in classes:
-                setting.click()
-            elif deferred is False and "fa-check-square-o" in classes:
-                setting.click()
-
-        self.upload_start()
-
-        self.components.upload.close_button.wait_for_and_click()
-
-    def perform_upload_of_composite_dataset_pasted_data(self, ext, paste_content):
-        self.home()
-        self.upload_start_click()
-        self.components.upload.tab(tab="composite").wait_for_and_click()
-        self.upload_set_footer_extension(ext, tab_id="composite")
-
-        for i in range(len(paste_content)):
-            self.components.upload.source_button(n=i).wait_for_and_click()
-            self.components.upload.paste_option(n=i).wait_for_and_click()
-            textarea = self.components.upload.paste_content(n=i).wait_for_visible()
-            textarea.send_keys(paste_content[i])
-
-        self.upload_start(tab_id="composite")
-        self.components.upload.composite_close_button.wait_for_and_click()
-
-    def upload_list(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
-        self._collection_upload_start(test_paths, ext, genome, "List")
-        if not hide_source_items:
-            self.collection_builder_hide_originals()
-
-        self.collection_builder_set_name(name)
-        self.collection_builder_create()
-
-    def upload_pair(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
-        self._collection_upload_start(test_paths, ext, genome, "Pair")
-        if not hide_source_items:
-            self.collection_builder_hide_originals()
-
-        self.collection_builder_set_name(name)
-        self.collection_builder_create()
-
-    def upload_paired_list(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
-        self._collection_upload_start(test_paths, ext, genome, "List of Pairs")
-        if not hide_source_items:
-            self.collection_builder_hide_originals()
-
-        assert len(test_paths) == 2
-        self.collection_builder_pair_rows(0, 1)
-
-        row0 = self.components.collection_builders.list_wizard.row._(index=0)
-        row0.link_button.assert_absent()
-
-        self.collection_builder_set_name(name)
-        self.collection_builder_create()
-
     def collection_builder_pair_rows(self, row_forward: int, row_reverse: int):
         row0 = self.components.collection_builders.list_wizard.row._(index=row_forward)
         row1 = self.components.collection_builders.list_wizard.row._(index=row_reverse)
@@ -1131,126 +1017,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         row0.link_button.wait_for_and_click()
         row1.link_button.wait_for_and_click()
-
-    def _collection_upload_start(self, test_paths, ext, genome, collection_type):
-        # Perform upload of files and open the collection builder for specified
-        # type.
-        self.home()
-        self.upload_start_click()
-        self.upload_tab_click("collection")
-
-        self.upload_set_footer_extension(ext, tab_id="collection")
-        self.upload_set_footer_genome(genome, tab_id="collection")
-        self.upload_set_collection_type(collection_type)
-
-        for test_path in test_paths:
-            self.upload_queue_local_file(test_path, tab_id="collection")
-
-        self.upload_start(tab_id="collection")
-        self.upload_build()
-
-    def upload_tab_click(self, tab):
-        self.components.upload.tab(tab=tab).wait_for_and_click()
-
-    def upload_start_click(self):
-        self.components.upload.start.wait_for_and_click()
-
-    @retry_during_transitions
-    def upload_set_footer_extension(self, ext, tab_id="regular"):
-        if ext is not None:
-            selector = f"div#{tab_id} .upload-footer-extension"
-            self.wait_for_selector_visible(selector)
-            self.select_set_value(selector, ext)
-
-    @retry_during_transitions
-    def upload_set_footer_genome(self, genome, tab_id="regular"):
-        if genome is not None:
-            selector = f"div#{tab_id} .upload-footer-genome"
-            self.wait_for_selector_visible(selector)
-            self.select_set_value(selector, genome)
-
-    @retry_during_transitions
-    def upload_set_collection_type(self, collection_type):
-        self.wait_for_selector_visible(".upload-footer-collection-type")
-        self.select_set_value(".upload-footer-collection-type", collection_type)
-
-    def upload_start(self, tab_id="regular"):
-        self.wait_for_and_click_selector(f"div#{tab_id} button#btn-start")
-
-    @retry_during_transitions
-    def upload_build(self, tab="collection"):
-        build_selector = f"div#{tab} button#btn-build"
-        # Pause a bit to let the callback on the build button be registered.
-        time.sleep(0.5)
-        # Click the Build button and make sure it disappears.
-        self.wait_for_and_click_selector(build_selector)
-        try:
-            self.wait_for_selector_absent_or_hidden(build_selector)
-        except SeleniumTimeoutException:
-            # Sometimes the callback in the JS hasn't be registered by the
-            # time that the build button is clicked. By the time the timeout
-            # has been registered - it should have been.
-            self.wait_for_and_click_selector(build_selector)
-            self.wait_for_selector_absent_or_hidden(build_selector)
-
-    def upload_queue_local_file(self, test_path, tab_id="regular"):
-        if self.backend_type == "playwright":
-            with self.page.expect_file_chooser() as fc_info:
-                self.wait_for_and_click_selector(f"div#{tab_id} button#btn-local")
-            file_chooser = fc_info.value
-            file_chooser.set_files(test_path)
-        else:
-            self.wait_for_and_click_selector(f"div#{tab_id} button#btn-local")
-            file_upload = self.wait_for_selector(f'div#{tab_id} input[type="file"]')
-            file_upload.send_keys(test_path)
-
-    def upload_paste_data(self, pasted_content, tab_id="regular"):
-        tab_locator = f"div#{tab_id}"
-        self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
-
-        textarea = self.wait_for_selector(f"{tab_locator} .upload-row:last-of-type .upload-text-content")
-        textarea.send_keys(pasted_content)
-
-    def upload_uri(self, uri, wait=False):
-        upload = self.components.upload
-        upload.start.wait_for_and_click()
-        upload.file_dialog.wait_for_and_click()
-        scheme, uri_rest = uri.split("://", 1)
-        parts = uri_rest.split("/")
-
-        root = f"{scheme}://{parts[0]}"
-        upload.file_source_selector(path=root).wait_for_and_click()
-        rest_parts = parts[1:]
-        path = root
-        for part in rest_parts:
-            path = f"{path}/{part}"
-            upload.file_source_selector(path=path).wait_for_and_click()
-        upload.file_dialog_ok.wait_for_and_click()
-        self.upload_start()
-        if wait:
-            self.sleep_for(self.wait_types.UX_RENDER)
-            self.wait_for_history()
-
-    def upload_rule_start(self):
-        self.upload_start_click()
-        self.upload_tab_click("rule-based")
-
-    def upload_rule_build(self):
-        self.upload_build(tab="rule-based")
-
-    def upload_rule_dataset_dialog(self):
-        upload = self.components.upload
-        upload.rule_dataset_dialog.wait_for_and_click()
-
-    def upload_rule_set_data_type(self, type_description):
-        upload = self.components.upload
-        data_type_element = upload.rule_select_data_type.wait_for_visible()
-        self.select_set_value(data_type_element, type_description)
-
-    def upload_rule_set_dataset(self, row=1):
-        upload = self.components.upload
-        upload.rule_dataset_selector.wait_for_visible()
-        upload.rule_dataset_selector_row(rowindex=row).wait_for_and_click()
 
     def rule_builder_set_collection_name(self, name):
         rule_builder = self.components.rule_builder
@@ -2115,7 +1881,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if save_workflow:
             save_button = self.components.workflow_editor.save_button
             save_button.wait_for_visible()
-            assert not save_button.has_class("disabled")
+            assert not save_button.has_class("g-disabled")
             save_button.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name
@@ -2988,7 +2754,17 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             assert element is not None
 
         if (textinsert := step.get("textinsert", None)) is not None:
-            element.send_keys(textinsert)
+            if "\t" in textinsert:
+                # send_keys interprets \t as a Tab keypress, which moves focus
+                # out of the element. Use JS to set the value directly instead.
+                self.execute_script(
+                    "arguments[0].value = arguments[1];"
+                    "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));",
+                    element,
+                    textinsert,
+                )
+            else:
+                element.send_keys(textinsert)
 
         tour_callback.handle_step(step, step_index)
 
@@ -3042,6 +2818,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         else:
             container_elem = container_selector_or_elem
         trigger_elem = container_elem.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        self.scroll_into_view(trigger_elem)
         trigger_elem.click()
         try:
             text_input = container_elem.find_element(By.CSS_SELECTOR, "input[class='multiselect__input']")

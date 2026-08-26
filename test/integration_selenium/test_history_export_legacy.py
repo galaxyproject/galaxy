@@ -1,10 +1,11 @@
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
 )
 
 
-class TestLegacyHistoryExport(SeleniumIntegrationTestCase):
+class TestLegacyHistoryExport(SeleniumIntegrationTestCase, UsesUploadActivity):
     """Test legacy history export for when celery is disabled.
 
     If Celery is enabled, a wizard will be setup and STS will serve downloads,
@@ -22,7 +23,7 @@ class TestLegacyHistoryExport(SeleniumIntegrationTestCase):
 
     @selenium_test
     def test_history_export(self):
-        self.perform_upload_of_pasted_content("my cool content")
+        self.upload_context("paste-content").stage_paste_content("my cool content").start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.click_history_option_export_to_file()
@@ -45,7 +46,7 @@ class TestLegacyHistoryExport(SeleniumIntegrationTestCase):
         history_export.generated_export_link.wait_for_visible()
         history_export.export_link.assert_absent()
 
-        self.perform_upload_of_pasted_content("my cool content part 2")
+        self.upload_context("paste-content").stage_paste_content("my cool content part 2").start()
         self.history_panel_wait_for_hid_ok(2)
 
         self.click_history_option_export_to_file()

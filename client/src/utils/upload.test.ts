@@ -640,12 +640,13 @@ describe("buildCollectionUploadPayload", () => {
         expect(target.name).toBe("My List");
         expect(target.elements).toHaveLength(2);
 
+        // Elements are reversed to match history panel display order (newest HID first)
         const elem1 = target.elements[0] as { src: string; url: string };
         const elem2 = target.elements[1] as { src: string; url: string };
         expect(elem1.src).toBe("url");
-        expect(elem1.url).toBe("http://example.com/1.txt");
+        expect(elem1.url).toBe("http://example.com/2.txt");
         expect(elem2.src).toBe("url");
-        expect(elem2.url).toBe("http://example.com/2.txt");
+        expect(elem2.url).toBe("http://example.com/1.txt");
     });
 
     test("builds list collection payload with local file items", () => {
@@ -772,10 +773,11 @@ describe("buildCollectionUploadPayload", () => {
         const target = result.targets[0] as HdcaUploadTarget;
         expect(target.elements).toHaveLength(2);
 
+        // Elements are reversed to match history panel display order (newest HID first)
         const elem1 = target.elements[0] as { src: string };
         const elem2 = target.elements[1] as { src: string };
-        expect(elem1.src).toBe("files");
-        expect(elem2.src).toBe("url");
+        expect(elem1.src).toBe("url");
+        expect(elem2.src).toBe("files");
     });
 
     test("handles pasted content in collection", () => {
@@ -794,9 +796,10 @@ describe("buildCollectionUploadPayload", () => {
         const target = result.targets[0] as HdcaUploadTarget;
         expect(target.elements).toHaveLength(2);
 
+        // Elements are reversed to match history panel display order (newest HID first)
         const elem1 = target.elements[0] as { src: string; paste_content: string };
         expect(elem1.src).toBe("pasted");
-        expect(elem1.paste_content).toBe("content 1");
+        expect(elem1.paste_content).toBe("content 2");
     });
 
     test("validates empty file data", () => {

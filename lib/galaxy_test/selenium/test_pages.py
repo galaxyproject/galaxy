@@ -8,9 +8,10 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestPages(SeleniumTestCase):
+class TestPages(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
@@ -18,7 +19,7 @@ class TestPages(SeleniumTestCase):
     def test_simple_page_creation_edit_and_view(self):
         # Upload a file to test embedded object stuff
         test_path = self.get_filename("1.fasta")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
         self.navigate_to_pages()
         self.screenshot("pages_grid")

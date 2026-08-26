@@ -6,7 +6,11 @@ import logging
 import os
 import os.path
 
-from ._caching_base import CachingConcreteObjectStore
+from ._caching_base import (
+    CachingConcreteObjectStore,
+    RemoteDataStream,
+    STREAM_CHUNK_SIZE,
+)
 from ._util import UsesAxel
 from .caching import (
     CacheShardManager,
@@ -259,6 +263,16 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
         except Exception:
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
         return False
+
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
+        key = self.bucket.objects.get(rel_path)
+        if key is None:
+            return None
+        content = key.iter_content(chunk_size=STREAM_CHUNK_SIZE)
+        # cloudbridge promises an iterable and nothing more, and what it hands back differs per
+        # provider -- a wrapper around the S3 body, a swift generator, a BytesIO -- so release it
+        # only if it knows how.
+        return RemoteDataStream(iter(content), getattr(content, "close", lambda: None))
 
     def _download_directory_into_cache(self, rel_path, cache_path):
         objects = self.bucket.objects.list(prefix=rel_path)

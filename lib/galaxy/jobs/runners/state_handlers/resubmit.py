@@ -132,17 +132,16 @@ class _ExpressionContext:
 
         if self._lazy_context is None:
             runner_state = getattr(self._job_state, "runner_state", None) or JobState.runner_states.UNKNOWN_ERROR
-            attempt = 1
+            job = self._job_state.job_wrapper.get_job()
+            attempt = job.resubmission_count + 1
             current_time = now()
             last_running_state = None
             last_queued_state = None
-            for state in self._job_state.job_wrapper.get_job().state_history:
+            for state in job.state_history:
                 if state.state == model.Job.states.RUNNING:
                     last_running_state = state
                 elif state.state == model.Job.states.QUEUED:
                     last_queued_state = state
-                elif state.state == model.Job.states.RESUBMITTED:
-                    attempt = attempt + 1
 
             seconds_running = 0
             seconds_since_queued = 0

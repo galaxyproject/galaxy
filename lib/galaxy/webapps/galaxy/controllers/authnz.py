@@ -13,7 +13,10 @@ from galaxy import (
     exceptions,
     web,
 )
-from galaxy.util import url_get
+from galaxy.util import (
+    is_safe_local_redirect,
+    url_get,
+)
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
 
@@ -104,11 +107,14 @@ class OIDC(BaseUIController):
     def callback(self, trans: "GalaxyWebTransaction", provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else "anonymous"
         login_next_cookie = trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME)
-        if login_next_cookie and login_next_cookie != "None":
+        if login_next_cookie and login_next_cookie != "None" and is_safe_local_redirect(login_next_cookie):
             # This cookie can sometimes be set to a literal string 'None', which we don't want to use as a redirect.
             login_next = url_for(login_next_cookie)
         else:
-            # Fallback to default redirect if no login_next cookie is found.
+            # Fallback to default redirect if no login_next cookie is found, or if it points
+            # somewhere we refuse to send the user -- this value reaches us from the client.
+            if login_next_cookie and login_next_cookie != "None":
+                log.warning("Ignoring post-login redirect target outside of Galaxy: %s", login_next_cookie)
             login_next = url_for("/")
         if not bool(kwargs):
             log.warning(f"OIDC callback received no data for provider `{provider}` and user `{user}`")

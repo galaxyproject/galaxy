@@ -72,7 +72,9 @@ const emit = defineEmits<{
 
 const currentForwardFilter = ref(props.forwardFilter);
 const currentReverseFilter = ref(props.reverseFilter);
-const activeElements = ref(props.initialElements);
+const flatLists = computed(() => props.collectionType.indexOf("paired") == -1);
+// Reverse the order of flat list elements to match the history panel display (newest HID first)
+const activeElements = ref(flatLists.value ? [...props.initialElements].reverse() : props.initialElements);
 const { currentSummary, summaryText, autoPair } = usePairingSummary<HistoryItemSummary>(props);
 
 const {
@@ -93,8 +95,6 @@ pairingTargetsStore.setShowElementExtension(showElementExtension);
 const style = computed(() => {
     return { width: "100%", height: "500px" };
 });
-
-const flatLists = computed(() => props.collectionType.indexOf("paired") == -1);
 
 const isNestedList = computed(() => {
     return props.collectionType.startsWith("list:list");

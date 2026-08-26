@@ -22,6 +22,7 @@ from .basic import (
     ColumnListParameter,
     DataCollectionToolParameter,
     DataToolParameter,
+    DirectoryUriToolParameter,
     ParameterValueError,
     SelectToolParameter,
     TextToolParameter,
@@ -284,6 +285,21 @@ def visit_input_values(
             callback_helper(
                 input, input_values, name_prefix, label_prefix, parent_prefix=parent_prefix, context=context
             )
+
+
+def collect_directory_uris(
+    inputs: ToolInputsT,
+    input_values: ToolStateJobInstancePopulatedT,
+) -> set[str]:
+    """Collect the values of every ``directory_uri`` parameter (file source write destinations)."""
+    uris: set[str] = set()
+
+    def _collect(input, value, **kwargs):
+        if isinstance(input, DirectoryUriToolParameter) and isinstance(value, str) and value:
+            uris.add(value)
+
+    visit_input_values(inputs, input_values, _collect)
+    return uris
 
 
 def check_param(

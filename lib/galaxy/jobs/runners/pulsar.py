@@ -589,6 +589,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     compute_tool_directory=remote_tool_directory,
                     compute_job_directory=remote_job_directory,
                 )
+                self._rewrite_container_for_compute_environment(container, compute_environment)
 
             # Pulsar handles ``create_tool_working_directory`` and
             # ``include_work_dir_outputs`` details.
@@ -619,6 +620,30 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container
+
+    @staticmethod
+    def _rewrite_container_for_compute_environment(container, compute_environment):
+        """Rewrite the resolved container image path for the compute environment.
+
+        Container resolution runs against the Galaxy-side filesystem, but the
+        image is read on the compute node, which may expose e.g. CVMFS at a
+        different path (cvmfsexec mountrepo mode). Route the resolved image path
+        through ``ComputeEnvironment.container_path_rewrite`` (only populated in
+        ``rewrite_parameters`` mode) so a destination ``file_actions`` rule with
+        ``path_types: container`` can remap it.
+
+        No-op when there is no compute environment (the rewrite is a Pulsar
+        ``rewrite_parameters`` concept), when the image identifier is not a
+        filesystem path (e.g. a ``docker://`` or registry reference, which the
+        compute node resolves itself), or when no matching rule is configured.
+        """
+        if container is None or compute_environment is None:
+            return
+        if not container.image_identifier_is_path:
+            return
+        rewritten_container_id = compute_environment.container_path_rewrite(container.container_id)
+        if rewritten_container_id:
+            container.container_id = rewritten_container_id
 
     def __prepare_input_files_locally(self, job_wrapper):
         """Run task splitting commands locally."""
@@ -1321,6 +1346,18 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         else:
             # Did not need to rewrite, use original path or value.
             return None
+
+    def container_path_rewrite(self, container_path):
+        # Container images are resolved against the Galaxy-side filesystem but
+        # read on the compute node, which may expose them at a different path
+        # (e.g. cvmfsexec mountrepo mode). A destination ``file_actions`` rule
+        # with ``path_types: container`` remaps the image; unlike unstructured
+        # paths, container images are never staged.
+        #
+        # getattr guards older pulsar-galaxy-lib releases lacking the method
+        # (added in galaxyproject/pulsar#475); drop once the pin requires it.
+        check = getattr(self.path_mapper, "check_for_container_rewrite", None)
+        return check(container_path) if check else None
 
     def working_directory(self):
         return self._working_directory

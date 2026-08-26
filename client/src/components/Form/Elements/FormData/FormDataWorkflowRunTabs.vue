@@ -6,22 +6,26 @@ import { computed, nextTick, ref, watch } from "vue";
 
 import type { HDCASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
-import { useUploadConfigurations } from "@/composables/uploadConfigurations";
+import type { UploadedDataset, UploadModalConfig } from "@/components/Panels/Upload/uploadModalTypes";
+import { toDataOptions } from "@/composables/upload/useUploadMethodModal";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
 import type { VariantInterface } from "./variants";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
-import CollectionCreatorShowExtensions from "@/components/Collections/common/CollectionCreatorShowExtensions.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
-import DefaultBox from "@/components/Upload/DefaultBox.vue";
+import UploadMethodViewInline from "@/components/Panels/Upload/UploadMethodViewInline.vue";
 
-const WorkflowRunTabs: Record<string, number> = {
+const WorkflowRunTabs = {
     view: 0,
-    create: 1,
-};
+    upload: 1,
+    create: 2,
+} as const;
+
+type WorkflowTabKey = keyof typeof WorkflowRunTabs;
+const workflowTabKeys = Object.keys(WorkflowRunTabs) as WorkflowTabKey[];
 
 const props = defineProps<{
     currentVariant?: VariantInterface | null;
@@ -36,36 +40,53 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "focus"): void;
-    (e: "uploaded-data", data: any): void;
+    (e: "uploaded-data", data: DataOption[]): void;
     (e: "update:workflow-tab", value: string): void;
 }>();
 
 const currentWorkflowTab = computed({
-    get: () => WorkflowRunTabs[props.workflowTab],
+    get: () => (props.workflowTab in WorkflowRunTabs ? WorkflowRunTabs[props.workflowTab as WorkflowTabKey] : -1),
     set: (value) => {
-        emit("update:workflow-tab", Object.keys(WorkflowRunTabs).find((key) => WorkflowRunTabs[key] === value) || "");
+        emit("update:workflow-tab", workflowTabKeys.find((key) => WorkflowRunTabs[key] === value) || "");
     },
 });
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
-// Upload properties
-const {
-    configOptions,
-    effectiveExtensions,
-    listDbKeys,
-    ready: uploadReady,
-} = useUploadConfigurations(props.extensions);
+const uploadConfig = computed<UploadModalConfig>(() => ({
+    formats: props.extensions,
+    multiple: props.currentVariant?.multiple,
+    allowCollections: false,
+    hideTips: true,
+    targetHistoryId: currentHistoryId.value ?? undefined,
+}));
 
-function addUploadedFiles(value: any[], viewUploads = true) {
+function addUploadedFiles(value: DataOption[], viewUploads = true) {
     emit("uploaded-data", value);
     if (viewUploads) {
         goToFirstWorkflowTab();
     }
 }
 
+function onUploaded(datasets: UploadedDataset[]) {
+    const dataOptions = toDataOptions(datasets);
+    addUploadedFiles(dataOptions, true);
+}
+
+function onUploadCancelled() {
+    goToFirstWorkflowTab();
+}
+
 function collectionCreated(collection: HDCASummary) {
-    addUploadedFiles([collection], false);
+    const dataOption: DataOption = {
+        id: collection.id,
+        name: collection.name ?? "",
+        src: "hdca",
+        keep: true,
+        batch: false,
+        tags: [],
+    };
+    addUploadedFiles([dataOption], false);
     emit("focus");
 }
 
@@ -82,16 +103,13 @@ watch(
     currentWorkflowTab,
     () => {
         nextTick(() => {
-            if (creatorIndex.value) {
+            if (creatorIndex.value && currentWorkflowTab.value === WorkflowRunTabs.create) {
                 creatorIndex.value.redrawCreator();
             }
         });
     },
     { immediate: true },
 );
-
-// TODO:
-// - Add support for the browse files option we have in FormData
 </script>
 
 <template>
@@ -105,34 +123,15 @@ watch(
                 <GenericItem class="mr-2 w-100" :item-id="item.id" :item-src="item.src" />
             </div>
         </div>
-        <div
-            v-show="
-                props.canBrowse && props.currentVariant?.src !== 'hdca' && currentWorkflowTab === WorkflowRunTabs.create
-            ">
+
+        <div v-show="currentWorkflowTab === WorkflowRunTabs.upload">
             <Heading separator size="sm">
                 <FontAwesomeIcon :icon="faUpload" fixed-width />
-                Upload {{ props.currentVariant?.tooltip.toLocaleLowerCase() || "value(s)" }}
+                Upload dataset{{ props.currentVariant?.multiple ? "s" : "" }}
             </Heading>
-            <DefaultBox
-                v-if="currentHistoryId && uploadReady && configOptions"
-                :effective-extensions="effectiveExtensions"
-                v-bind="configOptions"
-                :has-callback="false"
-                :history-id="currentHistoryId"
-                :list-db-keys="listDbKeys"
-                :show-beta-upload="false"
-                disable-footer
-                emit-uploaded
-                size="small"
-                @uploaded="addUploadedFiles"
-                @dismiss="goToFirstWorkflowTab">
-                <template v-slot:footer>
-                    <CollectionCreatorShowExtensions
-                        :extensions="props.extensions && props.extensions.filter((ext) => ext !== 'data')"
-                        upload />
-                </template>
-            </DefaultBox>
+            <UploadMethodViewInline :config="uploadConfig" @uploaded="onUploaded" @cancelled="onUploadCancelled" />
         </div>
+
         <div v-show="currentWorkflowTab === WorkflowRunTabs.create && props.currentVariant?.src === 'hdca'">
             <CollectionCreatorIndex
                 v-if="currentHistoryId && props.collectionType"

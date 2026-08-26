@@ -142,7 +142,6 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
         },
         stubs: {
             FontAwesomeIcon: true,
-            BModal: true,
         },
         localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),

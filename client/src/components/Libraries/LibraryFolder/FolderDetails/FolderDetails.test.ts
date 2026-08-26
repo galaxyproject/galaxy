@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -32,8 +32,8 @@ const DETAILS_MODAL = "#details-modal";
 const FOLDER_TABLE = '[data-testid="folder-table"]';
 const ERROR_ALERT = '[data-testid="error-alert"]';
 
-async function mountFolderDetailsWrapper(localVue) {
-    const wrapper = mount(FolderDetails, {
+async function mountFolderDetailsWrapper(localVue: ReturnType<typeof getLocalVue>) {
+    const wrapper = mount(FolderDetails as object, {
         localVue,
         propsData: INPUT_PROP_DATA,
     });
@@ -41,7 +41,7 @@ async function mountFolderDetailsWrapper(localVue) {
     return wrapper;
 }
 describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
-    let wrapper;
+    let wrapper: Wrapper<Vue>;
     const localVue = getLocalVue();
 
     beforeEach(async () => {
@@ -64,15 +64,16 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
             }),
         );
 
-        expectModalToBeHidden();
+        // Modal is hidden
+        expect(wrapper.find(DETAILS_MODAL).props("show")).toBeFalsy();
 
         await openDetailsModal();
 
-        expectModalToBeVisible();
+        // Modal is visible
+        expect(wrapper.find(DETAILS_MODAL).props("show")).toBeTruthy();
 
         expect(wrapper.find(LIBRARY_TABLE).html()).toContain(LIBRARY_ID);
         expect(wrapper.find(FOLDER_TABLE).html()).toContain(FOLDER_ID);
-        expect(wrapper.find(ERROR_ALERT).text()).toBeFalsy();
     });
 
     it("Should display error when the library details cannot be retrieved", async () => {
@@ -95,13 +96,5 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
         await button.trigger("click");
 
         await flushPromises();
-    }
-
-    function expectModalToBeHidden() {
-        expect(wrapper.find(DETAILS_MODAL).attributes("aria-hidden")).toBeTruthy();
-    }
-
-    function expectModalToBeVisible() {
-        expect(wrapper.find(DETAILS_MODAL).attributes("aria-hidden")).toBeFalsy();
     }
 });

@@ -305,7 +305,7 @@ defineExpose({
                     compact
                     hover
                     primary-key="id"
-                    :current-page="currentPage"
+                    :current-page="usingProvider ? undefined : currentPage"
                     :fields="fieldDetails"
                     :filter="filter"
                     :items="tableItems"
@@ -313,7 +313,7 @@ defineExpose({
                     :local-filtering="!usingProvider"
                     :local-sorting="!usingProvider"
                     :indeterminate-items="indeterminateItems"
-                    :per-page="perPage"
+                    :per-page="usingProvider ? undefined : perPage"
                     :selectable="props.selectable"
                     :selected-items="selectedItems"
                     :show-select-all="props.selectable"

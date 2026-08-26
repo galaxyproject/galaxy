@@ -449,7 +449,13 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     @abstractmethod
     def set_element_value(self, element: WebElementProtocol, value: str) -> None:
-        """Set input element value using JavaScript."""
+        """Set input element value using JavaScript.
+
+        The value is passed via arguments (not string-interpolated) so that
+        values containing quotes or special characters are handled correctly.
+        Both ``input`` and ``change`` events are dispatched so reactive
+        frameworks (e.g. Vue) detect the change.
+        """
         ...
 
     @abstractmethod

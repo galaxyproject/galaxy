@@ -40,6 +40,7 @@ class SetMetadataToolAction(ToolAction):
 
     produces_real_jobs: bool = False
     set_output_hid: bool = False
+    file_source_uri_discovery_complete = True
 
     def execute(
         self,

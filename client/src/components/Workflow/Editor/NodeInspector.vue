@@ -7,7 +7,7 @@ import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue";
 import { computed } from "vue";
 
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
-import type { Step } from "@/stores/workflowStepStore";
+import type { PostJobActions, Step } from "@/stores/workflowStepStore";
 
 import FormDefault from "./Forms/FormDefault.vue";
 import FormTool from "./Forms/FormTool.vue";
@@ -21,11 +21,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "postJobActionsChanged", id: string, postJobActions: unknown): void;
+    (e: "postJobActionsChanged", id: number, postJobActions: PostJobActions): void;
     (e: "annotationChanged", id: string, annotation: string): void;
     (e: "labelChanged", id: string, label: string): void;
-    (e: "dataChanged", id: string, data: unknown): void;
-    (e: "stepUpdated", id: string, step: Step): void;
+    (e: "dataChanged", id: number, data: object): void;
+    (e: "stepUpdated", id: number, step: Step): void;
     (e: "editSubworkflow", id: string): void;
     (e: "attemptRefactor", ...args: any[]): void;
     (e: "close"): void;

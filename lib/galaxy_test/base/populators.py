@@ -1116,7 +1116,9 @@ class BaseDatasetPopulator(BasePopulator):
 
     @contextlib.contextmanager
     def test_history(self, require_new: bool = True, name: str | None = None) -> Generator[str, None, None]:
-        with self._test_history(require_new=require_new, cleanup_callback=self._cleanup_history) as history_id:
+        with self._test_history(
+            require_new=require_new, cleanup_callback=self._cleanup_history, name=name
+        ) as history_id:
             yield history_id
 
     @contextlib.contextmanager

@@ -4,16 +4,17 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestCollectionBuilders(SeleniumTestCase):
+class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_build_list_simple_hidden(self):
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self._wait_for_and_select([1])
         self.history_panel_build_list_auto()
         self.collection_builder_set_name("my cool list")
@@ -25,7 +26,7 @@ class TestCollectionBuilders(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_build_list_and_show_items(self):
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self._wait_for_and_select([1])
         self.history_panel_build_list_auto()
         # this toggles the checkbox to not hide originals
@@ -38,12 +39,10 @@ class TestCollectionBuilders(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_build_paired_list_auto_matched(self):
-        self.perform_upload_of_pasted_content(
-            {
-                "basename_1.fasta": "forward content",
-                "basename_2.fasta": "reverse content",
-            }
-        )
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("forward content", {"name": "basename_1.fasta"})
+        uploader.stage_paste_content("reverse content", {"name": "basename_2.fasta"})
+        uploader.start()
         self._wait_for_and_select([1, 2])
         self.history_panel_build_list_of_pairs()
         self.collection_builder_set_name("my awesome paired list")
@@ -61,12 +60,10 @@ class TestCollectionBuilders(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_build_paired_list_manual_matched(self):
-        self.perform_upload_of_pasted_content(
-            {
-                "thisdoesnotmatch.fasta": "forward content",
-                "becausethenamesarentalike.fasta": "reverse content",
-            }
-        )
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("forward content", {"name": "thisdoesnotmatch.fasta"})
+        uploader.stage_paste_content("reverse content", {"name": "becausethenamesarentalike.fasta"})
+        uploader.start()
         self._wait_for_and_select([1, 2])
         self.history_panel_build_list_of_pairs()
         self.collection_builder_pair_rows(0, 1)
@@ -89,13 +86,11 @@ class TestCollectionBuilders(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_build_paired_unpaired_list(self):
-        self.perform_upload_of_pasted_content(
-            {
-                "commonprefix_1.fasta": "forward content",
-                "commonprefix_2.fasta": "reverse content",
-                "unmatched.fasta": "unmatched",
-            }
-        )
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("forward content", {"name": "commonprefix_1.fasta"})
+        uploader.stage_paste_content("reverse content", {"name": "commonprefix_2.fasta"})
+        uploader.stage_paste_content("unmatched", {"name": "unmatched.fasta"})
+        uploader.start()
         self._wait_for_and_select([1, 2, 3])
         self.history_panel_build_list_of_paired_or_unpaireds()
 
@@ -108,14 +103,12 @@ class TestCollectionBuilders(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_build_list_of_lists(self):
-        self.perform_upload_of_pasted_content(
-            {
-                "foo1.txt": "forward content 1",
-                "bar1.txt": "reverse content 1",
-                "foo2.txt": "forward content 2",
-                "bar2.txt": "forward content 2",
-            }
-        )
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("forward content 1", {"name": "foo1.txt"})
+        uploader.stage_paste_content("reverse content 1", {"name": "bar1.txt"})
+        uploader.stage_paste_content("forward content 2", {"name": "foo2.txt"})
+        uploader.stage_paste_content("forward content 2", {"name": "bar2.txt"})
+        uploader.start()
         self._wait_for_and_select([1, 2, 3, 4])
         self.history_panel_build_list_of_lists()
         self.list_wizard_click_cell_and_send_keys("outerIdentifier", 2, "outer1")
@@ -131,12 +124,10 @@ class TestCollectionBuilders(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_build_paired_list_show_original(self):
-        self.perform_upload_of_pasted_content(
-            {
-                "thisdoesnotmatch.fasta": "forward content",
-                "becausethenamesarentalike.fasta": "reverse content",
-            }
-        )
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("forward content", {"name": "thisdoesnotmatch.fasta"})
+        uploader.stage_paste_content("reverse content", {"name": "becausethenamesarentalike.fasta"})
+        uploader.start()
         self._wait_for_and_select([1, 2])
         self.history_panel_build_list_of_pairs()
 
@@ -159,11 +150,7 @@ class TestCollectionBuilders(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_build_simple_list_via_rules_hidden(self):
-        self.perform_upload_of_pasted_content(
-            {
-                "1.fasta": "fasta content",
-            }
-        )
+        self.upload_context("paste-content").stage_paste_content("fasta content", {"name": "1.fasta"}).start()
         self._wait_for_and_select([1])
         self.history_panel_build_rule_builder_for_selection()
         self.collection_builder_set_name("my cool list from rules originals hidden")
