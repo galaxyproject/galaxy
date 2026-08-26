@@ -93,6 +93,12 @@ describe("user-defined tool authoring help", () => {
             expect(section.body).toContain(`Add this \`${outputType}\` output under \`outputs\``);
             expect(parse(yamlExample!).outputs[0]).toEqual(definition.examples[0]);
         }
+
+        const dataOutput = outputSections.find((section) => section.id === "output-data");
+        expect(dataOutput?.body).toContain("`format_source: reads`");
+        expect(dataOutput?.body).toContain("`metadata_source: intervals`");
+        expect(dataOutput?.body).toContain("filtering reads");
+        expect(dataOutput?.body).toContain("interval column assignments");
     });
 
     it("builds one navigable reference entry per validator schema example", () => {

@@ -8,6 +8,7 @@ interface JsonSchemaProperty {
     const?: unknown;
     default?: unknown;
     description?: string;
+    examples?: unknown[];
     items?: JsonSchemaProperty;
     type?: string;
     anyOf?: JsonSchemaProperty[];
@@ -85,7 +86,7 @@ function markdownCell(value: string): string {
     return value.replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
-function propertyDetails(property: JsonSchemaProperty): string {
+function propertyDetails(name: string, property: JsonSchemaProperty): string {
     const details: string[] = [];
     if (property.description) {
         details.push(property.description.trim());
@@ -96,6 +97,11 @@ function propertyDetails(property: JsonSchemaProperty): string {
         if (types.length) {
             details.push(`Type: ${types.map((type) => `\`${type}\``).join(" or ")}.`);
         }
+    }
+    if (property.examples?.length) {
+        const value = property.examples[0];
+        const serialized = typeof value === "string" ? value : JSON.stringify(value);
+        details.push(`Example: \`${name}: ${serialized}\`.`);
     }
     return markdownCell(details.join(" ") || "No additional constraints.");
 }
@@ -111,7 +117,7 @@ function fieldName(name: string): string {
 function fieldTable(definition: JsonSchemaDefinition): string[] {
     const required = new Set(definition.required ?? []);
     const fields = Object.entries(definition.properties ?? {}).map(([name, property]) => {
-        return `| ${fieldName(name)} | ${propertyDetails(property)} | ${propertyDefault(property)} | ${required.has(name) ? "Yes" : "No"} |`;
+        return `| ${fieldName(name)} | ${propertyDetails(name, property)} | ${propertyDefault(property)} | ${required.has(name) ? "Yes" : "No"} |`;
     });
     return ["| Field | Details | Default | Required |", "| --- | --- | --- | --- |", ...fields];
 }

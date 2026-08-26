@@ -442,6 +442,33 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
             )
         return self
 
+    @model_validator(mode="after")
+    def _check_output_source_refs(self) -> "UserToolSourceAuthoringView":
+        declared_inputs = {parameter.root.name: parameter.root for parameter in self.inputs}
+        errors: List[str] = []
+        for output in self.outputs:
+            if not isinstance(output, IncomingToolOutputDataset):
+                continue
+            for field_name in ("format_source", "metadata_source"):
+                source_name = getattr(output, field_name)
+                if source_name is None:
+                    continue
+                source = declared_inputs.get(source_name)
+                if source is None:
+                    errors.append(
+                        f"output '{output.name}' {field_name} references input '{source_name}', which is not declared"
+                    )
+                    continue
+                if field_name == "format_source" and source.type not in ("data", "data_collection"):
+                    errors.append(
+                        f"output '{output.name}' format_source must reference a data or data_collection input"
+                    )
+                if field_name == "metadata_source" and (source.type != "data" or getattr(source, "multiple", False)):
+                    errors.append(f"output '{output.name}' metadata_source must reference a single data input")
+        if errors:
+            raise PydanticCustomError("dynamic_tool.invalid_output_source", "; ".join(errors))
+        return self
+
     @model_serializer(mode="wrap")
     def _canonical_order(self, handler: SerializerFunctionWrapHandler, info: Any):
         # Runs for both direct ``model_dump`` calls and nested serialization

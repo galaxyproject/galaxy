@@ -3855,7 +3855,8 @@ export interface components {
             format: string
             /**
              * Format Source
-             * @description This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
+             * @description Data or collection input whose datatype extension this output inherits. Use this when the command preserves the input representation, such as filtering reads without changing their format.
+             * @example reads
              */
             format_source?: string | null
             /**
@@ -3875,7 +3876,8 @@ export interface components {
             label?: string | null
             /**
              * Metadata Source
-             * @description This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
+             * @description Single dataset input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
+             * @example intervals
              */
             metadata_source?: string | null
             /**

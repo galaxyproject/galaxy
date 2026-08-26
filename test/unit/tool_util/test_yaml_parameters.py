@@ -619,6 +619,80 @@ def test_internal_output_schema_retains_scalar_outputs():
     assert set(mapping) == {"boolean", "collection", "data", "float", "integer", "text"}
 
 
+def test_user_tool_output_sources_publish_distinct_examples_and_validate():
+    from galaxy.tool_util_models.tool_outputs import IncomingUserToolOutputDataset
+
+    properties = UserToolSource.model_json_schema()["$defs"]["IncomingUserToolOutputDataset"]["properties"]
+    assert properties["format_source"]["examples"] == ["reads"]
+    assert properties["metadata_source"]["examples"] == ["intervals"]
+
+    tool = UserToolSource.model_validate(
+        {
+            "class": "GalaxyUserTool",
+            "name": "Preserve formats and metadata",
+            "version": "0.1.0",
+            "container": "busybox",
+            "shell_command": "true",
+            "inputs": [
+                {"name": "reads", "type": "data", "multiple": True},
+                {"name": "intervals", "type": "data", "format": ["interval"]},
+            ],
+            "outputs": [
+                {"name": "filtered_reads", "type": "data", "format_source": "reads", "from_work_dir": "reads"},
+                {
+                    "name": "filtered_intervals",
+                    "type": "data",
+                    "format": "interval",
+                    "metadata_source": "intervals",
+                    "from_work_dir": "intervals",
+                },
+            ],
+        }
+    )
+    format_output = tool.outputs[0]
+    metadata_output = tool.outputs[1]
+    assert isinstance(format_output, IncomingUserToolOutputDataset)
+    assert isinstance(metadata_output, IncomingUserToolOutputDataset)
+    assert format_output.format_source == "reads"
+    assert metadata_output.metadata_source == "intervals"
+
+
+@pytest.mark.parametrize(
+    ("field_name", "source_name", "inputs", "message"),
+    [
+        ("format_source", "missing", [{"name": "reads", "type": "data"}], "is not declared"),
+        ("format_source", "label", [{"name": "label", "type": "text"}], "data or data_collection"),
+        (
+            "metadata_source",
+            "reads",
+            [{"name": "reads", "type": "data", "multiple": True}],
+            "single data input",
+        ),
+        ("metadata_source", "label", [{"name": "label", "type": "text"}], "single data input"),
+    ],
+)
+def test_user_tool_output_sources_reject_invalid_input_references(field_name, source_name, inputs, message):
+    with pytest.raises(ValidationError, match=message):
+        UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "name": "Invalid output source",
+                "version": "0.1.0",
+                "container": "busybox",
+                "shell_command": "true",
+                "inputs": inputs,
+                "outputs": [
+                    {
+                        "name": "result",
+                        "type": "data",
+                        field_name: source_name,
+                        "from_work_dir": "result",
+                    }
+                ],
+            }
+        )
+
+
 def test_collection_and_discovery_fields_publish_authoring_help():
     definitions = UserToolSource.model_json_schema()["$defs"]
     collection_properties = definitions["IncomingUserToolOutputCollection"]["properties"]
