@@ -219,6 +219,10 @@ class OIDC(BaseUIController):
     @web.json
     @web.expose
     def logout(self, trans: "GalaxyWebTransaction", provider, **kwargs):
+        if not trans.app.config.enable_oidc:
+            msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
+            log.debug(msg)
+            return {"message": msg}
         post_user_logout_href = trans.app.config.post_user_logout_href
         if post_user_logout_href is not None:
             post_user_logout_href = trans.request.base + url_for(post_user_logout_href)
