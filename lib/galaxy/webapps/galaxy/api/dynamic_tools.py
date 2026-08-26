@@ -190,8 +190,11 @@ class UnprivilegedToolsApi:
         self,
         payload: DynamicUnprivilegedToolCreatePayload,
         history_id: DecodedDatabaseIdField,
+        user: User = DependsOnUser,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
+        self.dynamic_tools_manager.ensure_beta_tool_formats_enabled()
+        self.dynamic_tools_manager.ensure_can_use_unprivileged_tool(user)
         history = trans.app.history_manager.get_owned(history_id, trans.user)
         tool = tool_payload_to_tool(trans.app, payload.representation.model_dump(by_alias=True))
         if tool:
@@ -206,6 +209,7 @@ class UnprivilegedToolsApi:
         ),
     )
     def runtime_model(self, payload: DynamicUnprivilegedToolCreatePayload, user: User = DependsOnUser):
+        self.dynamic_tools_manager.ensure_beta_tool_formats_enabled()
         self.dynamic_tools_manager.ensure_can_use_unprivileged_tool(user)
         represention = payload.representation.model_dump(by_alias=True)
         tool_source = YamlToolSource(root_dict=represention)
