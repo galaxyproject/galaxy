@@ -2965,12 +2965,12 @@ class TestToolsApi(ApiTestCase, TestsTools):
         output2 = outputs[1]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        assert output1_content.strip() == "forward"
-        assert output2_content.strip() == "reverse"
+        assert output1_content.splitlines() == ["identifier forward", "safe_identifier forward"]
+        assert output2_content.splitlines() == ["identifier reverse", "safe_identifier reverse"]
 
     @skip_without_tool("identifier_single")
     def test_identifier_outside_map(self, history_id):
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="123", name="Plain HDA")
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="123", name="../Plain HDA")
         inputs = {
             "input1": {"src": "hda", "id": new_dataset1["id"]},
         }
@@ -2985,8 +2985,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        assert output1_content.strip() == "identifier Plain HDA"
-        assert output1_content.strip() == "safe_identifier Plain_HDA"
+        assert output1_content.splitlines() == ["identifier ../Plain HDA", "safe_identifier _Plain_HDA"]
 
     @skip_without_tool("identifier_multiple")
     def test_list_selectable_in_multidata_input(self, history_id):

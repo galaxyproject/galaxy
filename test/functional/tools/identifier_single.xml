@@ -1,6 +1,6 @@
 <tool id="identifier_single" name="identifier_single" version="1.0.0">
     <command><![CDATA[
-echo 'identifier $input1.element_identifier' > 'output1'
+echo 'identifier $input1.element_identifier' > 'output1';
 echo 'safe_identifier $input1.safe_element_identifier' >> 'output1'
     ]]></command>
     <inputs>
