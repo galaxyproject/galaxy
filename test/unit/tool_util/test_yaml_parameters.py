@@ -628,10 +628,7 @@ def test_user_tool_output_sources_publish_complete_distinct_examples_and_validat
     assert "examples" not in properties["metadata_source"]
 
     usage_examples = definition["x-usage-examples"]
-    assert [example["title"] for example in usage_examples] == [
-        "Inherit a datatype with `format_source`",
-        "Copy datatype metadata with `metadata_source`",
-    ]
+    assert [example["field"] for example in usage_examples] == ["format_source", "metadata_source"]
     assert usage_examples[0]["definition"]["inputs"][0]["name"] == "reads"
     assert usage_examples[0]["definition"]["outputs"][0]["format_source"] == "reads"
     assert usage_examples[1]["definition"]["inputs"][0]["name"] == "intervals"

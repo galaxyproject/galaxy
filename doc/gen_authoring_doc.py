@@ -128,7 +128,13 @@ def _property_default(prop: dict) -> str:
 
 
 def _field_name(name: str) -> str:
-    return "[`validators`](#validators)" if name == "validators" else f"`{name}`"
+    field_reference_sections = {
+        "validators": "validators",
+        "format_source": "output-data-format-source",
+        "metadata_source": "output-data-metadata-source",
+    }
+    section_id = field_reference_sections.get(name)
+    return f"[`{name}` #](#{section_id})" if section_id else f"`{name}`"
 
 
 def _field_table(definition: dict) -> list[str]:
@@ -220,6 +226,7 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
     definitions = tool_schema["$defs"]
     mapping = tool_schema["properties"]["outputs"]["items"]["discriminator"]["mapping"]
     sections = []
+    output_type_sections = []
     for output_type, reference in mapping.items():
         definition_name = reference.rsplit("/", 1)[-1]
         definition = definitions[definition_name]
@@ -229,7 +236,27 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
             "  ",
         )
         description = definition.get("description", "").replace("``", "`").strip()
-        usage_examples = []
+        output_section = {
+            "id": f"output-{output_type}",
+            "title": f"{output_type} output",
+            "kind": "detailed-reference",
+            "parentId": "output-types-reference",
+            "body": "\n".join(
+                [
+                    description,
+                    "",
+                    *_field_table(definition),
+                    "",
+                    f"Add this `{output_type}` output under `outputs`:",
+                    "",
+                    "```yaml",
+                    example_yaml,
+                    "```",
+                ]
+            ),
+        }
+        output_type_sections.append(output_section)
+        sections.append(output_section)
         for usage_example in definition.get("x-usage-examples", []):
             usage_definition = usage_example["definition"]
             field_order = ["inputs", "shell_command", "outputs", *usage_definition]
@@ -243,41 +270,24 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
                 sort_keys=False,
                 width=10_000,
             ).rstrip()
-            usage_examples.extend(
-                [
-                    "",
-                    f"**{usage_example['title']}**",
-                    "",
-                    usage_example["description"],
-                    "",
-                    "```yaml",
-                    usage_example_yaml,
-                    "```",
-                ]
+            sections.append(
+                {
+                    "id": f"output-{output_type}-{usage_example['field'].replace('_', '-')}",
+                    "title": usage_example["field"],
+                    "kind": "detailed-reference",
+                    "parentId": output_section["id"],
+                    "body": "\n".join(
+                        [
+                            usage_example["description"],
+                            "",
+                            "```yaml",
+                            usage_example_yaml,
+                            "```",
+                        ]
+                    ),
+                }
             )
-        sections.append(
-            {
-                "id": f"output-{output_type}",
-                "title": f"{output_type} output",
-                "kind": "detailed-reference",
-                "parentId": "output-types-reference",
-                "body": "\n".join(
-                    [
-                        description,
-                        "",
-                        *_field_table(definition),
-                        "",
-                        f"Add this `{output_type}` output under `outputs`:",
-                        "",
-                        "```yaml",
-                        example_yaml,
-                        "```",
-                        *(["", "**Usage examples**", *usage_examples] if usage_examples else []),
-                    ]
-                ),
-            }
-        )
-    return _reference_index("Output type", "output", sections), sections
+    return _reference_index("Output type", "output", output_type_sections), sections
 
 
 def _build_validator_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:

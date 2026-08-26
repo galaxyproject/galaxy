@@ -21,7 +21,7 @@ interface JsonSchemaDefinition {
     required?: string[];
     "x-shell-command"?: string;
     "x-usage-examples"?: Array<{
-        title: string;
+        field: string;
         description: string;
         definition: Record<string, unknown>;
     }>;
@@ -115,8 +115,15 @@ function propertyDefault(property: JsonSchemaProperty): string {
     return property.default === undefined ? "—" : `\`${JSON.stringify(property.default)}\``;
 }
 
+const FIELD_REFERENCE_SECTIONS: Record<string, string> = {
+    validators: "validators",
+    format_source: "output-data-format-source",
+    metadata_source: "output-data-metadata-source",
+};
+
 function fieldName(name: string): string {
-    return name === "validators" ? "[`validators`](#validators)" : `\`${name}\``;
+    const sectionId = FIELD_REFERENCE_SECTIONS[name];
+    return sectionId ? `[\`${name}\` #](#${sectionId})` : `\`${name}\``;
 }
 
 function fieldTable(definition: JsonSchemaDefinition): string[] {
@@ -205,22 +212,14 @@ export function buildParameterTypeReference(): TypeReference {
 
 export function buildOutputTypeReference(): TypeReference {
     const mapping = SCHEMA.properties.outputs.items.discriminator.mapping;
-    const sections = Object.entries(mapping).map(([outputType, reference]) => {
+    const sections: AuthoringHelpSection[] = [];
+    const outputTypeSections: AuthoringHelpSection[] = [];
+    Object.entries(mapping).forEach(([outputType, reference]) => {
         const definition = definitionFor(outputType, reference);
         const example = schemaExample(outputType, definition);
         const exampleYaml = stringify({ outputs: [example] }, { lineWidth: 0 }).trim();
         const description = definition.description?.replaceAll("``", "`").trim() ?? "";
-        const usageExamples = (definition["x-usage-examples"] ?? []).flatMap((usageExample) => [
-            "",
-            `**${usageExample.title}**`,
-            "",
-            usageExample.description,
-            "",
-            "```yaml",
-            stringify(orderUsageDefinition(usageExample.definition), { lineWidth: 0 }).trim(),
-            "```",
-        ]);
-        return {
+        const outputSection: AuthoringHelpSection = {
             id: `output-${outputType}`,
             title: `${outputType} output`,
             kind: "detailed-reference" as const,
@@ -235,11 +234,27 @@ export function buildOutputTypeReference(): TypeReference {
                 "```yaml",
                 exampleYaml,
                 "```",
-                ...(usageExamples.length ? ["", "**Usage examples**", ...usageExamples] : []),
             ].join("\n"),
         };
+        outputTypeSections.push(outputSection);
+        sections.push(outputSection);
+        for (const usageExample of definition["x-usage-examples"] ?? []) {
+            sections.push({
+                id: `output-${outputType}-${usageExample.field.replaceAll("_", "-")}`,
+                title: usageExample.field,
+                kind: "detailed-reference",
+                parentId: outputSection.id,
+                body: [
+                    usageExample.description,
+                    "",
+                    "```yaml",
+                    stringify(orderUsageDefinition(usageExample.definition), { lineWidth: 0 }).trim(),
+                    "```",
+                ].join("\n"),
+            });
+        }
     });
-    return { index: referenceIndex("Output type", "output", sections), sections };
+    return { index: referenceIndex("Output type", "output", outputTypeSections), sections };
 }
 
 export function buildValidatorTypeReference(): TypeReference {

@@ -87,8 +87,10 @@ describe("AuthoringHelpPanel", () => {
         const wrapper = mount(AuthoringHelpPanel as object);
         const outputToggle = wrapper.find('[data-description="toggle help section outputs"]');
         const dataOutputToggle = wrapper.find('[data-description="toggle help section output-data"]');
+        const formatSourceSection = wrapper.find("#output-data-format-source");
 
         expect(wrapper.find("#output-data").isVisible()).toBe(false);
+        expect(formatSourceSection.isVisible()).toBe(false);
         await outputToggle.trigger("click");
 
         expect(wrapper.find('#outputs a[href="#output-data"]').exists()).toBe(true);
@@ -101,6 +103,20 @@ describe("AuthoringHelpPanel", () => {
         await dataOutputToggle.trigger("click");
         expect(wrapper.find("#output-data").text()).toContain("from_work_dir");
         expect(wrapper.find("#output-data").text()).toContain("result.txt");
+        expect(wrapper.find('#output-data a[href="#output-data-format-source"]').exists()).toBe(true);
+        expect(formatSourceSection.isVisible()).toBe(true);
+        expect(formatSourceSection.attributes("style")).toContain("margin-left: 2rem");
+
+        const formatSourceLink = wrapper.find('#output-data a[href="#output-data-format-source"]');
+        formatSourceLink.element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+        await wrapper.vm.$nextTick();
+
+        expect(formatSourceSection.text()).toContain("format_source: reads");
+        expect(
+            wrapper
+                .find('[data-description="toggle help section output-data-format-source"]')
+                .attributes("aria-expanded"),
+        ).toBe("true");
     });
 
     it("nests validator types under input parameters", async () => {

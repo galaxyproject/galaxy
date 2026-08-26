@@ -297,10 +297,10 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
             ],
             "x-usage-examples": [
                 {
-                    "title": "Inherit a datatype with `format_source`",
+                    "field": "format_source",
                     "description": (
-                        "The command keeps the input representation, so Galaxy assigns the output the selected "
-                        "input dataset's datatype."
+                        "`format_source` can be used to assign an output the selected input dataset's datatype when "
+                        "the command preserves its representation."
                     ),
                     "definition": {
                         "inputs": [
@@ -322,10 +322,10 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
                     },
                 },
                 {
-                    "title": "Copy datatype metadata with `metadata_source`",
+                    "field": "metadata_source",
                     "description": (
-                        "The command keeps interval column assignments that Galaxy cannot infer from the produced file, "
-                        "so the output copies those datatype-specific settings from the input dataset."
+                        "`metadata_source` can be used to copy datatype-specific metadata from an input when the command "
+                        "preserves information Galaxy cannot infer from the produced file, such as interval column assignments."
                     ),
                     "definition": {
                         "inputs": [
