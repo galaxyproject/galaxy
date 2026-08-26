@@ -659,6 +659,57 @@ def test_general_incoming_outputs_retain_tool_provided_metadata_discovery(output
     assert parsed.discover_datasets[0].discover_via == "tool_provided_metadata"
 
 
+def test_user_tool_output_sources_publish_distinct_examples_and_validate():
+    properties = UserToolSource.model_json_schema()["$defs"]["IncomingUserToolOutputDataset"]["properties"]
+    assert properties["format_source"]["examples"] == ["reads"]
+    assert properties["metadata_source"]["examples"] == ["intervals"]
+
+    tool = UserToolSource.model_validate(
+        {
+            "class": "GalaxyUserTool",
+            "name": "Preserve formats and metadata",
+            "version": "0.1.0",
+            "container": "busybox",
+            "shell_command": "true",
+            "inputs": [
+                {"name": "reads", "type": "data", "multiple": True},
+                {"name": "intervals", "type": "data", "format": ["interval"]},
+            ],
+            "outputs": [
+                {"name": "filtered_reads", "type": "data", "format_source": "reads", "from_work_dir": "reads"},
+                {
+                    "name": "filtered_intervals",
+                    "type": "data",
+                    "format": "interval",
+                    "metadata_source": "intervals",
+                    "from_work_dir": "intervals",
+                },
+            ],
+        }
+    )
+    format_output = tool.outputs[0]
+    metadata_output = tool.outputs[1]
+    assert isinstance(format_output, IncomingUserToolOutputDataset)
+    assert isinstance(metadata_output, IncomingUserToolOutputDataset)
+    assert format_output.format_source == "reads"
+    assert metadata_output.metadata_source == "intervals"
+
+
+def test_collection_and_discovery_fields_publish_authoring_help():
+    definitions = UserToolSource.model_json_schema()["$defs"]
+    collection_properties = definitions["IncomingUserToolOutputCollection"]["properties"]
+
+    assert "collection_type_from_rules" not in collection_properties
+    for field_name in ("collection_type", "collection_type_source", "structured_like", "discover_datasets"):
+        assert collection_properties[field_name].get("description"), field_name
+
+    assert "ToolProvidedMetadataDatasetCollection" not in definitions
+    for definition_name in ("FilePatternDatasetCollectionDescription",):
+        for field_name, field_schema in definitions[definition_name]["properties"].items():
+            if field_name != "type":
+                assert field_schema.get("description"), f"{definition_name}.{field_name}"
+
+
 def test_user_tool_output_source_accepts_top_level_data_parameter():
     tool = UserToolSource.model_validate(
         {

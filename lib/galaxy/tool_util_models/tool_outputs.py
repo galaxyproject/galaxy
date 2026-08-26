@@ -154,8 +154,8 @@ class GenericToolOutputDataset(
         Optional[str],
         Field(
             description=(
-                "Dataset input whose datatype-specific metadata this output copies as defaults. Use this when "
-                "the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments."
+                "Data input whose datatype-specific metadata this output copies as defaults. Use this when the command "
+                "preserves metadata Galaxy cannot infer from the output, such as interval column assignments."
             ),
             examples=["intervals"],
         ),
