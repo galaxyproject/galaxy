@@ -12,7 +12,7 @@ import { TOOL_SOURCE_SCHEMA_URI } from "./schemaMarkdown";
 export interface AuthoringHelpSection {
     id: string;
     title: string;
-    kind: "getting-started" | "reference" | "faq";
+    kind: "getting-started" | "reference" | "detailed-reference" | "faq";
     parentId?: string;
     body: string;
 }
@@ -158,6 +158,11 @@ export const authoringHelpGroups: AuthoringHelpGroup[] = [
         id: "reference",
         title: "Reference",
         sections: authoringHelpSections.filter((section) => section.kind === "reference"),
+    },
+    {
+        id: "detailed-reference",
+        title: "Detailed reference",
+        sections: authoringHelpSections.filter((section) => section.kind === "detailed-reference"),
     },
     {
         id: "faq",
