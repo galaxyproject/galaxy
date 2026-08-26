@@ -182,8 +182,19 @@ def _form_only_params():
     return marked
 
 
+class AssertsAsyncSubmission:
+    """Assert the browser submitted through the tool request API, not the legacy one."""
+
+    def _assert_async_submission(self, tool_id, test_index):
+        called = self.execute_script(
+            "return performance.getEntriesByType('resource')"
+            ".map(e => e.name).filter(n => n.includes('/api/tool_requests'));"
+        )
+        assert called, f"{tool_id}[{test_index}] fell back to the legacy submission path"
+
+
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
-class TestToolFormHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
+class TestToolFormHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks, AssertsAsyncSubmission):
     ensure_registered = True
 
     @selenium_test
@@ -197,15 +208,11 @@ class TestToolFormHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
             galaxy_interactor=interactor,
             dataset_populator=self.dataset_populator,
         )
-        called = self.execute_script(
-            "return performance.getEntriesByType('resource')"
-            ".map(e => e.name).filter(n => n.includes('/api/tool_requests'));"
-        )
-        assert called, f"{tool_id}[{test_index}] fell back to the legacy submission path"
+        self._assert_async_submission(tool_id, test_index)
 
 
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
-class TestToolFormOnlyHarness(SeleniumTestCase, RunsToolTests):
+class TestToolFormOnlyHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks, AssertsAsyncSubmission):
     """Fill and submit every framework tool test without running the job."""
 
     ensure_registered = True
@@ -222,3 +229,4 @@ class TestToolFormOnlyHarness(SeleniumTestCase, RunsToolTests):
             dataset_populator=self.dataset_populator,
             form_only=True,
         )
+        self._assert_async_submission(tool_id, test_index)
