@@ -36,6 +36,10 @@ function sectionPath(sectionId: string): string[] {
     return path;
 }
 
+function sectionDepth(sectionId: string): number {
+    return sectionPath(sectionId).length - 1;
+}
+
 function toggle(id: string) {
     if (isExpanded(id)) {
         expanded.value = expanded.value.filter((openId) => openId !== id);
@@ -113,7 +117,8 @@ onBeforeUnmount(() => {
                 :id="section.id"
                 :key="section.id"
                 class="authoring-help-section"
-                :class="{ 'authoring-help-section-nested': section.parentId }">
+                :class="{ 'authoring-help-section-nested': section.parentId }"
+                :style="{ marginLeft: `${sectionDepth(section.id)}rem` }">
                 <GButton
                     transparent
                     size="small"
@@ -155,10 +160,6 @@ onBeforeUnmount(() => {
 
 .authoring-help-group-title {
     margin-bottom: 0.25rem;
-}
-
-.authoring-help-section-nested {
-    margin-left: 1rem;
 }
 
 .authoring-help-body {

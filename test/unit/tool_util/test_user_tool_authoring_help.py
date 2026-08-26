@@ -166,8 +166,14 @@ def test_generated_documentation_resolves_schema_sections() -> None:
     assert "[`regex` #](#validator-regex)" in result.stdout
     assert "[`shell_command` #](#expressions)" in result.stdout
     assert "[`discover_datasets` #](#discover-datasets)" in result.stdout
-    assert "**Inherit a datatype with `format_source`**" in result.stdout
-    assert "**Copy datatype metadata with `metadata_source`**" in result.stdout
+    assert "(output-data-format-source)=" in result.stdout
+    assert "(output-data-metadata-source)=" in result.stdout
+    assert "##### format_source" in result.stdout
+    assert "##### metadata_source" in result.stdout
+    assert "`format_source` can be used to assign" in result.stdout
+    assert "`metadata_source` can be used to copy" in result.stdout
+    assert "[`format_source` #](#output-data-format-source)" in result.stdout
+    assert "[`metadata_source` #](#output-data-metadata-source)" in result.stdout
     assert "format_source: reads" in result.stdout
     assert "metadata_source: intervals" in result.stdout
     assert "name: reads" in result.stdout
