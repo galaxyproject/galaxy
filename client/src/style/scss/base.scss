@@ -158,6 +158,8 @@ $galaxy-state-bg: (
     "skipped": $state-default-bg,
     "uninitialized": $gray-200,
     // Some `JobState`s:
+    // "finishing" brackets the metadata step, so it shares "setting_metadata"'s color.
+    "finishing": $state-warning-bg,
     "resubmitted": $state-default-bg,
     "failed": $state-danger-bg,
     "deleting": darken($state-default-bg, 30%),
