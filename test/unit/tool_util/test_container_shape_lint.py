@@ -10,6 +10,7 @@ from galaxy.tool_util.lint import (
     lint_user_tool_source,
 )
 from galaxy.tool_util.linters.containers import ContainerImageShape
+from galaxy.tool_util.parser.util import ParseException
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util_models import UserToolSource
 
@@ -118,6 +119,54 @@ def test_parser_reads_container_requirement():
     assert len(containers) == 1
     assert containers[0].type == "singularity"
     assert containers[0].identifier == "oras://example.org/image:tag"
+
+
+MALFORMED_CONTAINER_REQUIREMENTS = [
+    {"type": "container", "container_id": "busybox"},
+    {"type": "container", "container": {"type": "docker"}},
+    {"type": "container"},
+]
+
+
+@pytest.mark.parametrize("requirement", MALFORMED_CONTAINER_REQUIREMENTS)
+def test_user_tool_rejects_malformed_container_requirement(requirement):
+    tool_source = YamlToolSource(_doc(container=None, requirements=[requirement]))
+
+    with pytest.raises(ParseException, match="must set container.container_id"):
+        tool_source.parse_requirements()
+
+
+@pytest.mark.parametrize("requirement", MALFORMED_CONTAINER_REQUIREMENTS)
+def test_linting_reports_unparseable_user_tool_once(requirement):
+    tool_source = YamlToolSource(_doc(container=None, requirements=[requirement]))
+
+    ctx = get_lint_context_for_tool_source(tool_source)
+
+    assert [m.linter for m in ctx.error_messages] == ["ToolParse"]
+    assert "must set container.container_id" in ctx.error_messages[0].message
+
+
+@pytest.mark.parametrize("requirement", MALFORMED_CONTAINER_REQUIREMENTS)
+def test_non_user_tool_keeps_malformed_container_requirement(requirement):
+    # Matches the XML parser, which turns a container element with no image into a
+    # ContainerDescription with an empty identifier rather than failing to load.
+    source = _doc(container=None, requirements=[requirement])
+    source["class"] = "GalaxyTool"
+    tool_source = YamlToolSource(source)
+
+    _, containers, _, _, _ = tool_source.parse_requirements()
+
+    assert [c.identifier for c in containers] == [""]
+
+
+def test_parser_defaults_container_requirement_type_to_docker():
+    tool_source = YamlToolSource(
+        _doc(container=None, requirements=[{"type": "container", "container": {"container_id": "busybox"}}])
+    )
+
+    _, containers, _, _, _ = tool_source.parse_requirements()
+
+    assert containers[0].type == "docker"
 
 
 def test_top_level_container_takes_precedence_over_requirement():
