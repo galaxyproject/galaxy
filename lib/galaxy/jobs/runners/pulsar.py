@@ -699,10 +699,20 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
 
     def get_client_from_state(self, job_state: AsynchronousJobState) -> "BaseJobClient":
         job_destination_params = job_state.job_destination.params
-        job_id = job_state.job_wrapper.job_id  # we want the Galaxy ID here, job_state.job_id is the external one.
-        return self.get_client(job_destination_params, job_id)
+        job_wrapper = job_state.job_wrapper
+        job_id = job_wrapper.job_id  # we want the Galaxy ID here, job_state.job_id is the external one.
+        # Read the external id from the job rather than from job_state.job_id, which falls
+        # back to the Galaxy id when nothing was ever recorded.
+        external_id = job_wrapper.get_job().get_job_runner_external_id()
+        return self.get_client(job_destination_params, job_id, external_id=external_id)
 
-    def get_client(self, job_destination_params: dict[str, Any], job_id, env: list | None = None) -> "BaseJobClient":
+    def get_client(
+        self,
+        job_destination_params: dict[str, Any],
+        job_id,
+        env: list | None = None,
+        external_id: str | None = None,
+    ) -> "BaseJobClient":
         # Cannot use url_for outside of web thread.
         # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
         if env is None:
@@ -719,6 +729,11 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         get_client_kwds = dict(
             job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
         )
+        if external_id:
+            # TES assigns a task id at submission that cannot be derived from the
+            # Galaxy job id. Pass it beside the Galaxy id so provider operations use
+            # the recorded task while Galaxy file and token endpoints remain valid.
+            get_client_kwds["external_id"] = str(external_id)
         # Turn MutableDict into standard dict for pulsar consumption
         job_destination_params = dict(job_destination_params.items())
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
@@ -821,7 +836,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if not job.job_runner_external_id:
             return
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
-        client = self.get_client(job.destination_params, job.job_runner_external_id)
+        client = self.get_client(
+            job.destination_params, job.job_runner_external_id, external_id=job.job_runner_external_id
+        )
         job_ext_output_metadata = job.get_external_output_metadata()
         if not PulsarJobRunner.__remote_metadata(client) and job_ext_output_metadata:
             pid = job_ext_output_metadata[
@@ -858,7 +875,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             pulsar_url = job.job_runner_name
             job_id = job.job_runner_external_id
             log.debug(f"Attempt remote Pulsar kill of job with url {pulsar_url} and id {job_id}")
-            client = self.get_client(job.destination_params, job_id)
+            client = self.get_client(job.destination_params, job_id, external_id=job_id)
             client.kill()
 
     def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
