@@ -2,7 +2,6 @@
 import { computed, onUnmounted, ref } from "vue";
 
 import { useMarkdown } from "../composables/markdown";
-
 import type { ColorVariant } from "./componentVariants";
 
 interface Props {
@@ -90,7 +89,7 @@ onUnmounted(() => {
     position: relative;
     padding: 0.5rem 0.75rem;
     background-color: var(--color-grey-100);
-    border-radius: 0.25rem;
+    border-radius: 0.1875rem;
     border-left: 3px solid var(--color-blue-600);
 
     &.tip-info {
