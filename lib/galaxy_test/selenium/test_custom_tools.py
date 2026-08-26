@@ -45,6 +45,82 @@ class TestCustomTools(SeleniumTestCase):
             self.components.tool_form.execute.wait_for_and_click()
             self.history_panel_wait_for_hid_ok(3)
 
+    @selenium_test
+    def test_authoring_documentation_interactions(self):
+        if self.backend_type == "playwright":
+            self.page.set_viewport_size({"width": 1600, "height": 1000})
+        else:
+            self.driver.set_window_size(1600, 1000)
+        with self.dataset_populator.user_tool_execute_permissions():
+            self.home()
+            self.open_tool_editor()
+            custom_tools = self.components.custom_tools
+
+            editor_source = custom_tools.editor_content.wait_for_text().replace("\N{NO-BREAK SPACE}", " ")
+            assert "class: GalaxyUserTool" in editor_source
+            assert "name: Remove Comment Lines" in editor_source
+            assert "from_work_dir: output.txt" in editor_source
+
+            with self.accept_alert():
+                custom_tools.clear_button.wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+            cleared_source = custom_tools.editor_content.wait_for_text().replace("\N{NO-BREAK SPACE}", " ")
+            assert "class: GalaxyUserTool" in cleared_source
+            assert 'version: "0.1.0"' in cleared_source
+            assert "inputs: []" in cleared_source
+            assert "outputs: []" in cleared_source
+            assert "Remove Comment Lines" not in cleared_source
+
+            documentation_button = custom_tools.documentation_button.wait_for_visible()
+            assert documentation_button.get_attribute("aria-expanded") == "false"
+            custom_tools.documentation_button.wait_for_and_click()
+
+            custom_tools.documentation_panel.wait_for_visible()
+            custom_tools.documentation_content.wait_for_visible()
+            custom_tools.editor_pane.wait_for_visible()
+            assert documentation_button.get_attribute("aria-expanded") == "true"
+            self.screenshot("custom_tool_documentation_split")
+
+            custom_tools.documentation_expand_button.wait_for_and_click()
+            custom_tools.editor_pane.wait_for_absent_or_hidden()
+            custom_tools.documentation_content.wait_for_visible()
+
+            custom_tools.help_section_toggle(section_id="quick-start").wait_for_and_click()
+            custom_tools.example(section_id="quick-start").wait_for_visible()
+            assert custom_tools.example_label(section_id="quick-start").wait_for_text() == "Example"
+
+            self.execute_script("""
+                window.__authoringHelpCopiedText = null;
+                Object.defineProperty(navigator, "clipboard", {
+                    configurable: true,
+                    value: {
+                        writeText: (text) => {
+                            window.__authoringHelpCopiedText = text;
+                            return Promise.resolve();
+                        },
+                    },
+                });
+                """)
+            custom_tools.example_copy_button(section_id="quick-start").wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+            copied_example = self.execute_script("return window.__authoringHelpCopiedText;")
+            assert copied_example.startswith("class: GalaxyUserTool")
+            self.screenshot("custom_tool_documentation_example")
+
+            custom_tools.help_section_toggle(section_id="tool-format").wait_for_and_click()
+            custom_tools.help_section_link(section_id="tool-format", target_id="outputs").wait_for_and_click()
+            custom_tools.help_section(section_id="outputs").wait_for_visible()
+            assert (
+                custom_tools.help_section_toggle(section_id="outputs").wait_for_visible().get_attribute("aria-expanded")
+                == "true"
+            )
+
+            custom_tools.documentation_expand_button.wait_for_and_click()
+            custom_tools.editor_pane.wait_for_visible()
+            custom_tools.documentation_button.wait_for_and_click()
+            custom_tools.documentation_panel.wait_for_absent_or_hidden()
+            custom_tools.editor_pane.wait_for_visible()
+
     def create_new_custom_tool(self) -> str:
         self.home()
         self.open_tool_editor()

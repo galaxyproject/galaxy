@@ -195,7 +195,7 @@ cases:
             - {pattern: "*.txt"}
     valid: true
 
-  - name: collection_discover_tool_provided_accepted
+  - name: collection_discover_tool_provided_rejected
     doc:
       outputs:
         - type: collection
@@ -203,7 +203,9 @@ cases:
           collection_type: list
           discover_datasets:
             - {discover_via: tool_provided_metadata}
-    valid: true
+    expected_errors:
+      - code: literal_error
+      - code: missing
 
   - name: invalid_doi_citation
     doc:

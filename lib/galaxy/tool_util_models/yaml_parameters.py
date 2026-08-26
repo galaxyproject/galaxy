@@ -81,10 +81,22 @@ YamlSelectValidators = Union[NoOptionsParameterValidatorModel,]
 class _YamlParamBase(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    name: str
-    label: Optional[str] = None
-    help: Optional[str] = None
-    optional: bool = False
+    name: Annotated[
+        str,
+        Field(description="Identifier used to read this input from `shell_command` and other expressions."),
+    ]
+    label: Annotated[
+        Optional[str],
+        Field(description="Human-readable prompt shown beside the input on the tool form."),
+    ] = None
+    help: Annotated[
+        Optional[str],
+        Field(description="Additional guidance shown on the tool form to help users choose a value."),
+    ] = None
+    optional: Annotated[
+        bool,
+        Field(description="Set true when the command can run without the user supplying this input."),
+    ] = False
 
 
 def _common_internal_kwargs(yaml_param: "_YamlParamBase") -> dict:
@@ -97,19 +109,74 @@ def _common_internal_kwargs(yaml_param: "_YamlParamBase") -> dict:
 
 
 class YamlBooleanParameter(_YamlParamBase):
-    type: Literal["boolean"]
-    value: Optional[bool] = False
+    """A true-or-false input."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "include_header",
+                    "type": "boolean",
+                    "label": "Include a header line",
+                    "value": True,
+                }
+            ],
+            "x-shell-command": 'include_header="$(inputs.include_header)"',
+        }
+    )
+
+    type: Annotated[
+        Literal["boolean"],
+        Field(description="Presents a true-or-false choice and supplies the selected Boolean value to expressions."),
+    ]
+    value: Annotated[
+        Optional[bool],
+        Field(description="Initial choice shown when the user first opens the tool form."),
+    ] = False
 
     def to_internal(self) -> BooleanParameterModel:
         return BooleanParameterModel(type="boolean", value=self.value, **_common_internal_kwargs(self))
 
 
 class YamlIntegerParameter(_YamlParamBase):
-    type: Literal["integer"]
-    value: Optional[int] = None
-    min: Optional[int] = None
-    max: Optional[int] = None
-    validators: List[YamlNumberValidators] = []
+    """A whole-number input with optional bounds and validators."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "num_lines",
+                    "type": "integer",
+                    "label": "Number of lines",
+                    "value": 10,
+                    "min": 1,
+                    "max": 1000,
+                }
+            ],
+            "x-shell-command": 'num_lines="$(inputs.num_lines)"',
+        }
+    )
+
+    type: Annotated[
+        Literal["integer"],
+        Field(description="Accepts a whole number and supplies it as a numeric value to expressions."),
+    ]
+    value: Annotated[
+        Optional[int],
+        Field(description="Number prefilled when the user first opens the tool form."),
+    ] = None
+    min: Annotated[
+        Optional[int],
+        Field(description="Rejects submitted values smaller than this inclusive lower bound."),
+    ] = None
+    max: Annotated[
+        Optional[int],
+        Field(description="Rejects submitted values larger than this inclusive upper bound."),
+    ] = None
+    validators: Annotated[
+        List[YamlNumberValidators],
+        Field(description="Additional validation rules; supports `in_range`."),
+    ] = []
 
     def to_internal(self) -> IntegerParameterModel:
         return IntegerParameterModel(
@@ -123,11 +190,44 @@ class YamlIntegerParameter(_YamlParamBase):
 
 
 class YamlFloatParameter(_YamlParamBase):
-    type: Literal["float"]
-    value: Optional[float] = None
-    min: Optional[float] = None
-    max: Optional[float] = None
-    validators: List[YamlNumberValidators] = []
+    """A numeric input with optional bounds and validators."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "threshold",
+                    "type": "float",
+                    "label": "Score threshold",
+                    "value": 0.5,
+                    "min": 0.0,
+                    "max": 1.0,
+                }
+            ],
+            "x-shell-command": 'threshold="$(inputs.threshold)"',
+        }
+    )
+
+    type: Annotated[
+        Literal["float"],
+        Field(description="Accepts a number, including decimal values, and supplies it to expressions."),
+    ]
+    value: Annotated[
+        Optional[float],
+        Field(description="Number prefilled when the user first opens the tool form."),
+    ] = None
+    min: Annotated[
+        Optional[float],
+        Field(description="Rejects submitted values smaller than this inclusive lower bound."),
+    ] = None
+    max: Annotated[
+        Optional[float],
+        Field(description="Rejects submitted values larger than this inclusive upper bound."),
+    ] = None
+    validators: Annotated[
+        List[YamlNumberValidators],
+        Field(description="Additional validation rules; supports `in_range`."),
+    ] = []
 
     def to_internal(self) -> FloatParameterModel:
         return FloatParameterModel(
@@ -141,10 +241,40 @@ class YamlFloatParameter(_YamlParamBase):
 
 
 class YamlTextParameter(_YamlParamBase):
-    type: Literal["text"]
-    value: Optional[str] = Field(default=None, alias="value")
-    area: bool = False
-    validators: List[YamlTextValidators] = []
+    """A single-line or multiline text input."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "motif",
+                    "type": "text",
+                    "label": "Sequence motif",
+                    "value": "ACGT",
+                    "area": False,
+                }
+            ],
+            "x-shell-command": 'motif="$(inputs.motif)"',
+        }
+    )
+
+    type: Annotated[
+        Literal["text"],
+        Field(description="Accepts user-entered text and supplies the resulting string to expressions."),
+    ]
+    value: Optional[str] = Field(
+        default=None,
+        alias="value",
+        description="Text prefilled when the user first opens the tool form.",
+    )
+    area: Annotated[
+        bool,
+        Field(description="Set true to use a multiline editor instead of a single-line text box."),
+    ] = False
+    validators: Annotated[
+        List[YamlTextValidators],
+        Field(description="Additional validation rules; supports `length`, `regex`, and `empty_field`."),
+    ] = []
 
     def to_internal(self) -> TextParameterModel:
         return TextParameterModel(
@@ -157,10 +287,41 @@ class YamlTextParameter(_YamlParamBase):
 
 
 class YamlSelectParameter(_YamlParamBase):
-    type: Literal["select"]
-    options: Annotated[List[YamlLabelValue], Field(min_length=1)]
-    multiple: bool = False
-    validators: List[YamlSelectValidators] = []
+    """A choice from a fixed list of options."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "mode",
+                    "type": "select",
+                    "label": "Search mode",
+                    "options": [
+                        {"label": "Fast", "value": "fast", "selected": True},
+                        {"label": "Sensitive", "value": "sensitive", "selected": False},
+                    ],
+                }
+            ],
+            "x-shell-command": 'mode="$(inputs.mode)"',
+        }
+    )
+
+    type: Annotated[
+        Literal["select"],
+        Field(description="Lets the user choose from the declared `options` and supplies the selected value."),
+    ]
+    options: Annotated[
+        List[YamlLabelValue],
+        Field(min_length=1, description="Choices presented on the tool form, each with a display label and value."),
+    ]
+    multiple: Annotated[
+        bool,
+        Field(description="Set true to let the user select and supply several option values instead of one."),
+    ] = False
+    validators: Annotated[
+        List[YamlSelectValidators],
+        Field(description="Additional validation rules; supports `no_options`."),
+    ] = []
 
     def to_internal(self) -> SelectParameterModel:
         return SelectParameterModel(
@@ -173,8 +334,30 @@ class YamlSelectParameter(_YamlParamBase):
 
 
 class YamlColorParameter(_YamlParamBase):
-    type: Literal["color"]
-    value: Optional[str] = None
+    """A color-picker input."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "plot_color",
+                    "type": "color",
+                    "label": "Plot color",
+                    "value": "#3366cc",
+                }
+            ],
+            "x-shell-command": 'plot_color="$(inputs.plot_color)"',
+        }
+    )
+
+    type: Annotated[
+        Literal["color"],
+        Field(description="Presents a color picker and supplies the selected hexadecimal color string."),
+    ]
+    value: Annotated[
+        Optional[str],
+        Field(description="Color initially selected in the picker, written in hexadecimal notation."),
+    ] = None
 
     def to_internal(self) -> ColorParameterModel:
         return ColorParameterModel(type="color", value=self.value, **_common_internal_kwargs(self))
@@ -189,8 +372,30 @@ def _split_format(v):
 
 
 class YamlDataParameter(_YamlParamBase):
-    type: Literal["data"]
-    format: List[str] = ["data"]
+    """One dataset, or a list of datasets when ``multiple`` is true."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "input_file",
+                    "type": "data",
+                    "label": "Input file",
+                    "format": ["txt", "tabular"],
+                }
+            ],
+            "x-shell-command": "input_file='$(inputs.input_file.path)'",
+        }
+    )
+
+    type: Annotated[
+        Literal["data"],
+        Field(description="Lets the user select history datasets and exposes their paths and metadata to expressions."),
+    ]
+    format: Annotated[
+        List[str],
+        Field(description="Limits selectable datasets to these Galaxy datatype extensions."),
+    ] = ["data"]
     multiple: Annotated[
         bool,
         Field(description="Set true to accept several datasets (a list) for this input instead of one."),
@@ -218,9 +423,36 @@ class YamlDataParameter(_YamlParamBase):
 
 
 class YamlDataCollectionParameter(_YamlParamBase):
-    type: Literal["data_collection"]
-    collection_type: Optional[str] = None
-    format: List[str] = ["data"]
+    """A dataset collection input."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "reads",
+                    "type": "data_collection",
+                    "label": "Paired reads",
+                    "collection_type": "paired",
+                    "format": ["fastqsanger"],
+                }
+            ],
+            "x-shell-command": """forward='$(inputs.reads.elements.forward.path)'
+reverse='$(inputs.reads.elements.reverse.path)'""",
+        }
+    )
+
+    type: Annotated[
+        Literal["data_collection"],
+        Field(description="Lets the user select a history collection and exposes its elements to expressions."),
+    ]
+    collection_type: Annotated[
+        Optional[str],
+        Field(description="Limits selectable collections to this structure, such as `list` or `paired`."),
+    ] = None
+    format: Annotated[
+        List[str],
+        Field(description="Requires every selectable collection element to use one of these datatype extensions."),
+    ] = ["data"]
 
     @field_validator("format", mode="before")
     @classmethod
@@ -248,9 +480,55 @@ class YamlConditionalWhen(BaseModel):
 
 
 class YamlConditionalParameter(_YamlParamBase):
-    type: Literal["conditional"]
-    test_parameter: YamlConditionalTestParameter
-    whens: Annotated[List[YamlConditionalWhen], Field(min_length=1)]
+    """A control input that selects which nested inputs are displayed and supplied to the command."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "search_options",
+                    "type": "conditional",
+                    "test_parameter": {
+                        "name": "mode",
+                        "type": "select",
+                        "label": "Search mode",
+                        "options": [
+                            {"label": "Fast", "value": "fast", "selected": True},
+                            {
+                                "label": "Sensitive",
+                                "value": "sensitive",
+                                "selected": False,
+                            },
+                        ],
+                    },
+                    "whens": [
+                        {"discriminator": "fast", "parameters": []},
+                        {
+                            "discriminator": "sensitive",
+                            "parameters": [{"name": "iterations", "type": "integer", "value": 3}],
+                        },
+                    ],
+                }
+            ],
+            "x-shell-command": 'mode="$(inputs.search_options.mode)"\niterations="$(inputs.search_options.iterations)"',
+        }
+    )
+
+    type: Annotated[
+        Literal["conditional"],
+        Field(description="Shows one set of nested inputs at a time according to a Boolean or select control."),
+    ]
+    test_parameter: Annotated[
+        YamlConditionalTestParameter,
+        Field(description="Boolean or select input whose submitted value chooses the active `whens` branch."),
+    ]
+    whens: Annotated[
+        List[YamlConditionalWhen],
+        Field(
+            min_length=1,
+            description="Maps each control value to the nested parameters shown and supplied for that branch.",
+        ),
+    ]
 
     def to_internal(self) -> ConditionalParameterModel:
         internal_test = self.test_parameter.to_internal()
@@ -274,10 +552,40 @@ class YamlConditionalParameter(_YamlParamBase):
 
 
 class YamlRepeatParameter(_YamlParamBase):
-    type: Literal["repeat"]
-    parameters: List["YamlGalaxyToolParameter"] = []
-    min: Optional[int] = None
-    max: Optional[int] = None
+    """A group the user may add multiple times, with ``parameters`` defining one repeated entry."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "extra_files",
+                    "type": "repeat",
+                    "label": "Additional files",
+                    "min": 0,
+                    "max": 3,
+                    "parameters": [{"name": "input_file", "type": "data", "format": ["txt"]}],
+                }
+            ],
+            "x-shell-command": ("files='$(inputs.extra_files.map((item) => item.input_file.path).join(\" \"))'"),
+        }
+    )
+
+    type: Annotated[
+        Literal["repeat"],
+        Field(description="Lets the user add multiple entries that all contain the same nested inputs."),
+    ]
+    parameters: Annotated[
+        List["YamlGalaxyToolParameter"],
+        Field(description="Nested inputs that make up one entry in the repeated group."),
+    ] = []
+    min: Annotated[
+        Optional[int],
+        Field(description="Keeps at least this many entries in the group and creates them when the form opens."),
+    ] = None
+    max: Annotated[
+        Optional[int],
+        Field(description="Prevents the user from adding more than this many entries."),
+    ] = None
 
     def to_internal(self) -> RepeatParameterModel:
         return RepeatParameterModel(
@@ -290,8 +598,38 @@ class YamlRepeatParameter(_YamlParamBase):
 
 
 class YamlSectionParameter(_YamlParamBase):
-    type: Literal["section"]
-    parameters: List["YamlGalaxyToolParameter"] = []
+    """Related inputs that users can expand or collapse to reduce form complexity."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "advanced",
+                    "type": "section",
+                    "label": "Advanced options",
+                    "parameters": [
+                        {
+                            "name": "threshold",
+                            "type": "float",
+                            "value": 0.5,
+                            "min": 0.0,
+                            "max": 1.0,
+                        }
+                    ],
+                }
+            ],
+            "x-shell-command": 'threshold="$(inputs.advanced.threshold)"',
+        }
+    )
+
+    type: Annotated[
+        Literal["section"],
+        Field(description="Places related inputs in a collapsible group to simplify the tool form."),
+    ]
+    parameters: Annotated[
+        List["YamlGalaxyToolParameter"],
+        Field(description="Nested inputs displayed together inside the section."),
+    ] = []
 
     def to_internal(self) -> SectionParameterModel:
         return SectionParameterModel(
