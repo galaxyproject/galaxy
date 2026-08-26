@@ -1956,12 +1956,21 @@ class MinimalJobWrapper(HasResourceParameters):
         purged = dataset.dataset.purged
         if not purged and dataset.dataset.external_filename is None:
             trynum = 0
-            while trynum < self.app.config.retry_job_output_collection:
+            # +1 so retry_job_output_collection=0 still makes one attempt, matching the
+            # sibling retry loop in runners/__init__.py's _collect_job_output.
+            while trynum < self.app.config.retry_job_output_collection + 1:
                 try:
-                    # Attempt to short circuit NFS attribute caching
-                    os.stat(dataset.dataset.get_file_name())
-                    os.chown(dataset.dataset.get_file_name(), os.getuid(), -1)
-                    trynum = self.app.config.retry_job_output_collection
+                    # Attempt to short circuit NFS attribute caching. A stat that succeeds
+                    # but reports a zero-length file is treated the same as a transient
+                    # error: a remote writer (e.g. a GCP Batch task, whose output crosses
+                    # an NFS mount reached over a different network path than this
+                    # handler's own) can have already closed the file while this client
+                    # still serves a stale, empty cached view of it.
+                    file_name = dataset.dataset.get_file_name()
+                    os.chown(file_name, os.getuid(), -1)
+                    if os.stat(file_name).st_size == 0:
+                        raise OSError(f"{file_name} unexpectedly empty")
+                    break
                 except (OSError, ObjectNotFound) as e:
                     trynum += 1
                     log.warning("Error accessing dataset with ID %i, will retry: %s", dataset.dataset.id, unicodify(e))
