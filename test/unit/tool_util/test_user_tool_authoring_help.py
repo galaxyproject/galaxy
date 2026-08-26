@@ -166,8 +166,12 @@ def test_generated_documentation_resolves_schema_sections() -> None:
     assert "[`regex` #](#validator-regex)" in result.stdout
     assert "[`shell_command` #](#expressions)" in result.stdout
     assert "[`discover_datasets` #](#discover-datasets)" in result.stdout
-    assert "`format_source: reads`" in result.stdout
-    assert "`metadata_source: intervals`" in result.stdout
+    assert "**Inherit a datatype with `format_source`**" in result.stdout
+    assert "**Copy datatype metadata with `metadata_source`**" in result.stdout
+    assert "format_source: reads" in result.stdout
+    assert "metadata_source: intervals" in result.stdout
+    assert "name: reads" in result.stdout
+    assert "name: intervals" in result.stdout
     assert "User-defined tools discover them by matching filenames" in result.stdout
     assert "galaxy.json" not in result.stdout
     assert "**Datatypes page**" in result.stdout
