@@ -3115,10 +3115,12 @@ class MzSQlite(SQlite):
             return self.sniff_table_names(filename, table_names)
         return False
 
-class Mzlite(SQlite): 
+
+class Mzlite(SQlite):
     """Class describing a Proteomics mzlite database"""
 
-    file_ext ="mzlite"
+    file_ext = "mzlite"
+
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
@@ -3131,6 +3133,7 @@ class Mzlite(SQlite):
             ]
             return self.sniff_table_names(filename, table_names)
         return False
+
 
 class PQP(SQlite):
     """
