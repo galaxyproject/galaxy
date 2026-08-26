@@ -1,12 +1,14 @@
 import os
 import ssl
 import time
+from unittest.mock import MagicMock
 
 import pytest
 
 from galaxy.objectstore.irods import (
     _IRODS_RETRY_ATTEMPTS,
     _retry_on_connection_error,
+    IRODSObjectStore,
     parse_config_xml,
 )
 from galaxy.util import parse_xml
@@ -130,3 +132,54 @@ def test_no_retry_on_unrelated_error():
     with pytest.raises(ValueError):
         op(object())
     assert calls["n"] == 1
+
+
+def _flaky_side_effect(exc, fail_times, result):
+    calls = {"n": 0}
+
+    def side_effect(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] <= fail_times:
+            raise exc
+        return result
+
+    return side_effect, calls
+
+
+def _fake_object_store():
+    store = MagicMock()
+    store.resource = "demoResc"
+    store.logical_path = "/tempZone/home/rods"
+    store._construct_path.return_value = "a/b/c/dataset_1.dat"
+    store._get_object_id.return_value = 1
+    store._get_cache_path.return_value = "/tmp/does-not-need-to-exist/dataset_1.dat"
+    return store
+
+
+def test_delete_retries_on_transient_connection_error():
+    store = _fake_object_store()
+    data_obj = MagicMock()
+    side_effect, calls = _flaky_side_effect(ssl.SSLEOFError("handshake"), fail_times=1, result=data_obj)
+    store.session.data_objects.get.side_effect = side_effect
+
+    assert IRODSObjectStore._delete(store, object()) is True
+    assert calls["n"] == 2
+    data_obj.unlink.assert_called_once_with(force=True)
+
+
+def test_push_to_storage_retries_on_transient_connection_error(tmp_path):
+    store = _fake_object_store()
+    source_file = tmp_path / "dataset_1.dat"
+    source_file.write_text("some content")
+
+    store.session.data_objects.exists.return_value = False
+    side_effect, calls = _flaky_side_effect(ssl.SSLEOFError("handshake"), fail_times=1, result=None)
+    store.session.data_objects.put.side_effect = side_effect
+
+    assert (
+        IRODSObjectStore._push_to_storage(
+            store, "a/b/c/dataset_1.dat", source_file=str(source_file), cache_path=str(source_file)
+        )
+        is True
+    )
+    assert calls["n"] == 2

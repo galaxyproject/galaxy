@@ -56,7 +56,14 @@ else:
 
 
 def _retry_on_connection_error(func):
-    """Retry iRODS read operations on a transient connection error."""
+    """Retry an iRODS operation on a transient connection error.
+
+    Covers the idempotent reads (_get_remote_size / _exists_remotely / _download),
+    _push_to_storage (create/put both pass the iRODS FORCE_FLAG, so a retried
+    upload just overwrites whatever the interrupted attempt left behind), and
+    _delete (already treats "object not found" as success, so a retry after a
+    partial delete is safe).
+    """
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -488,6 +495,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
 
+    @_retry_on_connection_error
     def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
         """
         Push the file pointed to by ``rel_path`` to the iRODS. Extract folder name
@@ -567,6 +575,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _push_to_storage: %s", ipt_timer)
 
+    @_retry_on_connection_error
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
@@ -631,6 +640,10 @@ class IRODSObjectStore(CachingConcreteObjectStore):
                 except (DataObjectDoesNotExist, CollectionDoesNotExist):
                     log.info("Collection or data object (%s) does not exist", data_object_path)
                     return True
+        except _RETRYABLE_CONNECTION_ERRORS:
+            # ssl.SSLError is an OSError subclass; re-raise before the generic
+            # OSError handler below so @_retry_on_connection_error can retry it.
+            raise
         except OSError:
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         finally:
