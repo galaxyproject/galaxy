@@ -89,6 +89,7 @@ class ParameterValidatorModel(StrictModel):
     type: ValidatorType
     message: Annotated[
         Optional[str],
+        Field(description="Error message shown when validation fails; `%s` is replaced with the rejected value."),
         ValidationArgument(
             """The error message displayed on the tool form if validation fails. A placeholder string ``%s`` will be repaced by the ``value``"""
         ),
@@ -190,7 +191,7 @@ class RegexParameterValidatorModel(StaticValidatorModel):
 
 
 class InRangeParameterValidatorModel(StaticValidatorModel):
-    """Require a numeric value to fall within the configured bounds."""
+    """Require a numeric value to fall within optional lower and upper bounds."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"type": "in_range", "min": 0, "max": 1}]})
 
@@ -230,7 +231,7 @@ class InRangeParameterValidatorModel(StaticValidatorModel):
 
 
 class LengthParameterValidatorModel(StaticValidatorModel):
-    """Require a text value to have a length within the configured bounds."""
+    """Require the number of characters in a text value to fall within optional bounds."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"type": "length", "min": 1, "max": 20}]})
 
@@ -301,7 +302,7 @@ class UnspecifiedBuildParameterValidatorModel(ParameterValidatorModel):
 
 
 class NoOptionsParameterValidatorModel(StaticValidatorModel):
-    """Reject a select parameter when it has no available options."""
+    """Require a select parameter to have at least one available option."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"type": "no_options"}]})
 
@@ -321,7 +322,7 @@ class NoOptionsParameterValidatorModel(StaticValidatorModel):
 
 
 class EmptyFieldParameterValidatorModel(StaticValidatorModel):
-    """Require a parameter value to be present unless the rule is negated."""
+    """Require a value that is neither an empty string nor null."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"type": "empty_field"}]})
 

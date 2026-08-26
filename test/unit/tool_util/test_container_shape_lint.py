@@ -96,7 +96,7 @@ def test_user_tool_source_accepts_container_requirement():
 
 def test_user_tool_source_requires_a_container_form():
     source = _doc(container=None)
-    with pytest.raises(ValidationError, match="set container or add a container requirement"):
+    with pytest.raises(ValidationError, match="set the top-level container field"):
         UserToolSource.model_validate(source)
 
 
