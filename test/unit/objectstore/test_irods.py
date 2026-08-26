@@ -5,11 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-try:
-    import irods
-except ImportError:
-    irods = None
-
 from galaxy.objectstore.irods import (
     _IRODS_RETRY_ATTEMPTS,
     _retry_on_connection_error,
@@ -18,7 +13,20 @@ from galaxy.objectstore.irods import (
 )
 from galaxy.util import parse_xml
 
-requires_irods_package = pytest.mark.skipif(irods is None, reason="python-irodsclient is not installed")
+
+class _FakeKeywords:
+    FORCE_FLAG_KW = "forceFlag"
+    DEST_RESC_NAME_KW = "destRescName"
+
+
+@pytest.fixture(autouse=True)
+def _fake_irods_keywords(monkeypatch):
+    # irods.keywords (imported as `kw`) is only bound when python-irodsclient
+    # is installed, which some CI environments don't have. _delete and
+    # _push_to_storage reference it directly, so stand in a fake here instead
+    # of requiring the real package just to run these two tests.
+    monkeypatch.setattr("galaxy.objectstore.irods.kw", _FakeKeywords(), raising=False)
+
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
@@ -163,7 +171,6 @@ def _fake_object_store():
     return store
 
 
-@requires_irods_package
 def test_delete_retries_on_transient_connection_error():
     store = _fake_object_store()
     data_obj = MagicMock()
@@ -175,7 +182,6 @@ def test_delete_retries_on_transient_connection_error():
     data_obj.unlink.assert_called_once_with(force=True)
 
 
-@requires_irods_package
 def test_push_to_storage_retries_on_transient_connection_error(tmp_path):
     store = _fake_object_store()
     source_file = tmp_path / "dataset_1.dat"
