@@ -900,6 +900,7 @@ async function onCreate(): Promise<boolean> {
         return false;
     }
 
+    loadingWorkflow.value = true;
     try {
         const { id: createdId, name: createdName, number_of_steps } = await services.createWorkflow(workflowData.value);
         const message = `Created new workflow '${createdName}' with ${number_of_steps} steps.`;
@@ -909,10 +910,13 @@ async function onCreate(): Promise<boolean> {
 
         await routeToWorkflow(createdId);
 
+        changesIndicator.value?.flashSavedIndicator();
         Toast.success(message);
     } catch (e) {
         onWorkflowError("Creating workflow failed", errorMessageAsString(e, "Please contact an administrator."));
         return false;
+    } finally {
+        loadingWorkflow.value = false;
     }
     return true;
 }
@@ -1049,19 +1053,23 @@ async function onSave(): Promise<boolean> {
     const lastActiveNodeId = activeNodeId.value;
 
     try {
-        const data = await saveWorkflow(workflowData.value);
+        const serializedWorkflowData = JSON.stringify(workflowData.value);
+        const workflowToSave = JSON.parse(serializedWorkflowData) as Workflow;
+        const data = await saveWorkflow(workflowToSave);
 
         versions.value = await getVersions(id.value);
 
+        const hasNewerChanges = JSON.stringify(workflowData.value) !== serializedWorkflowData;
+
         // Mirror loadEditorData and only take fields the response actually carries,
         // otherwise a partial response blanks out the in-memory workflow.
-        if (data.name !== undefined) {
+        if (!hasNewerChanges && data.name !== undefined) {
             name.value = data.name;
         }
         if (data.version !== undefined) {
             version.value = data.version as number;
         }
-        if (data.annotation !== undefined) {
+        if (!hasNewerChanges && data.annotation !== undefined) {
             annotation.value = data.annotation;
         }
 
@@ -1071,6 +1079,12 @@ async function onSave(): Promise<boolean> {
         const latestVersion = versions.value[versions.value.length - 1]?.version;
         if ((version.value === undefined || version.value === null) && latestVersion !== undefined) {
             version.value = latestVersion;
+        }
+
+        if (hasNewerChanges) {
+            hasChanges.value = true;
+            syncVersionToRoute(version.value ?? undefined, true);
+            return true;
         }
 
         await loadCurrent(id.value, version.value);
@@ -1340,6 +1354,7 @@ initializeWorkflowEditor();
 
         <ActivityBar
             ref="activityBar"
+            :inert="loadingWorkflow ? '' : undefined"
             data-description="workflow editor activity bar"
             :default-activities="workflowActivities"
             :special-activities="specialActivities"
@@ -1427,6 +1442,12 @@ initializeWorkflowEditor();
                 :steps="steps"
                 @update="onReportUpdate">
                 <template v-slot:buttons>
+                    <ChangesIndicator
+                        ref="changesIndicator"
+                        class="pr-2"
+                        :has-changes="hasChanges"
+                        object-namespace="workflow" />
+
                     <GButton
                         tooltip
                         title="Generate AI GalaxyAI report based on the workflow and its expected results"
@@ -1453,7 +1474,7 @@ initializeWorkflowEditor();
             </MarkdownEditor>
         </template>
         <template v-else>
-            <div id="center" class="workflow-center">
+            <div id="center" class="workflow-center" :inert="loadingWorkflow ? '' : undefined">
                 <div class="editor-top-bar" unselectable="on">
                     <span>
                         <span class="sr-only">Workflow Editor</span>

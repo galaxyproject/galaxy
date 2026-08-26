@@ -33,6 +33,8 @@ export default {
     "Saved Histories": "Gespeicherte Verläufe",
     "Saved Datasets": "Gespeicherte Datensätze",
     "Saved Pages": "Gespeicherte Seiten",
+    Saved: "Gespeichert",
+    Unsaved: "Nicht gespeichert",
     //Tooltip
     "Account and saved data": "Nutzerkonto und gespeicherte Daten",
     "Account registration or login": "Registrierung oder Anmeldung",
