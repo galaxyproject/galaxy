@@ -1,1 +1,1 @@
-export { useClickableElement } from "@galaxyproject/galaxy-ui";
+export { type ClickableProps, useClickableElement } from "@galaxyproject/galaxy-ui";
