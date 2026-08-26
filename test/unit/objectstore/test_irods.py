@@ -5,21 +5,20 @@ from unittest.mock import MagicMock
 
 import pytest
 
+try:
+    import irods
+except ImportError:
+    irods = None
+
 from galaxy.objectstore.irods import (
     _IRODS_RETRY_ATTEMPTS,
     _retry_on_connection_error,
     IRODSObjectStore,
-    irods as irods_package,
     parse_config_xml,
 )
 from galaxy.util import parse_xml
 
-# _delete/_push_to_storage reference irods.keywords (as `kw`) directly in their
-# bodies, only bound when python-irodsclient is installed - unlike the generic
-# decorator tests below, these two exercise the real method bodies so they need
-# the real package present (some CI legs, e.g. the packaged objectstore tests,
-# don't install it).
-requires_irods_package = pytest.mark.skipif(irods_package is None, reason="python-irodsclient is not installed")
+requires_irods_package = pytest.mark.skipif(irods is None, reason="python-irodsclient is not installed")
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
