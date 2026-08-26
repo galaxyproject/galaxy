@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from galaxy import model
+from galaxy.jobs.handler import JobHandlerQueue
 from galaxy.jobs.runners import BaseJobRunner
 from galaxy.jobs.runners.local import LocalJobRunner
 from galaxy.jobs.runners.pulsar import (
@@ -148,3 +149,57 @@ def test_finish_staged_job_fails_loudly_without_an_exit_code(tmp_path):
         runner._finish_staged_job(SimpleNamespace(job_wrapper=job_wrapper))
     assert completed == []
     assert job_wrapper.failures == ["Unable to recover job interrupted while setting metadata"]
+
+
+class RecordingSession:
+    def __init__(self):
+        self.commits = 0
+
+    def commit(self):
+        self.commits += 1
+
+
+def _async_update_runner(job, server_name="handler1"):
+    runner = _runner(PulsarJobRunner)
+    runner.sa_session = RecordingSession()
+    job_queue = object.__new__(JobHandlerQueue)
+    job_queue.job_pair_for_id = lambda job_id: (job, MockJobWrapper())
+    runner.app = SimpleNamespace(
+        config=SimpleNamespace(server_name=server_name),
+        job_manager=SimpleNamespace(job_handler=SimpleNamespace(job_queue=job_queue)),
+    )
+    return runner
+
+
+def _async_update(runner, status):
+    with (
+        patch("galaxy.jobs.runners.pulsar.check_database_connection"),
+        patch.object(PulsarJobRunner, "_job_state", return_value=object()),
+        patch.object(PulsarJobRunner, "_update_job_state_for_status"),
+    ):
+        runner._PulsarJobRunner__async_update({"job_id": "1", "status": status})
+
+
+def test_async_update_commits_the_handler_claim():
+    """``get_jobs_to_check_at_startup`` filters on ``Job.handler``, so an unflushed claim
+    means no handler recovers the FINISHING job."""
+    job = SimpleNamespace(handler="handler2")
+    runner = _async_update_runner(job)
+    _async_update(runner, "complete")
+    assert job.handler == "handler1"
+    assert runner.sa_session.commits == 1
+
+
+def test_async_update_does_not_reclaim_a_job_it_already_owns():
+    job = SimpleNamespace(handler="handler1")
+    runner = _async_update_runner(job)
+    _async_update(runner, "complete")
+    assert runner.sa_session.commits == 0
+
+
+def test_async_update_leaves_the_handler_alone_for_non_terminal_status():
+    job = SimpleNamespace(handler="handler2")
+    runner = _async_update_runner(job)
+    _async_update(runner, "running")
+    assert job.handler == "handler2"
+    assert runner.sa_session.commits == 0
