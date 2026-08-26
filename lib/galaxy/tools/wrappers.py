@@ -2,7 +2,6 @@ import abc
 import logging
 import os
 import shlex
-import string
 import tempfile
 from collections.abc import (
     Iterable,
@@ -46,6 +45,7 @@ from galaxy.tools.parameters.wrapped_json import (
 )
 from galaxy.util import (
     filesystem_safe_string,
+    safe_filename_component,
     string_as_bool,
 )
 
@@ -421,11 +421,9 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         self._element_identifier = identifier
 
     @property
-    def safe_element_identifier(self) -> str | None:
-        return sanitize_for_filename(
-            self.element_identifier,
-            valid_filename_chars=set(string.ascii_letters + string.digits + "-_."),
-        ).lstrip("-.")
+    def safe_element_identifier(self) -> str:
+        max_len = 254 - len(self.file_ext)
+        return safe_filename_component(self.element_identifier, max_len=max_len)
 
     @property
     def element_identifier(self) -> str:
@@ -731,10 +729,8 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
     @property
     def safe_element_identifier(self) -> str | None:
-        return sanitize_for_filename(
-            self.name,
-            valid_filename_chars=set(string.ascii_letters + string.digits + "-_."),
-        ).lstrip("-")
+        identifier = self.element_identifier
+        return safe_filename_component(identifier) if identifier is not None else None
 
     @property
     def element_identifier(self) -> str | None:
