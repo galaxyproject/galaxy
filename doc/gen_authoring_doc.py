@@ -104,7 +104,7 @@ def _markdown_cell(value: str) -> str:
     return value.replace("|", r"\|").replace("\n", " ")
 
 
-def _property_details(prop: dict) -> str:
+def _property_details(name: str, prop: dict) -> str:
     details = []
     if description := prop.get("description"):
         details.append(description.strip())
@@ -116,6 +116,10 @@ def _property_details(prop: dict) -> str:
             types.append(prop["type"])
         if types:
             details.append("Type: " + " or ".join(f"`{type_name}`" for type_name in types) + ".")
+    if examples := prop.get("examples"):
+        value = examples[0]
+        serialized = value if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
+        details.append(f"Example: `{name}: {serialized}`.")
     return _markdown_cell(" ".join(details) or "No additional constraints.")
 
 
@@ -136,7 +140,7 @@ def _field_table(definition: dict) -> list[str]:
         "| --- | --- | --- | --- |",
         *[
             f"| {_field_name(name)} | "
-            f"{_property_details(prop)} | {_property_default(prop)} | "
+            f"{_property_details(name, prop)} | {_property_default(prop)} | "
             f"{'Yes' if name in required else 'No'} |"
             for name, prop in definition.get("properties", {}).items()
         ],
