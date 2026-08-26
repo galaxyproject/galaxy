@@ -46,6 +46,7 @@ RUN set -xe; \
         libc-dev \
         bzip2 \
         gcc \
+        zlib1g-dev \
     && pip install --no-cache virtualenv ansible==11.11.0 \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
