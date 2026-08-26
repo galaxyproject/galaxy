@@ -1250,6 +1250,11 @@ custom_tools:
     save_button:
       selector: 'save custom tool'
       type: data-description
+    clear_button:
+      selector: 'clear custom tool'
+      type: data-description
+    editor: '.custom-tool-editor .monaco-editor'
+    editor_content: '.custom-tool-editor .view-lines'
     tool_link: "#g-card-custom-tool-${tool_uuid}"
     documentation_button:
       selector: 'toggle tool documentation'
