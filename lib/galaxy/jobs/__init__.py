@@ -116,6 +116,7 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.path import external_chown
+from galaxy.util.properties import running_from_source
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.work.context import WorkRequestContext
@@ -1191,13 +1192,18 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def galaxy_lib_dir(self):
-        if self.__galaxy_lib_dir is None:
+        if self.__galaxy_lib_dir is None and running_from_source:
             self.__galaxy_lib_dir = os.path.abspath("lib")  # cwd = galaxy root
         return self.__galaxy_lib_dir
 
     @property
     def galaxy_virtual_env(self):
-        return os.environ.get("VIRTUAL_ENV", None)
+        virtual_env = os.environ.get("VIRTUAL_ENV")
+        if virtual_env:
+            return virtual_env
+        if sys.prefix != sys.base_prefix:
+            return sys.prefix
+        return None
 
     # legacy naming
     get_job_runner = get_job_runner_url

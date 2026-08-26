@@ -35,4 +35,5 @@ keywords = ["Galaxy"]
 [project.scripts]
 galaxy-main = "galaxy.main:main"
 galaxy-dependencies = "galaxy.dependencies.script:main"
+galaxy-remote-tool-eval = "galaxy.tools.remote_tool_eval:main"
 galaxy-sse-monitor = "galaxy.sse_monitor.__main__:main"
