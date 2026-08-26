@@ -838,13 +838,15 @@ class GalaxyInteractorApi:
             parameters = request_schema["parameters"]
 
             def adapt_datasets(test_input: JsonTestDatasetDefDict) -> DataRequestHda | DataRequestUri:
+                # if path is not set it might be a composite file with a path,
+                # e.g. composite_shapefile
+                test_input_path = test_input.get("path", "")
+                if test_input_path in self.uploads:
+                    return DataRequestHda(**self.uploads[test_input_path])
                 location = test_input.get("location")
                 if location:
                     ext = test_input.get("filetype") or "auto"
                     return DataRequestUri(url=location, ext=ext)
-                # if path is not set it might be a composite file with a path,
-                # e.g. composite_shapefile
-                test_input_path = test_input.get("path", "")
                 return DataRequestHda(**self.uploads[test_input_path])
 
             def adapt_collections(test_input: JsonTestCollectionDefDict) -> DataCollectionRequest:

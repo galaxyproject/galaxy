@@ -127,7 +127,7 @@ test = [
     "ase>=3.18.1",
     "axe-selenium-python",
     "boto3",
-    "cloudbridge",
+    "cloudbridge>=4.4.0",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
     "fluent-logger",
     "gcsfs",

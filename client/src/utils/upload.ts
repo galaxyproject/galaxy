@@ -805,7 +805,8 @@ export function buildCollectionUploadPayload(items: ApiUploadItem[], options: Co
     let elements: HdcaUploadTarget["elements"];
 
     if (options.collectionType === "list") {
-        elements = dataElements;
+        // reverse the order of the elements to emulate what we have in the history panel
+        elements = dataElements.reverse();
     } else if (options.collectionType === "list:paired") {
         elements = buildPairedElements(items, dataElements);
     } else {

@@ -22,9 +22,10 @@ from .framework import (
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_tool_verify_contents_by_peek(self):
@@ -156,6 +157,52 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
+    def test_repeat_cloning(self):
+        self.home()
+        self.tool_open("text_repeat")
+
+        def assert_input_order(inputs: list[str]):
+            for index, input_value in enumerate(inputs):
+                parameter_input = self.components.tool_form.parameter_input(parameter=f"the_repeat_{index}|texttest")
+                assert parameter_input.wait_for_value() == input_value
+
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_0|texttest", "Text A")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_1|texttest", "Text B")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_2|texttest", "Text C")
+
+        # Validate for: order of insertion
+        self.components.tool_form.repeat_clone(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text A", "Text B", "Text B", "Text C"])
+
+        # Validate for: deep copy, not a "shared reference"
+        self.tool_set_value("the_repeat_2|texttest", "Cloned Text B")
+        assert_input_order(["Text A", "Text B", "Cloned Text B", "Text C"])
+
+        # Validate for: deep copy independence holds in both directions
+        self.tool_set_value("the_repeat_1|texttest", "Edited Text B")
+        assert_input_order(["Text A", "Edited Text B", "Cloned Text B", "Text C"])
+
+        # Job parameters are recorded server-side, so this assertion is independent of the live form.
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+
+        details = [d.text for d in self._get_dataset_tool_parameters(1)]
+        assert details == [
+            "texttest",
+            "Text A",
+            "texttest",
+            "Edited Text B",
+            "texttest",
+            "Cloned Text B",
+            "texttest",
+            "Text C",
+        ]
+
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
     def test_rerun(self):
         self._run_environment_test_tool()
         self.history_panel_wait_for_hid_ok(1)
@@ -196,7 +243,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_rerun_deleted_dataset(self):
         # upload a first dataset that should not become selected on re-run
         test_path = self.get_filename("1.tabular")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
         self.tool_open("column_param")
         self.select_set_value("#col", "3")
@@ -241,7 +288,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_rerun_dataset_collection_element(self):
         # upload a first dataset that should not become selected on re-run
         test_path = self.get_filename("1.fasta")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
 
         history_id = self.current_history_id()
@@ -276,9 +323,9 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         test_path_decoy = self.get_filename("1.txt")
         # Upload form posts bad data if executed two times in a row like this, so
         # wait between uploads. xref https://github.com/galaxyproject/galaxy/issues/5169
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
-        self.perform_upload(test_path_decoy)
+        self.upload_context("local-file").stage_local_file(test_path_decoy).start()
         self.history_panel_wait_for_hid_ok(2)
 
         self.home()
@@ -434,7 +481,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.tool_form_execute()
 
 
-class TestLoggedInToolForm(SeleniumTestCase):
+class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -444,7 +491,7 @@ class TestLoggedInToolForm(SeleniumTestCase):
         # normally HID 2 would be selected but since it is discarded - it won't
         # be an option so verify the result was run with HID 1.
         test_path = self.get_filename("1.fasta")
-        self.perform_upload(test_path)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
 
         history_id = self.current_history_id()
@@ -515,9 +562,7 @@ class TestLoggedInToolForm(SeleniumTestCase):
     @pytest.mark.local
     def test_run_apply_rules_tutorial(self):
         self.home()
-        self.upload_rule_start()
-        self.upload_rule_set_data_type("Collections")
-        self.components.upload.rule_source_content.wait_for_and_send_keys(
+        self.upload_context("rule").creating("collections").from_source("pasted_table").paste_content(
             """https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated1fb.txt treated_single_1
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated2fb.txt treated_paired_2
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated3fb.txt treated_paired_3
@@ -528,16 +573,15 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
 """
         )
         self.screenshot("rules_apply_rules_example_4_1_input_paste")
-        self.upload_rule_build()
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.rule_builder_set_mapping("url", "A")
         self.rule_builder_set_mapping("list-identifiers", ["B"])
         self.rule_builder_set_collection_name("flat_count_list")
         self.rule_builder_set_extension("txt")
 
         self.screenshot("rules_apply_rules_example_4_2_input_rules")
-        rule_builder.main_button_ok.wait_for_and_click()
+        self.components.file_set_wizard.wizard_submit_button.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(1)
         self.screenshot("rules_apply_rules_example_4_3_input_ready")
         self.history_multi_view_display_collection_contents(1, "list")

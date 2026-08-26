@@ -1,279 +1,480 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
+import { getLocalVue, mockUnprivilegedToolsRequest, suppressExpectedErrorMessages } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { BFormTextarea } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import Vue, { nextTick } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { Services } from "@/components/Workflow/services";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
-import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
+import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import ReadmeEditor from "@/components/Workflow/Editor/ReadmeEditor.vue";
+import WorkflowAttributes from "@/components/Workflow/Editor/WorkflowAttributes.vue";
+import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
+
+const GET_APP_ROOT_PREFIX = "prefix/" as const;
+// Selectors
+const SELECTORS = {
+    WORKFLOW_GRAPH: '[data-description="workflow graph in editor"]',
+    ACTIVITY_BAR: '[data-description="workflow editor activity bar"]',
+} as const;
+
+// `<script setup>` SFCs compile to nameless component objects (their inferred
+// name lives on `__name`, which vue-test-utils 1.x doesn't read). Since
+// `Index.vue` is itself `<script setup>`, it resolves these children as direct
+// object references rather than string tags, so vue-test-utils' `stubs` option
+// (which matches by `.name`) can never target them unless we set `.name`
+// ourselves on the shared imported component object before mounting.
+(ActivityBar as unknown as { name?: string }).name = "ActivityBar";
+(WorkflowGraph as unknown as { name?: string }).name = "WorkflowGraph";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
-const router = injectTestRouter(localVue);
 
-vi.mock("components/Datatypes/factory", () => ({}));
+/**
+ * Stub for `ActivityBar`, a component `Index.vue` calls methods on directly
+ * (`activityBar.value?.isActiveSideBar/setActiveSideBar`). Renders its
+ * `side-panel` slot, passing `isActiveSideBar` as the `is-active-side-bar`
+ * scoped slot prop, so `WorkflowAttributes` etc. render underneath it, and
+ * tracks the "active" panel reactively so `showAttributes()` can switch it.
+ */
+const activityBarStub = Vue.extend({
+    data(): { activeSideBar: string } {
+        return { activeSideBar: "workflow-editor-attributes" };
+    },
+    methods: {
+        isActiveSideBar(this: { activeSideBar: string }, name: string) {
+            return this.activeSideBar === name;
+        },
+        setActiveSideBar(this: { activeSideBar: string }, name: string) {
+            this.activeSideBar = name;
+        },
+    },
+    template: `<div><slot name="side-panel" :is-active-side-bar="isActiveSideBar" /></div>`,
+});
+
+function editorStubs() {
+    return {
+        ActivityBar: activityBarStub,
+        WorkflowGraph: {
+            template: "<div />",
+            props: ["datatypesMapper"],
+            methods: {
+                fitWorkflow() {},
+                setTransform() {},
+            },
+        },
+    };
+}
+
+// vue-router mocks
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
+let mockRoute: { query: Record<string, string>; fullPath: string } = { query: {}, fullPath: "/" };
+vi.mock("vue-router/composables", () => ({
+    useRouter: () => ({ push: mockPush, replace: mockReplace }),
+    useRoute: () => mockRoute,
+}));
+
 vi.mock("./modules/services");
 vi.mock("@/onload/loadConfig");
 vi.mock("./modules/utilities");
 vi.mock("@/components/Workflow/workflows.services");
-
-vi.mock("app", () => ({}));
 
 const { server, http } = useServerMock();
 
 const mockGetAppRoot = vi.mocked(getAppRoot);
 const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
 const mockLoadWorkflow = vi.mocked(getWorkflowFull);
-const MockGetVersions = vi.mocked(getVersions);
+const mockGetVersions = vi.mocked(getVersions);
 const mockSaveWorkflow = vi.mocked(saveWorkflow);
 
-/** TODO: A potentially hacky type until we modernize the entire
- * component to Composition API and TypeScript */
-type IndexComponent = Vue & {
-    annotation: string | null;
-    name: string | null;
-    stateStore: ReturnType<typeof useWorkflowStateStore>;
-    datatypesMapper: ReturnType<typeof useDatatypesMapperStore> | null;
-    datatypes: Record<string, string[]> | null;
-    onDownload: () => void;
-    onChange: () => void;
-    saveAsName: string | null;
-    saveAsAnnotation: string | null;
-    services: { createWorkflow: ReturnType<typeof vi.fn> } | null;
-    routeToWorkflow: () => Promise<void>;
-    hasChanges: boolean;
-    isNewTempWorkflow: boolean;
-    onNavigate: (url: string, forceSave?: boolean, ignoreChanges?: boolean, appendVersion?: boolean) => Promise<void>;
-    createNewWorkflow: () => Promise<void>;
-};
-
 describe("Index", () => {
-    let wrapper: Wrapper<IndexComponent>;
-
     beforeEach(() => {
-        const testingPinia = createTestingPinia({ createSpy: vi.fn });
-        setActivePinia(testingPinia);
-        const datatypesStore = useDatatypesMapperStore();
-        datatypesStore.datatypesMapper = testDatatypesMapper;
-        mockLoadWorkflow.mockResolvedValue({ steps: {} });
-        MockGetVersions.mockResolvedValue([]);
+        vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 0);
+
+        mockPush.mockClear();
+        mockReplace.mockClear();
+        mockRoute = { query: {}, fullPath: "/" };
+
+        // `useMagicKeys` (undo/redo shortcuts) always wraps a `Set` in `reactive()`
+        // TODO: Remove this once we upgrade to Vue 3?
+        suppressExpectedErrorMessages(["Vue 2 does not support reactive collection types"]);
+
+        // return the structure expected by `fromSimple`
+        mockLoadWorkflow.mockResolvedValue({ steps: {}, comments: [], tags: [] });
+        mockGetVersions.mockResolvedValue([]);
         mockGetStateUpgradeMessages.mockImplementation(() => []);
-        mockGetAppRoot.mockImplementation(() => "prefix/");
-        Object.defineProperty(window, "onbeforeunload", {
-            value: null,
-            writable: true,
-        });
+        mockGetAppRoot.mockImplementation(() => GET_APP_ROOT_PREFIX);
         mockUnprivilegedToolsRequest(server, http);
-        wrapper = shallowMount(Index as object, {
-            propsData: {
-                workflowId: "workflow_id",
-                initialVersion: 1,
-                workflowTags: ["moo", "cow"],
-                workflows: [],
-                toolbox: [],
-            },
-            localVue,
-            pinia: testingPinia,
-            router,
-            // mock out components that have exposed methods used by Index.vue.
-            stubs: {
-                ActivityBar: {
-                    template: "<div />",
-                    methods: {
-                        isActiveSideBar(name: string) {
-                            return name === "workflow-editor-tools";
-                        },
-                    },
-                    expose: ["isActiveSideBar"],
-                },
-                WorkflowGraph: {
-                    template: "<div />",
-                    methods: {
-                        fitWorkflow() {},
-                    },
-                    expose: ["fitWorkflow"],
-                },
-            },
-        });
     });
 
-    // Methods to handle the `hasChanges` ref. Once we modernize, we can just use the store directly.
-    function getHasChanges() {
-        return wrapper.vm.stateStore.hasChanges;
-    }
-    async function resetChanges() {
-        setHasChanges(false);
-        await wrapper.vm.$nextTick();
-    }
-    function setHasChanges(value: boolean) {
-        wrapper.vm.stateStore.hasChanges = value;
-    }
+    describe("default mount", () => {
+        let wrapper: Wrapper<Vue>;
+        let stateStore: ReturnType<typeof useWorkflowStateStore>;
 
-    it("resolves datatypes", async () => {
-        expect(wrapper.vm.datatypesMapper).not.toBeNull();
-        expect(wrapper.vm.datatypes).not.toBeNull();
-    });
-
-    it("routes to download URL and respects Galaxy prefix", async () => {
-        Object.defineProperty(window, "location", {
-            value: "original",
-            writable: true,
-        });
-        wrapper.vm.onDownload();
-        expect(window.location).toBe("prefix/api/workflows/workflow_id/download?format=json-download");
-    });
-
-    it("tracks changes to annotations", async () => {
-        expect(getHasChanges()).toBeFalsy();
-        wrapper.vm.annotation = "original annotation";
-        await wrapper.vm.$nextTick();
-        expect(getHasChanges()).toBeTruthy();
-
-        await resetChanges();
-
-        wrapper.vm.annotation = "original annotation";
-        await wrapper.vm.$nextTick();
-        expect(getHasChanges()).toBeFalsy();
-
-        wrapper.vm.annotation = "new annotation";
-        await wrapper.vm.$nextTick();
-        expect(getHasChanges()).toBeTruthy();
-    });
-
-    it("tracks changes to name", async () => {
-        expect(getHasChanges()).toBeFalsy();
-        wrapper.vm.name = "original name";
-        await wrapper.vm.$nextTick();
-        expect(getHasChanges()).toBeTruthy();
-
-        await resetChanges();
-
-        wrapper.vm.name = "original name";
-        await wrapper.vm.$nextTick();
-        expect(getHasChanges()).toBeFalsy();
-
-        wrapper.vm.name = "new name";
-        await wrapper.vm.$nextTick();
-        expect(getHasChanges()).toBeTruthy();
-    });
-
-    it("save as calls createWorkflow with the provided name and annotation", async () => {
-        const vm = wrapper.vm;
-        vm.saveAsName = "My New Workflow";
-        vm.saveAsAnnotation = "A description";
-        vm.services = {
-            createWorkflow: vi.fn().mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 3 }),
-        };
-        vi.spyOn(vm, "routeToWorkflow").mockResolvedValue(undefined);
-
-        wrapper.find("[data-description='save-as-modal']").vm.$emit("ok");
-        await flushPromises();
-
-        expect(vm.services.createWorkflow).toHaveBeenCalledWith(
-            expect.objectContaining({ name: "My New Workflow", annotation: "A description" }),
-        );
-    });
-
-    it("save-as field values are intact when doSaveAs runs (not cleared by close event)", async () => {
-        const vm = wrapper.vm;
-        vm.saveAsName = "My New Workflow";
-        vm.services = {
-            createWorkflow: vi.fn().mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 1 }),
-        };
-        vi.spyOn(vm, "routeToWorkflow").mockResolvedValue(undefined);
-
-        wrapper.find("[data-description='save-as-modal']").vm.$emit("ok");
-        await flushPromises();
-
-        // if fields were cleared before doSaveAs ran, name would be the "SavedAs_..." fallback
-        expect(vm.services.createWorkflow).toHaveBeenCalledWith(expect.objectContaining({ name: "My New Workflow" }));
-    });
-
-    it("resets save-as fields when the modal is cancelled", async () => {
-        const vm = wrapper.vm;
-        vm.saveAsName = "My New Workflow";
-        vm.saveAsAnnotation = "A description";
-
-        wrapper.find("[data-description='save-as-modal']").vm.$emit("cancel");
-        await wrapper.vm.$nextTick();
-
-        expect(vm.saveAsName).toBeNull();
-        expect(vm.saveAsAnnotation).toBeNull();
-    });
-
-    it("prevents navigation only if hasChanges", async () => {
-        expect(getHasChanges()).toBeFalsy();
-        // Trigger hasChanges via the name watcher rather than calling onChange() directly,
-        // because direct method invocation doesn't propagate through createTestingPinia's
-        // store mutation tracking with Vite 8's module processing.
-        wrapper.vm.name = "trigger change";
-        await wrapper.vm.$nextTick();
-        expect(getHasChanges()).toBeTruthy();
-        await wrapper.vm.$nextTick();
-        const confirmationRequired = wrapper.emitted()["update:confirmation"]![0]![0];
-        expect(confirmationRequired).toBeTruthy();
-    });
-
-    describe("Messages modal", () => {
-        it("shows an error when clicking Save fails, and clears it once the modal is dismissed", async () => {
-            mockSaveWorkflow.mockRejectedValue(new Error("Test error message"));
-
-            // wait for workflow to load
-            await flushPromises();
-
-            // save button is disabled initially until a change is made
-            const saveButton = wrapper.find("#workflow-save-button");
-            expect(saveButton.attributes("disabled")).toBeTruthy();
-
-            // simulate WorkflowGraph making a change to enable the Save button
-            wrapper.findComponent({ ref: "workflowGraph" }).vm.$emit("onChange");
-            await wrapper.vm.$nextTick();
-
-            // save button is now enabled
-            expect(saveButton.attributes("disabled")).toBeFalsy();
-
-            await saveButton.trigger("click");
-            await flushPromises();
-
-            const modal = wrapper.find("[data-description='workflow editor error modal']");
-            expect(modal.props("show")).toBe(true);
-            expect(modal.props("title")).toBe("Saving workflow failed...");
-            expect(modal.findComponent(GAlert).props("variant")).toBe("danger");
-
-            // dismissing the modal (as a user closing it would) should clear the message
-            modal.vm.$emit("close");
-            await wrapper.vm.$nextTick();
-
-            expect(wrapper.find("[data-description='workflow editor error modal']").props("show")).toBe(false);
-        });
-    });
-
-    describe("onNavigate", () => {
-        let navWrapper: Wrapper<IndexComponent>;
-
-        /** Mounts a fresh Index instance on its own router, so route state (and
-         * router.push call history) never leaks between these tests. */
-        async function mountForNav(propsData: Record<string, unknown> = {}) {
-            const testingPinia = createTestingPinia({ createSpy: vi.fn });
+        beforeEach(() => {
+            const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
             setActivePinia(testingPinia);
             const datatypesStore = useDatatypesMapperStore();
             datatypesStore.datatypesMapper = testDatatypesMapper;
 
-            const navLocalVue = getLocalVue();
-            navLocalVue.use(PiniaVuePlugin);
-            const navRouter = injectTestRouter(navLocalVue);
+            stateStore = useWorkflowStateStore("workflow_id");
+
+            wrapper = shallowMount(Index as object, {
+                propsData: {
+                    workflowId: "workflow_id",
+                    initialVersion: 1,
+                    workflowTags: ["moo", "cow"],
+                    workflows: [],
+                    toolbox: [],
+                },
+                localVue,
+                pinia: testingPinia,
+                // mock out components that have exposed methods used by Index.vue.
+                stubs: editorStubs(),
+            });
+        });
+
+        async function resetChanges() {
+            stateStore.hasChanges = false;
+            await nextTick();
+        }
+
+        it("resolves datatypes", async () => {
+            const workflowGraph = wrapper.find(SELECTORS.WORKFLOW_GRAPH);
+
+            expect(workflowGraph.props("datatypesMapper")).toEqual(testDatatypesMapper);
+            expect(workflowGraph.props("datatypesMapper")).not.toBeNull();
+            expect(workflowGraph.props("datatypesMapper")).not.toBeUndefined();
+        });
+
+        it("does not have changes once the initial load settles", async () => {
+            await flushPromises();
+            expect(stateStore.hasChanges).toBeFalsy();
+        });
+
+        it("assigns a fresh id and uuid when cloning a step, including its workflow_outputs", async () => {
+            await flushPromises();
+
+            const stepStore = useWorkflowStepStore("workflow_id");
+            const sourceStep = stepStore.addStep({
+                type: "tool",
+                label: "source label",
+                name: "source step",
+                content_id: "cat1",
+                tool_id: "cat1",
+                tool_state: {},
+                input_connections: {},
+                inputs: [],
+                outputs: [],
+                position: { left: 0, top: 0 },
+                uuid: "11111111-1111-1111-1111-111111111111",
+                workflow_outputs: [{ output_name: "out1", uuid: "22222222-2222-2222-2222-222222222222" }],
+            });
+
+            wrapper.find(SELECTORS.WORKFLOW_GRAPH).vm.$emit("onClone", String(sourceStep.id));
+            await nextTick();
+
+            const clonedStepId = Object.keys(stepStore.steps).find((stepId) => stepId !== String(sourceStep.id))!;
+            const clonedStep = stepStore.steps[clonedStepId]!;
+
+            // The clone must not keep the source step's uuid, otherwise saving
+            // the workflow fails with "Duplicate step UUID ... in request."
+            expect(clonedStep.uuid).not.toBe(sourceStep.uuid);
+            expect(clonedStep.label).not.toBe(sourceStep.label);
+
+            // Nor may it keep its workflow_outputs' uuids, otherwise saving fails with
+            // "Duplicate workflow output UUID ... in request." instead.
+            expect(clonedStep.workflow_outputs?.[0]?.uuid).not.toBe(sourceStep.workflow_outputs?.[0]?.uuid);
+        });
+
+        it("routes to download URL and respects Galaxy prefix", async () => {
+            Object.defineProperty(window, "location", {
+                value: { href: "original" },
+                writable: true,
+            });
+
+            wrapper.find(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "workflow-download");
+            await flushPromises();
+
+            expect(window.location.href).toBe(
+                `${GET_APP_ROOT_PREFIX}api/workflows/workflow_id/download?format=json-download`,
+            );
+            expect(window.location.href).not.toBe("api/workflows/workflow_id/download?format=json-download");
+        });
+
+        it("tracks changes to annotations", async () => {
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "original annotation");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            await resetChanges();
+
+            // Re-emitting the same value should not mark the workflow as changed again.
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "original annotation");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "new annotation");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("tracks changes to name", async () => {
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:nameCurrent", "original name");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            await resetChanges();
+
+            // Re-emitting the same value should not mark the workflow as changed again.
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:nameCurrent", "original name");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:nameCurrent", "new name");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("tracks changes to help", async () => {
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:helpCurrent", "original help");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            await resetChanges();
+
+            // Re-emitting the same value should not mark the workflow as changed again.
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:helpCurrent", "original help");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:helpCurrent", "new help");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("tracks changes to logoUrl", async () => {
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:logoUrlCurrent", "http://example.com/a.png");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            await resetChanges();
+
+            // Re-emitting the same value should not mark the workflow as changed again.
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:logoUrlCurrent", "http://example.com/a.png");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:logoUrlCurrent", "http://example.com/b.png");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("tracks changes to readme", async () => {
+            // wait for the initial workflow load to settle before making changes.
+            await flushPromises();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:readme-active", true);
+            await nextTick();
+
+            wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "original readme");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            await resetChanges();
+
+            // Re-emitting the same value should not mark the workflow as changed again.
+            wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "original readme");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "new readme");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+        });
+
+        it("closes the readme editor when leaving the attributes activity, but not for undo-redo", async () => {
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:readme-active", true);
+            await nextTick();
+            expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(true);
+
+            // Switching to the undo-redo activity is the one exception: readme stays open.
+            (wrapper.find(SELECTORS.ACTIVITY_BAR).vm as InstanceType<typeof activityBarStub>).setActiveSideBar(
+                "workflow-undo-redo",
+            );
+            await nextTick();
+            expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(true);
+
+            // Any other activity closes the readme editor.
+            (wrapper.find(SELECTORS.ACTIVITY_BAR).vm as InstanceType<typeof activityBarStub>).setActiveSideBar(
+                "workflow-editor-tools",
+            );
+            await nextTick();
+            expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(false);
+        });
+
+        it("clears hasChanges after a successful save", async () => {
+            mockSaveWorkflow.mockResolvedValue({ version: 1 });
+
+            // wait for the initial workflow load to settle before making changes.
+            await flushPromises();
+
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "a change");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+
+            wrapper.find("#workflow-save-button").vm!.$emit("click");
+            await flushPromises();
+
+            expect(mockSaveWorkflow).toHaveBeenCalled();
+            expect(stateStore.hasChanges).toBeFalsy();
+        });
+
+        it("save as calls createWorkflow with the provided name and annotation", async () => {
+            const createWorkflowSpy = vi
+                .spyOn(Services.prototype, "createWorkflow")
+                .mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 3 });
+            mockSaveWorkflow.mockResolvedValue({ version: 1 });
+
+            wrapper.findComponent(GFormInput).vm.$emit("input", "My New Workflow");
+            // vue-test-utils' auto-stub for `BFormTextarea` declares its own v-model
+            // config (`{ prop: "value", event: "update" }`), so the emit event to
+            // drive `v-model="saveAsAnnotation"` is "update", not "input".
+            wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
+            await nextTick();
+
+            wrapper.find("[data-description='save-as-modal']").vm.$emit("ok");
+            await flushPromises();
+
+            expect(createWorkflowSpy).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "My New Workflow", annotation: "A description" }),
+            );
+            // Rule out the "no name provided" fallback naming, so this is actually
+            // checking that the typed-in name was used, not just any call at all.
+            expect(createWorkflowSpy).not.toHaveBeenCalledWith(
+                expect.objectContaining({ name: expect.stringContaining("SavedAs_") }),
+            );
+        });
+
+        it("save-as field values are intact when doSaveAs runs (not cleared by close event)", async () => {
+            const createWorkflowSpy = vi
+                .spyOn(Services.prototype, "createWorkflow")
+                .mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 1 });
+            mockSaveWorkflow.mockResolvedValue({ version: 1 });
+
+            wrapper.findComponent(GFormInput).vm.$emit("input", "My New Workflow");
+            await nextTick();
+
+            wrapper.find("[data-description='save-as-modal']").vm.$emit("ok");
+            await flushPromises();
+
+            // if fields were cleared before doSaveAs ran, name would be the "SavedAs_..." fallback
+            expect(createWorkflowSpy).toHaveBeenCalledWith(expect.objectContaining({ name: "My New Workflow" }));
+        });
+
+        it("resets save-as fields when the modal is cancelled", async () => {
+            wrapper.findComponent(GFormInput).vm.$emit("input", "My New Workflow");
+            wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
+            await nextTick();
+
+            expect(wrapper.findComponent(GFormInput).props("value")).toBe("My New Workflow");
+
+            wrapper.find("[data-description='save-as-modal']").vm.$emit("cancel");
+            await nextTick();
+
+            expect(wrapper.findComponent(GFormInput).props("value")).toBeNull();
+            expect(wrapper.findComponent(BFormTextarea).props("value")).toBeNull();
+        });
+
+        it("prevents navigation only if hasChanges", async () => {
+            expect(stateStore.hasChanges).toBeFalsy();
+
+            const workflowAttributes = wrapper.findComponent(WorkflowAttributes);
+            expect(workflowAttributes.exists()).toBe(true);
+            workflowAttributes.vm.$emit("update:nameCurrent", "trigger change");
+            await nextTick();
+
+            expect(stateStore.hasChanges).toBeTruthy();
+            await nextTick();
+
+            const confirmationRequired = wrapper.emitted()["update:confirmation"]![0]![0];
+            expect(confirmationRequired).toBeTruthy();
+        });
+
+        describe("Messages modal", () => {
+            it("shows an error when clicking Save fails, and clears it once the modal is dismissed", async () => {
+                mockSaveWorkflow.mockRejectedValue(new Error("Test error message"));
+
+                // wait for workflow to load
+                await flushPromises();
+
+                // save button is disabled initially until a change is made
+                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeTruthy();
+
+                // simulate WorkflowGraph making a change to enable the Save button
+                wrapper.find(SELECTORS.WORKFLOW_GRAPH).vm.$emit("onChange");
+                await nextTick();
+
+                // save button is now enabled
+                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeFalsy();
+
+                wrapper.find("#workflow-save-button").vm!.$emit("click");
+                await flushPromises();
+
+                const modal = wrapper.find("[data-description='workflow editor error modal']");
+                expect(modal.props("show")).toBe(true);
+                expect(modal.props("title")).toBe("Saving workflow failed...");
+                expect(modal.findComponent(GAlert).props("variant")).toBe("danger");
+                // Rule out a stale/leftover title from a previous state, so this is
+                // actually checking the error from *this* failed save.
+                expect(modal.props("title")).not.toBe("Workflow Editor Error");
+
+                // dismissing the modal (as a user closing it would) should clear the message
+                modal.vm.$emit("close");
+                await nextTick();
+
+                expect(wrapper.find("[data-description='workflow editor error modal']").props("show")).toBe(false);
+            });
+        });
+    });
+
+    describe("onNavigate", () => {
+        let stateStore: ReturnType<typeof useWorkflowStateStore>;
+
+        /** Mounts a fresh Index instance, so route state (and router.push call
+         * history) never leaks between these tests. */
+        async function mountForNav(propsData: Record<string, unknown> = {}) {
+            const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+            setActivePinia(testingPinia);
+            const datatypesStore = useDatatypesMapperStore();
+            datatypesStore.datatypesMapper = testDatatypesMapper;
 
             const w = shallowMount(Index as object, {
                 propsData: {
@@ -284,36 +485,34 @@ describe("Index", () => {
                     toolbox: [],
                     ...propsData,
                 },
-                localVue: navLocalVue,
+                localVue,
                 pinia: testingPinia,
-                router: navRouter,
-                stubs: {
-                    ActivityBar: {
-                        template: "<div />",
-                        methods: {
-                            isActiveSideBar(name: string) {
-                                return name === "workflow-editor-tools";
-                            },
-                        },
-                        expose: ["isActiveSideBar"],
-                    },
-                    WorkflowGraph: {
-                        template: "<div />",
-                        methods: { fitWorkflow() {}, setTransform() {} },
-                        expose: ["fitWorkflow", "setTransform"],
-                    },
-                },
-            }) as Wrapper<IndexComponent>;
+                stubs: editorStubs(),
+            });
             await flushPromises();
+
+            // When `workflowId` is omitted (new temp workflow), `Index.vue` scopes
+            // its stores to a randomly generated uid, not "workflow_id" — read the
+            // actual id `WorkflowAttributes` was given rather than guessing it.
+            const resolvedId = w.findComponent(WorkflowAttributes).props("id") as string;
+            stateStore = useWorkflowStateStore(resolvedId);
+
             return w;
         }
 
-        async function triggerHasChanges(w: Wrapper<IndexComponent>) {
-            // Trigger hasChanges via the name watcher (see note above) rather than
-            // mutating the store directly.
-            w.vm.name = "trigger change";
-            await w.vm.$nextTick();
-            expect(w.vm.stateStore.hasChanges).toBeTruthy();
+        /** Marks the workflow as changed via a real user-facing event (annotation
+         * update through `WorkflowAttributes`), rather than reaching into internals. */
+        async function triggerHasChanges(w: Wrapper<Vue>) {
+            w.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "trigger change");
+            await nextTick();
+            expect(stateStore.hasChanges).toBeTruthy();
+        }
+
+        /** `Index.vue` never exposes `onNavigate` directly; the "exit" activity
+         * routes to "/workflows/list" through it with no forceSave/appendVersion,
+         * matching what these tests exercise. */
+        async function triggerOnNavigateToList(w: Wrapper<Vue>) {
+            w.find(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "exit");
         }
 
         beforeEach(() => {
@@ -322,144 +521,154 @@ describe("Index", () => {
         });
 
         it("navigates immediately when there are no unsaved changes", async () => {
-            navWrapper = await mountForNav();
-            const pushSpy = vi.spyOn(navWrapper.vm.$router, "push");
+            const wrapper = await mountForNav();
 
-            await navWrapper.vm.onNavigate("/workflows/list");
+            await triggerOnNavigateToList(wrapper);
+            await flushPromises();
 
-            expect(navWrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
             expect(mockSaveWorkflow).not.toHaveBeenCalled();
-            expect(pushSpy).toHaveBeenCalledWith("/workflows/list");
+            expect(mockPush).toHaveBeenCalledWith("/workflows/list");
         });
 
         it("shows the save-changes modal instead of navigating when there are unsaved changes", async () => {
-            navWrapper = await mountForNav();
-            const pushSpy = vi.spyOn(navWrapper.vm.$router, "push");
-            await triggerHasChanges(navWrapper);
+            const wrapper = await mountForNav();
+            await triggerHasChanges(wrapper);
 
-            await navWrapper.vm.onNavigate("/workflows/list");
+            await triggerOnNavigateToList(wrapper);
+            await flushPromises();
 
-            expect(pushSpy).not.toHaveBeenCalled();
-            const modal = navWrapper.findComponent(SaveChangesModal);
+            expect(mockPush).not.toHaveBeenCalled();
+            const modal = wrapper.findComponent(SaveChangesModal);
             expect(modal.props("showModal")).toBe(true);
             expect(modal.props("navUrl")).toBe("/workflows/list");
         });
 
         it("does not navigate and keeps changes when the save-changes modal is cancelled", async () => {
-            navWrapper = await mountForNav();
-            const pushSpy = vi.spyOn(navWrapper.vm.$router, "push");
-            await triggerHasChanges(navWrapper);
-            await navWrapper.vm.onNavigate("/workflows/list");
+            const wrapper = await mountForNav();
+            await triggerHasChanges(wrapper);
+            await triggerOnNavigateToList(wrapper);
+            await nextTick();
 
-            navWrapper.findComponent(SaveChangesModal).vm.$emit("update:show-modal", false);
-            await navWrapper.vm.$nextTick();
+            wrapper.findComponent(SaveChangesModal).vm.$emit("update:show-modal", false);
+            await nextTick();
 
-            expect(pushSpy).not.toHaveBeenCalled();
+            expect(mockPush).not.toHaveBeenCalled();
             expect(mockSaveWorkflow).not.toHaveBeenCalled();
-            expect(navWrapper.vm.stateStore.hasChanges).toBeTruthy();
-            expect(navWrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
+            expect(stateStore.hasChanges).toBeTruthy();
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
         });
 
         it("navigates without saving when the save-changes modal's Don't Save is chosen", async () => {
-            navWrapper = await mountForNav();
-            const pushSpy = vi.spyOn(navWrapper.vm.$router, "push");
-            await triggerHasChanges(navWrapper);
-            await navWrapper.vm.onNavigate("/workflows/list");
+            const wrapper = await mountForNav();
+            await triggerHasChanges(wrapper);
+            await triggerOnNavigateToList(wrapper);
+            await nextTick();
 
             // "Don't Save": on-proceed emitted with forceSave=false, ignoreChanges=true
-            navWrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", false, true, false);
+            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", false, true, false);
             await flushPromises();
 
             expect(mockSaveWorkflow).not.toHaveBeenCalled();
-            expect(pushSpy).toHaveBeenCalledWith("/workflows/list");
-            expect(navWrapper.vm.stateStore.hasChanges).toBeFalsy();
+            expect(mockPush).toHaveBeenCalledWith("/workflows/list");
+            expect(stateStore.hasChanges).toBeFalsy();
         });
 
         it("saves before navigating when the save-changes modal's Save is chosen", async () => {
-            navWrapper = await mountForNav();
+            const wrapper = await mountForNav();
             mockSaveWorkflow.mockResolvedValue({ version: 2 });
-            const pushSpy = vi.spyOn(navWrapper.vm.$router, "push");
-            await triggerHasChanges(navWrapper);
-            await navWrapper.vm.onNavigate("/workflows/list");
+            await triggerHasChanges(wrapper);
+            await triggerOnNavigateToList(wrapper);
+            await nextTick();
 
             // "Save": on-proceed emitted with forceSave=true, ignoreChanges=false
-            navWrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", true, false, false);
+            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", true, false, false);
             await flushPromises();
 
             expect(mockSaveWorkflow).toHaveBeenCalled();
-            expect(pushSpy).toHaveBeenCalledWith("/workflows/list");
-            expect(navWrapper.vm.stateStore.hasChanges).toBeFalsy();
+            expect(mockPush).toHaveBeenCalledWith("/workflows/list");
+            expect(stateStore.hasChanges).toBeFalsy();
         });
 
         it("does not navigate if forced save fails", async () => {
-            navWrapper = await mountForNav();
+            const wrapper = await mountForNav();
             mockSaveWorkflow.mockRejectedValue(new Error("boom"));
-            const pushSpy = vi.spyOn(navWrapper.vm.$router, "push");
-            await triggerHasChanges(navWrapper);
+            await triggerHasChanges(wrapper);
+            await triggerOnNavigateToList(wrapper);
+            await nextTick();
 
-            await navWrapper.vm.onNavigate("/workflows/list", true);
+            // "Save": on-proceed emitted with forceSave=true, ignoreChanges=false
+            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", true, false, false);
+            await flushPromises();
 
             expect(mockSaveWorkflow).toHaveBeenCalled();
-            expect(pushSpy).not.toHaveBeenCalled();
+            expect(mockPush).not.toHaveBeenCalled();
         });
 
         it("appends the current version to the URL when appendVersion is true", async () => {
-            navWrapper = await mountForNav();
-            const pushSpy = vi.spyOn(navWrapper.vm.$router, "push");
+            const wrapper = await mountForNav();
 
-            await navWrapper.vm.onNavigate("/workflows/run?id=workflow_id", false, false, true);
+            // "workflow-run" activity routes via `onRun()`, which calls
+            // `onNavigate(..., false, false, true)` — appendVersion=true.
+            wrapper.find(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "workflow-run");
+            await flushPromises();
 
-            expect(pushSpy).toHaveBeenCalledWith(expect.stringContaining("&version="));
+            expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("&version="));
         });
 
         it("creates (rather than just saving) a new temp workflow when forced to save on navigate", async () => {
             // no workflowId prop => isNewTempWorkflow is true
-            navWrapper = await mountForNav({ workflowId: undefined });
-            const vm = navWrapper.vm;
-            vm.services = {
-                createWorkflow: vi
-                    .fn()
-                    .mockResolvedValue({ id: "new_id", name: "Unnamed Workflow", number_of_steps: 0 }),
-            };
-            const pushSpy = vi.spyOn(vm.$router, "push");
+            const wrapper = await mountForNav({ workflowId: undefined });
+            const createWorkflowSpy = vi
+                .spyOn(Services.prototype, "createWorkflow")
+                .mockResolvedValue({ id: "new_id", name: "Unnamed Workflow", number_of_steps: 0 });
             mockSaveWorkflow.mockClear();
 
-            await vm.onNavigate("/workflows/list", true);
+            await triggerHasChanges(wrapper);
+            await triggerOnNavigateToList(wrapper);
+            await nextTick();
+
+            // "Save": on-proceed emitted with forceSave=true, ignoreChanges=false
+            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", true, false, false);
+            await flushPromises();
 
             // onCreate() is used (not a plain onSave()) to persist the brand-new workflow;
             // onCreate() itself calls routeToWorkflow(), which does its own follow-up save
             // once the workflow has a real id, so saveWorkflow is expected to run after create.
-            expect(vm.services.createWorkflow).toHaveBeenCalled();
-            expect(pushSpy).toHaveBeenCalledWith("/workflows/list");
+            expect(createWorkflowSpy).toHaveBeenCalled();
+            expect(mockPush).toHaveBeenCalledWith("/workflows/list");
         });
 
         it("emits forceReload instead of pushing when navigating to the exact current route", async () => {
-            navWrapper = await mountForNav();
-            await navWrapper.vm.$router.push("/workflows/edit");
-            const pushSpy = vi.spyOn(navWrapper.vm.$router, "push");
+            mockRoute = { query: {}, fullPath: "/workflows/list" };
+            const wrapper = await mountForNav();
 
-            await navWrapper.vm.onNavigate("/workflows/edit");
+            await triggerOnNavigateToList(wrapper);
+            await flushPromises();
 
-            expect(pushSpy).not.toHaveBeenCalled();
-            expect(navWrapper.emitted().forceReload).toBeTruthy();
+            expect(mockPush).not.toHaveBeenCalled();
+            expect(wrapper.emitted().forceReload).toBeTruthy();
         });
 
         it("does not emit forceReload when navigating to a different route", async () => {
-            navWrapper = await mountForNav();
-            await navWrapper.vm.$router.push("/workflows/edit");
+            mockRoute = { query: {}, fullPath: "/workflows/edit" };
+            const wrapper = await mountForNav();
 
-            await navWrapper.vm.onNavigate("/workflows/list");
+            await triggerOnNavigateToList(wrapper);
+            await flushPromises();
 
-            expect(navWrapper.emitted().forceReload).toBeFalsy();
+            expect(wrapper.emitted().forceReload).toBeFalsy();
         });
 
         it("createNewWorkflow routes through onNavigate and its unsaved-changes guard", async () => {
-            navWrapper = await mountForNav();
-            const onNavigateSpy = vi.spyOn(navWrapper.vm, "onNavigate");
+            const wrapper = await mountForNav();
 
-            await navWrapper.vm.createNewWorkflow();
+            // "workflow-create" activity routes via `createNewWorkflow()`, which
+            // calls `onNavigate("/workflows/edit")` with no unsaved changes.
+            wrapper.find(SELECTORS.ACTIVITY_BAR).vm.$emit("activityClicked", "workflow-create");
+            await flushPromises();
 
-            expect(onNavigateSpy).toHaveBeenCalledWith("/workflows/edit");
+            expect(mockPush).toHaveBeenCalledWith("/workflows/edit");
         });
     });
 });

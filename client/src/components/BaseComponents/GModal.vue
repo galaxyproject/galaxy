@@ -94,7 +94,6 @@ const dialog = ref<HTMLDialogElement | null>(null);
 onMounted(() => {
     if (dialog.value) {
         dialog.value.addEventListener("close", onClose);
-        dialog.value.addEventListener("open", onOpen);
     }
     if (props.show) {
         showModal();
@@ -104,12 +103,12 @@ onMounted(() => {
 onBeforeUnmount(() => {
     if (dialog.value) {
         dialog.value.removeEventListener("close", onClose);
-        dialog.value.removeEventListener("open", onOpen);
     }
 });
 
 function showModal() {
     dialog.value?.showModal();
+    onOpen();
 }
 
 let isOk = false;

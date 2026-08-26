@@ -40,13 +40,13 @@ jobs:
           path: '${{ runner.temp }}/mulled-resolution-seed'
       - name: Check out Galaxy for mulled-cache
         if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           path: 'galaxy cache source'
           persist-credentials: false
       - name: Install uv
         if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@v10.0.0
         with:
           python-version: '3.10'
       - name: Fetch Biocontainers repository index
@@ -105,6 +105,11 @@ jobs:
       - name: Install packages
         # ffmpeg: ffprobe needed by media datatypes
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
+      - name: Create the CNI config directory minikube's none driver expects
+        # The action chmods /etc/cni/net.d without creating it, and current
+        # runner images no longer ship the directory. See
+        # https://github.com/medyagh/setup-minikube/issues/835
+        run: sudo mkdir -p /etc/cni/net.d
       - name: Setup Minikube
         uses: medyagh/setup-minikube@latest
         with:
@@ -112,12 +117,12 @@ jobs:
           kubernetes-version: '1.28.0'
       - name: Check pods
         run: kubectl get pods -A
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@v10.0.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python

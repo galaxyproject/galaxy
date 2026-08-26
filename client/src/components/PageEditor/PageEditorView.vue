@@ -231,12 +231,8 @@ function handleRevisionRestore(revisionId: string) {
         <template v-else-if="store.hasCurrentPage">
             <PageDisplayToolbar :labels="labels" mode="editor" @preview="handlePreview" @back="handleBack">
                 <template v-if="isStandalone" v-slot:extra-actions>
-                    <ObjectPermissionsModal
-                        id="object-permissions-modal"
-                        v-model="showPermissions"
-                        :markdown-content="store.currentContent" />
+                    <ObjectPermissionsModal :show.sync="showPermissions" :markdown-content="store.currentContent" />
                     <GButton
-                        v-b-modal:object-permissions-modal
                         color="blue"
                         outline
                         size="small"

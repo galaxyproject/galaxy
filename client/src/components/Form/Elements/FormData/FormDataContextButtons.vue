@@ -2,7 +2,7 @@
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faEye, faPlus, faSpinner, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
+import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CollectionType } from "@/api/datasetCollections";
@@ -11,7 +11,6 @@ import {
     type CollectionBuilderType,
 } from "@/components/Collections/common/buildCollectionModal";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
-import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import localize from "@/utils/localization";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
@@ -43,8 +42,6 @@ const emit = defineEmits<{
     (e: "uploaded-data", value: DataOption[]): void;
 }>();
 
-const { openUploadModal } = useUploadMethodModal();
-
 const createTitle = computed(() => {
     const defaultBuilderType = defaultCollectionBuilderType.value;
     return sourceIsCollection.value
@@ -56,17 +53,8 @@ function clickedTab(tab: string) {
     emit("update:workflow-tab", props.workflowTab === tab ? "" : tab);
 }
 
-async function onUploadBeta() {
-    const result = await openUploadModal({
-        formats: props.extensions,
-        multiple: props.multiple,
-        hideTips: true,
-    });
-
-    if (!result.cancelled) {
-        emit("uploaded-data", result.toDataOptions());
-        emit("update:workflow-tab", "view");
-    }
+function onUpload() {
+    emit("update:workflow-tab", "upload");
 }
 
 function createCollectionType(colType: CollectionBuilderType) {
@@ -182,21 +170,10 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                 v-g-tooltip.bottom.hover
                 class="d-flex flex-gapx-1 align-items-center"
                 data-description="upload"
-                :title="createTitle"
-                :pressed="props.workflowTab === 'create'"
-                @click="clickedTab('create')">
+                title="Upload data"
+                @click="onUpload">
                 <FontAwesomeIcon :icon="faUpload" />
                 <span v-localize>Upload</span>
-            </BButton>
-            <BButton
-                v-g-tooltip.bottom.hover
-                class="d-flex flex-gapx-1 align-items-center"
-                data-description="upload-beta"
-                title="Try our new upload experience"
-                @click="onUploadBeta">
-                <FontAwesomeIcon :icon="faUpload" />
-                <span v-localize>Upload</span>
-                <BBadge variant="warning" class="ml-1">Beta</BBadge>
             </BButton>
         </template>
     </BButtonGroup>

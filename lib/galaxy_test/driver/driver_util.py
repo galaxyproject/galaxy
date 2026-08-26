@@ -212,7 +212,7 @@ def setup_galaxy_config(
         allow_user_deletion=True,
         api_allow_run_as="test@bx.psu.edu",
         auto_configure_logging=logging_config_file is None,
-        chunk_upload_size=100,
+        chunk_upload_size=1048576,
         conda_prefix=conda_prefix,
         conda_auto_init=conda_auto_init,
         conda_auto_install=conda_auto_install,

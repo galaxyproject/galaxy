@@ -2,6 +2,7 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 PASTED_CONTENT = "this is pasted"
 CURRENT_HID = 1
@@ -9,19 +10,19 @@ RELATED_HID = 2
 UNRELATED_HID = 3
 
 
-class TestHistoryRelatedFilter(SeleniumTestCase):
+class TestHistoryRelatedFilter(SeleniumTestCase, UsesUploadActivity):
     @selenium_test
     def test_history_related_filter(self):
         self.register()
         # upload (current) dataset to get related item for
-        self.perform_upload_of_pasted_content(PASTED_CONTENT)
+        self.upload_context("paste-content").stage_paste_content(PASTED_CONTENT).start()
         self.history_panel_wait_for_hid_ok(CURRENT_HID)
         # create related item through a tool
         self.tool_open("cat")
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(RELATED_HID)
         # create an item unrelated to other items
-        self.perform_upload_of_pasted_content(PASTED_CONTENT)
+        self.upload_context("paste-content").stage_paste_content(PASTED_CONTENT).start()
         self.history_panel_wait_for_hid_ok(UNRELATED_HID)
 
         # test related filter on current item using button: only current and related items show

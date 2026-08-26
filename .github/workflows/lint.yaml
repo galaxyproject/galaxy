@@ -37,11 +37,11 @@ jobs:
       TYPE_PATH: 'lib/galaxy/dependencies/pinned-typecheck-requirements.txt'
       CORE_PATH: 'lib/galaxy/dependencies/pinned-requirements.txt'
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@v10.0.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install tox

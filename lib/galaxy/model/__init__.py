@@ -1819,6 +1819,14 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         return self.state == Job.states.RUNNING
 
     @property
+    def resubmission_count(self) -> int:
+        """How many times Galaxy resubmitted this job.
+
+        A job that ran once reports 0, so the execution attempt number is this plus one.
+        """
+        return sum(1 for state in self.state_history if state.state == Job.states.RESUBMITTED)
+
+    @property
     def finished(self):
         return self.state in self.finished_states
 
@@ -4857,6 +4865,11 @@ class Dataset(Base, StorableObject, Serializable):
     @property
     def is_new(self):
         return self.state == self.states.NEW
+
+    @property
+    def source_uris(self) -> list[str]:
+        """The URIs this dataset was populated from (e.g. remote/deferred sources)."""
+        return [source.source_uri for source in self.sources if source.source_uri]
 
     def in_ready_state(self):
         return self.state in self.ready_states
