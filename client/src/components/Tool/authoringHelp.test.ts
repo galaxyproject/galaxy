@@ -99,17 +99,24 @@ describe("user-defined tool authoring help", () => {
         const dataOutputDefinition = definitions[dataOutputDefinitionName] as {
             "x-usage-examples": Array<{ definition: Record<string, unknown> }>;
         };
-        const dataOutputYamlExamples = [...dataOutput!.body.matchAll(/```yaml\n([\s\S]+?)\n```/g)].map(
-            (match) => match[1],
-        );
+        const sourceSections = authoringHelpSections.filter((section) => section.parentId === "output-data");
+        const sourceYamlExamples = sourceSections.map((section) => section.body.match(/```yaml\n([\s\S]+?)\n```/)?.[1]);
 
-        expect(dataOutputYamlExamples).toHaveLength(3);
-        expect(parse(dataOutputYamlExamples[1]!)).toEqual(dataOutputDefinition["x-usage-examples"][0]?.definition);
-        expect(parse(dataOutputYamlExamples[2]!)).toEqual(dataOutputDefinition["x-usage-examples"][1]?.definition);
-        expect(dataOutput?.body).toContain("format_source: reads");
-        expect(dataOutput?.body).toContain("metadata_source: intervals");
-        expect(dataOutput?.body).toContain("inputs:");
-        expect(dataOutput?.body).toContain("shell_command:");
+        expect(sourceSections.map((section) => section.id)).toEqual([
+            "output-data-format-source",
+            "output-data-metadata-source",
+        ]);
+        expect(sourceSections.map((section) => section.title)).toEqual(["format_source", "metadata_source"]);
+        expect(parse(sourceYamlExamples[0]!)).toEqual(dataOutputDefinition["x-usage-examples"][0]?.definition);
+        expect(parse(sourceYamlExamples[1]!)).toEqual(dataOutputDefinition["x-usage-examples"][1]?.definition);
+        expect(dataOutput?.body).toContain("[`format_source` #](#output-data-format-source)");
+        expect(dataOutput?.body).toContain("[`metadata_source` #](#output-data-metadata-source)");
+        expect(sourceSections[0]?.body).toMatch(/^`format_source` can be used to assign/);
+        expect(sourceSections[1]?.body).toMatch(/^`metadata_source` can be used to copy/);
+        expect(sourceSections[0]?.body).toContain("format_source: reads");
+        expect(sourceSections[1]?.body).toContain("metadata_source: intervals");
+        expect(sourceSections.every((section) => section.body.includes("inputs:"))).toBe(true);
+        expect(sourceSections.every((section) => section.body.includes("shell_command:"))).toBe(true);
         expect(dataOutput?.body).toContain("filtering reads");
         expect(dataOutput?.body).toContain("interval column assignments");
     });
