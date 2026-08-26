@@ -10,6 +10,9 @@
         ".": "./src/index.ts",
         "./tokens.css": "./src/styles/tokens.css"
     },
+    "scripts": {
+        "type-check": "vue-tsc --noEmit -p tsconfig.json"
+    },
     "license": "MIT",
     "dependencies": {
         "@floating-ui/dom": "^1.6.0",

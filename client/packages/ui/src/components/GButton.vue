@@ -11,7 +11,6 @@ import type { RouterLink } from "vue-router";
 import { useClickableElement } from "../composables/clickableElement";
 import { useCurrentTitle } from "../composables/currentTitle";
 import { useResolveElement } from "../composables/resolveElement";
-
 import { type ComponentColor, type ComponentSize, type ComponentVariantClassList, prefix } from "./componentVariants";
 
 import GTooltip from "./GTooltip.vue";
