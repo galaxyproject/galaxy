@@ -100,6 +100,11 @@ class BaseJobRunner:
     runner_name = "BaseJobRunner"
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
+    #: Whether ``recover()`` knows how to resume a job left in the FINISHING state by an
+    #: interrupted ``_handle_metadata_externally``. Runners that cannot are not marked
+    #: FINISHING at all, since ``get_jobs_to_check_at_startup`` would hand them back a job
+    #: their ``recover()`` silently drops, wedging it out of every non-terminal state.
+    recovers_finishing_jobs = False
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
@@ -467,7 +472,8 @@ class BaseJobRunner:
                 self._verify_celery_config()
                 from galaxy.celery.tasks import set_job_metadata
 
-                job_wrapper.change_state(model.Job.states.FINISHING)
+                if self.recovers_finishing_jobs:
+                    job_wrapper.change_state(model.Job.states.FINISHING)
                 # We're synchronously waiting for a task here. This means we have to have a result backend.
                 # That is bad practice and also means this can never become part of another task.
                 try:

@@ -1807,6 +1807,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         states.RUNNING,
         states.FINISHING,
     ]
+    #: ``update_output_states`` copies the job's state onto its output datasets, so a job
+    #: state absent from ``DatasetState`` would be persisted as an invalid dataset state.
+    #: Map such states to the dataset state that describes the outputs at that point.
+    output_dataset_states = {
+        states.FINISHING: DatasetState.SETTING_METADATA,
+    }
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__(self):
@@ -2532,7 +2538,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 # Don't let collection update failures prevent job comion
                 log.error(f"Failed to update collection times for dataset {dataset.id} from job {self.id}")
 
-        params = {"job_id": self.id, "state": self.state, "info": self.info, "update_time": update_time}
+        dataset_state = self.output_dataset_states.get(self.state, self.state)
+        params = {"job_id": self.id, "state": dataset_state, "info": self.info, "update_time": update_time}
         for statement in statements:
             sa_session.execute(statement, params)
 

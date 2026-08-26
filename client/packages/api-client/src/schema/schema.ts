@@ -18208,6 +18208,7 @@ export interface components {
             | "waiting"
             | "queued"
             | "running"
+            | "finishing"
             | "ok"
             | "error"
             | "failed"
