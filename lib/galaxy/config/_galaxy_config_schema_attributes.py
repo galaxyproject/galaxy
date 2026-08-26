@@ -165,6 +165,7 @@ class GalaxyAppConfigurationAttributes:
     plausible_domain: str | None
     matomo_server: str | None
     matomo_site_id: str | None
+    matomo_disable_cookies: bool
     display_servers: str
     enable_old_display_applications: bool
     aws_estimate: bool

@@ -1426,6 +1426,13 @@ galaxy:
   # for tracking with Matomo (https://matomo.org/).
   #matomo_site_id: null
 
+  # Run Matomo in "cookieless" mode. When set to true (the default),
+  # Galaxy instructs the Matomo tracker to disable all tracking cookies
+  # by calling _paq.push(['disableCookies']) before tracking the page
+  # view. Set to false to allow Matomo to use cookies. See
+  # https://matomo.org/faq/general/faq_157/ for details.
+  #matomo_disable_cookies: true
+
   # Galaxy can display data at various external browsers.  These options
   # specify which browsers should be available.  URLs and builds
   # available at these browsers are defined in the specified files.

@@ -1605,6 +1605,17 @@ mapping:
           Please enter the site ID for the Matomo server so this can be used for tracking
           with Matomo (https://matomo.org/).
 
+      matomo_disable_cookies:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Run Matomo in "cookieless" mode. When set to true (the default), Galaxy
+          instructs the Matomo tracker to disable all tracking cookies by calling
+          _paq.push(['disableCookies']) before tracking the page view. Set to false
+          to allow Matomo to use cookies. See
+          https://matomo.org/faq/general/faq_157/ for details.
+
       display_servers:
         type: str
         default: hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
