@@ -24,6 +24,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
     DEFAULT_SORT,
+    ParseException,
 )
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.parameters import (
@@ -170,15 +171,27 @@ class YamlToolSource(ToolSource):
         elif containers:
             containers = containers
         else:
-            containers = [
-                {
-                    "identifier": requirement["container"]["container_id"],
-                    "type": requirement["container"]["type"],
-                    "explicit": True,
-                }
-                for requirement in mixed_requirements
-                if requirement.get("type") == "container"
-            ]
+            # Requirements here are raw YAML, so a container requirement may be missing
+            # the keys the model would have guaranteed. A user-defined tool has one
+            # documented shape and is rejected outright; every other YAML class keeps
+            # the entry with an empty identifier, matching what the XML parser builds
+            # from a container element that names no image.
+            user_tool = self.parse_class() == "GalaxyUserTool"
+            containers = []
+            for requirement in mixed_requirements:
+                if requirement.get("type") != "container":
+                    continue
+                container_dict = requirement.get("container") or {}
+                identifier = container_dict.get("container_id")
+                if not identifier and user_tool:
+                    raise ParseException("Container requirement must set container.container_id.")
+                containers.append(
+                    {
+                        "identifier": identifier or "",
+                        "type": container_dict.get("type", "docker"),
+                        "explicit": True,
+                    }
+                )
         return requirements.parse_requirements_from_lists(
             software_requirements=[r for r in mixed_requirements if r.get("type") == "package"],
             containers=containers,
