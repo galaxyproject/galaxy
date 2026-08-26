@@ -41,3 +41,6 @@ jobs:
       - name: Run vue-tsc
         working-directory: client
         run: pnpm type-check
+      - name: Run vue-tsc (galaxy-ui package)
+        working-directory: client
+        run: pnpm --filter @galaxyproject/galaxy-ui type-check
