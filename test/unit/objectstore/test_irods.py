@@ -9,9 +9,17 @@ from galaxy.objectstore.irods import (
     _IRODS_RETRY_ATTEMPTS,
     _retry_on_connection_error,
     IRODSObjectStore,
+    irods as irods_package,
     parse_config_xml,
 )
 from galaxy.util import parse_xml
+
+# _delete/_push_to_storage reference irods.keywords (as `kw`) directly in their
+# bodies, only bound when python-irodsclient is installed - unlike the generic
+# decorator tests below, these two exercise the real method bodies so they need
+# the real package present (some CI legs, e.g. the packaged objectstore tests,
+# don't install it).
+requires_irods_package = pytest.mark.skipif(irods_package is None, reason="python-irodsclient is not installed")
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
@@ -156,6 +164,7 @@ def _fake_object_store():
     return store
 
 
+@requires_irods_package
 def test_delete_retries_on_transient_connection_error():
     store = _fake_object_store()
     data_obj = MagicMock()
@@ -167,6 +176,7 @@ def test_delete_retries_on_transient_connection_error():
     data_obj.unlink.assert_called_once_with(force=True)
 
 
+@requires_irods_package
 def test_push_to_storage_retries_on_transient_connection_error(tmp_path):
     store = _fake_object_store()
     source_file = tmp_path / "dataset_1.dat"
