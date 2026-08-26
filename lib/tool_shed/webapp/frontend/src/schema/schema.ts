@@ -2000,7 +2000,7 @@ export interface components {
         EmptyFieldParameterValidatorModel: {
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
@@ -2017,6 +2017,7 @@ export interface components {
             negate: boolean
             /**
              * Type
+             * @description Fails validation when the submitted value is an empty string or null.
              * @default empty_field
              * @constant
              */
@@ -2033,7 +2034,7 @@ export interface components {
             expression: string
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
@@ -2430,13 +2431,13 @@ export interface components {
             exclude_min: boolean
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
             /**
              * Max
-             * @description Maximum accepted value; omit for no upper bound.
+             * @description Rejects larger values; omit to leave the range without an upper bound.
              */
             max?: number | null
             /**
@@ -2446,7 +2447,7 @@ export interface components {
             message?: string | null
             /**
              * Min
-             * @description Minimum accepted value; omit for no lower bound.
+             * @description Rejects smaller values; omit to leave the range without a lower bound.
              */
             min?: number | null
             /**
@@ -2457,6 +2458,7 @@ export interface components {
             negate: boolean
             /**
              * Type
+             * @description Enforces the numeric boundaries configured by `min` and `max`.
              * @default in_range
              * @constant
              */
@@ -2565,13 +2567,13 @@ export interface components {
         LengthParameterValidatorModel: {
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
             /**
              * Max
-             * @description Maximum accepted number of characters; omit for no upper bound.
+             * @description Rejects text with more characters; omit to leave the length without an upper bound.
              */
             max?: number | null
             /**
@@ -2581,7 +2583,7 @@ export interface components {
             message?: string | null
             /**
              * Min
-             * @description Minimum accepted number of characters; omit for no lower bound.
+             * @description Rejects text with fewer characters; omit to leave the length without a lower bound.
              */
             min?: number | null
             /**
@@ -2592,6 +2594,7 @@ export interface components {
             negate: boolean
             /**
              * Type
+             * @description Enforces character-count boundaries on a submitted text value.
              * @default length
              * @constant
              */
@@ -2614,7 +2617,7 @@ export interface components {
         NoOptionsParameterValidatorModel: {
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
@@ -2631,6 +2634,7 @@ export interface components {
             negate: boolean
             /**
              * Type
+             * @description Fails validation when a select input has no choices available.
              * @default no_options
              * @constant
              */
@@ -2696,7 +2700,7 @@ export interface components {
             expression: string
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
@@ -2713,6 +2717,7 @@ export interface components {
             negate: boolean
             /**
              * Type
+             * @description Applies the regular expression in `expression` to each submitted text value.
              * @default regex
              * @constant
              */
@@ -3767,17 +3772,17 @@ export interface components {
         ToolOutputBoolean: {
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
@@ -3790,14 +3795,14 @@ export interface components {
         ToolOutputCollection: {
             /**
              * Collection Type
-             * @description Collection structure, such as `list`, `paired`, or a nested type such as `list:paired`.
+             * @description Fixed structure Galaxy creates for this output, such as `list`, `paired`, or a nested type such as `list:paired`.
              */
             collection_type?: string | null
             /** Collection Type From Rules */
             collection_type_from_rules?: string | null
             /**
              * Collection Type Source
-             * @description Input collection whose structure determines this output collection's type.
+             * @description Declared data-collection input whose runtime structure determines this output's collection type.
              */
             collection_type_source?: string | null
             /**
@@ -3812,26 +3817,26 @@ export interface components {
                 | null
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
              * Structured Like
-             * @description Input collection whose element identifiers and nesting this output mirrors.
+             * @description Declared input whose element count, identifiers, and nesting this output mirrors. Use this when each produced element corresponds to an input element.
              */
             structured_like?: string | null
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset collection populated from files produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "collection"
@@ -3850,7 +3855,7 @@ export interface components {
                 | null
             /**
              * Format
-             * @description The short name for the output datatype.
+             * @description Galaxy datatype extension assigned when the command always produces a fixed representation. Use `format_source` instead when the datatype depends on an input.
              */
             format: string
             /**
@@ -3860,17 +3865,17 @@ export interface components {
             format_source?: string | null
             /**
              * from_work_dir
-             * @description Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.
+             * @description Relative path, inside the job working directory, that the command writes for this output. Galaxy claims that file after the command finishes.
              */
             from_work_dir?: string | null
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
@@ -3880,16 +3885,17 @@ export interface components {
             metadata_source?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
              * Precreate Directory
+             * @description Set true when `from_work_dir` names a produced directory for a composite datatype. Galaxy copies the directory contents into the output dataset's extra-files area.
              * @default false
              */
             precreate_directory: boolean | null
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset from a file produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data"
@@ -3898,17 +3904,17 @@ export interface components {
         ToolOutputFloat: {
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
@@ -3921,17 +3927,17 @@ export interface components {
         ToolOutputInteger: {
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
@@ -3944,17 +3950,17 @@ export interface components {
         ToolOutputText: {
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**

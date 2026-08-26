@@ -201,6 +201,11 @@ sections:
       `lexical` or `numeric`; and set `sort_reverse: true` for descending order.
 
       ```yaml
+      inputs: []
+      shell_command: |
+        mkdir reports
+        printf 'sample\tvalue\nA\t1\n' > reports/A.tsv
+        printf 'sample\tvalue\nB\t2\n' > reports/B.tsv
       outputs:
         - name: reports
           type: collection

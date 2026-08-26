@@ -37,11 +37,16 @@ IncomingNotRequiredStringT = TypeVar("IncomingNotRequiredStringT")
 
 class GenericToolOutputBaseModel(ToolSourceBaseModel, Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT]):
     name: Annotated[
-        IncomingNotRequiredStringT, Field(description="Parameter name. Used when referencing parameter in workflows.")
+        IncomingNotRequiredStringT,
+        Field(description="Identifier used to connect this output in workflows and address it in tool tests."),
     ]
-    label: Annotated[Optional[str], Field(description="Output label. Will be used as dataset name in history.")] = None
+    label: Annotated[
+        Optional[str],
+        Field(description="Name shown for the produced dataset or collection in the history."),
+    ] = None
     hidden: Annotated[
-        IncomingNotRequiredBoolT, Field(description="If true, the output will not be shown in the history.")
+        IncomingNotRequiredBoolT,
+        Field(description="Set true to keep the output available to workflows without showing it in the history."),
     ]
 
 
@@ -138,8 +143,19 @@ class GenericToolOutputDataset(
     GenericToolOutputBaseModel[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
     Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
 ):
-    type: Literal["data"]
-    format: Annotated[IncomingNotRequiredStringT, Field(description="The short name for the output datatype.")]
+    type: Annotated[
+        Literal["data"],
+        Field(description="Creates one history dataset from a file produced by the command."),
+    ]
+    format: Annotated[
+        IncomingNotRequiredStringT,
+        Field(
+            description=(
+                "Galaxy datatype extension assigned when the command always produces a fixed representation. "
+                "Use `format_source` instead when the datatype depends on an input."
+            )
+        ),
+    ]
     format_source: Annotated[
         Optional[str],
         Field(
@@ -166,10 +182,21 @@ class GenericToolOutputDataset(
         Optional[str],
         Field(
             title="from_work_dir",
-            description="Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.",
+            description=(
+                "Relative path, inside the job working directory, that the command writes for this output. "
+                "Galaxy claims that file after the command finishes."
+            ),
         ),
     ] = None
-    precreate_directory: Optional[bool] = False
+    precreate_directory: Annotated[
+        Optional[bool],
+        Field(
+            description=(
+                "Set true when `from_work_dir` names a produced directory for a composite datatype. Galaxy copies "
+                "the directory contents into the output dataset's extra-files area."
+            )
+        ),
+    ] = False
 
 
 class ToolOutputDataset(GenericToolOutputDataset[bool, str]): ...
@@ -188,6 +215,7 @@ class IncomingToolOutputDataset(
             "examples": [
                 {
                     "name": "result",
+                    "label": "Result",
                     "type": "data",
                     "format": "txt",
                     "from_work_dir": "result.txt",
@@ -196,10 +224,22 @@ class IncomingToolOutputDataset(
         }
     )
     name: Annotated[
-        Optional[str], Field(description="Parameter name. Used when referencing parameter in workflows.")
+        Optional[str],
+        Field(description="Identifier used to connect this output in workflows and address it in tool tests."),
     ] = None
-    hidden: Annotated[Optional[bool], Field(description="If true, the output will not be shown in the history.")] = None
-    format: Annotated[Optional[str], Field(description="The short name for the output datatype.")] = None
+    hidden: Annotated[
+        Optional[bool],
+        Field(description="Set true to keep the output available to workflows without showing it in the history."),
+    ] = None
+    format: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Galaxy datatype extension assigned when the command always produces a fixed representation. "
+                "Use `format_source` instead when the datatype depends on an input."
+            )
+        ),
+    ] = None
 
 
 def lift_legacy_collection_structure(output_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -228,18 +268,35 @@ class GenericToolOutputCollection(
     GenericToolOutputBaseModel[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
     Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
 ):
-    type: Literal["collection"]
+    type: Annotated[
+        Literal["collection"],
+        Field(description="Creates one history dataset collection populated from files produced by the command."),
+    ]
     collection_type: Annotated[
         Optional[str],
-        Field(description="Collection structure, such as `list`, `paired`, or a nested type such as `list:paired`."),
+        Field(
+            description=(
+                "Fixed structure Galaxy creates for this output, such as `list`, `paired`, or a nested type such "
+                "as `list:paired`."
+            )
+        ),
     ] = None
     collection_type_source: Annotated[
         Optional[str],
-        Field(description="Input collection whose structure determines this output collection's type."),
+        Field(
+            description=(
+                "Declared data-collection input whose runtime structure determines this output's collection type."
+            )
+        ),
     ] = None
     structured_like: Annotated[
         Optional[str],
-        Field(description="Input collection whose element identifiers and nesting this output mirrors."),
+        Field(
+            description=(
+                "Declared input whose element count, identifiers, and nesting this output mirrors. Use this when "
+                "each produced element corresponds to an input element."
+            )
+        ),
     ] = None
     discover_datasets: Annotated[
         Optional[List[DatasetCollectionDescriptionT]],
@@ -269,6 +326,7 @@ class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool]
             "examples": [
                 {
                     "name": "results",
+                    "label": "Results",
                     "type": "collection",
                     "collection_type": "list",
                     "discover_datasets": [{"pattern": "(?P<name>.+)\\.txt", "format": "txt"}],
@@ -277,9 +335,13 @@ class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool]
         },
     )
     name: Annotated[
-        Optional[str], Field(description="Parameter name. Used when referencing parameter in workflows.")
+        Optional[str],
+        Field(description="Identifier used to connect this output in workflows and address it in tool tests."),
     ] = None
-    hidden: Annotated[Optional[bool], Field(description="If true, the output will not be shown in the history.")] = None
+    hidden: Annotated[
+        Optional[bool],
+        Field(description="Set true to keep the output available to workflows without showing it in the history."),
+    ] = None
 
 
 class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
@@ -290,12 +352,32 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
             "examples": [
                 {
                     "name": "result",
+                    "label": "Result",
                     "type": "data",
                     "format": "txt",
                     "from_work_dir": "result.txt",
                 }
             ],
             "x-usage-examples": [
+                {
+                    "field": "format",
+                    "description": (
+                        "`format` can be used to assign a fixed Galaxy datatype when every run writes the same "
+                        "representation. The value is a datatype extension, not a filename suffix."
+                    ),
+                    "definition": {
+                        "inputs": [],
+                        "shell_command": "printf 'gene\\tscore\\nBRCA1\\t0.95\\n' > scores.tsv",
+                        "outputs": [
+                            {
+                                "name": "scores",
+                                "type": "data",
+                                "format": "tabular",
+                                "from_work_dir": "scores.tsv",
+                            }
+                        ],
+                    },
+                },
                 {
                     "field": "format_source",
                     "description": (
@@ -347,6 +429,60 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
                         ],
                     },
                 },
+                {
+                    "field": "from_work_dir",
+                    "description": (
+                        "`from_work_dir` can be used to claim a file written by the command. The relative path must "
+                        "match the command's destination and remain inside the job working directory."
+                    ),
+                    "definition": {
+                        "inputs": [
+                            {
+                                "name": "message",
+                                "type": "text",
+                                "label": "Message",
+                            }
+                        ],
+                        "shell_command": "printf '%s\\n' '$(inputs.message)' > message.txt",
+                        "outputs": [
+                            {
+                                "name": "message_file",
+                                "type": "data",
+                                "format": "txt",
+                                "from_work_dir": "message.txt",
+                            }
+                        ],
+                    },
+                },
+                {
+                    "field": "precreate_directory",
+                    "description": (
+                        "`precreate_directory` can be used with a directory-backed composite datatype. The command "
+                        "creates the directory named by `from_work_dir`; Galaxy then copies its contents into the "
+                        "output dataset's extra-files area."
+                    ),
+                    "definition": {
+                        "inputs": [
+                            {
+                                "name": "reference",
+                                "type": "data",
+                                "format": ["fasta"],
+                            }
+                        ],
+                        "shell_command": (
+                            "mkdir index && bwa-mem2 index -p index/reference '$(inputs.reference.path)'"
+                        ),
+                        "outputs": [
+                            {
+                                "name": "index",
+                                "type": "data",
+                                "format": "bwa_mem2_index",
+                                "from_work_dir": "index",
+                                "precreate_directory": True,
+                            }
+                        ],
+                    },
+                },
             ],
         }
     )
@@ -360,6 +496,122 @@ class IncomingUserToolOutputDataset(IncomingToolOutputDataset):
 
 class IncomingUserToolOutputCollection(IncomingToolOutputCollection):
     """A user-defined tool collection populated only by matching produced filenames."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "results",
+                    "label": "Results",
+                    "type": "collection",
+                    "collection_type": "list",
+                    "discover_datasets": [{"pattern": "(?P<name>.+)\\.txt", "format": "txt"}],
+                }
+            ],
+            "x-usage-examples": [
+                {
+                    "field": "collection_type",
+                    "description": (
+                        "`collection_type` can be used to declare a fixed output structure. A `list` contains an "
+                        "ordered set of discovered elements; `paired` requires `forward` and `reverse` identifiers."
+                    ),
+                    "definition": {
+                        "inputs": [],
+                        "shell_command": (
+                            "mkdir reports && printf 'sample\\tvalue\\nA\\t1\\n' > reports/A.tsv && "
+                            "printf 'sample\\tvalue\\nB\\t2\\n' > reports/B.tsv"
+                        ),
+                        "outputs": [
+                            {
+                                "name": "reports",
+                                "type": "collection",
+                                "collection_type": "list",
+                                "discover_datasets": [
+                                    {
+                                        "pattern": "(?P<name>.+)\\.tsv",
+                                        "directory": "reports",
+                                        "format": "tabular",
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                },
+                {
+                    "field": "collection_type_source",
+                    "description": (
+                        "`collection_type_source` can be used when the output has the same runtime collection type "
+                        "as a declared data-collection input, including when that input accepts more than one structure."
+                    ),
+                    "definition": {
+                        "inputs": [
+                            {
+                                "name": "reads",
+                                "type": "data_collection",
+                                "collection_type": "paired",
+                                "format": ["fastqsanger"],
+                            }
+                        ],
+                        "shell_command": (
+                            "mkdir copied && cp '$(inputs.reads.elements.forward.path)' copied/forward.fastq && "
+                            "cp '$(inputs.reads.elements.reverse.path)' copied/reverse.fastq"
+                        ),
+                        "outputs": [
+                            {
+                                "name": "copied_reads",
+                                "type": "collection",
+                                "collection_type_source": "reads",
+                                "discover_datasets": [
+                                    {
+                                        "pattern": "(?P<name>forward|reverse)\\.fastq",
+                                        "directory": "copied",
+                                        "format": "fastqsanger",
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                },
+                {
+                    "field": "structured_like",
+                    "description": (
+                        "`structured_like` can be used when each produced element corresponds to an element of a "
+                        "declared input. Galaxy mirrors that input's element identifiers and nesting in the output."
+                    ),
+                    "definition": {
+                        "inputs": [
+                            {
+                                "name": "reads",
+                                "type": "data_collection",
+                                "collection_type": "paired",
+                                "format": ["fastqsanger"],
+                            }
+                        ],
+                        "shell_command": (
+                            "mkdir trimmed && head -n 400 '$(inputs.reads.elements.forward.path)' > "
+                            "trimmed/forward.fastq && head -n 400 '$(inputs.reads.elements.reverse.path)' > "
+                            "trimmed/reverse.fastq"
+                        ),
+                        "outputs": [
+                            {
+                                "name": "trimmed_reads",
+                                "type": "collection",
+                                "collection_type": "paired",
+                                "structured_like": "reads",
+                                "discover_datasets": [
+                                    {
+                                        "pattern": "(?P<name>forward|reverse)\\.fastq",
+                                        "directory": "trimmed",
+                                        "format": "fastqsanger",
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                },
+            ],
+        }
+    )
 
     # Pydantic intentionally narrows this authoring model's accepted schema.
     discover_datasets: Annotated[

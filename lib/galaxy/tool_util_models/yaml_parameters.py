@@ -83,11 +83,20 @@ class _YamlParamBase(BaseModel):
 
     name: Annotated[
         str,
-        Field(description="Identifier used to reference this input from expressions."),
+        Field(description="Identifier used to read this input from `shell_command` and other expressions."),
     ]
-    label: Annotated[Optional[str], Field(description="Label displayed on the tool form.")] = None
-    help: Annotated[Optional[str], Field(description="Help text displayed with the input.")] = None
-    optional: Annotated[bool, Field(description="Whether the user may leave this input unset.")] = False
+    label: Annotated[
+        Optional[str],
+        Field(description="Human-readable prompt shown beside the input on the tool form."),
+    ] = None
+    help: Annotated[
+        Optional[str],
+        Field(description="Additional guidance shown on the tool form to help users choose a value."),
+    ] = None
+    optional: Annotated[
+        bool,
+        Field(description="Set true when the command can run without the user supplying this input."),
+    ] = False
 
 
 def _common_internal_kwargs(yaml_param: "_YamlParamBase") -> dict:
@@ -116,8 +125,14 @@ class YamlBooleanParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["boolean"]
-    value: Annotated[Optional[bool], Field(description="Default value.")] = False
+    type: Annotated[
+        Literal["boolean"],
+        Field(description="Presents a true-or-false choice and supplies the selected Boolean value to expressions."),
+    ]
+    value: Annotated[
+        Optional[bool],
+        Field(description="Initial choice shown when the user first opens the tool form."),
+    ] = False
 
     def to_internal(self) -> BooleanParameterModel:
         return BooleanParameterModel(type="boolean", value=self.value, **_common_internal_kwargs(self))
@@ -142,10 +157,22 @@ class YamlIntegerParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["integer"]
-    value: Annotated[Optional[int], Field(description="Default value.")] = None
-    min: Annotated[Optional[int], Field(description="Minimum accepted value.")] = None
-    max: Annotated[Optional[int], Field(description="Maximum accepted value.")] = None
+    type: Annotated[
+        Literal["integer"],
+        Field(description="Accepts a whole number and supplies it as a numeric value to expressions."),
+    ]
+    value: Annotated[
+        Optional[int],
+        Field(description="Number prefilled when the user first opens the tool form."),
+    ] = None
+    min: Annotated[
+        Optional[int],
+        Field(description="Rejects submitted values smaller than this inclusive lower bound."),
+    ] = None
+    max: Annotated[
+        Optional[int],
+        Field(description="Rejects submitted values larger than this inclusive upper bound."),
+    ] = None
     validators: Annotated[
         List[YamlNumberValidators],
         Field(description="Additional validation rules; supports `in_range`."),
@@ -181,10 +208,22 @@ class YamlFloatParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["float"]
-    value: Annotated[Optional[float], Field(description="Default value.")] = None
-    min: Annotated[Optional[float], Field(description="Minimum accepted value.")] = None
-    max: Annotated[Optional[float], Field(description="Maximum accepted value.")] = None
+    type: Annotated[
+        Literal["float"],
+        Field(description="Accepts a number, including decimal values, and supplies it to expressions."),
+    ]
+    value: Annotated[
+        Optional[float],
+        Field(description="Number prefilled when the user first opens the tool form."),
+    ] = None
+    min: Annotated[
+        Optional[float],
+        Field(description="Rejects submitted values smaller than this inclusive lower bound."),
+    ] = None
+    max: Annotated[
+        Optional[float],
+        Field(description="Rejects submitted values larger than this inclusive upper bound."),
+    ] = None
     validators: Annotated[
         List[YamlNumberValidators],
         Field(description="Additional validation rules; supports `in_range`."),
@@ -219,9 +258,19 @@ class YamlTextParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["text"]
-    value: Optional[str] = Field(default=None, alias="value", description="Default value.")
-    area: Annotated[bool, Field(description="Whether to display a multiline text area.")] = False
+    type: Annotated[
+        Literal["text"],
+        Field(description="Accepts user-entered text and supplies the resulting string to expressions."),
+    ]
+    value: Optional[str] = Field(
+        default=None,
+        alias="value",
+        description="Text prefilled when the user first opens the tool form.",
+    )
+    area: Annotated[
+        bool,
+        Field(description="Set true to use a multiline editor instead of a single-line text box."),
+    ] = False
     validators: Annotated[
         List[YamlTextValidators],
         Field(description="Additional validation rules; supports `length`, `regex`, and `empty_field`."),
@@ -257,12 +306,18 @@ class YamlSelectParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["select"]
+    type: Annotated[
+        Literal["select"],
+        Field(description="Lets the user choose from the declared `options` and supplies the selected value."),
+    ]
     options: Annotated[
         List[YamlLabelValue],
-        Field(min_length=1, description="Static choices shown to the user."),
+        Field(min_length=1, description="Choices presented on the tool form, each with a display label and value."),
     ]
-    multiple: Annotated[bool, Field(description="Whether the user may select several options.")] = False
+    multiple: Annotated[
+        bool,
+        Field(description="Set true to let the user select and supply several option values instead of one."),
+    ] = False
     validators: Annotated[
         List[YamlSelectValidators],
         Field(description="Additional validation rules; supports `no_options`."),
@@ -295,8 +350,14 @@ class YamlColorParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["color"]
-    value: Annotated[Optional[str], Field(description="Default color in hexadecimal notation.")] = None
+    type: Annotated[
+        Literal["color"],
+        Field(description="Presents a color picker and supplies the selected hexadecimal color string."),
+    ]
+    value: Annotated[
+        Optional[str],
+        Field(description="Color initially selected in the picker, written in hexadecimal notation."),
+    ] = None
 
     def to_internal(self) -> ColorParameterModel:
         return ColorParameterModel(type="color", value=self.value, **_common_internal_kwargs(self))
@@ -327,8 +388,14 @@ class YamlDataParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["data"]
-    format: Annotated[List[str], Field(description="Accepted Galaxy datatype extensions.")] = ["data"]
+    type: Annotated[
+        Literal["data"],
+        Field(description="Lets the user select history datasets and exposes their paths and metadata to expressions."),
+    ]
+    format: Annotated[
+        List[str],
+        Field(description="Limits selectable datasets to these Galaxy datatype extensions."),
+    ] = ["data"]
     multiple: Annotated[
         bool,
         Field(description="Set true to accept several datasets (a list) for this input instead of one."),
@@ -374,14 +441,17 @@ reverse='$(inputs.reads.elements.reverse.path)'""",
         }
     )
 
-    type: Literal["data_collection"]
+    type: Annotated[
+        Literal["data_collection"],
+        Field(description="Lets the user select a history collection and exposes its elements to expressions."),
+    ]
     collection_type: Annotated[
         Optional[str],
-        Field(description="Required collection structure, such as `list` or `paired`."),
+        Field(description="Limits selectable collections to this structure, such as `list` or `paired`."),
     ] = None
     format: Annotated[
         List[str],
-        Field(description="Accepted datatype extensions for collection elements."),
+        Field(description="Requires every selectable collection element to use one of these datatype extensions."),
     ] = ["data"]
 
     @field_validator("format", mode="before")
@@ -444,14 +514,20 @@ class YamlConditionalParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["conditional"]
+    type: Annotated[
+        Literal["conditional"],
+        Field(description="Shows one set of nested inputs at a time according to a Boolean or select control."),
+    ]
     test_parameter: Annotated[
         YamlConditionalTestParameter,
-        Field(description="Boolean or select input controlling the active branch."),
+        Field(description="Boolean or select input whose submitted value chooses the active `whens` branch."),
     ]
     whens: Annotated[
         List[YamlConditionalWhen],
-        Field(min_length=1, description="Parameters enabled for each test value."),
+        Field(
+            min_length=1,
+            description="Maps each control value to the nested parameters shown and supplied for that branch.",
+        ),
     ]
 
     def to_internal(self) -> ConditionalParameterModel:
@@ -494,13 +570,22 @@ class YamlRepeatParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["repeat"]
+    type: Annotated[
+        Literal["repeat"],
+        Field(description="Lets the user add multiple entries that all contain the same nested inputs."),
+    ]
     parameters: Annotated[
         List["YamlGalaxyToolParameter"],
-        Field(description="Inputs that make up one repeated entry."),
+        Field(description="Nested inputs that make up one entry in the repeated group."),
     ] = []
-    min: Annotated[Optional[int], Field(description="Minimum number of repetitions.")] = None
-    max: Annotated[Optional[int], Field(description="Maximum number of repetitions.")] = None
+    min: Annotated[
+        Optional[int],
+        Field(description="Keeps at least this many entries in the group and creates them when the form opens."),
+    ] = None
+    max: Annotated[
+        Optional[int],
+        Field(description="Prevents the user from adding more than this many entries."),
+    ] = None
 
     def to_internal(self) -> RepeatParameterModel:
         return RepeatParameterModel(
@@ -537,10 +622,13 @@ class YamlSectionParameter(_YamlParamBase):
         }
     )
 
-    type: Literal["section"]
+    type: Annotated[
+        Literal["section"],
+        Field(description="Places related inputs in a collapsible group to simplify the tool form."),
+    ]
     parameters: Annotated[
         List["YamlGalaxyToolParameter"],
-        Field(description="Inputs contained in the section."),
+        Field(description="Nested inputs displayed together inside the section."),
     ] = []
 
     def to_internal(self) -> SectionParameterModel:

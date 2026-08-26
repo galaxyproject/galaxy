@@ -98,7 +98,9 @@ class ParameterValidatorModel(StrictModel):
     implicit: Annotated[
         bool,
         Field(
-            description="Whether Galaxy added this validator automatically rather than the tool author declaring it."
+            description=(
+                "Set internally when Galaxy added the validator automatically; tool authors normally leave this false."
+            )
         ),
     ] = False
     _static: bool = PrivateAttr(False)
@@ -170,9 +172,22 @@ class RegexParameterValidatorModel(StaticValidatorModel):
     a select parameter is checked separately.
     """
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "regex", "expression": "^[ACGT]+$"}]})
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"type": "regex", "expression": "^[ACGT]+$"}],
+            "x-parameter-example": {
+                "name": "motif",
+                "type": "text",
+                "label": "DNA motif",
+                "validators": [{"type": "regex", "expression": "^[ACGT]+$"}],
+            },
+        }
+    )
 
-    type: Literal["regex"] = "regex"
+    type: Annotated[
+        Literal["regex"],
+        Field(description="Applies the regular expression in `expression` to each submitted text value."),
+    ] = "regex"
     negate: Annotated[
         Negate,
         Field(description="Reject matching values instead of values that do not match."),
@@ -210,16 +225,30 @@ class RegexParameterValidatorModel(StaticValidatorModel):
 class InRangeParameterValidatorModel(StaticValidatorModel):
     """Require a numeric value to fall within optional lower and upper bounds."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "in_range", "min": 0, "max": 1}]})
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"type": "in_range", "min": 0, "max": 1}],
+            "x-parameter-example": {
+                "name": "threshold",
+                "type": "float",
+                "label": "Score threshold",
+                "value": 0.5,
+                "validators": [{"type": "in_range", "min": 0, "max": 1}],
+            },
+        }
+    )
 
-    type: Literal["in_range"] = "in_range"
+    type: Annotated[
+        Literal["in_range"],
+        Field(description="Enforces the numeric boundaries configured by `min` and `max`."),
+    ] = "in_range"
     min: Annotated[
         Optional[Union[float, int]],
-        Field(description="Minimum accepted value; omit for no lower bound."),
+        Field(description="Rejects smaller values; omit to leave the range without a lower bound."),
     ] = None
     max: Annotated[
         Optional[Union[float, int]],
-        Field(description="Maximum accepted value; omit for no upper bound."),
+        Field(description="Rejects larger values; omit to leave the range without an upper bound."),
     ] = None
     exclude_min: Annotated[
         bool,
@@ -265,16 +294,29 @@ class InRangeParameterValidatorModel(StaticValidatorModel):
 class LengthParameterValidatorModel(StaticValidatorModel):
     """Require the number of characters in a text value to fall within optional bounds."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "length", "min": 1, "max": 20}]})
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"type": "length", "min": 1, "max": 20}],
+            "x-parameter-example": {
+                "name": "sample_name",
+                "type": "text",
+                "label": "Sample name",
+                "validators": [{"type": "length", "min": 1, "max": 20}],
+            },
+        }
+    )
 
-    type: Literal["length"] = "length"
+    type: Annotated[
+        Literal["length"],
+        Field(description="Enforces character-count boundaries on a submitted text value."),
+    ] = "length"
     min: Annotated[
         Optional[int],
-        Field(description="Minimum accepted number of characters; omit for no lower bound."),
+        Field(description="Rejects text with fewer characters; omit to leave the length without a lower bound."),
     ] = None
     max: Annotated[
         Optional[int],
-        Field(description="Maximum accepted number of characters; omit for no upper bound."),
+        Field(description="Rejects text with more characters; omit to leave the length without an upper bound."),
     ] = None
     negate: Annotated[
         Negate,
@@ -345,9 +387,23 @@ class UnspecifiedBuildParameterValidatorModel(ParameterValidatorModel):
 class NoOptionsParameterValidatorModel(StaticValidatorModel):
     """Require a select parameter to have at least one available option."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "no_options"}]})
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"type": "no_options"}],
+            "x-parameter-example": {
+                "name": "database",
+                "type": "select",
+                "label": "Reference database",
+                "options": [{"label": "Human", "value": "human"}],
+                "validators": [{"type": "no_options"}],
+            },
+        }
+    )
 
-    type: Literal["no_options"] = "no_options"
+    type: Annotated[
+        Literal["no_options"],
+        Field(description="Fails validation when a select input has no choices available."),
+    ] = "no_options"
     negate: Annotated[
         Negate,
         Field(description="Require the select parameter to have no available options instead."),
@@ -368,9 +424,22 @@ class NoOptionsParameterValidatorModel(StaticValidatorModel):
 class EmptyFieldParameterValidatorModel(StaticValidatorModel):
     """Require a value that is neither an empty string nor null."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"type": "empty_field"}]})
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"type": "empty_field"}],
+            "x-parameter-example": {
+                "name": "sample_name",
+                "type": "text",
+                "label": "Sample name",
+                "validators": [{"type": "empty_field"}],
+            },
+        }
+    )
 
-    type: Literal["empty_field"] = "empty_field"
+    type: Annotated[
+        Literal["empty_field"],
+        Field(description="Fails validation when the submitted value is an empty string or null."),
+    ] = "empty_field"
     negate: Annotated[
         Negate,
         Field(description="Require the value to be empty or null instead."),

@@ -12188,7 +12188,7 @@ export interface components {
         EmptyFieldParameterValidatorModel: {
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
@@ -12205,6 +12205,7 @@ export interface components {
             negate: boolean;
             /**
              * Type
+             * @description Fails validation when the submitted value is an empty string or null.
              * @default empty_field
              * @constant
              */
@@ -12588,7 +12589,7 @@ export interface components {
             expression: string;
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
@@ -16086,13 +16087,13 @@ export interface components {
             exclude_min: boolean;
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
             /**
              * Max
-             * @description Maximum accepted value; omit for no upper bound.
+             * @description Rejects larger values; omit to leave the range without an upper bound.
              */
             max?: number | null;
             /**
@@ -16102,7 +16103,7 @@ export interface components {
             message?: string | null;
             /**
              * Min
-             * @description Minimum accepted value; omit for no lower bound.
+             * @description Rejects smaller values; omit to leave the range without a lower bound.
              */
             min?: number | null;
             /**
@@ -16112,7 +16113,7 @@ export interface components {
              */
             negate: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Enforces the numeric boundaries configured by `min` and `max`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "in_range";
@@ -16133,12 +16134,12 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string;
             /**
@@ -16158,6 +16159,7 @@ export interface components {
          *           "pattern": "(?P<name>.+)\\.txt"
          *         }
          *       ],
+         *       "label": "Results",
          *       "name": "results",
          *       "type": "collection"
          *     }
@@ -16165,12 +16167,12 @@ export interface components {
         IncomingToolOutputCollection: {
             /**
              * Collection Type
-             * @description Collection structure, such as `list`, `paired`, or a nested type such as `list:paired`.
+             * @description Fixed structure Galaxy creates for this output, such as `list`, `paired`, or a nested type such as `list:paired`.
              */
             collection_type?: string | null;
             /**
              * Collection Type Source
-             * @description Input collection whose structure determines this output collection's type.
+             * @description Declared data-collection input whose runtime structure determines this output's collection type.
              */
             collection_type_source?: string | null;
             /**
@@ -16185,26 +16187,26 @@ export interface components {
                 | null;
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name?: string | null;
             /**
              * Structured Like
-             * @description Input collection whose element identifiers and nesting this output mirrors.
+             * @description Declared input whose element count, identifiers, and nesting this output mirrors. Use this when each produced element corresponds to an input element.
              */
             structured_like?: string | null;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset collection populated from files produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "collection";
@@ -16215,6 +16217,7 @@ export interface components {
          * @example {
          *       "format": "txt",
          *       "from_work_dir": "result.txt",
+         *       "label": "Result",
          *       "name": "result",
          *       "type": "data"
          *     }
@@ -16232,7 +16235,7 @@ export interface components {
                 | null;
             /**
              * Format
-             * @description The short name for the output datatype.
+             * @description Galaxy datatype extension assigned when the command always produces a fixed representation. Use `format_source` instead when the datatype depends on an input.
              */
             format?: string | null;
             /**
@@ -16242,17 +16245,17 @@ export interface components {
             format_source?: string | null;
             /**
              * from_work_dir
-             * @description Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.
+             * @description Relative path, inside the job working directory, that the command writes for this output. Galaxy claims that file after the command finishes.
              */
             from_work_dir?: string | null;
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
@@ -16262,16 +16265,17 @@ export interface components {
             metadata_source?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name?: string | null;
             /**
              * Precreate Directory
+             * @description Set true when `from_work_dir` names a produced directory for a composite datatype. Galaxy copies the directory contents into the output dataset's extra-files area.
              * @default false
              */
             precreate_directory: boolean | null;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset from a file produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data";
@@ -16292,12 +16296,12 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string;
             /**
@@ -16322,12 +16326,12 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string;
             /**
@@ -16352,12 +16356,12 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string;
             /**
@@ -16377,6 +16381,7 @@ export interface components {
          *           "pattern": "(?P<name>.+)\\.txt"
          *         }
          *       ],
+         *       "label": "Results",
          *       "name": "results",
          *       "type": "collection"
          *     }
@@ -16384,12 +16389,12 @@ export interface components {
         IncomingUserToolOutputCollection: {
             /**
              * Collection Type
-             * @description Collection structure, such as `list`, `paired`, or a nested type such as `list:paired`.
+             * @description Fixed structure Galaxy creates for this output, such as `list`, `paired`, or a nested type such as `list:paired`.
              */
             collection_type?: string | null;
             /**
              * Collection Type Source
-             * @description Input collection whose structure determines this output collection's type.
+             * @description Declared data-collection input whose runtime structure determines this output's collection type.
              */
             collection_type_source?: string | null;
             /**
@@ -16399,26 +16404,26 @@ export interface components {
             discover_datasets?: components["schemas"]["FilePatternDatasetCollectionDescription"][] | null;
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name?: string | null;
             /**
              * Structured Like
-             * @description Input collection whose element identifiers and nesting this output mirrors.
+             * @description Declared input whose element count, identifiers, and nesting this output mirrors. Use this when each produced element corresponds to an input element.
              */
             structured_like?: string | null;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset collection populated from files produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "collection";
@@ -16429,6 +16434,7 @@ export interface components {
          * @example {
          *       "format": "txt",
          *       "from_work_dir": "result.txt",
+         *       "label": "Result",
          *       "name": "result",
          *       "type": "data"
          *     }
@@ -16441,7 +16447,7 @@ export interface components {
             discover_datasets?: components["schemas"]["FilePatternDatasetCollectionDescription"][] | null;
             /**
              * Format
-             * @description The short name for the output datatype.
+             * @description Galaxy datatype extension assigned when the command always produces a fixed representation. Use `format_source` instead when the datatype depends on an input.
              */
             format?: string | null;
             /**
@@ -16451,17 +16457,17 @@ export interface components {
             format_source?: string | null;
             /**
              * from_work_dir
-             * @description Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.
+             * @description Relative path, inside the job working directory, that the command writes for this output. Galaxy claims that file after the command finishes.
              */
             from_work_dir?: string | null;
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden?: boolean | null;
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null;
             /**
@@ -16471,16 +16477,17 @@ export interface components {
             metadata_source?: string | null;
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name?: string | null;
             /**
              * Precreate Directory
+             * @description Set true when `from_work_dir` names a produced directory for a composite datatype. Galaxy copies the directory contents into the output dataset's extra-files area.
              * @default false
              */
             precreate_directory: boolean | null;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset from a file produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data";
@@ -18483,13 +18490,13 @@ export interface components {
         LengthParameterValidatorModel: {
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
             /**
              * Max
-             * @description Maximum accepted number of characters; omit for no upper bound.
+             * @description Rejects text with more characters; omit to leave the length without an upper bound.
              */
             max?: number | null;
             /**
@@ -18499,7 +18506,7 @@ export interface components {
             message?: string | null;
             /**
              * Min
-             * @description Minimum accepted number of characters; omit for no lower bound.
+             * @description Rejects text with fewer characters; omit to leave the length without a lower bound.
              */
             min?: number | null;
             /**
@@ -18509,7 +18516,7 @@ export interface components {
              */
             negate: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Enforces character-count boundaries on a submitted text value. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "length";
@@ -19768,7 +19775,7 @@ export interface components {
         NoOptionsParameterValidatorModel: {
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
@@ -19785,6 +19792,7 @@ export interface components {
             negate: boolean;
             /**
              * Type
+             * @description Fails validation when a select input has no choices available.
              * @default no_options
              * @constant
              */
@@ -21467,7 +21475,7 @@ export interface components {
             expression: string;
             /**
              * Implicit
-             * @description Whether Galaxy added this validator automatically rather than the tool author declaring it.
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean;
@@ -21483,7 +21491,7 @@ export interface components {
              */
             negate: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Applies the regular expression in `expression` to each submitted text value. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "regex";
@@ -27538,33 +27546,33 @@ export interface components {
         YamlBooleanParameter: {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Presents a true-or-false choice and supplies the selected Boolean value to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "boolean";
             /**
              * Value
-             * @description Default value.
+             * @description Initial choice shown when the user first opens the tool form.
              * @default false
              */
             value: boolean | null;
@@ -27582,33 +27590,33 @@ export interface components {
         YamlColorParameter: {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Presents a color picker and supplies the selected hexadecimal color string. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "color";
             /**
              * Value
-             * @description Default color in hexadecimal notation.
+             * @description Color initially selected in the picker, written in hexadecimal notation.
              */
             value?: string | null;
         };
@@ -27656,40 +27664,40 @@ export interface components {
         "YamlConditionalParameter-Input": {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Test Parameter
-             * @description Boolean or select input controlling the active branch.
+             * @description Boolean or select input whose submitted value chooses the active `whens` branch.
              */
             test_parameter:
                 | components["schemas"]["YamlBooleanParameter"]
                 | components["schemas"]["YamlSelectParameter"];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Shows one set of nested inputs at a time according to a Boolean or select control. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "conditional";
             /**
              * Whens
-             * @description Parameters enabled for each test value.
+             * @description Maps each control value to the nested parameters shown and supplied for that branch.
              */
             whens: components["schemas"]["YamlConditionalWhen-Input"][];
         };
@@ -27737,40 +27745,40 @@ export interface components {
         "YamlConditionalParameter-Output": {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Test Parameter
-             * @description Boolean or select input controlling the active branch.
+             * @description Boolean or select input whose submitted value chooses the active `whens` branch.
              */
             test_parameter:
                 | components["schemas"]["YamlBooleanParameter"]
                 | components["schemas"]["YamlSelectParameter"];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Shows one set of nested inputs at a time according to a Boolean or select control. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "conditional";
             /**
              * Whens
-             * @description Parameters enabled for each test value.
+             * @description Maps each control value to the nested parameters shown and supplied for that branch.
              */
             whens: components["schemas"]["YamlConditionalWhen-Output"][];
         };
@@ -27810,12 +27818,12 @@ export interface components {
         YamlDataCollectionParameter: {
             /**
              * Collection Type
-             * @description Required collection structure, such as `list` or `paired`.
+             * @description Limits selectable collections to this structure, such as `list` or `paired`.
              */
             collection_type?: string | null;
             /**
              * Format
-             * @description Accepted datatype extensions for collection elements.
+             * @description Requires every selectable collection element to use one of these datatype extensions.
              * @default [
              *       "data"
              *     ]
@@ -27823,27 +27831,27 @@ export interface components {
             format: string[];
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user select a history collection and exposes its elements to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data_collection";
@@ -27864,7 +27872,7 @@ export interface components {
         YamlDataParameter: {
             /**
              * Format
-             * @description Accepted Galaxy datatype extensions.
+             * @description Limits selectable datasets to these Galaxy datatype extensions.
              * @default [
              *       "data"
              *     ]
@@ -27872,12 +27880,12 @@ export interface components {
             format: string[];
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
@@ -27888,17 +27896,17 @@ export interface components {
             multiple: boolean;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user select history datasets and exposes their paths and metadata to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data";
@@ -27918,37 +27926,37 @@ export interface components {
         YamlFloatParameter: {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Max
-             * @description Maximum accepted value.
+             * @description Rejects submitted values larger than this inclusive upper bound.
              */
             max?: number | null;
             /**
              * Min
-             * @description Minimum accepted value.
+             * @description Rejects submitted values smaller than this inclusive lower bound.
              */
             min?: number | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Accepts a number, including decimal values, and supplies it to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "float";
@@ -27960,7 +27968,7 @@ export interface components {
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
             /**
              * Value
-             * @description Default value.
+             * @description Number prefilled when the user first opens the tool form.
              */
             value?: number | null;
         };
@@ -28005,37 +28013,37 @@ export interface components {
         YamlIntegerParameter: {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Max
-             * @description Maximum accepted value.
+             * @description Rejects submitted values larger than this inclusive upper bound.
              */
             max?: number | null;
             /**
              * Min
-             * @description Minimum accepted value.
+             * @description Rejects submitted values smaller than this inclusive lower bound.
              */
             min?: number | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Accepts a whole number and supplies it as a numeric value to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "integer";
@@ -28047,7 +28055,7 @@ export interface components {
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
             /**
              * Value
-             * @description Default value.
+             * @description Number prefilled when the user first opens the tool form.
              */
             value?: number | null;
         };
@@ -28089,43 +28097,43 @@ export interface components {
         "YamlRepeatParameter-Input": {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Max
-             * @description Maximum number of repetitions.
+             * @description Prevents the user from adding more than this many entries.
              */
             max?: number | null;
             /**
              * Min
-             * @description Minimum number of repetitions.
+             * @description Keeps at least this many entries in the group and creates them when the form opens.
              */
             min?: number | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
-             * @description Inputs that make up one repeated entry.
+             * @description Nested inputs that make up one entry in the repeated group.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Input"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user add multiple entries that all contain the same nested inputs. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "repeat";
@@ -28153,43 +28161,43 @@ export interface components {
         "YamlRepeatParameter-Output": {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Max
-             * @description Maximum number of repetitions.
+             * @description Prevents the user from adding more than this many entries.
              */
             max?: number | null;
             /**
              * Min
-             * @description Minimum number of repetitions.
+             * @description Keeps at least this many entries in the group and creates them when the form opens.
              */
             min?: number | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
-             * @description Inputs that make up one repeated entry.
+             * @description Nested inputs that make up one entry in the repeated group.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user add multiple entries that all contain the same nested inputs. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "repeat";
@@ -28215,33 +28223,33 @@ export interface components {
         "YamlSectionParameter-Input": {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
-             * @description Inputs contained in the section.
+             * @description Nested inputs displayed together inside the section.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Input"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Places related inputs in a collapsible group to simplify the tool form. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "section";
@@ -28267,33 +28275,33 @@ export interface components {
         "YamlSectionParameter-Output": {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
-             * @description Inputs contained in the section.
+             * @description Nested inputs displayed together inside the section.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Places related inputs in a collapsible group to simplify the tool form. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "section";
@@ -28322,38 +28330,38 @@ export interface components {
         YamlSelectParameter: {
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Multiple
-             * @description Whether the user may select several options.
+             * @description Set true to let the user select and supply several option values instead of one.
              * @default false
              */
             multiple: boolean;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
              * Options
-             * @description Static choices shown to the user.
+             * @description Choices presented on the tool form, each with a display label and value.
              */
             options: components["schemas"]["YamlLabelValue"][];
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Lets the user choose from the declared `options` and supplies the selected value. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "select";
@@ -28431,33 +28439,33 @@ export interface components {
         YamlTextParameter: {
             /**
              * Area
-             * @description Whether to display a multiline text area.
+             * @description Set true to use a multiline editor instead of a single-line text box.
              * @default false
              */
             area: boolean;
             /**
              * Help
-             * @description Help text displayed with the input.
+             * @description Additional guidance shown on the tool form to help users choose a value.
              */
             help?: string | null;
             /**
              * Label
-             * @description Label displayed on the tool form.
+             * @description Human-readable prompt shown beside the input on the tool form.
              */
             label?: string | null;
             /**
              * Name
-             * @description Identifier used to reference this input from expressions.
+             * @description Identifier used to read this input from `shell_command` and other expressions.
              */
             name: string;
             /**
              * Optional
-             * @description Whether the user may leave this input unset.
+             * @description Set true when the command can run without the user supplying this input.
              * @default false
              */
             optional: boolean;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Accepts user-entered text and supplies the resulting string to expressions. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "text";
@@ -28473,7 +28481,7 @@ export interface components {
             )[];
             /**
              * Value
-             * @description Default value.
+             * @description Text prefilled when the user first opens the tool form.
              */
             value?: string | null;
         };

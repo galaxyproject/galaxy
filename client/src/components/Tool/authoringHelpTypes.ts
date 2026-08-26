@@ -19,6 +19,7 @@ interface JsonSchemaDefinition {
     examples?: Record<string, unknown>[];
     properties?: Record<string, JsonSchemaProperty>;
     required?: string[];
+    "x-parameter-example"?: Record<string, unknown>;
     "x-shell-command"?: string;
     "x-usage-examples"?: Array<{
         field: string;
@@ -115,21 +116,20 @@ function propertyDefault(property: JsonSchemaProperty): string {
     return property.default === undefined ? "—" : `\`${JSON.stringify(property.default)}\``;
 }
 
-const FIELD_REFERENCE_SECTIONS: Record<string, string> = {
-    validators: "validators",
-    format_source: "output-data-format-source",
-    metadata_source: "output-data-metadata-source",
-};
+const COMMON_FIELD_REFERENCE_SECTIONS: Record<string, string> = { validators: "validators" };
 
-function fieldName(name: string): string {
-    const sectionId = FIELD_REFERENCE_SECTIONS[name];
+function fieldName(name: string, fieldReferenceSections: Record<string, string>): string {
+    const sectionId = fieldReferenceSections[name];
     return sectionId ? `[\`${name}\` #](#${sectionId})` : `\`${name}\``;
 }
 
-function fieldTable(definition: JsonSchemaDefinition): string[] {
+function fieldTable(
+    definition: JsonSchemaDefinition,
+    fieldReferenceSections: Record<string, string> = COMMON_FIELD_REFERENCE_SECTIONS,
+): string[] {
     const required = new Set(definition.required ?? []);
     const fields = Object.entries(definition.properties ?? {}).map(([name, property]) => {
-        return `| ${fieldName(name)} | ${propertyDetails(name, property)} | ${propertyDefault(property)} | ${required.has(name) ? "Yes" : "No"} |`;
+        return `| ${fieldName(name, fieldReferenceSections)} | ${propertyDetails(name, property)} | ${propertyDefault(property)} | ${required.has(name) ? "Yes" : "No"} |`;
     });
     return ["| Field | Details | Default | Required |", "| --- | --- | --- | --- |", ...fields];
 }
@@ -219,15 +219,24 @@ export function buildOutputTypeReference(): TypeReference {
         const example = schemaExample(outputType, definition);
         const exampleYaml = stringify({ outputs: [example] }, { lineWidth: 0 }).trim();
         const description = definition.description?.replaceAll("``", "`").trim() ?? "";
+        const outputSectionId = `output-${outputType}`;
+        const usageExamples = definition["x-usage-examples"] ?? [];
+        const fieldReferenceSections = Object.fromEntries(
+            usageExamples.map((usageExample) => [
+                usageExample.field,
+                `${outputSectionId}-${usageExample.field.replaceAll("_", "-")}`,
+            ]),
+        );
+        fieldReferenceSections.discover_datasets = "discover-datasets";
         const outputSection: AuthoringHelpSection = {
-            id: `output-${outputType}`,
+            id: outputSectionId,
             title: `${outputType} output`,
             kind: "detailed-reference" as const,
             parentId: "output-types-reference",
             body: [
                 description,
                 "",
-                ...fieldTable(definition),
+                ...fieldTable(definition, fieldReferenceSections),
                 "",
                 `Add this \`${outputType}\` output under \`outputs\`:`,
                 "",
@@ -238,7 +247,7 @@ export function buildOutputTypeReference(): TypeReference {
         };
         outputTypeSections.push(outputSection);
         sections.push(outputSection);
-        for (const usageExample of definition["x-usage-examples"] ?? []) {
+        for (const usageExample of usageExamples) {
             sections.push({
                 id: `output-${outputType}-${usageExample.field.replaceAll("_", "-")}`,
                 title: usageExample.field,
@@ -267,8 +276,11 @@ export function buildValidatorTypeReference(): TypeReference {
         if (typeof validatorType !== "string") {
             return [];
         }
-        const example = schemaExample(validatorType, definition);
-        const exampleYaml = stringify({ validators: [example] }, { lineWidth: 0 }).trim();
+        const parameterExample = definition["x-parameter-example"];
+        if (!parameterExample) {
+            throw new Error(`Validator schema '${validatorType}' has no parameter usage example.`);
+        }
+        const exampleYaml = stringify({ inputs: [parameterExample] }, { lineWidth: 0 }).trim();
         const description = definition.description?.replaceAll("``", "`").trim() ?? "";
         return [
             {
@@ -281,7 +293,7 @@ export function buildValidatorTypeReference(): TypeReference {
                     "",
                     ...fieldTable(definition),
                     "",
-                    "Add this rule to a supported parameter's `validators` list:",
+                    "Use this validator on a compatible input:",
                     "",
                     "```yaml",
                     exampleYaml,

@@ -17,6 +17,7 @@ from pydantic import (
     ValidationError,
 )
 
+from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util.parameters.convert import assert_yaml_v1_parameters
 from galaxy.tool_util_models import (
     UserToolSource,
@@ -619,31 +620,48 @@ def test_internal_output_schema_retains_scalar_outputs():
     assert set(mapping) == {"boolean", "collection", "data", "float", "integer", "text"}
 
 
-def test_user_tool_output_sources_publish_complete_distinct_examples_and_validate():
+def test_user_tool_output_attributes_publish_complete_examples_and_validate():
     from galaxy.tool_util_models.tool_outputs import IncomingUserToolOutputDataset
 
-    definition = UserToolSource.model_json_schema()["$defs"]["IncomingUserToolOutputDataset"]
-    properties = definition["properties"]
-    assert "examples" not in properties["format_source"]
-    assert "examples" not in properties["metadata_source"]
+    definitions = UserToolSource.model_json_schema()["$defs"]
+    expected_usage_fields = {
+        "IncomingUserToolOutputCollection": ["collection_type", "collection_type_source", "structured_like"],
+        "IncomingUserToolOutputDataset": [
+            "format",
+            "format_source",
+            "metadata_source",
+            "from_work_dir",
+            "precreate_directory",
+        ],
+    }
+    for definition_name, expected_fields in expected_usage_fields.items():
+        definition = definitions[definition_name]
+        assert all(property_schema.get("description") for property_schema in definition["properties"].values())
+        usage_examples = definition["x-usage-examples"]
+        assert [example["field"] for example in usage_examples] == expected_fields
+        for example in usage_examples:
+            field_name = example["field"]
+            assert example["description"].startswith(f"`{field_name}` can be used")
+            assert field_name in example["definition"]["outputs"][0]
+            tool = UserToolSource.model_validate(
+                {
+                    "class": "GalaxyUserTool",
+                    "id": "output-attribute-example",
+                    "name": "Output attribute example",
+                    "version": "0.1.0",
+                    "container": "docker.io/library/busybox:1.37",
+                    **example["definition"],
+                }
+            )
+            assert lint_user_tool_source(tool) == []
 
-    usage_examples = definition["x-usage-examples"]
-    assert [example["field"] for example in usage_examples] == ["format_source", "metadata_source"]
-    assert usage_examples[0]["definition"]["inputs"][0]["name"] == "reads"
-    assert usage_examples[0]["definition"]["outputs"][0]["format_source"] == "reads"
-    assert usage_examples[1]["definition"]["inputs"][0]["name"] == "intervals"
-    assert usage_examples[1]["definition"]["outputs"][0]["metadata_source"] == "intervals"
-
-    for example in usage_examples:
-        UserToolSource.model_validate(
-            {
-                "class": "GalaxyUserTool",
-                "name": "Output source example",
-                "version": "0.1.0",
-                "container": "busybox:1.37",
-                **example["definition"],
-            }
-        )
+    data_usage_examples = {
+        example["field"]: example for example in definitions["IncomingUserToolOutputDataset"]["x-usage-examples"]
+    }
+    assert data_usage_examples["format_source"]["definition"]["inputs"][0]["name"] == "reads"
+    assert data_usage_examples["format_source"]["definition"]["outputs"][0]["format_source"] == "reads"
+    assert data_usage_examples["metadata_source"]["definition"]["inputs"][0]["name"] == "intervals"
+    assert data_usage_examples["metadata_source"]["definition"]["outputs"][0]["metadata_source"] == "intervals"
 
     tool = UserToolSource.model_validate(
         {
@@ -727,6 +745,15 @@ def test_collection_and_discovery_fields_publish_authoring_help():
                 assert field_schema.get("description"), f"{definition_name}.{field_name}"
 
 
+def test_parameter_fields_publish_purpose_oriented_authoring_help():
+    definitions = UserToolSource.model_json_schema()["$defs"]
+    mapping = definitions["YamlGalaxyToolParameter"]["discriminator"]["mapping"]
+    for reference in mapping.values():
+        definition_name = reference.rsplit("/", 1)[-1]
+        for field_name, field_schema in definitions[definition_name]["properties"].items():
+            assert field_schema.get("description"), f"{definition_name}.{field_name}"
+
+
 def test_user_tool_collection_rejects_rules_only_collection_type_source():
     with pytest.raises(ValidationError):
         UserToolSource.model_validate(
@@ -760,8 +787,21 @@ def test_validator_fields_publish_detailed_authoring_help():
         definition = definitions[definition_name]
         assert definition.get("description")
         for field_name, field_schema in definition["properties"].items():
-            if field_name != "type":
-                assert field_schema.get("description"), f"{definition_name}.{field_name}"
+            assert field_schema.get("description"), f"{definition_name}.{field_name}"
+        parameter_example = definition["x-parameter-example"]
+        tool = UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "id": "validator-example",
+                "name": "Validator example",
+                "version": "0.1.0",
+                "container": "docker.io/library/busybox:1.37",
+                "shell_command": "true",
+                "inputs": [parameter_example],
+                "outputs": [],
+            }
+        )
+        assert lint_user_tool_source(tool) == []
 
 
 def test_authoring_view_round_trips_to_user_tool_source():
