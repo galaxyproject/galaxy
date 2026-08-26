@@ -26,7 +26,7 @@ galaxy.job\_metrics.instrumenters.core module
    :show-inheritance:
 
 galaxy.job\_metrics.instrumenters.cpuinfo module
-------------------------------------------------
+-------------------------------------------------
 
 .. automodule:: galaxy.job_metrics.instrumenters.cpuinfo
    :members:
