@@ -113,7 +113,10 @@ from galaxy.tool_util.parser.xml import (
     XmlToolSource,
 )
 from galaxy.tool_util.parser.yaml import YamlToolSource
-from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
+from galaxy.tool_util.provided_metadata import (
+    NullToolProvidedMetadata,
+    parse_tool_provided_metadata,
+)
 from galaxy.tool_util.toolbox import (
     AbstractToolBox,
     AbstractToolTagManager,
@@ -3384,6 +3387,10 @@ class OutputParameterJSONTool(Tool):
 class UserDefinedTool(Tool):
     tool_type = "user_defined"
     requires_js_runtime = True
+
+    def tool_provided_metadata(self, job_wrapper):
+        """Ignore tool-provided metadata files written by unprivileged tools."""
+        return NullToolProvidedMetadata()
 
 
 class ExpressionTool(Tool):
