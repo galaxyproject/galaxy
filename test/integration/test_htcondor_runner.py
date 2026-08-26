@@ -1906,13 +1906,23 @@ def test_hold_reason_code_sets_runner_state(
     expected_runner_state,
     message_fragment,
 ):
-    """JOB_HELD with a classified HoldReasonCode immediately fails with the correct runner_state."""
+    """A classified hold fails with the right runner_state once the grace window expires."""
+    from galaxy.jobs.runners.util.condor.htcondor import HELD_GRACE_SECONDS
+
     runner = runner_factory()
     job_wrapper = _job_wrapper(fake_instance, 1, dict(htcondor_config=f"/tmp/condor-hold-code-{hold_reason_code}"))
     cjs = _watch_job(runner, job_wrapper)
     _write_user_log(cjs)
+    clock = _FakeClock(cjs)
 
     _set_job_events_with_classads(fake_htcondor, cjs, [("JOB_HELD", {"HoldReasonCode": hold_reason_code})])
+    runner.check_watched_items()
+
+    # A hold is not terminal on sight - the pool may yet release the job.
+    assert runner.work_queue.empty()
+    assert len(runner.watched) == 1
+
+    clock.advance(HELD_GRACE_SECONDS)
     runner.check_watched_items()
 
     assert len(runner.watched) == 0
@@ -1920,6 +1930,61 @@ def test_hold_reason_code_sets_runner_state(
     assert method == runner.fail_job
     assert job_state_record.runner_state == expected_runner_state
     assert message_fragment.lower() in job_state_record.fail_message.lower()
+
+
+def test_memory_hold_released_by_pool_is_not_failed(fake_instance, fake_htcondor, runner_factory):
+    """A pool that releases held jobs must not be pre-empted by the hold reason.
+
+    Sites commonly configure periodic_release to retry a held job, at times
+    against a raised request_memory, so the retry can succeed where the first
+    attempt was held.
+    """
+    from galaxy.jobs.runners.util.condor.htcondor import HELD_GRACE_SECONDS
+
+    runner = runner_factory()
+    job_wrapper = _job_wrapper(fake_instance, 1, dict(htcondor_config="/tmp/condor-hold-released"))
+    cjs = _watch_job(runner, job_wrapper)
+    _write_user_log(cjs)
+    clock = _FakeClock(cjs)
+
+    _set_job_events_with_classads(fake_htcondor, cjs, [("JOB_HELD", {"HoldReasonCode": 34})])
+    runner.check_watched_items()
+    assert runner.work_queue.empty()
+    assert cjs.held_count == 1
+
+    clock.advance(HELD_GRACE_SECONDS / 2)
+    _set_job_events(fake_htcondor, cjs, ["JOB_RELEASED"])
+    runner.check_watched_items()
+    assert runner.work_queue.empty()
+    assert cjs.held_count == 0
+
+    # Well past the window the first hold opened, but the release cleared it.
+    clock.advance(HELD_GRACE_SECONDS)
+    runner.check_watched_items()
+    assert runner.work_queue.empty()
+    assert len(runner.watched) == 1
+
+
+def test_held_grace_seconds_is_configurable(fake_instance, fake_htcondor, runner_factory):
+    """held_grace_seconds destination param overrides how long a hold is tolerated."""
+    runner = runner_factory()
+    job_wrapper = _job_wrapper(
+        fake_instance, 1, dict(htcondor_config="/tmp/condor-hold-grace", held_grace_seconds="10")
+    )
+    cjs = _watch_job(runner, job_wrapper)
+    _write_user_log(cjs)
+    clock = _FakeClock(cjs)
+
+    _set_job_events_with_classads(fake_htcondor, cjs, [("JOB_HELD", {"HoldReasonCode": 34})])
+    runner.check_watched_items()
+    assert runner.work_queue.empty()
+
+    clock.advance(10)
+    runner.check_watched_items()
+
+    method, job_state_record = runner.work_queue.get_nowait()
+    assert method == runner.fail_job
+    assert job_state_record.runner_state == "memory_limit_reached"
 
 
 def test_hold_without_reason_code_uses_held_count_logic(fake_instance, fake_htcondor, runner_factory):

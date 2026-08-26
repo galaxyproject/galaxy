@@ -68,8 +68,17 @@ STATUS_ERROR_GRACE_SECONDS = 30.0
 # submission (NFS attribute caching defaults to 60s) as well as one that was
 # never written or was lost while the application was down.
 MISSING_LOG_GRACE_SECONDS = 60.0
+# How long a job may sit held before it is failed.  A hold is not by itself
+# terminal: a pool may release the job on its own, and sites commonly configure
+# periodic_release to retry a held job - sometimes against a raised
+# request_memory, so that the retry can succeed where the first attempt was
+# held.  Failing on the hold reason alone would pre-empt that policy, so the
+# job is failed only once it has stayed held for this long without a release.
+HELD_GRACE_SECONDS = 300.0
 # Number of distinct JOB_HELD events tolerated before a job is failed
-# permanently.  0 disables the escalation.
+# permanently.  This bounds hold/release thrashing, which the grace window
+# above cannot catch because each release restarts it.  0 disables the
+# escalation.
 DEFAULT_MAX_HELD_COUNT = 3
 
 # HTCondor HoldReasonCode values that indicate the job was held because it
@@ -114,6 +123,11 @@ MISSING_LOG_MESSAGE = (
     "manager was unavailable."
 )
 UNKNOWN_FAILURE_MESSAGE = "Cluster could not complete job"
+
+HELD_TOO_LONG_MESSAGE = (
+    "This job was held by HTCondor and stayed held without being released. "
+    "It may be waiting on a resource the pool cannot satisfy."
+)
 
 HOLD_MESSAGES = {
     HOLD_REASON_MEMORY_LIMIT: MEMORY_LIMIT_HOLD_MESSAGE,
@@ -257,24 +271,26 @@ class EventLogSummary(NamedTuple):
     job_running: bool
     job_complete: bool
     failure_event: int | None
-    job_held: bool
+    job_held: bool  # level: the job is held as of now, seeded from the prior cycle
     term_signal: int | None  # signal that killed the process (e.g. 9), None if normal exit
     hold_reason_code: int  # HoldReasonCode from JOB_HELD ClassAd, 0 if absent
     log_missing: bool = False  # True when the event log file does not exist
     job_released: bool = False  # True when a JOB_RELEASED event was seen this cycle
+    job_held_event: bool = False  # edge: a JOB_HELD event was seen this cycle
 
 
 class _EventState:
     """Mutable accumulator used while replaying a batch of event-log entries."""
 
-    def __init__(self, running: bool) -> None:
+    def __init__(self, running: bool, held: bool = False) -> None:
         self.job_running = running
         self.job_complete = False
         self.failure_event: int | None = None
-        self.job_held = False
+        self.job_held = held
         self.term_signal: int | None = None
         self.hold_reason_code = 0
         self.job_released = False
+        self.job_held_event = False
 
     def summary(self) -> EventLogSummary:
         return EventLogSummary(
@@ -285,6 +301,7 @@ class _EventState:
             self.term_signal,
             self.hold_reason_code,
             job_released=self.job_released,
+            job_held_event=self.job_held_event,
         )
 
 
@@ -305,6 +322,7 @@ def _apply_event(htcondor, state: _EventState, event) -> None:
     elif event_type == event_types.JOB_HELD:
         state.job_running = False
         state.job_held = True
+        state.job_held_event = True
         state.hold_reason_code = int(event.get("HoldReasonCode", 0))
     elif event_type == event_types.JOB_RELEASED:
         state.job_held = False
@@ -320,13 +338,18 @@ def _apply_event(htcondor, state: _EventState, event) -> None:
         state.failure_event = event_type
 
 
-def summarize_event_log(htcondor, event_log, cluster_id: int, running: bool = False) -> EventLogSummary:
+def summarize_event_log(
+    htcondor, event_log, cluster_id: int, running: bool = False, held: bool = False
+) -> EventLogSummary:
     """Replay the events appended to event_log since the last call.
 
-    ``running`` seeds the summary so that a cycle producing no new events
-    reports the state the caller already believed the job to be in.
+    ``running`` and ``held`` seed the summary so that a cycle producing no new
+    events reports the state the caller already believed the job to be in.
+    Seeding ``held`` is what makes ``job_held`` a level signal: a job held once
+    and never released emits a single JOB_HELD event, so without the seed it
+    would appear un-held on every later cycle.
     """
-    state = _EventState(running)
+    state = _EventState(running, held)
     for event in event_log.events(stop_after=0):
         if event.cluster != cluster_id or event.proc != 0:
             continue
@@ -350,6 +373,8 @@ class HTCondorEventLogTracker:
         self.clock = clock
         self.status_error_since: float | None = None
         self.missing_log_since: float | None = None
+        self.held_since: float | None = None
+        self.held_reason_code = 0
 
     def note_status_error(self) -> float:
         """Record a failed status check, returning seconds since the first one."""
@@ -371,6 +396,25 @@ class HTCondorEventLogTracker:
     def clear_missing_log(self) -> None:
         self.missing_log_since = None
 
+    def note_held(self, hold_reason_code: int = 0) -> float:
+        """Record that the job is held, returning seconds since it first was.
+
+        The reason code is remembered from the JOB_HELD event that opened the
+        hold.  Later cycles produce no new events, so the summary reports a
+        reason code of 0 by then, yet the caller still needs to know which
+        limit to name when the grace window expires.
+        """
+        now = self.clock()
+        if self.held_since is None:
+            self.held_since = now
+        if hold_reason_code:
+            self.held_reason_code = hold_reason_code
+        return now - self.held_since
+
+    def clear_held(self) -> None:
+        self.held_since = None
+        self.held_reason_code = 0
+
     def event_log(self, htcondor):
         if self._event_log is None:
             self._event_log = htcondor.JobEventLog(self.user_log)
@@ -384,11 +428,11 @@ class HTCondorEventLogTracker:
                 pass
             self._event_log = None
 
-    def summarize(self, htcondor, cluster_id: int, running: bool = False) -> EventLogSummary:
+    def summarize(self, htcondor, cluster_id: int, running: bool = False, held: bool = False) -> EventLogSummary:
         """Summarize new event-log entries, reporting log_missing if absent."""
         if not os.path.exists(self.user_log):
-            return EventLogSummary(running, False, None, False, None, 0, log_missing=True)
-        return summarize_event_log(htcondor, self.event_log(htcondor), cluster_id, running)
+            return EventLogSummary(running, False, None, held, None, 0, log_missing=True)
+        return summarize_event_log(htcondor, self.event_log(htcondor), cluster_id, running, held)
 
 
 class HTCondorClient:

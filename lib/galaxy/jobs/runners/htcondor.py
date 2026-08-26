@@ -32,7 +32,9 @@ from galaxy.jobs.runners.util.condor.htcondor import (
     DEFAULT_MAX_HELD_COUNT,
     FAILURE_EXECUTABLE_ERROR,
     FAILURE_MESSAGES,
+    HELD_GRACE_SECONDS,
     held_message,
+    HELD_TOO_LONG_MESSAGE,
     HOLD_MESSAGES,
     HOLD_REASON_MEMORY_LIMIT,
     HOLD_REASON_WALLTIME,
@@ -65,12 +67,21 @@ HTCONDOR_DESTINATION_KEYS = (
     "htcondor_config",
     "request_walltime",
     "max_held_count",
+    "held_grace_seconds",
     "embed_metadata_in_job",
 )
 HTCONDOR_REMOVE_REASON = "Galaxy job stop request"
 # Module attribute rather than a re-export of the shared default so that tests
 # can redirect the helper subprocess at a stub module.
 HTCONDOR_HELPER_MODULE = htcondor_helper.__name__
+# Galaxy's job model needs a runner_state per hold reason so that the
+# resubmission handler can act on it. Pulsar has no equivalent today; when it
+# grows one (galaxyproject/pulsar#492) this mapping belongs in the shared
+# module alongside HOLD_MESSAGES.
+_HOLD_RUNNER_STATES = {
+    HOLD_REASON_MEMORY_LIMIT: runner_states.MEMORY_LIMIT_REACHED,
+    HOLD_REASON_WALLTIME: runner_states.WALLTIME_REACHED,
+}
 
 
 class HTCondorJobState(AsynchronousJobState, HTCondorEventLogTracker):
@@ -102,6 +113,7 @@ class HTCondorJobState(AsynchronousJobState, HTCondorEventLogTracker):
         )
         HTCondorEventLogTracker.__init__(self, user_log)
         self.failed = False
+        self.held = False
 
 
 class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
@@ -333,9 +345,16 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                 continue
             cjs.clear_missing_log()
 
-            if summary.job_released and cjs.held_count > 0:
-                log.debug(f"({galaxy_id_tag}/{job_id}) job released, resetting held_count from {cjs.held_count} to 0")
-                cjs.held_count = 0
+            if summary.job_released:
+                if cjs.held_count > 0:
+                    log.debug(
+                        f"({galaxy_id_tag}/{job_id}) job released, resetting held_count from {cjs.held_count} to 0"
+                    )
+                    cjs.held_count = 0
+                # A release restarts the grace window - the pool is retrying the
+                # job, possibly against raised resources.
+                cjs.held = False
+                cjs.clear_held()
 
             if job_running:
                 cjs.job_wrapper.check_for_entry_points()
@@ -380,45 +399,58 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                     model.Job.states.DELETED,
                     model.Job.states.STOPPED,
                 ):
-                    # Classify the hold by HoldReasonCode before applying the
-                    # generic held_count escalation logic.
-                    hold_reason = classify_hold(hold_reason_code)
-                    if hold_reason == HOLD_REASON_MEMORY_LIMIT:
-                        log.info(
-                            f"({galaxy_id_tag}/{job_id}) job held for memory limit (HoldReasonCode={hold_reason_code})"
+                    # A hold is not by itself terminal: the pool may release the
+                    # job on its own, and sites commonly configure
+                    # periodic_release to retry a held job - sometimes against a
+                    # raised request_memory. Failing on the hold reason alone
+                    # would pre-empt that policy, so escalate on how long the
+                    # hold lasts and on how often it recurs instead.
+                    cjs.held = True
+                    if summary.job_held_event:
+                        cjs.held_count += 1
+                        # max_held_count: destination parameter, counts distinct
+                        # JOB_HELD events (default 3, 0 = disabled). Bounds
+                        # hold/release thrashing, which the grace window below
+                        # cannot catch because each release restarts it.
+                        max_held_count = int(
+                            cjs.job_wrapper.job_destination.params.get("max_held_count", DEFAULT_MAX_HELD_COUNT)
                         )
-                        cjs.fail_message = HOLD_MESSAGES[hold_reason]
-                        cjs.runner_state = runner_states.MEMORY_LIMIT_REACHED
-                        cjs.close_event_log()
-                        self.work_queue.put((self.fail_job, cjs))
-                        continue
-                    if hold_reason == HOLD_REASON_WALLTIME:
-                        log.info(f"({galaxy_id_tag}/{job_id}) job held by periodic_hold expression (walltime)")
-                        cjs.fail_message = HOLD_MESSAGES[hold_reason]
-                        cjs.runner_state = runner_states.WALLTIME_REACHED
-                        cjs.close_event_log()
-                        self.work_queue.put((self.fail_job, cjs))
-                        continue
-                    cjs.held_count += 1
-                    # max_held_count: destination parameter, counts distinct JOB_HELD events (default 3, 0 = disabled)
-                    max_held_count = int(
-                        cjs.job_wrapper.job_destination.params.get("max_held_count", DEFAULT_MAX_HELD_COUNT)
+                        if max_held_count > 0 and cjs.held_count >= max_held_count:
+                            log.warning(
+                                f"({galaxy_id_tag}/{job_id}) Job held {cjs.held_count} "
+                                "times without release, failing permanently"
+                            )
+                            cjs.fail_message = held_message(cjs.held_count)
+                            cjs.runner_state = runner_states.UNKNOWN_ERROR
+                            cjs.close_event_log()
+                            self.work_queue.put((self.fail_job, cjs))
+                            continue
+                    held_grace_seconds = float(
+                        cjs.job_wrapper.job_destination.params.get("held_grace_seconds", HELD_GRACE_SECONDS)
                     )
-                    if max_held_count > 0 and cjs.held_count >= max_held_count:
-                        log.warning(
-                            f"({galaxy_id_tag}/{job_id}) Job held {cjs.held_count} "
-                            "times without release, failing permanently"
+                    elapsed = cjs.note_held(hold_reason_code)
+                    if elapsed >= held_grace_seconds:
+                        hold_reason = classify_hold(cjs.held_reason_code)
+                        log.info(
+                            f"({galaxy_id_tag}/{job_id}) job held {elapsed:.0f}s without release "
+                            f"(HoldReasonCode={cjs.held_reason_code}), failing"
                         )
-                        cjs.fail_message = held_message(cjs.held_count)
-                        cjs.runner_state = runner_states.UNKNOWN_ERROR
+                        cjs.fail_message = HOLD_MESSAGES.get(hold_reason, HELD_TOO_LONG_MESSAGE)
+                        cjs.runner_state = _HOLD_RUNNER_STATES.get(hold_reason, runner_states.UNKNOWN_ERROR)
                         cjs.close_event_log()
                         self.work_queue.put((self.fail_job, cjs))
                         continue
+                    log.debug(
+                        f"({galaxy_id_tag}/{job_id}) job held {elapsed:.0f}s of {held_grace_seconds:.0f}s "
+                        f"(HoldReasonCode={cjs.held_reason_code}), held count {cjs.held_count}"
+                    )
                     cjs.job_wrapper.change_state(model.Job.states.QUEUED)
                 cjs.running = False
                 new_watched.append(cjs)
                 continue
             cjs.running = job_running
+            cjs.held = False
+            cjs.clear_held()
             new_watched.append(cjs)
         self.watched = new_watched
 
@@ -469,7 +501,7 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
     def _summarize_event_log(self, cjs: HTCondorJobState):
         if cjs.job_id is None:
             raise RuntimeError("Missing HTCondor job_id while summarizing event log.")
-        return cjs.summarize(self.htcondor, int(cjs.job_id), cjs.running)
+        return cjs.summarize(self.htcondor, int(cjs.job_id), cjs.running, cjs.held)
 
     def _apply_failure_event(self, cjs: HTCondorJobState, failure_event: int) -> None:
         """Set fail_message and runner_state on cjs based on the HTCondor failure event type."""
