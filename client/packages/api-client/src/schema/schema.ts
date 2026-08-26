@@ -5684,10 +5684,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Index */
+        /** List the user-defined tools owned by the current user. */
         get: operations["index_api_unprivileged_tools_get"];
         put?: never;
-        /** Create */
+        /**
+         * Create a user-defined tool.
+         * @description Creates a tool owned by the calling user from a `GalaxyUserTool` representation. The representation is validated and linted before it is stored, and a failure is returned as a 400 listing each problem. See the authoring reference at https://docs.galaxyproject.org/en/master/dev/user_defined_tools_authoring.html for the tool format, and run the resulting tool with `POST /api/tools` passing `tool_uuid`.
+         */
         post: operations["create_api_unprivileged_tools_post"];
         delete?: never;
         options?: never;
@@ -5704,7 +5707,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Build */
+        /**
+         * Render the tool form for a representation without storing the tool.
+         * @description Builds the tool against a history and returns the same payload the tool form consumes, without creating anything. Useful for checking that a draft's input interface is what you intended.
+         */
         post: operations["build_api_unprivileged_tools_build_post"];
         delete?: never;
         options?: never;
@@ -5721,7 +5727,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Runtime Model */
+        /**
+         * Return an OpenAPI model of a representation's inputs.
+         * @description Returns an OpenAPI document describing the inputs the tool would accept at runtime, so a client can validate or generate a request body for it without storing the tool.
+         */
         post: operations["runtime_model_api_unprivileged_tools_runtime_model_post"];
         delete?: never;
         options?: never;
@@ -5736,12 +5745,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Show */
+        /** Show one user-defined tool owned by the current user. */
         get: operations["show_api_unprivileged_tools__uuid__get"];
         put?: never;
         post?: never;
         /**
-         * Delete
+         * Deactivate a user-defined tool owned by the current user.
          * @description DELETE /api/unprivileged_tools/{encoded_dynamic_tool_id|tool_uuid}
          *
          *     Deactivate the specified dynamic tool. Deactivated tools will not
@@ -12169,7 +12178,13 @@ export interface components {
             /** Upload */
             upload?: number;
         };
-        /** EmptyFieldParameterValidatorModel */
+        /**
+         * EmptyFieldParameterValidatorModel
+         * @description Require a parameter value to be present unless the rule is negated.
+         * @example {
+         *       "type": "empty_field"
+         *     }
+         */
         EmptyFieldParameterValidatorModel: {
             /**
              * Implicit
@@ -16021,7 +16036,15 @@ export interface components {
              */
             uri: string;
         };
-        /** InRangeParameterValidatorModel */
+        /**
+         * InRangeParameterValidatorModel
+         * @description Require a numeric value to fall within the configured bounds.
+         * @example {
+         *       "max": 1,
+         *       "min": 0,
+         *       "type": "in_range"
+         *     }
+         */
         InRangeParameterValidatorModel: {
             /**
              * Exclude Max
@@ -16055,7 +16078,14 @@ export interface components {
              */
             type: "in_range";
         };
-        /** IncomingToolOutputBoolean */
+        /**
+         * IncomingToolOutputBoolean
+         * @description A boolean value emitted as a workflow-visible scalar output.
+         * @example {
+         *       "name": "matched",
+         *       "type": "boolean"
+         *     }
+         */
         IncomingToolOutputBoolean: {
             /**
              * Hidden
@@ -16078,7 +16108,21 @@ export interface components {
              */
             type: "boolean";
         };
-        /** IncomingToolOutputCollection */
+        /**
+         * IncomingToolOutputCollection
+         * @description A dataset collection populated by discovering files produced by the command.
+         * @example {
+         *       "collection_type": "list",
+         *       "discover_datasets": [
+         *         {
+         *           "format": "txt",
+         *           "pattern": "(?P<name>.+)\\.txt"
+         *         }
+         *       ],
+         *       "name": "results",
+         *       "type": "collection"
+         *     }
+         */
         IncomingToolOutputCollection: {
             /** Collection Type */
             collection_type?: string | null;
@@ -16116,7 +16160,16 @@ export interface components {
              */
             type: "collection";
         };
-        /** IncomingToolOutputDataset */
+        /**
+         * IncomingToolOutputDataset
+         * @description A dataset collected from a file produced in the job working directory.
+         * @example {
+         *       "format": "txt",
+         *       "from_work_dir": "result.txt",
+         *       "name": "result",
+         *       "type": "data"
+         *     }
+         */
         IncomingToolOutputDataset: {
             /** Discover Datasets */
             discover_datasets?:
@@ -16171,7 +16224,14 @@ export interface components {
              */
             type: "data";
         };
-        /** IncomingToolOutputFloat */
+        /**
+         * IncomingToolOutputFloat
+         * @description A floating-point value emitted as a workflow-visible scalar output.
+         * @example {
+         *       "name": "score",
+         *       "type": "float"
+         *     }
+         */
         IncomingToolOutputFloat: {
             /**
              * Hidden
@@ -16194,7 +16254,14 @@ export interface components {
              */
             type: "float";
         };
-        /** IncomingToolOutputInteger */
+        /**
+         * IncomingToolOutputInteger
+         * @description An integer value emitted as a workflow-visible scalar output.
+         * @example {
+         *       "name": "match_count",
+         *       "type": "integer"
+         *     }
+         */
         IncomingToolOutputInteger: {
             /**
              * Hidden
@@ -16217,7 +16284,14 @@ export interface components {
              */
             type: "integer";
         };
-        /** IncomingToolOutputText */
+        /**
+         * IncomingToolOutputText
+         * @description A text value emitted as a workflow-visible scalar output.
+         * @example {
+         *       "name": "message",
+         *       "type": "text"
+         *     }
+         */
         IncomingToolOutputText: {
             /**
              * Hidden
@@ -18226,7 +18300,15 @@ export interface components {
              */
             LIBRARY_MODIFY_in: string[] | string | null;
         };
-        /** LengthParameterValidatorModel */
+        /**
+         * LengthParameterValidatorModel
+         * @description Require a text value to have a length within the configured bounds.
+         * @example {
+         *       "max": 20,
+         *       "min": 1,
+         *       "type": "length"
+         *     }
+         */
         LengthParameterValidatorModel: {
             /**
              * Implicit
@@ -19494,7 +19576,13 @@ export interface components {
              */
             slug: string;
         };
-        /** NoOptionsParameterValidatorModel */
+        /**
+         * NoOptionsParameterValidatorModel
+         * @description Reject a select parameter when it has no available options.
+         * @example {
+         *       "type": "no_options"
+         *     }
+         */
         NoOptionsParameterValidatorModel: {
             /**
              * Implicit
@@ -21175,11 +21263,14 @@ export interface components {
         };
         /**
          * RegexParameterValidatorModel
-         * @description Check if a regular expression **matches** the value, i.e. appears
-         *     at the beginning of the value. To enforce a match of the complete value use
-         *     ``$`` at the end of the expression. The expression is given is the content
-         *     of the validator tag. Note that for ``selects`` each option is checked
-         *     separately.
+         * @description Require a regular expression to match from the start of the value.
+         *
+         *     End the expression with ``$`` to require a full-value match. Each option of
+         *     a select parameter is checked separately.
+         * @example {
+         *       "expression": "^[ACGT]+$",
+         *       "type": "regex"
+         *     }
          */
         RegexParameterValidatorModel: {
             /** Expression */
@@ -21455,7 +21546,16 @@ export interface components {
          * @enum {string}
          */
         Requirement: "logged_in" | "new_history" | "admin";
-        /** ResourceRequirement */
+        /**
+         * ResourceRequirement
+         * @description A tool's compute resource request.
+         *
+         *     Set the minimum resources needed to run the job and, when useful, an upper
+         *     limit. Galaxy exposes the allocated CPU count to the command as
+         *     ``$GALAXY_SLOTS``. Use numbers or numeric strings. Other strings are
+         *     reserved for expressions, which are not evaluated yet and are currently
+         *     ignored.
+         */
         ResourceRequirement: {
             /**
              * Cores Max
@@ -21472,15 +21572,30 @@ export interface components {
              * @default 1
              */
             cores_min: number | string | null;
-            /** Cuda Compute Capability */
+            /**
+             * Cuda Compute Capability
+             * @description Minimum CUDA compute capability required, e.g. 7.5.
+             */
             cuda_compute_capability?: number | string | null;
-            /** Cuda Device Count Max */
+            /**
+             * Cuda Device Count Max
+             * @description Maximum number of GPUs to reserve.
+             */
             cuda_device_count_max?: number | string | null;
-            /** Cuda Device Count Min */
+            /**
+             * Cuda Device Count Min
+             * @description Minimum number of GPUs to reserve.
+             */
             cuda_device_count_min?: number | string | null;
-            /** Cuda Version Min */
+            /**
+             * Cuda Version Min
+             * @description Minimum CUDA runtime version required, e.g. 11.2.
+             */
             cuda_version_min?: number | string | null;
-            /** Gpu Memory Min */
+            /**
+             * Gpu Memory Min
+             * @description Minimum GPU memory required, in mebibytes (2**20).
+             */
             gpu_memory_min?: number | string | null;
             /**
              * Ram Max
@@ -21495,16 +21610,25 @@ export interface components {
              * @default 256
              */
             ram_min: number | string | null;
-            /** Shm Size */
+            /**
+             * Shm Size
+             * @description Size of /dev/shm to request as `<number><unit>`. The optional unit can be `b` (bytes), `k` (kilobytes), `m` (megabytes), or `g` (gigabytes); without a unit, the value is bytes.
+             */
             shm_size?: number | string | null;
             /**
              * Timelimit
              * @description Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded.
              */
             timelimit?: number | string | null;
-            /** Tmpdir Max */
+            /**
+             * Tmpdir Max
+             * @description Maximum reserved temporary directory space, in mebibytes (2**20).
+             */
             tmpdir_max?: number | string | null;
-            /** Tmpdir Min */
+            /**
+             * Tmpdir Min
+             * @description Minimum reserved temporary directory space, in mebibytes (2**20).
+             */
             tmpdir_min?: number | string | null;
             /**
              * Type
@@ -25731,9 +25855,38 @@ export interface components {
          *     (``DynamicUnprivilegedToolCreatePayload.representation``). LLM authoring
          *     uses the slimmer ``UserToolSourceAuthoringView`` parent; ``tests`` is added
          *     back here so direct authors and stored rows can still carry tests.
+         * @example {
+         *       "class": "GalaxyUserTool",
+         *       "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+         *       "description": "from a text file",
+         *       "id": "remove_comments",
+         *       "inputs": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "name": "Remove Comment Lines",
+         *       "outputs": [
+         *         {
+         *           "format_source": "input_file",
+         *           "from_work_dir": "output.txt",
+         *           "name": "output_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "shell_command": "grep -v '^#' '$(inputs.input_file.path)' > output.txt || test \"$?\" = 1",
+         *       "version": "0.1.0"
+         *     }
          */
         "UserToolSource-Input": {
-            /** citations */
+            /**
+             * citations
+             * @description DOI or BibTeX references for publications describing the wrapped tool.
+             */
             citations?: components["schemas"]["Citation"][] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -25742,27 +25895,33 @@ export interface components {
             class: "GalaxyUserTool";
             /**
              * configfiles
-             * @description A list of config files for this tool.
+             * @description Files Galaxy writes into the job working directory before running the command. Their content is evaluated with the same sandboxed ECMAScript expressions as `shell_command`. Put scripts and other substantial command logic here, then keep `shell_command` to a short invocation.
              */
             configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
              * container
-             * @description Container image to use for this tool.
+             * @description Shorthand for a single Docker container requirement, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
              * @example quay.io/biocontainers/python:3.13
              */
-            container: string;
+            container?: string | null;
             /**
              * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
              */
             description?: string | null;
-            /** edam_operations */
+            /**
+             * edam_operations
+             * @description EDAM operation identifiers such as `operation_0308`.
+             */
             edam_operations?: string[] | null;
-            /** edam_topics */
+            /**
+             * edam_topics
+             * @description EDAM topic identifiers such as `topic_0102`.
+             */
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help text shown below the tool interface.
+             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
              */
             help?: components["schemas"]["HelpContent"] | null;
             /**
@@ -25773,6 +25932,7 @@ export interface components {
             id?: string | null;
             /**
              * inputs
+             * @description Parameters displayed on the tool form. Each item needs a unique `name` and a supported `type`. Reference scalar values as `$(inputs.input_name)` and data inputs as `$(inputs.input_name.path)` in `shell_command` or config files. Conditional, repeat, and section inputs contain nested parameters.
              * @default []
              */
             inputs: components["schemas"]["YamlGalaxyToolParameter-Input"][];
@@ -25789,6 +25949,7 @@ export interface components {
             name: string;
             /**
              * outputs
+             * @description Results Galaxy collects after the command finishes. A data output identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output uses `discover_datasets`. Scalar output types are `text`, `integer`, `float`, and `boolean`.
              * @default []
              */
             outputs: (
@@ -25803,7 +25964,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers, compute resource requests, and container requirements needed to execute this tool. The top-level `container` key is shorthand for a single Docker container requirement.
              * @default []
              */
             requirements:
@@ -25815,11 +25976,14 @@ export interface components {
                 | null;
             /**
              * shell_command
-             * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @description A string that contains the command to be executed. Reference inputs inside `$()` as `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a JavaScript function body that must return a value. Substituted values are not shell-quoted, so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell command substitution and braced parameter expansion do not reach the shell: escape them as `\$(` and `\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`.
              * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
              */
             shell_command: string;
-            /** tests */
+            /**
+             * tests
+             * @description Tool test declarations with input values and expected outputs. Database-stored user-defined tools retain these declarations but do not currently run them in the application.
+             */
             tests?: components["schemas"]["YamlToolTest-Input"][] | null;
             /**
              * version
@@ -25827,7 +25991,10 @@ export interface components {
              * @example 0.1.0
              */
             version: string;
-            /** xrefs */
+            /**
+             * xrefs
+             * @description External registry identifiers, each with a registry `type` and identifier `value`.
+             */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /**
@@ -25838,9 +26005,38 @@ export interface components {
          *     (``DynamicUnprivilegedToolCreatePayload.representation``). LLM authoring
          *     uses the slimmer ``UserToolSourceAuthoringView`` parent; ``tests`` is added
          *     back here so direct authors and stored rows can still carry tests.
+         * @example {
+         *       "class": "GalaxyUserTool",
+         *       "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+         *       "description": "from a text file",
+         *       "id": "remove_comments",
+         *       "inputs": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "name": "Remove Comment Lines",
+         *       "outputs": [
+         *         {
+         *           "format_source": "input_file",
+         *           "from_work_dir": "output.txt",
+         *           "name": "output_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "shell_command": "grep -v '^#' '$(inputs.input_file.path)' > output.txt || test \"$?\" = 1",
+         *       "version": "0.1.0"
+         *     }
          */
         "UserToolSource-Output": {
-            /** citations */
+            /**
+             * citations
+             * @description DOI or BibTeX references for publications describing the wrapped tool.
+             */
             citations?: components["schemas"]["Citation"][] | null;
             /**
              * class_
@@ -25849,27 +26045,33 @@ export interface components {
             class: "GalaxyUserTool";
             /**
              * configfiles
-             * @description A list of config files for this tool.
+             * @description Files Galaxy writes into the job working directory before running the command. Their content is evaluated with the same sandboxed ECMAScript expressions as `shell_command`. Put scripts and other substantial command logic here, then keep `shell_command` to a short invocation.
              */
             configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
              * container
-             * @description Container image to use for this tool.
+             * @description Shorthand for a single Docker container requirement, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
              * @example quay.io/biocontainers/python:3.13
              */
-            container: string;
+            container?: string | null;
             /**
              * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
              */
             description?: string | null;
-            /** edam_operations */
+            /**
+             * edam_operations
+             * @description EDAM operation identifiers such as `operation_0308`.
+             */
             edam_operations?: string[] | null;
-            /** edam_topics */
+            /**
+             * edam_topics
+             * @description EDAM topic identifiers such as `topic_0102`.
+             */
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help text shown below the tool interface.
+             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
              */
             help?: components["schemas"]["HelpContent"] | null;
             /**
@@ -25880,6 +26082,7 @@ export interface components {
             id?: string | null;
             /**
              * inputs
+             * @description Parameters displayed on the tool form. Each item needs a unique `name` and a supported `type`. Reference scalar values as `$(inputs.input_name)` and data inputs as `$(inputs.input_name.path)` in `shell_command` or config files. Conditional, repeat, and section inputs contain nested parameters.
              * @default []
              */
             inputs: components["schemas"]["YamlGalaxyToolParameter-Output"][];
@@ -25896,6 +26099,7 @@ export interface components {
             name: string;
             /**
              * outputs
+             * @description Results Galaxy collects after the command finishes. A data output identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output uses `discover_datasets`. Scalar output types are `text`, `integer`, `float`, and `boolean`.
              * @default []
              */
             outputs: (
@@ -25910,7 +26114,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers, compute resource requests, and container requirements needed to execute this tool. The top-level `container` key is shorthand for a single Docker container requirement.
              * @default []
              */
             requirements:
@@ -25922,11 +26126,14 @@ export interface components {
                 | null;
             /**
              * shell_command
-             * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @description A string that contains the command to be executed. Reference inputs inside `$()` as `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a JavaScript function body that must return a value. Substituted values are not shell-quoted, so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell command substitution and braced parameter expansion do not reach the shell: escape them as `\$(` and `\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`.
              * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
              */
             shell_command: string;
-            /** tests */
+            /**
+             * tests
+             * @description Tool test declarations with input values and expected outputs. Database-stored user-defined tools retain these declarations but do not currently run them in the application.
+             */
             tests?: components["schemas"]["YamlToolTest-Output"][] | null;
             /**
              * version
@@ -25934,7 +26141,10 @@ export interface components {
              * @example 0.1.0
              */
             version: string;
-            /** xrefs */
+            /**
+             * xrefs
+             * @description External registry identifiers, each with a registry `type` and identifier `value`.
+             */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /** UserUpdatePayload */
@@ -27117,16 +27327,35 @@ export interface components {
              */
             namespace: string;
         };
-        /** YamlBooleanParameter */
+        /**
+         * YamlBooleanParameter
+         * @description A true-or-false input.
+         * @example {
+         *       "label": "Include a header line",
+         *       "name": "include_header",
+         *       "type": "boolean",
+         *       "value": true
+         *     }
+         */
         YamlBooleanParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
@@ -27137,20 +27366,40 @@ export interface components {
             type: "boolean";
             /**
              * Value
+             * @description Default value.
              * @default false
              */
             value: boolean | null;
         };
-        /** YamlColorParameter */
+        /**
+         * YamlColorParameter
+         * @description A color-picker input.
+         * @example {
+         *       "label": "Plot color",
+         *       "name": "plot_color",
+         *       "type": "color",
+         *       "value": "#3366cc"
+         *     }
+         */
         YamlColorParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
@@ -27159,23 +27408,79 @@ export interface components {
              * @enum {string}
              */
             type: "color";
-            /** Value */
+            /**
+             * Value
+             * @description Default color in hexadecimal notation.
+             */
             value?: string | null;
         };
-        /** YamlConditionalParameter */
+        /**
+         * YamlConditionalParameter
+         * @description Inputs selected by the value of a boolean or select test parameter.
+         * @example {
+         *       "name": "search_options",
+         *       "test_parameter": {
+         *         "label": "Search mode",
+         *         "name": "mode",
+         *         "options": [
+         *           {
+         *             "label": "Fast",
+         *             "selected": true,
+         *             "value": "fast"
+         *           },
+         *           {
+         *             "label": "Sensitive",
+         *             "selected": false,
+         *             "value": "sensitive"
+         *           }
+         *         ],
+         *         "type": "select"
+         *       },
+         *       "type": "conditional",
+         *       "whens": [
+         *         {
+         *           "discriminator": "fast",
+         *           "parameters": []
+         *         },
+         *         {
+         *           "discriminator": "sensitive",
+         *           "parameters": [
+         *             {
+         *               "name": "iterations",
+         *               "type": "integer",
+         *               "value": 3
+         *             }
+         *           ]
+         *         }
+         *       ]
+         *     }
+         */
         "YamlConditionalParameter-Input": {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
-            /** Test Parameter */
+            /**
+             * Test Parameter
+             * @description Boolean or select input controlling the active branch.
+             */
             test_parameter:
                 | components["schemas"]["YamlBooleanParameter"]
                 | components["schemas"]["YamlSelectParameter"];
@@ -27184,23 +27489,79 @@ export interface components {
              * @enum {string}
              */
             type: "conditional";
-            /** Whens */
+            /**
+             * Whens
+             * @description Parameters enabled for each test value.
+             */
             whens: components["schemas"]["YamlConditionalWhen-Input"][];
         };
-        /** YamlConditionalParameter */
+        /**
+         * YamlConditionalParameter
+         * @description Inputs selected by the value of a boolean or select test parameter.
+         * @example {
+         *       "name": "search_options",
+         *       "test_parameter": {
+         *         "label": "Search mode",
+         *         "name": "mode",
+         *         "options": [
+         *           {
+         *             "label": "Fast",
+         *             "selected": true,
+         *             "value": "fast"
+         *           },
+         *           {
+         *             "label": "Sensitive",
+         *             "selected": false,
+         *             "value": "sensitive"
+         *           }
+         *         ],
+         *         "type": "select"
+         *       },
+         *       "type": "conditional",
+         *       "whens": [
+         *         {
+         *           "discriminator": "fast",
+         *           "parameters": []
+         *         },
+         *         {
+         *           "discriminator": "sensitive",
+         *           "parameters": [
+         *             {
+         *               "name": "iterations",
+         *               "type": "integer",
+         *               "value": 3
+         *             }
+         *           ]
+         *         }
+         *       ]
+         *     }
+         */
         "YamlConditionalParameter-Output": {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
-            /** Test Parameter */
+            /**
+             * Test Parameter
+             * @description Boolean or select input controlling the active branch.
+             */
             test_parameter:
                 | components["schemas"]["YamlBooleanParameter"]
                 | components["schemas"]["YamlSelectParameter"];
@@ -27209,7 +27570,10 @@ export interface components {
              * @enum {string}
              */
             type: "conditional";
-            /** Whens */
+            /**
+             * Whens
+             * @description Parameters enabled for each test value.
+             */
             whens: components["schemas"]["YamlConditionalWhen-Output"][];
         };
         /** YamlConditionalWhen */
@@ -27232,25 +27596,51 @@ export interface components {
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
         };
-        /** YamlDataCollectionParameter */
+        /**
+         * YamlDataCollectionParameter
+         * @description A dataset collection input.
+         * @example {
+         *       "collection_type": "paired",
+         *       "format": [
+         *         "fastqsanger"
+         *       ],
+         *       "label": "Paired reads",
+         *       "name": "reads",
+         *       "type": "data_collection"
+         *     }
+         */
         YamlDataCollectionParameter: {
-            /** Collection Type */
+            /**
+             * Collection Type
+             * @description Required collection structure, such as `list` or `paired`.
+             */
             collection_type?: string | null;
             /**
              * Format
+             * @description Accepted datatype extensions for collection elements.
              * @default [
              *       "data"
              *     ]
              */
             format: string[];
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
@@ -27260,18 +27650,37 @@ export interface components {
              */
             type: "data_collection";
         };
-        /** YamlDataParameter */
+        /**
+         * YamlDataParameter
+         * @description One dataset, or a list of datasets when ``multiple`` is true.
+         * @example {
+         *       "format": [
+         *         "txt",
+         *         "tabular"
+         *       ],
+         *       "label": "Input file",
+         *       "name": "input_file",
+         *       "type": "data"
+         *     }
+         */
         YamlDataParameter: {
             /**
              * Format
+             * @description Accepted Galaxy datatype extensions.
              * @default [
              *       "data"
              *     ]
              */
             format: string[];
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
             /**
              * Multiple
@@ -27279,10 +27688,14 @@ export interface components {
              * @default false
              */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
@@ -27292,20 +27705,47 @@ export interface components {
              */
             type: "data";
         };
-        /** YamlFloatParameter */
+        /**
+         * YamlFloatParameter
+         * @description A numeric input with optional bounds and validators.
+         * @example {
+         *       "label": "Score threshold",
+         *       "max": 1,
+         *       "min": 0,
+         *       "name": "threshold",
+         *       "type": "float",
+         *       "value": 0.5
+         *     }
+         */
         YamlFloatParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Max */
+            /**
+             * Max
+             * @description Maximum accepted value.
+             */
             max?: number | null;
-            /** Min */
+            /**
+             * Min
+             * @description Minimum accepted value.
+             */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
@@ -27316,10 +27756,14 @@ export interface components {
             type: "float";
             /**
              * Validators
+             * @description Additional validation rules; supports `in_range`.
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
-            /** Value */
+            /**
+             * Value
+             * @description Default value.
+             */
             value?: number | null;
         };
         /** YamlGalaxyToolParameter */
@@ -27348,20 +27792,47 @@ export interface components {
             | components["schemas"]["YamlConditionalParameter-Output"]
             | components["schemas"]["YamlRepeatParameter-Output"]
             | components["schemas"]["YamlSectionParameter-Output"];
-        /** YamlIntegerParameter */
+        /**
+         * YamlIntegerParameter
+         * @description A whole-number input with optional bounds and validators.
+         * @example {
+         *       "label": "Number of lines",
+         *       "max": 1000,
+         *       "min": 1,
+         *       "name": "num_lines",
+         *       "type": "integer",
+         *       "value": 10
+         *     }
+         */
         YamlIntegerParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Max */
+            /**
+             * Max
+             * @description Maximum accepted value.
+             */
             max?: number | null;
-            /** Min */
+            /**
+             * Min
+             * @description Minimum accepted value.
+             */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
@@ -27372,10 +27843,14 @@ export interface components {
             type: "integer";
             /**
              * Validators
+             * @description Additional validation rules; supports `in_range`.
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
-            /** Value */
+            /**
+             * Value
+             * @description Default value.
+             */
             value?: number | null;
         };
         /**
@@ -27393,25 +27868,61 @@ export interface components {
             /** Value */
             value: string;
         };
-        /** YamlRepeatParameter */
+        /**
+         * YamlRepeatParameter
+         * @description A group of inputs the user may add several times.
+         * @example {
+         *       "label": "Additional files",
+         *       "max": 3,
+         *       "min": 0,
+         *       "name": "extra_files",
+         *       "parameters": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "type": "repeat"
+         *     }
+         */
         "YamlRepeatParameter-Input": {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Max */
+            /**
+             * Max
+             * @description Maximum number of repetitions.
+             */
             max?: number | null;
-            /** Min */
+            /**
+             * Min
+             * @description Minimum number of repetitions.
+             */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
+             * @description Inputs contained in each repetition.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Input"][];
@@ -27421,25 +27932,61 @@ export interface components {
              */
             type: "repeat";
         };
-        /** YamlRepeatParameter */
+        /**
+         * YamlRepeatParameter
+         * @description A group of inputs the user may add several times.
+         * @example {
+         *       "label": "Additional files",
+         *       "max": 3,
+         *       "min": 0,
+         *       "name": "extra_files",
+         *       "parameters": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "type": "repeat"
+         *     }
+         */
         "YamlRepeatParameter-Output": {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Max */
+            /**
+             * Max
+             * @description Maximum number of repetitions.
+             */
             max?: number | null;
-            /** Min */
+            /**
+             * Min
+             * @description Minimum number of repetitions.
+             */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
+             * @description Inputs contained in each repetition.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
@@ -27449,21 +27996,49 @@ export interface components {
              */
             type: "repeat";
         };
-        /** YamlSectionParameter */
+        /**
+         * YamlSectionParameter
+         * @description A labeled group of related inputs.
+         * @example {
+         *       "label": "Advanced options",
+         *       "name": "advanced",
+         *       "parameters": [
+         *         {
+         *           "max": 1,
+         *           "min": 0,
+         *           "name": "threshold",
+         *           "type": "float",
+         *           "value": 0.5
+         *         }
+         *       ],
+         *       "type": "section"
+         *     }
+         */
         "YamlSectionParameter-Input": {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
+             * @description Inputs contained in the section.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Input"][];
@@ -27473,21 +28048,49 @@ export interface components {
              */
             type: "section";
         };
-        /** YamlSectionParameter */
+        /**
+         * YamlSectionParameter
+         * @description A labeled group of related inputs.
+         * @example {
+         *       "label": "Advanced options",
+         *       "name": "advanced",
+         *       "parameters": [
+         *         {
+         *           "max": 1,
+         *           "min": 0,
+         *           "name": "threshold",
+         *           "type": "float",
+         *           "value": 0.5
+         *         }
+         *       ],
+         *       "type": "section"
+         *     }
+         */
         "YamlSectionParameter-Output": {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
             /**
              * Parameters
+             * @description Inputs contained in the section.
              * @default []
              */
             parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
@@ -27497,25 +28100,59 @@ export interface components {
              */
             type: "section";
         };
-        /** YamlSelectParameter */
+        /**
+         * YamlSelectParameter
+         * @description A choice from a fixed list of options.
+         * @example {
+         *       "label": "Search mode",
+         *       "name": "mode",
+         *       "options": [
+         *         {
+         *           "label": "Fast",
+         *           "selected": true,
+         *           "value": "fast"
+         *         },
+         *         {
+         *           "label": "Sensitive",
+         *           "selected": false,
+         *           "value": "sensitive"
+         *         }
+         *       ],
+         *       "type": "select"
+         *     }
+         */
         YamlSelectParameter: {
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
             /**
              * Multiple
+             * @description Whether the user may select several options.
              * @default false
              */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
-            /** Options */
+            /**
+             * Options
+             * @description Static choices shown to the user.
+             */
             options: components["schemas"]["YamlLabelValue"][];
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -27524,6 +28161,7 @@ export interface components {
             type: "select";
             /**
              * Validators
+             * @description Additional validation rules; supports `no_options`.
              * @default []
              */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][];
@@ -27581,21 +28219,42 @@ export interface components {
              */
             value: string;
         };
-        /** YamlTextParameter */
+        /**
+         * YamlTextParameter
+         * @description A single-line or multiline text input.
+         * @example {
+         *       "area": false,
+         *       "label": "Sequence motif",
+         *       "name": "motif",
+         *       "type": "text",
+         *       "value": "ACGT"
+         *     }
+         */
         YamlTextParameter: {
             /**
              * Area
+             * @description Whether to display a multiline text area.
              * @default false
              */
             area: boolean;
-            /** Help */
+            /**
+             * Help
+             * @description Help text displayed with the input.
+             */
             help?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description Label displayed on the tool form.
+             */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Identifier used to reference this input from expressions.
+             */
             name: string;
             /**
              * Optional
+             * @description Whether the user may leave this input unset.
              * @default false
              */
             optional: boolean;
@@ -27606,6 +28265,7 @@ export interface components {
             type: "text";
             /**
              * Validators
+             * @description Additional validation rules; supports `length`, `regex`, and `empty_field`.
              * @default []
              */
             validators: (
@@ -27613,12 +28273,18 @@ export interface components {
                 | components["schemas"]["RegexParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[];
-            /** Value */
+            /**
+             * Value
+             * @description Default value.
+             */
             value?: string | null;
         };
         /** YamlToolSource */
         YamlToolSource: {
-            /** citations */
+            /**
+             * citations
+             * @description DOI or BibTeX references for publications describing the wrapped tool.
+             */
             citations?: components["schemas"]["Citation"][] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -27627,7 +28293,7 @@ export interface components {
             class: "GalaxyTool";
             /**
              * configfiles
-             * @description A list of config files for this tool.
+             * @description Files Galaxy writes into the job working directory before running the command. Their content is evaluated with the same sandboxed ECMAScript expressions as `shell_command`. Put scripts and other substantial command logic here, then keep `shell_command` to a short invocation.
              */
             configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
@@ -27641,13 +28307,19 @@ export interface components {
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
              */
             description?: string | null;
-            /** edam_operations */
+            /**
+             * edam_operations
+             * @description EDAM operation identifiers such as `operation_0308`.
+             */
             edam_operations?: string[] | null;
-            /** edam_topics */
+            /**
+             * edam_topics
+             * @description EDAM topic identifiers such as `topic_0102`.
+             */
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help text shown below the tool interface.
+             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
              */
             help?: components["schemas"]["HelpContent"] | null;
             /**
@@ -27658,6 +28330,7 @@ export interface components {
             id?: string | null;
             /**
              * inputs
+             * @description Parameters displayed on the tool form. Each item needs a unique `name` and a supported `type`. Reference scalar values as `$(inputs.input_name)` and data inputs as `$(inputs.input_name.path)` in `shell_command` or config files. Conditional, repeat, and section inputs contain nested parameters.
              * @default []
              */
             inputs: components["schemas"]["YamlGalaxyToolParameter-Input"][];
@@ -27674,6 +28347,7 @@ export interface components {
             name: string;
             /**
              * outputs
+             * @description Results Galaxy collects after the command finishes. A data output identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output uses `discover_datasets`. Scalar output types are `text`, `integer`, `float`, and `boolean`.
              * @default []
              */
             outputs: (
@@ -27688,7 +28362,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers, compute resource requests, and container requirements needed to execute this tool. The top-level `container` key is shorthand for a single Docker container requirement.
              * @default []
              */
             requirements:
@@ -27700,7 +28374,7 @@ export interface components {
                 | null;
             /**
              * shell_command
-             * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @description A string that contains the command to be executed. Reference inputs inside `$()` as `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a JavaScript function body that must return a value. Substituted values are not shell-quoted, so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell command substitution and braced parameter expansion do not reach the shell: escape them as `\$(` and `\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`.
              * @example head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt
              */
             shell_command: string;
@@ -27712,7 +28386,10 @@ export interface components {
              * @example 0.1.0
              */
             version?: string | null;
-            /** xrefs */
+            /**
+             * xrefs
+             * @description External registry identifiers, each with a registry `type` and identifier `value`.
+             */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /**

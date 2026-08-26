@@ -1990,7 +1990,13 @@ export interface components {
              */
             type: "drill_down"
         }
-        /** EmptyFieldParameterValidatorModel */
+        /**
+         * EmptyFieldParameterValidatorModel
+         * @description Require a parameter value to be present unless the rule is negated.
+         * @example {
+         *       "type": "empty_field"
+         *     }
+         */
         EmptyFieldParameterValidatorModel: {
             /**
              * Implicit
@@ -2374,7 +2380,15 @@ export interface components {
          * @enum {string}
          */
         ImageType: "Docker" | "Singularity" | "Conda"
-        /** InRangeParameterValidatorModel */
+        /**
+         * InRangeParameterValidatorModel
+         * @description Require a numeric value to fall within the configured bounds.
+         * @example {
+         *       "max": 1,
+         *       "min": 0,
+         *       "type": "in_range"
+         *     }
+         */
         InRangeParameterValidatorModel: {
             /**
              * Exclude Max
@@ -2500,7 +2514,15 @@ export interface components {
             /** Value */
             value: string
         }
-        /** LengthParameterValidatorModel */
+        /**
+         * LengthParameterValidatorModel
+         * @description Require a text value to have a length within the configured bounds.
+         * @example {
+         *       "max": 20,
+         *       "min": 1,
+         *       "type": "length"
+         *     }
+         */
         LengthParameterValidatorModel: {
             /**
              * Implicit
@@ -2532,7 +2554,13 @@ export interface components {
             /** Err Msg */
             err_msg: string
         }
-        /** NoOptionsParameterValidatorModel */
+        /**
+         * NoOptionsParameterValidatorModel
+         * @description Reject a select parameter when it has no available options.
+         * @example {
+         *       "type": "no_options"
+         *     }
+         */
         NoOptionsParameterValidatorModel: {
             /**
              * Implicit
@@ -2596,11 +2624,14 @@ export interface components {
         }
         /**
          * RegexParameterValidatorModel
-         * @description Check if a regular expression **matches** the value, i.e. appears
-         *     at the beginning of the value. To enforce a match of the complete value use
-         *     ``$`` at the end of the expression. The expression is given is the content
-         *     of the validator tag. Note that for ``selects`` each option is checked
-         *     separately.
+         * @description Require a regular expression to match from the start of the value.
+         *
+         *     End the expression with ``$`` to require a full-value match. Each option of
+         *     a select parameter is checked separately.
+         * @example {
+         *       "expression": "^[ACGT]+$",
+         *       "type": "regex"
+         *     }
          */
         RegexParameterValidatorModel: {
             /** Expression */
@@ -3042,7 +3073,16 @@ export interface components {
             /** Stop Time */
             stop_time: string
         }
-        /** ResourceRequirement */
+        /**
+         * ResourceRequirement
+         * @description A tool's compute resource request.
+         *
+         *     Set the minimum resources needed to run the job and, when useful, an upper
+         *     limit. Galaxy exposes the allocated CPU count to the command as
+         *     ``$GALAXY_SLOTS``. Use numbers or numeric strings. Other strings are
+         *     reserved for expressions, which are not evaluated yet and are currently
+         *     ignored.
+         */
         ResourceRequirement: {
             /**
              * Cores Max
@@ -3059,15 +3099,30 @@ export interface components {
              * @default 1
              */
             cores_min: number | string | null
-            /** Cuda Compute Capability */
+            /**
+             * Cuda Compute Capability
+             * @description Minimum CUDA compute capability required, e.g. 7.5.
+             */
             cuda_compute_capability?: number | string | null
-            /** Cuda Device Count Max */
+            /**
+             * Cuda Device Count Max
+             * @description Maximum number of GPUs to reserve.
+             */
             cuda_device_count_max?: number | string | null
-            /** Cuda Device Count Min */
+            /**
+             * Cuda Device Count Min
+             * @description Minimum number of GPUs to reserve.
+             */
             cuda_device_count_min?: number | string | null
-            /** Cuda Version Min */
+            /**
+             * Cuda Version Min
+             * @description Minimum CUDA runtime version required, e.g. 11.2.
+             */
             cuda_version_min?: number | string | null
-            /** Gpu Memory Min */
+            /**
+             * Gpu Memory Min
+             * @description Minimum GPU memory required, in mebibytes (2**20).
+             */
             gpu_memory_min?: number | string | null
             /**
              * Ram Max
@@ -3082,16 +3137,25 @@ export interface components {
              * @default 256
              */
             ram_min: number | string | null
-            /** Shm Size */
+            /**
+             * Shm Size
+             * @description Size of /dev/shm to request as `<number><unit>`. The optional unit can be `b` (bytes), `k` (kilobytes), `m` (megabytes), or `g` (gigabytes); without a unit, the value is bytes.
+             */
             shm_size?: number | string | null
             /**
              * Timelimit
              * @description Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded.
              */
             timelimit?: number | string | null
-            /** Tmpdir Max */
+            /**
+             * Tmpdir Max
+             * @description Maximum reserved temporary directory space, in mebibytes (2**20).
+             */
             tmpdir_max?: number | string | null
-            /** Tmpdir Min */
+            /**
+             * Tmpdir Min
+             * @description Minimum reserved temporary directory space, in mebibytes (2**20).
+             */
             tmpdir_min?: number | string | null
             /**
              * Type
