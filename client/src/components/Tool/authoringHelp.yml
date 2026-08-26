@@ -111,7 +111,6 @@ sections:
   - id: parameters
     title: Input parameters
     kind: reference
-    parameter_types: true
     body: |
       User-defined tools support the input types listed below. Unknown and
       unsupported fields are rejected.
@@ -134,7 +133,6 @@ sections:
     title: Validators
     kind: reference
     parentId: parameters
-    validator_types: true
     body: |
       Validators reject parameter values before a job starts. Each parameter
       type's field table lists the validators it supports.
@@ -144,7 +142,6 @@ sections:
   - id: outputs
     title: Outputs
     kind: reference
-    output_types: true
     body: |
       Each output declares a `type` and a `name`. Dataset outputs identify the
       produced file with `from_work_dir`; collection outputs use
@@ -154,14 +151,36 @@ sections:
 
       Each type below has a field table and example.
 
+  - id: parameter-types-reference
+    title: Input parameter types
+    kind: detailed-reference
+    parameter_types: true
+    body: |
+      Field tables and examples for every input type supported by user-defined
+      tools.
+
+  - id: validator-types-reference
+    title: Validator types
+    kind: detailed-reference
+    validator_types: true
+    body: |
+      Field tables and examples for every validator supported by user-defined
+      tool inputs.
+
+  - id: output-types-reference
+    title: Output types
+    kind: detailed-reference
+    output_types: true
+    body: |
+      Field tables and examples for dataset and dataset collection outputs.
+
   - id: discover-datasets
     title: Discover datasets
-    kind: reference
-    parentId: outputs
+    kind: detailed-reference
     body: |
       Use `discover_datasets` when a command creates a variable set of files.
-      Galaxy can discover them by filename pattern or from metadata written by
-      the tool.
+      User-defined tools discover them by matching filenames produced in the
+      job working directory.
 
       Pattern discovery matches a regular expression against filenames. Named
       groups such as `name`, `designation`, `ext`, and `dbkey` set the
@@ -192,18 +211,6 @@ sections:
               format: tabular
               visible: true
               sort_key: name
-      ```
-
-      For metadata discovery, the command writes Galaxy's tool-provided
-      metadata file describing each produced dataset, then declares:
-
-      ```yaml
-      outputs:
-        - name: reports
-          type: collection
-          collection_type: list
-          discover_datasets:
-            - discover_via: tool_provided_metadata
       ```
 
   - id: help-content
