@@ -64,6 +64,7 @@ describe("user-defined tool authoring help", () => {
             expect(section.parentId).toBe("parameter-types-reference");
             expect(yamlExamples).toHaveLength(2);
             expect(section.body).toContain(`Add this \`${parameterType}\` parameter under \`inputs\``);
+            expect(section.body).not.toContain("Type: ");
             expect(parse(inputExample!).inputs[0]).toEqual(definition.examples[0]);
             expect(parse(shellCommandExample!).shell_command.trim()).toBe(definition["x-shell-command"]);
         }
@@ -94,29 +95,41 @@ describe("user-defined tool authoring help", () => {
             expect(parse(yamlExample!).outputs[0]).toEqual(definition.examples[0]);
         }
 
-        const dataOutput = outputSections.find((section) => section.id === "output-data");
-        const dataOutputDefinitionName = mapping.data.split("/").at(-1)!;
-        const dataOutputDefinition = definitions[dataOutputDefinitionName] as {
-            "x-usage-examples": Array<{ definition: Record<string, unknown> }>;
+        const expectedUsageFields = {
+            collection: ["collection_type", "collection_type_source", "structured_like"],
+            data: ["format", "format_source", "metadata_source", "from_work_dir", "precreate_directory"],
         };
-        const sourceSections = authoringHelpSections.filter((section) => section.parentId === "output-data");
-        const sourceYamlExamples = sourceSections.map((section) => section.body.match(/```yaml\n([\s\S]+?)\n```/)?.[1]);
+        for (const outputType of Object.keys(expectedUsageFields) as Array<keyof typeof expectedUsageFields>) {
+            const outputSection = outputSections.find((section) => section.id === `output-${outputType}`)!;
+            const definitionName = mapping[outputType].split("/").at(-1)!;
+            const definition = definitions[definitionName] as {
+                "x-usage-examples": Array<{ field: string; definition: Record<string, unknown> }>;
+            };
+            const attributeSections = authoringHelpSections.filter(
+                (section) => section.parentId === `output-${outputType}`,
+            );
+            const attributeYamlExamples = attributeSections.map(
+                (section) => section.body.match(/```yaml\n([\s\S]+?)\n```/)?.[1],
+            );
 
-        expect(sourceSections.map((section) => section.id)).toEqual([
-            "output-data-format-source",
-            "output-data-metadata-source",
-        ]);
-        expect(sourceSections.map((section) => section.title)).toEqual(["format_source", "metadata_source"]);
-        expect(parse(sourceYamlExamples[0]!)).toEqual(dataOutputDefinition["x-usage-examples"][0]?.definition);
-        expect(parse(sourceYamlExamples[1]!)).toEqual(dataOutputDefinition["x-usage-examples"][1]?.definition);
-        expect(dataOutput?.body).toContain("[`format_source` #](#output-data-format-source)");
-        expect(dataOutput?.body).toContain("[`metadata_source` #](#output-data-metadata-source)");
-        expect(sourceSections[0]?.body).toMatch(/^`format_source` can be used to assign/);
-        expect(sourceSections[1]?.body).toMatch(/^`metadata_source` can be used to copy/);
-        expect(sourceSections[0]?.body).toContain("format_source: reads");
-        expect(sourceSections[1]?.body).toContain("metadata_source: intervals");
-        expect(sourceSections.every((section) => section.body.includes("inputs:"))).toBe(true);
-        expect(sourceSections.every((section) => section.body.includes("shell_command:"))).toBe(true);
+            expect(definition["x-usage-examples"].map((usageExample) => usageExample.field)).toEqual(
+                expectedUsageFields[outputType],
+            );
+            expect(attributeSections.map((section) => section.title)).toEqual(expectedUsageFields[outputType]);
+            for (const [index, field] of expectedUsageFields[outputType].entries()) {
+                const sectionId = `output-${outputType}-${field.replaceAll("_", "-")}`;
+                expect(attributeSections[index]?.id).toBe(sectionId);
+                expect(parse(attributeYamlExamples[index]!)).toEqual(definition["x-usage-examples"][index]?.definition);
+                expect(outputSection.body).toContain(`[\`${field}\` #](#${sectionId})`);
+                expect(attributeSections[index]?.body.startsWith(`\`${field}\` can be used`)).toBe(true);
+                expect(attributeSections[index]?.body).toContain(`${field}:`);
+                expect(attributeSections[index]?.body).toContain("inputs:");
+                expect(attributeSections[index]?.body).toContain("shell_command:");
+            }
+            expect(outputSection.body).not.toContain("Type: ");
+        }
+
+        const dataOutput = outputSections.find((section) => section.id === "output-data");
         expect(dataOutput?.body).toContain("filtering reads");
         expect(dataOutput?.body).toContain("interval column assignments");
     });
@@ -127,6 +140,7 @@ describe("user-defined tool authoring help", () => {
             {
                 examples?: Array<Record<string, unknown>>;
                 properties?: { type?: { const?: string } };
+                "x-parameter-example"?: Record<string, unknown>;
             }
         >;
         const validatorDefinitions = Object.entries(definitions).filter(([name]) =>
@@ -152,7 +166,9 @@ describe("user-defined tool authoring help", () => {
             expect(validatorIndex?.body).toContain(`\` #](#${section.id})`);
             expect(section.kind).toBe("detailed-reference");
             expect(section.parentId).toBe("validator-types-reference");
-            expect(parse(yamlExample!).validators[0]).toEqual(definition?.examples?.[0]);
+            expect(section.body).not.toContain("Type: ");
+            expect(parse(yamlExample!).inputs[0]).toEqual(definition?.["x-parameter-example"]);
+            expect(parse(yamlExample!).inputs[0].validators[0]).toEqual(definition?.examples?.[0]);
         }
     });
 
@@ -210,7 +226,7 @@ describe("user-defined tool authoring help", () => {
         expect(discovery?.body).toContain("matching filenames");
         expect(discovery?.body).not.toContain("tool-provided metadata");
         expect(discovery?.body).not.toContain("galaxy.json");
-        expect(dataParameter?.body).toContain("Accepted Galaxy datatype extensions");
+        expect(dataParameter?.body).toContain("Limits selectable datasets to these Galaxy datatype extensions");
         expect(authoringHelpSections.find((section) => section.id === "parameters")?.body).toContain(
             "[Datatypes page](/datatypes)",
         );
