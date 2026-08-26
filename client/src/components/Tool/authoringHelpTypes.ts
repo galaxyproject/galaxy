@@ -131,7 +131,7 @@ function referenceIndex(label: string, prefix: string, sections: AuthoringHelpSe
         ...sections.map((section) => {
             const typeName = section.id.replace(`${prefix}-`, "");
             const description = section.body.split("\n", 1)[0] ?? "";
-            return `| [\`${typeName}\`](#${section.id}) | ${markdownCell(description)} |`;
+            return `| [\`${typeName}\` #](#${section.id}) | ${markdownCell(description)} |`;
         }),
     ].join("\n");
 }

@@ -12,7 +12,7 @@ import { TOOL_SOURCE_SCHEMA_URI } from "./schemaMarkdown";
 export interface AuthoringHelpSection {
     id: string;
     title: string;
-    kind: "reference" | "faq";
+    kind: "getting-started" | "reference" | "faq";
     parentId?: string;
     body: string;
 }
@@ -39,6 +39,7 @@ const DOCS_BASE = "https://docs.galaxyproject.org/en/master/";
 // `[text](gxdoc:dev/schema.md)`, so the same string can resolve to a relative
 // path in the generated Sphinx page and to an absolute URL here.
 const GXDOC_LINK = /\]\(gxdoc:([^)]+)\)/g;
+const GXUI_LINK = /\]\(gxui:([^)]+)\)/g;
 const QUICK_START_EXAMPLE = "{{quick_start_example}}";
 const OUTPUT_TYPE_INDEX = "{{output_type_index}}";
 const PARAMETER_TYPE_INDEX = "{{parameter_type_index}}";
@@ -53,7 +54,7 @@ const SCHEMA_KEY_SECTIONS: Record<string, string> = {
     requirements: "resource-requirements",
     validators: "validators",
     from_work_dir: "outputs",
-    discover_datasets: "outputs",
+    discover_datasets: "discover-datasets",
     help: "help-content",
     tests: "testing",
     citations: "citations-metadata",
@@ -67,9 +68,11 @@ const LINKED_SCHEMA_KEY = /\[`([a-z_]+)`\]\(#[^)]+\)/g;
 const INLINE_SCHEMA_KEY = /`([a-z_]+)`/g;
 
 export function resolveDocLinks(text: string): string {
-    return text.replace(GXDOC_LINK, (_match, target: string) => {
-        return `](${DOCS_BASE}${target.replace(/\.(md|rst)$/, ".html")})`;
-    });
+    return text
+        .replace(GXDOC_LINK, (_match, target: string) => {
+            return `](${DOCS_BASE}${target.replace(/\.(md|rst)$/, ".html")})`;
+        })
+        .replace(GXUI_LINK, (_match, target: string) => `](${target})`);
 }
 
 export function linkSchemaKeys(text: string): string {
@@ -146,6 +149,11 @@ export function linkedAuthoringHelpSection(href: string): string | undefined {
 }
 
 export const authoringHelpGroups: AuthoringHelpGroup[] = [
+    {
+        id: "getting-started",
+        title: "Getting Started",
+        sections: authoringHelpSections.filter((section) => section.kind === "getting-started"),
+    },
     {
         id: "reference",
         title: "Reference",

@@ -24,6 +24,7 @@ class _IndentedSafeDumper(yaml.SafeDumper):
 # relative to doc/source/dev/; the editor resolves the same token to an absolute
 # docs.galaxyproject.org URL.
 GXDOC_LINK = re.compile(r"\]\(gxdoc:([^)]+)\)")
+GXUI_LINK = re.compile(r"\[([^\]]+)\]\(gxui:[^)]+\)")
 QUICK_START_EXAMPLE = "{{quick_start_example}}"
 OUTPUT_TYPE_INDEX = "{{output_type_index}}"
 PARAMETER_TYPE_INDEX = "{{parameter_type_index}}"
@@ -38,7 +39,7 @@ SCHEMA_KEY_SECTIONS = {
     "requirements": "resource-requirements",
     "validators": "validators",
     "from_work_dir": "outputs",
-    "discover_datasets": "outputs",
+    "discover_datasets": "discover-datasets",
     "help": "help-content",
     "tests": "testing",
     "citations": "citations-metadata",
@@ -63,7 +64,8 @@ editor's help panel renders. Edit that file, not this one.
 
 
 def resolve_links(text: str) -> str:
-    return GXDOC_LINK.sub(lambda m: f"](../{m.group(1)})", text)
+    text = GXDOC_LINK.sub(lambda m: f"](../{m.group(1)})", text)
+    return GXUI_LINK.sub(lambda m: f"**{m.group(1)}**", text)
 
 
 def link_schema_keys(text: str) -> str:
@@ -152,7 +154,7 @@ def _reference_index(label: str, prefix: str, sections: list[dict]) -> str:
             f"| {label} | Details |",
             "| --- | --- |",
             *[
-                f"| [`{section['id'].removeprefix(f'{prefix}-')}`](#{section['id']}) | "
+                f"| [`{section['id'].removeprefix(f'{prefix}-')}` #](#{section['id']}) | "
                 f"{_markdown_cell(section['body'].splitlines()[0])} |"
                 for section in sections
             ],
@@ -349,14 +351,18 @@ def render(help_data: dict, tool_schema: dict) -> str:
         link_schema_keys(resolve_links(help_data["intro"].rstrip())),
         "",
     ]
-    groups = (("reference", "Reference"), ("faq", "Common questions"))
+    groups = (
+        ("getting-started", "Getting Started"),
+        ("reference", "Reference"),
+        ("faq", "Common questions"),
+    )
     for kind, title in groups:
         parts.append(f"## {title}")
         parts.append("")
         for section in sections:
             if section["kind"] != kind:
                 continue
-            parts.append(f'<span id="{section["id"]}"></span>')
+            parts.append(f'({section["id"]})=')
             parts.append("")
             heading = "#" * _heading_level(section, sections_by_id)
             parts.append(f"{heading} {section['title']}")

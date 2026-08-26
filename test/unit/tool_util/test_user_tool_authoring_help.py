@@ -155,10 +155,18 @@ def test_generated_documentation_resolves_schema_sections() -> None:
     )
 
     assert "{{" not in result.stdout
+    assert "## Getting Started" in result.stdout
+    assert "(quick-start)=" in result.stdout
+    assert "(discover-datasets)=" in result.stdout
+    assert "(validator-regex)=" in result.stdout
     assert "### Quick start" in result.stdout
     assert "#### Validators" in result.stdout
     assert "##### regex validator" in result.stdout
+    assert "[`regex` #](#validator-regex)" in result.stdout
     assert "[`shell_command` #](#expressions)" in result.stdout
+    assert "[`discover_datasets` #](#discover-datasets)" in result.stdout
+    assert "**Datatypes page**" in result.stdout
+    assert "](/datatypes)" not in result.stdout
     assert "shell_command: grep" in result.stdout
 
 

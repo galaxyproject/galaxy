@@ -18,8 +18,13 @@ describe("user-defined tool authoring help", () => {
         expect(authoringHelpIntro).toContain("User-defined tools let a user register");
         expect(authoringHelpSections.length).toBeGreaterThan(0);
         expect(new Set(authoringHelpSections.map((section) => section.id)).size).toBe(authoringHelpSections.length);
-        expect(authoringHelpGroups.map((group) => group.title)).toEqual(["Reference", "Common questions"]);
+        expect(authoringHelpGroups.map((group) => group.title)).toEqual([
+            "Getting Started",
+            "Reference",
+            "Common questions",
+        ]);
         expect(authoringHelpGroups.every((group) => group.sections.length > 0)).toBe(true);
+        expect(authoringHelpGroups[0]?.sections.map((section) => section.id)).toEqual(["quick-start"]);
     });
 
     it("renders the schema quick-start example", () => {
@@ -51,6 +56,7 @@ describe("user-defined tool authoring help", () => {
             const shellCommandExample = yamlExamples[1];
 
             expect(parameterIndex?.body).toContain(`](#${section.id})`);
+            expect(parameterIndex?.body).toContain(`\` #](#${section.id})`);
             expect(section.parentId).toBe("parameters");
             expect(yamlExamples).toHaveLength(2);
             expect(section.body).toContain(`Add this \`${parameterType}\` parameter under \`inputs\``);
@@ -65,6 +71,8 @@ describe("user-defined tool authoring help", () => {
         const outputSections = authoringHelpSections.filter((section) => section.id.startsWith("output-"));
         const outputIndex = authoringHelpSections.find((section) => section.id === "outputs");
 
+        expect(Object.keys(mapping)).toEqual(["collection", "data"]);
+
         expect(outputSections.map((section) => section.id)).toEqual(
             Object.keys(mapping).map((outputType) => `output-${outputType}`),
         );
@@ -75,6 +83,7 @@ describe("user-defined tool authoring help", () => {
             const yamlExample = section.body.match(/```yaml\n([\s\S]+?)\n```/)?.[1];
 
             expect(outputIndex?.body).toContain(`](#${section.id})`);
+            expect(outputIndex?.body).toContain(`\` #](#${section.id})`);
             expect(section.parentId).toBe("outputs");
             expect(section.body).toContain(`Add this \`${outputType}\` output under \`outputs\``);
             expect(parse(yamlExample!).outputs[0]).toEqual(definition.examples[0]);
@@ -107,15 +116,18 @@ describe("user-defined tool authoring help", () => {
 
             expect(definition?.examples).toHaveLength(1);
             expect(validatorIndex?.body).toContain(`](#${section.id})`);
+            expect(validatorIndex?.body).toContain(`\` #](#${section.id})`);
             expect(section.parentId).toBe("validators");
             expect(parse(yamlExample!).validators[0]).toEqual(definition?.examples?.[0]);
         }
     });
 
     it("resolves Galaxy documentation links for the editor", () => {
-        const input = "[Tool schema](gxdoc:dev/schema.md)";
+        const input = "[Tool schema](gxdoc:dev/schema.md) and [Datatypes](gxui:/datatypes)";
 
-        expect(resolveDocLinks(input)).toBe("[Tool schema](https://docs.galaxyproject.org/en/master/dev/schema.html)");
+        expect(resolveDocLinks(input)).toBe(
+            "[Tool schema](https://docs.galaxyproject.org/en/master/dev/schema.html) and [Datatypes](/datatypes)",
+        );
     });
 
     it("links schema keys outside code fences", () => {
@@ -142,7 +154,22 @@ describe("user-defined tool authoring help", () => {
         expect(authoringHelpIntro).not.toContain("gxdoc:");
         for (const section of authoringHelpSections) {
             expect(section.body).not.toContain("gxdoc:");
+            expect(section.body).not.toContain("gxui:");
         }
+    });
+
+    it("links discovery guidance and the current instance datatype page", () => {
+        const outputs = authoringHelpSections.find((section) => section.id === "outputs");
+        const discovery = authoringHelpSections.find((section) => section.id === "discover-datasets");
+        const dataParameter = authoringHelpSections.find((section) => section.id === "parameter-data");
+
+        expect(outputs?.body).toContain("[`discover_datasets` #](#discover-datasets)");
+        expect(discovery?.parentId).toBe("outputs");
+        expect(discovery?.body).toContain("[Datatypes page](/datatypes)");
+        expect(dataParameter?.body).toContain("Accepted Galaxy datatype extensions");
+        expect(authoringHelpSections.find((section) => section.id === "parameters")?.body).toContain(
+            "[Datatypes page](/datatypes)",
+        );
     });
 
     it("recognizes embedded authoring-reference links", () => {

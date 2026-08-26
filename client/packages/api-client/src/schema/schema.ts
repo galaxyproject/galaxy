@@ -26106,7 +26106,7 @@ export interface components {
             configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
              * container
-             * @description Shorthand for a single Docker container requirement, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
+             * @description Docker container image for the tool, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
              * @example quay.io/biocontainers/python:3.13
              */
             container?: string | null;
@@ -26166,7 +26166,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description JavaScript helpers, compute resource requests, and container requirements needed to execute this tool. The top-level `container` key is shorthand for a single Docker container requirement.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool.
              * @default []
              */
             requirements:
@@ -26252,7 +26252,7 @@ export interface components {
             configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
              * container
-             * @description Shorthand for a single Docker container requirement, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
+             * @description Docker container image for the tool, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
              * @example quay.io/biocontainers/python:3.13
              */
             container?: string | null;
@@ -26312,7 +26312,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description JavaScript helpers, compute resource requests, and container requirements needed to execute this tool. The top-level `container` key is shorthand for a single Docker container requirement.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool.
              * @default []
              */
             requirements:
@@ -28560,7 +28560,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description JavaScript helpers, compute resource requests, and container requirements needed to execute this tool. The top-level `container` key is shorthand for a single Docker container requirement.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool.
              * @default []
              */
             requirements:

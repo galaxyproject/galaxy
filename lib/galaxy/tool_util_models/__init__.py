@@ -199,12 +199,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     ] = None
     requirements: Annotated[
         Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]],
-        Field(
-            description=(
-                "JavaScript helpers, compute resource requests, and container requirements needed to execute this "
-                "tool. The top-level `container` key is shorthand for a single Docker container requirement."
-            )
-        ),
+        Field(description=("JavaScript helpers and compute resource requests needed to execute this tool.")),
     ] = []
     shell_command: Annotated[
         str,
@@ -392,7 +387,7 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
         Optional[str],
         Field(
             description=(
-                "Shorthand for a single Docker container requirement, as a fully qualified "
+                "Docker container image for the tool, as a fully qualified "
                 "registry/repository:tag string. "
                 "This image is the tool's entire execution environment, so every command used by shell_command "
                 "must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself "
@@ -443,7 +438,7 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
         if not self.container and not has_container_requirement:
             raise PydanticCustomError(
                 "dynamic_tool.container_required",
-                "set container or add a container requirement",
+                "set the top-level container field",
             )
         return self
 

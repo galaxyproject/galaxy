@@ -11,7 +11,9 @@
 # with a `gxdoc:` target naming the source file, e.g.
 # `[tool schema](gxdoc:dev/schema.md)`. The generator rewrites it to a
 # relative path; the editor rewrites it to an absolute docs.galaxyproject.org
-# URL.
+# URL. Link to a page in the current Galaxy UI with `gxui:/path`; the editor
+# keeps the instance-relative link and the Sphinx renderer names the page
+# without emitting a broken link.
 #
 # Schema markers and sections with `parameter_types`, `output_types`, or
 # `validator_types` are rendered from ToolSourceSchema.json. Its examples come
@@ -31,7 +33,7 @@ intro: |
 sections:
   - id: quick-start
     title: Quick start
-    kind: reference
+    kind: getting-started
     body: |
       Paste this definition into the editor. It accepts a text dataset and
       writes a copy without lines beginning with `#`.
@@ -45,7 +47,7 @@ sections:
     kind: reference
     body: |
       A user-defined tool is a YAML document. `class: GalaxyUserTool` selects
-      the restricted schema, `container` is shorthand for the image the command runs in,
+      the user-defined tool format, `container` is the image the command runs in,
       and `shell_command` is the command itself, with inputs referenced as
       `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files.
 
@@ -56,9 +58,9 @@ sections:
       | `name` | Name displayed in the tool menu. | Yes |
       | `version` | Version of this wrapper. Change it when behavior or the container changes. | Yes |
       | `description` | Short text displayed after the tool name. | No |
-      | `container` | Shorthand for a single Docker container requirement. | No* |
+      | `container` | Fully qualified container image containing the wrapped software. | Yes |
       | `shell_command` | Command to execute, with inputs referenced through expressions. | Yes |
-      | [`configfiles`](#configfiles) | Templated files Galaxy writes into the job working directory. Use them for scripts and other substantial command logic. | No |
+      | [`configfiles`](#configfiles) | Scripts and configuration files required by the software you are wrapping. | No |
       | [`inputs`](#parameters) | Input parameters shown on the tool form. | No |
       | [`outputs`](#outputs) | Datasets and collections Galaxy claims after the command finishes. | No |
       | [`requirements`](#resource-requirements) | JavaScript helpers and compute-resource requests. | No |
@@ -67,16 +69,11 @@ sections:
       | [`citations`](#citations-metadata), `license`, [`edam_operations`](#citations-metadata), [`edam_topics`](#citations-metadata), [`xrefs`](#citations-metadata) | Publication and ontology metadata. | No |
       | `profile` | Galaxy tool profile controlling versioned tool behavior. | No |
 
-      \* A container is required, but it may be declared with either
-      top-level `container` or a container entry under `requirements`.
-
       Compared with an equivalent [Galaxy XML tool](gxdoc:dev/schema.md), three
       things differ:
 
-      - `class: GalaxyUserTool` is required, and selects the restricted
-        `UserToolSource` schema.
-      - A container is required, either through top-level `container` or a
-        container entry under `requirements`. XML tools may instead resolve
+      - `class: GalaxyUserTool` is required.
+      - A top-level `container` is required. XML tools may instead resolve
         dependencies through Conda.
       - The command lives under `shell_command` and is templated with sandboxed
         JavaScript expressions rather than Cheetah, so it has no access to the
@@ -91,9 +88,10 @@ sections:
     title: Config files
     kind: reference
     body: |
-      Galaxy writes each config file into the job working directory before it
-      runs `shell_command`. The file content supports the same sandboxed
-      ECMAScript expressions as the command.
+      Use `configfiles` for scripts and configuration files required by the
+      software you are wrapping. Galaxy writes each file into the job working
+      directory before it runs `shell_command`. File content supports the same
+      sandboxed ECMAScript expressions as the command.
 
       | Field | Details | Default | Required |
       | --- | --- | --- | --- |
@@ -115,15 +113,16 @@ sections:
     kind: reference
     parameter_types: true
     body: |
-      The YAML authoring layer exposes a deliberately narrow subset of Galaxy's
-      parameter model. The JSON schema published to the editor is generated from
-      this subset and rejects unknown fields, so an unsupported attribute fails
-      at parse time rather than being silently ignored.
+      User-defined tools support the input types listed below. Unknown and
+      unsupported fields are rejected.
 
       {{parameter_type_index}}
 
-      Each type below has its own field table and example. These are generated
-      from the same Pydantic schema used by the editor and OpenAPI.
+      Each type below has its own field table and example.
+
+      For `data` inputs, `format` lists accepted Galaxy datatype extensions.
+      See the [Datatypes page](gxui:/datatypes) in your Galaxy instance for the
+      extensions available there.
 
       Types that exist in the XML tool vocabulary but are rejected here:
       `hidden`, `drill_down`, `data_column`, `genomebuild`, `group_tag`,
@@ -149,13 +148,63 @@ sections:
     body: |
       Each output declares a `type` and a `name`. Dataset outputs identify the
       produced file with `from_work_dir`; collection outputs use
-      `discover_datasets`. Scalar output types are `text`, `integer`, `float`,
-      and `boolean`.
+      `discover_datasets`.
 
       {{output_type_index}}
 
-      Each type below has a field table and a minimal example generated from
-      the schema used by the editor and OpenAPI.
+      Each type below has a field table and example.
+
+  - id: discover-datasets
+    title: Discover datasets
+    kind: reference
+    parentId: outputs
+    body: |
+      Use `discover_datasets` when a command creates a variable set of files.
+      Galaxy can discover them by filename pattern or from metadata written by
+      the tool.
+
+      Pattern discovery matches a regular expression against filenames. Named
+      groups such as `name`, `designation`, `ext`, and `dbkey` set the
+      corresponding dataset metadata. Use `directory` to search below the job
+      working directory, and set `recurse: true` to include nested directories.
+      With recursion, `match_relative_path: true` applies the pattern to each
+      path relative to `directory` instead of only the filename.
+
+      The `format` field sets the Galaxy datatype extension when the pattern
+      does not provide `ext`. See the [Datatypes page](gxui:/datatypes) in your
+      Galaxy instance for the extensions it supports. Set `visible: true` to
+      show discovered datasets individually in the history. For a `data`
+      output, `assign_primary_output: true` assigns the first match to the
+      declared primary output.
+
+      Results default to lexical filename order. Choose `sort_key` from
+      `filename`, `name`, `designation`, or `dbkey`; choose `sort_comp` as
+      `lexical` or `numeric`; and set `sort_reverse: true` for descending order.
+
+      ```yaml
+      outputs:
+        - name: reports
+          type: collection
+          collection_type: list
+          discover_datasets:
+            - pattern: "(?P<name>.+)\\.tsv"
+              directory: reports
+              format: tabular
+              visible: true
+              sort_key: name
+      ```
+
+      For metadata discovery, the command writes Galaxy's tool-provided
+      metadata file describing each produced dataset, then declares:
+
+      ```yaml
+      outputs:
+        - name: reports
+          type: collection
+          collection_type: list
+          discover_datasets:
+            - discover_via: tool_provided_metadata
+      ```
 
   - id: help-content
     title: Tool help
@@ -330,25 +379,9 @@ sections:
       writing the prefix yourself produces a doubled `docker://docker://...`
       identifier.
 
-      The top-level key is shorthand for a single Docker container requirement.
-      The equivalent explicit form is useful when selecting another supported
-      container type:
-
-      ```yaml
-      requirements:
-        - type: container
-          container:
-            type: singularity
-            container_id: oras://example.org/image:tag
-      ```
-
-      A tool must use one of these forms. If both are present, the top-level
-      `container` takes precedence.
-
-      Which container types are usable on a given server, and whether images are
-      converted and cached ahead of time, depends on that server. Check the
-      server's user documentation or support channel before relying on a
-      particular container type.
+      Author user-defined tools with the top-level `container` field. Which
+      container runtime executes that image, and whether images are converted
+      and cached ahead of time, depends on the server.
 
   - id: resource-requirements
     title: Resource requirements
@@ -500,7 +533,5 @@ sections:
       Run the resulting tool by passing its `uuid` to the normal tool execution
       endpoint: `POST /api/tools` with `tool_uuid` instead of `tool_id`.
 
-      The request and response schemas are not reproduced here. Your server
-      publishes them at `<galaxy_url>/api/docs` under the `dynamic_tools` tag,
-      generated from the same `UserToolSource` model this editor validates
-      against.
+      Your server publishes the request and response details at
+      `<galaxy_url>/api/docs` under the `dynamic_tools` tag.
