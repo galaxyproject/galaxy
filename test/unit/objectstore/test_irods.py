@@ -19,13 +19,21 @@ class _FakeKeywords:
     DEST_RESC_NAME_KW = "destRescName"
 
 
+class _NeverRaised(Exception):
+    pass
+
+
 @pytest.fixture(autouse=True)
-def _fake_irods_keywords(monkeypatch):
-    # irods.keywords (imported as `kw`) is only bound when python-irodsclient
-    # is installed, which some CI environments don't have. _delete and
-    # _push_to_storage reference it directly, so stand in a fake here instead
+def _fake_irods_names(monkeypatch):
+    # kw (irods.keywords) and the DataObjectDoesNotExist/CollectionDoesNotExist
+    # exception types are only bound when python-irodsclient is installed,
+    # which some CI environments don't have. _delete and _push_to_storage
+    # reference them directly (an except clause has to evaluate its exception
+    # types even to decide they don't match), so stand in fakes here instead
     # of requiring the real package just to run these two tests.
     monkeypatch.setattr("galaxy.objectstore.irods.kw", _FakeKeywords(), raising=False)
+    monkeypatch.setattr("galaxy.objectstore.irods.DataObjectDoesNotExist", _NeverRaised, raising=False)
+    monkeypatch.setattr("galaxy.objectstore.irods.CollectionDoesNotExist", _NeverRaised, raising=False)
 
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
