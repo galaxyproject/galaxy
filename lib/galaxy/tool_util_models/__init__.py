@@ -199,13 +199,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     ] = None
     requirements: Annotated[
         Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]],
-        Field(
-            description=(
-                "A list of requirements needed to execute this tool. These can be javascript expressions or "
-                "resource requirements. Container requirements listed here are not read by the YAML tool parser; "
-                "set the top-level `container` key instead."
-            )
-        ),
+        Field(description=("JavaScript helpers and compute resource requests needed to execute this tool.")),
     ] = []
     shell_command: Annotated[
         str,
@@ -397,7 +391,8 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
         str,
         Field(
             description=(
-                "Container image to use for this tool, as a fully qualified registry/repository:tag string. "
+                "Docker container image for the tool, as a fully qualified "
+                "registry/repository:tag string. "
                 "This image is the tool's entire execution environment, so every command used by shell_command "
                 "must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself "
                 "for Singularity and Apptainer destinations. An unqualified name is resolved against the "
