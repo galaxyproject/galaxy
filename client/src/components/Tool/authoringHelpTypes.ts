@@ -20,6 +20,11 @@ interface JsonSchemaDefinition {
     properties?: Record<string, JsonSchemaProperty>;
     required?: string[];
     "x-shell-command"?: string;
+    "x-usage-examples"?: Array<{
+        title: string;
+        description: string;
+        definition: Record<string, unknown>;
+    }>;
 }
 
 interface DiscriminatedSchema {
@@ -130,6 +135,13 @@ function schemaExample(typeName: string, definition: JsonSchemaDefinition): Reco
     return example;
 }
 
+function orderUsageDefinition(definition: Record<string, unknown>): Record<string, unknown> {
+    const fieldOrder = ["inputs", "shell_command", "outputs", ...Object.keys(definition)];
+    return Object.fromEntries(
+        [...new Set(fieldOrder)].filter((field) => field in definition).map((field) => [field, definition[field]]),
+    );
+}
+
 function referenceIndex(label: string, prefix: string, sections: AuthoringHelpSection[]): string {
     return [
         `| ${label} | Details |`,
@@ -198,6 +210,16 @@ export function buildOutputTypeReference(): TypeReference {
         const example = schemaExample(outputType, definition);
         const exampleYaml = stringify({ outputs: [example] }, { lineWidth: 0 }).trim();
         const description = definition.description?.replaceAll("``", "`").trim() ?? "";
+        const usageExamples = (definition["x-usage-examples"] ?? []).flatMap((usageExample) => [
+            "",
+            `**${usageExample.title}**`,
+            "",
+            usageExample.description,
+            "",
+            "```yaml",
+            stringify(orderUsageDefinition(usageExample.definition), { lineWidth: 0 }).trim(),
+            "```",
+        ]);
         return {
             id: `output-${outputType}`,
             title: `${outputType} output`,
@@ -213,6 +235,7 @@ export function buildOutputTypeReference(): TypeReference {
                 "```yaml",
                 exampleYaml,
                 "```",
+                ...(usageExamples.length ? ["", "**Usage examples**", ...usageExamples] : []),
             ].join("\n"),
         };
     });

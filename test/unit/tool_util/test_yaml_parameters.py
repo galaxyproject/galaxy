@@ -665,10 +665,32 @@ def test_general_incoming_outputs_retain_tool_provided_metadata_discovery(output
     assert parsed.discover_datasets[0].discover_via == "tool_provided_metadata"
 
 
-def test_user_tool_output_sources_publish_distinct_examples_and_validate():
-    properties = UserToolSource.model_json_schema()["$defs"]["IncomingUserToolOutputDataset"]["properties"]
-    assert properties["format_source"]["examples"] == ["reads"]
-    assert properties["metadata_source"]["examples"] == ["intervals"]
+def test_user_tool_output_sources_publish_complete_distinct_examples_and_validate():
+    definition = UserToolSource.model_json_schema()["$defs"]["IncomingUserToolOutputDataset"]
+    properties = definition["properties"]
+    assert "examples" not in properties["format_source"]
+    assert "examples" not in properties["metadata_source"]
+
+    usage_examples = definition["x-usage-examples"]
+    assert [example["title"] for example in usage_examples] == [
+        "Inherit a datatype with `format_source`",
+        "Copy datatype metadata with `metadata_source`",
+    ]
+    assert usage_examples[0]["definition"]["inputs"][0]["name"] == "reads"
+    assert usage_examples[0]["definition"]["outputs"][0]["format_source"] == "reads"
+    assert usage_examples[1]["definition"]["inputs"][0]["name"] == "intervals"
+    assert usage_examples[1]["definition"]["outputs"][0]["metadata_source"] == "intervals"
+
+    for example in usage_examples:
+        UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "name": "Output source example",
+                "version": "0.1.0",
+                "container": "busybox:1.37",
+                **example["definition"],
+            }
+        )
 
     tool = UserToolSource.model_validate(
         {

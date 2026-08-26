@@ -95,8 +95,21 @@ describe("user-defined tool authoring help", () => {
         }
 
         const dataOutput = outputSections.find((section) => section.id === "output-data");
-        expect(dataOutput?.body).toContain("`format_source: reads`");
-        expect(dataOutput?.body).toContain("`metadata_source: intervals`");
+        const dataOutputDefinitionName = mapping.data.split("/").at(-1)!;
+        const dataOutputDefinition = definitions[dataOutputDefinitionName] as {
+            "x-usage-examples": Array<{ definition: Record<string, unknown> }>;
+        };
+        const dataOutputYamlExamples = [...dataOutput!.body.matchAll(/```yaml\n([\s\S]+?)\n```/g)].map(
+            (match) => match[1],
+        );
+
+        expect(dataOutputYamlExamples).toHaveLength(3);
+        expect(parse(dataOutputYamlExamples[1]!)).toEqual(dataOutputDefinition["x-usage-examples"][0]?.definition);
+        expect(parse(dataOutputYamlExamples[2]!)).toEqual(dataOutputDefinition["x-usage-examples"][1]?.definition);
+        expect(dataOutput?.body).toContain("format_source: reads");
+        expect(dataOutput?.body).toContain("metadata_source: intervals");
+        expect(dataOutput?.body).toContain("inputs:");
+        expect(dataOutput?.body).toContain("shell_command:");
         expect(dataOutput?.body).toContain("filtering reads");
         expect(dataOutput?.body).toContain("interval column assignments");
     });

@@ -231,6 +231,32 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
             "  ",
         )
         description = definition.get("description", "").replace("``", "`").strip()
+        usage_examples = []
+        for usage_example in definition.get("x-usage-examples", []):
+            usage_definition = usage_example["definition"]
+            field_order = ["inputs", "shell_command", "outputs", *usage_definition]
+            ordered_usage_definition = {
+                field: usage_definition[field] for field in dict.fromkeys(field_order) if field in usage_definition
+            }
+            usage_example_yaml = yaml.dump(
+                ordered_usage_definition,
+                Dumper=_IndentedSafeDumper,
+                allow_unicode=True,
+                sort_keys=False,
+                width=10_000,
+            ).rstrip()
+            usage_examples.extend(
+                [
+                    "",
+                    f"**{usage_example['title']}**",
+                    "",
+                    usage_example["description"],
+                    "",
+                    "```yaml",
+                    usage_example_yaml,
+                    "```",
+                ]
+            )
         sections.append(
             {
                 "id": f"output-{output_type}",
@@ -248,6 +274,7 @@ def _build_output_type_reference(tool_schema: dict) -> tuple[str, list[dict]]:
                         "```yaml",
                         example_yaml,
                         "```",
+                        *(["", "**Usage examples**", *usage_examples] if usage_examples else []),
                     ]
                 ),
             }
