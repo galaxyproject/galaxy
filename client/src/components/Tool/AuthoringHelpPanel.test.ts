@@ -1,11 +1,22 @@
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
 import AuthoringHelpPanel from "./AuthoringHelpPanel.vue";
 
+const localVue = getLocalVue();
+
+function mountAuthoringHelpPanel() {
+    return mount(AuthoringHelpPanel as object, {
+        localVue,
+        pinia: createTestingPinia({ createSpy: vi.fn }),
+    });
+}
+
 describe("AuthoringHelpPanel", () => {
     it("expands and collapses a help section", async () => {
-        const wrapper = mount(AuthoringHelpPanel as object);
+        const wrapper = mountAuthoringHelpPanel();
         const quickStartToggle = wrapper.find('[data-description="toggle help section quick-start"]');
         const toolDefinitionToggle = wrapper.find('[data-description="toggle help section tool-format"]');
 
@@ -30,12 +41,17 @@ describe("AuthoringHelpPanel", () => {
 
         await toolDefinitionToggle.trigger("click");
         expect(wrapper.findAll("th").wrappers.map((header) => header.text())).toEqual(["Field", "Details", "Required"]);
+        const containerHelpLink = wrapper.find('#tool-format a[href="/help/terms/galaxy.tools.container"]');
+        const commandHelpLink = wrapper.find('#tool-format a[href="/help/terms/unix.commandLine"]');
+        expect(containerHelpLink.text()).toBe("container image");
+        expect(commandHelpLink.text()).toBe("command line");
+        expect(containerHelpLink.attributes("style")).toContain("text-decoration-style: dashed");
     });
 
     it("copies an example", async () => {
         const writeText = vi.fn().mockResolvedValue(undefined);
         Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-        const wrapper = mount(AuthoringHelpPanel as object);
+        const wrapper = mountAuthoringHelpPanel();
 
         await wrapper.find('[data-description="toggle help section quick-start"]').trigger("click");
         const expected = wrapper.find(".authoring-code-example code").element.textContent;
@@ -45,7 +61,7 @@ describe("AuthoringHelpPanel", () => {
     });
 
     it("links the parameter index to each parameter section", async () => {
-        const wrapper = mount(AuthoringHelpPanel as object);
+        const wrapper = mountAuthoringHelpPanel();
         const parameterToggle = wrapper.find('[data-description="toggle help section parameters"]');
         const booleanSection = wrapper.find("#parameter-boolean");
 
@@ -66,7 +82,7 @@ describe("AuthoringHelpPanel", () => {
     });
 
     it("shows defaults and shell command usage for parameter types", async () => {
-        const wrapper = mount(AuthoringHelpPanel as object);
+        const wrapper = mountAuthoringHelpPanel();
 
         await (wrapper.vm as unknown as { openSection: (id: string) => Promise<boolean> }).openSection(
             "parameter-boolean",
@@ -84,7 +100,7 @@ describe("AuthoringHelpPanel", () => {
     });
 
     it("nests output types under outputs", async () => {
-        const wrapper = mount(AuthoringHelpPanel as object);
+        const wrapper = mountAuthoringHelpPanel();
         const outputToggle = wrapper.find('[data-description="toggle help section outputs"]');
         const dataOutputToggle = wrapper.find('[data-description="toggle help section output-data"]');
         const formatSourceSection = wrapper.find("#output-data-format-source");
@@ -120,7 +136,7 @@ describe("AuthoringHelpPanel", () => {
     });
 
     it("nests validator types under input parameters", async () => {
-        const wrapper = mount(AuthoringHelpPanel as object);
+        const wrapper = mountAuthoringHelpPanel();
         const parameterToggle = wrapper.find('[data-description="toggle help section parameters"]');
         const validatorsToggle = wrapper.find('[data-description="toggle help section validators"]');
         const regexToggle = wrapper.find('[data-description="toggle help section validator-regex"]');
@@ -144,7 +160,7 @@ describe("AuthoringHelpPanel", () => {
     });
 
     it("expands structured fields linked from the tool definition", async () => {
-        const wrapper = mount(AuthoringHelpPanel as object);
+        const wrapper = mountAuthoringHelpPanel();
         const toolDefinitionToggle = wrapper.find('[data-description="toggle help section tool-format"]');
 
         await toolDefinitionToggle.trigger("click");
@@ -171,7 +187,7 @@ describe("AuthoringHelpPanel", () => {
     });
 
     it("opens a section programmatically for editor hover links", async () => {
-        const wrapper = mount(AuthoringHelpPanel as object);
+        const wrapper = mountAuthoringHelpPanel();
         const outputToggle = wrapper.find('[data-description="toggle help section output-data"]');
 
         expect(outputToggle.attributes("aria-expanded")).toBe("false");
