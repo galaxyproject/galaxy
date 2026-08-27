@@ -222,7 +222,8 @@ export function buildOutputTypeReference(): TypeReference {
         .filter(([outputType]) => outputType in documentedDefinitions)
         .forEach(([outputType, reference]) => {
             const definitionName = documentedDefinitions[outputType];
-            const definition = (definitionName && SCHEMA.$defs[definitionName]) ?? definitionFor(outputType, reference);
+            const documentedDefinition = definitionName ? SCHEMA.$defs[definitionName] : undefined;
+            const definition = documentedDefinition ?? definitionFor(outputType, reference);
             const example = schemaExample(outputType, definition);
             const exampleYaml = stringify({ outputs: [example] }, { lineWidth: 0 }).trim();
             const description = definition.description?.replaceAll("``", "`").trim() ?? "";
