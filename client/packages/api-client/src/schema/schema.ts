@@ -26334,7 +26334,7 @@ export interface components {
              * @description Container image to use for this tool.
              * @example quay.io/biocontainers/python:3.13
              */
-            container: string;
+            container?: string | null;
             /**
              * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
@@ -26387,7 +26387,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool.
              * @default []
              */
             requirements:
@@ -26441,7 +26441,7 @@ export interface components {
              * @description Container image to use for this tool.
              * @example quay.io/biocontainers/python:3.13
              */
-            container: string;
+            container?: string | null;
             /**
              * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
@@ -26494,7 +26494,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool.
              * @default []
              */
             requirements:
@@ -28298,7 +28298,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool.
              * @default []
              */
             requirements:
