@@ -13,7 +13,9 @@
 # relative path; the editor rewrites it to an absolute docs.galaxyproject.org
 # URL. Link to a page in the current Galaxy UI with `gxui:/path`; the editor
 # keeps the instance-relative link and the Sphinx renderer names the page
-# without emitting a broken link.
+# without emitting a broken link. Link a Galaxy help term with
+# `[descriptive label](gxhelp://term.path)`; the editor adds the term's popover
+# and the Sphinx renderer keeps the descriptive label without a broken link.
 #
 # Schema markers and sections with `parameter_types`, `output_types`, or
 # `validator_types` are rendered from ToolSourceSchema.json. Its examples come
@@ -27,8 +29,9 @@
 title: Authoring User-Defined Tools
 
 intro: |
-  User-defined tools let a user register a containerized command as a Galaxy
-  tool without administrator privileges.
+  Create a Galaxy tool from a containerized command without waiting for an
+  administrator to install it. Define its inputs and outputs here, then run it
+  like any other tool.
 
 sections:
   - id: quick-start
@@ -47,9 +50,11 @@ sections:
     kind: reference
     body: |
       A user-defined tool is a YAML document. `class: GalaxyUserTool` selects
-      the user-defined tool format, `container` is the image the command runs in,
-      and `shell_command` is the command itself, with inputs referenced as
-      `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files.
+      the user-defined tool format. `container` selects a [container image](gxhelp://galaxy.tools.container)
+      containing the program and everything it needs to run. `shell_command`
+      supplies the [command line](gxhelp://unix.commandLine) Galaxy runs inside
+      that image, with inputs referenced as `$(inputs.input_name)` for scalar
+      values and `$(inputs.input_name.path)` for files.
 
       | Field | Details | Required |
       | --- | --- | --- |
@@ -58,8 +63,8 @@ sections:
       | `name` | Name displayed in the tool menu. | Yes |
       | `version` | Version of this wrapper. Change it when behavior or the container changes. | Yes |
       | `description` | Short text displayed after the tool name. | No |
-      | `container` | Fully qualified container image containing the wrapped software. | Yes |
-      | `shell_command` | Command to execute, with inputs referenced through expressions. | Yes |
+      | `container` | Fully qualified image supplying the program, interpreters, libraries, and utilities the tool needs. | Yes |
+      | `shell_command` | Command line Galaxy evaluates and runs in the selected image, with inputs referenced through expressions. | Yes |
       | [`configfiles`](#configfiles) | Scripts and configuration files required by the software you are wrapping. | No |
       | [`inputs`](#parameters) | Input parameters shown on the tool form. | No |
       | [`outputs`](#outputs) | Datasets and collections Galaxy claims after the command finishes. | No |

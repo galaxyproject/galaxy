@@ -21,6 +21,7 @@ from galaxy.tool_util_models.dynamic_tool_models import (
 from galaxy.tool_util_models.tool_source import JavascriptRequirement
 
 HELP_RELATIVE_PATH = Path("client/src/components/Tool/authoringHelp.yml")
+HELP_TERMS_RELATIVE_PATH = Path("lib/galaxy/schema/terms.yml")
 
 
 def _project_root() -> Path:
@@ -32,8 +33,10 @@ def _project_root() -> Path:
 
 PROJECT_ROOT = _project_root()
 HELP_PATH = PROJECT_ROOT / HELP_RELATIVE_PATH
+HELP_TERMS_PATH = PROJECT_ROOT / HELP_TERMS_RELATIVE_PATH
 HELP_GENERATOR_PATH = PROJECT_ROOT / "doc" / "gen_authoring_doc.py"
 FENCED_BLOCK = re.compile(r"```(?P<language>\w+)\n(?P<source>.*?)\n```", re.DOTALL)
+HELP_TERM_LINK = re.compile(r"\[[^\]]+\]\(gxhelp://(?P<term>[^)]+)\)")
 INPUT_REFERENCE = re.compile(r"inputs\.([A-Za-z_][A-Za-z0-9_]*)(\.path)?")
 KNOWN_FENCE_LANGUAGES = {"console", "json", "yaml"}
 BASE_TOOL: dict[str, Any] = {
@@ -172,6 +175,20 @@ def test_all_documentation_fences_are_recognized_and_closed() -> None:
         assert {match.group("language") for match in matches} <= KNOWN_FENCE_LANGUAGES
 
 
+def test_all_documented_help_terms_exist() -> None:
+    terms = yaml.safe_load(HELP_TERMS_PATH.read_text())
+    help_data = yaml.safe_load(HELP_PATH.read_text())
+    authored_content = "\n".join([help_data["intro"], *(section["body"] for section in help_data["sections"])])
+    referenced_terms = HELP_TERM_LINK.findall(authored_content)
+
+    assert referenced_terms == ["galaxy.tools.container", "unix.commandLine"]
+    for referenced_term in referenced_terms:
+        value = terms
+        for part in referenced_term.split("."):
+            value = value[part]
+        assert isinstance(value, str) and value.strip()
+
+
 def test_generated_documentation_resolves_schema_sections() -> None:
     result = subprocess.run(
         [sys.executable, str(HELP_GENERATOR_PATH), str(HELP_PATH)],
@@ -214,6 +231,9 @@ def test_generated_documentation_resolves_schema_sections() -> None:
     assert "galaxy.json" not in result.stdout
     assert "**Datatypes page**" in result.stdout
     assert "](/datatypes)" not in result.stdout
+    assert "**container image**" in result.stdout
+    assert "**command line**" in result.stdout
+    assert "gxhelp://" not in result.stdout
     assert "shell_command: grep" in result.stdout
 
 

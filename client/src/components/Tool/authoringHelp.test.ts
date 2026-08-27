@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
+import { hasHelp } from "@/components/Help/terms";
+
 import {
     authoringHelpGroups,
     authoringHelpIntro,
@@ -15,7 +17,8 @@ import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 describe("user-defined tool authoring help", () => {
     it("loads the shared help content", () => {
         expect(authoringHelpTitle).toBe("Authoring User-Defined Tools");
-        expect(authoringHelpIntro).toContain("User-defined tools let a user register");
+        expect(authoringHelpIntro).toContain("Create a Galaxy tool from a containerized command");
+        expect(authoringHelpIntro).toContain("like any other tool");
         expect(authoringHelpSections.length).toBeGreaterThan(0);
         expect(new Set(authoringHelpSections.map((section) => section.id)).size).toBe(authoringHelpSections.length);
         expect(authoringHelpGroups.map((group) => group.title)).toEqual([
@@ -209,6 +212,16 @@ describe("user-defined tool authoring help", () => {
         for (const section of authoringHelpSections) {
             expect(section.body).not.toContain("gxdoc:");
             expect(section.body).not.toContain("gxui:");
+        }
+    });
+
+    it("links authoring concepts to existing Galaxy help terms", () => {
+        const toolDefinition = authoringHelpSections.find((section) => section.id === "tool-format");
+        const helpTerms = [...(toolDefinition?.body.matchAll(/gxhelp:\/\/([^)]+)/g) ?? [])].map((match) => match[1]!);
+
+        expect(helpTerms).toEqual(["galaxy.tools.container", "unix.commandLine"]);
+        for (const term of helpTerms) {
+            expect(hasHelp(term)).toBe(true);
         }
     });
 

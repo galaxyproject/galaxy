@@ -25,6 +25,7 @@ class _IndentedSafeDumper(yaml.SafeDumper):
 # docs.galaxyproject.org URL.
 GXDOC_LINK = re.compile(r"\]\(gxdoc:([^)]+)\)")
 GXUI_LINK = re.compile(r"\[([^\]]+)\]\(gxui:[^)]+\)")
+GXHELP_LINK = re.compile(r"\[([^\]]+)\]\(gxhelp://[^)]+\)")
 QUICK_START_EXAMPLE = "{{quick_start_example}}"
 OUTPUT_TYPE_INDEX = "{{output_type_index}}"
 PARAMETER_TYPE_INDEX = "{{parameter_type_index}}"
@@ -64,7 +65,8 @@ editor's help panel renders. Edit that file, not this one.
 
 def resolve_links(text: str) -> str:
     text = GXDOC_LINK.sub(lambda m: f"](../{m.group(1)})", text)
-    return GXUI_LINK.sub(lambda m: f"**{m.group(1)}**", text)
+    text = GXUI_LINK.sub(lambda m: f"**{m.group(1)}**", text)
+    return GXHELP_LINK.sub(lambda m: f"**{m.group(1)}**", text)
 
 
 def link_schema_keys(text: str) -> str:
