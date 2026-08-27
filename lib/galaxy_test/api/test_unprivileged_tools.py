@@ -1,4 +1,5 @@
 # Test tools API.
+from unittest.mock import patch
 from uuid import uuid4
 
 from galaxy.tool_util_models import UserToolSource
@@ -76,6 +77,44 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             assert response
             assert response["openapi"] == "3.1.0"
             assert response["components"]["schemas"]["inputs"]
+
+    def test_build_requires_execute_role(self):
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator.build_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND), history_id=history_id, assert_ok=False
+            )
+        assert response["err_msg"] == "User is not allowed to run unprivileged tools"
+
+    def test_build_requires_authenticated_user(self):
+        with self.dataset_populator.test_history() as history_id, self._different_user(anon=True):
+            response = self.dataset_populator.build_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND), history_id=history_id, assert_ok=False
+            )
+        assert response["err_msg"] == "Action requires user authentication."
+
+    def test_build_runtime_model_requires_execute_role(self):
+        response = self.dataset_populator.build_runtime_model_for_tool(
+            UserToolSource(**TOOL_WITH_SHELL_COMMAND), assert_ok=False
+        )
+        assert response["err_msg"] == "User is not allowed to run unprivileged tools"
+
+    def test_build_endpoints_require_beta_tool_formats(self):
+        driver = self.driver_or_skip_test_if_remote()
+        assert driver.app
+        config_error = "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+            patch.object(driver.app.config, "enable_beta_tool_formats", False),
+        ):
+            build_response = self.dataset_populator.build_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND), history_id=history_id, assert_ok=False
+            )
+            runtime_model_response = self.dataset_populator.build_runtime_model_for_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND), assert_ok=False
+            )
+        assert build_response["err_msg"] == config_error
+        assert runtime_model_response["err_msg"] == config_error
 
     def test_run(self):
         with (
