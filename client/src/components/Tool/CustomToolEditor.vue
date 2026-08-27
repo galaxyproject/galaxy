@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { faArrowAltCircleUp, faLightbulb, faSave } from "@fortawesome/free-regular-svg-icons";
+import { faEraser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
@@ -20,6 +21,7 @@ import {
 } from "@/api";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
+import { CLEAR_TOOL_YAML, NEW_TOOL_YAML } from "./customToolEditorDefaults";
 import { setupMonaco } from "./YamlJs";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -72,20 +74,7 @@ interface ExistingTool {
 const props = defineProps<ExistingTool>();
 const errorMsg = ref<MessageException>();
 const persistedTool = ref<UnprivilegedToolResponse>();
-const defaultYaml = `class: GalaxyUserTool
-id:
-name:
-version: "0.1"
-description:
-container:
-shell_command:
-inputs:
-  - name: input1
-    type: data
-outputs:
-  - name: output1
-    type: data`;
-const yamlRepresentation = ref<string>(defaultYaml);
+const yamlRepresentation = ref<string>(NEW_TOOL_YAML);
 
 if (props.toolUuid) {
     GalaxyApi()
@@ -142,6 +131,12 @@ async function importFromUrl() {
         yamlRepresentation.value = yaml;
     } catch (error) {
         errorMsg.value = { err_code: -1, err_msg: `Couldn't import YAML from URL: ${error}` };
+    }
+}
+
+function clearTool() {
+    if (window.confirm("Replace the current tool definition with the minimal skeleton?")) {
+        yamlRepresentation.value = CLEAR_TOOL_YAML;
     }
 }
 
@@ -216,6 +211,15 @@ async function generateViaLLM() {
                 data-description="Import from a URL"
                 @click="importFromUrl"
                 ><FontAwesomeIcon :icon="faArrowAltCircleUp"
+            /></b-button>
+            <b-button
+                variant="secondary"
+                size="m"
+                title="Clear Tool"
+                aria-label="Clear Tool"
+                data-description="clear custom tool"
+                @click="clearTool"
+                ><FontAwesomeIcon :icon="faEraser"
             /></b-button>
             <b-button
                 variant="primary"

@@ -1246,6 +1246,9 @@ custom_tools:
     save_button:
       selector: 'save custom tool'
       type: data-description
+    clear_button:
+      selector: 'clear custom tool'
+      type: data-description
     tool_link: "#g-card-custom-tool-${tool_uuid}"
 
 admin:

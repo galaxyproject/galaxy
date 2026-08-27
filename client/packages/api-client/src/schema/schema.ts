@@ -26315,6 +26315,32 @@ export interface components {
          *     (``DynamicUnprivilegedToolCreatePayload.representation``). LLM authoring
          *     uses the slimmer ``UserToolSourceAuthoringView`` parent; ``tests`` is added
          *     back here so direct authors and stored rows can still carry tests.
+         * @example {
+         *       "class": "GalaxyUserTool",
+         *       "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+         *       "description": "from a text file",
+         *       "id": "remove_comments",
+         *       "inputs": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "name": "Remove Comment Lines",
+         *       "outputs": [
+         *         {
+         *           "format_source": "input_file",
+         *           "from_work_dir": "output.txt",
+         *           "name": "output_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "shell_command": "grep -v '^#' '$(inputs.input_file.path)' > output.txt || test \"$?\" = 1",
+         *       "version": "0.1.0"
+         *     }
          */
         "UserToolSource-Input": {
             /** citations */
@@ -26422,6 +26448,32 @@ export interface components {
          *     (``DynamicUnprivilegedToolCreatePayload.representation``). LLM authoring
          *     uses the slimmer ``UserToolSourceAuthoringView`` parent; ``tests`` is added
          *     back here so direct authors and stored rows can still carry tests.
+         * @example {
+         *       "class": "GalaxyUserTool",
+         *       "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+         *       "description": "from a text file",
+         *       "id": "remove_comments",
+         *       "inputs": [
+         *         {
+         *           "format": [
+         *             "txt"
+         *           ],
+         *           "name": "input_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "name": "Remove Comment Lines",
+         *       "outputs": [
+         *         {
+         *           "format_source": "input_file",
+         *           "from_work_dir": "output.txt",
+         *           "name": "output_file",
+         *           "type": "data"
+         *         }
+         *       ],
+         *       "shell_command": "grep -v '^#' '$(inputs.input_file.path)' > output.txt || test \"$?\" = 1",
+         *       "version": "0.1.0"
+         *     }
          */
         "UserToolSource-Output": {
             /** citations */
