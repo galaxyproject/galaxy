@@ -154,9 +154,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     ] = None
     requirements: Annotated[
         list[JavascriptRequirement | ResourceRequirement | ContainerRequirement] | None,
-        Field(
-            description="A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images."
-        ),
+        Field(description="JavaScript helpers and compute resource requests needed to execute this tool."),
     ] = []
     shell_command: Annotated[
         str,
@@ -290,8 +288,9 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
 
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     container: Annotated[
-        str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
-    ]
+        str | None,
+        Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"]),
+    ] = None
     # Required here (it's optional on the base for stored/legacy rows). Galaxy's
     # linter rejects a versionless tool, so forcing it into the structured-output
     # ``required`` set stops the model dropping it -- notably on a retry, where the
@@ -335,13 +334,25 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
 
     @field_validator("container", mode="after")
     @classmethod
-    def _reject_blank_container(cls, value: str) -> str:
-        if not value or not value.strip():
+    def _reject_blank_container(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
             raise PydanticCustomError(
                 "dynamic_tool.blank_container",
                 "container must not be empty",
             )
         return value
+
+    @model_validator(mode="after")
+    def _require_container(self) -> "UserToolSourceAuthoringView":
+        has_container_requirement = any(
+            isinstance(requirement, ContainerRequirement) for requirement in self.requirements or []
+        )
+        if not self.container and not has_container_requirement:
+            raise PydanticCustomError(
+                "dynamic_tool.container_required",
+                "set the top-level container field",
+            )
+        return self
 
     @model_serializer(mode="wrap")
     def _canonical_order(self, handler: SerializerFunctionWrapHandler, info: Any):

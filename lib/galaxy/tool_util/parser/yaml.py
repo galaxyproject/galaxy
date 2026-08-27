@@ -19,6 +19,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
     DEFAULT_SORT,
+    ParseException,
 )
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.parameters import (
@@ -165,7 +166,29 @@ class YamlToolSource(ToolSource):
         elif containers:
             containers = containers
         else:
+            # Requirements here are raw YAML, so a container requirement may be
+            # missing keys that the model would have guaranteed. User-defined
+            # tools reject that shape deliberately; other YAML tools retain an
+            # empty identifier, matching an XML container with no image text.
+            user_tool = self.parse_class() == "GalaxyUserTool"
             containers = []
+            for requirement in mixed_requirements:
+                if requirement.get("type") != "container":
+                    continue
+                raw_container = requirement.get("container")
+                container_dict = raw_container if isinstance(raw_container, dict) else {}
+                identifier = container_dict.get("container_id")
+                if not isinstance(identifier, str) or not identifier.strip():
+                    if user_tool:
+                        raise ParseException("Container requirement must set container.container_id.")
+                    identifier = ""
+                containers.append(
+                    {
+                        "identifier": identifier,
+                        "type": container_dict.get("type", "docker"),
+                        "explicit": True,
+                    }
+                )
         return requirements.parse_requirements_from_lists(
             software_requirements=[r for r in mixed_requirements if r.get("type") == "package"],
             containers=containers,

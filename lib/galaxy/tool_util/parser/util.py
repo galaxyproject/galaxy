@@ -102,7 +102,11 @@ def text_input_is_optional(input_source: "InputSource") -> tuple[bool, bool]:
     return optional, optionality_inferred
 
 
-class ParameterParseException(Exception):
+class ParseException(Exception):
+    """A tool source could not be parsed into a usable tool."""
+
+
+class ParameterParseException(ParseException):
     message: str
 
     def __init__(self, message):

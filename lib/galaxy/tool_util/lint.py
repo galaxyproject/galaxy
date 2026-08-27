@@ -58,10 +58,12 @@ from typing import (
 
 import galaxy.tool_util.linters
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.parser.util import ParseException
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.util import (
     Element,
     submodules,
+    unicodify,
 )
 
 if TYPE_CHECKING:
@@ -203,6 +205,7 @@ class LintContext:
         object_name: str | None = None,
     ):
         self.skip_types = skip_types or []
+        self._reported_failures: set[str] = set()
         if isinstance(level, str):
             self.level = LintLevel[level.upper()]
         else:
@@ -243,7 +246,12 @@ class LintContext:
             self.message_list = []
 
         # call linter
-        lint_func(lint_target, self)
+        try:
+            lint_func(lint_target, self)
+        except ParseException as e:
+            # Several linters parse requirements; report a malformed source once
+            # and attribute it to parsing rather than to the first such linter.
+            self._report_failure(f"Tool could not be parsed: {unicodify(e)}", "ToolParse")
 
         if self.level < LintLevel.SILENT:
             for message in self.error_messages:
@@ -287,6 +295,12 @@ class LintContext:
 
     def info(self, message: str, linter: str | None = None, *args, **kwargs) -> None:
         self.__handle_message("info", message, linter, *args, **kwargs)
+
+    def _report_failure(self, message: str, linter: str) -> None:
+        if message in self._reported_failures:
+            return
+        self._reported_failures.add(message)
+        self.error(message, linter=linter)
 
     def error(self, message: str, linter: str | None = None, *args, **kwargs) -> None:
         self.__handle_message("error", message, linter, *args, **kwargs)

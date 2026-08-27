@@ -3,12 +3,14 @@
 from copy import deepcopy
 
 import pytest
+from pydantic import ValidationError
 
 from galaxy.tool_util.lint import (
     get_lint_context_for_tool_source,
     lint_user_tool_source,
 )
 from galaxy.tool_util.linters.containers import ContainerImageShape
+from galaxy.tool_util.parser.util import ParseException
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util_models import UserToolSource
 
@@ -76,3 +78,114 @@ def test_lint_user_tool_source_surfaces_container_shape_failure():
     bullets = lint_user_tool_source(user_tool)
     assert any("does not match a recognized shape" in b for b in bullets)
     assert any(b.startswith(f"{ContainerImageShape.name()}:") for b in bullets)
+
+
+def test_user_tool_source_accepts_container_requirement():
+    source = _doc(
+        container=None,
+        requirements=[
+            {
+                "type": "container",
+                "container": {"type": "docker", "container_id": "busybox"},
+            }
+        ],
+    )
+
+    tool = UserToolSource.model_validate(source)
+
+    assert tool.container is None
+
+
+def test_user_tool_source_requires_a_container_form():
+    with pytest.raises(ValidationError, match="set the top-level container field"):
+        UserToolSource.model_validate(_doc(container=None))
+
+
+def test_parser_reads_container_requirement():
+    tool_source = YamlToolSource(
+        _doc(
+            container=None,
+            requirements=[
+                {
+                    "type": "container",
+                    "container": {
+                        "type": "singularity",
+                        "container_id": "oras://example.org/image:tag",
+                    },
+                }
+            ],
+        )
+    )
+
+    _, containers, _, _, _ = tool_source.parse_requirements()
+
+    assert len(containers) == 1
+    assert containers[0].type == "singularity"
+    assert containers[0].identifier == "oras://example.org/image:tag"
+
+
+MALFORMED_CONTAINER_REQUIREMENTS = [
+    {"type": "container", "container_id": "busybox"},
+    {"type": "container", "container": {"type": "docker"}},
+    {"type": "container", "container": {"type": "docker", "container_id": " "}},
+    {"type": "container", "container": "busybox"},
+    {"type": "container"},
+]
+
+
+@pytest.mark.parametrize("requirement", MALFORMED_CONTAINER_REQUIREMENTS)
+def test_user_tool_rejects_malformed_container_requirement(requirement):
+    tool_source = YamlToolSource(_doc(container=None, requirements=[requirement]))
+
+    with pytest.raises(ParseException, match="must set container.container_id"):
+        tool_source.parse_requirements()
+
+
+@pytest.mark.parametrize("requirement", MALFORMED_CONTAINER_REQUIREMENTS)
+def test_linting_reports_unparseable_user_tool_once(requirement):
+    tool_source = YamlToolSource(_doc(container=None, requirements=[requirement]))
+
+    ctx = get_lint_context_for_tool_source(tool_source)
+
+    assert [m.linter for m in ctx.error_messages] == ["ToolParse"]
+    assert "must set container.container_id" in ctx.error_messages[0].message
+
+
+@pytest.mark.parametrize("requirement", MALFORMED_CONTAINER_REQUIREMENTS)
+def test_non_user_tool_keeps_malformed_container_requirement(requirement):
+    source = _doc(container=None, requirements=[requirement])
+    source["class"] = "GalaxyTool"
+    tool_source = YamlToolSource(source)
+
+    _, containers, _, _, _ = tool_source.parse_requirements()
+
+    assert [container.identifier for container in containers] == [""]
+
+
+def test_parser_defaults_container_requirement_type_to_docker():
+    tool_source = YamlToolSource(
+        _doc(container=None, requirements=[{"type": "container", "container": {"container_id": "busybox"}}])
+    )
+
+    _, containers, _, _, _ = tool_source.parse_requirements()
+
+    assert containers[0].type == "docker"
+
+
+def test_top_level_container_takes_precedence_over_requirement():
+    tool_source = YamlToolSource(
+        _doc(
+            container="quay.io/biocontainers/python:3.13",
+            requirements=[
+                {
+                    "type": "container",
+                    "container": {"type": "docker", "container_id": "busybox:latest"},
+                }
+            ],
+        )
+    )
+
+    _, containers, _, _, _ = tool_source.parse_requirements()
+
+    assert len(containers) == 1
+    assert containers[0].identifier == "quay.io/biocontainers/python:3.13"
