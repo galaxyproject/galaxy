@@ -5,7 +5,9 @@ import platform
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
+from galaxy.tool_util_models import UserToolSource
 from .framework import (
+    playwright_only,
     selenium_only,
     selenium_test,
     SeleniumTestCase,
@@ -45,6 +47,66 @@ class TestCustomTools(SeleniumTestCase):
             self.components.tool_form.execute.wait_for_and_click()
             self.history_panel_wait_for_hid_ok(3)
 
+    @playwright_only("Validates the custom-tool editor workflow with Playwright dialogs and console events.")
+    @selenium_test
+    def test_new_tool_editor_defaults_and_clear(self):
+        console_errors = []
+        self.page.on(
+            "console", lambda message: console_errors.append(message.text) if message.type == "error" else None
+        )
+
+        with self.dataset_populator.user_tool_execute_permissions():
+            self.home()
+            self.open_tool_editor()
+
+            new_tool_source = self.editor_source()
+            assert "class: GalaxyUserTool" in new_tool_source
+            assert "name: Remove Comment Lines" in new_tool_source
+            assert "from_work_dir: output.txt" in new_tool_source
+
+            self.page.once("dialog", lambda dialog: dialog.dismiss())
+            self.components.custom_tools.clear_button.wait_for_and_click()
+            assert self.editor_source() == new_tool_source
+
+            self.page.once("dialog", lambda dialog: dialog.accept())
+            self.components.custom_tools.clear_button.wait_for_and_click()
+            expected_skeleton = """class: GalaxyUserTool
+name:
+version: "0.1.0"
+container:
+shell_command:
+inputs: []
+outputs: []"""
+            self._wait_on(
+                lambda: self.editor_source() == expected_skeleton,
+                "the custom-tool editor to contain the clear-tool skeleton",
+            )
+
+            stored_tool = UserToolSource(
+                **{
+                    "class": "GalaxyUserTool",
+                    "id": "stored_editor_tool",
+                    "name": "Stored Editor Tool",
+                    "version": "2.0.0",
+                    "container": "busybox",
+                    "shell_command": "echo stored > output.txt",
+                    "outputs": [{"name": "output", "type": "data", "from_work_dir": "output.txt"}],
+                }
+            )
+            stored_tool_uuid = self.dataset_populator.create_unprivileged_tool(stored_tool)["uuid"]
+            self.get(f"tools/editor/{stored_tool_uuid}")
+            self.wait_for_selector_visible(".monaco-editor")
+            self._wait_on(
+                lambda: "name: Stored Editor Tool" in self.editor_source(),
+                "the custom-tool editor to load the stored tool",
+            )
+            existing_tool_source = self.editor_source()
+            assert "version: 2.0.0" in existing_tool_source
+            assert "Remove Comment Lines" not in existing_tool_source
+
+        uninitialized_confirm_error = "Confirm dialog component reference not set"
+        assert not any(uninitialized_confirm_error in error for error in console_errors), console_errors
+
     def create_new_custom_tool(self) -> str:
         self.home()
         self.open_tool_editor()
@@ -59,6 +121,10 @@ class TestCustomTools(SeleniumTestCase):
         # Wait for the Tool Editor heading to appear
         self.wait_for_selector_visible("h1")
         self.wait_for_selector_visible(".monaco-editor")
+
+    def editor_source(self) -> str:
+        source = self.page.locator(".monaco-editor .view-lines").inner_text()
+        return source.replace("\N{NO-BREAK SPACE}", " ").strip()
 
     def save_tool(self) -> str:
         self.components.custom_tools.save_button.wait_for_and_click()

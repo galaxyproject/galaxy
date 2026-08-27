@@ -375,6 +375,37 @@ class UserToolSource(UserToolSourceAuthoringView):
     back here so direct authors and stored rows can still carry tests.
     """
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "class": "GalaxyUserTool",
+                    "id": "remove_comments",
+                    "name": "Remove Comment Lines",
+                    "version": "0.1.0",
+                    "description": "from a text file",
+                    "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+                    "shell_command": "grep -v '^#' '$(inputs.input_file.path)' > output.txt || test \"$?\" = 1",
+                    "inputs": [
+                        {
+                            "name": "input_file",
+                            "type": "data",
+                            "format": ["txt"],
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "name": "output_file",
+                            "type": "data",
+                            "format_source": "input_file",
+                            "from_work_dir": "output.txt",
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
     # ``version`` is required (inherited from UserToolSourceAuthoringView). A stored
     # row that predates the requirement won't validate; ``lift_user_tool_source``
     # returns it as the raw dict with status "invalid" so its author still sees it.
