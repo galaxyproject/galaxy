@@ -1956,12 +1956,14 @@ class MinimalJobWrapper(HasResourceParameters):
         purged = dataset.dataset.purged
         if not purged and dataset.dataset.external_filename is None:
             trynum = 0
-            while trynum < self.app.config.retry_job_output_collection:
+            # +1 so retry_job_output_collection=0 still makes one attempt, matching the
+            # sibling retry loop in runners/__init__.py's _collect_job_output.
+            while trynum < self.app.config.retry_job_output_collection + 1:
                 try:
                     # Attempt to short circuit NFS attribute caching
                     os.stat(dataset.dataset.get_file_name())
                     os.chown(dataset.dataset.get_file_name(), os.getuid(), -1)
-                    trynum = self.app.config.retry_job_output_collection
+                    break
                 except (OSError, ObjectNotFound) as e:
                     trynum += 1
                     log.warning("Error accessing dataset with ID %i, will retry: %s", dataset.dataset.id, unicodify(e))
