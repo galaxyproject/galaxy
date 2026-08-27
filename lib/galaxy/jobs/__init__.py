@@ -87,7 +87,10 @@ from galaxy.model import (
     Task,
 )
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
-from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
+from galaxy.model.store.discover import (
+    MaxDiscoveredFilesExceededError,
+    OutputCollectionSecurityError,
+)
 from galaxy.objectstore import (
     is_user_object_store,
     ObjectStorePopulator,
@@ -2180,12 +2183,17 @@ class MinimalJobWrapper(HasResourceParameters):
             # importing metadata will discover outputs if extended metadata
             try:
                 self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
-            except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError) as e:
+            except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError, OutputCollectionSecurityError) as e:
                 log.warning("Job %s failed during output discovery: %s", job.id, e)
                 final_job_state = job.states.ERROR
+                message_type = (
+                    "output_collection_security"
+                    if isinstance(e, OutputCollectionSecurityError)
+                    else "max_discovered_files"
+                )
                 job.job_messages = [
                     {
-                        "type": "max_discovered_files",
+                        "type": message_type,
                         "desc": str(e),
                         "error_level": StdioErrorLevel.FATAL,
                     }
@@ -2605,6 +2613,9 @@ class MinimalJobWrapper(HasResourceParameters):
             datatypes_config=datatypes_config,
             job_metadata=job_metadata,
             provided_metadata_style=self.tool.provided_metadata_style,
+            uses_tool_provided_metadata=self.tool.uses_tool_provided_metadata,
+            allows_unnamed_outputs=self.tool.allows_unnamed_outputs,
+            allows_external_output_paths=self.tool.allows_external_output_paths,
             object_store_conf=object_store_conf,
             tool=self.tool,
             job=job,

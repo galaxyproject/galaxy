@@ -19909,6 +19909,20 @@ export interface components {
              */
             url: string;
         };
+        /** OutputCollectionSecurityJobMessage */
+        OutputCollectionSecurityJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "output_collection_security";
+        };
         /**
          * OutputCompareType
          * @enum {string}
@@ -22709,6 +22723,7 @@ export interface components {
                       | components["schemas"]["ExitCodeJobMessage"]
                       | components["schemas"]["RegexJobMessage"]
                       | components["schemas"]["MaxDiscoveredFilesJobMessage"]
+                      | components["schemas"]["OutputCollectionSecurityJobMessage"]
                   )[]
                 | null;
             /**
