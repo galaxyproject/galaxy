@@ -194,6 +194,7 @@ class GalaxyAppConfigurationAttributes:
     logo_url: str
     logo_src: str
     logo_src_secondary: str | None
+    subdomain_switcher: list[dict[str, str]]
     helpsite_url: str
     wiki_url: str
     quota_url: str

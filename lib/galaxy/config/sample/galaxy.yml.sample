@@ -1601,6 +1601,15 @@ galaxy:
   # The custom brand image source.
   #logo_src_secondary: null
 
+  # Sites to display in the masthead's "Switch sites" menu. Each entry
+  # requires a non-empty label and an absolute HTTP or HTTPS URL.
+  # Entries are displayed in the configured order, excluding the site
+  # matching the current URL origin.
+  # Example value: ``[{label: Base site, url:
+  # https://usegalaxy.example.org}, {label: Single Cell Omics, url:
+  # https://singlecell.usegalaxy.example.org}]``
+  #subdomain_switcher: []
+
   # The URL linked by the "Galaxy Help" link in the "Help" menu.
   #helpsite_url: https://help.galaxyproject.org/
 

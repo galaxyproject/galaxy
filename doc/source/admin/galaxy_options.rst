@@ -2531,6 +2531,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``subdomain_switcher``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sites to display in the masthead's "Switch sites" menu. Each entry
+    requires a non-empty label and an absolute HTTP or HTTPS URL.
+    Entries are displayed in the configured order, excluding the site
+    matching the current URL origin.
+    Example value: ``[{label: Base site, url:
+    https://usegalaxy.example.org}, {label: Single Cell Omics, url:
+    https://singlecell.usegalaxy.example.org}]``
+:Default: ``[]``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~
 ``helpsite_url``
 ~~~~~~~~~~~~~~~~
