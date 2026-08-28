@@ -7,7 +7,12 @@ import datetime
 
 from markupsafe import escape
 
-from galaxy.model import PostJobActionAssociation
+from galaxy.model import (
+    DatasetInstance,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    PostJobActionAssociation,
+)
 from galaxy.util import send_mail
 from galaxy.util.custom_logging import get_logger
 
@@ -33,13 +38,16 @@ class DefaultJobAction:
         pass
 
     @staticmethod
-    def mapped_over_dataset_instances(step_output):
+    def mapped_over_dataset_instances(
+        step_output: HistoryDatasetAssociation | HistoryDatasetCollectionAssociation,
+    ) -> list[DatasetInstance]:
         """Dataset instances an action should act on for a mapped over step output.
 
         Handles both collection and single dataset outputs, and drops skipped
         placeholders - mutating those breaks skip detection downstream.
         """
-        if hasattr(step_output, "dataset_instances"):
+        instances: list[DatasetInstance | None]
+        if isinstance(step_output, HistoryDatasetCollectionAssociation):
             instances = step_output.dataset_instances
         else:
             instances = [step_output]
