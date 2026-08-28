@@ -157,6 +157,8 @@ GALAXY_TEST_SELENIUM_REMOTE_HOST = os.environ.get(
 )
 GALAXY_TEST_SELENIUM_HEADLESS = os.environ.get("GALAXY_TEST_SELENIUM_HEADLESS", DEFAULT_SELENIUM_HEADLESS)
 GALAXY_TEST_EXTERNAL_FROM_SELENIUM = os.environ.get("GALAXY_TEST_EXTERNAL_FROM_SELENIUM", None)
+# Stop tool tests at submission, skipping job execution and output verification.
+GALAXY_TEST_TOOL_FORM_ONLY = os.environ.get("GALAXY_TEST_TOOL_FORM_ONLY", None)
 # Auto-retry selenium tests this many times.
 GALAXY_TEST_SELENIUM_RETRIES = int(os.environ.get("GALAXY_TEST_SELENIUM_RETRIES", "0"))
 
@@ -770,6 +772,9 @@ class RunsToolTests(NavigatesGalaxyMixin):
         self.tool_open(tool_id)
         self._fill_tool_test_inputs(test_def, hid_map, required_filenames, collection_hid_map)
         self.tool_form_execute()
+        if asbool(GALAXY_TEST_TOOL_FORM_ONLY):
+            self._wait_for_new_job(history_id, tool_id, pre_job_ids, dataset_populator)
+            return
         self._verify_tool_test_outputs(test_def, history_id, tool_id, pre_job_ids, dataset_populator)
 
     # -- Data staging --
@@ -1079,6 +1084,18 @@ class RunsToolTests(NavigatesGalaxyMixin):
         input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
         self.set_element_value(input_element, value)
 
+    def _wait_for_new_job(self, history_id: str, tool_id: str, pre_job_ids: set, dataset_populator) -> str:
+        """Wait for the job the form just submitted and return its id."""
+
+        def _find_new_job(driver=None):
+            jobs = dataset_populator.history_jobs_for_tool(history_id, tool_id)
+            new_jobs = [j for j in jobs if j["id"] not in pre_job_ids]
+            return new_jobs[0] if new_jobs else None
+
+        new_job = self._wait_on(_find_new_job, "tool job to appear in history")
+        assert new_job is not None
+        return new_job["id"]
+
     # -- Output verification --
 
     def _verify_tool_test_outputs(
@@ -1107,16 +1124,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
         if not has_work:
             return
 
-        def _find_new_job(driver=None):
-            jobs = dataset_populator.history_jobs_for_tool(history_id, tool_id)
-            new_jobs = [j for j in jobs if j["id"] not in pre_job_ids]
-            if new_jobs:
-                return new_jobs[0]
-            return None
-
-        new_job = self._wait_on(_find_new_job, "tool job to appear in history")
-        assert new_job is not None
-        job_id = new_job["id"]
+        job_id = self._wait_for_new_job(history_id, tool_id, pre_job_ids, dataset_populator)
 
         has_job_checks = (
             expect_exit_code is not None
