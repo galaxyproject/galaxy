@@ -11,7 +11,16 @@
                     <FontAwesomeIcon :icon="faDownload" />
                 </GButton>
 
-                <GButton :href="importUrl" tooltip transparent color="blue" size="small" title="Import Dataset">
+                <GButton
+                    data-description="import dataset button"
+                    tooltip
+                    transparent
+                    color="blue"
+                    size="small"
+                    title="Import Dataset"
+                    :disabled="importing || importedOnce"
+                    :disabled-title="importedOnce ? 'Already imported' : 'Importing'"
+                    @click="onImport">
                     <FontAwesomeIcon :icon="faFileImport" />
                 </GButton>
 
@@ -95,11 +104,15 @@ import { BCard, BCardBody, BCardHeader, BEmbed, BPagination } from "bootstrap-vu
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
+import { copyDataset } from "@/api/datasets";
 import type { TableField } from "@/components/Common/GTable.types";
+import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatasetTextContentStore } from "@/stores/datasetTextContentStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -126,6 +139,9 @@ const props = defineProps<{
 const currentPage = ref(1);
 const expanded = ref(false);
 const perPage = ref(100);
+/** Denotes if a successful attempt to import into history has been made. */
+const importedOnce = ref(false);
+const importing = ref(false);
 
 // Store
 const { getDatasetError, getDataset } = useDatasetStore();
@@ -134,6 +150,8 @@ const {
     getItemLoadError: getContentLoadError,
     isLoadingItem: isLoadingContent,
 } = useDatasetTextContentStore();
+const historyStore = useHistoryStore();
+const { currentHistoryId } = storeToRefs(historyStore);
 
 // Dataset Mapper Store
 const datatypesMapperStore = useDatatypesMapperStore();
@@ -156,7 +174,6 @@ const dataError = computed(() => getContentLoadError(props.datasetId));
 const dataLoading = computed(() => isLoadingContent(props.datasetId));
 const downloadUrl = computed(() => `${getAppRoot()}dataset/display?dataset_id=${props.datasetId}`);
 const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/display/?preview=True`);
-const importUrl = computed(() => `${getAppRoot()}dataset/imp?dataset_id=${props.datasetId}`);
 const metaContent = computed(() => getDataset(props.datasetId) as Dataset);
 const metaError = computed(() => getDatasetError(props.datasetId));
 const metaType = computed(() => metaContent.value?.extension);
@@ -203,6 +220,26 @@ const getItems = (textData: string, metaData: Dataset) => {
 const onExpand = () => {
     expanded.value = !expanded.value;
 };
+
+async function onImport() {
+    if (importing.value || importedOnce.value) {
+        return;
+    }
+    importing.value = true;
+    try {
+        if (!currentHistoryId.value) {
+            throw new Error("No current history found.");
+        }
+        await copyDataset(props.datasetId, currentHistoryId.value);
+        historyStore.loadCurrentHistory();
+        Toast.success(`Dataset "${metaContent.value?.name}" copied to current history.`);
+        importedOnce.value = true;
+    } catch (e) {
+        Toast.error(errorMessageAsString(e), "Failed to import dataset");
+    } finally {
+        importing.value = false;
+    }
+}
 
 // Lifecycle hooks
 onMounted(() => {
