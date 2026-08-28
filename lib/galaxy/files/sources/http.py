@@ -1,6 +1,8 @@
 import logging
 import re
 import urllib.request
+from contextlib import ExitStack
+from urllib.parse import urlparse
 
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
@@ -11,7 +13,8 @@ from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
-    stream_to_open_named_file,
+    requests,
+    stream_to_path,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.config_templates import TemplateExpansion
@@ -63,23 +66,36 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
         self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[HTTPFileSourceConfiguration]
     ):
         config = context.config
-        req = urllib.request.Request(source_path, headers=config.http_headers)
-        try:
-            page = urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT)
-        except Exception as e:
-            if "control characters" in str(e):
-                raise ValueError(
-                    f"URL contains unencoded characters (e.g. spaces): {source_path}. "
-                    "The URL source should properly percent-encode the path."
-                ) from e
-            raise
+        scheme = urlparse(source_path).scheme.lower()
+        if scheme in ("http", "https") and re.search(r"[\x00-\x20\x7f]", source_path):
+            raise ValueError(
+                f"URL contains unencoded characters (e.g. spaces): {source_path}. "
+                "The URL source should properly percent-encode the path."
+            )
 
-        with page:
+        with ExitStack() as stack:
+            if scheme == "ftp":
+                req = urllib.request.Request(source_path, headers=config.http_headers)
+                page = stack.enter_context(urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT))
+            else:
+                session = stack.enter_context(requests.Session())
+                page = stack.enter_context(
+                    session.get(
+                        source_path,
+                        headers=config.http_headers,
+                        stream=True,
+                        timeout=DEFAULT_SOCKET_TIMEOUT,
+                    )
+                )
+                page.raise_for_status()
+                page.raw.decode_content = True
             # Verify url post-redirects is still allowlisted
-            validate_non_local(page.geturl(), self._allowlist or config.fetch_url_allowlist)
-            f = open(native_path, "wb")  # fd will be .close()ed in stream_to_open_named_file
-            return stream_to_open_named_file(
-                page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)
+            final_url = page.geturl() if scheme == "ftp" else page.url
+            validate_non_local(final_url, self._allowlist or config.fetch_url_allowlist)
+            return stream_to_path(
+                page if scheme == "ftp" else page.raw,
+                native_path,
+                source_encoding=get_charset_from_http_headers(page.headers),
             )
 
     def _write_from(

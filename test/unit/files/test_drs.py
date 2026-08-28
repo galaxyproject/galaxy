@@ -1,12 +1,6 @@
-import io
 import json
 import os
-import urllib
-from typing import (
-    Any,
-    cast,
-)
-from unittest import mock
+from typing import cast
 
 import pytest
 import responses
@@ -127,7 +121,7 @@ def test_file_source_drs_http():
     def access_handler(request):
         assert request.headers["Authorization"] == "Bearer IBearTokens"
         access_data = {
-            "url": "https://my.respository.org/myfile.txt",
+            "url": "https://my.repository.org/myfile.txt",
             "headers": ["Authorization: Basic Z2E0Z2g6ZHJz"],
         }
         return (200, {}, json.dumps(access_data))
@@ -148,23 +142,23 @@ def test_file_source_drs_http():
 
     test_url = "drs://drs.example.org/314159"
 
-    def check_specific_header(request, **kwargs):
-        assert request.full_url == "https://my.respository.org/myfile.txt"
+    def check_specific_header(request):
         assert request.headers["Authorization"] == "Basic Z2E0Z2g6ZHJz"
-        response: Any = io.StringIO("hello drs world")
-        response.headers = {}
-        response.geturl = lambda: test_url
-        return response
+        return 200, {}, "hello drs world"
 
-    with mock.patch.object(urllib.request, "urlopen", new=check_specific_header):
-        user_context = user_context_fixture()
-        file_sources = configured_file_sources(FILE_SOURCES_CONF)
-        file_source_pair = file_sources.get_file_source_path(test_url)
+    responses.add_callback(
+        responses.GET,
+        "https://my.repository.org/myfile.txt",
+        callback=check_specific_header,
+    )
+    user_context = user_context_fixture()
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    file_source_pair = file_sources.get_file_source_path(test_url)
 
-        assert file_source_pair.path == test_url
-        assert file_source_pair.file_source.id == "test1"
+    assert file_source_pair.path == test_url
+    assert file_source_pair.file_source.id == "test1"
 
-        assert_realizes_as(file_sources, test_url, "hello drs world", user_context=user_context)
+    assert_realizes_as(file_sources, test_url, "hello drs world", user_context=user_context)
 
 
 @responses.activate
@@ -260,21 +254,16 @@ def test_file_source_drs_attach_oidc_token():
 
     test_url = "drs://drs.oidc-example.org/999"
 
-    def check_download(request, **kwargs):
-        response: Any = io.StringIO("hello oidc world")
-        response.headers = {}
-        response.geturl = lambda: test_url
-        return response
+    responses.add(responses.GET, "https://my.repository.org/oidcfile.txt", body="hello oidc world")
 
-    with mock.patch.object(urllib.request, "urlopen", new=check_download):
-        user_context = DictFileSourcesUserContext(
-            username="alice",
-            email="alice@galaxyproject.org",
-            preferences={},
-            role_names=set(),
-            group_names=set(),
-            is_admin=False,
-            oidc_access_tokens={"oidc": oidc_token},
-        )
-        file_sources = configured_file_sources(DRS_OIDC_FILE_SOURCES_CONF)
-        assert_realizes_as(file_sources, test_url, "hello oidc world", user_context=user_context)
+    user_context = DictFileSourcesUserContext(
+        username="alice",
+        email="alice@galaxyproject.org",
+        preferences={},
+        role_names=set(),
+        group_names=set(),
+        is_admin=False,
+        oidc_access_tokens={"oidc": oidc_token},
+    )
+    file_sources = configured_file_sources(DRS_OIDC_FILE_SOURCES_CONF)
+    assert_realizes_as(file_sources, test_url, "hello oidc world", user_context=user_context)

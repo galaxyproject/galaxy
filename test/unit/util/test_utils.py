@@ -2,7 +2,10 @@ import errno
 import os
 import tempfile
 from enum import Enum
-from io import StringIO
+from io import (
+    BytesIO,
+    StringIO,
+)
 from pathlib import Path
 
 import pytest
@@ -24,6 +27,21 @@ SECTION_XML = """<?xml version="1.0" ?>
 def test_strip_control_characters():
     s = "\x00bla"
     assert util.strip_control_characters(s) == "bla"
+
+
+def test_stream_to_path(tmp_path):
+    destination = tmp_path / "streamed"
+
+    assert util.stream_to_path(BytesIO(b"streamed content"), destination) == destination
+    assert destination.read_bytes() == b"streamed content"
+
+
+def test_stream_to_open_named_file_compatibility(tmp_path):
+    destination = tmp_path / "streamed"
+    fd = os.open(destination, os.O_WRONLY | os.O_CREAT)
+
+    assert util.stream_to_open_named_file(BytesIO(b"streamed content"), fd, destination) == destination
+    assert destination.read_bytes() == b"streamed content"
 
 
 def test_parse_xml_string():

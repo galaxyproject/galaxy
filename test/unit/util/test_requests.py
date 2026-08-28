@@ -1,5 +1,7 @@
 import socket
+import ssl
 import threading
+from unittest import mock
 
 import pytest
 import responses
@@ -10,6 +12,17 @@ from galaxy.util.requests import DEFAULT_RETRIES
 from galaxy.util.user_agent import get_default_headers
 
 EXPECTED_USER_AGENT = get_default_headers()["user-agent"]
+
+
+def test_create_ssl_context_uses_requests_ca_bundle():
+    ssl_context = mock.Mock()
+    with (
+        mock.patch.object(galaxy_requests, "requests_ca_bundle_path", return_value="/certifi/cacert.pem"),
+        mock.patch.object(ssl, "create_default_context", return_value=ssl_context) as create_default_context,
+    ):
+        assert galaxy_requests.create_ssl_context() is ssl_context
+
+    create_default_context.assert_called_once_with(cafile="/certifi/cacert.pem")
 
 
 # --- User-Agent header injection ---
