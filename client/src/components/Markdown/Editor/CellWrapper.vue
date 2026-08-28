@@ -14,7 +14,7 @@
                         @click="$emit('toggle')">
                         <FontAwesomeIcon :icon="toggle ? faAngleDoubleUp : faEdit" fixed-width />
                     </GButton>
-                    <CellAdd title="Insert After" @click="$emit('add-after', $event)" />
+                    <CellAdd title="Insert Cell Below" @click="$emit('add-after', $event)" />
                 </GButtonGroup>
             </div>
             <SectionWrapper

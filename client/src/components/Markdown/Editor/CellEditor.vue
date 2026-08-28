@@ -1,6 +1,8 @@
 <template>
     <div class="h-100 px-4 mx-auto">
-        <CellAdd class="p-1" @click="onAdd(0, $event)"><i>Insert Cell Above</i></CellAdd>
+        <CellAdd class="p-1" @click="onAdd(0, $event)">
+            <i class="pr-1">{{ cells.length === 0 ? "Insert a new cell" : "Insert Cell Above" }}</i>
+        </CellAdd>
         <hr class="solid m-0" />
         <div v-for="(cell, cellIndex) in cells" :key="cellIndex" ref="cellRefs">
             <CellWrapper
