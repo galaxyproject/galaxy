@@ -1,27 +1,18 @@
 <template>
     <BCard body-class="p-0">
-        <BCardHeader v-if="!embedded">
-            <span class="float-right">
-                <GButton
-                    :href="downloadUrl"
-                    tooltip
-                    transparent
-                    color="blue"
-                    size="small"
-                    title="Download Dataset"
-                    class="py-0 px-1">
-                    <FontAwesomeIcon :icon="faDownload" fixed-width />
+        <BCardHeader v-if="!embedded" class="d-flex justify-content-between">
+            <span>
+                <span>Dataset:</span>
+                <span class="font-weight-light">{{ metaContent?.name || "..." }}</span>
+            </span>
+
+            <span>
+                <GButton :href="downloadUrl" tooltip transparent color="blue" size="small" title="Download Dataset">
+                    <FontAwesomeIcon :icon="faDownload" />
                 </GButton>
 
-                <GButton
-                    :href="importUrl"
-                    tooltip
-                    transparent
-                    color="blue"
-                    size="small"
-                    title="Import Dataset"
-                    class="py-0 px-1">
-                    <FontAwesomeIcon :icon="faFileImport" fixed-width />
+                <GButton :href="importUrl" tooltip transparent color="blue" size="small" title="Import Dataset">
+                    <FontAwesomeIcon :icon="faFileImport" />
                 </GButton>
 
                 <GButton
@@ -31,9 +22,8 @@
                     color="blue"
                     size="small"
                     title="Collapse"
-                    class="py-0 px-1"
                     @click="onExpand">
-                    <FontAwesomeIcon :icon="faAngleDoubleUp" fixed-width />
+                    <FontAwesomeIcon :icon="faAngleDoubleUp" />
                 </GButton>
                 <GButton
                     v-else-if="expandable"
@@ -42,15 +32,9 @@
                     color="blue"
                     size="small"
                     title="Expand"
-                    class="py-0 px-1"
                     @click="onExpand">
-                    <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
+                    <FontAwesomeIcon :icon="faAngleDoubleDown" />
                 </GButton>
-            </span>
-
-            <span>
-                <span>Dataset:</span>
-                <span class="font-weight-light">{{ metaContent?.name || "..." }}</span>
             </span>
         </BCardHeader>
 
