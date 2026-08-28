@@ -63,6 +63,28 @@ from .tool_source import (
 )
 from .yaml_parameters import YamlGalaxyToolParameter
 
+UserToolInputs = Annotated[
+    list[YamlGalaxyToolParameter],
+    Field(
+        description=(
+            "Parameters displayed on the tool form. Each item needs a unique `name` and a supported `type`. "
+            "Reference scalar values as `$(inputs.input_name)` and data inputs as "
+            "`$(inputs.input_name.path)` in "
+            "`shell_command` or config files. Conditional, repeat, and section inputs contain nested parameters."
+        )
+    ),
+]
+UserToolOutputs = Annotated[
+    list[IncomingToolOutput],
+    Field(
+        description=(
+            "Results Galaxy collects after the command finishes. A data output identifies its produced file "
+            "with `from_work_dir` or `discover_datasets`; a collection output uses `discover_datasets`. "
+            "Scalar output types are `text`, `integer`, `float`, and `boolean`."
+        )
+    ),
+]
+
 
 def normalize_dict(values, keys: list[str]):
     for key in keys:
@@ -150,25 +172,40 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
         ),
     ] = None
     configfiles: Annotated[
-        list[YamlTemplateConfigFile] | None, Field(description="A list of config files for this tool.")
+        list[YamlTemplateConfigFile] | None,
+        Field(
+            description=(
+                "Files Galaxy writes into the job working directory before running the command. Their content "
+                "is evaluated with the same sandboxed ECMAScript expressions as `shell_command`. Put scripts "
+                "and other substantial command logic here, then keep `shell_command` to a short invocation."
+            )
+        ),
     ] = None
     requirements: Annotated[
         list[JavascriptRequirement | ResourceRequirement | ContainerRequirement] | None,
-        Field(
-            description="A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images."
-        ),
+        Field(description=("JavaScript helpers and compute resource requests needed to execute this tool.")),
     ] = []
     shell_command: Annotated[
         str,
         Field(
             title="shell_command",
-            description="A string that contains the command to be executed. Parameters can be referenced inside $().",
+            description=(
+                "A string that contains the command to be executed. Reference inputs inside `$()` as "
+                "`$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a "
+                "JavaScript function body that must return a value. Substituted values are not shell-quoted, "
+                "so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell "
+                "command substitution and braced parameter expansion do not reach the shell: escape them as "
+                "`\\$(` and `\\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`."
+            ),
             examples=["head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt"],
         ),
     ]
-    inputs: list[YamlGalaxyToolParameter] = []
-    outputs: list[IncomingToolOutput] = []
-    citations: list[Citation] | None = None
+    inputs: UserToolInputs = []
+    outputs: UserToolOutputs = []
+    citations: Annotated[
+        list[Citation] | None,
+        Field(description="DOI or BibTeX references for publications describing the wrapped tool."),
+    ] = None
     license: Annotated[
         str | None,
         Field(
@@ -176,11 +213,28 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
             examples=["MIT"],
         ),
     ] = None
-    edam_operations: list[str] | None = None
-    edam_topics: list[str] | None = None
-    xrefs: list[XrefDict] | None = None
+    edam_operations: Annotated[
+        list[str] | None,
+        Field(description="EDAM operation identifiers such as `operation_0308`."),
+    ] = None
+    edam_topics: Annotated[
+        list[str] | None,
+        Field(description="EDAM topic identifiers such as `topic_0102`."),
+    ] = None
+    xrefs: Annotated[
+        list[XrefDict] | None,
+        Field(description="External registry identifiers, each with a registry `type` and identifier `value`."),
+    ] = None
     profile: float | None = None
-    help: Annotated[HelpContent | None, Field(description="Help text shown below the tool interface.")] = None
+    help: Annotated[
+        HelpContent | None,
+        Field(
+            description=(
+                "Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or "
+                "`plain_text`, and put the documentation in `content`."
+            )
+        ),
+    ] = None
     # NOTE: `tests` is intentionally NOT declared here. It lives on the concrete
     # subclasses (`UserToolSource`, `YamlToolSource`) so that the slim
     # `UserToolSourceAuthoringView` can inherit everything *except* the test
@@ -259,6 +313,29 @@ class CondaPackage(BaseModel):
     version: str | None = None
 
 
+_USER_TOOL_SOURCE_FIELD_ORDER: tuple[str, ...] = (
+    "class_",
+    "id",
+    "name",
+    "version",
+    "description",
+    "container",
+    "requirements",
+    "shell_command",
+    "configfiles",
+    "inputs",
+    "outputs",
+    "citations",
+    "license",
+    "profile",
+    "edam_operations",
+    "edam_topics",
+    "xrefs",
+    "help",
+    "tests",
+)
+
+
 # Schema-narrowed view of ``UserToolSource`` for LLM tool authoring.
 #
 # This is the *parent* of ``UserToolSource`` and carries every field and
@@ -283,14 +360,25 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
 
     Provide the tool's identity (``id``, ``name``, ``version``), a ``container``
     image to run in, and a ``shell_command`` that references inputs as
-    ``$(inputs.NAME)`` for scalar values or ``$(inputs.NAME.path)`` for files.
+    ``$(inputs.input_name)`` for scalar values or ``$(inputs.input_name.path)`` for files.
     Declare every referenced input under ``inputs`` and every produced file under
     ``outputs`` (each output must set ``from_work_dir`` or ``discover_datasets``).
     """
 
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     container: Annotated[
-        str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
+        str,
+        Field(
+            description=(
+                "Docker container image for the tool, as a fully qualified "
+                "registry/repository:tag string. "
+                "This image is the tool's entire execution environment, so every command used by shell_command "
+                "must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself "
+                "for Singularity and Apptainer destinations. An unqualified name is resolved against the "
+                "container runtime's own default registry (Docker Hub), which is rarely what you want."
+            ),
+            examples=["quay.io/biocontainers/python:3.13"],
+        ),
     ]
     # Required here (it's optional on the base for stored/legacy rows). Galaxy's
     # linter rejects a versionless tool, so forcing it into the structured-output
@@ -305,33 +393,13 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     # model to emit them. ``UserToolSource`` restores the lenient defaults so stored /
     # API-authored tools may still omit them. An empty list is allowed -- this forces the
     # key to be present, not non-empty.
-    inputs: list[YamlGalaxyToolParameter]
-    outputs: list[IncomingToolOutput]
+    inputs: UserToolInputs
+    outputs: UserToolOutputs
 
     # Field declaration order puts subclass fields (class_, container) after
     # parent ones, which serializes them at the end. Re-order on dump so the
     # YAML the tool editor renders leads with identity + runtime.
-    _CANONICAL_FIELD_ORDER: ClassVar[tuple[str, ...]] = (
-        "class_",
-        "id",
-        "name",
-        "version",
-        "description",
-        "container",
-        "requirements",
-        "shell_command",
-        "configfiles",
-        "inputs",
-        "outputs",
-        "citations",
-        "license",
-        "profile",
-        "edam_operations",
-        "edam_topics",
-        "xrefs",
-        "help",
-        "tests",
-    )
+    _CANONICAL_FIELD_ORDER: ClassVar[tuple[str, ...]] = _USER_TOOL_SOURCE_FIELD_ORDER
 
     @field_validator("container", mode="after")
     @classmethod
@@ -375,15 +443,58 @@ class UserToolSource(UserToolSourceAuthoringView):
     back here so direct authors and stored rows can still carry tests.
     """
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "x-field-order": [
+                "class",
+                *[field for field in _USER_TOOL_SOURCE_FIELD_ORDER if field != "class_"],
+            ],
+            "examples": [
+                {
+                    "class": "GalaxyUserTool",
+                    "id": "remove_comments",
+                    "name": "Remove Comment Lines",
+                    "version": "0.1.0",
+                    "description": "from a text file",
+                    "container": "quay.io/biocontainers/grep:3.4--hf43ccf4_4",
+                    "shell_command": "grep -v '^#' '$(inputs.input_file.path)' > output.txt || test \"$?\" = 1",
+                    "inputs": [
+                        {
+                            "name": "input_file",
+                            "type": "data",
+                            "format": ["txt"],
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "name": "output_file",
+                            "type": "data",
+                            "format_source": "input_file",
+                            "from_work_dir": "output.txt",
+                        }
+                    ],
+                }
+            ],
+        }
+    )
+
     # ``version`` is required (inherited from UserToolSourceAuthoringView). A stored
     # row that predates the requirement won't validate; ``lift_user_tool_source``
     # returns it as the raw dict with status "invalid" so its author still sees it.
-    tests: list["YamlToolTest"] | None = None
+    tests: Annotated[
+        list["YamlToolTest"] | None,
+        Field(
+            description=(
+                "Tool test declarations with input values and expected outputs. Database-stored user-defined "
+                "tools retain these declarations but do not currently run them in the application."
+            )
+        ),
+    ] = None
     # Restore lenient defaults: the required-ness of ``inputs``/``outputs`` on the
     # authoring view is a structured-output nudge for the LLM only. The canonical
     # model (API surface, stored rows) must still accept tools that omit them.
-    inputs: list[YamlGalaxyToolParameter] = []
-    outputs: list[IncomingToolOutput] = []
+    inputs: UserToolInputs = []
+    outputs: UserToolOutputs = []
 
 
 class YamlToolSource(_DynamicToolSourceBase):

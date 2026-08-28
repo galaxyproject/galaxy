@@ -1,0 +1,554 @@
+---
+# Single source of truth for user-defined tool authoring guidance.
+#
+# Two consumers render this file:
+#   - AuthoringHelpPanel.vue, the help panel in the tool editor
+#   - doc/gen_authoring_doc.py, which generates
+#     doc/source/dev/user_defined_tools_authoring.md at `make docs` time
+#
+# Bodies must be plain CommonMark so both renderers agree: no MyST roles or
+# directives, and no relative links. Link to another Galaxy documentation page
+# with a `gxdoc:` target naming the source file, e.g.
+# `[tool schema](gxdoc:dev/schema.md)`. The generator rewrites it to a
+# relative path; the editor rewrites it to an absolute docs.galaxyproject.org
+# URL. Link to a page in the current Galaxy UI with `gxui:/path`; the editor
+# keeps the instance-relative link and the Sphinx renderer names the page
+# without emitting a broken link. Link a Galaxy help term with
+# `[descriptive label](gxhelp://term.path)`; the editor adds the term's popover
+# and the Sphinx renderer keeps the descriptive label without a broken link.
+#
+# Schema markers and sections with `parameter_types`, `output_types`, or
+# `validator_types` are rendered from ToolSourceSchema.json. Its examples come
+# from the Pydantic models.
+#
+# Per-field facts (units, required shapes) belong on the pydantic models
+# instead: those reach the OpenAPI schema, the generated TypeScript client and
+# the editor's hover help from one place. Keep this file for the prose that is
+# too long to sit on a field.
+
+title: Authoring User-Defined Tools
+
+intro: |
+  Create a Galaxy tool from a containerized command without waiting for an
+  administrator to install it. Define its inputs and outputs here, then run it
+  like any other tool.
+
+sections:
+  - id: quick-start
+    title: Quick start
+    kind: getting-started
+    body: |
+      Paste this definition into the editor. It accepts a text dataset and
+      writes a copy without lines beginning with `#`.
+
+      ```yaml
+      {{quick_start_example}}
+      ```
+
+  - id: tool-format
+    title: Tool definition
+    kind: reference
+    body: |
+      A user-defined tool is a YAML document. `class: GalaxyUserTool` selects
+      the user-defined tool format. `container` selects a [container image](gxhelp://galaxy.tools.container)
+      containing the program and everything it needs to run. `shell_command`
+      supplies the [command line](gxhelp://unix.commandLine) Galaxy runs inside
+      that image, with inputs referenced as `$(inputs.input_name)` for scalar
+      values and `$(inputs.input_name.path)` for files.
+
+      | Field | Details | Required |
+      | --- | --- | --- |
+      | `class` | Selects the user-defined tool format. Must be `GalaxyUserTool`. | Yes |
+      | `id` | Stable lowercase identifier. Must start with a letter and may contain letters, digits, `_`, and `-`. | No |
+      | `name` | Name displayed in the tool menu. | Yes |
+      | `version` | Version of this wrapper. Change it when behavior or the container changes. | Yes |
+      | `description` | Short text displayed after the tool name. | No |
+      | `container` | Fully qualified image supplying the program, interpreters, libraries, and utilities the tool needs. | Yes |
+      | `shell_command` | Command line Galaxy evaluates and runs in the selected image, with inputs referenced through expressions. | Yes |
+      | [`configfiles`](#configfiles) | Scripts and configuration files required by the software you are wrapping. | No |
+      | [`inputs`](#parameters) | Input parameters shown on the tool form. | No |
+      | [`outputs`](#outputs) | Datasets and collections Galaxy claims after the command finishes. | No |
+      | [`requirements`](#resource-requirements) | JavaScript helpers and compute-resource requests. | No |
+      | [`help`](#help-content) | Longer help text shown below the tool form. | No |
+      | [`tests`](#testing) | Tool test declarations. | No |
+      | [`citations`](#citations-metadata), `license`, [`edam_operations`](#citations-metadata), [`edam_topics`](#citations-metadata), [`xrefs`](#citations-metadata) | Publication and ontology metadata. | No |
+      | `profile` | Galaxy tool profile controlling versioned tool behavior. | No |
+
+      Compared with an equivalent [Galaxy XML tool](gxdoc:dev/schema.md), three
+      things differ:
+
+      - `class: GalaxyUserTool` is required.
+      - A top-level `container` is required. XML tools may instead resolve
+        dependencies through Conda.
+      - The command lives under `shell_command` and is templated with sandboxed
+        JavaScript expressions rather than Cheetah, so it has no access to the
+        Galaxy database or filesystem.
+
+      Every output must say where its bytes come from: a `data` output needs
+      `from_work_dir` or `discover_datasets`, and a collection output needs
+      `discover_datasets`. An output that declares neither is rejected, because
+      nothing would ever be claimed from the working directory.
+
+  - id: configfiles
+    title: Config files
+    kind: reference
+    body: |
+      Use `configfiles` for scripts and configuration files required by the
+      software you are wrapping. Galaxy writes each file into the job working
+      directory before it runs `shell_command`. File content supports the same
+      sandboxed ECMAScript expressions as the command.
+
+      | Field | Details | Default | Required |
+      | --- | --- | --- | --- |
+      | `filename` | Name of the file in the job working directory. | — | No |
+      | `content` | File contents, including any input expressions. | — | Yes |
+      | `name` | Internal name for the config file. | — | No |
+      | `eval_engine` | Template engine; user-defined tools use `ecmascript`. | `ecmascript` | No |
+
+      ```yaml
+      configfiles:
+        - filename: message.txt
+          content: |
+            Selected motif: $(inputs.motif)
+      shell_command: cat message.txt
+      ```
+
+  - id: parameters
+    title: Input parameters
+    kind: reference
+    body: |
+      User-defined tools support the input types listed below. Unknown and
+      unsupported fields are rejected.
+
+      {{parameter_type_index}}
+
+      Each type below has its own field table and example.
+
+      For `data` inputs, `format` lists accepted Galaxy datatype extensions.
+      See the [Datatypes page](gxui:/datatypes) in your Galaxy instance for the
+      extensions available there.
+
+      Types that exist in the XML tool vocabulary but are rejected here:
+      `hidden`, `drill_down`, `data_column`, `genomebuild`, `group_tag`,
+      `baseurl`, `rules`, `directory`. XML-only fields such as `truevalue`,
+      `falsevalue`, `argument`, `is_dynamic` and `parameter_type` are likewise
+      rejected on any parameter.
+
+  - id: validators
+    title: Validators
+    kind: reference
+    parentId: parameters
+    body: |
+      Validators reject parameter values before a job starts. Each parameter
+      type's field table lists the validators it supports.
+
+      {{validator_type_index}}
+
+  - id: outputs
+    title: Outputs
+    kind: reference
+    body: |
+      Each output declares a `type` and a `name`. Dataset outputs identify the
+      produced file with `from_work_dir`; collection outputs use
+      `discover_datasets`.
+
+      {{output_type_index}}
+
+      Each type below has a field table and example.
+
+  - id: parameter-types-reference
+    title: Input parameter types
+    kind: detailed-reference
+    parameter_types: true
+    body: |
+      Field tables and examples for every input type supported by user-defined
+      tools.
+
+  - id: validator-types-reference
+    title: Validator types
+    kind: detailed-reference
+    validator_types: true
+    body: |
+      Field tables and examples for every validator supported by user-defined
+      tool inputs.
+
+  - id: output-types-reference
+    title: Output types
+    kind: detailed-reference
+    output_types: true
+    body: |
+      Field tables and examples for dataset and dataset collection outputs.
+
+  - id: discover-datasets
+    title: Discover datasets
+    kind: detailed-reference
+    body: |
+      Use `discover_datasets` when a command creates a variable set of files.
+      User-defined tools discover them by matching filenames produced in the
+      job working directory.
+
+      Pattern discovery matches a regular expression against filenames. Named
+      groups such as `name`, `designation`, `ext`, and `dbkey` set the
+      corresponding dataset metadata. Use `directory` to search below the job
+      working directory, and set `recurse: true` to include nested directories.
+      With recursion, `match_relative_path: true` applies the pattern to each
+      path relative to `directory` instead of only the filename.
+
+      The `format` field sets the Galaxy datatype extension when the pattern
+      does not provide `ext`. See the [Datatypes page](gxui:/datatypes) in your
+      Galaxy instance for the extensions it supports. Set `visible: true` to
+      show discovered datasets individually in the history. For a `data`
+      output, `assign_primary_output: true` assigns the first match to the
+      declared primary output.
+
+      Results default to lexical filename order. Choose `sort_key` from
+      `filename`, `name`, `designation`, or `dbkey`; choose `sort_comp` as
+      `lexical` or `numeric`; and set `sort_reverse: true` for descending order.
+
+      ```yaml
+      inputs: []
+      shell_command: |
+        mkdir reports
+        printf 'sample\tvalue\nA\t1\n' > reports/A.tsv
+        printf 'sample\tvalue\nB\t2\n' > reports/B.tsv
+      outputs:
+        - name: reports
+          type: collection
+          collection_type: list
+          discover_datasets:
+            - pattern: "(?P<name>.+)\\.tsv"
+              directory: reports
+              format: tabular
+              visible: true
+              sort_key: name
+      ```
+
+  - id: help-content
+    title: Tool help
+    kind: reference
+    body: |
+      Tool help is rendered below the input form. Declare its format and
+      content together.
+
+      | Field | Details | Required |
+      | --- | --- | --- |
+      | `format` | One of `markdown`, `restructuredtext`, or `plain_text`. | Yes |
+      | `content` | Help shown to the user. | Yes |
+
+      ```yaml
+      help:
+        format: markdown
+        content: |
+          Finds lines containing the selected motif.
+      ```
+
+  - id: citations-metadata
+    title: Citations and metadata
+    kind: reference
+    body: |
+      Use `citations` for publications describing the wrapped tool, `license`
+      for the wrapper license, EDAM identifiers for topics and operations, and
+      `xrefs` for identifiers in other registries.
+
+      ```yaml
+      citations:
+        - type: doi
+          content: 10.1093/bioinformatics/bts611
+      license: MIT
+      edam_topics:
+        - topic_0102
+      edam_operations:
+        - operation_0308
+      xrefs:
+        - type: bio.tools
+          value: example_tool
+      ```
+
+  - id: expressions
+    title: Expression syntax
+    kind: reference
+    body: |
+      `shell_command` is not handed to the shell unchanged. Galaxy first
+      evaluates it with a sandboxed ECMAScript 5.1 engine, using the same
+      parameter-reference syntax CWL uses, and only the evaluated result is
+      written into the job script.
+
+      | Form | Details | Example |
+      | --- | --- | --- |
+      | `$( ... )` | Parameter reference or single expression. | `$(inputs.num_lines)`, `$(inputs.query.path)` |
+      | `${ ... }` | Function body that must return a value. | `${ return inputs.num_lines * 2 }` |
+
+      Substituted values are inserted literally; Galaxy does **not** shell-quote
+      them. Quote any substitution that can contain spaces yourself, as
+      `'$(inputs.query.path)'`.
+
+      Reusable helper functions can be declared with a `javascript` requirement,
+      and are then available to every expression in the tool:
+
+      ```yaml
+      requirements:
+        - type: javascript
+          expression_lib:
+            - |
+              function basename(path) { return path.split('/').pop(); }
+      ```
+
+  - id: expressions-shell
+    title: Why do some shell constructs fail?
+    kind: faq
+    body: |
+      The expression evaluator interprets `$(` and `${` as expression
+      delimiters, so shell constructs using them are not passed to the shell:
+
+      | Written in `shell_command` | Result |
+      | --- | --- |
+      | `$(date +%s)` | Evaluated as JavaScript; the job fails with an expression evaluation error. |
+      | `${HOME}`, `${f%.txt}`, `${VAR:-default}` | Evaluated as JavaScript; normally a syntax error. |
+      | `$(( 1 + 2 ))` | Evaluated as JavaScript and replaced by `3`, changing the command's meaning without an error. |
+      | `$GALAXY_SLOTS`, `$HOME`, `$1` | Passed through untouched. A `$` not followed by `(` or `{` is ignored. |
+
+      An unbraced shell variable is therefore the safe form, and `$GALAXY_SLOTS`
+      in particular works as it does in XML tools.
+
+      To emit a literal `$(` or `${`, escape the dollar with a backslash:
+      `\$(date +%s)` reaches the shell as `$(date +%s)`.
+
+      Backslash handling has one more consequence worth knowing. Escape
+      processing only runs when the command contains `$(` or `${` somewhere; a
+      command with no expression at all is passed through byte for byte. In a
+      command that *does* contain an expression, `\\` collapses to a single `\`
+      everywhere in that command, so a literal backslash pair has to be written
+      as `\\\\`. Lone backslashes such as `\;`, `\.` and `\t` are left alone.
+
+  - id: expressions-pattern
+    title: How should I structure a command?
+    kind: faq
+    body: |
+      Keep `shell_command` to a short invocation. When a command needs a script,
+      put it in `configfiles`; each file's `content` is evaluated with the same
+      expression syntax as `shell_command`. Within a shell script, evaluate each
+      input once into a variable and use plain, unbraced shell variables below.
+
+      CPU allocation is not a tool input: declare it with a
+      [resource requirement](#resource-requirements) and pass the allocated
+      `$GALAXY_SLOTS` value to the program.
+
+      ```yaml
+      requirements:
+        - type: resource
+          cores_min: 4
+      configfiles:
+        - filename: run.sh
+          content: |
+            set -eu
+            query='$(inputs.query.path)'
+            db='$(inputs.database.path)'
+
+            foldseek easy-search "$query" "$db" result.m8 tmp --threads "$GALAXY_SLOTS"
+      shell_command: sh run.sh
+      ```
+
+      User-defined tool commands run under `set -e`, so the first failing
+      command ends the job.
+
+  - id: containers
+    title: Why is a command missing from the container?
+    kind: faq
+    body: |
+      `container` is required, and the image it names is the only environment
+      the command gets. Every binary, interpreter and library referenced by
+      `shell_command`, including utilities used to sort, reformat or rename
+      outputs, has to already exist in that image.
+
+      A single-tool BioContainer is built to be small. Many do ship a Python
+      interpreter, since they are conda environments, but a given image may not,
+      and may equally lack utilities like `jq` or `bc`. Check before relying on
+      one:
+
+      ```console
+      $ docker run --rm quay.io/biocontainers/foldseek:10.941cd33 sh -c 'command -v python3 awk sort'
+      ```
+
+      If a command needs several packages, use a multi-package (mulled) image or
+      an image you build and publish yourself, rather than assuming a
+      single-tool image also carries the others.
+
+  - id: containers-reference
+    title: How should I write the container image reference?
+    kind: faq
+    body: |
+      Use a fully qualified `registry/repository:tag` reference:
+
+      ```yaml
+      container: quay.io/biocontainers/foldseek:10.941cd33
+      ```
+
+      A bare `foldseek:10.941cd33` is not resolved by Galaxy against
+      BioContainers. The identifier is passed to the container runtime as
+      written, and the runtime applies its own default registry, which for
+      Docker is `docker.io/library`, where the image almost certainly does not
+      exist. The failure surfaces at job runtime as an image pull error, not at
+      tool creation.
+
+      Do **not** prefix the value with `docker://`. Galaxy stores a `container`
+      string as a Docker container description and adds the `docker://` prefix
+      itself when the destination executes through Singularity or Apptainer;
+      writing the prefix yourself produces a doubled `docker://docker://...`
+      identifier.
+
+      Author user-defined tools with the top-level `container` field. Which
+      container runtime executes that image, and whether images are converted
+      and cached ahead of time, depends on the server.
+
+  - id: resource-requirements
+    title: Resource requirements
+    kind: reference
+    body: |
+      Declare compute needs with a `resource` entry under `requirements`:
+
+      ```yaml
+      requirements:
+        - type: resource
+          cores_min: 32
+          ram_min: 8192
+          cuda_device_count_min: 1
+          cuda_device_count_max: 1
+          gpu_memory_min: 40960
+      ```
+
+      | Field | Details | Required |
+      | --- | --- | --- |
+      | `type` | Selects a resource requirement. Must be `resource`. | Yes |
+      | `cores_min`, `cores_max` | Minimum and maximum reserved CPU cores. Fractional values are allowed. | No |
+      | `ram_min`, `ram_max` | Minimum and maximum reserved RAM in MiB. | No |
+      | `tmpdir_min`, `tmpdir_max` | Minimum and maximum temporary-directory space in MiB. | No |
+      | `cuda_version_min` | Minimum required CUDA runtime version. | No |
+      | `cuda_compute_capability` | Minimum required CUDA compute capability. | No |
+      | `gpu_memory_min` | Minimum required GPU memory in MiB. | No |
+      | `cuda_device_count_min`, `cuda_device_count_max` | Minimum and maximum number of GPUs to reserve. | No |
+      | `shm_size` | Requested `/dev/shm` size, optionally suffixed with `b`, `k`, `m`, or `g`. | No |
+      | `timelimit` | Maximum runtime in seconds. Galaxy terminates the job if it is exceeded. | No |
+
+      Pass `$GALAXY_SLOTS` to threaded programs; Galaxy sets it to the number
+      of CPU cores allocated to the job.
+
+      Use numbers or numeric strings. Other strings are reserved for runtime
+      expressions; expression evaluation for resource requirements is not
+      implemented yet, so those values are currently ignored.
+
+  - id: validation
+    title: What does Galaxy check for me?
+    kind: faq
+    body: |
+      Galaxy checks a user-defined tool at several points before it ever runs:
+
+      - **Schema validation.** Unknown keys are rejected anywhere in the
+        document, so a misspelled or XML-only field fails immediately rather
+        than being ignored.
+      - **Cross-field validation.** Every `$(inputs.input_name)` referenced from
+        `shell_command` or a config file must correspond to a declared input,
+        and every output must declare where its bytes come from.
+      - **Linting.** Creating or editing a tool runs Galaxy's tool linters and
+        refuses the tool if any of them reports a problem. This includes a check
+        that the container reference has a recognizable shape. Linters that call
+        external services are skipped so that authoring does not depend on
+        third-party availability.
+
+      Two endpoints check a draft without saving it:
+      `POST /api/unprivileged_tools/build` renders the tool form, which is the
+      quickest way to confirm the input interface is what you intended, and
+      `POST /api/unprivileged_tools/runtime_model` returns an OpenAPI model of
+      the tool's inputs.
+
+      None of this checks that the tool produces *correct results*. A tool that
+      validates, lints and runs to completion can still be wrong: a misquoted
+      path, a flag that silently changes meaning between tool versions, or a
+      container whose tool version differs from the one the command was written
+      against.
+
+  - id: testing
+    title: Can Galaxy run the declared tests?
+    kind: faq
+    body: |
+      A user-defined tool may declare a `tests` block, using the same test
+      syntax as other YAML-format Galaxy tools:
+
+      ```yaml
+      tests:
+        - inputs:
+            input1:
+              class: File
+              path: simple_line.txt
+          outputs:
+            output1: simple_line.txt
+      ```
+
+      Galaxy stores and returns these tests, but does not currently run them for
+      a tool held in the database. There is no in-application "run this tool's
+      tests" action, and a database-stored tool has no tool directory, so
+      file-based test inputs such as the `simple_line.txt` above cannot be
+      resolved. Declared tests become executable once the tool is exported to
+      disk and loaded like a regular tool, at which point the usual tool-test
+      tooling applies.
+
+      Until in-platform testing exists, validate correctness by running the tool
+      on inputs whose answer you already know, and comparing the outputs against
+      a run of the same command outside Galaxy. This is worth doing once per
+      registered version, since a version bump usually means a new container
+      image as well.
+
+  - id: api
+    title: API endpoints
+    kind: reference
+    body: |
+      This editor is a client of a small API, so tools can also be created and
+      managed programmatically, which is useful when registering many tools or
+      many versions of one tool. All of these endpoints require the
+      `Custom Tool Execution` role and operate only on the calling user's own
+      tools.
+
+      | Endpoint | Purpose |
+      | --- | --- |
+      | `POST /api/unprivileged_tools` | Create a tool; returns its `uuid`. |
+      | `GET /api/unprivileged_tools` | List the calling user's tools. |
+      | `GET /api/unprivileged_tools/{uuid}` | Show one tool and its representation. |
+      | `DELETE /api/unprivileged_tools/{uuid}` | Deactivate a tool. |
+      | `POST /api/unprivileged_tools/build?history_id=...` | Render the tool form without saving the tool. |
+      | `POST /api/unprivileged_tools/runtime_model` | Return an OpenAPI model of the tool's inputs. |
+
+      The create payload wraps the YAML document, converted to JSON, in a
+      `representation` key. Keeping it in a file avoids complex shell quoting
+      for `shell_command`:
+
+      ```json
+      {
+        "representation": {
+          "class": "GalaxyUserTool",
+          "id": "my-cool-tool",
+          "name": "My Cool Tool",
+          "version": "0.1.0",
+          "container": "quay.io/biocontainers/python:3.13",
+          "shell_command": "head -n '$(inputs.n_lines)' '$(inputs.data_input.path)' > out.txt",
+          "inputs": [
+            {"type": "integer", "name": "n_lines"},
+            {"type": "data", "name": "data_input"}
+          ],
+          "outputs": [
+            {"type": "data", "name": "out", "from_work_dir": "out.txt"}
+          ]
+        }
+      }
+      ```
+
+      ```console
+      $ curl -X POST "$GALAXY_URL/api/unprivileged_tools" \
+          -H "x-api-key: $GALAXY_API_KEY" \
+          -H 'Content-Type: application/json' \
+          -d @tool.json
+      ```
+
+      Run the resulting tool by passing its `uuid` to the normal tool execution
+      endpoint: `POST /api/tools` with `tool_uuid` instead of `tool_id`.
+
+      Your server publishes the request and response details at
+      `<galaxy_url>/api/docs` under the `dynamic_tools` tag.
