@@ -8,6 +8,7 @@
 - [ ] This is a refactoring of components with existing test coverage.
 - [ ] Instructions for manual testing are as follows:
   1. [add testing steps and prerequisites here if you didn't write automated tests covering all your changes]
+- [ ] New or changed functionality is sufficiently documented
 
 ## License
 - [x] I agree to license these and all my past contributions to the core galaxy codebase under the [MIT license](https://opensource.org/licenses/MIT).
