@@ -581,6 +581,7 @@ _ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
         # seq attrs with more specific element types
         "file_source_templates": "list[dict[str, Any]] | None",
         "object_store_templates": "list[dict[str, Any]] | None",
+        "subdomain_switcher": "list[dict[str, str]]",
         # Stored as float despite int schema type
         "object_store_cache_size": "float",
         # Converted from int (days) to timedelta by _process_config

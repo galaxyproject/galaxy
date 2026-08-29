@@ -9,11 +9,22 @@ import TextShort from "@/components/Common/TextShort.vue";
 
 const dropdown = ref(null);
 
-interface MenuItem {
+interface BaseMenuItem {
     title: string;
     icon?: IconLike;
-    handler: () => void;
 }
+
+interface HandlerMenuItem extends BaseMenuItem {
+    handler: () => void;
+    href?: never;
+}
+
+interface AnchorMenuItem extends BaseMenuItem {
+    href: string;
+    handler?: never;
+}
+
+type MenuItem = HandlerMenuItem | AnchorMenuItem;
 
 /* props */
 defineProps({
@@ -51,8 +62,9 @@ defineProps({
                 v-for="(item, idx) in menu"
                 :key="idx"
                 :data-description="`${id} ${item.title.toLowerCase()}`"
+                :href="item.href"
                 role="menuitem"
-                @click="item.handler">
+                @click="item.handler && item.handler()">
                 <FontAwesomeIcon v-if="item.icon" fixed-width :icon="item.icon" />
                 <span>{{ item.title }}</span>
             </BDropdownItem>
