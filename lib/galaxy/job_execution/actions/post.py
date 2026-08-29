@@ -53,12 +53,11 @@ class EmailAction(DefaultJobAction):
         try:
             history_id_encoded = app.security.encode_id(job.history_id)
             link_invocation = None
+            galaxy_url = app.config.galaxy_external_url or app.config.galaxy_infrastructure_url
             if job.workflow_invocation_step:
                 invocation_id_encoded = app.security.encode_id(job.workflow_invocation_step.workflow_invocation_id)
-                link_invocation = (
-                    f"{app.config.galaxy_infrastructure_url}/workflows/invocations/report?id={invocation_id_encoded}"
-                )
-            link = f"{app.config.galaxy_infrastructure_url}/histories/view?id={history_id_encoded}"
+                link_invocation = f"{galaxy_url}/workflows/invocations/report?id={invocation_id_encoded}"
+            link = f"{galaxy_url}/histories/view?id={history_id_encoded}"
             to = job.get_user_email()
             subject = f"Galaxy job completion notification from history '{job.history.name}'"
             outdata = ",\n".join(ds.dataset.display_name() for ds in job.output_datasets)
