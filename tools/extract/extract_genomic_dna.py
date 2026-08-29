@@ -31,7 +31,7 @@ from galaxy.tools.util.galaxyops import parse_cols_arg
 
 def stop_err(msg):
     sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(1)
 
 
 def reverse_complement(s):
@@ -122,16 +122,18 @@ def __main__():
 
             # Get stderr, allowing for case where it's very large.
             tmp_stderr = open(tmp_name, "rb")
-            stderr = ""
+            chunks = []
             buffsize = 1048576
             try:
                 while True:
-                    stderr += tmp_stderr.read(buffsize)
-                    if not stderr or len(stderr) % buffsize != 0:
+                    chunk = tmp_stderr.read(buffsize)
+                    if not chunk:
                         break
+                    chunks.append(chunk)
             except OverflowError:
                 pass
             tmp_stderr.close()
+            stderr = b"".join(chunks).decode(errors="replace")
 
             # Error checking.
             if returncode != 0:
