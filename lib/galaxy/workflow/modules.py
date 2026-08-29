@@ -2231,6 +2231,8 @@ class PickValueModule(WorkflowModule):
         mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
         all_inputs = self.get_all_inputs()
 
+        self._ensure_inputs_ready(trans, progress, step, all_inputs)
+
         collection_info = self.compute_collection_info(progress, step, all_inputs)
 
         if collection_info:
@@ -2247,6 +2249,17 @@ class PickValueModule(WorkflowModule):
         progress.set_step_outputs(invocation_step, {"output": output})
         self._apply_post_job_actions(trans, step, output, progress.effective_replacement_dict())
         return None
+
+    def _ensure_inputs_ready(self, trans: "WorkRequestContext", progress: "WorkflowProgress", step, all_inputs) -> None:
+        """Delay this step until the inputs it picks from have been produced.
+
+        A tool step can be scheduled against a dataset that is still running - the job queue
+        orders the work. This module cannot. It reads the inputs to decide which one to pick,
+        and the picked output aliases that dataset rather than copying it, so a post job
+        action on this step mutates an upstream job's output. Both need that job finished.
+        """
+        for input_dict in all_inputs:
+            progress.replacement_for_input(trans, step, input_dict, require_ready=True)
 
     def _execute_mapped(self, trans: "ProvidesHistoryContext", invocation_step, mode, all_inputs, collection_info):
         """Execute pick_value mapped over collection inputs."""
