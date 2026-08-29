@@ -2,10 +2,10 @@
 #    uv export --frozen --no-annotate --no-hashes --only-group=typecheck
 annotated-types==0.8.0
 ast-serialize==0.8.0
-boto3-stubs==1.43.78
+boto3-stubs==1.43.83
 botocore-stubs==1.43.67
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
-cryptography==50.0.0
+cryptography==50.0.1
 librt==0.15.0 ; platform_python_implementation != 'PyPy'
 lxml-stubs==0.5.1
 mypy==2.3.1
@@ -13,15 +13,15 @@ mypy-boto3-s3==1.43.66
 mypy-extensions==1.1.0
 pathspec==1.1.1
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
-pydantic==2.13.4
-pydantic-core==2.46.4
+pydantic==2.13.5
+pydantic-core==2.46.5
 tomli==2.4.1 ; python_full_version < '3.11'
 types-bleach==6.4.0.20260728
 types-boto==2.49.18.20241019
 types-cachetools==7.0.0.20260713
 types-contextvars==2.4.7.3
 types-dataclasses==0.6.6
-types-docutils==0.22.3.20260724
+types-docutils==0.23.0.20260827
 types-html5lib==1.1.11.20260518
 types-markdown==3.10.2.20260712
 types-paramiko==5.0.0.20260724
@@ -32,7 +32,7 @@ types-requests==2.33.0.20260712
 types-s3transfer==0.16.0
 types-setuptools==84.0.0.20260812
 types-six==1.17.0.20260724
-types-webencodings==0.6.0.20260822
+types-webencodings==0.6.0.20260827
 typing-extensions==4.16.0
 typing-inspection==0.4.4
 urllib3==2.7.0
