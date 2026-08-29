@@ -99,6 +99,7 @@ export type ToolHelpData = {
     help?: string;
     helpFormat?: string;
     summary?: string;
+    failed?: boolean;
 };
 
 type ToolHelpResponse = {
@@ -308,7 +309,8 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     async function fetchHelpForId(toolId: string) {
-        if (helpDataCached.value[toolId]) {
+        const cached = helpDataCached.value[toolId];
+        if (cached && !cached.failed) {
             return;
         }
         const existing = fetchedHelpIds.value.get(toolId);
@@ -335,7 +337,9 @@ export const useToolStore = defineStore("toolStore", () => {
                 Vue.set(helpDataCached.value, toolId, toolHelpData);
             } catch (error) {
                 console.error("Error fetching help:", error);
-                fetchedHelpIds.value.delete(toolId); // Allow retrying on next request
+                // Settle current consumers but allow a later request to retry.
+                Vue.set(helpDataCached.value, toolId, { help: "", failed: true });
+                fetchedHelpIds.value.delete(toolId);
             }
         })();
         fetchedHelpIds.value.set(toolId, promise);
