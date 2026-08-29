@@ -369,26 +369,19 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
             self._collect()
 
     def test_tool_provided_metadata_cannot_read_traversing_filename(self):
-        with tempfile.TemporaryDirectory(dir=os.path.dirname(self.test_directory)) as outside_directory:
-            outside_path = os.path.join(outside_directory, "sentinel.txt")
-            self._setup_extra_file(path=outside_path)
+        with self._external_file(parent=os.path.dirname(self.test_directory)) as outside_path:
             filename = os.path.relpath(outside_path, self.test_directory)
 
             with self.assertRaises(InvalidDiscoveredFilePathError):
                 self._collect_tool_provided_dataset(filename)
 
     def test_tool_provided_metadata_cannot_read_absolute_filename(self):
-        with tempfile.TemporaryDirectory() as outside_directory:
-            outside_path = os.path.join(outside_directory, "sentinel.txt")
-            self._setup_extra_file(path=outside_path)
-
+        with self._external_file() as outside_path:
             with self.assertRaises(InvalidDiscoveredFilePathError):
                 self._collect_tool_provided_dataset(outside_path)
 
     def test_tool_provided_metadata_cannot_read_symlinked_filename(self):
-        with tempfile.TemporaryDirectory() as outside_directory:
-            outside_path = os.path.join(outside_directory, "sentinel.txt")
-            self._setup_extra_file(path=outside_path)
+        with self._external_file() as outside_path:
             filename = "symlinked-output.txt"
             os.symlink(outside_path, os.path.join(self.test_directory, filename))
 
@@ -396,9 +389,7 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
                 self._collect_tool_provided_dataset(filename)
 
     def test_pattern_discovery_cannot_read_symlinked_filename(self):
-        with tempfile.TemporaryDirectory() as outside_directory:
-            outside_path = os.path.join(outside_directory, "sentinel.txt")
-            self._setup_extra_file(path=outside_path)
+        with self._external_file() as outside_path:
             filename = f"primary_{self.hda.id}_symlink_visible_data"
             os.symlink(outside_path, os.path.join(self.test_directory, filename))
 
@@ -454,16 +445,7 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
 
     def test_installed_tool_can_create_in_working_directory_unnamed_output(self):
         path = self._setup_extra_file(filename="unnamed.txt")
-        metadata = self._metadata_from_dict(
-            {
-                "__unnamed_outputs": [
-                    {
-                        "destination": {"type": "hdas"},
-                        "elements": [{"filename": os.path.basename(path), "name": "unnamed"}],
-                    }
-                ]
-            }
-        )
+        metadata = self._unnamed_outputs_metadata([{"filename": os.path.basename(path), "name": "unnamed"}])
 
         self._collect(tool_provided_metadata=metadata)
 
@@ -471,25 +453,8 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert os.path.realpath(path) in map(os.path.realpath, object_store.created_datasets.values())
 
     def test_installed_tool_cannot_link_external_unnamed_output(self):
-        with tempfile.TemporaryDirectory() as outside_directory:
-            outside_path = os.path.join(outside_directory, "linked.txt")
-            self._setup_extra_file(path=outside_path)
-            metadata = self._metadata_from_dict(
-                {
-                    "__unnamed_outputs": [
-                        {
-                            "destination": {"type": "hdas"},
-                            "elements": [
-                                {
-                                    "filename": outside_path,
-                                    "link_data_only": True,
-                                    "name": "linked output",
-                                }
-                            ],
-                        }
-                    ]
-                }
-            )
+        with self._external_file("linked.txt") as outside_path:
+            metadata = self._unnamed_outputs_metadata([self._linked_element(outside_path)])
 
             with self.assertRaises(ExternalOutputPathNotAllowedError):
                 self._collect(tool_provided_metadata=metadata)
@@ -497,16 +462,7 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def test_tool_without_unnamed_outputs_capability_is_rejected(self):
         self.tool.allows_unnamed_outputs = False
         path = self._setup_extra_file(filename="unnamed.txt")
-        metadata = self._metadata_from_dict(
-            {
-                "__unnamed_outputs": [
-                    {
-                        "destination": {"type": "hdas"},
-                        "elements": [{"filename": os.path.basename(path), "name": "unnamed"}],
-                    }
-                ]
-            }
-        )
+        metadata = self._unnamed_outputs_metadata([{"filename": os.path.basename(path), "name": "unnamed"}])
 
         with self.assertRaises(UntrustedToolProvidedMetadataError):
             self._collect(tool_provided_metadata=metadata)
@@ -516,25 +472,8 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
 
     def test_data_fetch_can_link_unnamed_output(self):
         self._mark_as_data_fetch()
-        with tempfile.TemporaryDirectory() as outside_directory:
-            outside_path = os.path.join(outside_directory, "linked.txt")
-            self._setup_extra_file(path=outside_path)
-            metadata = self._metadata_from_dict(
-                {
-                    "__unnamed_outputs": [
-                        {
-                            "destination": {"type": "hdas"},
-                            "elements": [
-                                {
-                                    "filename": outside_path,
-                                    "link_data_only": True,
-                                    "name": "linked output",
-                                }
-                            ],
-                        }
-                    ]
-                }
-            )
+        with self._external_file("linked.txt") as outside_path:
+            metadata = self._unnamed_outputs_metadata([self._linked_element(outside_path)])
 
             with self._disk_object_store():
                 self._collect(tool_provided_metadata=metadata)
@@ -554,29 +493,12 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def test_data_fetch_can_link_external_collection_element(self):
         self._mark_as_data_fetch()
         linked_collection = self._setup_hdca("linked collection")
-        with tempfile.TemporaryDirectory() as outside_directory:
-            outside_path = os.path.join(outside_directory, "linked.txt")
-            self._setup_extra_file(path=outside_path)
-            metadata = self._metadata_from_dict(
-                {
-                    "__unnamed_outputs": [
-                        {
-                            "destination": {
-                                "type": "hdca",
-                                "object_id": linked_collection.id,
-                            },
-                            "name": "linked collection",
-                            "collection_type": "list",
-                            "elements": [
-                                {
-                                    "filename": outside_path,
-                                    "link_data_only": True,
-                                    "name": "linked output",
-                                }
-                            ],
-                        }
-                    ]
-                }
+        with self._external_file("linked.txt") as outside_path:
+            metadata = self._unnamed_outputs_metadata(
+                [self._linked_element(outside_path)],
+                destination=self._hdca_destination(linked_collection),
+                name="linked collection",
+                collection_type="list",
             )
 
             with self._disk_object_store():
@@ -590,29 +512,12 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def test_dynamic_tool_cannot_spoof_data_fetch_collection_link(self):
         self._mark_as_data_fetch(dynamic_tool_id=1)
         linked_collection = self._setup_hdca("linked collection")
-        with tempfile.TemporaryDirectory() as outside_directory:
-            outside_path = os.path.join(outside_directory, "linked.txt")
-            self._setup_extra_file(path=outside_path)
-            metadata = self._metadata_from_dict(
-                {
-                    "__unnamed_outputs": [
-                        {
-                            "destination": {
-                                "type": "hdca",
-                                "object_id": linked_collection.id,
-                            },
-                            "name": "linked collection",
-                            "collection_type": "list",
-                            "elements": [
-                                {
-                                    "filename": outside_path,
-                                    "link_data_only": True,
-                                    "name": "linked output",
-                                }
-                            ],
-                        }
-                    ]
-                }
+        with self._external_file("linked.txt") as outside_path:
+            metadata = self._unnamed_outputs_metadata(
+                [self._linked_element(outside_path)],
+                destination=self._hdca_destination(linked_collection),
+                name="linked collection",
+                collection_type="list",
             )
 
             with self.assertRaises(ExternalOutputPathNotAllowedError):
@@ -621,28 +526,19 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def test_data_fetch_collection_allows_deferred_element(self):
         self._mark_as_data_fetch()
         deferred_collection = self._setup_hdca("deferred collection")
-        metadata = self._metadata_from_dict(
-            {
-                "__unnamed_outputs": [
-                    {
-                        "destination": {
-                            "type": "hdca",
-                            "object_id": deferred_collection.id,
-                        },
-                        "name": "deferred collection",
-                        "collection_type": "list",
-                        "elements": [
-                            {
-                                "state": "deferred",
-                                "name": "deferred output",
-                                "ext": "txt",
-                                "src": "url",
-                                "url": "https://example.org/deferred.txt",
-                            }
-                        ],
-                    }
-                ]
-            }
+        metadata = self._unnamed_outputs_metadata(
+            [
+                {
+                    "state": "deferred",
+                    "name": "deferred output",
+                    "ext": "txt",
+                    "src": "url",
+                    "url": "https://example.org/deferred.txt",
+                }
+            ],
+            destination=self._hdca_destination(deferred_collection),
+            name="deferred collection",
+            collection_type="list",
         )
 
         with self._distributed_object_store():
@@ -685,6 +581,23 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         with open(meta_file, "w") as f:
             json.dump(metadata, f)
         return ToolProvidedMetadata(meta_file)
+
+    def _unnamed_outputs_metadata(self, elements, destination=None, **output_attributes):
+        output = {"destination": destination or {"type": "hdas"}, "elements": elements, **output_attributes}
+        return self._metadata_from_dict({"__unnamed_outputs": [output]})
+
+    def _linked_element(self, path):
+        return {"filename": path, "link_data_only": True, "name": "linked output"}
+
+    def _hdca_destination(self, hdca):
+        return {"type": "hdca", "object_id": hdca.id}
+
+    @contextmanager
+    def _external_file(self, filename="sentinel.txt", parent=None):
+        with tempfile.TemporaryDirectory(dir=parent) as outside_directory:
+            outside_path = os.path.join(outside_directory, filename)
+            self._setup_extra_file(path=outside_path)
+            yield outside_path
 
     def _collect(self, job_working_directory=None, tool_provided_metadata=None):
         if not job_working_directory:
