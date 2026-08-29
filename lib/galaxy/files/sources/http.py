@@ -25,6 +25,10 @@ from . import (
 
 log = logging.getLogger(__name__)
 
+# ASCII control characters, space, and DEL must be percent-encoded in a URL;
+# same character set http.client refuses in a request line.
+_DISALLOWED_URL_CHARACTERS = re.compile(r"[\x00-\x20\x7f]")
+
 
 class HTTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     # `url_regex` is not templated because it needs to be set at initialization with no RuntimeContext available.
@@ -67,7 +71,7 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
     ):
         config = context.config
         scheme = urlparse(source_path).scheme.lower()
-        if scheme in ("http", "https") and re.search(r"[\x00-\x20\x7f]", source_path):
+        if scheme in ("http", "https") and _DISALLOWED_URL_CHARACTERS.search(source_path):
             raise ValueError(
                 f"URL contains unencoded characters (e.g. spaces): {source_path}. "
                 "The URL source should properly percent-encode the path."

@@ -57,6 +57,18 @@ def _parse_last_modified(header: str | None) -> datetime | None:
     return parsed
 
 
+def _file_url_path(url: str) -> Path | None:
+    """Return the local path for a ``file://`` URL, or None for any other scheme."""
+    parsed_url = urlparse(url)
+    if parsed_url.scheme == "file":
+        return Path(unquote(parsed_url.path))
+    return None
+
+
+def _mtime_utc(path: Path) -> datetime:
+    return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+
+
 def _escape_like(value: str) -> str:
     """Escape SQLite LIKE metacharacters so tool names match literally."""
     return value.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
@@ -255,10 +267,9 @@ class GTNSearchDB:
     @staticmethod
     def _remote_last_modified(url: str) -> datetime | None:
         """HEAD ``url`` and return its parsed Last-Modified, or None on failure."""
-        parsed_url = urlparse(url)
-        if parsed_url.scheme == "file":
+        if (source_path := _file_url_path(url)) is not None:
             try:
-                return datetime.fromtimestamp(Path(unquote(parsed_url.path)).stat().st_mtime, tz=timezone.utc)
+                return _mtime_utc(source_path)
             except OSError as e:
                 log.debug(f"GTN freshness check failed for {url}: {e}")
                 return None
@@ -283,11 +294,9 @@ class GTNSearchDB:
         tmp_path.unlink(missing_ok=True)
         try:
             log.info(f"Downloading GTN database from {download_url} ...")
-            parsed_url = urlparse(download_url)
             remote_dt: datetime | None
-            if parsed_url.scheme == "file":
-                source_path = Path(unquote(parsed_url.path))
-                remote_dt = datetime.fromtimestamp(source_path.stat().st_mtime, tz=timezone.utc)
+            if (source_path := _file_url_path(download_url)) is not None:
+                remote_dt = _mtime_utc(source_path)
                 with source_path.open("rb") as source, open(tmp_path, "wb") as out:
                     shutil.copyfileobj(source, out)
             else:

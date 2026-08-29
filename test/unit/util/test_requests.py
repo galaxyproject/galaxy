@@ -1,8 +1,8 @@
 import socket
 import ssl
 import threading
-from unittest import mock
 
+import certifi
 import pytest
 import responses
 from requests.adapters import HTTPAdapter
@@ -14,15 +14,13 @@ from galaxy.util.user_agent import get_default_headers
 EXPECTED_USER_AGENT = get_default_headers()["user-agent"]
 
 
-def test_create_ssl_context_uses_requests_ca_bundle():
-    ssl_context = mock.Mock()
-    with (
-        mock.patch.object(galaxy_requests, "requests_ca_bundle_path", return_value="/certifi/cacert.pem"),
-        mock.patch.object(ssl, "create_default_context", return_value=ssl_context) as create_default_context,
-    ):
-        assert galaxy_requests.create_ssl_context() is ssl_context
-
-    create_default_context.assert_called_once_with(cafile="/certifi/cacert.pem")
+def test_create_ssl_context_uses_certifi_ca_bundle():
+    context = galaxy_requests.create_ssl_context()
+    certifi_context = ssl.create_default_context(cafile=certifi.where())
+    assert context.get_ca_certs()
+    assert context.get_ca_certs() == certifi_context.get_ca_certs()
+    assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.check_hostname
 
 
 # --- User-Agent header injection ---

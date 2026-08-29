@@ -42,6 +42,8 @@ def test_stream_to_open_named_file_compatibility(tmp_path):
 
     assert util.stream_to_open_named_file(BytesIO(b"streamed content"), fd, destination) == destination
     assert destination.read_bytes() == b"streamed content"
+    with pytest.raises(OSError):
+        os.fstat(fd)
 
 
 def test_parse_xml_string():
@@ -96,11 +98,13 @@ def test_parse_xml_enoent():
 
 
 def test_clean_multiline_string():
-    x = util.clean_multiline_string("""
+    x = util.clean_multiline_string(
+        """
         a
         b
         c
-""")
+"""
+    )
     assert x == "a\nb\nc\n"
 
 
