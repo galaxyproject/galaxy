@@ -105,7 +105,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { copyDataset } from "@/api/datasets";
-import type { TableField } from "@/components/Common/GTable.types";
+import { getFields, getItems } from "@/components/Markdown/Utilities/tabularData";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatasetStore } from "@/stores/datasetStore";
@@ -177,45 +177,6 @@ const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/di
 const metaContent = computed(() => getDataset(props.datasetId) as Dataset);
 const metaError = computed(() => getDatasetError(props.datasetId));
 const metaType = computed(() => metaContent.value?.extension);
-
-const getFields = (metaContent: Dataset): TableField[] => {
-    const fields: TableField[] = [];
-    const columnNames = metaContent.metadata_column_names || [];
-    const columnCount = metaContent.metadata_columns || 0;
-    for (let i = 0; i < columnCount; i++) {
-        fields.push({
-            key: `${i}`,
-            label: columnNames[i] || String(i),
-            sortable: true,
-        });
-    }
-    return fields;
-};
-
-const getItems = (textData: string, metaData: Dataset) => {
-    const tableData: Record<string, string>[] = [];
-    const delimiter = metaData.metadata_delimiter || "\t";
-    const comments = metaData.metadata_comment_lines || 0;
-    const lines = textData.split("\n");
-    lines.forEach((line, i) => {
-        if (i >= comments) {
-            const tabs = line.split(delimiter);
-            const rowData: Record<string, string> = {};
-            let hasData = false;
-            tabs.forEach((cellData, j) => {
-                const cellDataTrimmed = cellData.trim();
-                if (cellDataTrimmed) {
-                    hasData = true;
-                }
-                rowData[j] = cellDataTrimmed;
-            });
-            if (hasData) {
-                tableData.push(rowData);
-            }
-        }
-    });
-    return tableData;
-};
 
 const onExpand = () => {
     expanded.value = !expanded.value;

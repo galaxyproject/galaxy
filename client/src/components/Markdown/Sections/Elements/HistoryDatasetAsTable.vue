@@ -2,7 +2,7 @@
 import { BCard, BCardFooter, BCardTitle } from "bootstrap-vue";
 import { computed } from "vue";
 
-import type { TableField } from "@/components/Common/GTable.types";
+import { getFields, getItems } from "@/components/Markdown/Utilities/tabularData";
 import { UrlDataProvider } from "@/components/providers/UrlDataProvider.js";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -40,48 +40,6 @@ const metaUrl = computed(() => {
 });
 
 const contentClass = computed(() => (props.compact ? "embedded-dataset" : "embedded-dataset-expanded"));
-
-function getFields(metaData: any): TableField[] {
-    const fields: TableField[] = [];
-    const columnNames = metaData.metadata_column_names || [];
-    const columnCount = metaData.metadata_columns;
-    for (let i = 0; i < columnCount; i++) {
-        fields.push({
-            key: `${i}`,
-            label: columnNames[i] || i,
-            sortable: true,
-        });
-    }
-    return fields;
-}
-
-function getItems(textData: string, metaData: any) {
-    const tableData: Record<string, string>[] = [];
-    const delimiter: string = metaData.metadata_delimiter || "\t";
-    const lines = textData.split("\n");
-    lines.forEach((line: string) => {
-        // Galaxy counts blank lines and `#`-prefixed lines as "comment lines" (see
-        // tabular.py's set_meta), so skip them the same way instead of slicing off
-        // a fixed number of lines from the start.
-        if (!line || line.startsWith("#")) {
-            return;
-        }
-        const tabs = line.split(delimiter);
-        const rowData: Record<string, string> = {};
-        let hasData = false;
-        tabs.forEach((cellData: string, j: number) => {
-            const cellDataTrimmed = cellData.trim();
-            if (cellDataTrimmed) {
-                hasData = true;
-            }
-            rowData[j] = cellDataTrimmed;
-        });
-        if (hasData) {
-            tableData.push(rowData);
-        }
-    });
-    return tableData;
-}
 </script>
 
 <template>
