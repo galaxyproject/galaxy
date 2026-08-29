@@ -194,11 +194,17 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         # false red.
         @partial(retry_assertion_during_transitions, attempts=30, sleep=0.2)
         def assert_more_options_loaded():
-            self.scroll_into_view(select_field.find_element(By.CSS_SELECTOR, ".form-data-load-more-sentinel"))
+            # The sentinel renders only while the server reports has_more, so it
+            # unmounts once the last page lands. Scroll it if it is still there,
+            # and report its absence in the message rather than requiring it.
+            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
+            if sentinels:
+                self.scroll_into_view(sentinels[0])
             options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
-            assert (
-                len(options) > DEFAULT_OPTIONS_PAGE_SIZE
-            ), f"Expected the dropdown to append a second page, got {len(options)} options"
+            assert len(options) > DEFAULT_OPTIONS_PAGE_SIZE, (
+                f"Expected the dropdown to append a second page, got {len(options)} options "
+                f"(load-more sentinel present: {bool(sentinels)})"
+            )
 
         assert_more_options_loaded()
 
@@ -251,11 +257,17 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         # false red.
         @partial(retry_assertion_during_transitions, attempts=30, sleep=0.2)
         def assert_more_options_loaded():
-            self.scroll_into_view(select_field.find_element(By.CSS_SELECTOR, ".form-data-load-more-sentinel"))
+            # The sentinel renders only while the server reports has_more, so it
+            # unmounts once the last page lands. Scroll it if it is still there,
+            # and report its absence in the message rather than requiring it.
+            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
+            if sentinels:
+                self.scroll_into_view(sentinels[0])
             loaded_options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
-            assert (
-                len(loaded_options) > DEFAULT_OPTIONS_PAGE_SIZE
-            ), f"Expected the simplified dropdown to append a second page, got {len(loaded_options)} options"
+            assert len(loaded_options) > DEFAULT_OPTIONS_PAGE_SIZE, (
+                f"Expected the simplified dropdown to append a second page, got {len(loaded_options)} options "
+                f"(load-more sentinel present: {bool(sentinels)})"
+            )
 
         assert_more_options_loaded()
 
