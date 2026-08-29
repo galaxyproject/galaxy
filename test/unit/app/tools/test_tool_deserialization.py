@@ -16,7 +16,6 @@ XML_TOOL = """
 <tool id="tool_id" name="xml tool" version="1" profile="26.1"/>
 """
 XML_TOOL_PROFILE_26_2 = XML_TOOL.replace('profile="26.1"', 'profile="26.2"')
-XML_TOOL_PROFILE_26_3 = XML_TOOL.replace('profile="26.1"', 'profile="26.3"')
 XML_TOOL_WITH_PROVIDED_METADATA = """
 <tool id="tool_id" name="xml tool" version="1" profile="26.0">
     <outputs provided_metadata_file="galaxy.json">
@@ -25,14 +24,14 @@ XML_TOOL_WITH_PROVIDED_METADATA = """
 </tool>
 """
 XML_TOOL_WITH_AUTO_FORMAT = """
-<tool id="tool_id" name="xml tool" version="1" profile="26.3">
+<tool id="tool_id" name="xml tool" version="1" profile="26.2">
     <outputs>
         <data name="output" format="auto" />
     </outputs>
 </tool>
 """
 XML_TOOL_WITH_METADATA_DISCOVERY = """
-<tool id="tool_id" name="xml tool" version="1" profile="26.3">
+<tool id="tool_id" name="xml tool" version="1" profile="26.2">
     <outputs>
         <data name="output">
             <discover_datasets discover_via="tool_provided_metadata" />
@@ -41,7 +40,7 @@ XML_TOOL_WITH_METADATA_DISCOVERY = """
 </tool>
 """
 XML_TOOL_WITH_COLLECTION_METADATA_DISCOVERY = """
-<tool id="tool_id" name="xml tool" version="1" profile="26.3">
+<tool id="tool_id" name="xml tool" version="1" profile="26.2">
     <outputs>
         <collection name="output" type="list">
             <discover_datasets from_provided_metadata="true" />
@@ -90,10 +89,10 @@ outputs:
   out_file1:
     format: txt
 """
-YAML_TOOL_PROFILE_26_3_WITH_AUTO_FORMAT = YAML_TOOL.replace("version: 1.0", 'version: 1.0\nprofile: "26.3"').replace(
+YAML_TOOL_PROFILE_26_2_WITH_AUTO_FORMAT = YAML_TOOL.replace("version: 1.0", 'version: 1.0\nprofile: "26.2"').replace(
     "format: txt", "format: auto"
 )
-UNRECOGNIZED_YAML_TOOL_WITH_AUTO_FORMAT = YAML_TOOL_PROFILE_26_3_WITH_AUTO_FORMAT.replace(
+UNRECOGNIZED_YAML_TOOL_WITH_AUTO_FORMAT = YAML_TOOL_PROFILE_26_2_WITH_AUTO_FORMAT.replace(
     "id: simple_constructs_y", "class: FutureUntrustedTool\nid: simple_constructs_y"
 )
 USER_DEFINED_TOOL = """
@@ -136,7 +135,7 @@ class ToolApp(GalaxyDataTestApp):
 class FutureProfileToolApp(ToolApp):
     # Profile validation is skipped for apps named "tool_shed", which lets tools
     # with profiles newer than VERSION_MAJOR load; fold this back into ToolApp
-    # once VERSION_MAJOR >= 26.3.
+    # once VERSION_MAJOR >= 26.2.
     name = "tool_shed"
 
 
@@ -163,14 +162,11 @@ def test_deserialize_xml_tool(tool_app):
     assert tool.tool_source.allows_tool_provided_metadata()
 
 
-@pytest.mark.parametrize("raw_tool_source", [XML_TOOL, XML_TOOL_PROFILE_26_2])
-def test_legacy_profile_xml_tool_implicitly_uses_tool_provided_metadata(
-    future_profile_tool_app, tmp_path, raw_tool_source
-):
+def test_legacy_profile_xml_tool_implicitly_uses_tool_provided_metadata(tool_app, tmp_path):
     tool = _deserialize(
-        future_profile_tool_app,
+        tool_app,
         tool_source_class="XmlToolSource",
-        raw_tool_source=raw_tool_source,
+        raw_tool_source=XML_TOOL,
     )
     (tmp_path / "galaxy.json").write_text("{}")
 
@@ -199,7 +195,7 @@ def test_new_profile_xml_tool_must_opt_in_to_tool_provided_metadata(future_profi
     tool = _deserialize(
         future_profile_tool_app,
         tool_source_class="XmlToolSource",
-        raw_tool_source=XML_TOOL_PROFILE_26_3,
+        raw_tool_source=XML_TOOL_PROFILE_26_2,
     )
     (tmp_path / "galaxy.json").write_text("{}")
 
@@ -289,7 +285,7 @@ def test_new_profile_yaml_tool_can_opt_in_via_metadata_dependent_output(future_p
     tool = _deserialize(
         future_profile_tool_app,
         tool_source_class="YamlToolSource",
-        raw_tool_source=YAML_TOOL_PROFILE_26_3_WITH_AUTO_FORMAT,
+        raw_tool_source=YAML_TOOL_PROFILE_26_2_WITH_AUTO_FORMAT,
     )
 
     assert tool.uses_tool_provided_metadata

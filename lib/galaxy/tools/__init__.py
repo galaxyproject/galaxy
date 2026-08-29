@@ -1710,7 +1710,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         if any(output_uses_tool_provided_metadata(output) for output in self.outputs.values()):
             return True
 
-        return not (self.tool_type == "interactive" or Version(str(self.profile)) > Version("26.2"))
+        return not (self.tool_type == "interactive" or Version(str(self.profile)) >= Version("26.2"))
 
     def parse_command(self, tool_source):
         """ """
