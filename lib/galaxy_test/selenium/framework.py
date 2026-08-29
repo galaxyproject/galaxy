@@ -157,8 +157,6 @@ GALAXY_TEST_SELENIUM_REMOTE_HOST = os.environ.get(
 )
 GALAXY_TEST_SELENIUM_HEADLESS = os.environ.get("GALAXY_TEST_SELENIUM_HEADLESS", DEFAULT_SELENIUM_HEADLESS)
 GALAXY_TEST_EXTERNAL_FROM_SELENIUM = os.environ.get("GALAXY_TEST_EXTERNAL_FROM_SELENIUM", None)
-# Stop tool tests at submission, skipping job execution and output verification.
-GALAXY_TEST_TOOL_FORM_ONLY = os.environ.get("GALAXY_TEST_TOOL_FORM_ONLY", None)
 # Auto-retry selenium tests this many times.
 GALAXY_TEST_SELENIUM_RETRIES = int(os.environ.get("GALAXY_TEST_SELENIUM_RETRIES", "0"))
 
@@ -758,8 +756,19 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
 class RunsToolTests(NavigatesGalaxyMixin):
     """Mixin that drives tool execution through the browser form using tool test definitions."""
 
-    def run_tool_test(self, tool_id: str, test_index: int = 0, galaxy_interactor=None, dataset_populator=None):
-        """Top-level entry point: fetch test def, stage data, fill form, execute, verify."""
+    def run_tool_test(
+        self,
+        tool_id: str,
+        test_index: int = 0,
+        galaxy_interactor=None,
+        dataset_populator=None,
+        form_only: bool = False,
+    ):
+        """Top-level entry point: fetch test def, stage data, fill form, execute, verify.
+
+        With form_only set, stop once the form has submitted a job, leaving execution
+        and output verification to the API-level tool tests.
+        """
         assert galaxy_interactor is not None, "galaxy_interactor is required"
         assert dataset_populator is not None, "dataset_populator is required"
         test_defs = galaxy_interactor.get_tool_tests(tool_id)
@@ -769,11 +778,21 @@ class RunsToolTests(NavigatesGalaxyMixin):
         self.home()
         hid_map, required_filenames, collection_hid_map = self._stage_test_data(test_def, history_id, galaxy_interactor)
         pre_job_ids = {j["id"] for j in dataset_populator.history_jobs_for_tool(history_id, tool_id)}
-        self.tool_open(tool_id)
-        self._fill_tool_test_inputs(test_def, hid_map, required_filenames, collection_hid_map)
+        self.tool_open_by_url(tool_id)
+        self._fill_tool_test_inputs(
+            test_def, hid_map, required_filenames, collection_hid_map, self._select_labels(tool_id)
+        )
+        expect_failure = test_def.get("expect_failure", False)
+        if form_only and expect_failure and not self._run_button_enabled():
+            # Galaxy disabled the run button and said why, so the form refused an input
+            # set this test declares invalid. There is nothing to submit.
+            return
         self.tool_form_execute()
-        if asbool(GALAXY_TEST_TOOL_FORM_ONLY):
-            self._wait_for_new_job(history_id, tool_id, pre_job_ids, dataset_populator)
+        if form_only:
+            # An expect_failure test that did submit is rejected by the backend instead;
+            # that outcome belongs to the API tool tests.
+            if not expect_failure:
+                self._wait_for_new_job(history_id, tool_id, pre_job_ids, dataset_populator)
             return
         self._verify_tool_test_outputs(test_def, history_id, tool_id, pre_job_ids, dataset_populator)
 
@@ -803,18 +822,28 @@ class RunsToolTests(NavigatesGalaxyMixin):
         filename_by_key: dict[str, str] = {}
         collection_keys: set[str] = set()
 
+        def file_entry(filename: str) -> dict:
+            entry: dict = {"class": "File", "path": filename}
+            ftype = file_meta.get(filename, {}).get("ftype")
+            if ftype:
+                entry["filetype"] = ftype
+            return entry
+
         for key, value in inputs.items():
             raw = value[0] if isinstance(value, list) and len(value) == 1 else value
             if isinstance(raw, dict) and raw.get("model_class") == "TestCollectionDef":
                 job[key] = self._convert_collection_def(raw, file_meta)
                 collection_keys.add(key)
             elif isinstance(raw, str) and raw in required_filenames:
-                file_entry: dict = {"class": "File", "path": raw}
-                ftype = file_meta.get(raw, {}).get("ftype")
-                if ftype:
-                    file_entry["filetype"] = ftype
-                job[key] = file_entry
+                job[key] = file_entry(raw)
                 filename_by_key[key] = raw
+            elif self._is_multi_file_value(raw, required_filenames):
+                # Stage each file on its own. Passing the list through would build a
+                # collection, and a multiple="true" data param takes separate datasets.
+                for index, filename in enumerate(raw):
+                    job_key = f"{key}|{index}"
+                    job[job_key] = file_entry(filename)
+                    filename_by_key[job_key] = filename
 
         if not job:
             return {}, required_filenames, {}
@@ -890,6 +919,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
         hid_map: dict,
         required_filenames: set,
         collection_hid_map: dict | None = None,
+        select_labels: dict | None = None,
     ):
         """Fill tool form inputs from test definition.
 
@@ -921,6 +951,8 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 collection_params.append((key, raw_value))
             elif isinstance(raw_value, str) and raw_value in required_filenames:
                 data_params.append((key, value))
+            elif self._is_multi_file_value(raw_value, required_filenames):
+                data_params.append((key, raw_value))
             else:
                 non_data_params.append((key, value))
 
@@ -934,7 +966,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
         deferred = []
         for key, value in non_data_params:
             try:
-                self._set_tool_form_value(key, value, required_filenames)
+                self._set_tool_form_value(key, value, required_filenames, select_labels)
                 self.sleep_for(self.wait_types.UX_RENDER)
             except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
                 deferred.append((key, value))
@@ -945,23 +977,67 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 expanded_id = key.replace("|", "-")
                 if self.components.tool_form.parameter_div(parameter=expanded_id).is_absent:
                     continue
-                self._set_tool_form_value(key, value, required_filenames)
+                self._set_tool_form_value(key, value, required_filenames, select_labels)
 
         for key, value in data_params:
-            if isinstance(value, list) and len(value) == 1:
-                value = value[0]
-            hid = hid_map.get(value)
-            assert hid is not None, f"No staged file for data param {key}={value}"
+            filenames = list(value) if isinstance(value, list) else [value]
             is_multiple = self._is_multi_data_param(key)
+            assert is_multiple or len(filenames) == 1, f"Data param {key} takes one file, got {filenames}"
             if is_multiple:
                 self._clear_multiselect_tags(key)
-            self.tool_set_value(key, f"{hid}: {value}", expected_type="data", multiple=is_multiple)
+            for filename in filenames:
+                hid = hid_map.get(filename)
+                assert hid is not None, f"No staged file for data param {key}={filename}"
+                self.tool_set_value(key, f"{hid}: {filename}", expected_type="data", multiple=is_multiple)
 
         for key, coll_def in collection_params:
             hid = collection_hid_map.get(key)
             assert hid is not None, f"No staged collection for param {key}"
             coll_name = coll_def.get("name", "")
             self.tool_set_value(key, f"{hid}: {coll_name}", expected_type="data")
+
+    def _select_labels(self, tool_id: str) -> dict[str, dict[str, str]]:
+        """Per parameter, the option value -> displayed label the select renders.
+
+        Test cases declare option values while the form shows labels, so setting a
+        select by its declared value only works where the two happen to match.
+        """
+        labels: dict[str, dict[str, str]] = {}
+
+        def walk(inputs, path=()):
+            for input_dict in inputs or []:
+                name = input_dict.get("name")
+                if name is None:
+                    continue
+                here = path + (name,)
+                for nested in ("inputs", "cases"):
+                    for child in input_dict.get(nested) or []:
+                        walk(child.get("inputs") if nested == "cases" else [child], here)
+                options = input_dict.get("options")
+                if isinstance(options, list):
+                    by_value = {
+                        str(option[1]): str(option[0])
+                        for option in options
+                        if isinstance(option, (list, tuple)) and len(option) >= 2
+                    }
+                    if by_value:
+                        labels["|".join(here)] = by_value
+
+        try:
+            build = self.api_get(f"tools/{tool_id}/build")
+        except Exception:
+            return labels
+        walk(build.get("inputs"))
+        return labels
+
+    @staticmethod
+    def _is_multi_file_value(value, required_filenames: set) -> bool:
+        """A list of staged filenames, as a multiple="true" data param declares them."""
+        return (
+            isinstance(value, list)
+            and len(value) > 1
+            and all(isinstance(item, str) and item in required_filenames for item in value)
+        )
 
     def _is_multi_data_param(self, expanded_id: str) -> bool:
         return not self.components.tool_form.parameter_form_selection(parameter=expanded_id).is_absent
@@ -1022,13 +1098,14 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
         return "text"
 
-    def _set_tool_form_value(self, key: str, value, required_filenames: set):
+    def _set_tool_form_value(self, key: str, value, required_filenames: set, select_labels: dict | None = None):
         if isinstance(value, list) and len(value) == 1:
             value = value[0]
         if isinstance(value, str) and value in required_filenames:
             return
 
         param_type = self._detect_param_type(key)
+        by_value = (select_labels or {}).get(key, {})
 
         if param_type == "drilldown":
             values = value if isinstance(value, list) else [value]
@@ -1041,9 +1118,25 @@ class RunsToolTests(NavigatesGalaxyMixin):
         elif param_type == "color":
             self._set_color_value(key, value)
         elif param_type == "select":
-            self.tool_set_value(key, str(value), expected_type="select")
+            for item in self._select_values(value, by_value):
+                # The form matches on the label, so send that where one is known.
+                self.tool_set_value(key, by_value.get(item, item), expected_type="select")
         else:
             self._set_text_value(key, str(value))
+
+    @staticmethod
+    def _select_values(value, by_value: dict) -> list:
+        """The individual option values a select param was declared with.
+
+        A multiple select takes them comma joined; a value carrying a comma of its
+        own is left alone, since it appears in the option list as declared.
+        """
+        if isinstance(value, list):
+            return [str(item) for item in value]
+        text = str(value)
+        if text in by_value or "," not in text:
+            return [text]
+        return [item for item in text.split(",") if item]
 
     def _set_boolean_value(self, expanded_id: str, value):
         checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
@@ -1083,6 +1176,11 @@ class RunsToolTests(NavigatesGalaxyMixin):
     def _set_text_value(self, expanded_id: str, value: str):
         input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
         self.set_element_value(input_element, value)
+
+    def _run_button_enabled(self) -> bool:
+        """Whether the form will accept a run; Galaxy marks a blocked button aria-disabled."""
+        button = self.components.tool_form.execute.wait_for_visible()
+        return button.get_attribute("aria-disabled") != "true"
 
     def _wait_for_new_job(self, history_id: str, tool_id: str, pre_job_ids: set, dataset_populator) -> str:
         """Wait for the job the form just submitted and return its id."""

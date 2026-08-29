@@ -8,6 +8,7 @@ import contextlib
 import random
 import string
 import time
+from urllib.parse import quote
 from abc import abstractmethod
 from dataclasses import (
     dataclass,
@@ -1986,6 +1987,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         tool_element = tool_link.wait_for_present()
         self.scroll_into_view(tool_element)
         tool_link.wait_for_and_click()
+
+    def tool_open_by_url(self, tool_id: str):
+        """Open a tool form by URL rather than through tool panel search.
+
+        Shed and user-defined tools are not always reachable from the panel, and
+        the panel click silently leaves the browser on the current page.
+        """
+        self.get(f"?tool_id={quote(tool_id, safe='')}&version=latest")
+        self.components.tool_form.execute.wait_for_visible()
 
     def datasource_tool_open(self, tool_id):
         tool_link = self.components.tool_panel.data_source_tool_link(tool_id=tool_id)
