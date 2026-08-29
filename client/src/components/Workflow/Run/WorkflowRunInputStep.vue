@@ -19,6 +19,7 @@
 <script>
 import { debounce } from "lodash";
 
+import { DEFAULT_OPTIONS_PAGE_SIZE } from "@/components/Form/Elements/FormData/types";
 import WorkflowIcons from "@/components/Workflow/icons";
 
 import { searchHistoryContents } from "./services";
@@ -103,7 +104,6 @@ export default {
     },
     methods: {
         onChange(data) {
-            console.log("emitting default change", data);
             this.$emit("onChange", this.model.index, data);
         },
         onValidation(validation) {
@@ -133,13 +133,15 @@ export default {
             }
             const type = src === "hdca" ? "dataset_collection" : "dataset";
             const extensions = input.acceptable_extensions || [];
-            const limit = payload.limit || 50;
+            const limit = payload.limit || DEFAULT_OPTIONS_PAGE_SIZE;
             const offset = payload.offset || 0;
             try {
                 const rows = await searchHistoryContents(this.historyId, {
                     extensions,
                     type,
                     tag: input.tag,
+                    // ``data_collection`` parameters offer hidden collections too.
+                    visibleOnly: input.type !== "data_collection",
                     search: payload.search,
                     offset,
                     limit,
@@ -175,7 +177,7 @@ export default {
             this._fetchStepOptions(name, src, { offset, limit, search });
         },
         onSearchChange({ name, src, query, limit }) {
-            this._fetchStepOptions(name, src, { offset: 0, limit: limit || 50, search: query });
+            this._fetchStepOptions(name, src, { offset: 0, limit: limit || DEFAULT_OPTIONS_PAGE_SIZE, search: query });
         },
     },
 };

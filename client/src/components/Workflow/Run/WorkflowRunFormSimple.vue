@@ -10,6 +10,7 @@ import type { WriteStoreToPayload } from "@/api/exports";
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
 import type { ToolIdentifier } from "@/api/tools";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import { DEFAULT_OPTIONS_PAGE_SIZE } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
@@ -334,13 +335,15 @@ async function fetchStepOptions(
     }
     const type = src === "hdca" ? "dataset_collection" : "dataset";
     const extensions = (input.acceptable_extensions || []) as string[];
-    const limit = payload.limit || 50;
+    const limit = payload.limit || DEFAULT_OPTIONS_PAGE_SIZE;
     const offset = payload.offset || 0;
     try {
         const rows = await searchHistoryContents(props.model.historyId, {
             extensions,
             type,
             tag: input.tag,
+            // ``data_collection`` parameters offer hidden collections too.
+            visibleOnly: input.type !== "data_collection",
             search: payload.search,
             offset,
             limit,
@@ -391,7 +394,7 @@ function onLoadMore({
 }
 
 function onSearchChange({ name, src, query, limit }: { name: string; src: string; query: string; limit?: number }) {
-    fetchStepOptions(name, src, { offset: 0, limit: limit || 50, search: query });
+    fetchStepOptions(name, src, { offset: 0, limit: limit || DEFAULT_OPTIONS_PAGE_SIZE, search: query });
 }
 
 function onStorageUpdate(objectStoreId: string, intermediate: boolean) {

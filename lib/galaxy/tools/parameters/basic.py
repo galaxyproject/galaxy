@@ -65,6 +65,7 @@ from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.pagination import (
     DataOptionsBuilder,
+    DEFAULT_OPTIONS_PAGE_SIZE,
     make_dce_entry,
     make_hda_entry,
     make_hdca_entry,
@@ -1891,7 +1892,7 @@ def _paginated_visible_datasets(
     tag: Optional[str] = None,
     search: Optional[str] = None,
     offset: int = 0,
-    limit: int = 50,
+    limit: int = DEFAULT_OPTIONS_PAGE_SIZE,
 ) -> tuple[list[HistoryDatasetAssociation], int]:
     """``history.paginated_active_visible_datasets`` memoized on the request.
 
@@ -1930,7 +1931,7 @@ def _paginated_dataset_collections(
     tag: Optional[str] = None,
     search: Optional[str] = None,
     offset: int = 0,
-    limit: int = 50,
+    limit: int = DEFAULT_OPTIONS_PAGE_SIZE,
 ) -> tuple[list[HistoryDatasetCollectionAssociation], int]:
     """``history.paginated_active_dataset_collections`` memoized on the request
     context's short-term cache (see :func:`_paginated_visible_datasets`)."""

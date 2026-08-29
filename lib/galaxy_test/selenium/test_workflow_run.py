@@ -1,4 +1,5 @@
 import json
+from functools import partial
 from typing import Literal
 from uuid import uuid4
 
@@ -6,6 +7,7 @@ import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
+from galaxy.tools.parameters.pagination import DEFAULT_OPTIONS_PAGE_SIZE
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED,
@@ -131,7 +133,9 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
             history_id,
             [{"src": "pasted", "paste_content": "y", "name": legacy_sentinel}],
         )
-        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
         self.home()
         # A single cat1 step with no workflow-level inputs — the step's
         # ``input1`` is unconnected, so it renders as a dropdown the user
@@ -146,7 +150,9 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         select_field.find_element(By.CSS_SELECTOR, ".multiselect__select").click()
         self.sleep_for(self.wait_types.UX_RENDER)
         baseline_options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
-        assert len(baseline_options) == 50, f"Expected default page to contain 50 options, got {len(baseline_options)}"
+        assert (
+            len(baseline_options) == DEFAULT_OPTIONS_PAGE_SIZE
+        ), f"Expected the default page to contain {DEFAULT_OPTIONS_PAGE_SIZE} options, got {len(baseline_options)}"
         baseline_labels = [opt.text for opt in baseline_options]
         assert all(legacy_sentinel not in label for label in baseline_labels), baseline_labels
         search_input = select_field.find_element(By.CSS_SELECTOR, "input.multiselect__input")
@@ -172,22 +178,27 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         input tree kept rendering the first 50 options.
         """
         history_id = self.current_history_id()
-        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
         self.home()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_run_ensure_expanded()
         select_field = self.components.workflow_run.input_data_div(label="input1").wait_for_visible()
         select_field.find_element(By.CSS_SELECTOR, ".multiselect__select").click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        assert len(select_field.find_elements(By.CSS_SELECTOR, "[role='option']")) == 50
+        assert len(select_field.find_elements(By.CSS_SELECTOR, "[role='option']")) == DEFAULT_OPTIONS_PAGE_SIZE
 
-        @retry_assertion_during_transitions
+        # The default ~1s budget has to cover an IntersectionObserver firing,
+        # an HTTP round-trip and a re-render; widen it so loaded CI is not a
+        # false red.
+        @partial(retry_assertion_during_transitions, attempts=30, sleep=0.2)
         def assert_more_options_loaded():
-            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
-            if sentinels:
-                self.scroll_into_view(sentinels[0])
+            self.scroll_into_view(select_field.find_element(By.CSS_SELECTOR, ".form-data-load-more-sentinel"))
             options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
-            assert len(options) > 50, f"Expected the dropdown to append a second page, got {len(options)} options"
+            assert (
+                len(options) > DEFAULT_OPTIONS_PAGE_SIZE
+            ), f"Expected the dropdown to append a second page, got {len(options)} options"
 
         assert_more_options_loaded()
 
@@ -195,7 +206,9 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
     def test_workflow_run_pagination_simplified_form(self):
         """Scrolling a simplified workflow-run dropdown appends its second page."""
         history_id = self.current_history_id()
-        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
         # Sentinel for positive lower-bound (see legacy-form test).
         simplified_sentinel = "unique-simplified-sentinel"
         self.dataset_populator.fetch_hdas(
@@ -224,21 +237,24 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         select_field.find_element(By.CSS_SELECTOR, ".multiselect__select").click()
         self.sleep_for(self.wait_types.UX_RENDER)
         options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
-        assert len(options) == 50, f"Expected the first page to contain 50 options, got {len(options)}"
+        assert (
+            len(options) == DEFAULT_OPTIONS_PAGE_SIZE
+        ), f"Expected the first page to contain {DEFAULT_OPTIONS_PAGE_SIZE} options, got {len(options)}"
         # Positive lower-bound: the sentinel HDA is newest (hid=61) so it must
         # appear in the first page of options. Without this the ``<= 50`` upper
         # bound passes vacuously on an empty dropdown.
         labels = [opt.text for opt in options]
         assert any(simplified_sentinel in label for label in labels), labels
 
-        @retry_assertion_during_transitions
+        # The default ~1s budget has to cover an IntersectionObserver firing,
+        # an HTTP round-trip and a re-render; widen it so loaded CI is not a
+        # false red.
+        @partial(retry_assertion_during_transitions, attempts=30, sleep=0.2)
         def assert_more_options_loaded():
-            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
-            if sentinels:
-                self.scroll_into_view(sentinels[0])
+            self.scroll_into_view(select_field.find_element(By.CSS_SELECTOR, ".form-data-load-more-sentinel"))
             loaded_options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
             assert (
-                len(loaded_options) > 50
+                len(loaded_options) > DEFAULT_OPTIONS_PAGE_SIZE
             ), f"Expected the simplified dropdown to append a second page, got {len(loaded_options)} options"
 
         assert_more_options_loaded()
@@ -820,7 +836,9 @@ steps: {}
         # tag predicate must be applied before pagination; filtering the first
         # generic page in FormData would otherwise leave this required input
         # empty even though a matching dataset exists in the history.
-        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
         workflow_id, workflow_name = self._create_workflow_with_unique_name(WORKFLOW_WITH_DATA_TAG_FILTER, "ga")
         self.workflow_run_with_name(workflow_name)
         self.workflow_run_submit()
