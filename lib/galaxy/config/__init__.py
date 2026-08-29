@@ -770,6 +770,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     tool_filters: list[str]
     tool_label_filters: list[str]
     tool_path: str
+    tool_search_index_dir: str
     tool_section_filters: list[str]
     toolbox_filter_base_modules: list[str]
     track_jobs_in_database: bool
