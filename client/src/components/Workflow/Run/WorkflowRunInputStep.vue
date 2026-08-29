@@ -139,6 +139,7 @@ export default {
                 const rows = await searchHistoryContents(this.historyId, {
                     extensions,
                     type,
+                    tag: input.tag,
                     search: payload.search,
                     offset,
                     limit,

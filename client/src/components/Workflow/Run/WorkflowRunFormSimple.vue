@@ -340,6 +340,7 @@ async function fetchStepOptions(
         const rows = await searchHistoryContents(props.model.historyId, {
             extensions,
             type,
+            tag: input.tag,
             search: payload.search,
             offset,
             limit,

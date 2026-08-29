@@ -816,8 +816,11 @@ steps: {}
         history_id = self.current_history_id()
         dataset = self.dataset_populator.new_dataset(history_id, wait=True)
         self.dataset_populator.tag_dataset(history_id, dataset["id"], tags=["genomescope_model"])
-        # Add another possible input that should not be selected
-        self.dataset_populator.new_dataset(history_id, wait=True)
+        # Push the tagged dataset beyond the first 50 datatype matches. The
+        # tag predicate must be applied before pagination; filtering the first
+        # generic page in FormData would otherwise leave this required input
+        # empty even though a matching dataset exists in the history.
+        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
         workflow_id, workflow_name = self._create_workflow_with_unique_name(WORKFLOW_WITH_DATA_TAG_FILTER, "ga")
         self.workflow_run_with_name(workflow_name)
         self.workflow_run_submit()

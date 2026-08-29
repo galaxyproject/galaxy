@@ -35,11 +35,12 @@ export async function getRunData(workflowId, version = null, instance = false) {
  * @param {Object} opts
  * @param {Array<string>} [opts.extensions] - sorted accept-set; empty/missing → no extension filter.
  * @param {String} [opts.type] - "dataset" | "dataset_collection".
+ * @param {String} [opts.tag] - exact dataset/collection tag required by the workflow input.
  * @param {String} [opts.search] - name substring or numeric hid match.
  * @param {Number} [opts.offset]
  * @param {Number} [opts.limit]
  */
-export async function searchHistoryContents(historyId, { extensions, type, search, offset = 0, limit = 50 } = {}) {
+export async function searchHistoryContents(historyId, { extensions, type, tag, search, offset = 0, limit = 50 } = {}) {
     const q = [];
     const qv = [];
     q.push("visible-eq");
@@ -53,6 +54,10 @@ export async function searchHistoryContents(historyId, { extensions, type, searc
     if (extensions && extensions.length) {
         q.push("extension-in");
         qv.push(extensions.join(","));
+    }
+    if (tag) {
+        q.push("tag-eq");
+        qv.push(tag);
     }
     if (search) {
         const trimmed = String(search).trim();
