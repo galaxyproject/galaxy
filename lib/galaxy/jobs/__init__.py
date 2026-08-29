@@ -1159,6 +1159,8 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def requires_containerization(self):
+        if self.tool.tool_type in ("user_defined", "interactive"):
+            return True
         return util.asbool(self.get_destination_configuration("require_container", "False"))
 
     @property
