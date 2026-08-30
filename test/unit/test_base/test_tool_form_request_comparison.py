@@ -72,7 +72,7 @@ def test_repeat_value_mismatch_is_reported():
 def test_missing_repeat_instance_is_reported():
     declared = {"r": [{"p": "a"}, {"p": "b"}]}
     submitted = {"r": [{"p": "a"}]}
-    assert declared_mismatches(declared, submitted) == ["r (1 instances, not 2)"]
+    assert declared_mismatches(declared, submitted) == ["r (1 values, not 2)"]
 
 
 def test_list_of_scalars_matches():

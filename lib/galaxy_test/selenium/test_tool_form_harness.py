@@ -173,7 +173,10 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "composite_pbed_0": "a directory is passed where the test expects a file",
     "credentials_test_0": "run button stays disabled, so a parameter was not accepted by the form",
     "credentials_test_1": "run button stays disabled, so a parameter was not accepted by the form",
-    "filter_multiple_splitter_0": "parameter index never appears on the form",
+    "filter_data_table_0": "options come from an unreachable from_url, so the tool does not load",
+    "filter_data_table_1": "options come from an unreachable from_url, so the tool does not load",
+    "filter_multiple_splitter_0": "select options are read from a dataset chosen on the same form",
+    "filter_multiple_splitter_1": "select options are read from a dataset chosen on the same form",
     "filter_param_value_ref_attribute_2": "parameter select_mult never appears on the form",
     "filter_param_value_ref_attribute_3": "parameter select_mult never appears on the form",
     "filter_param_value_ref_attribute_4": "parameter select_coll never appears on the form",
@@ -230,10 +233,14 @@ os.environ.setdefault("GALAXY_CONFIG_OVERRIDE_ENABLE_CELERY_TASKS", "true")
 class AssertsAsyncSubmission(NavigatesGalaxyMixin):
     """Assert the browser submitted through the tool request API, not the legacy one."""
 
-    def _assert_async_submission(self, tool_id, test_index):
-        # Galaxy records the request before queueing the job, so this holds whatever
-        # the tool goes on to do. Browser resource timings do not: they only show the
-        # tool request polling a submission that succeeded.
+    def _assert_async_submission(self, tool_id, test_index, test_def=None):
+        # Galaxy records the request before queueing the job, so this holds whatever the
+        # tool goes on to do. Browser resource timings do not: they only show the tool
+        # request polling a submission that succeeded.
+        if (test_def or {}).get("expect_failure"):
+            # An input set the test declares invalid is rejected before a request is
+            # recorded, so there is nothing here to tell the two paths apart.
+            return
         history_id = self.current_history_id()
         recorded = self.api_get(f"histories/{history_id}/tool_requests")
         assert recorded, f"{tool_id}[{test_index}] fell back to the legacy submission path"
@@ -254,7 +261,7 @@ class TestToolFormHarness(AssertsAsyncSubmission, SeleniumTestCase, RunsToolTest
             galaxy_interactor=interactor,
             dataset_populator=self.dataset_populator,
         )
-        self._assert_async_submission(tool_id, test_index)
+        self._assert_async_submission(tool_id, test_index, self.tool_test_def(tool_id, test_index, interactor))
 
 
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
@@ -275,4 +282,4 @@ class TestToolFormOnlyHarness(AssertsAsyncSubmission, SeleniumTestCase, RunsTool
             dataset_populator=self.dataset_populator,
             form_only=True,
         )
-        self._assert_async_submission(tool_id, test_index)
+        self._assert_async_submission(tool_id, test_index, self.tool_test_def(tool_id, test_index, interactor))
