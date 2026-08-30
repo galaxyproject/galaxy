@@ -776,7 +776,8 @@ class RunsToolTests(NavigatesGalaxyMixin):
         test_def = test_defs[test_index]
         history_id = self.current_history_id()
         self.home()
-        self._staged_dataset_ids: dict[str, str] = {}
+        self._staged_dataset_ids: dict[str, list[str]] = {}
+        self._multi_hids: dict[str, list] = {}
         hid_map, required_filenames, collection_hid_map = self._stage_test_data(test_def, history_id, galaxy_interactor)
         pre_job_ids = {j["id"] for j in dataset_populator.history_jobs_for_tool(history_id, tool_id)}
         self.tool_open_by_url(tool_id)
@@ -824,6 +825,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
         job: dict = {}
         filename_by_key: dict[str, str] = {}
         collection_keys: set[str] = set()
+        multi_job_keys: dict[str, list[str]] = {}
 
         def file_entry(filename: str) -> dict:
             entry: dict = {"class": "File", "path": filename}
@@ -849,9 +851,10 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 # Stage each file on its own. Passing the list through would build a
                 # collection, and a multiple="true" data param takes separate datasets.
                 for index, filename in enumerate(raw):
-                    job_key = f"{key}|{index}"
+                    job_key = f"{key}|multi|{index}"
                     job[job_key] = file_entry(filename)
                     filename_by_key[job_key] = filename
+                    multi_job_keys.setdefault(key, []).append(job_key)
 
         if not job:
             return {}, required_filenames, {}
@@ -866,13 +869,15 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
         dataset_id_to_hid = {ds["id"]: ds["hid"] for ds in datasets}
         hid_map: dict[str, int] = {}
+        hid_by_job_key: dict[str, int] = {}
         for key, ref in staged_job.items():
             if key in collection_keys:
                 continue
             filename = filename_by_key.get(key)
             if filename and ref.get("id") in dataset_id_to_hid:
                 hid_map[filename] = dataset_id_to_hid[ref["id"]]
-                self._staged_dataset_ids[filename] = ref["id"]
+                self._staged_dataset_ids.setdefault(filename, []).append(ref["id"])
+                hid_by_job_key[key] = dataset_id_to_hid[ref["id"]]
 
         collection_hid_map: dict[str, int] = {}
         if collection_keys:
@@ -882,6 +887,12 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 ref = staged_job.get(key, {})
                 if ref.get("id") in collection_id_to_hid:
                     collection_hid_map[key] = collection_id_to_hid[ref["id"]]
+
+        # The same file can be staged more than once; keep each copy for its position.
+        self._multi_hids = {
+            param: [(hid_by_job_key[k], filename_by_key[k]) for k in keys if k in hid_by_job_key]
+            for param, keys in multi_job_keys.items()
+        }
 
         for hid in hid_map.values():
             self.history_panel_wait_for_hid_ok(hid)
@@ -1072,14 +1083,19 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
     def _set_data_param(self, key: str, value, hid_map: dict):
         """Point a data parameter at the datasets its test case staged."""
-        filenames = list(value) if isinstance(value, list) else [value]
+        staged = self._multi_hids.get(key)
+        if staged is None:
+            filenames = list(value) if isinstance(value, list) else [value]
+            staged = []
+            for filename in filenames:
+                hid = hid_map.get(filename)
+                assert hid is not None, f"No staged file for data param {key}={filename}"
+                staged.append((hid, filename))
         is_multiple = self._is_multi_data_param(key)
-        assert is_multiple or len(filenames) == 1, f"Data param {key} takes one file, got {filenames}"
+        assert is_multiple or len(staged) == 1, f"Data param {key} takes one file, got {staged}"
         if is_multiple:
             self._clear_multiselect_tags(key)
-        for filename in filenames:
-            hid = hid_map.get(filename)
-            assert hid is not None, f"No staged file for data param {key}={filename}"
+        for hid, filename in staged:
             self.tool_set_value(key, f"{hid}: {filename}", expected_type="data", multiple=is_multiple)
 
     def _is_multi_data_param(self, expanded_id: str) -> bool:
@@ -1342,10 +1358,13 @@ class RunsToolTests(NavigatesGalaxyMixin):
         if cls._is_dataset_reference(expected):
             if not cls._is_dataset_reference(actual):
                 return [f"{here} (expected a dataset, got {actual!r})"]
-            # Hold the form to the dataset this file was staged as, where it is known.
+            # Hold the form to a dataset this file was staged as, where that is known.
+            # The same file can be staged more than once, and any copy will do.
             staged = (dataset_ids or {}).get(expected.get("path"))
-            if staged is not None and actual.get("id") != staged:
-                return [f"{here} (dataset {actual.get('id')!r}, not the staged {staged!r})"]
+            if isinstance(staged, str):
+                staged = [staged]
+            if staged and actual.get("id") not in staged:
+                return [f"{here} (dataset {actual.get('id')!r}, not one staged for this file)"]
             return []
         if isinstance(expected, dict):
             return cls._declared_mismatches(expected, actual, here, dataset_ids, select_labels)

@@ -82,15 +82,15 @@ def test_list_of_scalars_matches():
 def test_declared_file_matches_the_staged_dataset():
     declared = {"i": {"class": "File", "path": "a.bed"}}
     submitted = {"i": {"src": "hda", "id": "abc123"}}
-    assert declared_mismatches(declared, submitted, dataset_ids={"a.bed": "abc123"}) == []
+    assert declared_mismatches(declared, submitted, dataset_ids={"a.bed": ["abc123"]}) == []
 
 
 def test_declared_file_bound_to_the_wrong_dataset_is_reported():
     """A form that submits a dataset other than the one the test staged."""
     declared = {"i": {"class": "File", "path": "a.bed"}}
     submitted = {"i": {"src": "hda", "id": "def456"}}
-    mismatches = declared_mismatches(declared, submitted, dataset_ids={"a.bed": "abc123"})
-    assert mismatches == ["i (dataset 'def456', not the staged 'abc123')"]
+    mismatches = declared_mismatches(declared, submitted, dataset_ids={"a.bed": ["abc123"]})
+    assert mismatches == ["i (dataset 'def456', not one staged for this file)"]
 
 
 def test_unknown_staging_falls_back_to_shape():
@@ -103,8 +103,8 @@ def test_unknown_staging_falls_back_to_shape():
 def test_wrong_dataset_inside_a_repeat_is_reported():
     declared = {"q": [{"i": {"class": "File", "path": "b.bed"}}]}
     submitted = {"q": [{"i": {"src": "hda", "id": "zzz"}}]}
-    mismatches = declared_mismatches(declared, submitted, dataset_ids={"b.bed": "yyy"})
-    assert mismatches == ["q|0|i (dataset 'zzz', not the staged 'yyy')"]
+    mismatches = declared_mismatches(declared, submitted, dataset_ids={"b.bed": ["yyy"]})
+    assert mismatches == ["q|0|i (dataset 'zzz', not one staged for this file)"]
 
 
 def test_colour_hash_prefix_is_ignored():
@@ -132,3 +132,11 @@ def test_unrelated_select_value_is_still_reported():
     labels = {"s": {"hg19_value": "hg19_name"}}
     mismatches = declared_mismatches({"s": "mm10_name"}, {"s": "hg19_value"}, select_labels=labels)
     assert mismatches == ["s ('hg19_value' not 'mm10_name')"]
+
+
+def test_any_copy_of_a_file_staged_twice_matches():
+    """The same file staged twice gives two datasets; either satisfies the test."""
+    declared = {"i": {"class": "File", "path": "a.bed"}}
+    ids = {"a.bed": ["first", "second"]}
+    assert declared_mismatches(declared, {"i": {"src": "hda", "id": "first"}}, dataset_ids=ids) == []
+    assert declared_mismatches(declared, {"i": {"src": "hda", "id": "second"}}, dataset_ids=ids) == []
