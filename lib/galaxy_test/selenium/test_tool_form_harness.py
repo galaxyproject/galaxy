@@ -163,7 +163,7 @@ FORM_ONLY_TOOL_TESTS = _framework_tool_tests()
 # an entry that starts passing is reported as XPASS, which is the signal to delete it.
 # Empty the dict to see the raw state of the suite.
 KNOWN_FORM_FAILURES: dict[str, str] = {
-    "async_conditional_no_default_nested_data_0": "a repeat inside a conditional gets one instance too many",
+    "async_conditional_no_default_nested_data_0": "the repeat renders one instance more than the test declares",
     "collection_split_on_column_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
     "composite_pbed_0": "test data uses a datatype the instance does not know",
     "credentials_test_0": "the tool needs a credential this instance has none of",
@@ -176,7 +176,7 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "filter_param_value_ref_attribute_2": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
     "filter_param_value_ref_attribute_4": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
     "filter_param_value_ref_attribute_5": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
-    "format_source_in_conditional_1": "a data parameter nested two conditionals deep never renders",
+    "format_source_in_conditional_1": "a data parameter two conditionals deep never becomes clickable",
     "implicit_conversion_optional_param_0": "test data uses a datatype the instance does not know",
     "inheritance_simple_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
     "output_format_input_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
