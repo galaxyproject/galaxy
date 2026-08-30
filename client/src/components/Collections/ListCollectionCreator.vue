@@ -2,7 +2,6 @@
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
@@ -18,6 +17,7 @@ import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
 import HelpText from "../Help/HelpText.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
 
@@ -374,24 +374,24 @@ function selectionAsHdaSummary(value: any): HDASummary {
 <template>
     <div class="list-collection-creator">
         <div v-if="!showDuplicateError && state == 'error'">
-            <BAlert show variant="danger">
+            <GAlert show variant="danger">
                 {{ localize("There was a problem creating the collection.") }}
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else>
             <div v-if="fromSelection && returnInvalidElementsLength">
-                <BAlert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ localize("The following selections could not be included due to problems:") }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
                             {{ problem }}
                         </li>
                     </ul>
-                </BAlert>
+                </GAlert>
             </div>
 
             <div v-if="!atLeastOneElement">
-                <BAlert show variant="warning" dismissible @dismissed="atLeastOneElement = true">
+                <GAlert show variant="warning" dismissible @dismissed="atLeastOneElement = true">
                     {{ localize("At least one element is needed for the list.") }}
                     <span v-if="fromSelection">
                         <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
@@ -399,11 +399,11 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         </a>
                         {{ localize("and reselect new elements.") }}
                     </span>
-                </BAlert>
+                </GAlert>
             </div>
 
             <div v-if="showDuplicateError">
-                <BAlert show variant="danger">
+                <GAlert show variant="danger">
                     {{
                         localize("Collections cannot have duplicated names. The following list names are duplicated: ")
                     }}
@@ -411,7 +411,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         <li v-for="name in duplicateNames" :key="name">{{ name }}</li>
                     </ol>
                     {{ localize("Please fix these duplicates and try again.") }}
-                </BAlert>
+                </GAlert>
             </div>
 
             <CollectionCreator
@@ -538,26 +538,26 @@ function selectionAsHdaSummary(value: any): HDASummary {
                 </template>
 
                 <template v-slot:middle-content>
-                    <BAlert v-if="listHasMixedExtensions" show variant="warning" dismissible>
+                    <GAlert v-if="listHasMixedExtensions" show variant="warning" dismissible>
                         {{ localize("The selected datasets have mixed formats.") }}
                         {{ localize("You can still create the list but generally") }}
                         {{ localize("dataset lists should contain datasets of the same type.") }}
                         <HelpText
                             uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
                             :text="localize('Why?')" />
-                    </BAlert>
+                    </GAlert>
                     <div v-if="noInitialElements">
-                        <BAlert show variant="warning" dismissible>
+                        <GAlert show variant="warning" dismissible>
                             {{ localize("No datasets were selected") }}
                             {{ localize("At least one element is needed for the collection. You may need to") }}
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                                 {{ localize("cancel") }}
                             </a>
                             {{ localize("and reselect new elements, or upload datasets.") }}
-                        </BAlert>
+                        </GAlert>
                     </div>
                     <div v-else-if="allElementsAreInvalid">
-                        <BAlert v-if="!fromSelection" show variant="warning">
+                        <GAlert v-if="!fromSelection" show variant="warning">
                             {{
                                 localize(
                                     "No elements in your history are valid for this list. \
@@ -572,8 +572,8 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                     </li>
                                 </ul>
                             </div>
-                        </BAlert>
-                        <BAlert v-else show variant="warning" dismissible>
+                        </GAlert>
+                        <GAlert v-else show variant="warning" dismissible>
                             {{ localize("The following selections could not be included due to problems:") }}
                             <ul>
                                 <li v-for="problem in returnInvalidElements" :key="problem">
@@ -585,7 +585,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                 {{ localize("cancel") }}
                             </a>
                             {{ localize("and reselect new elements, or upload valid datasets.") }}
-                        </BAlert>
+                        </GAlert>
                     </div>
                     <div v-else-if="fromSelection">
                         <div class="collection-elements-controls">
@@ -649,13 +649,13 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         </div>
 
                         <div v-if="noMoreValidDatasets">
-                            <BAlert show variant="warning">
+                            <GAlert show variant="warning">
                                 {{ localize("No elements left. Would you like to") }}
                                 <a class="reset-text" href="javascript:void(0)" role="button" @click="reset">
                                     {{ localize("start over") }}
                                 </a>
                                 ?
-                            </BAlert>
+                            </GAlert>
                         </div>
 
                         <draggable

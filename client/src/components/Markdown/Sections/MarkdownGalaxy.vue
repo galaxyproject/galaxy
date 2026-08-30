@@ -1,5 +1,5 @@
 <script setup>
-import { BAlert, BLink } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
@@ -33,6 +33,7 @@ import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 import VisualizationWrapper from "./VisualizationWrapper.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowInvocationInputs from "@/components/WorkflowInvocationState/WorkflowInvocationInputs.vue";
@@ -117,21 +118,21 @@ watch(
 </script>
 
 <template>
-    <BAlert v-if="error" v-localize variant="danger" class="m-0" show>
+    <GAlert v-if="error" v-localize variant="danger" class="m-0" show>
         {{ error }}
-    </BAlert>
-    <BAlert v-else-if="invocationLoadError" v-localize variant="danger" class="m-0" show>
+    </GAlert>
+    <GAlert v-else-if="invocationLoadError" v-localize variant="danger" class="m-0" show>
         {{ invocationLoadError }}
-    </BAlert>
-    <BAlert v-else-if="!hasValidName(name)" v-localize variant="danger" class="m-0" show>
+    </GAlert>
+    <GAlert v-else-if="!hasValidName(name)" v-localize variant="danger" class="m-0" show>
         <span v-localize>Invalid component type </span>
         <b>{{ name }}</b>
-    </BAlert>
-    <BAlert v-else-if="!hasValidLabel(name, args, labels)" v-localize variant="danger" class="m-0" show>
+    </GAlert>
+    <GAlert v-else-if="!hasValidLabel(name, args, labels)" v-localize variant="danger" class="m-0" show>
         <span v-localize>Invalid or missing label for</span>
         <b>{{ name }}</b>
-    </BAlert>
-    <BAlert
+    </GAlert>
+    <GAlert
         v-else-if="hasLabels && !invocationId && getRequiredObject(name)"
         v-localize
         variant="info"
@@ -139,14 +140,14 @@ watch(
         show>
         <span v-localize>Data for rendering not yet available for</span>
         <b>{{ name }}</b>
-    </BAlert>
+    </GAlert>
     <LoadingSpan v-else-if="isLoading" />
-    <BAlert v-else-if="!hasValidObject(name, args)" v-localize variant="warning" class="m-0" show>
+    <GAlert v-else-if="!hasValidObject(name, args)" v-localize variant="warning" class="m-0" show>
         <span v-localize>Missing</span>
         <b>{{ getRequiredObject(name) }}</b>
         <span v-localize>for</span>
         <b>{{ name }}</b>
-    </BAlert>
+    </GAlert>
     <div v-else>
         <BLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}

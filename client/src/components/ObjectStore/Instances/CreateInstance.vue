@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
@@ -10,6 +9,7 @@ import { useInstanceRouting } from "./routing";
 import type { UserConcreteObjectStore } from "./types";
 
 import CreateForm from "./CreateForm.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -48,9 +48,9 @@ async function onCreated(objectStore: UserConcreteObjectStore) {
             <BreadcrumbHeading :items="breadcrumbItems" />
         </div>
 
-        <BAlert v-if="!template" variant="info" show>
+        <GAlert v-if="!template" variant="info" show>
             <LoadingSpan :message="localize('Loading Galaxy storage options')" />
-        </BAlert>
+        </GAlert>
         <CreateForm v-else :template="template" @created="onCreated"></CreateForm>
     </div>
 </template>

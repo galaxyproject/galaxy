@@ -33,7 +33,6 @@ function mountTarget() {
             FontAwesomeIcon: true,
             FormSelection: true,
             BButton: true,
-            BAlert: true,
         },
         directives: {
             localize: () => {},
@@ -53,7 +52,7 @@ describe("RoleForm.vue", () => {
         server.use(http.get("/api/groups", ({ response }) => response(500).json({ err_msg: "Groups failed" })));
         const wrapper = mountTarget();
         await flushPromises();
-        const alert = wrapper.findComponent({ name: "BAlert" });
+        const alert = wrapper.find(".alert");
         expect(alert.exists()).toBe(true);
         expect(alert.text()).toContain("Groups failed");
     });
@@ -63,7 +62,7 @@ describe("RoleForm.vue", () => {
         server.use(http.get("/api/roles", ({ response }) => response(500).json({ err_msg: "Roles failed" })));
         const wrapper = mountTarget();
         await flushPromises();
-        const alert = wrapper.findComponent({ name: "BAlert" });
+        const alert = wrapper.find(".alert");
         expect(alert.exists()).toBe(true);
         expect(alert.text()).toContain("Roles failed");
     });
@@ -75,7 +74,7 @@ describe("RoleForm.vue", () => {
         await flushPromises();
         await wrapper.find("#role-submit").trigger("click");
         await flushPromises();
-        const alert = wrapper.findComponent({ name: "BAlert" });
+        const alert = wrapper.find(".alert");
         expect(alert.exists()).toBe(true);
         expect(alert.text()).toContain("Please complete all required inputs.");
     });
@@ -114,7 +113,7 @@ describe("RoleForm.vue", () => {
         await wrapper.find("#role-description").setValue("Bad Description");
         await wrapper.find("#role-submit").trigger("click");
         await flushPromises();
-        const alert = wrapper.findComponent({ name: "BAlert" });
+        const alert = wrapper.find(".alert");
         expect(alert.exists()).toBe(true);
         expect(alert.text()).toContain("Failed to create role");
     });

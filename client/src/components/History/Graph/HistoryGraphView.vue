@@ -9,7 +9,7 @@ import {
     faMap,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BNav, BNavItem } from "bootstrap-vue";
+import { BNav, BNavItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, toRef, watch } from "vue";
 
@@ -21,6 +21,7 @@ import { useHistoryGraph } from "./useHistoryGraph";
 import HistoryGraphOverview from "./HistoryGraphOverview.vue";
 import HistoryGraphReport from "./HistoryGraphReport.vue";
 import HistoryGraphToolExecutions from "./HistoryGraphToolExecutions.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import NavigationTitle from "@/components/Common/NavigationTitle.vue";
 import HistoryDatasetsBadge from "@/components/History/HistoryDatasetsBadge.vue";
@@ -86,15 +87,15 @@ watch(activeTab, (val) => {
 
 <template>
     <div class="history-graph-view">
-        <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
+        <GAlert v-if="error" variant="danger" show>{{ error }}</GAlert>
         <LoadingSpan v-else-if="loading" message="Loading history graph" />
-        <BAlert v-else-if="graphNodes.length === 0" show variant="info" class="m-3">
+        <GAlert v-else-if="graphNodes.length === 0" show variant="info" class="m-3">
             This history is empty. Add datasets or run tools to populate it.
-        </BAlert>
-        <BAlert v-else-if="toolExecutionNodes.length === 0" show variant="info" class="m-3">
+        </GAlert>
+        <GAlert v-else-if="toolExecutionNodes.length === 0" show variant="info" class="m-3">
             No History Graph available. Please ensure that the History contains tool executions, and note that Galaxy
             started capturing the required tool execution data with release 26.1.
-        </BAlert>
+        </GAlert>
         <template v-else>
             <NavigationTitle
                 :icon="faBezierCurve"
@@ -138,14 +139,14 @@ watch(activeTab, (val) => {
                 </template>
             </NavigationTitle>
 
-            <BAlert
+            <GAlert
                 v-if="isTruncated && toolExecutionNodes.length > 0"
                 show
                 variant="warning"
                 class="mt-2 mb-0 py-1 flex-shrink-0">
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="mr-1" />
                 Only considering first {{ toolExecutionNodes.length }} executions.
-            </BAlert>
+            </GAlert>
 
             <BNav pills class="mb-2 mt-2 p-2 bg-light border-bottom">
                 <BNavItem

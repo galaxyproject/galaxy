@@ -2,7 +2,7 @@
 import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useIntersectionObserver } from "@vueuse/core";
-import { BAlert, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import {
@@ -37,6 +37,7 @@ import FormSelectionPreference from "../FormSelectionPreference.vue";
 import FormDataContextButtons from "./FormDataContextButtons.vue";
 import FormDataExtensions from "./FormDataExtensions.vue";
 import FormDataWorkflowRunTabs from "./FormDataWorkflowRunTabs.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
@@ -1162,9 +1163,9 @@ const noOptionsWarningMessage = computed(() => {
                     :placeholder="`Select a ${placeholder}`"
                     @search-change="onSearchChange">
                     <template v-slot:no-options>
-                        <BAlert class="form-data-no-options-alert" variant="warning" show>
+                        <GAlert class="form-data-no-options-alert" variant="warning" show>
                             {{ noOptionsWarningMessage }}
-                        </BAlert>
+                        </GAlert>
                     </template>
                     <template v-if="hasMoreInCurrentSource" v-slot:after-list>
                         <div ref="loadMoreSentinel" class="form-data-load-more-sentinel text-muted text-center py-2">
@@ -1188,9 +1189,9 @@ const noOptionsWarningMessage = computed(() => {
                     @preference-change="onPreferenceChange"
                     @search-change="onSearchChange">
                     <template v-slot:no-options>
-                        <BAlert class="form-data-no-options-alert" variant="warning" show>
+                        <GAlert class="form-data-no-options-alert" variant="warning" show>
                             {{ noOptionsWarningMessage }}
-                        </BAlert>
+                        </GAlert>
                     </template>
                     <template v-if="hasMoreInCurrentSource" v-slot:after-list>
                         <div ref="loadMoreSentinel" class="form-data-load-more-sentinel text-muted text-center py-2">

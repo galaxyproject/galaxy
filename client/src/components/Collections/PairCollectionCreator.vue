@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faArrowsAltV } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { CollectionElementIdentifiers, CreateNewCollectionPayload, HDASummary, HistoryItemSummary } from "@/api";
@@ -18,6 +17,7 @@ import DelayedInput from "../Common/DelayedInput.vue";
 import HelpText from "../Help/HelpText.vue";
 import FixedIdentifierDatasetCollectionElementView from "./FixedIdentifierDatasetCollectionElementView.vue";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
 const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
@@ -299,20 +299,20 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
 <template>
     <div class="pair-collection-creator">
         <div v-if="state == 'error'">
-            <BAlert show variant="danger">
+            <GAlert show variant="danger">
                 {{ localize("Galaxy could not be reached and may be updating.  Try again in a few minutes.") }}
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else>
             <div v-if="fromSelection && invalidElements.length">
-                <BAlert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ localize("The following selections could not be included due to problems:") }}
                     <ul>
                         <li v-for="problem in invalidElements" :key="problem">
                             {{ problem }}
                         </li>
                     </ul>
-                </BAlert>
+                </GAlert>
             </div>
 
             <CollectionCreator
@@ -385,17 +385,17 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
 
                 <template v-slot:middle-content>
                     <div v-if="noElementsSelected">
-                        <BAlert show variant="warning" dismissible>
+                        <GAlert show variant="warning" dismissible>
                             {{ localize("No datasets were selected.") }}
                             {{ localize("Exactly two elements needed for the collection. You may need to") }}
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                                 {{ localize("cancel") }}
                             </a>
                             {{ localize("and reselect new elements, or upload datasets.") }}
-                        </BAlert>
+                        </GAlert>
                     </div>
                     <div v-else-if="allElementsAreInvalid">
-                        <BAlert v-if="!fromSelection" show variant="warning">
+                        <GAlert v-if="!fromSelection" show variant="warning">
                             {{
                                 localize(
                                     "No elements in your history are valid for this pair. \
@@ -410,8 +410,8 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                                     </li>
                                 </ul>
                             </div>
-                        </BAlert>
-                        <BAlert v-else show variant="warning" dismissible>
+                        </GAlert>
+                        <GAlert v-else show variant="warning" dismissible>
                             {{ localize("The following selections could not be included due to problems:") }}
                             <ul>
                                 <li v-for="problem in invalidElements" :key="problem">
@@ -423,7 +423,7 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                                 {{ localize("cancel") }}
                             </a>
                             {{ localize("and reselect new elements, or upload datasets.") }}
-                        </BAlert>
+                        </GAlert>
                     </div>
                     <div v-else>
                         <div class="collection-elements-controls flex-gapx-1">
@@ -439,7 +439,7 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                                 </GButton>
                             </div>
                             <div class="flex-grow-1">
-                                <BAlert v-if="!exactlyTwoValidElements" show variant="warning">
+                                <GAlert v-if="!exactlyTwoValidElements" show variant="warning">
                                     {{ localize("Exactly two elements are needed for the pair.") }}
                                     <span v-if="fromSelection">
                                         <a
@@ -451,19 +451,19 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                                         </a>
                                         {{ localize("and reselect new elements.") }}
                                     </span>
-                                </BAlert>
-                                <BAlert v-else-if="pairHasMixedExtensions" show variant="warning">
+                                </GAlert>
+                                <GAlert v-else-if="pairHasMixedExtensions" show variant="warning">
                                     {{ localize("The selected datasets have mixed formats.") }}
                                     {{ localize("You can still create the pair but generally") }}
                                     {{ localize("dataset pairs should contain datasets of the same type.") }}
                                     <HelpText
                                         uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
                                         :text="localize('Why?')" />
-                                </BAlert>
-                                <BAlert v-else show variant="success">
+                                </GAlert>
+                                <GAlert v-else show variant="success">
                                     {{ localize("The Dataset Pair is ready to be created.") }}
                                     {{ localize("Provide a name and click the button below to create the pair.") }}
-                                </BAlert>
+                                </GAlert>
                             </div>
                         </div>
 
@@ -507,9 +507,9 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                                         @onRename="(name) => (element.name = name)" />
                                 </div>
                             </div>
-                            <BAlert v-else show variant="info">
+                            <GAlert v-else show variant="info">
                                 {{ localize(`No datasets found${filterText ? " matching '" + filterText + "'" : ""}`) }}
-                            </BAlert>
+                            </GAlert>
                         </div>
                     </div>
                 </template>

@@ -32,9 +32,9 @@
                     </tr>
                 </tbody>
             </table>
-            <b-alert :show="hasParameterErrors" variant="danger">
+            <GAlert :show="hasParameterErrors" variant="danger">
                 One or more of your original parameters may no longer be valid or displayed properly.
-            </b-alert>
+            </GAlert>
         </div>
         <div v-if="isSingleParam" id="single-param">
             <div v-if="Array.isArray(singleParam)">
@@ -63,11 +63,13 @@ import Heading from "../Common/Heading.vue";
 import JobOutputs from "../JobInformation/JobOutputs.vue";
 import DataFetchRequestParameter from "./DataFetchRequestParameter.vue";
 import JobParametersArrayValue from "./JobParametersArrayValue.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         DataFetchRequestParameter,
         Heading,
         JobOutputs,

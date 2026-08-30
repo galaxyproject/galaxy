@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -13,6 +13,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import EmailReportForm from "../Common/EmailReportForm.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DatasetErrorDetails from "@/components/DatasetInformation/DatasetErrorDetails.vue";
 import GalaxyWizard from "@/components/GalaxyWizard.vue";
 
@@ -126,14 +127,14 @@ onMounted(async () => {
 
 <template>
     <div>
-        <BAlert v-if="errorMessage" variant="danger" show>
+        <GAlert v-if="errorMessage" variant="danger" show>
             <h2 class="alert-heading h-sm">Failed to access Dataset details.</h2>
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="datasetLoading || jobLoading" variant="info" show>
+        <GAlert v-if="datasetLoading || jobLoading" variant="info" show>
             <LoadingSpan :message="localize('Loading dataset error details')" />
-        </BAlert>
+        </GAlert>
 
         <div v-else-if="!datasetLoading && !jobLoading && dataset && jobDetails">
             <div class="page-container edit-attr">

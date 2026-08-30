@@ -1,5 +1,5 @@
 <template>
-    <BAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</BAlert>
+    <GAlert v-if="errorMessage" variant="warning" show>{{ errorMessage }}</GAlert>
     <div v-else class="p-2">
         <ConfigureHeader :has-changed="hasChanged" @ok="onOk" @cancel="$emit('cancel')" />
         <div v-if="urlReferences.length > 0">
@@ -11,7 +11,7 @@
                     @change="onChange(ref.keyPath, $event)" />
             </div>
         </div>
-        <BAlert v-else variant="warning" show>No URL-like fields found.</BAlert>
+        <GAlert v-else variant="warning" show>No URL-like fields found.</GAlert>
         <FormElementLabel title="Height" help="Specify the height of the view in pixels.">
             <FormNumber id="vitessce-height" v-model="height" :min="100" :max="1000" type="integer" @input="onHeight" />
         </FormElementLabel>
@@ -19,7 +19,6 @@
 </template>
 
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { type Ref, ref, watch } from "vue";
 
 import { stringify } from "@/components/Markdown/Utilities/stringify";
@@ -28,6 +27,7 @@ import { getAppRoot } from "@/onload";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import FormNumber from "@/components/Form/Elements/FormNumber.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
 

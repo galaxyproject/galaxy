@@ -1,21 +1,13 @@
 <script setup lang="ts">
 import axios from "axios";
-import {
-    BAlert,
-    BButton,
-    BCard,
-    BCardBody,
-    BCardFooter,
-    BEmbed,
-    BForm,
-    BFormCheckbox,
-    BFormGroup,
-} from "bootstrap-vue";
+import { BButton, BCard, BCardBody, BCardFooter, BEmbed, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     termsUrl?: string;
@@ -69,13 +61,13 @@ async function submit() {
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
-                <BAlert :show="!!registrationWarningMessage" variant="info">
+                <GAlert :show="!!registrationWarningMessage" variant="info">
                     {{ registrationWarningMessage }}
-                </BAlert>
+                </GAlert>
 
-                <BAlert :show="!!messageText" :variant="messageVariant">
+                <GAlert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
-                </BAlert>
+                </GAlert>
 
                 <BForm id="confirmation" @submit.prevent="submit()">
                     <BCard no-body header="Confirm new account creation">

@@ -98,7 +98,7 @@
                     :spin="invocationStep.headerIconSpin" />
             </span>
         </div>
-        <b-alert
+        <GAlert
             v-if="!!errors"
             variant="danger"
             show
@@ -108,7 +108,7 @@
             @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected">
             {{ errors }}
-        </b-alert>
+        </GAlert>
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             v-else
@@ -188,6 +188,7 @@ import { isWorkflowInput } from "../constants";
 import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";

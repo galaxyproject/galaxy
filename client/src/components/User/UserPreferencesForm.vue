@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watchEffect } from "vue";
 
@@ -11,6 +10,7 @@ import {
 } from "@/components/User/UserPreferencesModel";
 import { useUserStore } from "@/stores/userStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -57,9 +57,9 @@ watchEffect(() => {
         <BreadcrumbHeading :items="breadcrumbItems" />
 
         <FormGeneric v-if="formConfig" v-bind="formConfig" :trim-inputs="true" />
-        <BAlert v-else-if="!loading" show variant="danger"> User preferences not found. </BAlert>
-        <BAlert v-else-if="loading" show>
+        <GAlert v-else-if="!loading" show variant="danger"> User preferences not found. </GAlert>
+        <GAlert v-else-if="loading" show>
             <LoadingSpan message="Loading user preferences" />
-        </BAlert>
+        </GAlert>
     </div>
 </template>

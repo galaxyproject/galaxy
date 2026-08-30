@@ -6,6 +6,7 @@ import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
@@ -72,12 +73,12 @@ watch(
 </script>
 
 <template>
-    <b-alert v-if="!isEmpty(errorContent)" variant="warning" show>
+    <GAlert v-if="!isEmpty(errorContent)" variant="warning" show>
         <ul v-if="typeof errorContent === 'object'" class="my-2">
             <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">{{ errorKey }}: {{ errorValue }}</li>
         </ul>
         <div v-else>{{ errorContent }}</div>
-    </b-alert>
+    </GAlert>
     <b-card v-else body-class="p-0" class="workflow-display">
         <b-card-header v-if="!embedded">
             <span class="float-right">

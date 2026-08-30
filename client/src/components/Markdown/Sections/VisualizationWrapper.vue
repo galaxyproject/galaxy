@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { faExpand, faWindowMaximize } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 
 interface Props {
@@ -33,7 +34,7 @@ const fixedHeight = computed(() =>
 
 <template>
     <div v-if="errorMessage">
-        <BAlert variant="danger" show>{{ errorMessage }}</BAlert>
+        <GAlert variant="danger" show>{{ errorMessage }}</GAlert>
     </div>
     <div v-else class="position-relative h-100">
         <div :class="`visualization-pop${expand ? 'out' : 'in'}`">

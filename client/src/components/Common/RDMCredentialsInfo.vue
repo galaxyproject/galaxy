@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { RouterLink } from "vue-router";
 
 import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     selectedRepository?: BrowsableFilesSourcePlugin;
@@ -18,7 +19,7 @@ const repositoryName = props.selectedRepository?.label ?? "the selected reposito
 </script>
 
 <template>
-    <BAlert show variant="info">
+    <GAlert show variant="info">
         If you haven't done it yet, you may need to setup your credentials for {{ repositoryName }}
 
         <span v-if="isPrivateFileSource && selectedRepository">
@@ -35,5 +36,5 @@ const repositoryName = props.selectedRepository?.label ?? "the selected reposito
         </span>
         to be able to export. You can also define some default options for the export in those settings, like the public
         name you want to associate with your records.
-    </BAlert>
+    </GAlert>
 </template>

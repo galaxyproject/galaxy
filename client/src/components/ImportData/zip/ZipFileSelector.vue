@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -7,6 +7,7 @@ import { usePagination } from "@/composables/pagination";
 import type { ArchiveSource, ImportableFile, ImportableZipContents } from "@/composables/zipExplorer";
 import { useUserStore } from "@/stores/userStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
@@ -157,7 +158,7 @@ function onSearch(value: string) {
         <div v-if="paginatedWorkflows.length > 0" class="d-flex flex-column w-100">
             <Heading h3 separator> Workflows </Heading>
 
-            <BAlert v-if="isAnonymous" variant="warning" show fade>You must be logged in to import workflows</BAlert>
+            <GAlert v-if="isAnonymous" variant="warning" show fade>You must be logged in to import workflows</GAlert>
             <p>Here you can select workflows compatible with Galaxy and import them into your account.</p>
 
             <div class="d-flex flex-wrap">
@@ -188,9 +189,9 @@ function onSearch(value: string) {
             </div>
         </div>
 
-        <BAlert v-if="searchQuery && filteredWorkflows.length === 0 && filteredFiles.length === 0" variant="info" show>
+        <GAlert v-if="searchQuery && filteredWorkflows.length === 0 && filteredFiles.length === 0" variant="info" show>
             No files found matching "{{ searchQuery }}". Try a different search term.
-        </BAlert>
+        </GAlert>
 
         <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
             <BPagination

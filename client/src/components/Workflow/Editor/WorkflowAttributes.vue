@@ -1,8 +1,8 @@
 <template>
     <ActivityPanel id="edit-attributes" title="Attributes" itemscope itemtype="http://schema.org/CreativeWork">
-        <b-alert :variant="messageVariant" :show="!!message">
+        <GAlert :variant="messageVariant" :show="!!message">
             {{ message }}
-        </b-alert>
+        </GAlert>
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
@@ -165,6 +165,7 @@ import {
 import { UntypedParameters } from "./modules/parameters";
 
 import WorkflowVersionSelector from "../WorkflowVersionSelector.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import ItemListEditor from "@/components/Common/ItemListEditor.vue";
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
@@ -177,6 +178,7 @@ const BEST_PRACTICE_HIGHLIGHT_TIME = 4000;
 export default {
     name: "WorkflowAttributes",
     components: {
+        GAlert,
         StatelessTags,
         LicenseSelector,
         CreatorEditor,

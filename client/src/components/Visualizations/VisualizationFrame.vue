@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert } from "bootstrap-vue";
 import { debounce } from "lodash";
 import { onMounted, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const DELAY = 300;
 
@@ -94,7 +95,7 @@ onMounted(() => render());
 
 <template>
     <div v-if="errorMessage">
-        <BAlert variant="danger" show>{{ errorMessage }}</BAlert>
+        <GAlert variant="danger" show>{{ errorMessage }}</GAlert>
     </div>
     <iframe
         v-else

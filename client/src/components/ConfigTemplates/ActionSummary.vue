@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { BAlert, BButton } from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import { ref } from "vue";
 
 import type { PluginStatus } from "@/api/configTemplates";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ConfigurationTestSummaryModal from "@/components/ConfigTemplates/ConfigurationTestSummaryModal.vue";
 
 interface Props {
@@ -19,11 +20,11 @@ defineProps<Props>();
 <template>
     <div>
         <ConfigurationTestSummaryModal v-model="showTestResults" :test-results="testResults" />
-        <BAlert v-if="error" variant="danger" class="configuration-instance-error" show>
+        <GAlert v-if="error" variant="danger" class="configuration-instance-error" show>
             <span :data-description="errorDataDescription">
                 {{ error }}
             </span>
             <BButton variant="link" @click="showTestResults = true">View configuration test status.</BButton>
-        </BAlert>
+        </GAlert>
     </div>
 </template>

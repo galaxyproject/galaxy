@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BBadge } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -16,6 +16,7 @@ import ActivityPanel from "./ActivityPanel.vue";
 import FavoritesButton from "./Buttons/FavoritesButton.vue";
 import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const toolStore = useToolStore();
 
@@ -124,9 +125,9 @@ initializePanel();
             :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool" />
         <div v-else-if="errorMessage" data-description="tool panel error message">
-            <BAlert class="m-2" variant="danger" show>
+            <GAlert class="m-2" variant="danger" show>
                 {{ errorMessage }}
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else>
             <BBadge class="alert-info w-100">
@@ -134,9 +135,9 @@ initializePanel();
             </BBadge>
         </div>
     </ActivityPanel>
-    <BAlert v-else-if="currentToolSections" class="m-2" variant="info" show>
+    <GAlert v-else-if="currentToolSections" class="m-2" variant="info" show>
         <LoadingSpan message="Loading Toolbox" />
-    </BAlert>
+    </GAlert>
 </template>
 
 <style lang="scss" scoped>

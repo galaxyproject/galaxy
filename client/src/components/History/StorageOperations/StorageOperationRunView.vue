@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BBadge, BPagination } from "bootstrap-vue";
+import { BBadge, BPagination } from "bootstrap-vue";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import {
@@ -16,6 +16,7 @@ import localize from "@/utils/localization";
 import { getIneligibleReasonDescription, toTrackedStorageRun } from "@/utils/storageOperations";
 import { bytesToString } from "@/utils/utils";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DatasetPopoverLink from "@/components/Common/DatasetPopoverLink.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
@@ -206,7 +207,7 @@ onBeforeUnmount(() => {
         <LoadingSpan v-if="!run" :message="localize('Loading storage operation run status')" />
 
         <template v-else>
-            <BAlert show variant="secondary">
+            <GAlert show variant="secondary">
                 <div class="d-flex align-items-center flex-wrap">
                     <strong class="mr-2">{{ localize("State:") }}</strong>
                     <StorageOperationRunStateBadge
@@ -221,7 +222,7 @@ onBeforeUnmount(() => {
                         <strong>{{ localize("Target store:") }}</strong> {{ targetStoreDisplayName }}
                     </span>
                 </div>
-            </BAlert>
+            </GAlert>
 
             <div class="mb-3">
                 <strong>{{ localize("Total:") }}</strong> {{ run.total_count }}
@@ -244,9 +245,9 @@ onBeforeUnmount(() => {
                     height-class="storage-operation-progress-md" />
             </div>
 
-            <BAlert v-if="!isTerminal" show variant="info">
+            <GAlert v-if="!isTerminal" show variant="info">
                 {{ localize("This run is still in progress. Status is updated automatically.") }}
-            </BAlert>
+            </GAlert>
 
             <div class="mt-3">
                 <Heading h3 size="sm">{{ localize("Failed or Skipped Items") }}</Heading>

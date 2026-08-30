@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheckDouble } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -9,6 +9,7 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import localize from "@/utils/localization";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -61,13 +62,13 @@ async function onMarkAllAsRead() {
             </div>
         </template>
 
-        <BAlert v-if="loadingNotifications" key="loading-notifications" show>
+        <GAlert v-if="loadingNotifications" key="loading-notifications" show>
             <LoadingSpan message="Loading notifications" />
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-else-if="!unreadNotifications.length" key="no-notifications-message" show>
+        <GAlert v-else-if="!unreadNotifications.length" key="no-notifications-message" show>
             No unread notifications to show.
-        </BAlert>
+        </GAlert>
 
         <TransitionGroup class="notifications-box-list" name="notifications-box-list" tag="div">
             <NotificationCard

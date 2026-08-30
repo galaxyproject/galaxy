@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCopy, faSpinner, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -21,6 +20,7 @@ import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
 import PageRevisionList from "./PageRevisionList.vue";
 import PageRevisionView from "./PageRevisionView.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 
 const props = defineProps<{
@@ -209,14 +209,14 @@ function handleRevisionRestore(revisionId: string) {
 
 <template>
     <div class="page-editor-view d-flex flex-column h-100" data-description="page editor view">
-        <BAlert v-if="store.error" variant="danger" show dismissible @dismissed="store.error = null">
+        <GAlert v-if="store.error" variant="danger" show dismissible @dismissed="store.error = null">
             {{ store.error }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="store.isLoadingPage && !store.hasCurrentPage" variant="info" show>
+        <GAlert v-if="store.isLoadingPage && !store.hasCurrentPage" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
             Loading page...
-        </BAlert>
+        </GAlert>
 
         <!-- Display-only mode: rendered view -->
         <PageDisplayOnly

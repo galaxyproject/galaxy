@@ -1,7 +1,7 @@
 <template>
-    <b-alert v-if="!!errorText" variant="warning" show>
+    <GAlert v-if="!!errorText" variant="warning" show>
         {{ errorText }}
-    </b-alert>
+    </GAlert>
     <b-card v-else body-class="p-0">
         <b-card-header>
             <span class="float-right">
@@ -37,9 +37,9 @@
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Collection" />
             <div v-else class="content-height">
-                <b-alert v-if="!!messageText" :variant="messageVariant" show>
+                <GAlert v-if="!!messageText" :variant="messageVariant" show>
                     {{ messageText }}
-                </b-alert>
+                </GAlert>
                 <CollectionTree :node="itemContent" :skip-head="true" />
             </div>
         </b-card-body>
@@ -56,6 +56,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import CollectionTree from "./CollectionTree.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{

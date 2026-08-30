@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faFilter, faSortAlphaDown, faSortAlphaUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BDropdown, BDropdownItem } from "bootstrap-vue";
+import { BBadge, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { type ToolSection, useToolStore } from "@/stores/toolStore";
@@ -12,6 +12,7 @@ import { searchSections } from "../Panels/utilities";
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GLink from "../BaseComponents/GLink.vue";
 import ToolOntologyCard from "./ToolOntologyCard.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import HelpText from "@/components/Help/HelpText.vue";
@@ -212,9 +213,9 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
             </div>
         </div>
 
-        <BAlert v-if="errorMessage" show variant="danger">
+        <GAlert v-if="errorMessage" show variant="danger">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
         <div class="d-flex flex-column overflow-auto h-100">
             <ScrollList

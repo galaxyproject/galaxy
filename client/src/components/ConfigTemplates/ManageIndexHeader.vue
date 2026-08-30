@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import localize from "@/utils/localization";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
@@ -40,8 +40,8 @@ const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user"
             </div>
         </BreadcrumbHeading>
 
-        <BAlert v-if="message" show dismissible>
+        <GAlert v-if="message" show dismissible>
             {{ message || "" }}
-        </BAlert>
+        </GAlert>
     </div>
 </template>

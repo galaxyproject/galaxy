@@ -1,9 +1,9 @@
 <template>
     <div aria-labelledby="jobs-title">
         <h1 id="jobs-title" class="h-lg">Jobs</h1>
-        <b-alert v-if="message" :variant="status" show>
+        <GAlert v-if="message" :variant="status" show>
             {{ message }}
-        </b-alert>
+        </GAlert>
         <Heading h2 size="md" separator>Job Lock</Heading>
         <JobLock />
         <Heading h2 size="md" separator>Job Overview</Heading>
@@ -180,11 +180,18 @@ import { commonJobFields } from "./JobFields";
 
 import JobLock from "./JobLock.vue";
 import JobsTable from "@/components/admin/JobsTable.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 export default {
-    components: { FilterMenu, JobLock, JobsTable, Heading },
+    components: {
+        GAlert,
+        FilterMenu,
+        JobLock,
+        JobsTable,
+        Heading,
+    },
     setup() {
         const filter = ref("");
         const showAdvanced = ref(false);

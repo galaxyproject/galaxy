@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { AxiosError } from "axios";
-import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import type { components } from "@/api/schema";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
 type HistoryContentBulkOperationResult = components["schemas"]["HistoryContentBulkOperationResult"];
@@ -66,11 +66,11 @@ function onHide() {
 
 <template>
     <GModal :show="show" :title="title" @close="onHide">
-        <BAlert v-if="isPartialSuccess" show variant="warning">
+        <GAlert v-if="isPartialSuccess" show variant="warning">
             <strong>{{ success_count }}</strong> items were processed successfully, unfortunately,
             <strong>{{ error_count }}</strong> items failed because of the following reasons:
-        </BAlert>
-        <BAlert v-else show variant="danger">The operation failed for the following reasons:</BAlert>
+        </GAlert>
+        <GAlert v-else show variant="danger">The operation failed for the following reasons:</GAlert>
 
         <div>
             <ul v-if="errorMessage">

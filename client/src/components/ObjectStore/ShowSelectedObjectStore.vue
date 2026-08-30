@@ -7,6 +7,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { ConcreteObjectStoreModel } from "./types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 
@@ -47,6 +48,6 @@ const loadingMessage = localize("Loading Galaxy storage details");
         <LoadingSpan v-if="loading" :message="loadingMessage" />
         <DescribeObjectStore v-else-if="objectStore != null" :what="forWhat" :storage-info="objectStore">
         </DescribeObjectStore>
-        <b-alert v-else-if="error" show variant="danger">{{ error }}</b-alert>
+        <GAlert v-else-if="error" show variant="danger">{{ error }}</GAlert>
     </div>
 </template>

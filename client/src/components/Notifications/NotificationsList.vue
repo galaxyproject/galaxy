@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { faCheck, faCog, faRetweet, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
+import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import type { UserNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -95,13 +96,13 @@ function togglePreferences() {
             </div>
         </GCollapse>
 
-        <BAlert v-if="loadingNotifications" show>
+        <GAlert v-if="loadingNotifications" show>
             <LoadingSpan message="Loading notifications" />
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-else-if="notifications.length === 0" id="no-notifications" show variant="info">
+        <GAlert v-else-if="notifications.length === 0" id="no-notifications" show variant="info">
             No notifications to show.
-        </BAlert>
+        </GAlert>
 
         <div v-else class="notifications-list-body">
             <div class="notifications-list-filter card-container">
@@ -158,9 +159,9 @@ function togglePreferences() {
                 </div>
             </div>
 
-            <BAlert v-show="filteredNotifications.length === 0" show variant="info">
+            <GAlert v-show="filteredNotifications.length === 0" show variant="info">
                 No matching notifications with current filters.
-            </BAlert>
+            </GAlert>
 
             <TransitionGroup
                 v-show="filteredNotifications.length > 0"

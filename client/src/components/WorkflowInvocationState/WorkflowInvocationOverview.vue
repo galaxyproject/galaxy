@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -11,6 +10,7 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import InvocationGraph from "../Workflow/Invocation/Graph/InvocationGraph.vue";
 import SubworkflowAlert from "./SubworkflowAlert.vue";
 import WorkflowInvocationError from "./WorkflowInvocationError.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -66,12 +66,12 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
                 @view-subworkflow-invocation="showSubworkflowInvocation" />
         </div>
         <!-- Once the workflow for the invocation and step job summaries are loaded, display the graph -->
-        <BAlert v-if="loading || !props.stepsJobsSummary" variant="info" show>
+        <GAlert v-if="loading || !props.stepsJobsSummary" variant="info" show>
             <LoadingSpan message="Loading workflow..." />
-        </BAlert>
-        <BAlert v-else-if="error" variant="danger" show>
+        </GAlert>
+        <GAlert v-else-if="error" variant="danger" show>
             {{ error }}
-        </BAlert>
+        </GAlert>
         <div v-else-if="workflow && !isSubworkflow">
             <InvocationGraph
                 ref="invocationGraph"
@@ -84,6 +84,6 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
                 :is-full-page="isFullPage"
                 :show-minimap="isFullPage" />
         </div>
-        <BAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </BAlert>
+        <GAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </GAlert>
     </div>
 </template>

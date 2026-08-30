@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { GraphEdge } from "@/components/Graph/types";
@@ -10,6 +9,7 @@ import type { HistoryGraphNode } from "./historyGraphMapper";
 import { historyNodeColor } from "./historyNodeColor";
 
 import HistoryGraphNodeDetails from "./HistoryGraphNodeDetails.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GraphView from "@/components/Graph/GraphView.vue";
 
 interface Props {
@@ -74,10 +74,10 @@ function onNodeSelected(node: HistoryGraphNode | null) {
         <div v-if="selectedNode" class="details-pane mt-2">
             <HistoryGraphNodeDetails :node="selectedNode" />
         </div>
-        <BAlert v-else show variant="info" class="mt-2 mb-0 py-1 flex-shrink-0">
+        <GAlert v-else show variant="info" class="mt-2 mb-0 py-1 flex-shrink-0">
             <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" />
             Click on a node in the graph above to view its details.
-        </BAlert>
+        </GAlert>
     </div>
 </template>
 

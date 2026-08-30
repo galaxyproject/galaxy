@@ -1,23 +1,18 @@
 <template>
     <section class="external-id">
-        <b-alert :show="!!connectExternal" variant="info">
+        <GAlert :show="!!connectExternal" variant="info">
             You are logged in. You can now connect the Galaxy user account with the email <i>{{ userEmail }}</i
             >, to your preferred external provider.
-        </b-alert>
-        <b-alert :show="!!existingEmail" variant="warning">
+        </GAlert>
+        <GAlert :show="!!existingEmail" variant="warning">
             Note: We found a Galaxy account matching the email of this identity, <i>{{ existingEmail }}</i
             >. The active account <i>{{ userEmail }}</i> has been linked to this external identity. If you wish to link
             this identity to a different account, you will need to disconnect it from this account first.
-        </b-alert>
+        </GAlert>
         <header>
-            <b-alert
-                dismissible
-                fade
-                variant="warning"
-                :show="errorMessage !== null"
-                @dismissed="errorMessage = null"
-                >{{ errorMessage }}</b-alert
-            >
+            <GAlert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">{{
+                errorMessage
+            }}</GAlert>
 
             <hgroup class="external-id-title">
                 <h1 class="h-lg">Manage External Identities</h1>
@@ -50,14 +45,9 @@
                 {{ item.email }}
             </b-button>
 
-            <b-alert
-                dismissible
-                fade
-                variant="warning"
-                :show="errorMessage !== null"
-                @dismissed="errorMessage = null"
-                >{{ errorMessage }}</b-alert
-            >
+            <GAlert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">{{
+                errorMessage
+            }}</GAlert>
         </div>
 
         <div v-if="enable_oidc" class="external-subheading">
@@ -81,6 +71,7 @@ import { capitalizeFirstLetter } from "@/utils/strings";
 
 import svc from "./service";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
@@ -88,6 +79,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         ExternalLogin,
+        GAlert,
     },
     setup() {
         const { confirm } = useConfirmDialog();

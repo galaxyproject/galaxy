@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
 import { onMounted, onUnmounted, type PropType, watch } from "vue";
@@ -9,6 +8,7 @@ import { type Tool, type ToolPanelItem, type ToolSection, useToolStore } from "@
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -281,7 +281,7 @@ function post(message: object) {
             :placeholder="placeholder"
             @change="checkQuery" />
     </div>
-    <BAlert v-else class="mb-3" variant="info" show>
+    <GAlert v-else class="mb-3" variant="info" show>
         <LoadingSpan message="Loading Tool Search" />
-    </BAlert>
+    </GAlert>
 </template>

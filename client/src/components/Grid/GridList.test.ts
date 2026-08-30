@@ -175,8 +175,8 @@ describe("GridList", () => {
         await flushPromises();
         const alert = wrapper.find(".alert");
         expect(alert.text()).toBe("Operation-3 has been executed.");
-        vi.runAllTimers();
-        await wrapper.vm.$nextTick();
+        await vi.runAllTimersAsync();
+        await flushPromises();
         expect(wrapper.find(".alert").exists()).toBeFalsy();
     });
 

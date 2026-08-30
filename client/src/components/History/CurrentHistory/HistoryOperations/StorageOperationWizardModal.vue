@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButton } from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
@@ -17,6 +17,7 @@ import { useStorageOperationsStore } from "@/stores/storageOperationsStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { toTrackedStorageRun } from "@/utils/storageOperations";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import StorageOperationPreviewReport from "@/components/History/CurrentHistory/HistoryOperations/StorageOperationPreviewReport.vue";
@@ -234,13 +235,13 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
 
 <template>
     <GModal :show.sync="showProxy" title="Move Datasets to New Storage Location" size="medium" overflow-visible>
-        <BAlert v-if="previewError" show variant="danger" dismissible class="mb-2" @dismissed="previewError = null">
+        <GAlert v-if="previewError" show variant="danger" dismissible class="mb-2" @dismissed="previewError = null">
             {{ previewError }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="executionError" show variant="danger" dismissible class="mb-2" @dismissed="executionError = null">
+        <GAlert v-if="executionError" show variant="danger" dismissible class="mb-2" @dismissed="executionError = null">
             {{ executionError }}
-        </BAlert>
+        </GAlert>
 
         <GenericWizard
             :use="wizard"
@@ -258,9 +259,9 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
                         Target storage location
                     </label>
                     <LoadingSpan v-if="objectStoresLoading" message="Loading Galaxy storage information" />
-                    <BAlert v-else-if="loadErrorMessage" show variant="danger" class="mb-2">
+                    <GAlert v-else-if="loadErrorMessage" show variant="danger" class="mb-2">
                         {{ loadErrorMessage }}
-                    </BAlert>
+                    </GAlert>
                     <Multiselect
                         v-else
                         id="storage-target-select"
@@ -315,10 +316,10 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
                     v-if="storagePreviewLoading"
                     class="text-center text-muted py-3"
                     message="Loading preview information for the selected items. This may take a few moments. Please do not close this dialog while the preview is loading." />
-                <BAlert v-else-if="!storagePreview" show variant="info">
+                <GAlert v-else-if="!storagePreview" show variant="info">
                     No preview information is available. Please go back and ensure you have selected a target storage
                     location.
-                </BAlert>
+                </GAlert>
 
                 <StorageOperationPreviewReport
                     v-else-if="storagePreview"

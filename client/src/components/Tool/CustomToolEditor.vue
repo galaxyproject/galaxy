@@ -22,6 +22,7 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 import { setupMonaco } from "./YamlJs";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 // Configure Monaco environment with worker factory before loading
@@ -195,9 +196,9 @@ async function generateViaLLM() {
 
 <template>
     <div>
-        <b-alert v-if="errorMsg" variant="danger" show dismissible>
+        <GAlert v-if="errorMsg" variant="danger" show dismissible>
             {{ errorMsg.err_msg }}
-        </b-alert>
+        </GAlert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
             <b-button

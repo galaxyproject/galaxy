@@ -54,13 +54,13 @@ describe("ConfigureVitessce.vue", () => {
             },
         });
         expect(wrapper.text()).toContain("Failed to parse:");
-        expect(wrapper.findComponent({ name: "BAlert" }).exists()).toBe(true);
+        expect(wrapper.find(".alert").exists()).toBe(true);
     });
 
     it("shows warning alert if no URL-like fields are found", () => {
         const wrapper = mountComponent({});
         expect(wrapper.text()).toContain("No URL-like fields found.");
-        expect(wrapper.findComponent({ name: "BAlert" }).exists()).toBe(true);
+        expect(wrapper.find(".alert").exists()).toBe(true);
     });
 
     it("renders ConfigureHeader and ConfigureSelector for each URL field", () => {

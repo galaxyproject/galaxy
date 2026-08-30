@@ -11,6 +11,7 @@ import { uid } from "@/utils/utils";
 
 import { type DataOption, isDataOption, itemUniqueKey } from "./FormData/types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
@@ -283,7 +284,7 @@ function isSelected(item: SelectValue): boolean {
             </template>
         </Multiselect>
         <slot v-else name="no-options">
-            <b-alert v-localize class="w-100" variant="warning" show> No options available. </b-alert>
+            <GAlert v-localize class="w-100" variant="warning" show> No options available. </GAlert>
         </slot>
     </div>
 </template>

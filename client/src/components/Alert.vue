@@ -1,12 +1,15 @@
 <template>
-    <b-alert :variant="galaxyKwdToBootstrap" :show="showP" v-bind="$props">
+    <GAlert :variant="galaxyKwdToBootstrap" :show="showP" v-bind="$props">
         <!-- @slot Message to display in alert -->
         <slot> {{ message }} </slot>
-    </b-alert>
+    </GAlert>
 </template>
 
 <script>
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
 export default {
+    components: { GAlert },
     props: {
         /**
          * Message to display in the alert
