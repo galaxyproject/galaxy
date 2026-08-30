@@ -1215,16 +1215,30 @@ class RunsToolTests(NavigatesGalaxyMixin):
             if not isinstance(submitted, dict) or name not in submitted:
                 mismatches.append(f"{here} (absent)")
                 continue
-            actual = submitted[name]
-            if cls._is_dataset_reference(expected):
-                # The test names a file; the form sends whatever it was staged as.
-                if not cls._is_dataset_reference(actual):
-                    mismatches.append(f"{here} (expected a dataset, got {actual!r})")
-            elif isinstance(expected, dict):
-                mismatches.extend(cls._declared_mismatches(expected, actual, here))
-            elif str(expected) != str(actual):
-                mismatches.append(f"{here} ({actual!r} not {expected!r})")
+            mismatches.extend(cls._compare(expected, submitted[name], here))
         return mismatches
+
+    @classmethod
+    def _compare(cls, expected, actual, here: str) -> list[str]:
+        if cls._is_dataset_reference(expected):
+            # The test names a file; the form sends whatever it was staged as.
+            if not cls._is_dataset_reference(actual):
+                return [f"{here} (expected a dataset, got {actual!r})"]
+            return []
+        if isinstance(expected, dict):
+            return cls._declared_mismatches(expected, actual, here)
+        if isinstance(expected, list):
+            # Repeats arrive as a list of instances, compared position by position.
+            if not isinstance(actual, list) or len(actual) != len(expected):
+                count = len(actual) if isinstance(actual, list) else 0
+                return [f"{here} ({count} instances, not {len(expected)})"]
+            nested = []
+            for index, item in enumerate(expected):
+                nested.extend(cls._compare(item, actual[index], f"{here}|{index}"))
+            return nested
+        if str(expected) != str(actual):
+            return [f"{here} ({actual!r} not {expected!r})"]
+        return []
 
     @staticmethod
     def _is_dataset_reference(value) -> bool:
