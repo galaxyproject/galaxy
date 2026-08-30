@@ -34,7 +34,7 @@ adlfs
 huggingface_hub
 omero-py #type: omero
 iiif-fsspec # type: iiif
-fs-irods # type: irods, depends on python-irodsclient
+mangofs @ git+https://gitlab.kuleuven.be/setit/rdm/mango-fsspec.git@1.1.0 # type: irods, depends on python-irodsclient
 mavedb-fsspec>=0.1.0 # type: mavedb
 
 # Vault backend

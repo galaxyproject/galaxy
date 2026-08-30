@@ -321,6 +321,9 @@ class ConditionalDependencies(BaseConditionalDependencies):
     def check_fs_irods(self):
         return "irods" in self.file_sources
 
+    def check_mangofs(self):
+        return self.check_fs_irods()
+
     def check_watchdog(self):
         install_set = {"auto", "True", "true", "polling", True}
         return self.config["watch_tools"] in install_set or self.config["watch_tool_data_dir"] in install_set
