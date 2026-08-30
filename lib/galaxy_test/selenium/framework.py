@@ -975,6 +975,13 @@ class RunsToolTests(NavigatesGalaxyMixin):
         repeat_params.sort(key=lambda kv: kv[0].count("|"))
 
         deferred = []
+        # Datasets first: a data column or a dynamic select reads its options from them.
+        for key, value in data_params:
+            try:
+                self._set_data_param(key, value, hid_map)
+            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+                deferred.append((key, value))
+
         for key, value in outer_params:
             try:
                 self._set_tool_form_value(key, value, required_filenames, select_labels)
@@ -1003,24 +1010,16 @@ class RunsToolTests(NavigatesGalaxyMixin):
                     still_deferred.append((key, value))
                     continue
                 try:
-                    self._set_tool_form_value(key, value, required_filenames, select_labels)
+                    if (key, value) in data_params:
+                        self._set_data_param(key, value, hid_map)
+                    else:
+                        self._set_tool_form_value(key, value, required_filenames, select_labels)
                     self.sleep_for(self.wait_types.UX_RENDER)
                 except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
                     still_deferred.append((key, value))
             if len(still_deferred) == len(deferred):
                 break
             deferred = still_deferred
-
-        for key, value in data_params:
-            filenames = list(value) if isinstance(value, list) else [value]
-            is_multiple = self._is_multi_data_param(key)
-            assert is_multiple or len(filenames) == 1, f"Data param {key} takes one file, got {filenames}"
-            if is_multiple:
-                self._clear_multiselect_tags(key)
-            for filename in filenames:
-                hid = hid_map.get(filename)
-                assert hid is not None, f"No staged file for data param {key}={filename}"
-                self.tool_set_value(key, f"{hid}: {filename}", expected_type="data", multiple=is_multiple)
 
         for key, coll_def in collection_params:
             hid = collection_hid_map.get(key)
@@ -1070,6 +1069,18 @@ class RunsToolTests(NavigatesGalaxyMixin):
             and len(value) > 1
             and all(isinstance(item, str) and item in required_filenames for item in value)
         )
+
+    def _set_data_param(self, key: str, value, hid_map: dict):
+        """Point a data parameter at the datasets its test case staged."""
+        filenames = list(value) if isinstance(value, list) else [value]
+        is_multiple = self._is_multi_data_param(key)
+        assert is_multiple or len(filenames) == 1, f"Data param {key} takes one file, got {filenames}"
+        if is_multiple:
+            self._clear_multiselect_tags(key)
+        for filename in filenames:
+            hid = hid_map.get(filename)
+            assert hid is not None, f"No staged file for data param {key}={filename}"
+            self.tool_set_value(key, f"{hid}: {filename}", expected_type="data", multiple=is_multiple)
 
     def _is_multi_data_param(self, expanded_id: str) -> bool:
         return not self.components.tool_form.parameter_form_selection(parameter=expanded_id).is_absent

@@ -165,8 +165,7 @@ FORM_ONLY_TOOL_TESTS = _framework_tool_tests()
 KNOWN_FORM_FAILURES: dict[str, str] = {
     "async_conditional_no_default_nested_data_0": "repeat instances are inserted before the conditional that reveals the repeat",
     "collection_split_on_column_0": "the test declares no ftype, so the staged dataset is not offered for this format",
-    "column_multi_param_0": "run button stays disabled, so a parameter was not accepted by the form",
-    "column_param_list_0": "run button stays disabled, so a parameter was not accepted by the form",
+    "column_multi_param_0": "the same file staged twice yields one dataset, so both selections collide",
     "credentials_test_0": "run button stays disabled, so a parameter was not accepted by the form",
     "credentials_test_1": "run button stays disabled, so a parameter was not accepted by the form",
     "options_from_metadata_file_0": "a value not among the rendered options falls back to a prefix match",
