@@ -533,6 +533,22 @@ execution:
       # Docker.
       #docker_set_user: $UID
 
+      # Alternatively, resolve a username from an OIDC token claim. This can be used to
+      # launch the Docker container as that user and/or expose the username
+      # inside the container as an environment variable.
+      #
+      # When set_user is true, docker_set_user must be unset, null, or empty.
+      # Galaxy resolves the username to UID/GID on the execution host with
+      # id -u/id -g and adds the user's supplementary groups with --group-add.
+      #
+      #docker_username_from_oidc_token_claim:
+      #  set_user: true
+      #  expose_as_env: GALAXY_TOOL_USER
+      #  providers:
+      #    azure:
+      #      claim: unique_name
+      #      template: "^.{0,3}"
+
       # Pass extra arguments to the docker run command not covered by the
       # above options.
       #docker_run_extra_arguments:

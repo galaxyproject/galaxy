@@ -578,6 +578,10 @@
                remote job user. Leave empty to not use the -u argument with
                Docker. -->
           <!-- <param id="docker_set_user">$UID</param> -->
+          <!-- Docker containers can also use a username resolved from an OIDC
+               token claim via the docker_username_from_oidc_token_claim destination
+               parameter. This is a nested setting and must be configured in
+               job_conf.yml. See config/job_conf.sample.yml for an example. -->
           <!-- Pass extra arguments to the docker run command not covered by the
                above options. -->
           <!-- <param id="docker_run_extra_arguments"></param> -->
