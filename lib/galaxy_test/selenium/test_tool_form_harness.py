@@ -165,8 +165,8 @@ FORM_ONLY_TOOL_TESTS = _framework_tool_tests()
 KNOWN_FORM_FAILURES: dict[str, str] = {
     "async_conditional_no_default_nested_data_0": "repeat instances are inserted before the conditional that reveals the repeat",
     "collection_split_on_column_0": "the test declares no ftype, so the staged dataset is not offered for this format",
-    "credentials_test_0": "run button stays disabled, so a parameter was not accepted by the form",
-    "credentials_test_1": "run button stays disabled, so a parameter was not accepted by the form",
+    "credentials_test_0": "the tool needs a credential this instance has none of",
+    "credentials_test_1": "the tool needs a credential this instance has none of",
     "options_from_metadata_file_0": "a value not among the rendered options falls back to a prefix match",
     "select_dynamic_0": "a select that renames its value column is filled from the wrong column",
     "filter_data_table_0": "options come from an unreachable from_url, so the tool does not load",
@@ -192,9 +192,7 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "select_from_dataset_1": "run button stays disabled, so a parameter was not accepted by the form",
     "select_from_url_0": "no job appears after the form submits",
     "use_directory_index_0": "a directory is passed where the test expects a file",
-    "validation_dataset_metadata_in_file_0": "run button stays disabled, so a parameter was not accepted by the form",
     "validation_hdf5_0": "the test declares no ftype, so the staged dataset is not offered for this format",
-    "validation_metadata_in_datatable_0": "run button stays disabled, so a parameter was not accepted by the form",
 }
 
 
