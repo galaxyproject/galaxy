@@ -1211,6 +1211,10 @@ class RunsToolTests(NavigatesGalaxyMixin):
             for item in items:
                 # The form matches on the label, so send that where one is known.
                 self._select_option(key, by_value.get(item, item))
+            # An option that is not there yet is set silently, so say so and be retried
+            # once the parameter it depends on has been filled.
+            missing = [item for item in items if not self._select_holds(key, by_value.get(item, item))]
+            assert not missing, f"Select {key} has no option for {missing}"
         else:
             self._set_text_value(key, str(value))
 
@@ -1227,6 +1231,23 @@ class RunsToolTests(NavigatesGalaxyMixin):
         if text in by_value or "," not in text:
             return [text]
         return [item for item in text.split(",") if item]
+
+    def _select_holds(self, expanded_id: str, text: str) -> bool:
+        """Whether the parameter now shows this option as chosen."""
+        return bool(
+            self.execute_script(
+                "const div = document.getElementById(arguments[0]);"
+                "if (!div) { return false; }"
+                "const wanted = arguments[1];"
+                "const chosen = div.querySelectorAll('.multiselect__tag, .multiselect__single');"
+                "for (const node of chosen) {"
+                "  if (node.textContent.trim() === wanted) { return true; }"
+                "}"
+                "return false;",
+                f"form-element-{expanded_id.replace('|', '-')}",
+                text,
+            )
+        )
 
     def _select_option(self, expanded_id: str, text: str):
         """Pick the option whose label is exactly this text.
