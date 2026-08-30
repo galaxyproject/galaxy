@@ -105,3 +105,13 @@ def test_wrong_dataset_inside_a_repeat_is_reported():
     submitted = {"q": [{"i": {"src": "hda", "id": "zzz"}}]}
     mismatches = declared_mismatches(declared, submitted, dataset_ids={"b.bed": "yyy"})
     assert mismatches == ["q|0|i (dataset 'zzz', not the staged 'yyy')"]
+
+
+def test_colour_hash_prefix_is_ignored():
+    """A colour input always reports the leading hash a test case may leave out."""
+    assert declared_mismatches({"r": "000000"}, {"r": "#000000"}) == []
+    assert declared_mismatches({"r": "#ABCDEF"}, {"r": "#abcdef"}) == []
+
+
+def test_differing_colours_are_still_reported():
+    assert declared_mismatches({"r": "000000"}, {"r": "#ffffff"}) == ["r ('#ffffff' not '000000')"]
