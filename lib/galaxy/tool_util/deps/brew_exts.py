@@ -35,7 +35,7 @@ WHITESPACE_PATTERN = re.compile(r"[\s]+")
 DESCRIPTION = "Script built on top of linuxbrew to operate on isolated, versioned brew installed environments."
 
 if sys.platform == "darwin":
-    DEFAULT_HOMEBREW_ROOT = "/usr/local"
+    DEFAULT_HOMEBREW_ROOT = "/opt/homebrew"
 else:
     DEFAULT_HOMEBREW_ROOT = os.path.join(os.path.expanduser("~"), ".linuxbrew")
 
@@ -54,8 +54,7 @@ class BrewContext:
         raw_config = brew_execute(["config"])
         config_lines = [line.strip().split(":", 1) for line in raw_config.split("\n") if line]
         config = {p[0].strip(): p[1].strip() for p in config_lines}
-        # unset if "/usr/local" -> https://github.com/Homebrew/homebrew/blob/master/Library/Homebrew/cmd/config.rb
-        homebrew_prefix = config.get("HOMEBREW_PREFIX", "/usr/local")
+        homebrew_prefix = config.get("HOMEBREW_PREFIX", "/opt/homebrew")
         homebrew_cellar = config.get("HOMEBREW_CELLAR", os.path.join(homebrew_prefix, "Cellar"))
         self.homebrew_prefix = homebrew_prefix
         self.homebrew_cellar = homebrew_cellar
