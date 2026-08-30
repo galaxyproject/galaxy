@@ -225,6 +225,7 @@ from galaxy.util.json import (
     swap_inf_nan,
 )
 from galaxy.util.path import StrPath
+from galaxy.util.permutations import InputMatchedException
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import (
     fill_template,
@@ -2279,6 +2280,15 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
+    def _raise_matched_input_errors(self, exc: InputMatchedException) -> None:
+        """Convert matched-input expansion errors to validation errors.
+
+        When multi-input parameters have mismatched lengths, this surfaces
+        the error as a request validation error (400) instead of a generic
+        server error.
+        """
+        raise exceptions.RequestParameterInvalidException(str(exc)) from exc
+
     def expand_incoming_async(
         self,
         request_context: WorkRequestContext,
@@ -2305,9 +2315,12 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         expanded_incomings: list[ToolStateJobInstanceExpansionT]
         job_tool_states: list[ToolStateJobInstanceT]
         collection_info: MatchingCollections | None
-        expanded_incomings, job_tool_states, collection_info = expand_meta_parameters_async(
-            request_context.app, self, tool_request_internal_state
-        )
+        try:
+            expanded_incomings, job_tool_states, collection_info = expand_meta_parameters_async(
+                request_context.app, self, tool_request_internal_state
+            )
+        except InputMatchedException as exc:
+            self._raise_matched_input_errors(exc)
 
         self._ensure_expansion_is_valid(job_tool_states, rerun_remap_job_id)
 
@@ -2354,9 +2367,12 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings: list[ToolStateJobInstanceExpansionT]
         collection_info: MatchingCollections | None
-        expanded_incomings, collection_info = expand_meta_parameters(
-            request_context, self, incoming, input_format=input_format
-        )
+        try:
+            expanded_incomings, collection_info = expand_meta_parameters(
+                request_context, self, incoming, input_format=input_format
+            )
+        except InputMatchedException as exc:
+            self._raise_matched_input_errors(exc)
 
         self._ensure_expansion_is_valid(expanded_incomings, rerun_remap_job_id)
 
