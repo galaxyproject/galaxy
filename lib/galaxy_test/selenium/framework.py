@@ -1173,7 +1173,11 @@ class RunsToolTests(NavigatesGalaxyMixin):
         elif param_type == "color":
             self._set_color_value(key, value)
         elif param_type == "select":
-            for item in self._select_values(value, by_value):
+            items = self._select_values(value, by_value)
+            if len(items) > 1 or self._is_multi_data_param(key):
+                # Otherwise the declared values are added to whatever is selected already.
+                self._clear_multiselect_tags(key)
+            for item in items:
                 # The form matches on the label, so send that where one is known.
                 self.tool_set_value(key, by_value.get(item, item), expected_type="select")
         else:
@@ -1261,11 +1265,20 @@ class RunsToolTests(NavigatesGalaxyMixin):
         fresh = [r for r in self.api_get(f"histories/{history_id}/tool_requests") if r["id"] not in pre_request_ids]
         assert fresh, f"{tool_id}: form submitted without recording a tool request"
         submitted = fresh[-1].get("request") or {}
-        mismatches = self._declared_mismatches(declared, submitted, dataset_ids=self._staged_dataset_ids)
+        mismatches = self._declared_mismatches(
+            declared, submitted, dataset_ids=self._staged_dataset_ids, select_labels=self._select_labels(tool_id)
+        )
         assert not mismatches, f"{tool_id}: form state differs from the test case at " + "; ".join(mismatches)
 
     @classmethod
-    def _declared_mismatches(cls, declared, submitted, path: str = "", dataset_ids: dict | None = None) -> list[str]:
+    def _declared_mismatches(
+        cls,
+        declared,
+        submitted,
+        path: str = "",
+        dataset_ids: dict | None = None,
+        select_labels: dict | None = None,
+    ) -> list[str]:
         """Paths where a declared parameter is missing from or differs in the request."""
         mismatches = []
         for name, expected in declared.items():
@@ -1273,11 +1286,13 @@ class RunsToolTests(NavigatesGalaxyMixin):
             if not isinstance(submitted, dict) or name not in submitted:
                 mismatches.append(f"{here} (absent)")
                 continue
-            mismatches.extend(cls._compare(expected, submitted[name], here, dataset_ids))
+            mismatches.extend(cls._compare(expected, submitted[name], here, dataset_ids, select_labels))
         return mismatches
 
     @classmethod
-    def _compare(cls, expected, actual, here: str, dataset_ids: dict | None = None) -> list[str]:
+    def _compare(
+        cls, expected, actual, here: str, dataset_ids: dict | None = None, select_labels: dict | None = None
+    ) -> list[str]:
         if cls._is_dataset_reference(expected):
             if not cls._is_dataset_reference(actual):
                 return [f"{here} (expected a dataset, got {actual!r})"]
@@ -1287,7 +1302,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 return [f"{here} (dataset {actual.get('id')!r}, not the staged {staged!r})"]
             return []
         if isinstance(expected, dict):
-            return cls._declared_mismatches(expected, actual, here, dataset_ids)
+            return cls._declared_mismatches(expected, actual, here, dataset_ids, select_labels)
         if isinstance(expected, list):
             # Repeats arrive as a list of instances, compared position by position.
             if not isinstance(actual, list) or len(actual) != len(expected):
@@ -1295,11 +1310,15 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 return [f"{here} ({count} values, not {len(expected)})"]
             nested = []
             for index, item in enumerate(expected):
-                nested.extend(cls._compare(item, actual[index], f"{here}|{index}", dataset_ids))
+                nested.extend(cls._compare(item, actual[index], f"{here}|{index}", dataset_ids, select_labels))
             return nested
-        if not cls._same_scalar(expected, actual):
-            return [f"{here} ({actual!r} not {expected!r})"]
-        return []
+        if cls._same_scalar(expected, actual):
+            return []
+        # Test cases name a select option by its value or by its label; both identify it.
+        by_value = (select_labels or {}).get(here, {})
+        if str(by_value.get(str(actual), "")) == str(expected):
+            return []
+        return [f"{here} ({actual!r} not {expected!r})"]
 
     @staticmethod
     def _same_scalar(expected, actual) -> bool:

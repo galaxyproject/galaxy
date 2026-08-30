@@ -115,3 +115,20 @@ def test_colour_hash_prefix_is_ignored():
 
 def test_differing_colours_are_still_reported():
     assert declared_mismatches({"r": "000000"}, {"r": "#ffffff"}) == ["r ('#ffffff' not '000000')"]
+
+
+def test_select_declared_by_label_matches_its_value():
+    """Test cases name a select option by value or by label; both identify it."""
+    labels = {"s": {"hg19_value": "hg19_name"}}
+    assert declared_mismatches({"s": "hg19_name"}, {"s": "hg19_value"}, select_labels=labels) == []
+
+
+def test_select_declared_by_value_matches():
+    labels = {"s": {"hg19_value": "hg19_name"}}
+    assert declared_mismatches({"s": "hg19_value"}, {"s": "hg19_value"}, select_labels=labels) == []
+
+
+def test_unrelated_select_value_is_still_reported():
+    labels = {"s": {"hg19_value": "hg19_name"}}
+    mismatches = declared_mismatches({"s": "mm10_name"}, {"s": "hg19_value"}, select_labels=labels)
+    assert mismatches == ["s ('hg19_value' not 'mm10_name')"]

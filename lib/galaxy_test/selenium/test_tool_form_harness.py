@@ -164,11 +164,14 @@ FORM_ONLY_TOOL_TESTS = _framework_tool_tests()
 # Empty the dict to see the raw state of the suite.
 KNOWN_FORM_FAILURES: dict[str, str] = {
     "async_conditional_no_default_nested_data_0": "repeat instances are inserted before the conditional that reveals the repeat",
-    "collection_split_on_column_0": "parameter input1 never appears on the form",
+    "collection_split_on_column_0": "the test declares no ftype, so the staged dataset is not offered for this format",
     "column_multi_param_0": "run button stays disabled, so a parameter was not accepted by the form",
     "column_param_list_0": "run button stays disabled, so a parameter was not accepted by the form",
     "credentials_test_0": "run button stays disabled, so a parameter was not accepted by the form",
     "credentials_test_1": "run button stays disabled, so a parameter was not accepted by the form",
+    "metadata_bam_0": "typing a value selects the first option containing it, not the exact one",
+    "options_from_metadata_file_0": "typing a value selects the first option containing it, not the exact one",
+    "select_dynamic_0": "a select that renames its value column is filled from the wrong column",
     "filter_data_table_0": "options come from an unreachable from_url, so the tool does not load",
     "filter_data_table_1": "options come from an unreachable from_url, so the tool does not load",
     "filter_multiple_splitter_0": "select options are read from a dataset chosen on the same form",
@@ -180,9 +183,9 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "format_source_in_conditional_1": "parameter cond|inner_cond|input1 never appears on the form",
     "gx_data_multiple_user_1": "run button stays disabled, so a parameter was not accepted by the form",
     "implicit_conversion_optional_param_0": "test data uses a datatype the instance does not know",
-    "inheritance_simple_0": "parameter input1 never appears on the form",
+    "inheritance_simple_0": "the test declares no ftype, so the staged dataset is not offered for this format",
     "multi_data_param_2": "run button stays disabled, so a parameter was not accepted by the form",
-    "output_format_input_0": "parameter input never appears on the form",
+    "output_format_input_0": "the test declares no ftype, so the staged dataset is not offered for this format",
     "pick_value_10": "an unset optional boolean submits false, so a declared null cannot be expressed",
     "pick_value_11": "an unset optional boolean submits false, so a declared null cannot be expressed",
     "pick_value_12": "an unset optional boolean submits false, so a declared null cannot be expressed",
@@ -194,7 +197,7 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "select_from_url_0": "no job appears after the form submits",
     "use_directory_index_0": "a directory is passed where the test expects a file",
     "validation_dataset_metadata_in_file_0": "run button stays disabled, so a parameter was not accepted by the form",
-    "validation_hdf5_0": "parameter input never appears on the form",
+    "validation_hdf5_0": "the test declares no ftype, so the staged dataset is not offered for this format",
     "validation_metadata_in_datatable_0": "run button stays disabled, so a parameter was not accepted by the form",
 }
 
