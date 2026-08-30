@@ -14,6 +14,7 @@ from galaxy.util.unittest_utils import skip_unless_environ
 from galaxy_test.base.api import UsesCeleryTasks
 from .framework import (
     managed_history,
+    NavigatesGalaxyMixin,
     RunsToolTests,
     selenium_test,
     SeleniumTestCase,
@@ -140,7 +141,7 @@ def _framework_tool_tests():
                 spec = fh.read()
         return [(str(tool_id), int(test_index)) for tool_id, test_index in json.loads(spec)]
     # A tool can be listed more than once in the panel; test ids have to stay unique.
-    pairs = set()
+    pairs: set[tuple[str, int]] = set()
     for tool in ET.parse(FRAMEWORK_TOOL_CONF).getroot().iter("tool"):
         path = os.path.join(FRAMEWORK_TOOLS_DIR, tool.get("file") or "")
         if not os.path.exists(path):
@@ -226,7 +227,7 @@ os.environ.setdefault("GALAXY_CONFIG_OVERRIDE_ENABLE_TOOL_REQUESTS", "true")
 os.environ.setdefault("GALAXY_CONFIG_OVERRIDE_ENABLE_CELERY_TASKS", "true")
 
 
-class AssertsAsyncSubmission:
+class AssertsAsyncSubmission(NavigatesGalaxyMixin):
     """Assert the browser submitted through the tool request API, not the legacy one."""
 
     def _assert_async_submission(self, tool_id, test_index):
