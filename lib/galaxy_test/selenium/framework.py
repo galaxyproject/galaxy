@@ -1186,6 +1186,10 @@ class RunsToolTests(NavigatesGalaxyMixin):
         button = self.components.tool_form.execute.wait_for_visible()
         return button.get_attribute("aria-disabled") != "true"
 
+    def tool_test_def(self, tool_id: str, test_index: int, galaxy_interactor) -> dict:
+        """The parsed test case, so callers can read what it declares."""
+        return galaxy_interactor.get_tool_tests(tool_id)[test_index]
+
     def _tool_request_ids(self, history_id: str) -> set:
         try:
             return {request["id"] for request in self.api_get(f"histories/{history_id}/tool_requests")}
@@ -1236,7 +1240,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
             # Repeats arrive as a list of instances, compared position by position.
             if not isinstance(actual, list) or len(actual) != len(expected):
                 count = len(actual) if isinstance(actual, list) else 0
-                return [f"{here} ({count} instances, not {len(expected)})"]
+                return [f"{here} ({count} values, not {len(expected)})"]
             nested = []
             for index, item in enumerate(expected):
                 nested.extend(cls._compare(item, actual[index], f"{here}|{index}", dataset_ids))
