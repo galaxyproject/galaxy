@@ -776,6 +776,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
         test_def = test_defs[test_index]
         history_id = self.current_history_id()
         self.home()
+        self._staged_dataset_ids: dict[str, str] = {}
         hid_map, required_filenames, collection_hid_map = self._stage_test_data(test_def, history_id, galaxy_interactor)
         pre_job_ids = {j["id"] for j in dataset_populator.history_jobs_for_tool(history_id, tool_id)}
         self.tool_open_by_url(tool_id)
@@ -866,6 +867,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
             filename = filename_by_key.get(key)
             if filename and ref.get("id") in dataset_id_to_hid:
                 hid_map[filename] = dataset_id_to_hid[ref["id"]]
+                self._staged_dataset_ids[filename] = ref["id"]
 
         collection_hid_map: dict[str, int] = {}
         if collection_keys:
@@ -1203,11 +1205,11 @@ class RunsToolTests(NavigatesGalaxyMixin):
         fresh = [r for r in self.api_get(f"histories/{history_id}/tool_requests") if r["id"] not in pre_request_ids]
         assert fresh, f"{tool_id}: form submitted without recording a tool request"
         submitted = fresh[-1].get("request") or {}
-        mismatches = self._declared_mismatches(declared, submitted)
+        mismatches = self._declared_mismatches(declared, submitted, dataset_ids=self._staged_dataset_ids)
         assert not mismatches, f"{tool_id}: form state differs from the test case at " + "; ".join(mismatches)
 
     @classmethod
-    def _declared_mismatches(cls, declared, submitted, path: str = "") -> list[str]:
+    def _declared_mismatches(cls, declared, submitted, path: str = "", dataset_ids: dict | None = None) -> list[str]:
         """Paths where a declared parameter is missing from or differs in the request."""
         mismatches = []
         for name, expected in declared.items():
@@ -1215,18 +1217,21 @@ class RunsToolTests(NavigatesGalaxyMixin):
             if not isinstance(submitted, dict) or name not in submitted:
                 mismatches.append(f"{here} (absent)")
                 continue
-            mismatches.extend(cls._compare(expected, submitted[name], here))
+            mismatches.extend(cls._compare(expected, submitted[name], here, dataset_ids))
         return mismatches
 
     @classmethod
-    def _compare(cls, expected, actual, here: str) -> list[str]:
+    def _compare(cls, expected, actual, here: str, dataset_ids: dict | None = None) -> list[str]:
         if cls._is_dataset_reference(expected):
-            # The test names a file; the form sends whatever it was staged as.
             if not cls._is_dataset_reference(actual):
                 return [f"{here} (expected a dataset, got {actual!r})"]
+            # Hold the form to the dataset this file was staged as, where it is known.
+            staged = (dataset_ids or {}).get(expected.get("path"))
+            if staged is not None and actual.get("id") != staged:
+                return [f"{here} (dataset {actual.get('id')!r}, not the staged {staged!r})"]
             return []
         if isinstance(expected, dict):
-            return cls._declared_mismatches(expected, actual, here)
+            return cls._declared_mismatches(expected, actual, here, dataset_ids)
         if isinstance(expected, list):
             # Repeats arrive as a list of instances, compared position by position.
             if not isinstance(actual, list) or len(actual) != len(expected):
@@ -1234,7 +1239,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 return [f"{here} ({count} instances, not {len(expected)})"]
             nested = []
             for index, item in enumerate(expected):
-                nested.extend(cls._compare(item, actual[index], f"{here}|{index}"))
+                nested.extend(cls._compare(item, actual[index], f"{here}|{index}", dataset_ids))
             return nested
         if str(expected) != str(actual):
             return [f"{here} ({actual!r} not {expected!r})"]
