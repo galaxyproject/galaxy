@@ -960,15 +960,27 @@ class RunsToolTests(NavigatesGalaxyMixin):
             else:
                 non_data_params.append((key, value))
 
+        self._expand_collapsed_sections()
+
+        # A repeat nested in a conditional only appears once the conditional has been
+        # set, so the params that reveal it go first, shallowest first.
+        outer_params = [kv for kv in non_data_params if not self._parse_repeat_key(kv[0])]
+        repeat_params = [kv for kv in non_data_params if self._parse_repeat_key(kv[0])]
+        outer_params.sort(key=lambda kv: kv[0].count("|"))
+        repeat_params.sort(key=lambda kv: kv[0].count("|"))
+
+        deferred = []
+        for key, value in outer_params:
+            try:
+                self._set_tool_form_value(key, value, required_filenames, select_labels)
+                self.sleep_for(self.wait_types.UX_RENDER)
+            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+                deferred.append((key, value))
+
         for repeat_name, count in repeat_counts.items():
             self._add_repeat_instances(repeat_name, count)
 
-        self._expand_collapsed_sections()
-
-        non_data_params.sort(key=lambda kv: kv[0].count("|"))
-
-        deferred = []
-        for key, value in non_data_params:
+        for key, value in repeat_params:
             try:
                 self._set_tool_form_value(key, value, required_filenames, select_labels)
                 self.sleep_for(self.wait_types.UX_RENDER)
@@ -1064,8 +1076,10 @@ class RunsToolTests(NavigatesGalaxyMixin):
         return None
 
     def _add_repeat_instances(self, repeat_name: str, count: int):
+        # The insert button carries the repeat's own name, not the path the test uses.
+        button_name = repeat_name.split("|")[-1]
         for _ in range(count):
-            self.components.tool_form.repeat_insert_named(name=repeat_name).wait_for_and_click()
+            self.components.tool_form.repeat_insert_named(name=button_name).wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
 
     def _expand_collapsed_sections(self):
