@@ -220,6 +220,13 @@ def _form_only_params():
     return marked
 
 
+# The selenium driver is configured once from SeleniumTestCase, so a per-class
+# handle_galaxy_config_kwds never reaches the server. Set the overrides the config
+# loader does read, and do it before the driver starts.
+os.environ.setdefault("GALAXY_CONFIG_OVERRIDE_ENABLE_TOOL_REQUESTS", "true")
+os.environ.setdefault("GALAXY_CONFIG_OVERRIDE_ENABLE_CELERY_TASKS", "true")
+
+
 class AssertsAsyncSubmission:
     """Assert the browser submitted through the tool request API, not the legacy one."""
 
@@ -232,7 +239,7 @@ class AssertsAsyncSubmission:
 
 
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
-class TestToolFormHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks, AssertsAsyncSubmission):
+class TestToolFormHarness(AssertsAsyncSubmission, SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
     ensure_registered = True
 
     @selenium_test
@@ -250,7 +257,7 @@ class TestToolFormHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks, Asse
 
 
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
-class TestToolFormOnlyHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks, AssertsAsyncSubmission):
+class TestToolFormOnlyHarness(AssertsAsyncSubmission, SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
     """Fill and submit every framework tool test without running the job."""
 
     ensure_registered = True
