@@ -54,3 +54,26 @@ def test_declared_file_matches_a_dataset_reference():
 def test_declared_file_without_a_dataset_reference_is_reported():
     declared = {"i": {"class": "File", "path": "a.bed"}}
     assert declared_mismatches(declared, {"i": "a.bed"}) == ["i (expected a dataset, got 'a.bed')"]
+
+
+def test_repeat_of_datasets_matches():
+    """A repeat is a list of dicts; its data parameters are staged like any other."""
+    declared = {"queries": [{"input2": {"class": "File", "path": "2.bed"}}]}
+    submitted = {"queries": [{"input2": {"src": "hda", "id": "529fd61ab1c6cc36"}}]}
+    assert declared_mismatches(declared, submitted) == []
+
+
+def test_repeat_value_mismatch_is_reported():
+    declared = {"r": [{"p": "a"}, {"p": "b"}]}
+    submitted = {"r": [{"p": "a"}, {"p": "z"}]}
+    assert declared_mismatches(declared, submitted) == ["r|1|p ('z' not 'b')"]
+
+
+def test_missing_repeat_instance_is_reported():
+    declared = {"r": [{"p": "a"}, {"p": "b"}]}
+    submitted = {"r": [{"p": "a"}]}
+    assert declared_mismatches(declared, submitted) == ["r (1 instances, not 2)"]
+
+
+def test_list_of_scalars_matches():
+    assert declared_mismatches({"vals": ["1", "2"]}, {"vals": [1, 2]}) == []
