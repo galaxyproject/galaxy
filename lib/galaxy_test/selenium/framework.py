@@ -827,9 +827,14 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
         def file_entry(filename: str) -> dict:
             entry: dict = {"class": "File", "path": filename}
-            ftype = file_meta.get(filename, {}).get("ftype")
+            meta = file_meta.get(filename, {})
+            ftype = meta.get("ftype")
             if ftype:
                 entry["filetype"] = ftype
+            # A composite datatype is uploaded as its parts; staging knows how.
+            composite_data = meta.get("composite_data")
+            if composite_data:
+                entry["composite_data"] = composite_data
             return entry
 
         for key, value in inputs.items():
@@ -987,13 +992,24 @@ class RunsToolTests(NavigatesGalaxyMixin):
             except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
                 deferred.append((key, value))
 
-        if deferred:
+        # Setting one parameter can reveal another, so keep retrying the ones that were
+        # not on the form yet until a pass sets nothing new.
+        while deferred:
             self.sleep_for(self.wait_types.UX_RENDER)
+            still_deferred = []
             for key, value in deferred:
                 expanded_id = key.replace("|", "-")
                 if self.components.tool_form.parameter_div(parameter=expanded_id).is_absent:
+                    still_deferred.append((key, value))
                     continue
-                self._set_tool_form_value(key, value, required_filenames, select_labels)
+                try:
+                    self._set_tool_form_value(key, value, required_filenames, select_labels)
+                    self.sleep_for(self.wait_types.UX_RENDER)
+                except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+                    still_deferred.append((key, value))
+            if len(still_deferred) == len(deferred):
+                break
+            deferred = still_deferred
 
         for key, value in data_params:
             filenames = list(value) if isinstance(value, list) else [value]
@@ -1078,9 +1094,20 @@ class RunsToolTests(NavigatesGalaxyMixin):
     def _add_repeat_instances(self, repeat_name: str, count: int):
         # The insert button carries the repeat's own name, not the path the test uses.
         button_name = repeat_name.split("|")[-1]
-        for _ in range(count):
+        # A repeat with a minimum renders instances already, so only add what is missing.
+        for _ in range(max(0, count - self._repeat_instance_count(repeat_name))):
             self.components.tool_form.repeat_insert_named(name=button_name).wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
+
+    def _repeat_instance_count(self, repeat_name: str) -> int:
+        """How many instances of this repeat the form is already showing."""
+        prefix = f"form-element-{repeat_name.replace('|', '-')}_"
+        return self.execute_script(
+            "return [...document.querySelectorAll('div.ui-form-element')]"
+            f".filter(e => e.id.startsWith({prefix!r}))"
+            f".map(e => e.id.slice({len(prefix)}).split('-')[0])"
+            ".filter((v, i, a) => a.indexOf(v) === i).length;"
+        )
 
     def _expand_collapsed_sections(self):
         self.components.tool_form.execute.wait_for_visible()
@@ -1189,7 +1216,8 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
     def _set_color_value(self, expanded_id: str, value: str):
         color_input = self.components.tool_form.parameter_color_input(parameter=expanded_id).wait_for_present()
-        self.set_element_value(color_input, value)
+        # The browser only accepts #rrggbb here and silently keeps its old value otherwise.
+        self.set_element_value(color_input, value if value.startswith("#") else f"#{value}")
 
     def _set_text_value(self, expanded_id: str, value: str):
         input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
@@ -1259,9 +1287,22 @@ class RunsToolTests(NavigatesGalaxyMixin):
             for index, item in enumerate(expected):
                 nested.extend(cls._compare(item, actual[index], f"{here}|{index}", dataset_ids))
             return nested
-        if str(expected) != str(actual):
+        if not cls._same_scalar(expected, actual):
             return [f"{here} ({actual!r} not {expected!r})"]
         return []
+
+    @staticmethod
+    def _same_scalar(expected, actual) -> bool:
+        """Whether a declared scalar and a submitted one mean the same thing.
+
+        A colour input always reports the leading hash a test case may leave out.
+        """
+        left, right = str(expected), str(actual)
+        if left == right:
+            return True
+        if "#" in (left + right):
+            return left.lstrip("#").lower() == right.lstrip("#").lower()
+        return False
 
     @staticmethod
     def _is_dataset_reference(value) -> bool:
