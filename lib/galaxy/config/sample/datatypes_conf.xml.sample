@@ -647,6 +647,8 @@
     <datatype extension="bed_tabix.gz" type="galaxy.datatypes.interval:BedTabix" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="gff_tabix.gz" type="galaxy.datatypes.interval:GffTabix" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="bgzip" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
+    <datatype extension="warc" type="galaxy.datatypes.warc:Warc" display_in_upload="true" description="Web ARChive (WARC) file." description_url="https://iipc.github.io/warc-specifications/"/>
+    <datatype extension="warc.gz" type="galaxy.datatypes.warc:WarcGz" display_in_upload="true" description="gzip-compressed Web ARChive (WARC) file." description_url="https://iipc.github.io/warc-specifications/"/>
     <!-- GWAS results datatypes to be used with locuszoom visualization plugin -->
     <datatype extension="gwas_bgzip" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="gwas_tabix.gz" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
@@ -1548,5 +1550,7 @@
     <sniffer type="galaxy.datatypes.text:StormSample"/>
     <sniffer type="galaxy.datatypes.text:StormCheck"/>
     <sniffer type="galaxy.datatypes.text:SourmashSignature"/>
+    <sniffer type="galaxy.datatypes.warc:WarcGz"/>
+    <sniffer type="galaxy.datatypes.warc:Warc"/>
   </sniffers>
 </datatypes>
