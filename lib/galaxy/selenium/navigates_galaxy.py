@@ -9,7 +9,6 @@ import json
 import random
 import string
 import time
-from urllib.parse import quote
 from abc import abstractmethod
 from collections.abc import (
     Callable,
@@ -32,6 +31,7 @@ from typing import (
     TYPE_CHECKING,
     TypeVar,
 )
+from urllib.parse import quote
 
 import yaml
 from selenium.webdriver.common.by import By
