@@ -8,7 +8,6 @@ import contextlib
 import random
 import string
 import time
-from urllib.parse import quote
 from abc import abstractmethod
 from dataclasses import (
     dataclass,
@@ -25,6 +24,7 @@ from typing import (
     NamedTuple,
     TYPE_CHECKING,
 )
+from urllib.parse import quote
 
 import yaml
 from selenium.webdriver.common.by import By

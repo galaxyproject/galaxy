@@ -10,7 +10,6 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from galaxy.tool_util.parser import get_tool_source
-
 from galaxy.util.unittest_utils import skip_unless_environ
 from galaxy_test.base.api import UsesCeleryTasks
 from .framework import (
