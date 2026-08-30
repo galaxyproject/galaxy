@@ -309,6 +309,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.vault_config_file = kwargs.get("vault_config_file")
         self.url_headers_config_file = None
         self.max_discovered_files = 10000
+        self.galaxy_url_prefix = "/"
         self.display_builtin_converters = True
         self.enable_notification_system = True
         self.config_dict = self.dict()
