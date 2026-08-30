@@ -77,3 +77,31 @@ def test_missing_repeat_instance_is_reported():
 
 def test_list_of_scalars_matches():
     assert declared_mismatches({"vals": ["1", "2"]}, {"vals": [1, 2]}) == []
+
+
+def test_declared_file_matches_the_staged_dataset():
+    declared = {"i": {"class": "File", "path": "a.bed"}}
+    submitted = {"i": {"src": "hda", "id": "abc123"}}
+    assert declared_mismatches(declared, submitted, dataset_ids={"a.bed": "abc123"}) == []
+
+
+def test_declared_file_bound_to_the_wrong_dataset_is_reported():
+    """A form that submits a dataset other than the one the test staged."""
+    declared = {"i": {"class": "File", "path": "a.bed"}}
+    submitted = {"i": {"src": "hda", "id": "def456"}}
+    mismatches = declared_mismatches(declared, submitted, dataset_ids={"a.bed": "abc123"})
+    assert mismatches == ["i (dataset 'def456', not the staged 'abc123')"]
+
+
+def test_unknown_staging_falls_back_to_shape():
+    """Nothing is known about this file, so only the reference shape is checked."""
+    declared = {"i": {"class": "File", "path": "a.bed"}}
+    submitted = {"i": {"src": "hda", "id": "def456"}}
+    assert declared_mismatches(declared, submitted, dataset_ids={}) == []
+
+
+def test_wrong_dataset_inside_a_repeat_is_reported():
+    declared = {"q": [{"i": {"class": "File", "path": "b.bed"}}]}
+    submitted = {"q": [{"i": {"src": "hda", "id": "zzz"}}]}
+    mismatches = declared_mismatches(declared, submitted, dataset_ids={"b.bed": "yyy"})
+    assert mismatches == ["q|0|i (dataset 'zzz', not the staged 'yyy')"]
