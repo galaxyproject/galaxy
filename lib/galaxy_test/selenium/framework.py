@@ -1179,7 +1179,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 self._clear_multiselect_tags(key)
             for item in items:
                 # The form matches on the label, so send that where one is known.
-                self.tool_set_value(key, by_value.get(item, item), expected_type="select")
+                self._select_option(key, by_value.get(item, item))
         else:
             self._set_text_value(key, str(value))
 
@@ -1196,6 +1196,41 @@ class RunsToolTests(NavigatesGalaxyMixin):
         if text in by_value or "," not in text:
             return [text]
         return [item for item in text.split(",") if item]
+
+    def _select_option(self, expanded_id: str, text: str):
+        """Pick the option whose label is exactly this text.
+
+        Typing and pressing enter takes the first match, so a value that is a prefix of
+        another option (chr11 against chr11_random) selects the wrong one. Fall back to
+        that behaviour when the option is not among the ones on screen.
+        """
+        element_id = f"form-element-{expanded_id.replace('|', '-')}"
+        opened = self.execute_script(
+            "const div = document.getElementById(arguments[0]);"
+            "const root = div && div.querySelector('.multiselect');"
+            "if (!root) { return false; }"
+            "if (!root.classList.contains('multiselect--active')) {"
+            "  const toggle = root.querySelector('.multiselect__select') || root;"
+            "  toggle.click();"
+            "}"
+            "return true;",
+            element_id,
+        )
+        if opened:
+            self.sleep_for(self.wait_types.UX_RENDER)
+            if self.execute_script(
+                "const div = document.getElementById(arguments[0]);"
+                "const wanted = arguments[1];"
+                "for (const option of div.querySelectorAll('.multiselect__option')) {"
+                "  if (option.textContent.trim() === wanted) { option.click(); return true; }"
+                "}"
+                "return false;",
+                element_id,
+                text,
+            ):
+                self.sleep_for(self.wait_types.UX_RENDER)
+                return
+        self.tool_set_value(expanded_id, text, expected_type="select")
 
     def _set_boolean_value(self, expanded_id: str, value):
         checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
