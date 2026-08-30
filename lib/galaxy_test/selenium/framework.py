@@ -828,8 +828,9 @@ class RunsToolTests(NavigatesGalaxyMixin):
         multi_job_keys: dict[str, list[str]] = {}
 
         def file_entry(filename: str) -> dict:
-            entry: dict = {"class": "File", "path": filename}
             meta = file_meta.get(filename, {})
+            # A test can name a directory rather than a file; staging uploads it as one.
+            entry: dict = {"class": meta.get("class") or "File", "path": filename}
             ftype = meta.get("ftype")
             if ftype:
                 entry["filetype"] = ftype

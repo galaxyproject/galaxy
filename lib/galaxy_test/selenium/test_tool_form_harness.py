@@ -165,6 +165,7 @@ FORM_ONLY_TOOL_TESTS = _framework_tool_tests()
 KNOWN_FORM_FAILURES: dict[str, str] = {
     "async_conditional_no_default_nested_data_0": "a repeat inside a conditional gets one instance too many",
     "collection_split_on_column_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
+    "composite_pbed_0": "test data uses a datatype the instance does not know",
     "credentials_test_0": "the tool needs a credential this instance has none of",
     "credentials_test_1": "the tool needs a credential this instance has none of",
     "select_dynamic_0": "a select that renames its value column is filled from the wrong column",
@@ -188,7 +189,6 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "pick_value_9": "an unset optional boolean submits false, so a declared null cannot be expressed",
     "select_from_dataset_1": "options read from a dataset are matched by position, not by value",
     "select_from_url_0": "no job appears after the form submits",
-    "use_directory_index_0": "the test input is a directory and staging expects a file",
     "validation_hdf5_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
 }
 
