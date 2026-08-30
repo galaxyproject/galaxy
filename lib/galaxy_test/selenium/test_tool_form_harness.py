@@ -190,8 +190,6 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "pick_value_4": "an unset optional boolean submits false, so a declared null cannot be expressed",
     "pick_value_5": "an unset optional boolean submits false, so a declared null cannot be expressed",
     "pick_value_9": "an unset optional boolean submits false, so a declared null cannot be expressed",
-    "section_0": "parameter int|inttest never appears on the form",
-    "section_1": "parameter int|inttest never appears on the form",
     "select_from_dataset_1": "run button stays disabled, so a parameter was not accepted by the form",
     "select_from_url_0": "no job appears after the form submits",
     "use_directory_index_0": "a directory is passed where the test expects a file",

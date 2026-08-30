@@ -1110,9 +1110,19 @@ class RunsToolTests(NavigatesGalaxyMixin):
         )
 
     def _expand_collapsed_sections(self):
+        """Open the sections that are closed, leaving the open ones alone."""
         self.components.tool_form.execute.wait_for_visible()
-        for header in self.components.tool_form.section_header.all():
-            header.click()
+        # The header toggles, so clicking an open section would hide its parameters.
+        opened = self.execute_script(
+            "let n = 0;"
+            "for (const section of document.querySelectorAll('.ui-portlet-section')) {"
+            "  const content = section.querySelector('.portlet-content');"
+            "  const header = section.querySelector('.portlet-header');"
+            "  if (header && content && content.offsetParent === null) { header.click(); n += 1; }"
+            "}"
+            "return n;"
+        )
+        if opened:
             self.sleep_for(self.wait_types.UX_RENDER)
 
     # -- Type detection and value setting --
