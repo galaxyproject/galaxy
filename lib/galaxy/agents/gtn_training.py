@@ -8,6 +8,7 @@ from typing import (
     Any,
 )
 
+from langchain_openai import OpenAIEmbeddings
 from pydantic import (
     BaseModel,
     Field,
@@ -34,11 +35,14 @@ from .gtn import GTNSearchDB
 
 log = logging.getLogger(__name__)
 
+GTN_TRAINING_BASE_URL = "https://training.galaxyproject.org/training-material"
+
 
 class GTNSearchResponse(BaseModel):
     """Structured response from GTN training agent."""
 
     tutorials: list[dict[str, Any]] = Field(default_factory=list, description="List of matching tutorials")
+    workflows: list[dict[str, Any]] = Field(default_factory=list, description="List of matching workflows")
     faqs: list[dict[str, Any]] = Field(default_factory=list, description="List of matching FAQs")
     summary: str = Field(..., description="Natural language summary of findings")
     learning_path: str | None = Field(None, description="Suggested learning progression")
@@ -80,10 +84,14 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         db_path = getattr(deps.config, "gtn_database_path", None)
         download_url = getattr(deps.config, "gtn_database_url", None)
+        vector_db_path = getattr(deps.config, "vector_database_path", None)
+        vector_db_url = getattr(deps.config, "vector_database_url", None)
 
         self.gtn_db: GTNSearchDB | None = None
         try:
-            self.gtn_db = GTNSearchDB(db_path=db_path, download_url=download_url)
+            self.gtn_db = GTNSearchDB(
+                db_path=db_path, vector_db_path=vector_db_path, download_url=download_url, vector_db_url=vector_db_url
+            )
             log.info("GTN database initialized successfully")
         except (OSError, RuntimeError) as e:
             log.warning(f"GTN database not available: {e}")
@@ -117,6 +125,85 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             # malformed output recovers.
             retries=self._get_retries(),
         )
+
+        @agent.tool
+        async def search_gtn_tutorial_vectors(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+            limit: int = 5,
+        ) -> str:
+            """Search GTN tutorials using vector search over titles, descriptions, and content."""
+            try:
+                embeddings, persist_dir = self._vector_search_dependencies()
+                if not self.gtn_db:
+                    return json.dumps({"error": "GTN database not available"})
+                results = self.gtn_db.search_gtn_vector_db(
+                    query=query,
+                    embeddings=embeddings,
+                    persist_dir=persist_dir,
+                    collection_name="gtn_tutorials",
+                    limit=limit,
+                )
+                return json.dumps({"results": [r.to_dict() for r in results], "count": len(results)})
+            except (AttributeError, KeyError, TypeError) as e:
+                log.warning(f"GTN vector search failed: {e}")
+                return json.dumps({"error": str(e)})
+
+        @agent.tool
+        async def search_gtn_workflow_vectors(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+            limit: int = 5,
+        ) -> str:
+            """Search workflow vectors for end-to-end analysis workflows relevant to the query."""
+            try:
+                embeddings, persist_dir = self._vector_search_dependencies()
+                if not self.gtn_db:
+                    return json.dumps({"error": "GTN database not available"})
+                results = self.gtn_db.search_workflow_vector_db(
+                    query=query,
+                    embeddings=embeddings,
+                    persist_dir=persist_dir,
+                    collection_name="iwc_workflows",
+                    limit=limit,
+                )
+                return json.dumps(
+                    {
+                        "results": [r.to_dict() for r in results],
+                        "count": len(results),
+                    }
+                )
+            except (AttributeError, KeyError, TypeError, ValueError) as e:
+                log.warning(f"GTN workflow vector search failed: {e}")
+                return json.dumps({"error": str(e)})
+
+        @agent.tool
+        async def search_gtn_faq_vectors(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+            limit: int = 5,
+        ) -> str:
+            """Search FAQ vectors for relevant questions and answers."""
+            try:
+                embeddings, persist_dir = self._vector_search_dependencies()
+                if not self.gtn_db:
+                    return json.dumps({"error": "GTN database not available"})
+                results = self.gtn_db.search_faq_vector_db(
+                    query=query,
+                    embeddings=embeddings,
+                    persist_dir=persist_dir,
+                    collection_name="galaxy_faqs",
+                    limit=limit,
+                )
+                return json.dumps(
+                    {
+                        "results": [r.to_dict() for r in results],
+                        "count": len(results),
+                    }
+                )
+            except (AttributeError, KeyError, TypeError, ValueError) as e:
+                log.warning(f"GTN FAQ vector search failed: {e}")
+                return json.dumps({"error": str(e)})
 
         @agent.tool
         async def search_gtn_tutorials(
@@ -245,6 +332,25 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "gtn_training.md"
         return prompt_path.read_text()
 
+    def _vector_search_dependencies(self) -> tuple[OpenAIEmbeddings, Path]:
+        vector_database_path = getattr(self.deps.config, "vector_database_path", None)
+        if not vector_database_path:
+            raise ValueError("Vector database path is not configured")
+        persist_dir = Path(vector_database_path)
+        embedding_base_url = getattr(self.deps.config, "embedding_api_base_url", None)
+        embedding_model = getattr(self.deps.config, "embedding_model", None)
+        embedding_api_key = getattr(self.deps.config, "embedding_api_key", None) or ""
+        embeddings = OpenAIEmbeddings(
+            openai_api_base=embedding_base_url,
+            model=embedding_model,
+            openai_api_key=embedding_api_key,
+            tiktoken_enabled=False,
+            check_embedding_ctx_length=False,
+        )
+        self.persist_dir = persist_dir
+        self.embeddings = embeddings
+        return embeddings, persist_dir
+
     async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
@@ -263,8 +369,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         try:
             message_history = self._extract_message_history(context)
-            result = await self._run_with_retry(query, message_history=message_history)
 
+            result = await self._run_with_retry(query, message_history=message_history)
             usage = extract_usage_info(result)
             if usage:
                 log.info(
@@ -286,10 +392,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                         query=query,
                         error="invalid_structured_output",
                     )
-
                 used_fallback = False
-                if not response_data.tutorials and not response_data.faqs:
-                    log.info("No tutorials or FAQs in response, falling back to direct search")
+                if not response_data.tutorials and not response_data.faqs and not response_data.workflows:
                     fallback_results = self.gtn_db.search(query, limit=5)
                     if fallback_results:
                         used_fallback = True
@@ -297,12 +401,11 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                             tutorials=[r.to_dict() for r in fallback_results],
                             summary=f"Found {len(fallback_results)} tutorials related to your query",
                         )
-
                 return self._build_response(
                     content=self._format_gtn_response(response_data),
                     confidence=(
                         ConfidenceLevel.HIGH
-                        if response_data.tutorials or response_data.faqs
+                        if response_data.tutorials or response_data.faqs or response_data.workflows
                         else ConfidenceLevel.MEDIUM
                     ),
                     method="structured_with_fallback" if used_fallback else "structured",
@@ -311,6 +414,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     suggestions=self._create_suggestions(response_data),
                     agent_data={
                         "tutorial_count": len(response_data.tutorials),
+                        "workflow_count": len(response_data.workflows),
                         "faq_count": len(response_data.faqs),
                         "has_learning_path": bool(response_data.learning_path),
                         "total_time": response_data.total_time,
@@ -346,8 +450,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 topic = tutorial.get("topic", "Unknown")
                 difficulty = tutorial.get("difficulty", "Unknown")
                 time_estimation = tutorial.get("time_estimation", "Unknown")
-                url = tutorial.get("url", "#")
+                url = tutorial.get("url") or tutorial.get("link") or None
                 snippet = tutorial.get("snippet", "")
+                summary = tutorial.get("summary") or tutorial.get("description") or None
 
                 parts.append(f"\n{i}. **{title}**")
                 if snippet:
@@ -358,25 +463,56 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     parts.append(f"   - Difficulty: {difficulty}")
                 if time_estimation and time_estimation != "Unknown":
                     parts.append(f"   - Time: {time_estimation}")
-                parts.append(f"   - Link: {url}")
+                if url:
+                    parts.append(f"   - Link: {url}")
+                if summary:
+                    parts.append(f"   - Summary: {summary}")
+
+        if response_data.workflows:
+            parts.append("\n**Relevant Workflows:**")
+            for i, workflow in enumerate(response_data.workflows, 1):
+                title = (
+                    workflow.get("workflow_name")
+                    or workflow.get("name")
+                    or workflow.get("title")
+                    or "Untitled Workflow"
+                )
+                topic = workflow.get("topic", "Unknown")
+                url = workflow.get("url", "Unknown")
+                content = workflow.get("content", "")
+                summary = workflow.get("summary") or workflow.get("description") or None
+
+                parts.append(f"\n{i}. **{title}**")
+                if content:
+                    parts.append(f"   - Summary: {content}")
+                if topic and topic != "Unknown":
+                    parts.append(f"   - Topic: {topic}")
+                if url:
+                    parts.append(f"   - Link: {url}")
+                if summary:
+                    parts.append(f"   - Summary: {summary}")
 
         if response_data.faqs:
             parts.append("\n**Relevant FAQs:**")
             for i, faq in enumerate(response_data.faqs, 1):
                 title = faq.get("title", "Untitled FAQ")
-                category = faq.get("category", "Unknown")
                 area = faq.get("area", "")
-                url = faq.get("url", "#")
                 snippet = faq.get("snippet", "")
+                question = faq.get("question", "")
+                answer = faq.get("answer", "")
+                url = faq.get("url", "")
 
                 parts.append(f"\n{i}. **{title}**")
+                if question:
+                    parts.append(f"   - Question: {question}")
+                if answer:
+                    parts.append(f"   - Answer: {answer}")
                 if snippet:
-                    parts.append(f"   {snippet}")
-                if category and category != "Unknown":
-                    parts.append(f"   - Category: {category}")
+                    parts.append(f"   - Snippet: {snippet}")
                 if area:
                     parts.append(f"   - Area: {area}")
-                parts.append(f"   - Link: {url}")
+                if url:
+                    parts.append(f"   - Link: {url}")
 
         if response_data.learning_path:
             parts.append(f"\n**Suggested Learning Path:**\n{response_data.learning_path}")
@@ -396,7 +532,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         for tutorial in response_data.tutorials[:3]:
             title = tutorial.get("title", "Untitled Tutorial")
-            url = tutorial.get("url", "#")
+            url = tutorial.get("url", "Unknown")
+            if not url:
+                continue
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.VIEW_EXTERNAL,
@@ -409,11 +547,34 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         for faq in response_data.faqs[:3]:
             title = faq.get("title", "Untitled FAQ")
-            url = faq.get("url", "#")
+            url = faq.get("url", "Unknown")
+            if not url:
+                continue
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.VIEW_EXTERNAL,
                     description=f"Open FAQ: {title}",
+                    parameters={"url": url},
+                    confidence=ConfidenceLevel.HIGH,
+                    priority=1 if not response_data.tutorials else 2,
+                )
+            )
+
+        for workflow in response_data.workflows[:3]:
+            title = (
+                workflow.get("workflow_name")
+                or workflow.get("name")
+                or workflow.get("title")
+                or workflow.get("workflow_id")
+                or "Untitled Workflow"
+            )
+            url = workflow.get("url", "Unknown")
+            if not url:
+                continue
+            suggestions.append(
+                ActionSuggestion(
+                    action_type=ActionType.VIEW_EXTERNAL,
+                    description=f"Open workflow: {title}",
                     parameters={"url": url},
                     confidence=ConfidenceLevel.HIGH,
                     priority=1 if not response_data.tutorials else 2,

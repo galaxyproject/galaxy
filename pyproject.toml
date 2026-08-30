@@ -54,6 +54,8 @@ dependencies = [
     "jinja2",
     "kombu>=5.5.0",  # prefer not downgrading this to upgrading typing-extensions
     "lagom",
+    "langchain-chroma==1.1.0",
+    "langchain-openai==1.2.1",
     "Mako",
     "Markdown",
     "MarkupSafe",

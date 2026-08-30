@@ -4289,6 +4289,44 @@ mapping:
         desc: |
           AI model to enable the wizard. Global fallback for all AI agents.
 
+      embedding_api_key:
+        type: str
+        required: false
+        desc: |
+          API key for the OpenAI-compatible embedding provider used by vector search agents.
+
+      embedding_api_base_url:
+        type: str
+        required: false
+        desc: |
+          Embedding API base URL. Needs to be OpenAI compatible.
+
+      embedding_model:
+        type: str
+        default: BAAI/bge-large-en-v1.5
+        required: false
+        desc: |
+          Embedding model used by vector search agents.
+
+      vector_database_path:
+        type: str
+        default: 'gtn/chroma_db_composite'
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Path to the Chroma vector database used by vector search agents.
+          Resolves against ``data_dir`` so admins can place it in a mutable-data
+          directory. The database archive is downloaded automatically on first
+          use from ``vector_database_url`` if it does not exist.
+
+      vector_database_url:
+        type: str
+        required: false
+        desc: |
+          URL used to download the Chroma vector database archive when the
+          local directory at ``vector_database_path`` is missing. Supported
+          archive formats are zip, tar, tar.gz, and tgz.
+
       inference_services:
         type: any
         required: false

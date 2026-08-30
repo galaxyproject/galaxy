@@ -1285,6 +1285,27 @@ class TestAgentUnitMocked:
         assert "**Relevant Tutorials:**" not in content
 
     @pytest.mark.asyncio
+    async def test_gtn_process_uses_vector_tool_results_when_structured_output(self):
+        mock_gtn_agent = AsyncMock()
+        mock_gtn_agent.process.return_value = MagicMock(
+            content="To perform RNA‑seq differential expression analysis in Galaxy you can use the dedicated RNA‑Seq Differential Expression Analysis.",
+            agent_type="gtn_training",
+            metadata={
+                "model": "openai/gpt-oss-120b",
+                "method": "structured",
+                "tutorial_count": 1,
+                "workflow_count": 1,
+            },
+        )
+
+        response = await mock_gtn_agent.process("RNA-seq differential expression")
+
+        assert "RNA‑seq differential expression" in response.content
+        assert "**Relevant FAQs:**" not in response.content
+        assert response.agent_type == "gtn_training"
+        assert response.metadata["method"] == "structured"
+
+    @pytest.mark.asyncio
     async def test_workflow_orchestrator_generic_fallback_behavior(self):
         agent = self._orchestrator_agent()
 

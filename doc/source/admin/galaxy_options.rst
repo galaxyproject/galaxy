@@ -5765,6 +5765,63 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``embedding_api_key``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    API key for the OpenAI-compatible embedding provider used by vector
+    search agents.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``embedding_api_base_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Embedding API base URL. Needs to be OpenAI compatible.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``embedding_model``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Embedding model used by vector search agents.
+:Default: ``BAAI/bge-large-en-v1.5``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``vector_database_path``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to the Chroma vector database used by vector search agents.
+    Resolves against ``data_dir`` so admins can place it in a
+    mutable-data directory. The database archive is downloaded
+    automatically on first use from ``vector_database_url`` if it does
+    not exist.
+:Default: ``gtn/chroma_db_composite``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``vector_database_url``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL used to download the Chroma vector database archive when the
+    local directory at ``vector_database_path`` is missing. Supported
+    archive formats are zip, tar, tar.gz, and tgz.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``inference_services``
 ~~~~~~~~~~~~~~~~~~~~~~
