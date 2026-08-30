@@ -58,6 +58,13 @@ const filteredWorkflows = computed(() => {
 });
 
 const filteredFiles = computed(() => {
+    console.log("Zipcontents:", props.zipContents);
+    console.debug("[ZipFileSelector] Filtered files with metadata:", props.zipContents.files.map(f => ({
+        path: f.path,
+        name: f.name,
+        alternateName: f.alternateName,
+        description: f.description,
+    })));
     return props.zipContents.files.filter(matchesSearch);
 });
 
