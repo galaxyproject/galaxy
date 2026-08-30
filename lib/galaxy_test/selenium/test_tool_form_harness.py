@@ -231,11 +231,12 @@ class AssertsAsyncSubmission:
     """Assert the browser submitted through the tool request API, not the legacy one."""
 
     def _assert_async_submission(self, tool_id, test_index):
-        called = self.execute_script(
-            "return performance.getEntriesByType('resource')"
-            ".map(e => e.name).filter(n => n.includes('/api/tool_requests'));"
-        )
-        assert called, f"{tool_id}[{test_index}] fell back to the legacy submission path"
+        # Galaxy records the request before queueing the job, so this holds whatever
+        # the tool goes on to do. Browser resource timings do not: they only show the
+        # tool request polling a submission that succeeded.
+        history_id = self.current_history_id()
+        recorded = self.api_get(f"histories/{history_id}/tool_requests")
+        assert recorded, f"{tool_id}[{test_index}] fell back to the legacy submission path"
 
 
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
