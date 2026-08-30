@@ -783,6 +783,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
             test_def, hid_map, required_filenames, collection_hid_map, self._select_labels(tool_id)
         )
         expect_failure = test_def.get("expect_failure", False)
+        pre_request_ids = self._tool_request_ids(history_id)
         if form_only and expect_failure and not self._run_button_enabled():
             # Galaxy disabled the run button and said why, so the form refused an input
             # set this test declares invalid. There is nothing to submit.
@@ -793,6 +794,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
             # that outcome belongs to the API tool tests.
             if not expect_failure:
                 self._wait_for_new_job(history_id, tool_id, pre_job_ids, dataset_populator)
+                self._verify_request_state(history_id, test_def, tool_id, pre_request_ids)
             return
         self._verify_tool_test_outputs(test_def, history_id, tool_id, pre_job_ids, dataset_populator)
 
@@ -1181,6 +1183,54 @@ class RunsToolTests(NavigatesGalaxyMixin):
         """Whether the form will accept a run; Galaxy marks a blocked button aria-disabled."""
         button = self.components.tool_form.execute.wait_for_visible()
         return button.get_attribute("aria-disabled") != "true"
+
+    def _tool_request_ids(self, history_id: str) -> set:
+        try:
+            return {request["id"] for request in self.api_get(f"histories/{history_id}/tool_requests")}
+        except Exception:
+            return set()
+
+    def _verify_request_state(self, history_id: str, test_def: dict, tool_id: str, pre_request_ids: set):
+        """Compare what the form submitted against what the test case declares.
+
+        Galaxy stores the typed request the browser sent, so the form's own state is
+        readable here. Only declared parameters are checked; the form also sends
+        defaults the test says nothing about.
+        """
+        declared = test_def.get("request")
+        if not declared:
+            return
+        fresh = [r for r in self.api_get(f"histories/{history_id}/tool_requests") if r["id"] not in pre_request_ids]
+        assert fresh, f"{tool_id}: form submitted without recording a tool request"
+        submitted = fresh[-1].get("request") or {}
+        mismatches = self._declared_mismatches(declared, submitted)
+        assert not mismatches, f"{tool_id}: form state differs from the test case at " + "; ".join(mismatches)
+
+    @classmethod
+    def _declared_mismatches(cls, declared, submitted, path: str = "") -> list[str]:
+        """Paths where a declared parameter is missing from or differs in the request."""
+        mismatches = []
+        for name, expected in declared.items():
+            here = f"{path}|{name}" if path else name
+            if not isinstance(submitted, dict) or name not in submitted:
+                mismatches.append(f"{here} (absent)")
+                continue
+            actual = submitted[name]
+            if cls._is_dataset_reference(expected):
+                # The test names a file; the form sends whatever it was staged as.
+                if not cls._is_dataset_reference(actual):
+                    mismatches.append(f"{here} (expected a dataset, got {actual!r})")
+            elif isinstance(expected, dict):
+                mismatches.extend(cls._declared_mismatches(expected, actual, here))
+            elif str(expected) != str(actual):
+                mismatches.append(f"{here} ({actual!r} not {expected!r})")
+        return mismatches
+
+    @staticmethod
+    def _is_dataset_reference(value) -> bool:
+        if not isinstance(value, dict):
+            return False
+        return "src" in value or value.get("class") in ("File", "Collection")
 
     def _wait_for_new_job(self, history_id: str, tool_id: str, pre_job_ids: set, dataset_populator) -> str:
         """Wait for the job the form just submitted and return its id."""
