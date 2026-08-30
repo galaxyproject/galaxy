@@ -19,6 +19,7 @@ from typing import (
 
 import requests
 import yaml
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from requests.models import Response
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
@@ -992,27 +993,37 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
         deferred = []
         # Datasets first: a data column or a dynamic select reads its options from them.
+        # A dataset inside a repeat waits for its instance to be inserted below.
+        repeat_data_params = [kv for kv in data_params if self._parse_repeat_key(kv[0])]
         for key, value in data_params:
+            if (key, value) in repeat_data_params:
+                continue
             try:
                 self._set_data_param(key, value, hid_map)
-            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+            except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
                 deferred.append((key, value))
 
         for key, value in outer_params:
             try:
                 self._set_tool_form_value(key, value, required_filenames, select_labels)
                 self.sleep_for(self.wait_types.UX_RENDER)
-            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+            except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
                 deferred.append((key, value))
 
         for repeat_name, count in repeat_counts.items():
             self._add_repeat_instances(repeat_name, count)
 
+        for key, value in repeat_data_params:
+            try:
+                self._set_data_param(key, value, hid_map)
+            except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
+                deferred.append((key, value))
+
         for key, value in repeat_params:
             try:
                 self._set_tool_form_value(key, value, required_filenames, select_labels)
                 self.sleep_for(self.wait_types.UX_RENDER)
-            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+            except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
                 deferred.append((key, value))
 
         # Setting one parameter can reveal another, so keep retrying the ones that were
@@ -1031,7 +1042,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
                     else:
                         self._set_tool_form_value(key, value, required_filenames, select_labels)
                     self.sleep_for(self.wait_types.UX_RENDER)
-                except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+                except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
                     still_deferred.append((key, value))
             if len(still_deferred) == len(deferred):
                 break
