@@ -837,6 +837,10 @@ class RunsToolTests(NavigatesGalaxyMixin):
             composite_data = meta.get("composite_data")
             if composite_data:
                 entry["composite_data"] = composite_data
+            # Validators read dataset metadata, so it has to survive staging.
+            for attribute in ("dbkey", "metadata"):
+                if meta.get(attribute):
+                    entry[attribute] = meta[attribute]
             return entry
 
         for key, value in inputs.items():
