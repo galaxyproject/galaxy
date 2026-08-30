@@ -27,14 +27,22 @@ async function makeHistoryPrivate() {
         if (!history.value) {
             throw new Error("History not found");
         }
-        const { sharingStatusChanged } = await historyStore.secureHistory(history.value);
+        const { sharingStatusChanged, skippedDatasets } = await historyStore.secureHistory(history.value);
         Toast.success(
             localize(
-                "Existing data in this history is now private, as well as any new data created in this history. \
+                "Your data in this history is now private, as well as any new data created in this history. \
                 Your sharing preferences have also been reset.",
             ),
             localize("Successfully made history private."),
         );
+        if (skippedDatasets > 0) {
+            Toast.warning(
+                `${skippedDatasets} ${localize(
+                    "dataset(s) in this history belong to another user and remain accessible to others.",
+                )}`,
+                localize("Some datasets were not made private."),
+            );
+        }
         emit("history-made-private", sharingStatusChanged);
     } catch (error) {
         Toast.error(errorMessageAsString(error), localize("An error occurred while making the history private."));
@@ -51,9 +59,10 @@ async function makeHistoryPrivate() {
         </template>
 
         <p v-localize>
-            This will make all the data in this history private (excluding library datasets), and will set permissions
-            such that all new data is created as private. Any datasets within that are currently shared will need to be
-            re-shared or published. Are you sure you want to do this?
+            This will make the datasets you own in this history private (excluding library datasets), and will set
+            permissions such that all new data is created as private. Datasets that belong to another user, for example
+            those in a history you imported, stay as they are. Any datasets within that are currently shared will need
+            to be re-shared or published. Are you sure you want to do this?
         </p>
 
         <AsyncButton

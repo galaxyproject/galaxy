@@ -1,3 +1,4 @@
+import re
 import time
 from typing import ClassVar
 from unittest import SkipTest
@@ -8,6 +9,7 @@ import pytest
 from requests import (
     post,
     put,
+    Session,
 )
 
 from galaxy.model.unittest_utils.store_fixtures import (
@@ -18,11 +20,13 @@ from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.decorators import (
     requires_admin,
+    requires_new_library,
     requires_new_user,
 )
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    LibraryPopulator,
     skip_without_tool,
 )
 from ._framework import ApiTestCase
@@ -1024,6 +1028,7 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     @requires_new_user
     def test_sharing_with_private_datasets(self):
@@ -1145,6 +1150,73 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
             self._assert_status_code_is(show_response, 200)
             hda = show_response.json()
             assert hda["id"] == hda_id
+
+    @requires_new_library
+    @requires_new_user
+    def test_make_private_imported_history(self):
+        source_history_id = self.dataset_populator.new_history()
+        source_hdas = [
+            self.dataset_populator.new_dataset(source_history_id, content=content, wait=True)
+            for content in ("source dataset one", "source dataset two")
+        ]
+        library_dataset = self.library_populator.new_library_dataset("source library dataset")
+        library_copy_response = self._post(
+            f"histories/{source_history_id}/contents",
+            data={"content": library_dataset["id"], "source": "library", "type": "dataset"},
+            json=True,
+        )
+        library_copy_response.raise_for_status()
+        source_library_hda = library_copy_response.json()
+        self.dataset_populator.make_dataset_public_raw(source_history_id, source_library_hda["id"]).raise_for_status()
+        self.dataset_populator.make_public(source_history_id)
+
+        with self._different_user():
+            importer_email = self._get("users/current").json()["email"]
+            copied_history_response = self.dataset_populator.copy_history(source_history_id)
+            copied_history_response.raise_for_status()
+            copied_history_id = copied_history_response.json()["id"]
+            imported_hdas = self.dataset_populator.get_history_contents(copied_history_id)
+            importer_hda = self.dataset_populator.new_dataset(copied_history_id, content="importer dataset", wait=True)
+
+            make_private_response = self._make_history_private_as_browser(importer_email, copied_history_id)
+            # the two imported datasets belong to the source user, the library dataset is not counted
+            assert make_private_response["skipped_datasets"] == len(source_hdas)
+
+            for imported_hda, source_hda in zip(imported_hdas, source_hdas):
+                imported_details = self._get(f"datasets/{imported_hda['id']}")
+                self._assert_status_code_is(imported_details, 200)
+                assert imported_details.json()["dataset_id"] == source_hda["dataset_id"]
+            self._assert_status_code_is(self._get(f"datasets/{importer_hda['id']}"), 200)
+
+            with self._different_user("unrelated-user@test.galaxyproject.org"):
+                for hda in imported_hdas:
+                    self._assert_status_code_is(self._get(f"datasets/{hda['id']}"), 200)
+                self._assert_status_code_is(self._get(f"datasets/{importer_hda['id']}"), 403)
+
+        source_history = self._show(source_history_id)
+        assert source_history["published"] is True
+        with self._different_user("unrelated-user@test.galaxyproject.org"):
+            for hda in [*source_hdas, source_library_hda]:
+                self._assert_status_code_is(self._get(f"datasets/{hda['id']}"), 200)
+
+    def _make_history_private_as_browser(self, email: str, history_id: str) -> dict:
+        # history/make_private is a legacy controller route outside /api, so it
+        # only accepts a browser session, not an API key.
+        with Session() as session:
+            login_page = session.get(urljoin(self.url, "login/start"))
+            self._assert_status_code_is(login_page, 200)
+            csrf_token_match = re.search(r'session_csrf_token = "(.*)"', login_page.text)
+            assert csrf_token_match
+            login_response = session.post(
+                urljoin(self.url, "user/login"),
+                data={"login": email, "password": "testpass", "session_csrf_token": csrf_token_match.group(1)},
+            )
+            self._assert_status_code_is(login_response, 200)
+            make_private_response = session.post(
+                urljoin(self.url, "history/make_private"), data={"history_id": history_id}
+            )
+            self._assert_status_code_is(make_private_response, 200)
+            return make_private_response.json()
 
     def _share_history_with_payload(self, history_id, payload):
         sharing_response = self._put(f"histories/{history_id}/share_with_users", data=payload, json=True)
