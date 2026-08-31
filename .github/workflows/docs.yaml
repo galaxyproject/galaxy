@@ -16,6 +16,11 @@ concurrency:
 permissions: {}
 jobs:
   build:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     runs-on: ubuntu-latest
     strategy:
       matrix:

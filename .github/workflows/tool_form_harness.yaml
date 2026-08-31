@@ -41,8 +41,18 @@ concurrency:
 permissions: {}
 jobs:
   build-client:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     uses: ./.github/workflows/build_client.yaml
   test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Test
     needs: [build-client]
     runs-on: ubuntu-latest

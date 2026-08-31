@@ -26,6 +26,11 @@ concurrency:
 permissions: {}
 jobs:
   prepare-mulled-cache:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Prepare mulled resolution cache
     runs-on: ubuntu-latest
     steps:
@@ -74,6 +79,11 @@ jobs:
           retention-days: 1
 
   test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Test
     needs: prepare-mulled-cache
     runs-on: ubuntu-latest

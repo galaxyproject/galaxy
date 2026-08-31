@@ -14,6 +14,11 @@ permissions: {}
 
 jobs:
   zizmor:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Run zizmor 🌈
     runs-on: ubuntu-latest
     permissions:
