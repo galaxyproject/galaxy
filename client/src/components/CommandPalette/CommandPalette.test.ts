@@ -109,10 +109,12 @@ describe("CommandPalette", () => {
         expect(inputValue()).toBe("align");
     });
 
-    it("hints at scopes whose provider is not registered yet", async () => {
+    it("hands a scope to its registered provider", async () => {
         await type("w: rna");
         expect(badge().text()).toContain("My workflows");
-        expect(wrapper.find("[data-description='palette scope hint']").text()).toContain("My workflows");
+        // the workflow store is empty here, so the scope has nothing to offer
+        expect(wrapper.find("[data-description='palette scope hint']").exists()).toBe(false);
+        expect(wrapper.find("[data-description='palette empty']").exists()).toBe(true);
     });
 
     it("pops the badge on backspace with the caret at the start", async () => {

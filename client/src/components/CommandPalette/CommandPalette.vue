@@ -187,15 +187,29 @@ function helpSections(ctx: PaletteContext): ResultSection[] {
     ].map((section) => ({ ...section, items: rankPaletteItems(section.items, query.value) }));
 }
 
+/** One provider failing must never cost the user every other section */
+function withoutFailing<T>(providerId: string, run: () => T | Promise<T>, fallback: T): Promise<T> {
+    return Promise.resolve()
+        .then(run)
+        .catch((error) => {
+            console.debug(`Command palette provider "${providerId}" failed`, error);
+            return fallback;
+        });
+}
+
 async function providerItems(providerId: string, ctx: PaletteContext): Promise<PaletteItem[]> {
     const provider = findPaletteProvider(providerId);
     if (!provider) {
         return [];
     }
-    if (!query.value && provider.emptyQueryItems) {
-        return provider.emptyQueryItems(ctx).slice(0, MAX_EMPTY_QUERY_ITEMS);
-    }
-    return provider.search(query.value, ctx);
+    return withoutFailing(
+        providerId,
+        () =>
+            !query.value && provider.emptyQueryItems
+                ? provider.emptyQueryItems(ctx).slice(0, MAX_EMPTY_QUERY_ITEMS)
+                : provider.search(query.value, ctx),
+        [],
+    );
 }
 
 /** Unscoped search: every provider contributes a section, best match first */
@@ -227,7 +241,7 @@ async function scopedSections(scope: ScopeDefinition, ctx: PaletteContext): Prom
         return [];
     }
     if (provider.searchScoped) {
-        const scoped = await provider.searchScoped(scope, query.value, ctx);
+        const scoped = await withoutFailing(provider.id, () => provider.searchScoped!(scope, query.value, ctx), []);
         return scoped.map((section) => ({ ...section, id: `${provider.id}:${section.id}` }));
     }
     return [{ id: provider.id, items: await providerItems(provider.id, ctx), title: provider.title }];

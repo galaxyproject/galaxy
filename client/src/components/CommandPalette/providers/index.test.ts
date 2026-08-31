@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { PaletteItem } from "../types";
-import { parsePaletteQuery, rankPaletteItems } from "./index";
+import { findPaletteProvider, paletteProviders, parsePaletteQuery, rankPaletteItems } from "./index";
+import { ACTIONS_SCOPE, PALETTE_SCOPES } from "./scopes";
 
 function item(id: string, title: string, extras: Partial<PaletteItem> = {}): PaletteItem {
     return { id, title, ...extras };
@@ -12,6 +13,25 @@ function scopeKey(raw: string) {
     const parsed = parsePaletteQuery(raw);
     return parsed.type === "scope" ? parsed.scope.key : undefined;
 }
+
+describe("paletteProviders", () => {
+    it("serves every registered scope", () => {
+        [ACTIONS_SCOPE, ...PALETTE_SCOPES].forEach((scope) => {
+            expect(findPaletteProvider(scope.providerId)?.id).toBe(scope.providerId);
+        });
+    });
+
+    it("registers each provider exactly once", () => {
+        const ids = paletteProviders.map((provider) => provider.id);
+        expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it("gives every scope variant a sectioned search", () => {
+        PALETTE_SCOPES.filter((scope) => scope.variant).forEach((scope) => {
+            expect(findPaletteProvider(scope.providerId)?.searchScoped).toBeTypeOf("function");
+        });
+    });
+});
 
 describe("parsePaletteQuery", () => {
     it("returns a plain query unscoped", () => {
