@@ -369,11 +369,25 @@ describe("historiesProvider", () => {
     it("falls back to the remembered name for histories missing from the store", async () => {
         recent = [{ type: "history", id: "h9", name: "Forgotten history" }];
 
-        const [item] = (await scopedSections(SHARED_SCOPE)).find((s) => s.id === "recent")?.items ?? [];
+        const [item] = (await scopedSections(OWN_SCOPE)).find((s) => s.id === "recent")?.items ?? [];
 
         expect(item?.title).toBe("Forgotten history");
         expect(item?.to).toBe("/histories/view?id=h9");
         expect(item?.secondaryAction).toBeUndefined();
+    });
+
+    it("keeps the palette recents out of the shared, public and archived scopes", async () => {
+        // the MRU is one list per entity type, so a private (and unarchived)
+        // history opened through `h:` must not leak into the other scopes
+        recent = [{ type: "history", id: "h1", name: "RNA-seq analysis" }];
+
+        for (const scope of [SHARED_SCOPE, PUBLISHED_SCOPE, ARCHIVED_SCOPE]) {
+            const sections = await scopedSections(scope);
+            expect(sections.map((s) => s.id)).not.toContain("recent");
+            expect(sections.flatMap((s) => s.items.map((i) => i.title))).not.toContain("RNA-seq analysis");
+        }
+        // the base scope still offers them
+        expect((await scopedSections(OWN_SCOPE)).map((s) => s.id)).toContain("recent");
     });
 
     it("keeps the same history addressable in several sections", async () => {

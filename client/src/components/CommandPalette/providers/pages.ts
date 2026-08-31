@@ -160,14 +160,19 @@ export const pagesProvider: CommandPaletteProvider = {
         }
         return storeFirstItems("my", trimmed, RECENT_LIMIT, true);
     },
-    /** `p:` own pages and `pp:` published pages, as Recent + list sections */
+    /**
+     * `p:` own pages as Recent + list sections, `pp:` the published list alone.
+     * The palette remembers one list per entity type rather than per scope, so
+     * the recents are offered by the base scope only — a page the user opened
+     * from `p:` has no business showing up under "public".
+     */
     async searchScoped(scope: ScopeDefinition, query: string, ctx: PaletteContext) {
         if (ctx.isAnonymous) {
             return [];
         }
         const variant = variantOf(scope);
         const trimmed = query.trim();
-        const recent = recentItems(trimmed, RECENT_LIMIT);
+        const recent = variant === "my" ? recentItems(trimmed, RECENT_LIMIT) : [];
         const recentIds = new Set(recent.map((item) => item.id));
         const listed = (await storeFirstItems(variant, trimmed, SECTION_LIMIT + recentIds.size))
             .filter((item) => !recentIds.has(item.id))
