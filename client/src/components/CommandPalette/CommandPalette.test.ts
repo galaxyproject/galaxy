@@ -776,6 +776,40 @@ describe("CommandPalette", () => {
         expect(close).toHaveBeenCalled();
     });
 
+    it("reopens on a toggle that lands during the close transition", async () => {
+        const dialog = wrapper.find("dialog");
+        const close = vi.spyOn(dialog.element as HTMLDialogElement, "close");
+
+        useCommandPalette().closePalette();
+        await wrapper.vm.$nextTick();
+        // fading out, the dialog itself is still open
+        expect(dialog.classes()).not.toContain("palette-open");
+        expect((dialog.element as HTMLDialogElement).open).toBe(true);
+
+        // ⌘K before the fade-out finished must land in the open state
+        useCommandPalette().togglePalette();
+        await settle();
+
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(dialog.classes()).toContain("palette-open");
+        // the interrupted close is disarmed, fallback timer included
+        expect(close).not.toHaveBeenCalled();
+        expect(wrapper.text()).toContain("Upload data");
+    });
+
+    it("ignores a close event a reopen has already superseded", async () => {
+        const dialog = wrapper.find("dialog");
+        expect((dialog.element as HTMLDialogElement).open).toBe(true);
+
+        // the browser fires `close` in a task of its own, which a ⌘K gesture is
+        // allowed to overtake: by the time it lands the dialog is showing again
+        dialog.element.dispatchEvent(new Event("close"));
+        await settle();
+
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(dialog.classes()).toContain("palette-open");
+    });
+
     it("closes on escape", async () => {
         await input().trigger("keydown", { key: "Escape" });
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
