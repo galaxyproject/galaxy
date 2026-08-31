@@ -166,9 +166,7 @@ class VisualizationManager(sharable.SharableModelManager[model.Visualization]):
         else:
             total_matches = None
         sort_column = getattr(model.Visualization, payload.sort_by)
-        if payload.sort_desc:
-            sort_column = sort_column.desc()
-        stmt = stmt.order_by(sort_column)
+        stmt = base.apply_sort_column(stmt, sort_column, payload.sort_desc, model.Visualization.id)
         if payload.limit is not None:
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:

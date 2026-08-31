@@ -272,6 +272,21 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             index_response = self._get(f"histories{query}").json()
             assert len(index_response) == 3
 
+    def test_index_sort_by_name_is_case_insensitive(self):
+        # Codepoint ordering would sort every capitalised name ahead of every lowercase one.
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            unique_id = uuid4().hex
+            for name in [f"Zeta_{unique_id}", f"alpha_{unique_id}", f"Beta_{unique_id}"]:
+                self._create_history(name)
+
+            data = dict(search=unique_id, show_published=False, sort_by="name", sort_desc=False)
+            names = [history["name"] for history in self._get("histories", data=data).json()]
+            assert names == [f"alpha_{unique_id}", f"Beta_{unique_id}", f"Zeta_{unique_id}"]
+
+            data["sort_desc"] = True
+            names = [history["name"] for history in self._get("histories", data=data).json()]
+            assert names == [f"Zeta_{unique_id}", f"Beta_{unique_id}", f"alpha_{unique_id}"]
+
     def test_index_advanced_filter(self):
         # Create the histories with a different user to ensure the test
         # is not conflicted with the current user's histories.
