@@ -73,7 +73,7 @@ const userStore = useUserStore();
 
 // the machine needs the context to reject scope tokens the user may not use;
 // `buildContext` is a hoisted declaration, so it is safe to hand over here
-const { badgeLabel, enterAction, enterScope, handleEscape, mode, popMode, query, reset, setText, text } =
+const { badgeLabel, enterAction, enterScope, handleEscape, mode, popMode, query, setText, text } =
     usePaletteMachine(buildContext);
 
 const dialogElement = ref<HTMLDialogElement | null>(null);
@@ -849,6 +849,9 @@ async function openDialog() {
         }
     }
     inputElement.value?.focus();
+    // a preserved query starts out selected: typing replaces it outright, while
+    // an arrow key drops the selection and carries on from where it left off
+    inputElement.value?.select();
     if (prefersReducedMotion()) {
         paletteVisible.value = true;
         return;
@@ -933,11 +936,12 @@ async function hydrateTools() {
     }
 }
 
+// what was typed survives a close, so a ⌘K toggle or a stray backdrop click can
+// be taken back: only escape clears the palette, one step at a time, and by the
+// time it asks for the close there is nothing left to preserve
 watchImmediate(isPaletteOpen, (open) => {
     if (open) {
         openEpoch++;
-        reset();
-        resetCategory();
         hydrateTools();
         runSearch();
         openDialog();

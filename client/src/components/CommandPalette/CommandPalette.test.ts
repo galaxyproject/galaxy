@@ -815,6 +815,39 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
 
+    it("keeps the query and the badge when the palette is closed without escape", async () => {
+        await type("t: align");
+        expect(badge().text()).toContain("Tools");
+
+        useCommandPalette().togglePalette();
+        await settle();
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+
+        useCommandPalette().togglePalette();
+        await settle();
+
+        // a mistaken toggle or backdrop click is taken back, not typed again
+        expect(inputValue()).toBe("align");
+        expect(badge().text()).toContain("Tools");
+    });
+
+    it("reopens on a clean root state after escape closed the palette", async () => {
+        await type("t: align");
+
+        // escape is stepwise: the text goes, then the badge, then the palette
+        await press("Escape");
+        await press("Escape");
+        await press("Escape");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+
+        useCommandPalette().openPalette();
+        await settle();
+
+        expect(inputValue()).toBe("");
+        expect(badge().exists()).toBe(false);
+        expect(wrapper.text()).toContain("Upload data");
+    });
+
     it("toggles on the global ctrl/cmd+k shortcut", async () => {
         useCommandPalette().closePalette();
 
