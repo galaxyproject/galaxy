@@ -6,6 +6,7 @@ import { useInvocationStore } from "@/stores/invocationStore";
 
 import type { PaletteContext } from "../types";
 import { invocationsProvider } from "./invocations";
+import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 vi.mock("@/components/Grid/configs/invocations", () => ({
@@ -18,12 +19,15 @@ const HISTORY_NAMES: Record<string, string> = { h1: "My analysis", h2: "Scratch"
 vi.mock("@/stores/workflowStore", () => ({
     useWorkflowStore: () => ({
         getStoredWorkflowNameByInstanceId: (id: string, fallback = "...") => WORKFLOW_NAMES[id] ?? fallback,
+        // awaited by `fetchLatestInvocations` so the names are there to render
+        fetchWorkflowForInstanceIdCached: async () => undefined,
     }),
 }));
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => ({
         getHistoryById: (id: string) => (HISTORY_NAMES[id] ? { id, name: HISTORY_NAMES[id] } : null),
+        loadHistoryById: async () => undefined,
     }),
 }));
 
@@ -70,6 +74,7 @@ describe("invocationsProvider", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         recentItems.mockReturnValue([]);
+        resetListRefreshTracking();
         vi.mocked(getInvocationsData).mockReset();
         vi.mocked(getInvocationsData).mockResolvedValue([INVOCATIONS, INVOCATIONS.length] as never);
     });
@@ -127,6 +132,61 @@ describe("invocationsProvider", () => {
         expect(sections.map((s) => s.id)).toEqual(["recent", "latest"]);
         expect(sections[0]?.items.map((i) => i.id)).toEqual(["invocations:inv2"]);
         expect(sections[1]?.items.map((i) => i.id)).toEqual(["invocations:inv1", "invocations:inv3"]);
+    });
+
+    it("fetches once and answers further keystrokes from the store", async () => {
+        await invocationsProvider.searchScoped?.(SCOPE, "", makeCtx());
+        expect(getInvocationsData).toHaveBeenCalledTimes(1);
+
+        // the invocations index has no free-text search, so a query must not
+        // repeat the identical unfiltered request
+        await invocationsProvider.searchScoped?.(SCOPE, "r", makeCtx());
+        await invocationsProvider.searchScoped?.(SCOPE, "rn", makeCtx());
+        await invocationsProvider.searchScoped?.(SCOPE, "rna", makeCtx());
+
+        expect(getInvocationsData).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not refetch for a user without invocations", async () => {
+        vi.mocked(getInvocationsData).mockResolvedValue([[], 0] as never);
+
+        await invocationsProvider.searchScoped?.(SCOPE, "", makeCtx());
+        await invocationsProvider.searchScoped?.(SCOPE, "rna", makeCtx());
+
+        expect(getInvocationsData).toHaveBeenCalledTimes(1);
+    });
+
+    it("refreshes the cached list in the background once it goes stale", async () => {
+        await invocationsProvider.searchScoped?.(SCOPE, "", makeCtx());
+        expect(getInvocationsData).toHaveBeenCalledTimes(1);
+
+        resetListRefreshTracking();
+        const sections = (await invocationsProvider.searchScoped?.(SCOPE, "", makeCtx())) ?? [];
+
+        expect(sections.at(-1)?.items.map((i) => i.id)).toEqual([
+            "invocations:inv1",
+            "invocations:inv2",
+            "invocations:inv3",
+        ]);
+        expect(getInvocationsData).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps rendering the cached invocations when a fetch fails", async () => {
+        await invocationsProvider.searchScoped?.(SCOPE, "", makeCtx());
+        vi.mocked(getInvocationsData).mockRejectedValue(new Error("boom"));
+        resetListRefreshTracking();
+
+        const sections = (await invocationsProvider.searchScoped?.(SCOPE, "rna", makeCtx())) ?? [];
+
+        expect(sections[0]?.items.map((i) => i.id)).toEqual(["invocations:inv2"]);
+    });
+
+    it("keeps the scope empty rather than failing when the first fetch fails", async () => {
+        vi.mocked(getInvocationsData).mockRejectedValue(new Error("boom"));
+
+        const sections = (await invocationsProvider.searchScoped?.(SCOPE, "", makeCtx())) ?? [];
+
+        expect(sections).toEqual([]);
     });
 
     it("returns a single results section for a scoped query", async () => {
