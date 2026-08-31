@@ -18,6 +18,8 @@ const MIN_BACKEND_QUERY_LENGTH = 3;
 const MAX_RESULTS = 10;
 /** Cap of the favorites/recent sections shown above the scoped results */
 const MAX_SECTION_ITEMS = 8;
+/** Cap of the toolbox fallback an empty `t:` falls back to */
+const MAX_FALLBACK_ITEMS = 8;
 
 function toolToItem(tool: Tool): PaletteItem {
     return {
@@ -83,6 +85,15 @@ async function searchTools(query: string, limit: number): Promise<PaletteItem[]>
     return itemsForToolIds(resultIds ?? []).slice(0, limit);
 }
 
+/** The head of the hydrated toolbox, alphabetically, as the empty `t:` fallback */
+function firstTools(limit: number): PaletteItem[] {
+    const toolStore = useToolStore();
+    return Object.values(toolStore.toolsById)
+        .map(toolToItem)
+        .sort((a, b) => a.title.localeCompare(b.title))
+        .slice(0, limit);
+}
+
 function favoriteToolItems(): PaletteItem[] {
     const userStore = useUserStore();
     return itemsForToolIds(userStore.currentFavorites.tools ?? []);
@@ -110,7 +121,8 @@ export const toolsProvider: CommandPaletteProvider = {
     /**
      * `t:` scope — favorites and recently used tools on top, the actual search
      * results below with everything already listed above filtered out. An empty
-     * query shows the two top sections only.
+     * query shows the two top sections only, or the head of the toolbox when an
+     * account is new enough to have neither.
      */
     async searchScoped(_scope: ScopeDefinition, query: string): Promise<ScopedSection[]> {
         const trimmed = query.trim();
@@ -126,7 +138,9 @@ export const toolsProvider: CommandPaletteProvider = {
 
         const sections = [...section("favorites", "Favorites", favorites), ...section("recent", "Recent", recent)];
         if (!trimmed) {
-            return sections;
+            // a fresh account has neither, and an empty scope reads as broken —
+            // the toolbox itself is the fallback, no request needed
+            return sections.length ? sections : section("results", "Tools", firstTools(MAX_FALLBACK_ITEMS));
         }
 
         const listed = new Set([...favorites, ...recent].map((item) => item.id));
