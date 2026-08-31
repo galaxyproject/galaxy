@@ -1660,7 +1660,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> app = Bunch(config=Bunch(tool_data_path=None))
-    >>> tool = Bunch(app=app)
+    >>> tool = Bunch(app=app, options=Bunch(sanitize=False))
     >>> trans = Bunch(app=app, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None), security=lambda x: x)
     >>> p = DrillDownSelectToolParameter(tool, XML(
     ... '''
@@ -1697,6 +1697,19 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> assert d['options'][0]['options'][2]['options'][1]['value'] == 'option4'
     >>> assert d['options'][1]['name'] == 'Option 5'
     >>> assert d['options'][1]['value'] == 'option5'
+    >>> assert p.from_json(['option5'], trans) == ['option5']
+    >>> single = DrillDownSelectToolParameter(tool, XML(
+    ... '''
+    ... <param name="_name" type="drill_down" display="checkbox" hierarchy="exact">
+    ...   <options>
+    ...    <option name="Option 1" value="option1" selected="true"/>
+    ...    <option name="Option 2" value="option2"/>
+    ...   </options>
+    ... </param>
+    ... '''))
+    >>> assert single.from_json(['option1'], trans) == 'option1'
+    >>> assert single.get_initial_value(trans, {}) == 'option1'
+    >>> assert single.to_param_dict_string('option1') == 'option1'
     """
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
