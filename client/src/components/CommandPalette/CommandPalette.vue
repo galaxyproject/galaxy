@@ -744,7 +744,18 @@ function onDialogCancel(event: Event) {
     }
 }
 
+/**
+ * The dialog was closed by the platform, so the palette follows — unless the
+ * event belongs to a close a reopen has already superseded. The browser fires
+ * `close` in a task of its own, and a user gesture is allowed to overtake it, so
+ * a ⌘K landing at the end of a fade-out is answered (the dialog is showing
+ * again) before this event is delivered. Honoring it then would swallow the
+ * press and leave the palette closed.
+ */
 function onDialogClose() {
+    if (dialogElement.value?.open) {
+        return;
+    }
     if (isPaletteOpen.value) {
         closePalette();
     }
@@ -797,7 +808,8 @@ watchDebounced([text, mode, activeCategoryId], runSearch, { debounce: SEARCH_DEB
 const paletteVisible = ref(false);
 /** Bumped by every open and close so a rapid toggle cancels the transition in flight */
 let transitionEpoch = 0;
-let closeTimeout: ReturnType<typeof setTimeout> | null = null;
+/** Disarms the close that is still waiting for its fade-out, if there is one */
+let cancelPendingClose: (() => void) | null = null;
 
 function prefersReducedMotion() {
     return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -812,22 +824,23 @@ function afterNextFrame(callback: () => void) {
     requestAnimationFrame(() => requestAnimationFrame(callback));
 }
 
-function clearCloseTimeout() {
-    if (closeTimeout !== null) {
-        clearTimeout(closeTimeout);
-        closeTimeout = null;
-    }
+function clearPendingClose() {
+    cancelPendingClose?.();
+    cancelPendingClose = null;
 }
 
 async function openDialog() {
     const epoch = ++transitionEpoch;
-    // a close still waiting on its transition must not fire after we reopen
-    clearCloseTimeout();
+    // a close still waiting on its fade-out is cancelled outright, listener and
+    // fallback timer included: a toggle landing mid-close reopens instead of
+    // being swallowed by the close it interrupted
+    clearPendingClose();
     await nextTick();
     const dialog = dialogElement.value;
     if (!dialog || epoch !== transitionEpoch) {
         return;
     }
+    // still open while fading out, or genuinely closed and reopened from scratch
     if (!dialog.open) {
         try {
             dialog.showModal();
@@ -849,19 +862,28 @@ async function openDialog() {
 
 function closeDialog() {
     const epoch = ++transitionEpoch;
-    clearCloseTimeout();
+    clearPendingClose();
     paletteVisible.value = false;
     const dialog = dialogElement.value;
     if (!dialog?.open) {
         return;
     }
-    function finishClose() {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    /** Disarms this close, whether it ran or was cancelled by a reopen */
+    function disarm() {
         dialog?.removeEventListener("transitionend", onTransitionEnd);
+        if (timeout !== null) {
+            clearTimeout(timeout);
+            timeout = null;
+        }
+        cancelPendingClose = null;
+    }
+    function finishClose() {
+        disarm();
         if (epoch !== transitionEpoch) {
             // reopened mid-transition, the newer open owns the dialog now
             return;
         }
-        clearCloseTimeout();
         dialog?.close();
     }
     function onTransitionEnd(event: TransitionEvent) {
@@ -874,12 +896,13 @@ function closeDialog() {
         return;
     }
     dialog.addEventListener("transitionend", onTransitionEnd);
-    closeTimeout = setTimeout(finishClose, CLOSE_TRANSITION_FALLBACK);
+    timeout = setTimeout(finishClose, CLOSE_TRANSITION_FALLBACK);
+    cancelPendingClose = disarm;
 }
 
 onBeforeUnmount(() => {
     transitionEpoch++;
-    clearCloseTimeout();
+    clearPendingClose();
 });
 
 /** Bumped by every open, so a hydration landing after a close is dropped */
