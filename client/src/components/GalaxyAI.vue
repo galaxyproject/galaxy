@@ -233,8 +233,13 @@ function consumeSeededQuestion() {
         return;
     }
     query.value = props.initialQuestion;
-    // consumed: the same path without the parameter, and without a history entry
-    router.replace({ path: route.path });
+    // Consumed: the same path without the parameter, and without a history
+    // entry. Deliberately not a router navigation — `Analysis.vue` renders its
+    // `<router-view :key="$route.fullPath">`, so dropping `?q=` through the
+    // router would change that key, destroy this component and take the just
+    // seeded question with it. Rewriting the address bar keeps the route (and
+    // therefore the key) untouched, and a reload still starts empty.
+    window.history.replaceState(window.history.state, "", window.location.pathname);
 }
 
 function showWelcome() {
