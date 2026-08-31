@@ -12,11 +12,13 @@ interface Props {
     id: string;
     /** The palette item to render */
     item: PaletteItem;
+    /** Names what shift + enter would do with this item, previewed while shift is held */
+    secondaryHint?: string;
     /** Previews that ctrl/cmd + enter would open this item in a new tab */
     showExternal?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), { showExternal: false });
+const props = withDefaults(defineProps<Props>(), { secondaryHint: undefined, showExternal: false });
 
 const emit = defineEmits<{
     (e: "select", event: MouseEvent): void;
@@ -64,8 +66,18 @@ const ariaLabel = computed(() => (props.item.shortcut ? `${title.value} (${props
             <span v-if="subtitle" class="item-subtitle">{{ subtitle }}</span>
         </span>
 
+        <span
+            v-if="props.secondaryHint"
+            class="item-secondary-hint"
+            aria-hidden="true"
+            data-description="palette option secondary">
+            <kbd>⇧↵</kbd>
+
+            {{ props.secondaryHint }}
+        </span>
+
         <FontAwesomeIcon
-            v-if="props.showExternal"
+            v-else-if="props.showExternal"
             class="item-external"
             data-description="palette option external"
             fixed-width
@@ -121,6 +133,29 @@ const ariaLabel = computed(() => (props.item.shortcut ? `${title.value} (${props
     .item-external {
         margin-left: auto;
         color: var(--color-blue-600);
+    }
+
+    .item-secondary-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-1);
+        flex: none;
+        margin-left: auto;
+        color: var(--color-blue-800);
+        font-size: var(--font-size-small);
+        white-space: nowrap;
+
+        kbd {
+            padding: 0 var(--spacing-1);
+            border: 1px solid var(--color-blue-300);
+            border-radius: var(--spacing);
+            background-color: var(--color-blue-100);
+            color: var(--color-blue-800);
+            // the ⇧↵ glyphs are missing from the monospace default on some platforms
+            font-family: inherit;
+            font-size: inherit;
+            line-height: 1.4;
+        }
     }
 
     .item-shortcut {

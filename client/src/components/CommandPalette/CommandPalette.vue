@@ -86,6 +86,8 @@ const selectedIndex = ref(0);
 const activeCategoryId = ref(ALL_CATEGORY.id);
 /** Whether ctrl/cmd is currently down, so the palette can preview "new tab" */
 const modifierHeld = ref(false);
+/** Whether shift is currently down, so the palette can preview the secondary run */
+const shiftHeld = ref(false);
 /** Scope whose provider has not landed yet; renders the temporary hint row */
 const pendingScope = ref<ScopeDefinition | null>(null);
 /** What the palette could not load, naming the scope in the error row */
@@ -150,14 +152,16 @@ const escapeLabel = computed(() => {
     return localize("close");
 });
 
-/** What `⇧↵` would do with the selected item, unset when it offers nothing */
-const secondaryLabel = computed(() => {
-    const item = selectedItem.value;
+/** What `⇧↵` would do with one item, unset when the item offers nothing */
+function secondaryLabelFor(item: PaletteItem | undefined) {
     if (item?.argumentMode) {
         return localize(item.argumentMode.label ?? "options");
     }
     return item?.secondaryAction ? localize(item.secondaryAction.label) : undefined;
-});
+}
+
+/** What `⇧↵` would do with the selected item, unset when it offers nothing */
+const secondaryLabel = computed(() => secondaryLabelFor(selectedItem.value));
 
 const footerHints = computed<FooterHint[]>(() => {
     const activeMode = mode.value;
@@ -176,9 +180,15 @@ const footerHints = computed<FooterHint[]>(() => {
     } else if (activeMode.type === "help") {
         hints.push({ id: "apply", keys: "↵", label: localize("apply") });
     } else {
-        hints.push({ active: !modifierHeld.value, id: "open", keys: "↵", label: localize("open") });
+        // shift takes the enter before ctrl/cmd ever sees it, so it dims both
         hints.push({
-            active: modifierHeld.value,
+            active: !modifierHeld.value && !shiftHeld.value,
+            id: "open",
+            keys: "↵",
+            label: localize("open"),
+        });
+        hints.push({
+            active: modifierHeld.value && !shiftHeld.value,
             id: "new-tab",
             keys: `${modifierLabel.value}↵`,
             label: localize("new tab"),
@@ -186,7 +196,7 @@ const footerHints = computed<FooterHint[]>(() => {
     }
 
     if (secondaryLabel.value) {
-        hints.push({ id: "secondary", keys: "⇧↵", label: secondaryLabel.value });
+        hints.push({ active: shiftHeld.value, id: "secondary", keys: "⇧↵", label: secondaryLabel.value });
     }
     if (activeMode.type === "scoped") {
         hints.push({ id: "remove-scope", keys: "⌫", label: localize("remove filter") });
@@ -605,7 +615,12 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
 
 /** Previews what ctrl/cmd + enter would do on the selected, navigable item */
 function showExternalIcon(index: number, item: PaletteItem) {
-    return modifierHeld.value && index === selectedIndex.value && Boolean(item.to);
+    return modifierHeld.value && !shiftHeld.value && index === selectedIndex.value && Boolean(item.to);
+}
+
+/** Previews what `⇧↵` would do on the selected item, so a row never claims both */
+function secondaryHint(index: number, item: PaletteItem) {
+    return shiftHeld.value && index === selectedIndex.value ? secondaryLabelFor(item) : undefined;
 }
 
 function onInput(event: Event) {
@@ -804,6 +819,9 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
     if (isNewTabModifier(event.key)) {
         modifierHeld.value = true;
     }
+    if (event.key === "Shift") {
+        shiftHeld.value = true;
+    }
     const platformModifier = eventStore.isMac ? event.metaKey : event.ctrlKey;
     if (event.key.toLowerCase() === "k" && platformModifier && !event.shiftKey && !event.altKey && !event.repeat) {
         event.preventDefault();
@@ -815,11 +833,15 @@ useEventListener(window, "keyup", (event: KeyboardEvent) => {
     if (isNewTabModifier(event.key)) {
         modifierHeld.value = false;
     }
+    if (event.key === "Shift") {
+        shiftHeld.value = false;
+    }
 });
 
 // opening a new tab moves focus away, so the matching keyup never arrives here
 useEventListener(window, "blur", () => {
     modifierHeld.value = false;
+    shiftHeld.value = false;
 });
 
 // the category is part of what is being searched, so it shares the debounce
@@ -968,6 +990,7 @@ watchImmediate(isPaletteOpen, (open) => {
         openDialog();
     } else {
         modifierHeld.value = false;
+        shiftHeld.value = false;
         closeDialog();
     }
 });
@@ -1065,6 +1088,7 @@ watchImmediate(isPaletteOpen, (open) => {
                     :key="item.id"
                     :active="optionIndex(sectionIdx, itemIdx) === selectedIndex"
                     :item="item"
+                    :secondary-hint="secondaryHint(optionIndex(sectionIdx, itemIdx), item)"
                     :show-external="showExternalIcon(optionIndex(sectionIdx, itemIdx), item)"
                     @select="runItem(item, $event)"
                     @highlight="selectedIndex = optionIndex(sectionIdx, itemIdx)" />
