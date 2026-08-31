@@ -38,7 +38,7 @@
         <template v-if="!embedded">
             <div id="dd-helper" />
             <GToast />
-            <CommandPalette />
+            <CommandPalette v-if="paletteEnabled" />
             <ConfirmDialog ref="confirmDialogRef" />
             <BroadcastsOverlay />
             <DragGhost />
@@ -58,6 +58,7 @@ import { getGalaxyInstance } from "@/app";
 import short from "@/components/plugins/short";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { useRouteQueryBool } from "@/composables/route";
+import { useCommandPalette } from "@/composables/useCommandPalette";
 import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -102,6 +103,16 @@ export default {
         setConfirmDialogComponentRef(confirmDialogRef);
 
         const windowManagerStore = useWindowManagerStore();
+
+        // Unmounting the palette takes its ctrl/cmd+k listener with it, so an
+        // instance that turned it off runs none of its code. The open state
+        // outlives the component, so a logout that revokes access closes it.
+        const { paletteEnabled, closePalette } = useCommandPalette();
+        watch(paletteEnabled, (enabled) => {
+            if (!enabled) {
+                closePalette();
+            }
+        });
 
         // Treat any iframe context as embedded: scratchbook pops dataset
         // displays into ``WinBox`` iframes that hit the same routes without
@@ -164,6 +175,7 @@ export default {
             currentTheme,
             embedded,
             currentTour,
+            paletteEnabled,
             windowManagerStore,
         };
     },

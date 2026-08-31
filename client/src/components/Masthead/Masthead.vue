@@ -51,7 +51,7 @@ const subdomainSwitcherMenu = computed(() => {
         }));
 });
 
-const { openPalette } = useCommandPalette();
+const { openPalette, paletteEnabled } = useCommandPalette();
 const eventStore = useEventStore();
 const shortcutLabel = computed(() => (eventStore.isMac ? "⌘K" : "Ctrl+K"));
 
@@ -195,7 +195,7 @@ onMounted(() => {
                 :icon="faConnectdevelop"
                 tooltip="Switch sites"
                 :menu="subdomainSwitcherMenu" />
-            <li class="nav-item masthead-search">
+            <li v-if="paletteEnabled" class="nav-item masthead-search">
                 <button
                     class="masthead-search-button"
                     type="button"

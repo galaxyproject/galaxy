@@ -13,6 +13,9 @@ export interface PaletteContext {
     canUseUnprivilegedTools: boolean;
     /** Relevant subset of the Galaxy configuration */
     config: {
+        allow_local_account_creation?: boolean;
+        /** Provider ids the instance turned off, never unset — see the palette */
+        command_palette_disabled_providers?: string[];
         enable_notification_system?: boolean;
         interactivetools_enable?: boolean;
         llm_api_configured?: boolean;
