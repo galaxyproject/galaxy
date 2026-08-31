@@ -661,13 +661,11 @@ class BaseJobRunner:
                     tool_stdout = ""
                     tool_stderr = "Job cancelled"
                 else:
-                    # Should we instead just move on ?
-                    # In the end the only consequence here is that we won't be able to determine
-                    # if the job failed for known tool reasons (check_tool_output).
-                    # OTOH I don't know if this can even be reached
-                    # Deal with it if we ever get reports about this.
-                    raise
-
+                    # Missing tool output files — likely a premature job death.
+                    # Continue with empty strings so check_tool_output can still
+                    # evaluate the exit code and runner state.
+                    tool_stdout = ""
+                    tool_stderr = ""
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
                 tool_stderr,
