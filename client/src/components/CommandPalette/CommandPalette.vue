@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faQuestionCircle, faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventListener, watchDebounced, watchImmediate } from "@vueuse/core";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
@@ -139,6 +139,14 @@ const placeholder = computed(() => {
         return localize(HELP_PLACEHOLDER);
     }
     return localize(ROOT_PLACEHOLDER);
+});
+
+/** A running search still owns the icon; help mode otherwise names itself */
+const inputIcon = computed(() => {
+    if (searching.value) {
+        return faSpinner;
+    }
+    return mode.value.type === "help" ? faQuestionCircle : faSearch;
 });
 
 /** Escape steps through clearing the text, then the badge, then closing */
@@ -1022,7 +1030,7 @@ watchImmediate(isPaletteOpen, (open) => {
             <FontAwesomeIcon
                 class="palette-input-icon"
                 fixed-width
-                :icon="searching ? faSpinner : faSearch"
+                :icon="inputIcon"
                 :spin="searching" />
 
             <button
