@@ -182,6 +182,21 @@ describe("CommandPalette", () => {
         expect(push).not.toHaveBeenCalled();
     });
 
+    it("animates in and closes through the transition fallback", async () => {
+        const dialog = wrapper.find("dialog");
+        expect(dialog.classes()).toContain("palette-open");
+
+        const close = vi.spyOn(dialog.element as HTMLDialogElement, "close");
+        useCommandPalette().closePalette();
+        await wrapper.vm.$nextTick();
+        // the panel fades out first, the dialog only closes once the transition
+        // ends - or, with no transition events, after the timeout fallback
+        expect(dialog.classes()).not.toContain("palette-open");
+
+        await settle();
+        expect(close).toHaveBeenCalled();
+    });
+
     it("closes on escape", async () => {
         await input().trigger("keydown", { key: "Escape" });
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
