@@ -104,7 +104,6 @@ import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished
 import WorkflowRerun from "@/components/Workflow/Run/WorkflowRerun.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import StoredWorkflowInvocations from "@/components/Workflow/StoredWorkflowInvocations.vue";
-import WorkflowCreate from "@/components/Workflow/WorkflowCreate.vue";
 import WorkflowExport from "@/components/Workflow/WorkflowExport.vue";
 import WorkflowImport from "@/components/Workflow/WorkflowImport.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
@@ -801,8 +800,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/create",
-                        component: WorkflowCreate,
-                        redirect: redirectAnon(),
+                        redirect: "/workflows/edit",
                     },
                     {
                         path: "workflows/export",
