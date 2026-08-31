@@ -176,6 +176,7 @@ const ACTIONS: ActionDefinition[] = [
         title: "Create new history",
         handler: () => useHistoryStore().createNewHistory(),
         argumentMode: {
+            emptyHint: "Type a name for the new history…",
             getItems: (argQuery: string) => namedHistoryItems(argQuery),
             label: "name it",
             placeholder: "Name the new history…",
@@ -208,6 +209,7 @@ const ACTIONS: ActionDefinition[] = [
         title: "Create new page",
         to: "/pages/create",
         argumentMode: {
+            emptyHint: "Type a title for the new page…",
             getItems: (argQuery: string) => titledPageItems(argQuery),
             label: "title it",
             placeholder: "Title the new page…",
@@ -238,6 +240,7 @@ const ACTIONS: ActionDefinition[] = [
         title: "Ask GalaxyAI",
         handler: (ctx: PaletteContext) => ctx.startNewChat?.(true),
         argumentMode: {
+            emptyHint: "Type a question to start a new chat…",
             getItems: (argQuery: string) => galaxyAiItems(argQuery),
             label: "ask a question",
             placeholder: "Ask GalaxyAI…",
