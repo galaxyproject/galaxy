@@ -1367,6 +1367,8 @@ class SelectToolParameter(ToolParameter):
         elif not self.multiple:
             value2 = value[0]
         else:
+            # A multiple select holds a list even when one option is selected; the typed
+            # request model rejects a bare value here.
             value2 = value
         return value2
 
