@@ -17,6 +17,7 @@ import { useConfig } from "@/composables/config";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
+import { localize } from "@/utils/localization";
 import { userLogout } from "@/utils/logout";
 import { withPrefix } from "@/utils/redirect";
 
@@ -54,6 +55,8 @@ const subdomainSwitcherMenu = computed(() => {
 const { openPalette, paletteEnabled } = useCommandPalette();
 const eventStore = useEventStore();
 const shortcutLabel = computed(() => (eventStore.isMac ? "⌘K" : "Ctrl+K"));
+// an instance-configured phrase is admin copy, so it is used verbatim
+const searchPlaceholder = computed(() => config.value.command_palette_placeholder || localize("Search Galaxy"));
 
 const hasOIDCRegistration = computed(() => {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
@@ -200,9 +203,10 @@ onMounted(() => {
                     class="masthead-search-button"
                     type="button"
                     data-description="masthead search button"
-                    :title="`Search Galaxy (${shortcutLabel})`"
+                    :title="`${searchPlaceholder} (${shortcutLabel})`"
                     @click="openPalette()">
                     <FontAwesomeIcon :icon="faSearch" />
+                    <span class="search-placeholder">{{ searchPlaceholder }}</span>
                     <kbd>{{ shortcutLabel }}</kbd>
                 </button>
             </li>
@@ -353,6 +357,14 @@ onMounted(() => {
             color: var(--masthead-text-color);
             cursor: pointer;
 
+            .search-placeholder {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 12rem;
+                opacity: 0.85;
+            }
+
             kbd {
                 background: rgba(0, 0, 0, 0.25);
                 border-radius: 3px;
@@ -364,6 +376,19 @@ onMounted(() => {
             &:hover {
                 color: var(--masthead-text-hover);
                 border-color: currentColor;
+            }
+
+            // the narrower the masthead, the more the button degrades to its icon
+            @media (max-width: 60rem) {
+                .search-placeholder {
+                    display: none;
+                }
+            }
+
+            @media (max-width: 48rem) {
+                kbd {
+                    display: none;
+                }
             }
         }
     }
