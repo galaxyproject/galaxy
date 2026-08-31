@@ -423,14 +423,16 @@ describe("historiesProvider", () => {
         expect(ids).toContain("histories:my:h2");
     });
 
-    it("stays out of the unscoped fan-out for short queries and anonymous users", async () => {
+    it("stays out of the unscoped fan-out for short queries", async () => {
         expect(await historiesProvider.search("v", makeCtx())).toEqual([]);
-        expect(await historiesProvider.search("variant", makeCtx(true))).toEqual([]);
+        expect(await historiesProvider.search("v", makeCtx(true))).toEqual([]);
         expect(getHistoryList).not.toHaveBeenCalled();
+        expect(getSharedHistories).not.toHaveBeenCalled();
+        expect(getPublishedHistories).not.toHaveBeenCalled();
     });
 
-    it("filters the cache in the unscoped fan-out and never fetches there", async () => {
-        // nothing cached yet: the fan-out contributes nothing rather than fetching
+    it("filters the cached own histories in the fan-out without fetching them", async () => {
+        // nothing cached yet: the own rows are whatever the store already holds
         expect(await historiesProvider.search("variant", makeCtx())).toEqual([]);
         expect(getHistoryList).not.toHaveBeenCalled();
 
@@ -440,7 +442,64 @@ describe("historiesProvider", () => {
         const items = await historiesProvider.search("variant", makeCtx());
 
         expect(items.map((i) => i.title)).toEqual(["Variant calling"]);
+        // the own list is only ever fetched by the `h:` scope
         expect(getHistoryList.mock.calls.length).toBe(callsAfterHydration);
+    });
+
+    it("merges the shared and public matches into the unscoped fan-out", async () => {
+        await useHistoryStore().loadHistories(false);
+        const sharedRna = history("h8", "RNA-seq alignment", "2026-08-20T10:00:00", {
+            username: "colleague",
+            owner: "colleague",
+        });
+        const publicRna = history("h9", "RNA-seq metagenomics", "2026-08-19T10:00:00", {
+            username: "stranger",
+            owner: "stranger",
+        });
+        getSharedHistories.mockResolvedValue({ data: [sharedRna], total: 1 });
+        getPublishedHistories.mockResolvedValue({ data: [publicRna], total: 1 });
+
+        const items = await historiesProvider.search("rna", makeCtx());
+
+        expect(items.map((i) => i.title).sort()).toEqual([
+            "RNA-seq alignment",
+            "RNA-seq analysis",
+            "RNA-seq metagenomics",
+        ]);
+        // a handful of rows per listing is enough next to the own histories
+        expect(getSharedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 3 }));
+        expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 3 }));
+    });
+
+    it("keeps one row per history in the fan-out, preferring the user's own", async () => {
+        await useHistoryStore().loadHistories(false);
+        // the published listing answers with a history the user owns
+        getSharedHistories.mockResolvedValue({ data: [], total: 0 });
+        getPublishedHistories.mockResolvedValue({ data: [{ ...VARIANTS, username: "me", owner: "me" }], total: 1 });
+
+        const items = await historiesProvider.search("variant", makeCtx());
+
+        expect(items.map((i) => i.id)).toEqual(["histories:my:h2"]);
+        expect(items[0]?.secondaryAction?.label).toBe("Set as current");
+    });
+
+    it("searches the public listing alone for an anonymous root query", async () => {
+        const items = await historiesProvider.search("metagenomics", makeCtx(true));
+
+        expect(items.map((i) => i.title)).toEqual(["Public metagenomics"]);
+        expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "metagenomics" }));
+        expect(getSharedHistories).not.toHaveBeenCalled();
+        expect(getHistoryList).not.toHaveBeenCalled();
+    });
+
+    it("keeps the cached own rows in the fan-out when a listing search fails", async () => {
+        await useHistoryStore().loadHistories(false);
+        getSharedHistories.mockRejectedValue(new Error("boom"));
+        getPublishedHistories.mockRejectedValue(new Error("boom"));
+
+        const items = await historiesProvider.search("variant", makeCtx());
+
+        expect(items.map((i) => i.title)).toEqual(["Variant calling"]);
     });
 
     it("lists remembered histories for an empty root query", async () => {

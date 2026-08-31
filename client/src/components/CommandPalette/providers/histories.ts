@@ -8,7 +8,7 @@ import { useUserStore } from "@/stores/userStore";
 import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
-import { rankPaletteItems } from "../utilities";
+import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { fetchOrFail } from "./errors";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -20,6 +20,9 @@ export const HISTORY_RECENT_TYPE = "history";
 const RESULTS_LIMIT = 8;
 const RECENT_LIMIT = 5;
 const ROOT_LIMIT = 5;
+
+/** How many rows the root fan-out asks each searched listing for */
+const ROOT_VARIANT_LIMIT = 3;
 
 /** Neither the unscoped fan-out nor a backend query runs on a single character */
 const MIN_QUERY_LENGTH = 2;
@@ -157,11 +160,12 @@ function latestFirst(histories: HistoryEntryLike[]): HistoryEntryLike[] {
 }
 
 /** A failing background fetch degrades to whatever the store already holds */
-async function fetchQuietly(fetch: () => Promise<unknown>) {
+async function fetchQuietly<T>(fetch: () => Promise<T>): Promise<T | undefined> {
     try {
-        await fetch();
+        return await fetch();
     } catch (error) {
         console.debug("Command palette could not fetch histories", error);
+        return undefined;
     }
 }
 
@@ -273,6 +277,41 @@ async function listItems(
     return rankHistories(cachedHistories(variant), variant, query).slice(0, limit);
 }
 
+/** The listings the root fan-out searches, next to the cached own histories */
+function rootVariants(isAnonymous: boolean): HistoryListVariant[] {
+    // an anonymous visitor has neither own nor shared-with-me histories
+    return isAnonymous ? ["published"] : ["shared", "published"];
+}
+
+/**
+ * One backend search for the root fan-out, answering with the matches it
+ * returned rather than with the whole cached listing. A failing listing
+ * contributes nothing rather than costing the section its other rows.
+ */
+async function variantItems(variant: HistoryListVariant, query: string): Promise<PaletteItem[]> {
+    const historyStore = useHistoryStore();
+    const entries =
+        (await fetchQuietly(() =>
+            historyStore.fetchHistoryList(variant, { search: query, limit: ROOT_VARIANT_LIMIT }),
+        )) ?? [];
+    return rankHistories(entries as unknown as HistoryEntryLike[], variant, query);
+}
+
+/**
+ * Root mode results: the cached own histories answer the keystroke instantly,
+ * while the shared and published listings are searched on the backend — the
+ * palette is the one place that finds a history without being told where it
+ * lives. Copies of one history collapse into the own row, which may be made
+ * current; the palette's debounce keeps the request volume down.
+ */
+async function rootItems(query: string, isAnonymous: boolean): Promise<PaletteItem[]> {
+    // the searches start before the cache is filtered, so they run in parallel
+    const listed = Promise.all(rootVariants(isAnonymous).map((variant) => variantItems(variant, query)));
+    const own = isAnonymous ? [] : await listItems("my", query, ROOT_LIMIT, true);
+    const merged = dedupePaletteItemsByEntity([own, ...(await listed)].flat());
+    return rankPaletteItems(merged, query).slice(0, ROOT_LIMIT + ROOT_VARIANT_LIMIT);
+}
+
 /** Histories opened through the palette before, most recently used first */
 function recentItems(query: string, limit = RECENT_LIMIT): PaletteItem[] {
     const historyStore = useHistoryStore();
@@ -315,13 +354,13 @@ export const historiesProvider: CommandPaletteProvider = {
         }
         return recentItems("", ROOT_LIMIT);
     },
-    /** Root mode fan-out, filtering the cached own histories without a request */
+    /** Root mode fan-out over the cached own histories and the public listings */
     async search(query: string, ctx: PaletteContext) {
         const trimmed = query.trim();
-        if (ctx.isAnonymous || trimmed.length < MIN_QUERY_LENGTH) {
+        if (trimmed.length < MIN_QUERY_LENGTH) {
             return [];
         }
-        return listItems("my", trimmed, ROOT_LIMIT, true);
+        return rootItems(trimmed, ctx.isAnonymous);
     },
     /**
      * `h:` shows the palette recents on top of the user's own listing; `hs:`,
