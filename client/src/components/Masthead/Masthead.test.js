@@ -107,6 +107,19 @@ describe("Masthead.vue", () => {
         useCommandPalette().closePalette();
     });
 
+    it.each([
+        ["the palette is disabled", { enable_command_palette: false }, currentUser],
+        [
+            "an anonymous user may not use it",
+            { command_palette_allow_anonymous: false },
+            { id: "anonymous", isAnonymous: true },
+        ],
+    ])("hides the search button when %s", async (_reason, variantConfig, user) => {
+        await remount(variantConfig, user);
+
+        expect(wrapper.find("[data-description='masthead search button']").exists()).toBe(false);
+    });
+
     it("should display window manager button", async () => {
         expect(wrapper.find("#enable-window-manager a svg").exists()).toBe(true);
         expect(windowTab._active).toBe(false);
