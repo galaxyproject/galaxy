@@ -215,6 +215,35 @@ describe("historyStore — cached history listings", () => {
         expect(cached.map((history) => history.id)).toEqual(["h1"]);
     });
 
+    it("shares a running fetch instead of returning the still empty listing", async () => {
+        const store = useHistoryStore();
+        let resolveFetch: (result: { data: AnyHistoryEntry[]; total: number }) => void = () => undefined;
+        getSharedHistories.mockReturnValue(
+            new Promise((resolve) => {
+                resolveFetch = resolve;
+            }),
+        );
+
+        const hydrating = store.ensureHistoryListLoaded("shared");
+        const duringFetch = store.ensureHistoryListLoaded("shared");
+        resolveFetch(resultOf([mockHistory("h1", "One", "2026-01-01T00:00:00")]));
+        const [first, second] = await Promise.all([hydrating, duringFetch]);
+
+        expect(getSharedHistories).toHaveBeenCalledTimes(1);
+        expect(first.map((history) => history.id)).toEqual(["h1"]);
+        expect(second.map((history) => history.id)).toEqual(["h1"]);
+    });
+
+    it("deduplicates identical concurrent fetches of a listing", async () => {
+        const store = useHistoryStore();
+        getSharedHistories.mockResolvedValue(resultOf([mockHistory("h1", "One", "2026-01-01T00:00:00")]));
+
+        const [first, second] = await Promise.all([store.fetchHistoryList("shared"), store.fetchHistoryList("shared")]);
+
+        expect(getSharedHistories).toHaveBeenCalledTimes(1);
+        expect(first).toEqual(second);
+    });
+
     it("re-fetches after the cached listing has been cleared", async () => {
         const store = useHistoryStore();
         getSharedHistories.mockResolvedValue(resultOf([mockHistory("h1", "One", "2026-01-01T00:00:00")]));

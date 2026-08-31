@@ -45,7 +45,12 @@ import {
 } from "@/watch/watchHistory";
 
 const PAGINATION_LIMIT = 10;
-const isLoadingHistory = new Set<string>();
+/**
+ * In-flight single history loads, keyed by id. The promise (rather than a bare
+ * "is loading" flag) is kept so a second caller awaits the running request
+ * instead of returning before its result reached the cache.
+ */
+const historyPromises = new Map<string, Promise<void>>();
 const retryCounts: { [key: string]: number } = {};
 const CONTENT_STATS_KEYS = ["size", "contents_active", "update_time"] as const;
 
@@ -112,6 +117,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const listedHistoriesLoading = ref<Record<HistoryListVariant, boolean>>(historyListFlags(false));
     const listedHistoriesLoaded = ref<Record<HistoryListVariant, boolean>>(historyListFlags(false));
     const listedHistoriesTotal = ref<Record<HistoryListVariant, number>>(historyListCounts());
+    /** In-flight own-history loads, keyed by request (see `loadHistories`). */
+    const loadHistoriesPromises = new Map<string, Promise<void>>();
+    /** In-flight listing fetches, keyed by request (see `fetchHistoryList`). */
+    const listPromises = new Map<string, { variant: HistoryListVariant; promise: Promise<AnyHistoryEntry[]> }>();
 
     const histories = computed(() => {
         return Object.values(storedHistories.value)
@@ -458,35 +467,58 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * - not handling filters with pagination for now
      *   "pausing" pagination at the existing offset if a filter exists
      */
-    async function loadHistories(paginate = true, queryString?: string) {
-        if (!historiesLoading.value) {
-            setHistoriesLoading(true);
-            let limit: number | null = null;
-            if (!queryString || queryString == "") {
-                if (paginate) {
-                    await loadTotalHistoryCount();
-                    if (historiesOffset.value >= totalHistoryCount.value) {
-                        setHistoriesLoading(false);
-                        return;
-                    }
-                    limit = PAGINATION_LIMIT;
-                } else {
-                    historiesOffset.value = 0;
+    async function fetchHistories(paginate: boolean, queryString?: string) {
+        setHistoriesLoading(true);
+        let limit: number | null = null;
+        if (!queryString || queryString == "") {
+            if (paginate) {
+                await loadTotalHistoryCount();
+                if (historiesOffset.value >= totalHistoryCount.value) {
+                    setHistoriesLoading(false);
+                    return;
                 }
-            }
-            const offset = queryString ? 0 : historiesOffset.value;
-            try {
-                const histories = (await getHistoryList(offset, limit, queryString)) as HistorySummary[];
-                setHistories(histories);
-                if (paginate && !queryString && historiesOffset.value == offset) {
-                    await handleTotalCountChange(histories.length);
-                }
-            } catch (error) {
-                rethrowSimple(error);
-            } finally {
-                setHistoriesLoading(false);
+                limit = PAGINATION_LIMIT;
+            } else {
+                historiesOffset.value = 0;
             }
         }
+        const offset = queryString ? 0 : historiesOffset.value;
+        try {
+            const histories = (await getHistoryList(offset, limit, queryString)) as HistorySummary[];
+            setHistories(histories);
+            if (paginate && !queryString && historiesOffset.value == offset) {
+                await handleTotalCountChange(histories.length);
+            }
+        } catch (error) {
+            rethrowSimple(error);
+        } finally {
+            setHistoriesLoading(false);
+        }
+    }
+
+    /**
+     * Loads the current user's histories into `storedHistories`.
+     *
+     * Identical calls made while a load is still running share that request and
+     * resolve with it, so a consumer which starts searching while the first
+     * fetch is in flight (the command palette) sees the filled cache instead of
+     * an empty one. A *different* load started meanwhile is still skipped: the
+     * store fetches one own-history list at a time.
+     */
+    function loadHistories(paginate = true, queryString?: string): Promise<void> {
+        const key = `${paginate}|${queryString ?? ""}`;
+        const inFlight = loadHistoriesPromises.get(key);
+        if (inFlight) {
+            return inFlight;
+        }
+        if (historiesLoading.value) {
+            return Promise.resolve();
+        }
+        const promise = fetchHistories(paginate, queryString).finally(() => {
+            loadHistoriesPromises.delete(key);
+        });
+        loadHistoriesPromises.set(key, promise);
+        return promise;
     }
 
     /**
@@ -515,7 +547,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * @param options Pagination, sorting and search options
      * @returns The fetched entries, in the order the backend returned them
      */
-    async function fetchHistoryList(
+    function fetchHistoryList(
         variant: HistoryListVariant,
         options: FetchHistoryListOptions = {},
     ): Promise<AnyHistoryEntry[]> {
@@ -527,8 +559,33 @@ export const useHistoryStore = defineStore("historyStore", () => {
             sortDesc = true,
             replace = false,
         } = options;
-        const requestOptions = { limit, offset, search, sortBy, sortDesc };
+        const key = [variant, search, limit, offset, sortBy, sortDesc, replace].join("|");
 
+        const pending = listPromises.get(key);
+        if (pending) {
+            return pending.promise;
+        }
+        const promise = requestHistoryList(variant, { search, limit, offset, sortBy, sortDesc }, replace).finally(
+            () => {
+                listPromises.delete(key);
+            },
+        );
+        listPromises.set(key, { variant, promise });
+        return promise;
+    }
+
+    /** Runs one listing request; `fetchHistoryList` owns the deduplication. */
+    async function requestHistoryList(
+        variant: HistoryListVariant,
+        requestOptions: {
+            search: string;
+            limit: number;
+            offset: number;
+            sortBy: HistorySortByLiteral;
+            sortDesc: boolean;
+        },
+        replace: boolean,
+    ): Promise<AnyHistoryEntry[]> {
         listedHistoriesLoading.value[variant] = true;
         try {
             let result: { data: AnyHistoryEntry[]; total: number };
@@ -550,15 +607,34 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
+    /** The request currently running for a listing, whatever its options. */
+    function pendingHistoryListFetch(variant: HistoryListVariant): Promise<AnyHistoryEntry[]> | undefined {
+        for (const pending of listPromises.values()) {
+            if (pending.variant === variant) {
+                return pending.promise;
+            }
+        }
+        return undefined;
+    }
+
     /**
      * Fetches a history listing only if it has not been fetched before, so that
      * consumers can hydrate a listing without hitting the backend repeatedly.
+     *
+     * A fetch that is already running is awaited rather than skipped: returning
+     * the (still empty) cache early would tell the caller the listing is loaded
+     * and leave it rendering "no results" until something else refetches.
      */
     async function ensureHistoryListLoaded(
         variant: HistoryListVariant,
         options: FetchHistoryListOptions = {},
     ): Promise<AnyHistoryEntry[]> {
-        if (listedHistoriesLoaded.value[variant] || listedHistoriesLoading.value[variant]) {
+        const pending = pendingHistoryListFetch(variant);
+        if (pending) {
+            await pending;
+            return getListedHistories.value(variant);
+        }
+        if (listedHistoriesLoaded.value[variant]) {
             return getListedHistories.value(variant);
         }
         return fetchHistoryList(variant, options);
@@ -689,21 +765,29 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function loadHistoryById(historyId: string) {
-        if (!isLoadingHistory.has(historyId)) {
-            isLoadingHistory.add(historyId);
-            try {
-                const result = await getHistoryByIdFromServer(historyId);
-                if (result.error) {
-                    retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
-                    set(historyLoadErrors.value, historyId, result.error);
-                } else {
-                    setHistory(result.data);
-                    del(historyLoadErrors.value, historyId);
-                    delete retryCounts[historyId];
-                }
-            } finally {
-                isLoadingHistory.delete(historyId);
+        const inFlight = historyPromises.get(historyId);
+        if (inFlight) {
+            // Share the running request: callers that need the name right after
+            // (the command palette's invocation rows) must not resolve before it.
+            await inFlight;
+            return;
+        }
+        const promise = (async () => {
+            const result = await getHistoryByIdFromServer(historyId);
+            if (result.error) {
+                retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
+                set(historyLoadErrors.value, historyId, result.error);
+            } else {
+                setHistory(result.data);
+                del(historyLoadErrors.value, historyId);
+                delete retryCounts[historyId];
             }
+        })();
+        historyPromises.set(historyId, promise);
+        try {
+            await promise;
+        } finally {
+            historyPromises.delete(historyId);
         }
     }
 
