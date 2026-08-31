@@ -222,6 +222,7 @@ function buildContext(): PaletteContext {
     return {
         canUseUnprivilegedTools: unprivilegedToolStore.canUseUnprivilegedTools ?? false,
         config: {
+            enable_notification_system: config.value?.enable_notification_system,
             interactivetools_enable: config.value?.interactivetools_enable,
             llm_api_configured: config.value?.llm_api_configured,
         },

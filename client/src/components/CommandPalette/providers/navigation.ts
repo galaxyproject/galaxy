@@ -9,9 +9,22 @@ import { rankPaletteItems } from "../utilities";
 /** Activities owned by the actions provider instead */
 const EXCLUDED_ACTIVITY_IDS = ["upload", "beta-upload"];
 
+/**
+ * A destination that is not an activity. Gated like the activity rows are:
+ * `anonymous` mirrors the flag of {@link defaultActivities}, `available` adds
+ * the configuration check the route itself makes.
+ */
+interface ExtraDestination extends PaletteItem {
+    /** Whether anonymous users may reach it; the routes redirect them otherwise */
+    anonymous: boolean;
+    /** Extra availability check against the Galaxy configuration */
+    available?: (ctx: PaletteContext) => boolean;
+}
+
 /** Useful destinations that are not activities */
-const EXTRA_DESTINATIONS: PaletteItem[] = [
+const EXTRA_DESTINATIONS: ExtraDestination[] = [
     {
+        anonymous: false,
         id: "navigation:preferences",
         icon: faUserCog,
         keywords: "settings account user",
@@ -20,6 +33,8 @@ const EXTRA_DESTINATIONS: PaletteItem[] = [
         to: "/user",
     },
     {
+        anonymous: false,
+        available: (ctx) => Boolean(ctx.config.enable_notification_system),
         id: "navigation:notifications",
         icon: faBell,
         keywords: "messages broadcasts",
@@ -28,6 +43,7 @@ const EXTRA_DESTINATIONS: PaletteItem[] = [
         to: "/user/notifications",
     },
     {
+        anonymous: true,
         id: "navigation:tours",
         icon: faMapSigns,
         keywords: "help introduction guided",
@@ -36,6 +52,7 @@ const EXTRA_DESTINATIONS: PaletteItem[] = [
         to: "/tours",
     },
     {
+        anonymous: true,
         id: "navigation:datatypes",
         icon: faPuzzlePiece,
         keywords: "formats extensions",
@@ -44,6 +61,7 @@ const EXTRA_DESTINATIONS: PaletteItem[] = [
         to: "/datatypes",
     },
     {
+        anonymous: true,
         id: "navigation:about",
         icon: faInfoCircle,
         keywords: "version instance galaxy",
@@ -72,6 +90,20 @@ function activityAvailable(activityId: string, anonymous: boolean, ctx: PaletteC
     return true;
 }
 
+/**
+ * The curated destinations the current user can actually reach — an anonymous
+ * user is redirected away from `/user`, and notifications only exist where the
+ * notification system is enabled.
+ */
+function extraDestinations(ctx: PaletteContext): PaletteItem[] {
+    return EXTRA_DESTINATIONS.filter((destination) => {
+        if (!destination.anonymous && ctx.isAnonymous) {
+            return false;
+        }
+        return destination.available ? destination.available(ctx) : true;
+    }).map(({ anonymous: _anonymous, available: _available, ...item }) => item);
+}
+
 /** Focuses a panel-type activity in the activity bar side panel */
 function openActivityPanel(activityId: string) {
     const activityStore = useActivityStore("default");
@@ -95,7 +127,7 @@ function navigationItems(ctx: PaletteContext): PaletteItem[] {
             }
             return { ...base, handler: () => openActivityPanel(activity.id) };
         });
-    return [...activityItems, ...EXTRA_DESTINATIONS];
+    return [...activityItems, ...extraDestinations(ctx)];
 }
 
 export const navigationProvider: CommandPaletteProvider = {
