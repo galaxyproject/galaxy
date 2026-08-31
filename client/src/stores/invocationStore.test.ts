@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import type { StepJobSummary, WorkflowJobMetric } from "@/api/invocations";
+import type { StepJobSummary, WorkflowInvocation, WorkflowJobMetric } from "@/api/invocations";
 
 import { useInvocationStore } from "./invocationStore";
 
@@ -25,6 +25,18 @@ function metricsResponse(jobIds: string[]): WorkflowJobMetric[] {
                 job_id,
             }) as unknown as WorkflowJobMetric,
     );
+}
+
+function invocationResponse(id: string, updateTime: string): WorkflowInvocation {
+    return {
+        id,
+        create_time: updateTime,
+        update_time: updateTime,
+        state: "scheduled",
+        history_id: `history-${id}`,
+        workflow_id: `workflow-${id}`,
+        model_class: "WorkflowInvocation",
+    } as unknown as WorkflowInvocation;
 }
 
 describe("stores/invocationStore", () => {
@@ -95,6 +107,107 @@ describe("stores/invocationStore", () => {
             await flushPromises();
 
             expect(metricsCallCount).toBe(1);
+        });
+    });
+
+    describe("fetchLatestInvocations", () => {
+        let invocations: WorkflowInvocation[];
+        let invocationsCallCount: number;
+        let requestedLimits: (string | null)[];
+
+        beforeEach(() => {
+            invocations = [invocationResponse("inv2", "2026-08-02"), invocationResponse("inv1", "2026-08-01")];
+            invocationsCallCount = 0;
+            requestedLimits = [];
+
+            server.use(
+                http.get("/api/invocations", ({ response, request }) => {
+                    invocationsCallCount++;
+                    requestedLimits.push(new URL(request.url).searchParams.get("limit"));
+                    return response(200).json(invocations);
+                }),
+                // Requested by the grid's `getData` to populate the name caches.
+                http.get("/api/histories/{history_id}", ({ response, params }) => {
+                    return response(200).json({ id: params.history_id, name: "History" } as never);
+                }),
+                http.get("/api/workflows/{workflow_id}", ({ response, params }) => {
+                    return response(200).json({ id: params.workflow_id, name: "Workflow" } as never);
+                }),
+            );
+        });
+
+        it("stores the latest invocations in server order and exposes them as summaries", async () => {
+            const store = useInvocationStore();
+
+            const fetched = await store.fetchLatestInvocations();
+
+            expect(fetched.map((invocation) => invocation.id)).toEqual(["inv2", "inv1"]);
+            expect(store.latestInvocations.map((invocation) => invocation.id)).toEqual(["inv2", "inv1"]);
+            expect(requestedLimits).toEqual(["15"]);
+        });
+
+        it("passes the requested limit on to the server", async () => {
+            const store = useInvocationStore();
+
+            await store.fetchLatestInvocations(5);
+
+            expect(requestedLimits).toEqual(["5"]);
+        });
+
+        it("merges the fetched invocations into the shared cache instead of duplicating them", async () => {
+            const store = useInvocationStore();
+
+            await store.fetchLatestInvocations();
+            store.updateInvocation("inv1", { state: "cancelled" });
+
+            expect(store.getInvocationById("inv1")?.state).toBe("cancelled");
+            expect(store.latestInvocations.find((invocation) => invocation.id === "inv1")?.state).toBe("cancelled");
+            expect(store.sortedStoredInvocations.map((invocation) => invocation.id)).toEqual(["inv2", "inv1"]);
+        });
+
+        it("dedupes repeated ids and replaces the previous list on refetch", async () => {
+            const store = useInvocationStore();
+
+            invocations = [invocationResponse("inv1", "2026-08-01"), invocationResponse("inv1", "2026-08-01")];
+            await store.fetchLatestInvocations();
+            expect(store.latestInvocations.map((invocation) => invocation.id)).toEqual(["inv1"]);
+
+            invocations = [invocationResponse("inv3", "2026-08-03")];
+            await store.fetchLatestInvocations();
+            expect(store.latestInvocations.map((invocation) => invocation.id)).toEqual(["inv3"]);
+        });
+
+        it("shares a single request between concurrent calls", async () => {
+            const store = useInvocationStore();
+
+            await Promise.all([store.fetchLatestInvocations(), store.fetchLatestInvocations()]);
+
+            expect(invocationsCallCount).toBe(1);
+            expect(store.isLoadingLatestInvocations).toBe(false);
+        });
+
+        it("resets the loading flag and allows retrying after a failed fetch", async () => {
+            const store = useInvocationStore();
+
+            server.use(
+                http.get("/api/invocations", ({ response }) => {
+                    invocationsCallCount++;
+                    return response("4XX").json({ err_msg: "nope", err_code: 400 }, { status: 400 });
+                }),
+            );
+            await expect(store.fetchLatestInvocations()).rejects.toBeDefined();
+            expect(store.isLoadingLatestInvocations).toBe(false);
+
+            server.use(
+                http.get("/api/invocations", ({ response }) => {
+                    invocationsCallCount++;
+                    return response(200).json(invocations);
+                }),
+            );
+            await store.fetchLatestInvocations();
+
+            expect(invocationsCallCount).toBe(2);
+            expect(store.latestInvocations.map((invocation) => invocation.id)).toEqual(["inv2", "inv1"]);
         });
     });
 
