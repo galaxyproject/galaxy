@@ -30,11 +30,18 @@ export interface PaletteItem {
     id: string;
     /** Turns the item into a badge collecting a second value before it runs */
     argumentMode?: {
-        placeholder: string;
         getItems(argQuery: string, ctx: PaletteContext): PaletteItem[] | Promise<PaletteItem[]>;
+        /**
+         * Whether plain enter enters the argument mode as well — for actions
+         * such as "Run workflow" that have nothing useful to do without it.
+         */
+        immediate?: boolean;
+        /** Verb shown next to the `⇧↵` footer hint, e.g. "name it" */
+        label?: string;
+        placeholder: string;
     };
     /** Imperative action to run on selection */
-    handler?: () => void;
+    handler?: (ctx: PaletteContext) => void;
     /** Icon shown in front of the title */
     icon?: IconDefinition;
     /** Extra search corpus, never displayed */

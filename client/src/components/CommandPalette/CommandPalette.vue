@@ -103,6 +103,15 @@ const escapeLabel = computed(() => {
     return localize("close");
 });
 
+/** What `⇧↵` would do with the selected item, unset when it offers nothing */
+const secondaryLabel = computed(() => {
+    const item = selectedItem.value;
+    if (item?.argumentMode) {
+        return localize(item.argumentMode.label ?? "add an argument");
+    }
+    return item?.secondaryAction ? localize(item.secondaryAction.label) : undefined;
+});
+
 const footerHints = computed<FooterHint[]>(() => {
     const activeMode = mode.value;
     const hints: FooterHint[] = [{ id: "navigate", keys: "↑↓", label: localize("navigate") }];
@@ -121,12 +130,13 @@ const footerHints = computed<FooterHint[]>(() => {
         });
     }
 
-    const secondaryAction = selectedItem.value?.secondaryAction;
-    if (secondaryAction) {
-        hints.push({ id: "secondary", keys: "⇧↵", label: localize(secondaryAction.label) });
+    if (secondaryLabel.value) {
+        hints.push({ id: "secondary", keys: "⇧↵", label: secondaryLabel.value });
     }
     if (activeMode.type === "scoped") {
         hints.push({ id: "remove-scope", keys: "⌫", label: localize("remove scope") });
+    } else if (activeMode.type === "action") {
+        hints.push({ id: "remove-action", keys: "⌫", label: localize("remove action") });
     }
 
     hints.push({ id: "escape", keys: "esc", label: escapeLabel.value });
@@ -250,13 +260,26 @@ async function scopedSections(scope: ScopeDefinition, ctx: PaletteContext): Prom
     return [{ id: provider.id, items: await providerItems(provider.id, ctx), title: provider.title }];
 }
 
+/**
+ * Argument mode: the input collects the action's argument and the action itself
+ * turns the typed text into the rows to pick from. Free text actions surface the
+ * text as their own first item, so enter always runs the selected row.
+ */
+async function actionSections(action: PaletteItem, ctx: PaletteContext): Promise<ResultSection[]> {
+    const argumentMode = action.argumentMode;
+    if (!argumentMode) {
+        return [];
+    }
+    const items = await withoutFailing(action.id, () => argumentMode.getItems(query.value, ctx), []);
+    return [{ id: `action:${action.id}`, items, title: localize(action.title) }];
+}
+
 function modeSections(activeMode: PaletteMode, ctx: PaletteContext): Promise<ResultSection[]> | ResultSection[] {
     switch (activeMode.type) {
         case "help":
             return helpSections(ctx);
         case "action":
-            // action arguments are wired up with the actions rework
-            return [];
+            return actionSections(activeMode.action, ctx);
         case "scoped":
             return scopedSections(activeMode.scope, ctx);
         default:
@@ -327,10 +350,11 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
     }
     if (mode.value.type === "help") {
         // help rows only rewrite the input, the palette stays open
-        item.handler?.();
+        item.handler?.(buildContext());
         return;
     }
-    if (event?.shiftKey) {
+    if (event?.shiftKey || item.argumentMode?.immediate) {
+        // an action without a useful default enters its argument mode on plain enter too
         runSecondary(item);
         return;
     }
@@ -346,7 +370,7 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
             // duplicate navigation to the current route is fine
         });
     } else {
-        item.handler?.();
+        item.handler?.(buildContext());
     }
     closePalette();
 }
