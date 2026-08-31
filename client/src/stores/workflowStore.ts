@@ -2,12 +2,139 @@ import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type { StoredWorkflowDetailed } from "@/api/workflows";
+import type { StoredWorkflowDetailed, WorkflowSortBy, WorkflowSummary } from "@/api/workflows";
+import { loadWorkflows } from "@/api/workflows";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
+
+/** The workflow lists the store keeps ordered id caches for. */
+export type WorkflowListVariant = "my" | "shared" | "published" | "bookmarked";
+
+export interface FetchWorkflowListOptions {
+    sortBy?: WorkflowSortBy;
+    sortDesc?: boolean;
+    limit?: number;
+    offset?: number;
+}
+
+/** Filter token and query params each variant adds on top of the user provided query. */
+function variantParams(variant: WorkflowListVariant, query: string) {
+    const filters = query.trim() ? [query.trim()] : [];
+
+    switch (variant) {
+        case "shared":
+            filters.push("is:shared_with_me");
+            return { filterText: filters.join(" "), showPublished: false, showShared: true };
+        case "published":
+            filters.push("is:published");
+            return { filterText: filters.join(" "), showPublished: true, showShared: undefined };
+        case "bookmarked":
+            filters.push("is:bookmarked");
+            return { filterText: filters.join(" "), showPublished: false, showShared: undefined };
+        default:
+            return { filterText: filters.join(" "), showPublished: false, showShared: undefined };
+    }
+}
 
 export const useWorkflowStore = defineStore("workflowStore", () => {
     const workflowsByInstanceId = ref<{ [index: string]: StoredWorkflowDetailed }>({});
     const fullWorkflowsByIdAndVersion = ref(new Map<string, any>());
+
+    /** Single cache of workflow summaries, keyed by workflow id. */
+    const workflowSummariesById = ref<{ [index: string]: WorkflowSummary }>({});
+
+    /** Ordered workflow ids per list variant and query -- ids only, never copies of the summaries. */
+    const listIdsByKey = ref<{ [index: string]: string[] }>({});
+
+    /** In progress list fetches, to avoid firing the same request twice. */
+    const listPromises = new Map<string, Promise<WorkflowSummary[]>>();
+
+    function listKey(variant: WorkflowListVariant, query = "") {
+        return `${variant}:${query.trim()}`;
+    }
+
+    const getWorkflowSummaryById = computed(() => (workflowId: string) => workflowSummariesById.value[workflowId]);
+
+    const allWorkflowSummaries = computed(() => Object.values(workflowSummariesById.value));
+
+    /** Summaries for a cached list, in the order the backend returned them. */
+    const getWorkflowList = computed(() => (variant: WorkflowListVariant, query = "") => {
+        const ids = listIdsByKey.value[listKey(variant, query)] ?? [];
+        return ids
+            .map((workflowId) => workflowSummariesById.value[workflowId])
+            .filter((workflow): workflow is WorkflowSummary => Boolean(workflow));
+    });
+
+    /** Whether a list has been fetched at least once (an empty result still counts as loaded). */
+    const isWorkflowListLoaded = computed(
+        () =>
+            (variant: WorkflowListVariant, query = "") =>
+                listKey(variant, query) in listIdsByKey.value,
+    );
+
+    /** Merges summaries into the cache, updating existing entries instead of duplicating them. */
+    function mergeWorkflowSummaries(workflows: WorkflowSummary[]) {
+        workflows.forEach((workflow) => {
+            const cached = workflowSummariesById.value[workflow.id];
+            set(workflowSummariesById.value, workflow.id, cached ? { ...cached, ...workflow } : workflow);
+        });
+    }
+
+    async function fetchAndMergeWorkflowList(
+        key: string,
+        variant: WorkflowListVariant,
+        query: string,
+        options: FetchWorkflowListOptions,
+    ) {
+        const { sortBy = "update_time", sortDesc = true, limit = 20, offset = 0 } = options;
+        const { filterText, showPublished, showShared } = variantParams(variant, query);
+
+        try {
+            const { data } = await loadWorkflows({
+                sortBy,
+                sortDesc,
+                limit,
+                offset,
+                filterText,
+                showPublished,
+                showShared,
+                skipStepCounts: true,
+            });
+
+            mergeWorkflowSummaries(data);
+            set(
+                listIdsByKey.value,
+                key,
+                data.map((workflow) => workflow.id),
+            );
+
+            return getWorkflowList.value(variant, query);
+        } finally {
+            listPromises.delete(key);
+        }
+    }
+
+    /**
+     * Fetches a workflow list and merges it into the summary cache.
+     * @param variant which list to fetch
+     * @param query optional free text search
+     * @param options sorting and paging overrides
+     */
+    function fetchWorkflowList(
+        variant: WorkflowListVariant,
+        query = "",
+        options: FetchWorkflowListOptions = {},
+    ): Promise<WorkflowSummary[]> {
+        const key = listKey(variant, query);
+
+        const existingPromise = listPromises.get(key);
+        if (existingPromise) {
+            return existingPromise;
+        }
+
+        const promise = fetchAndMergeWorkflowList(key, variant, query, options);
+        listPromises.set(key, promise);
+        return promise;
+    }
 
     /** Cached promises for fetching full workflows to prevent duplicate requests */
     const fullWorkflowPromises = new Map<string, Promise<any>>();
@@ -115,12 +242,18 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     }
 
     return {
+        allWorkflowSummaries,
         fetchWorkflowForInstanceId,
         fetchWorkflowForInstanceIdCached,
+        fetchWorkflowList,
         getFullWorkflowCached,
         getStoredWorkflowByInstanceId,
         getStoredWorkflowIdByInstanceId,
         getStoredWorkflowNameByInstanceId,
+        getWorkflowList,
+        getWorkflowSummaryById,
+        isWorkflowListLoaded,
         workflowsByInstanceId,
+        workflowSummariesById,
     };
 });

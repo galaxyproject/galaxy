@@ -2,6 +2,8 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { WorkflowSummary } from "@/api/workflows";
+import { loadWorkflows } from "@/api/workflows";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -10,12 +12,25 @@ vi.mock("@/components/Workflow/workflows.services", () => ({
     getWorkflowFull: vi.fn(),
 }));
 
+// Mock the workflows API layer used by the list cache
+vi.mock("@/api/workflows", () => ({
+    loadWorkflows: vi.fn(),
+}));
+
 const mockWorkflow = {
     id: "workflow-123",
     name: "Test Workflow",
     version: 1,
     steps: {},
 };
+
+function workflowSummary(id: string, name: string, extra: Partial<WorkflowSummary> = {}): WorkflowSummary {
+    return { id, name, update_time: "2026-08-31T10:00:00", ...extra } as WorkflowSummary;
+}
+
+function mockLoadWorkflowsOnce(data: WorkflowSummary[]) {
+    vi.mocked(loadWorkflows).mockResolvedValueOnce({ data, totalMatches: data.length });
+}
 
 describe("useWorkflowStore", () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>;
@@ -156,6 +171,135 @@ describe("useWorkflowStore", () => {
 
             // Still only one API call total
             expect(getWorkflowFull).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe("fetchWorkflowList", () => {
+        it("requests the params of the 'my' variant and caches the returned summaries", async () => {
+            const summaries = [workflowSummary("w1", "First"), workflowSummary("w2", "Second")];
+            mockLoadWorkflowsOnce(summaries);
+
+            const result = await workflowStore.fetchWorkflowList("my");
+
+            expect(loadWorkflows).toHaveBeenCalledWith({
+                sortBy: "update_time",
+                sortDesc: true,
+                limit: 20,
+                offset: 0,
+                filterText: "",
+                showPublished: false,
+                showShared: undefined,
+                skipStepCounts: true,
+            });
+            expect(result).toEqual(summaries);
+            expect(workflowStore.getWorkflowList("my")).toEqual(summaries);
+            expect(workflowStore.getWorkflowSummaryById("w1")).toEqual(summaries[0]);
+        });
+
+        it("requests shared workflows with show_shared and the shared filter", async () => {
+            mockLoadWorkflowsOnce([workflowSummary("w3", "Shared")]);
+
+            await workflowStore.fetchWorkflowList("shared", "rna");
+
+            expect(loadWorkflows).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    filterText: "rna is:shared_with_me",
+                    showShared: true,
+                    showPublished: false,
+                }),
+            );
+        });
+
+        it("requests published workflows with show_published and the published filter", async () => {
+            mockLoadWorkflowsOnce([workflowSummary("w4", "Published")]);
+
+            await workflowStore.fetchWorkflowList("published");
+
+            expect(loadWorkflows).toHaveBeenCalledWith(
+                expect.objectContaining({ filterText: "is:published", showPublished: true }),
+            );
+        });
+
+        it("requests bookmarked workflows with the bookmarked filter", async () => {
+            mockLoadWorkflowsOnce([workflowSummary("w5", "Bookmarked")]);
+
+            await workflowStore.fetchWorkflowList("bookmarked");
+
+            expect(loadWorkflows).toHaveBeenCalledWith(
+                expect.objectContaining({ filterText: "is:bookmarked", showPublished: false }),
+            );
+        });
+
+        it("applies sorting and paging overrides", async () => {
+            mockLoadWorkflowsOnce([]);
+
+            await workflowStore.fetchWorkflowList("my", "", { sortBy: "name", sortDesc: false, limit: 5, offset: 10 });
+
+            expect(loadWorkflows).toHaveBeenCalledWith(
+                expect.objectContaining({ sortBy: "name", sortDesc: false, limit: 5, offset: 10 }),
+            );
+        });
+
+        it("merges updated summaries into the existing cache entry instead of duplicating it", async () => {
+            mockLoadWorkflowsOnce([workflowSummary("w1", "Old name", { tags: ["a"] })]);
+            await workflowStore.fetchWorkflowList("my");
+
+            mockLoadWorkflowsOnce([workflowSummary("w1", "New name")]);
+            await workflowStore.fetchWorkflowList("published");
+
+            expect(workflowStore.allWorkflowSummaries).toHaveLength(1);
+            expect(workflowStore.getWorkflowSummaryById("w1")).toEqual(
+                expect.objectContaining({ name: "New name", tags: ["a"] }),
+            );
+            // Both lists read the same cached summary
+            expect(workflowStore.getWorkflowList("my")[0]).toEqual(workflowStore.getWorkflowList("published")[0]);
+        });
+
+        it("keeps separate ordered id lists per variant and query", async () => {
+            mockLoadWorkflowsOnce([workflowSummary("w2", "Second"), workflowSummary("w1", "First")]);
+            await workflowStore.fetchWorkflowList("my");
+
+            mockLoadWorkflowsOnce([workflowSummary("w1", "First")]);
+            await workflowStore.fetchWorkflowList("my", "first");
+
+            expect(workflowStore.getWorkflowList("my").map((workflow) => workflow.id)).toEqual(["w2", "w1"]);
+            expect(workflowStore.getWorkflowList("my", "first").map((workflow) => workflow.id)).toEqual(["w1"]);
+            expect(workflowStore.getWorkflowList("shared")).toEqual([]);
+        });
+
+        it("deduplicates concurrent fetches of the same list", async () => {
+            mockLoadWorkflowsOnce([workflowSummary("w1", "First")]);
+
+            const [first, second] = await Promise.all([
+                workflowStore.fetchWorkflowList("my"),
+                workflowStore.fetchWorkflowList("my"),
+            ]);
+
+            expect(loadWorkflows).toHaveBeenCalledTimes(1);
+            expect(first).toEqual(second);
+        });
+
+        it("refetches after a previous fetch settled", async () => {
+            mockLoadWorkflowsOnce([]);
+            await workflowStore.fetchWorkflowList("my");
+
+            mockLoadWorkflowsOnce([workflowSummary("w1", "First")]);
+            await workflowStore.fetchWorkflowList("my");
+
+            expect(loadWorkflows).toHaveBeenCalledTimes(2);
+            expect(workflowStore.getWorkflowList("my")).toHaveLength(1);
+        });
+
+        it("reports whether a list has been loaded and does not cache failed fetches", async () => {
+            expect(workflowStore.isWorkflowListLoaded("my")).toBe(false);
+
+            vi.mocked(loadWorkflows).mockRejectedValueOnce(new Error("boom"));
+            await expect(workflowStore.fetchWorkflowList("my")).rejects.toThrow("boom");
+            expect(workflowStore.isWorkflowListLoaded("my")).toBe(false);
+
+            mockLoadWorkflowsOnce([]);
+            await workflowStore.fetchWorkflowList("my");
+            expect(workflowStore.isWorkflowListLoaded("my")).toBe(true);
         });
     });
 });
