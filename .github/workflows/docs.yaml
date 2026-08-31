@@ -1,6 +1,9 @@
 name: Build docs
 on:
   push:
+    branches:
+      - dev
+      - release_*
     paths-ignore:
       - 'client/**'
       - 'lib/galaxy_test/selenium/**'

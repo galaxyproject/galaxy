@@ -1,6 +1,9 @@
 name: Tool form harness tests
 on:
   push:
+    branches:
+      - dev
+      - release_*
     paths:
       - 'client/src/components/Form/**'
       - 'client/src/components/Tool/**'

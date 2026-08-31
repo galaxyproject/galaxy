@@ -1,6 +1,9 @@
 name: Test Galaxy packages for Pulsar
 on:
   push:
+    branches:
+      - dev
+      - release_*
     paths-ignore:
       - 'client/**'
       - 'doc/**'

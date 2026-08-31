@@ -1,6 +1,9 @@
 name: API tests
 on:
   push:
+    branches:
+      - dev
+      - release_*
     paths-ignore:
       - 'client/**'
       - 'doc/**'

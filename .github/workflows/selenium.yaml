@@ -1,6 +1,9 @@
 name: Selenium tests
 on:
   push:
+    branches:
+      - dev
+      - release_*
     paths-ignore:
       - 'doc/**'
       - 'packages/**'

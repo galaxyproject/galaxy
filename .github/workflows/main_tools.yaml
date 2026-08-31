@@ -1,6 +1,9 @@
 name: Main tool tests
 on:
   push:
+    branches:
+      - dev
+      - release_*
     paths-ignore:
       - 'client/**'
       - 'doc/**'

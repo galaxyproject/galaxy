@@ -2,6 +2,9 @@ name: GitHub Actions Security Analysis with zizmor 🌈
 
 on:
   push:
+    branches:
+      - dev
+      - release_*
     paths:
       - '.github/workflows/*'
       - zizmor.yml

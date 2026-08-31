@@ -1,6 +1,9 @@
 name: Client linting
 on:
   push:
+    branches:
+      - dev
+      - release_*
     paths:
       - 'client/**'
       - '.github/workflows/js_lint.yaml'
