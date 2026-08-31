@@ -16,7 +16,14 @@ export interface FetchWorkflowListOptions {
     offset?: number;
 }
 
-/** Filter token and query params each variant adds on top of the user provided query. */
+/**
+ * Filter token and query params each variant adds on top of the user provided query.
+ *
+ * `showShared` is always spelled out: the backend defaults `show_shared` to true
+ * and an `undefined` value is dropped from the query string altogether, so the
+ * lists of the user's own workflows have to ask for `false` explicitly to stay
+ * free of workflows that were only shared with them.
+ */
 function variantParams(variant: WorkflowListVariant, query: string) {
     const filters = query.trim() ? [query.trim()] : [];
 
@@ -29,9 +36,9 @@ function variantParams(variant: WorkflowListVariant, query: string) {
             return { filterText: filters.join(" "), showPublished: true, showShared: undefined };
         case "bookmarked":
             filters.push("is:bookmarked");
-            return { filterText: filters.join(" "), showPublished: false, showShared: undefined };
+            return { filterText: filters.join(" "), showPublished: false, showShared: false };
         default:
-            return { filterText: filters.join(" "), showPublished: false, showShared: undefined };
+            return { filterText: filters.join(" "), showPublished: false, showShared: false };
     }
 }
 

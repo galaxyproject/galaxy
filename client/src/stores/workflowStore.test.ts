@@ -188,7 +188,9 @@ describe("useWorkflowStore", () => {
                 offset: 0,
                 filterText: "",
                 showPublished: false,
-                showShared: undefined,
+                // explicit `false`, so the request does not fall back to the
+                // backend default (which includes shared-with-me workflows)
+                showShared: false,
                 skipStepCounts: true,
             });
             expect(result).toEqual(summaries);
@@ -226,7 +228,7 @@ describe("useWorkflowStore", () => {
             await workflowStore.fetchWorkflowList("bookmarked");
 
             expect(loadWorkflows).toHaveBeenCalledWith(
-                expect.objectContaining({ filterText: "is:bookmarked", showPublished: false }),
+                expect.objectContaining({ filterText: "is:bookmarked", showPublished: false, showShared: false }),
             );
         });
 
