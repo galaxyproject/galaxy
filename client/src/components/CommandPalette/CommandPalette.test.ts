@@ -155,6 +155,37 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
 
+    it("collects an action argument on shift+enter and runs the picked row", async () => {
+        const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
+
+        await type("> upload");
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Upload data");
+        expect(hint("secondary").text()).toContain("pick a method");
+
+        await press("Enter", { shiftKey: true });
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().text()).toContain("Upload data");
+        expect(inputValue()).toBe("");
+        expect(wrapper.text()).toContain("Paste File Content");
+        expect(hint("run").exists()).toBe(true);
+        expect(hint("remove-action").exists()).toBe(true);
+
+        await type("paste file content");
+        await press("Enter");
+        expect(push).toHaveBeenCalledWith("/upload/paste-content");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
+    it("leaves an action's argument badge on backspace at the start", async () => {
+        await type("> upload");
+        await press("Enter", { shiftKey: true });
+        expect(badge().text()).toContain("Upload data");
+
+        await press("Backspace");
+        expect(badge().exists()).toBe(false);
+        expect(wrapper.text()).toContain("Navigation");
+    });
+
     it("ignores shift+enter on an item without a secondary behavior", async () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
 
