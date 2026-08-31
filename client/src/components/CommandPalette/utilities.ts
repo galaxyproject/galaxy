@@ -1,12 +1,10 @@
 import { type SearchCommonKeys, searchObjectsByKeys } from "@/components/Panels/utilities";
 
-import type { CommandPaletteProvider, PaletteItem } from "./types";
+import { ACTIONS_SCOPE, findScope, type ScopeDefinition } from "./providers/scopes";
+import type { PaletteItem } from "./types";
 
-/**
- * Prefixes reserved for per-entity providers that are not implemented yet
- * (workflows, histories, datasets, visualizations, invocations, pages).
- */
-export const RESERVED_PREFIXES = ["w", "h", "d", "v", "i", "p"];
+/** A scope token: one or two letters followed by a colon, e.g. `w:` or `hs:` */
+const SCOPE_TOKEN = /^([a-zA-Z]{1,2}):(.*)$/;
 
 const PALETTE_SEARCH_KEYS: SearchCommonKeys = {
     exact: 5,
@@ -17,37 +15,33 @@ const PALETTE_SEARCH_KEYS: SearchCommonKeys = {
     wordMatch: 0,
 };
 
-export interface ParsedPaletteQuery {
-    /** Provider the query is scoped to; unset searches all providers */
-    providerId?: string;
-    query: string;
-    /** Known entity prefix whose provider is not available yet */
-    reservedPrefix?: string;
-}
+export type ParsedPaletteQuery =
+    /** Unscoped search text */
+    | { type: "text"; query: string }
+    /** A recognized `>` or `x:` token, stripped from the remaining query */
+    | { type: "scope"; scope: ScopeDefinition; query: string }
+    /** A lone `?`, which opens the help panel */
+    | { type: "help" };
 
 /**
- * Splits a raw palette query into an optional provider scope and the actual
- * search text. `>` scopes to actions; single-letter `x:` prefixes scope to
- * the provider registered for that letter.
+ * Classifies a raw palette query. `>` scopes to actions and an exactly
+ * matching `x:`/`xy:` token scopes to that entity; anything else — including
+ * unknown tokens such as `name:fastqc` — stays plain search text.
  */
-export function parsePaletteQuery(raw: string, providers: CommandPaletteProvider[]): ParsedPaletteQuery {
+export function parsePaletteQuery(raw: string): ParsedPaletteQuery {
     const trimmed = raw.trim();
+    if (trimmed === "?") {
+        return { type: "help" };
+    }
     if (trimmed.startsWith(">")) {
-        return { providerId: "actions", query: trimmed.slice(1).trim() };
+        return { type: "scope", scope: ACTIONS_SCOPE, query: trimmed.slice(1).trim() };
     }
-    const prefixMatch = trimmed.match(/^([a-zA-Z]):(.*)$/);
-    if (prefixMatch) {
-        const prefix = (prefixMatch[1] as string).toLowerCase();
-        const query = (prefixMatch[2] as string).trim();
-        const provider = providers.find((p) => p.prefix === prefix);
-        if (provider) {
-            return { providerId: provider.id, query };
-        }
-        if (RESERVED_PREFIXES.includes(prefix)) {
-            return { reservedPrefix: prefix, query };
-        }
+    const token = trimmed.match(SCOPE_TOKEN);
+    const scope = token ? findScope(token[1] as string) : undefined;
+    if (token && scope) {
+        return { type: "scope", scope, query: (token[2] as string).trim() };
     }
-    return { query: trimmed };
+    return { type: "text", query: trimmed };
 }
 
 export interface ScoredPaletteItem {

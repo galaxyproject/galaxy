@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faSearch, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventListener, watchDebounced, watchImmediate } from "@vueuse/core";
 import { computed, nextTick, ref, watch } from "vue";
@@ -12,9 +12,12 @@ import { useEventStore } from "@/stores/eventStore";
 import { useToolStore } from "@/stores/toolStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
+import { localize } from "@/utils/localization";
 
-import { paletteProviders, parsePaletteQuery } from "./providers";
+import { findPaletteProvider, paletteProviders, rankPaletteItems } from "./providers";
+import { ACTIONS_SCOPE, availableScopes, type ScopeDefinition } from "./providers/scopes";
 import type { PaletteContext, PaletteItem } from "./types";
+import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
 import { scorePaletteItems } from "./utilities";
 
 import CommandPaletteItem from "./CommandPaletteItem.vue";
@@ -23,14 +26,7 @@ const SEARCH_DEBOUNCE = 150;
 /** Cap per section on an empty query so defaults stay scannable */
 const MAX_EMPTY_QUERY_ITEMS = 8;
 
-const RESERVED_PREFIX_LABELS: Record<string, string> = {
-    w: "workflows",
-    h: "histories",
-    d: "datasets",
-    v: "visualizations",
-    i: "invocations",
-    p: "pages",
-};
+const ROOT_PLACEHOLDER = "Search Galaxy…  (> actions, w: t: … scopes, ? help)";
 
 interface ResultSection {
     id: string;
@@ -46,13 +42,15 @@ const toolStore = useToolStore();
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const userStore = useUserStore();
 
+const { badgeLabel, enterScope, handleEscape, mode, popMode, query, reset, setText, text } = usePaletteMachine();
+
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const inputElement = ref<HTMLInputElement | null>(null);
-const query = ref("");
-const reservedPrefix = ref<string | null>(null);
 const searching = ref(false);
 const sections = ref<ResultSection[]>([]);
 const selectedIndex = ref(0);
+/** Scope whose provider has not landed yet; renders the temporary hint row */
+const pendingScope = ref<ScopeDefinition | null>(null);
 
 const uid = useUid("command-palette");
 const listboxId = computed(() => `${uid.value}-listbox`);
@@ -63,9 +61,32 @@ const selectedItem = computed(() => flatItems.value[selectedIndex.value]);
 
 const activeDescendant = computed(() => (selectedItem.value ? optionId(selectedIndex.value) : undefined));
 
-const reservedHint = computed(() => (reservedPrefix.value ? RESERVED_PREFIX_LABELS[reservedPrefix.value] : undefined));
-
 const modifierLabel = computed(() => (eventStore.isMac ? "⌘" : "Ctrl+"));
+
+const badgeAriaLabel = computed(() => `${localize("Remove filter")}: ${badgeLabel.value}`);
+
+const placeholder = computed(() => {
+    const activeMode = mode.value;
+    if (activeMode.type === "action") {
+        return activeMode.action.argumentMode?.placeholder ?? searchLabel(activeMode.action.title);
+    }
+    if (activeMode.type === "scoped") {
+        return searchLabel(localize(activeMode.scope.label));
+    }
+    return localize(ROOT_PLACEHOLDER);
+});
+
+const scopeHint = computed(() => {
+    const scope = pendingScope.value;
+    if (!scope) {
+        return undefined;
+    }
+    return `${scope.key}: ${localize("searches")} ${localize(scope.label)} — ${localize("provider loading soon")}`;
+});
+
+function searchLabel(subject: string) {
+    return `${localize("Search")} ${subject.toLowerCase()}…`;
+}
 
 function optionId(index: number) {
     return `${uid.value}-option-${index}`;
@@ -91,41 +112,95 @@ function buildContext(): PaletteContext {
     };
 }
 
+/** One help row per scope, selecting it turns the scope into a badge */
+function scopeHelpItem(scope: ScopeDefinition): PaletteItem {
+    return {
+        id: `help:${scope.key}`,
+        handler: () => enterScope(scope),
+        keywords: scope.key,
+        shortcut: scope.key === ACTIONS_SCOPE.key ? scope.key : `${scope.key}:`,
+        title: `${localize("Search")} ${localize(scope.label).toLowerCase()}`,
+    };
+}
+
+function helpSections(ctx: PaletteContext): ResultSection[] {
+    return [
+        { id: "help:actions", items: [scopeHelpItem(ACTIONS_SCOPE)], title: localize("Actions") },
+        { id: "help:scopes", items: availableScopes(ctx).map(scopeHelpItem), title: localize("Scopes") },
+    ].map((section) => ({ ...section, items: rankPaletteItems(section.items, query.value) }));
+}
+
+async function providerItems(providerId: string, ctx: PaletteContext): Promise<PaletteItem[]> {
+    const provider = findPaletteProvider(providerId);
+    if (!provider) {
+        return [];
+    }
+    if (!query.value && provider.emptyQueryItems) {
+        return provider.emptyQueryItems(ctx).slice(0, MAX_EMPTY_QUERY_ITEMS);
+    }
+    return provider.search(query.value, ctx);
+}
+
+/** Unscoped search: every provider contributes a section, best match first */
+async function rootSections(ctx: PaletteContext): Promise<ResultSection[]> {
+    const scored = await Promise.all(
+        paletteProviders.map(async (provider) => {
+            const items = await providerItems(provider.id, ctx);
+            // sections are shown best-match first; backend-ranked tools carry
+            // no scores, so they slot between "starts with" (4) and plain name
+            // matches (3) of the local providers
+            let score = 0;
+            if (query.value) {
+                score =
+                    provider.id === "tools"
+                        ? 3.5
+                        : Math.max(0, ...scorePaletteItems(items, query.value).map((match) => match.order));
+            }
+            return { id: provider.id, items, score, title: provider.title };
+        }),
+    );
+    return scored.sort((a, b) => b.score - a.score).map(({ score: _score, ...section }) => section);
+}
+
+async function scopedSections(scope: ScopeDefinition, ctx: PaletteContext): Promise<ResultSection[]> {
+    const provider = findPaletteProvider(scope.providerId);
+    // a variant (shared, published, …) can only be served by a scoped search
+    if (!provider || (scope.variant && !provider.searchScoped)) {
+        pendingScope.value = scope;
+        return [];
+    }
+    if (provider.searchScoped) {
+        const scoped = await provider.searchScoped(scope, query.value, ctx);
+        return scoped.map((section) => ({ ...section, id: `${provider.id}:${section.id}` }));
+    }
+    return [{ id: provider.id, items: await providerItems(provider.id, ctx), title: provider.title }];
+}
+
+function modeSections(activeMode: PaletteMode, ctx: PaletteContext): Promise<ResultSection[]> | ResultSection[] {
+    switch (activeMode.type) {
+        case "help":
+            return helpSections(ctx);
+        case "action":
+            // action arguments are wired up with the actions rework
+            return [];
+        case "scoped":
+            return scopedSections(activeMode.scope, ctx);
+        default:
+            return rootSections(ctx);
+    }
+}
+
 let searchEpoch = 0;
 
 async function runSearch() {
     const epoch = ++searchEpoch;
-    const parsed = parsePaletteQuery(query.value);
-    reservedPrefix.value = parsed.reservedPrefix ?? null;
-
-    const scopedProviders = parsed.reservedPrefix
-        ? []
-        : paletteProviders.filter((provider) => !parsed.providerId || provider.id === parsed.providerId);
-
     const ctx = buildContext();
+    pendingScope.value = null;
     searching.value = true;
     try {
-        const results = await Promise.all(
-            scopedProviders.map(async (provider) => {
-                let items: PaletteItem[];
-                let score = 0;
-                if (!parsed.query && provider.emptyQueryItems) {
-                    items = provider.emptyQueryItems(ctx).slice(0, MAX_EMPTY_QUERY_ITEMS);
-                } else {
-                    items = await provider.search(parsed.query, ctx);
-                    // sections are shown best-match first; backend-ranked tools
-                    // carry no scores, so they slot between "starts with" (4)
-                    // and plain name matches (3) of the local providers
-                    score =
-                        provider.id === "tools"
-                            ? 3.5
-                            : Math.max(0, ...scorePaletteItems(items, parsed.query).map((scored) => scored.order));
-                }
-                return { id: provider.id, items, score, title: provider.title };
-            }),
-        );
+        const results = await modeSections(mode.value, ctx);
         if (epoch === searchEpoch) {
-            sections.value = results.filter((section) => section.items.length > 0).sort((a, b) => b.score - a.score);
+            sections.value = results.filter((section) => section.items.length > 0);
             selectedIndex.value = 0;
         }
     } finally {
@@ -137,6 +212,11 @@ async function runSearch() {
 
 function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEvent) {
     if (!item) {
+        return;
+    }
+    if (mode.value.type === "help") {
+        // help rows only rewrite the input, the palette stays open
+        item.handler?.();
         return;
     }
     if (item.to) {
@@ -154,6 +234,20 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
     closePalette();
 }
 
+function onInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    setText(input.value);
+    if (input.value !== text.value) {
+        // a recognized token was converted into a badge
+        input.value = text.value;
+    }
+}
+
+function dismissBadge() {
+    popMode();
+    inputElement.value?.focus();
+}
+
 function onKeydown(event: KeyboardEvent) {
     const count = flatItems.value.length;
     switch (event.key) {
@@ -169,13 +263,23 @@ function onKeydown(event: KeyboardEvent) {
                 selectedIndex.value = (selectedIndex.value - 1 + count) % count;
             }
             break;
+        case "Backspace": {
+            const input = event.target as HTMLInputElement;
+            if (mode.value.type !== "root" && input.selectionStart === 0 && input.selectionEnd === 0) {
+                event.preventDefault();
+                popMode();
+            }
+            break;
+        }
         case "Enter":
             event.preventDefault();
             runItem(selectedItem.value, event);
             break;
         case "Escape":
             event.preventDefault();
-            closePalette();
+            if (handleEscape() === "close") {
+                closePalette();
+            }
             break;
     }
 }
@@ -211,10 +315,11 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
     }
 });
 
-watchDebounced(query, runSearch, { debounce: SEARCH_DEBOUNCE });
+watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });
 
 watchImmediate(isPaletteOpen, async (open) => {
     if (open) {
+        reset();
         // hydrate the tool store so recent tools resolve to names
         toolStore.fetchTools()?.catch?.(() => {});
         runSearch();
@@ -225,7 +330,6 @@ watchImmediate(isPaletteOpen, async (open) => {
             // dialog may already be open, or the test environment lacks support
         }
         inputElement.value?.focus();
-        inputElement.value?.select();
     } else {
         dialogElement.value?.close();
     }
@@ -248,10 +352,20 @@ watchImmediate(isPaletteOpen, async (open) => {
                 :icon="searching ? faSpinner : faSearch"
                 :spin="searching" />
 
-            <!-- eslint-disable-next-line vuejs-accessibility/no-autofocus -->
+            <button
+                v-if="badgeLabel"
+                class="palette-badge"
+                type="button"
+                data-description="palette badge"
+                :aria-label="badgeAriaLabel"
+                @click="dismissBadge">
+                {{ badgeLabel }}
+
+                <FontAwesomeIcon :icon="faTimes" />
+            </button>
+
             <input
                 ref="inputElement"
-                v-model="query"
                 data-description="palette input"
                 type="text"
                 role="combobox"
@@ -260,9 +374,11 @@ watchImmediate(isPaletteOpen, async (open) => {
                 aria-label="Search Galaxy"
                 aria-haspopup="listbox"
                 aria-expanded="true"
-                placeholder="Search Galaxy…  (> commands, t: tools)"
+                :placeholder="placeholder"
+                :value="text"
                 :aria-controls="listboxId"
                 :aria-activedescendant="activeDescendant"
+                @input="onInput"
                 @keydown="onKeydown" />
         </div>
 
@@ -285,12 +401,12 @@ watchImmediate(isPaletteOpen, async (open) => {
                     @highlight="selectedIndex = optionIndex(sectionIdx, itemIdx)" />
             </div>
 
-            <div v-if="reservedHint" class="palette-hint" data-description="palette reserved hint">
-                <code>{{ reservedPrefix }}:</code> searches {{ reservedHint }} — coming in a future update.
+            <div v-if="scopeHint" class="palette-hint" data-description="palette scope hint">
+                {{ scopeHint }}
             </div>
 
             <div v-else-if="flatItems.length === 0 && !searching" class="palette-hint" data-description="palette empty">
-                No results.
+                {{ localize("No results.") }}
             </div>
         </div>
 
@@ -303,7 +419,11 @@ watchImmediate(isPaletteOpen, async (open) => {
                 ><kbd>{{ modifierLabel }}↵</kbd> new tab</span
             >
 
-            <span><kbd>esc</kbd> close</span>
+            <span v-if="badgeLabel"><kbd>⌫</kbd> remove filter</span>
+
+            <span><kbd>esc</kbd> clear/close</span>
+
+            <span><kbd>?</kbd> help</span>
         </div>
     </dialog>
 </template>
@@ -338,8 +458,23 @@ watchImmediate(isPaletteOpen, async (open) => {
             color: var(--color-grey-500);
         }
 
+        .palette-badge {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-1);
+            flex: none;
+            padding: 0 var(--spacing-2);
+            border: 1px solid var(--color-blue-300);
+            border-radius: var(--spacing-2);
+            background-color: var(--color-blue-100);
+            color: var(--color-blue-800);
+            font-size: var(--font-size-small);
+            white-space: nowrap;
+        }
+
         input {
             flex-grow: 1;
+            min-width: 0;
             border: none;
             outline: none;
             background: transparent;

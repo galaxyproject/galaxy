@@ -7,32 +7,47 @@ function item(id: string, title: string, extras: Partial<PaletteItem> = {}): Pal
     return { id, title, ...extras };
 }
 
+/** Key of the scope a query resolves to, or undefined when it is plain text */
+function scopeKey(raw: string) {
+    const parsed = parsePaletteQuery(raw);
+    return parsed.type === "scope" ? parsed.scope.key : undefined;
+}
+
 describe("parsePaletteQuery", () => {
     it("returns a plain query unscoped", () => {
-        expect(parsePaletteQuery("fastqc")).toEqual({ query: "fastqc" });
+        expect(parsePaletteQuery("fastqc")).toEqual({ type: "text", query: "fastqc" });
     });
 
     it("scopes '>' to the actions provider", () => {
-        expect(parsePaletteQuery("> upload")).toEqual({ providerId: "actions", query: "upload" });
-        expect(parsePaletteQuery(">")).toEqual({ providerId: "actions", query: "" });
+        expect(parsePaletteQuery("> upload")).toMatchObject({ type: "scope", query: "upload" });
+        expect(parsePaletteQuery(">")).toMatchObject({ type: "scope", query: "" });
+        expect(scopeKey(">")).toBe(">");
     });
 
-    it("scopes 't:' to the tools provider, case-insensitively", () => {
-        expect(parsePaletteQuery("t: align")).toEqual({ providerId: "tools", query: "align" });
-        expect(parsePaletteQuery("T:align")).toEqual({ providerId: "tools", query: "align" });
+    it("scopes single-letter tokens, case-insensitively", () => {
+        expect(parsePaletteQuery("t: align")).toMatchObject({ type: "scope", query: "align" });
+        expect(scopeKey("t: align")).toBe("t");
+        expect(scopeKey("T:align")).toBe("t");
+        expect(scopeKey("w: rna")).toBe("w");
     });
 
-    it("marks known-but-unavailable prefixes as reserved", () => {
-        expect(parsePaletteQuery("w: rna")).toEqual({ reservedPrefix: "w", query: "rna" });
-        expect(parsePaletteQuery("i:")).toEqual({ reservedPrefix: "i", query: "" });
+    it("scopes two-letter tokens", () => {
+        expect(scopeKey("hs: shared")).toBe("hs");
+        expect(scopeKey("wp:")).toBe("wp");
+        expect(scopeKey("pp: news")).toBe("pp");
+        expect(scopeKey("it: jupyter")).toBe("it");
     });
 
-    it("leaves multi-letter 'key:value' filters untouched", () => {
-        expect(parsePaletteQuery("name:fastqc")).toEqual({ query: "name:fastqc" });
+    it("keeps unknown tokens as plain text instead of splitting them", () => {
+        expect(parsePaletteQuery("name:fastqc")).toEqual({ type: "text", query: "name:fastqc" });
+        expect(parsePaletteQuery("x: foo")).toEqual({ type: "text", query: "x: foo" });
+        expect(parsePaletteQuery("wz: rna")).toEqual({ type: "text", query: "wz: rna" });
     });
 
-    it("leaves unknown single-letter prefixes untouched", () => {
-        expect(parsePaletteQuery("x: foo")).toEqual({ query: "x: foo" });
+    it("treats a lone '?' as the help request", () => {
+        expect(parsePaletteQuery("?")).toEqual({ type: "help" });
+        expect(parsePaletteQuery("  ?  ")).toEqual({ type: "help" });
+        expect(parsePaletteQuery("? how")).toEqual({ type: "text", query: "? how" });
     });
 });
 

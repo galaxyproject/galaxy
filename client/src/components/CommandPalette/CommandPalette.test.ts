@@ -49,10 +49,26 @@ describe("CommandPalette", () => {
         wrapper?.destroy();
     });
 
+    function input() {
+        return wrapper.find("[data-description='palette input']");
+    }
+
+    function inputValue() {
+        return (input().element as HTMLInputElement).value;
+    }
+
+    function badge() {
+        return wrapper.find("[data-description='palette badge']");
+    }
+
     async function type(query: string) {
-        const input = wrapper.find("[data-description='palette input']");
-        (input.element as HTMLInputElement).value = query;
-        await input.trigger("input");
+        (input().element as HTMLInputElement).value = query;
+        await input().trigger("input");
+        await settle();
+    }
+
+    async function press(key: string, options: Record<string, unknown> = {}) {
+        await input().trigger("keydown", { key, ...options });
         await settle();
     }
 
@@ -73,19 +89,86 @@ describe("CommandPalette", () => {
     it("scopes to actions with the '>' prefix", async () => {
         await type("> ");
         const text = wrapper.text();
+        expect(badge().text()).toContain("Actions");
         expect(text).toContain("Upload data");
         expect(text).not.toContain("Navigation");
     });
 
-    it("shows a hint for reserved entity prefixes", async () => {
+    it("converts a scope token into a badge and strips it from the input", async () => {
+        await type("t: align");
+        expect(badge().text()).toContain("Tools");
+        expect(inputValue()).toBe("align");
+    });
+
+    it("hints at scopes whose provider is not registered yet", async () => {
         await type("w: rna");
-        expect(wrapper.find("[data-description='palette reserved hint']").text()).toContain("workflow");
+        expect(badge().text()).toContain("My workflows");
+        expect(wrapper.find("[data-description='palette scope hint']").text()).toContain("My workflows");
+    });
+
+    it("pops the badge on backspace with the caret at the start", async () => {
+        await type("t:");
+        expect(badge().exists()).toBe(true);
+
+        await press("Backspace");
+        expect(badge().exists()).toBe(false);
+        expect(wrapper.text()).toContain("Navigation");
+    });
+
+    it("keeps the badge on backspace while the caret is inside the text", async () => {
+        await type("t: align");
+        (input().element as HTMLInputElement).setSelectionRange(2, 2);
+
+        await press("Backspace");
+        expect(badge().exists()).toBe(true);
+    });
+
+    it("pops the badge when its remove button is clicked", async () => {
+        await type("t: align");
+        expect(badge().attributes("aria-label")).toContain("Tools");
+
+        await badge().trigger("click");
+        await settle();
+        expect(badge().exists()).toBe(false);
+        // the query typed after the badge is kept
+        expect(inputValue()).toBe("align");
+    });
+
+    it("clears the text, then the badge, then closes on escape", async () => {
+        await type("t: align");
+
+        await press("Escape");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().exists()).toBe(true);
+        expect(inputValue()).toBe("");
+
+        await press("Escape");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().exists()).toBe(false);
+
+        await press("Escape");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
+    it("lists the scopes in help mode and applies the selected one", async () => {
+        await type("?");
+        const text = wrapper.text();
+        expect(text).toContain("Scopes");
+        expect(text).toContain("Search my workflows");
+        expect(text).toContain("w:");
+        // gated behind interactivetools_enable, which the mocked config leaves off
+        expect(text).not.toContain("Search interactive tools");
+
+        await press("Enter");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().text()).toContain("Actions");
+        expect(wrapper.text()).toContain("Upload data");
     });
 
     it("navigates to the selected item on enter and closes", async () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
         await type("workflows");
-        await wrapper.find("[data-description='palette input']").trigger("keydown", { key: "Enter" });
+        await input().trigger("keydown", { key: "Enter" });
         expect(push).toHaveBeenCalledWith("/workflows/list");
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
@@ -94,13 +177,13 @@ describe("CommandPalette", () => {
         const open = vi.spyOn(window, "open").mockImplementation(() => null);
         const push = vi.spyOn(router, "push");
         await type("workflows");
-        await wrapper.find("[data-description='palette input']").trigger("keydown", { key: "Enter", ctrlKey: true });
+        await input().trigger("keydown", { key: "Enter", ctrlKey: true });
         expect(open).toHaveBeenCalledWith(router.resolve("/workflows/list").href, "_blank", "noopener");
         expect(push).not.toHaveBeenCalled();
     });
 
     it("closes on escape", async () => {
-        await wrapper.find("[data-description='palette input']").trigger("keydown", { key: "Escape" });
+        await input().trigger("keydown", { key: "Escape" });
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
 
