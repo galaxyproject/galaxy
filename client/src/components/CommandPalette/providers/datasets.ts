@@ -8,9 +8,13 @@ import localize from "@/utils/localization";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { markListRefreshed, refreshListWhenStale } from "./refresh";
 
 /** MRU bucket the palette records dataset selections under */
 export const DATASET_RECENT_TYPE = "dataset";
+
+/** Identity of the cached list in the palette's refresh bookkeeping */
+const REFRESH_KEY = "datasets:latest";
 
 /** Maximum number of rows rendered per section */
 const SECTION_CAP = 6;
@@ -63,9 +67,37 @@ function byUpdateTimeDesc(a: HDASummary, b: HDASummary): number {
 }
 
 /**
+ * Whether the cached "latest" list is everything the backend has. The unfiltered
+ * fetch reports the total, so a cache that reaches it can answer any query with
+ * its local name filter and no search request is worth sending.
+ */
+function cacheHoldsEveryDataset(): boolean {
+    const datasetListStore = useDatasetListStore();
+    return (
+        datasetListStore.hasLoadedLatest &&
+        datasetListStore.latestDatasetIds.length >= datasetListStore.totalLatestMatches
+    );
+}
+
+/**
+ * Hydrates the "latest" list once per session and refreshes it in the background
+ * afterwards, so a long lived tab does not keep serving the list it saw first.
+ */
+async function ensureLatestHydrated(): Promise<void> {
+    const datasetListStore = useDatasetListStore();
+    if (!datasetListStore.hasLoadedLatest) {
+        await datasetListStore.ensureLatestLoaded();
+        markListRefreshed(REFRESH_KEY);
+    } else {
+        refreshListWhenStale(REFRESH_KEY, () => datasetListStore.fetchDatasets());
+    }
+}
+
+/**
  * Store-first dataset lookup: the cache answers every keystroke, and the
- * backend is only asked when the cache cannot produce a full section. Fetched
- * summaries are merged into the store, so the next keystroke is local again.
+ * backend is only asked when the cache cannot produce a full section and does
+ * not already hold every dataset. Fetched summaries are merged into the store,
+ * so the next keystroke is local again.
  *
  * @param cacheOnly never request anything, not even to hydrate an empty cache —
  * the unscoped root fan-out runs on every provider at once and only filters what
@@ -76,9 +108,9 @@ async function matchingDatasets(query: string, cacheOnly = false): Promise<HDASu
     if (cacheOnly) {
         return datasetListStore.searchCachedDatasets(query, SECTION_CAP);
     }
-    await datasetListStore.ensureLatestLoaded();
+    await ensureLatestHydrated();
     const cached = datasetListStore.searchCachedDatasets(query, SECTION_CAP);
-    if (cached.length >= SECTION_CAP || query.length < MIN_BACKEND_QUERY_LENGTH) {
+    if (cached.length >= SECTION_CAP || query.length < MIN_BACKEND_QUERY_LENGTH || cacheHoldsEveryDataset()) {
         return cached;
     }
     await datasetListStore.fetchDatasets({ search: query, limit: SECTION_CAP });
@@ -127,7 +159,7 @@ export const datasetsProvider: CommandPaletteProvider = {
         const recent = recentItems(trimmed);
         if (!trimmed) {
             const datasetListStore = useDatasetListStore();
-            await datasetListStore.ensureLatestLoaded();
+            await ensureLatestHydrated();
             const latest = [...datasetListStore.latestDatasets].sort(byUpdateTimeDesc).map(datasetToItem);
             return toSections([
                 { id: "recent", items: recent, title: localize("Recent") },

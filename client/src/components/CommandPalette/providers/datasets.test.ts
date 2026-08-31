@@ -9,6 +9,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import type { PaletteContext } from "../types";
 import { datasetsProvider } from "./datasets";
+import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 vi.mock("@/api/datasets", async (importOriginal) => ({
@@ -59,6 +60,7 @@ describe("datasetsProvider", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.mocked(loadDatasets).mockReset();
+        resetListRefreshTracking();
         recentEntries.length = 0;
     });
 
@@ -97,21 +99,50 @@ describe("datasetsProvider", () => {
 
     it("answers a scoped query from the store cache without a second request", async () => {
         mockLoadDatasets();
-        const datasetListStore = useDatasetListStore();
-        await datasetListStore.ensureLatestLoaded();
+        // hydrate through the palette, the way opening the scope does
+        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
         vi.mocked(loadDatasets).mockClear();
 
         const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "beta", makeCtx());
 
         expect(sections.at(-1)?.items.map((i) => i.id)).toEqual(["datasets:d2"]);
-        // one backend query is still allowed to top the section up, never more
-        expect(vi.mocked(loadDatasets).mock.calls.filter(([options]) => options.search)).toHaveLength(1);
+        // the unfiltered fetch reported two matches and the cache holds both,
+        // so a backend search could not add anything
+        expect(loadDatasets).not.toHaveBeenCalled();
+    });
+
+    it("keeps searching locally instead of per keystroke once the cache is complete", async () => {
+        mockLoadDatasets();
+        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        vi.mocked(loadDatasets).mockClear();
+
+        // queries without a single local match: the complete cache answers them
+        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx());
+        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zzz", makeCtx());
+
+        expect(sections).toEqual([]);
+        expect(loadDatasets).not.toHaveBeenCalled();
+    });
+
+    it("refreshes the cached datasets in the background once they go stale", async () => {
+        mockLoadDatasets();
+        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        vi.mocked(loadDatasets).mockClear();
+
+        // a later palette session, past the refresh interval
+        resetListRefreshTracking();
+        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+
+        expect(sections[0]?.items.map((i) => i.id)).toEqual(["datasets:d2", "datasets:d1"]);
+        expect(loadDatasets).toHaveBeenCalledTimes(1);
     });
 
     it("merges backend matches missing from the cache into the store", async () => {
         const GAMMA = makeDataset("d3", "gamma reads", "2026-01-01T00:00:00");
         mockLoadDatasets([ALPHA, BETA, GAMMA]);
-        vi.mocked(loadDatasets).mockImplementationOnce(async () => ({ data: [ALPHA, BETA], totalMatches: 2 }));
+        // the first page does not cover everything the backend reports, so the
+        // cache cannot answer a query on its own
+        vi.mocked(loadDatasets).mockImplementationOnce(async () => ({ data: [ALPHA, BETA], totalMatches: 3 }));
 
         const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "gamma", makeCtx());
 
