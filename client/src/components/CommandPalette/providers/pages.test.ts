@@ -249,6 +249,25 @@ describe("pagesProvider", () => {
             );
         });
 
+        it("keeps the fan-out's published hits out of the cached listing", async () => {
+            mockPages([mockPage("z", { title: "Notes of a stranger" })]);
+
+            await pagesProvider.search("notes", makeCtx({ isAnonymous: true }));
+
+            const pageStore = usePageStore();
+            // the hits answered one query, so the listing itself is still unfetched
+            expect(pageStore.publishedPages).toEqual([]);
+            expect(pageStore.isLoaded("published")).toBe(false);
+
+            vi.mocked(loadPages).mockClear();
+            mockPages([mockPage("p1", { title: "Public notes" })]);
+            const sections = (await pagesProvider.searchScoped?.(scope("pp"), "", makeCtx())) ?? [];
+
+            // …and `pp:` fetches a full, unfiltered listing of its own
+            expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "", showPublished: true }));
+            expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:p1"]);
+        });
+
         it("keeps one row per page in the fan-out, preferring the user's own", async () => {
             // `mockPage` hands its pages to "owner", so only the own listing
             // proves that the page belongs to the current user
