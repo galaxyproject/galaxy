@@ -26,6 +26,15 @@ def test_user_agent_and_caller_headers_are_set(method: str):
     assert req_headers["X-Custom"] == "value"
 
 
+@responses.activate
+def test_request_injects_user_agent_and_preserves_caller_headers():
+    responses.add(responses.GET, "https://example.com/", status=200)
+    galaxy_requests.request("GET", "https://example.com/", headers={"X-Custom": "value"})
+    req_headers = responses.calls[0].request.headers
+    assert req_headers["user-agent"] == EXPECTED_USER_AGENT
+    assert req_headers["X-Custom"] == "value"
+
+
 # --- Session factory ---
 
 

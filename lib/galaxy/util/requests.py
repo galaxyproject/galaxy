@@ -51,4 +51,5 @@ patch = _request_decorator(requests.patch)
 post = _request_decorator(requests.post)
 options = _request_decorator(requests.options)
 put = _request_decorator(requests.put)
+request = _request_decorator(requests.request)
 session = Session
