@@ -644,6 +644,19 @@ function onClickDialog(event: MouseEvent) {
     }
 }
 
+/**
+ * The browser's own escape handling closes a modal dialog outright. Escape in
+ * the palette is stepwise, so the close request is cancelled and routed through
+ * the same handler the input uses — the input's own escape never reaches here,
+ * it prevents the keydown default before a close request is even made.
+ */
+function onDialogCancel(event: Event) {
+    event.preventDefault();
+    if (handleEscape() === "close") {
+        closePalette();
+    }
+}
+
 function onDialogClose() {
     if (isPaletteOpen.value) {
         closePalette();
@@ -805,6 +818,7 @@ watchImmediate(isPaletteOpen, (open) => {
         class="command-palette"
         :class="{ 'palette-open': paletteVisible }"
         :aria-label="localize('Command palette')"
+        @cancel="onDialogCancel"
         @click="onClickDialog"
         @close="onDialogClose">
         <div class="palette-input">
