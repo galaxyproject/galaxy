@@ -5,6 +5,7 @@ import errno
 import json
 import logging
 import os
+import re
 import traceback
 import unittest
 from functools import (
@@ -988,8 +989,16 @@ class RunsToolTests(NavigatesGalaxyMixin):
         # set, so the params that reveal it go first, shallowest first.
         outer_params = [kv for kv in non_data_params if not self._parse_repeat_key(kv[0])]
         repeat_params = [kv for kv in non_data_params if self._parse_repeat_key(kv[0])]
-        outer_params.sort(key=lambda kv: kv[0].count("|"))
-        repeat_params.sort(key=lambda kv: kv[0].count("|"))
+        # A conditional's selector re-renders its branch, so set it before its siblings.
+        selectors: set[str] = getattr(self, "_conditional_selectors", set())
+
+        def fill_order(pair):
+            # Flat keys carry a repeat index the parameter model does not.
+            plain = "|".join(re.sub(r"_\d+$", "", part) for part in pair[0].split("|"))
+            return (pair[0].count("|"), plain not in selectors)
+
+        outer_params.sort(key=fill_order)
+        repeat_params.sort(key=fill_order)
 
         deferred = []
         # Datasets first: a data column or a dynamic select reads its options from them.
@@ -1061,6 +1070,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
         select by its declared value only works where the two happen to match.
         """
         labels: dict[str, dict[str, str]] = {}
+        self._conditional_selectors: set[str] = set()
 
         def walk(inputs, path=()):
             for input_dict in inputs or []:
@@ -1071,6 +1081,10 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 for nested in ("inputs", "cases"):
                     for child in input_dict.get(nested) or []:
                         walk(child.get("inputs") if nested == "cases" else [child], here)
+                test_param = input_dict.get("test_param")
+                if isinstance(test_param, dict) and test_param.get("name"):
+                    self._conditional_selectors.add("|".join(here + (test_param["name"],)))
+                    walk([test_param], here)
                 options = input_dict.get("options")
                 if isinstance(options, list):
                     by_value = {
