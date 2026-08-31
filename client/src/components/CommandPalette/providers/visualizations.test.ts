@@ -6,6 +6,7 @@ import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
 import type { PaletteContext } from "../types";
+import { resetListRefreshTracking } from "./refresh";
 import { visualizationsProvider } from "./visualizations";
 
 vi.mock("@/api/visualizations", () => ({
@@ -52,6 +53,7 @@ describe("visualizationsProvider", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.mocked(loadVisualizations).mockReset();
+        resetListRefreshTracking();
         recentEntries.length = 0;
     });
 
@@ -69,9 +71,9 @@ describe("visualizationsProvider", () => {
     });
 
     it("hydrates the store once and ranks the cache before merging backend hits", async () => {
-        const store = useVisualizationStore();
         mockList(mockVisualization("viz-1", "ATAC peaks"), mockVisualization("viz-2", "Coverage plot"));
-        await store.ensureVariantLoaded("my");
+        // hydrate through the palette, the way opening the scope does
+        await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
         vi.mocked(loadVisualizations).mockClear();
         // the backend repeats the cached match, which must not be listed twice
         vi.mocked(loadVisualizations).mockResolvedValueOnce({
@@ -103,6 +105,19 @@ describe("visualizationsProvider", () => {
         expect(loadVisualizations).toHaveBeenCalledTimes(2);
         expect(sections[0]?.items.map((item) => item.id)).toEqual(["visualizations:viz-9"]);
         expect(useVisualizationStore().getVisualizationSummary("viz-9")?.title).toBe("Genome browser");
+    });
+
+    it("refreshes the cached visualizations in the background once they go stale", async () => {
+        mockList(mockVisualization("viz-1", "ATAC peaks"));
+        await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx());
+        vi.mocked(loadVisualizations).mockClear();
+
+        // a later palette session, past the refresh interval
+        resetListRefreshTracking();
+        const sections = (await visualizationsProvider.searchScoped?.(VISUALIZATION_SCOPE, "", makeCtx())) ?? [];
+
+        expect(sections[0]?.items.map((item) => item.id)).toEqual(["visualizations:viz-1"]);
+        expect(loadVisualizations).toHaveBeenCalledTimes(1);
     });
 
     it("filters the cache in the unscoped fan-out and never fetches there", async () => {

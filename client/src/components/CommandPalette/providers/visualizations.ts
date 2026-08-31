@@ -8,12 +8,16 @@ import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { markListRefreshed, refreshListWhenStale } from "./refresh";
 
 /** Entity type used for the palette MRU list of visualizations */
 export const VISUALIZATION_RECENT_TYPE = "visualization";
 
 /** Only the saved visualizations of the current user are searchable (`v:`) */
 const VARIANT = "my";
+
+/** Identity of the cached list in the palette's refresh bookkeeping */
+const REFRESH_KEY = "visualizations:my";
 
 /** Cap of a single rendered section */
 const MAX_RESULTS = 8;
@@ -64,6 +68,21 @@ function dedupeById(items: PaletteItem[]): PaletteItem[] {
 }
 
 /**
+ * Hydrates the saved visualizations once per session and refreshes them in the
+ * background afterwards, so a long lived tab does not keep serving the list it
+ * saw first (see `refresh.ts`).
+ */
+async function ensureHydrated(): Promise<void> {
+    const store = useVisualizationStore();
+    if (!store.hasLoadedVariant(VARIANT)) {
+        await store.ensureVariantLoaded(VARIANT);
+        markListRefreshed(REFRESH_KEY);
+    } else {
+        refreshListWhenStale(REFRESH_KEY, () => store.fetchVisualizations(VARIANT));
+    }
+}
+
+/**
  * Store-first search: rank whatever the store already cached, and only ask the
  * backend when the cache cannot fill the section. Backend results are merged
  * into the same store, so the two sources dedupe by id.
@@ -75,7 +94,7 @@ function dedupeById(items: PaletteItem[]): PaletteItem[] {
 async function searchVisualizations(query: string, limit = MAX_RESULTS, cacheOnly = false): Promise<PaletteItem[]> {
     const store = useVisualizationStore();
     if (!cacheOnly) {
-        await store.ensureVariantLoaded(VARIANT);
+        await ensureHydrated();
     }
     const cached = rankPaletteItems(store.getVisualizations(VARIANT).map(visualizationToItem), query);
     if (cacheOnly || !query || cached.length >= limit) {
@@ -134,8 +153,7 @@ export const visualizationsProvider: CommandPaletteProvider = {
     async searchScoped(_scope, query: string): Promise<ScopedSection[]> {
         const trimmed = query.trim();
         if (!trimmed) {
-            const store = useVisualizationStore();
-            await store.ensureVariantLoaded(VARIANT);
+            await ensureHydrated();
             return sectionsWithItems([
                 { id: "recent", items: recentItems(), title: "Recent" },
                 { id: "latest", items: latestItems(), title: "Latest visualizations" },
