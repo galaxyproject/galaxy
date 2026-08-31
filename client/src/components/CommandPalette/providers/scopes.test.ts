@@ -7,7 +7,10 @@ import {
     findScope,
     isProviderEnabled,
     isScopeAvailable,
+    isScopeLoginGated,
+    loginGatedScopes,
     PALETTE_SCOPES,
+    type ScopeDefinition,
 } from "./scopes";
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
@@ -131,5 +134,54 @@ describe("isScopeAvailable", () => {
             "pp",
             "n",
         ]);
+    });
+});
+
+describe("isScopeLoginGated", () => {
+    it("names the scopes an account alone stands between", () => {
+        const ctx = makeCtx({ isAnonymous: true });
+        expect(isScopeLoginGated(findScope("w")!, ctx)).toBe(true);
+        expect(isScopeLoginGated(findScope("d")!, ctx)).toBe(true);
+        // public, so nothing is being kept from anyone
+        expect(isScopeLoginGated(findScope("wp")!, ctx)).toBe(false);
+    });
+
+    it("gates nothing for a user who is logged in", () => {
+        expect(isScopeLoginGated(findScope("w")!, makeCtx())).toBe(false);
+    });
+
+    it("stays silent about a scope of a provider the instance disabled", () => {
+        const ctx = makeCtx({ isAnonymous: true, config: { command_palette_disabled_providers: ["workflows"] } });
+        expect(isScopeLoginGated(findScope("w")!, ctx)).toBe(false);
+        expect(isScopeLoginGated(findScope("h")!, ctx)).toBe(true);
+    });
+
+    it("stays silent while a config gate of the scope's own is unmet", () => {
+        const scope: ScopeDefinition = {
+            key: "x",
+            label: "Gated",
+            providerId: "workflows",
+            requiresLogin: true,
+            configGate: (ctx) => Boolean(ctx.config.interactivetools_enable),
+        };
+        expect(isScopeLoginGated(scope, makeCtx({ isAnonymous: true }))).toBe(false);
+        expect(
+            isScopeLoginGated(scope, makeCtx({ isAnonymous: true, config: { interactivetools_enable: true } })),
+        ).toBe(true);
+    });
+
+    it("lists the gated scopes in registry order", () => {
+        expect(loginGatedScopes(makeCtx({ isAnonymous: true })).map((scope) => scope.key)).toEqual([
+            "w",
+            "ws",
+            "h",
+            "hs",
+            "ha",
+            "d",
+            "v",
+            "i",
+            "p",
+        ]);
+        expect(loginGatedScopes(makeCtx())).toEqual([]);
     });
 });

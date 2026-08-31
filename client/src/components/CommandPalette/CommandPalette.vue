@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { faQuestionCircle, faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+    faLock,
+    faQuestionCircle,
+    faSearch,
+    faSignInAlt,
+    faSpinner,
+    faTimes,
+    faUserPlus,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventListener, watchDebounced, watchImmediate } from "@vueuse/core";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router/composables";
 
 import { useStartNewChat } from "@/components/GalaxyAI/useStartNewChat";
 import { useFilteredUploadMethods } from "@/components/Panels/Upload/uploadMethodRegistry";
@@ -21,10 +29,17 @@ import { enabledPaletteProviders, findPaletteProvider, rankPaletteItems } from "
 import { actionsProvider } from "./providers/actions";
 import { ALL_CATEGORY, availableCategories, categoryScope, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
-import { ACTIONS_SCOPE, availableScopes, isProviderEnabled, type ScopeDefinition } from "./providers/scopes";
+import {
+    ACTIONS_SCOPE,
+    availableScopes,
+    isProviderEnabled,
+    isScopeLoginGated,
+    loginGatedScopes,
+    type ScopeDefinition,
+} from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "./types";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
-import { scorePaletteItems } from "./utilities";
+import { parsePaletteQuery, scorePaletteItems } from "./utilities";
 
 import CommandPaletteItem from "./CommandPaletteItem.vue";
 
@@ -70,6 +85,7 @@ const { addRecentItem } = useRecentPaletteItems();
 // and hands them to the providers through the context
 const uploadMethods = useFilteredUploadMethods();
 const startNewChat = useStartNewChat();
+const route = useRoute();
 const router = useRouter();
 const { config } = useConfig();
 const eventStore = useEventStore();
@@ -102,12 +118,54 @@ const failedSubject = ref<string | null>(null);
 const uid = useUid("command-palette");
 const listboxId = computed(() => `${uid.value}-listbox`);
 
+/** Where a login has to land the user again once it is done */
+const loginRedirect = computed(() => `/login/start?redirect=${encodeURIComponent(route.fullPath)}`);
+
+/**
+ * The way in for an anonymous visitor who typed a scope only an account reaches.
+ * The machine refuses the badge for such a token, so it is still sitting in the
+ * input to be read here — and the offer is a section of ordinary rows rather
+ * than a banner, so ↑↓ and enter reach it like any other result.
+ */
+const loginPromptSection = computed<ResultSection | undefined>(() => {
+    if (mode.value.type !== "root") {
+        return undefined;
+    }
+    const parsed = parsePaletteQuery(text.value);
+    const ctx = buildContext();
+    if (parsed.type !== "scope" || !isScopeLoginGated(parsed.scope, ctx)) {
+        return undefined;
+    }
+    const items: PaletteItem[] = [
+        {
+            id: "login-prompt:login",
+            icon: faSignInAlt,
+            title: `${localize("Log in to search")} ${localize(parsed.scope.label).toLowerCase()}`,
+            to: loginRedirect.value,
+        },
+    ];
+    // registering is offered exactly where the masthead offers it
+    if (ctx.config.allow_local_account_creation) {
+        items.push({
+            id: "login-prompt:register",
+            icon: faUserPlus,
+            title: localize("Create a Galaxy account"),
+            to: "/register/start",
+        });
+    }
+    return { id: "login-prompt", items, title: "Log in required" };
+});
+
 /**
  * Sections worth a heading: one still loading holds its place with skeletons, one
  * that answered with nothing is dropped the moment it does — a bare title over no
- * rows is worse than the gap it leaves.
+ * rows is worse than the gap it leaves. The login offer leads where there is one,
+ * over whatever the literal text still finds underneath it.
  */
-const visibleSections = computed(() => sections.value.filter((section) => section.loading || section.items.length > 0));
+const visibleSections = computed(() => {
+    const answered = sections.value.filter((section) => section.loading || section.items.length > 0);
+    return loginPromptSection.value ? [loginPromptSection.value, ...answered] : answered;
+});
 
 const flatItems = computed(() => visibleSections.value.flatMap((section) => section.items));
 
@@ -324,6 +382,25 @@ function scopeHelpItem(scope: ScopeDefinition): PaletteItem {
     };
 }
 
+/**
+ * A scope only an account reaches, listed so an anonymous visitor can see what
+ * logging in would add. Selecting it types the token the row documents, which
+ * answers with the login offer — the same one typing it by hand would get.
+ */
+function lockedScopeHelpItem(scope: ScopeDefinition): PaletteItem {
+    return {
+        id: `help:locked:${scope.key}`,
+        handler: () => {
+            popMode();
+            setText(`${scope.key}: `);
+        },
+        icon: faLock,
+        keywords: scope.key,
+        shortcut: `${scope.key}:`,
+        title: `${localize("Search")} ${localize(scope.label).toLowerCase()}`,
+    };
+}
+
 /** A key binding row: the description reads as the title, the keys as the badge */
 function helpKeyItem(id: string, keys: string, title: string, keywords: string): PaletteItem {
     return { id: `help:key:${id}`, keywords, shortcut: keys, title: localize(title) };
@@ -371,7 +448,12 @@ function actionHelpItems(ctx: PaletteContext): PaletteItem[] {
 
 function helpSections(ctx: PaletteContext): ResultSection[] {
     const help: ResultSection[] = [
-        { id: "help:scopes", items: availableScopes(ctx).map(scopeHelpItem), title: "Scopes" },
+        {
+            id: "help:scopes",
+            // what the user can search now, then what an account would add
+            items: [...availableScopes(ctx).map(scopeHelpItem), ...loginGatedScopes(ctx).map(lockedScopeHelpItem)],
+            title: "Scopes",
+        },
     ];
     // the actions provider is asked directly here, so it is gated here as well
     if (isProviderEnabled(actionsProvider.id, ctx)) {
