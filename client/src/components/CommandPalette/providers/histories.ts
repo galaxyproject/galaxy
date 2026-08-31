@@ -9,6 +9,7 @@ import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { fetchOrFail } from "./errors";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
@@ -186,8 +187,8 @@ async function ensureHydrated(variant: HistoryVariant): Promise<void> {
     const key = `histories:${variant}`;
     if (variant === "my") {
         if (historyStore.histories.length === 0) {
-            // unpaginated: the whole own list, so later keystrokes stay local
-            await fetchQuietly(() => historyStore.loadHistories(false));
+            // nothing cached to fall back on, so a failure is reported
+            await fetchOrFail(() => historyStore.loadHistories(false));
             markListRefreshed(key);
         } else {
             refreshListWhenStale(key, () => historyStore.loadHistories(false));
@@ -195,7 +196,7 @@ async function ensureHydrated(variant: HistoryVariant): Promise<void> {
         return;
     }
     if (!historyStore.hasLoadedHistoryList(variant)) {
-        await fetchQuietly(() => historyStore.ensureHistoryListLoaded(variant, { limit: LIST_PAGE_SIZE }));
+        await fetchOrFail(() => historyStore.ensureHistoryListLoaded(variant, { limit: LIST_PAGE_SIZE }));
         markListRefreshed(key);
     } else {
         refreshListWhenStale(key, () => historyStore.fetchHistoryList(variant, { limit: LIST_PAGE_SIZE }));

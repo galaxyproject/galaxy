@@ -7,6 +7,7 @@ import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useUserStore } from "@/stores/userStore";
 
 import type { PaletteContext } from "../types";
+import { PaletteFetchError } from "./errors";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 import { workflowsProvider } from "./workflows";
@@ -218,6 +219,13 @@ describe("workflowsProvider", () => {
 
         expect(vi.mocked(loadWorkflows).mock.calls.some(([args]) => args.filterText === "zqx")).toBe(true);
         expect(sections.flatMap((s) => s.items)).toEqual([]);
+    });
+
+    it("reports a scope whose very first fetch failed", async () => {
+        vi.mocked(loadWorkflows).mockRejectedValue(new Error("boom"));
+
+        // nothing is cached, so "no results" would be a lie
+        await expect(scopedSections(OWN_SCOPE)).rejects.toBeInstanceOf(PaletteFetchError);
     });
 
     it("keeps the same workflow addressable in several sections", async () => {

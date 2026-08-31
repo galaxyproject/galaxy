@@ -7,6 +7,7 @@ import { usePageStore } from "@/stores/pageStore";
 import { useUserStore } from "@/stores/userStore";
 
 import type { PaletteContext } from "../types";
+import { PaletteFetchError } from "./errors";
 import { pagesProvider } from "./pages";
 import { resetListRefreshTracking } from "./refresh";
 import { findScope, type ScopeDefinition } from "./scopes";
@@ -186,6 +187,15 @@ describe("pagesProvider", () => {
 
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
             expect(loadPages).toHaveBeenCalledTimes(2);
+        });
+
+        it("reports a scope whose very first fetch failed", async () => {
+            vi.mocked(loadPages).mockRejectedValue(new Error("boom"));
+
+            // nothing is cached, so "no results" would be a lie
+            await expect(pagesProvider.searchScoped?.(scope("p"), "", makeCtx())).rejects.toBeInstanceOf(
+                PaletteFetchError,
+            );
         });
 
         it("keeps serving the cache when the request fails", async () => {

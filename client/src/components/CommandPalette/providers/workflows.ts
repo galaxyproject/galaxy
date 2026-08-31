@@ -9,6 +9,7 @@ import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { fetchOrFail } from "./errors";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
@@ -151,7 +152,8 @@ async function listItems(
     const refreshKey = `workflows:${variant}`;
     if (!cacheOnly) {
         if (!workflowStore.isWorkflowListLoaded(variant)) {
-            await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, "", { limit: LIST_PAGE_SIZE }));
+            // nothing cached to fall back on, so a failure is reported
+            await fetchOrFail(() => workflowStore.fetchWorkflowList(variant, "", { limit: LIST_PAGE_SIZE }));
             markListRefreshed(refreshKey);
         } else {
             // stale-while-revalidate: the cached rows render now, the refreshed
