@@ -56,6 +56,11 @@ class TestManageInformation(SeleniumTestCase):
         # UX_RENDER time sometimes is not enough
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
+        # The account page confirms with a toast and stays put, so go back to
+        # preferences to read the rendered email.
+        self.navigate_to_user_preferences()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         # email should be changed
         assert_email(new_email)
 
