@@ -33,7 +33,7 @@ describe("actionsProvider", () => {
         const items = await search("upload", makeCtx({ isAnonymous: true }));
         const upload = items.find((i) => i.id === "actions:upload");
         expect(upload).toBeDefined();
-        expect(upload?.handler).toBeTypeOf("function");
+        expect(upload?.to).toBe("/upload");
     });
 
     it("hides login-only actions from anonymous users", async () => {
