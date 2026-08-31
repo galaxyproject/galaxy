@@ -3,8 +3,6 @@ import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { localize } from "@/utils/localization";
-
 import type { PaletteItem } from "./types";
 
 interface Props {
@@ -25,10 +23,16 @@ const emit = defineEmits<{
     (e: "highlight"): void;
 }>();
 
-// providers keep their strings in English, the rows are localized where they render
-const title = computed(() => localize(props.item.title));
+/**
+ * Rendered verbatim: most rows are named after user data — a history, a page, a
+ * tool — and running those names through `localize()` is an unguarded lookup in
+ * the locale dictionary, so a history called "constructor" or "toString" would
+ * render whatever that name resolves to on the object prototype. Rows carrying
+ * static UI copy (the help panel) localize their strings where they are built.
+ */
+const title = computed(() => props.item.title);
 
-const subtitle = computed(() => (props.item.subtitle ? localize(props.item.subtitle) : undefined));
+const subtitle = computed(() => props.item.subtitle);
 
 /**
  * The key badge is decorative markup, so a row carrying one names itself and its
