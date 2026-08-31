@@ -410,6 +410,26 @@ function modeSections(activeMode: PaletteMode, ctx: PaletteContext): Promise<Res
 }
 
 let searchEpoch = 0;
+/** What the rendered sections are results *of*, see {@link searchIdentity} */
+let renderedIdentity = "";
+
+/**
+ * Identity of what is being searched — the badge the results belong under. Only
+ * the query may change without it changing, so anything else invalidates the
+ * sections on screen the moment it does.
+ */
+function searchIdentity(activeMode: PaletteMode): string {
+    switch (activeMode.type) {
+        case "scoped":
+            return `scoped:${activeMode.scope.key}`;
+        case "action":
+            return `action:${activeMode.action.id}`;
+        case "help":
+            return "help";
+        default:
+            return `root:${activeCategoryId.value}`;
+    }
+}
 
 async function runSearch() {
     const epoch = ++searchEpoch;
@@ -417,7 +437,15 @@ async function runSearch() {
     // picking a category reruns the search; the row keeps the selection so the
     // next ←→ moves on to the neighboring category
     const keepCategoryRow = categoryRowSelected.value;
+    const identity = searchIdentity(mode.value);
     pendingScope.value = null;
+    if (identity !== renderedIdentity) {
+        // a scope's fetch can take a while; the previous mode's results must
+        // never keep rendering under the badge of the new one
+        renderedIdentity = identity;
+        sections.value = [];
+        selectedIndex.value = 0;
+    }
     searching.value = true;
     try {
         const results = await modeSections(mode.value, ctx);
@@ -933,7 +961,14 @@ watchImmediate(isPaletteOpen, (open) => {
                 {{ scopeHint }}
             </div>
 
-            <div v-else-if="flatItems.length === 0 && !searching" class="palette-hint" data-description="palette empty">
+            <div
+                v-else-if="flatItems.length === 0 && searching"
+                class="palette-hint"
+                data-description="palette searching">
+                {{ localize("Searching…") }}
+            </div>
+
+            <div v-else-if="flatItems.length === 0" class="palette-hint" data-description="palette empty">
                 {{ localize("No results.") }}
             </div>
         </div>
