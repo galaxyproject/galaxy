@@ -50,6 +50,7 @@ from .tool_outputs import (
     IncomingToolOutput,
     IncomingToolOutputCollection,
     IncomingToolOutputDataset,
+    IncomingUserToolOutput,
     ToolOutput,
 )
 from .tool_source import (
@@ -67,6 +68,17 @@ from .tool_source import (
     YamlTemplateConfigFile,
 )
 from .yaml_parameters import YamlGalaxyToolParameter
+
+UserToolOutputs = Annotated[
+    List[IncomingUserToolOutput],
+    Field(
+        description=(
+            "Datasets and dataset collections Galaxy collects after the command finishes. A data output "
+            "identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output "
+            "uses `discover_datasets`."
+        )
+    ),
+]
 
 
 def normalize_dict(values, keys: List[str]):
@@ -312,7 +324,9 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     # API-authored tools may still omit them. An empty list is allowed -- this forces the
     # key to be present, not non-empty.
     inputs: List[YamlGalaxyToolParameter]
-    outputs: List[IncomingToolOutput]
+    # Pydantic intentionally narrows the mutable base-model list so the
+    # user-tool schema exposes only dataset and collection outputs.
+    outputs: UserToolOutputs  # type: ignore[assignment]
 
     # Field declaration order puts subclass fields (class_, container) after
     # parent ones, which serializes them at the end. Re-order on dump so the
@@ -389,7 +403,7 @@ class UserToolSource(UserToolSourceAuthoringView):
     # authoring view is a structured-output nudge for the LLM only. The canonical
     # model (API surface, stored rows) must still accept tools that omit them.
     inputs: List[YamlGalaxyToolParameter] = []
-    outputs: List[IncomingToolOutput] = []
+    outputs: UserToolOutputs = []
 
 
 class YamlToolSource(_DynamicToolSourceBase):

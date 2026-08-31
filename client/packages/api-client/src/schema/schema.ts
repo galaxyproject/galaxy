@@ -12942,50 +12942,67 @@ export interface components {
         FilePatternDatasetCollectionDescription: {
             /**
              * Assign Primary Output
+             * @description Whether the first matching file replaces the primary dataset output.
              * @default false
              */
             assign_primary_output: boolean;
-            /** Directory */
+            /**
+             * Directory
+             * @description Directory to search, relative to the job working directory.
+             */
             directory?: string | null;
             /**
              * Discover Via
+             * @description Discover datasets by matching files produced by the command.
              * @default pattern
              * @constant
              */
             discover_via: "pattern";
-            /** Format */
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned to each discovered dataset.
+             */
             format?: string | null;
             /**
              * Match Relative Path
+             * @description Whether `pattern` matches each file's relative path instead of only its filename.
              * @default false
              */
             match_relative_path: boolean;
-            /** Pattern */
+            /**
+             * Pattern
+             * @description Regular expression matched against produced filenames. Named groups such as `name`, `designation`, `ext`, and `dbkey` set discovered dataset metadata.
+             */
             pattern: string;
             /**
              * Recurse
+             * @description Whether to search recursively below `directory`.
              * @default false
              */
             recurse: boolean;
             /**
              * Sort Comp
+             * @description Whether the sort key is compared as text or as a number.
              * @default lexical
              * @enum {string}
              */
             sort_comp: "lexical" | "numeric";
             /**
              * Sort Key
+             * @description Discovered metadata used to order matching files.
              * @default filename
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey";
             /**
              * Sort Reverse
+             * @description Whether to reverse the discovered dataset order.
              * @default false
              */
             sort_reverse: boolean;
             /**
              * Visible
+             * @description Whether discovered datasets are visible in the history.
              * @default false
              */
             visible: boolean;
@@ -16078,21 +16095,36 @@ export interface components {
              */
             type: "boolean";
         };
-        /** IncomingToolOutputCollection */
+        /**
+         * IncomingToolOutputCollection
+         * @description A dataset collection populated by discovering files produced by the command.
+         */
         IncomingToolOutputCollection: {
-            /** Collection Type */
+            /**
+             * Collection Type
+             * @description Collection structure, such as `list`, `paired`, or a nested type such as `list:paired`.
+             */
             collection_type?: string | null;
-            /** Collection Type From Rules */
-            collection_type_from_rules?: string | null;
-            /** Collection Type Source */
+            /**
+             * Collection Type Source
+             * @description Input collection whose structure determines this output collection's type.
+             */
             collection_type_source?: string | null;
-            /** Discover Datasets */
+            /**
+             * Discover Datasets
+             * @description Rules used to discover and populate collection elements from produced files.
+             */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null;
+            /**
+             * Format
+             * @description Default datatype extension assigned to collection elements.
+             */
+            format?: string | null;
             /**
              * Hidden
              * @description If true, the output will not be shown in the history.
@@ -16108,7 +16140,10 @@ export interface components {
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name?: string | null;
-            /** Structured Like */
+            /**
+             * Structured Like
+             * @description Input collection whose element identifiers and nesting this output mirrors.
+             */
             structured_like?: string | null;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -16118,7 +16153,10 @@ export interface components {
         };
         /** IncomingToolOutputDataset */
         IncomingToolOutputDataset: {
-            /** Discover Datasets */
+            /**
+             * Discover Datasets
+             * @description Rules for discovering additional datasets produced by the command.
+             */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
@@ -16132,7 +16170,8 @@ export interface components {
             format?: string | null;
             /**
              * Format Source
-             * @description This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
+             * @description Data or collection input whose datatype extension this output inherits. Use this when the command preserves the input representation, such as filtering reads without changing their format.
+             * @example reads
              */
             format_source?: string | null;
             /**
@@ -16152,7 +16191,8 @@ export interface components {
             label?: string | null;
             /**
              * Metadata Source
-             * @description This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
+             * @description Single dataset input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
+             * @example intervals
              */
             metadata_source?: string | null;
             /**
@@ -16239,6 +16279,115 @@ export interface components {
              * @enum {string}
              */
             type: "text";
+        };
+        /**
+         * IncomingUserToolOutputCollection
+         * @description A user-defined tool collection populated only by matching produced filenames.
+         */
+        IncomingUserToolOutputCollection: {
+            /**
+             * Collection Type
+             * @description Collection structure, such as `list`, `paired`, or a nested type such as `list:paired`.
+             */
+            collection_type?: string | null;
+            /**
+             * Collection Type Source
+             * @description Input collection whose structure determines this output collection's type.
+             */
+            collection_type_source?: string | null;
+            /**
+             * Discover Datasets
+             * @description Filename pattern used to discover and populate collection elements.
+             */
+            discover_datasets?: components["schemas"]["FilePatternDatasetCollectionDescription"][] | null;
+            /**
+             * Format
+             * @description Default datatype extension assigned to collection elements.
+             */
+            format?: string | null;
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
+            hidden?: boolean | null;
+            /**
+             * Label
+             * @description Output label. Will be used as dataset name in history.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name?: string | null;
+            /**
+             * Structured Like
+             * @description Input collection whose element identifiers and nesting this output mirrors.
+             */
+            structured_like?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "collection";
+        };
+        /**
+         * IncomingUserToolOutputDataset
+         * @description A user-defined tool dataset discovered only from files inside the job working directory.
+         */
+        IncomingUserToolOutputDataset: {
+            /**
+             * Discover Datasets
+             * @description Filename pattern used to discover additional datasets produced by the command.
+             */
+            discover_datasets?: components["schemas"]["FilePatternDatasetCollectionDescription"][] | null;
+            /**
+             * Format
+             * @description The short name for the output datatype.
+             */
+            format?: string | null;
+            /**
+             * Format Source
+             * @description Data or collection input whose datatype extension this output inherits. Use this when the command preserves the input representation, such as filtering reads without changing their format.
+             * @example reads
+             */
+            format_source?: string | null;
+            /**
+             * from_work_dir
+             * @description Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.
+             */
+            from_work_dir?: string | null;
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
+            hidden?: boolean | null;
+            /**
+             * Label
+             * @description Output label. Will be used as dataset name in history.
+             */
+            label?: string | null;
+            /**
+             * Metadata Source
+             * @description Single dataset input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
+             * @example intervals
+             */
+            metadata_source?: string | null;
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
+            name?: string | null;
+            /**
+             * Precreate Directory
+             * @default false
+             */
+            precreate_directory: boolean | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data";
         };
         /** InferredCollectionTypeLogEntry */
         InferredCollectionTypeLogEntry: {
@@ -24308,30 +24457,41 @@ export interface components {
         ToolProvidedMetadataDatasetCollection: {
             /**
              * Assign Primary Output
+             * @description Whether the first matching file replaces the primary dataset output.
              * @default false
              */
             assign_primary_output: boolean;
-            /** Directory */
+            /**
+             * Directory
+             * @description Directory to search, relative to the job working directory.
+             */
             directory?: string | null;
             /**
              * Discover Via
+             * @description Read discovered dataset details from the tool-provided metadata file.
              * @constant
              */
             discover_via: "tool_provided_metadata";
-            /** Format */
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned to each discovered dataset.
+             */
             format?: string | null;
             /**
              * Match Relative Path
+             * @description Whether `pattern` matches each file's relative path instead of only its filename.
              * @default false
              */
             match_relative_path: boolean;
             /**
              * Recurse
+             * @description Whether to search recursively below `directory`.
              * @default false
              */
             recurse: boolean;
             /**
              * Visible
+             * @description Whether discovered datasets are visible in the history.
              * @default false
              */
             visible: boolean;
@@ -25804,15 +25964,12 @@ export interface components {
             name: string;
             /**
              * outputs
+             * @description Datasets and dataset collections Galaxy collects after the command finishes. A data output identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output uses `discover_datasets`.
              * @default []
              */
             outputs: (
-                | components["schemas"]["IncomingToolOutputDataset"]
-                | components["schemas"]["IncomingToolOutputCollection"]
-                | components["schemas"]["IncomingToolOutputText"]
-                | components["schemas"]["IncomingToolOutputInteger"]
-                | components["schemas"]["IncomingToolOutputFloat"]
-                | components["schemas"]["IncomingToolOutputBoolean"]
+                | components["schemas"]["IncomingUserToolOutputDataset"]
+                | components["schemas"]["IncomingUserToolOutputCollection"]
             )[];
             /** profile */
             profile?: number | null;
@@ -25911,15 +26068,12 @@ export interface components {
             name: string;
             /**
              * outputs
+             * @description Datasets and dataset collections Galaxy collects after the command finishes. A data output identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output uses `discover_datasets`.
              * @default []
              */
             outputs: (
-                | components["schemas"]["IncomingToolOutputDataset"]
-                | components["schemas"]["IncomingToolOutputCollection"]
-                | components["schemas"]["IncomingToolOutputText"]
-                | components["schemas"]["IncomingToolOutputInteger"]
-                | components["schemas"]["IncomingToolOutputFloat"]
-                | components["schemas"]["IncomingToolOutputBoolean"]
+                | components["schemas"]["IncomingUserToolOutputDataset"]
+                | components["schemas"]["IncomingUserToolOutputCollection"]
             )[];
             /** profile */
             profile?: number | null;

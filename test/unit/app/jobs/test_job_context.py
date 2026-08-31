@@ -24,11 +24,13 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
+from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.provided_metadata import (
     BaseToolProvidedMetadata,
     NullToolProvidedMetadata,
     ToolProvidedMetadata,
 )
+from galaxy.tool_util_models import UserToolSource
 from galaxy.tools import JobContext
 from ..tools.test_history_imp_exp import _mock_app
 
@@ -134,6 +136,52 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     sa_session.commit()
     assert len(collection.dataset_instances) == 10
     assert collection.dataset_instances[0].dataset.file_size == 1
+
+
+def test_user_tool_collection_format_applies_to_discovered_elements():
+    with tempfile.TemporaryDirectory() as job_working_directory:
+        setup_data(job_working_directory)
+        _app, sa_session, job_context, collection = job_context_for_directory(job_working_directory)
+        source = UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "name": "Collection format test",
+                "version": "0.1.0",
+                "container": "busybox",
+                "shell_command": "true",
+                "outputs": [
+                    {
+                        "name": "output",
+                        "type": "collection",
+                        "collection_type": "list",
+                        "format": "txt",
+                        "discover_datasets": [{"pattern": r"(?P<name>datasets_.+)\.txt"}],
+                    }
+                ],
+            }
+        )
+        persisted_source = source.model_dump(by_alias=True)
+        assert persisted_source["outputs"][0]["format"] == "txt"
+
+        tool_source = YamlToolSource(persisted_source)
+        outputs, output_collections = tool_source.parse_outputs(None)
+        output_collection = output_collections["output"]
+        assert output_collection.default_format == "txt"
+        assert output_collection.dataset_collector_descriptions[0].default_ext == "txt"
+
+        persisted_source["outputs"][0]["discover_datasets"][0]["format"] = "tabular"
+        _override_outputs, override_collections = YamlToolSource(persisted_source).parse_outputs(None)
+        assert override_collections["output"].dataset_collector_descriptions[0].default_ext == "tabular"
+
+        job_context.tool.outputs = outputs
+        job_context.tool.output_collections = output_collections
+
+        collect_dynamic_outputs(job_context, {"output": collection})
+
+        assert collection.populated
+        sa_session.flush()
+        assert len(collection.dataset_instances) == 10
+        assert {dataset.extension for dataset in collection.dataset_instances} == {"txt"}
 
 
 def test_collection_rejects_tool_provided_extra_files_outside_working_directory():
