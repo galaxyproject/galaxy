@@ -73,9 +73,15 @@ export function usePaletteMachine() {
     /**
      * Applies raw input. A recognized token (`>` or `x:`) becomes a badge and
      * is stripped, a lone `?` in root opens help, anything else is kept as
-     * typed — trailing spaces included, so words can be typed normally.
+     * typed — trailing spaces included, so words can be typed normally. While
+     * an action collects its argument nothing is parsed at all.
      */
     function setText(next: string) {
+        if (mode.value.type === "action") {
+            // an argument is free text — neither a scope token nor `?` may steal it
+            text.value = next;
+            return;
+        }
         const parsed = parsePaletteQuery(next);
         if (parsed.type === "scope") {
             enterScope(parsed.scope);

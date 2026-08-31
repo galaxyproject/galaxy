@@ -90,6 +90,30 @@ describe("usePaletteMachine", () => {
         expect(machine.badgeLabel.value).toBe("Create new history");
     });
 
+    it("collects the argument of an action and steps back out of it", () => {
+        const machine = usePaletteMachine();
+        machine.enterAction(NEW_HISTORY);
+        machine.setText("rna analysis");
+        expect(machine.mode.value).toEqual({ type: "action", action: NEW_HISTORY });
+        expect(machine.query.value).toBe("rna analysis");
+
+        expect(machine.handleEscape()).toBe("cleared-text");
+        expect(machine.mode.value).toEqual({ type: "action", action: NEW_HISTORY });
+
+        expect(machine.handleEscape()).toBe("popped-mode");
+        expect(machine.mode.value).toEqual({ type: "root" });
+        expect(machine.badgeLabel.value).toBeUndefined();
+    });
+
+    it("keeps a scope token typed as an argument as plain text", () => {
+        const machine = usePaletteMachine();
+        machine.enterAction(NEW_HISTORY);
+        machine.setText("w: my run");
+        // an argument is free text, the scope parser must not steal it
+        expect(machine.mode.value).toEqual({ type: "action", action: NEW_HISTORY });
+        expect(machine.text.value).toBe("w: my run");
+    });
+
     it("pops the badge but keeps the typed text", () => {
         const machine = usePaletteMachine();
         machine.setText("w: rna");
