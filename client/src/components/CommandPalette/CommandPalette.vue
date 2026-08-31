@@ -18,6 +18,7 @@ import { useUserStore } from "@/stores/userStore";
 import { localize } from "@/utils/localization";
 
 import { findPaletteProvider, paletteProviders, rankPaletteItems } from "./providers";
+import { actionsProvider } from "./providers/actions";
 import { ALL_CATEGORY, availableCategories, categoryScope, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
 import { ACTIONS_SCOPE, availableScopes, type ScopeDefinition } from "./providers/scopes";
@@ -295,10 +296,32 @@ function helpKeyItems(): PaletteItem[] {
     ];
 }
 
+/**
+ * One help row per action the user has: selecting it applies the `>` badge and
+ * pre-fills the action's own title, so the row is the only one left to run.
+ * Enter therefore means the same thing on every help row — it rewrites the
+ * input, it never navigates.
+ */
+function actionHelpItems(ctx: PaletteContext): PaletteItem[] {
+    return (actionsProvider.emptyQueryItems?.(ctx) ?? []).map((action) => ({
+        id: `help:action:${action.id}`,
+        handler: () => {
+            enterScope(ACTIONS_SCOPE);
+            setText(action.title);
+        },
+        icon: action.icon,
+        keywords: [action.keywords, action.subtitle].filter(Boolean).join(" "),
+        shortcut: ACTIONS_SCOPE.key,
+        // the action titles are rendered as they are everywhere else, so the
+        // pre-filled query keeps matching the row it came from
+        title: action.title,
+    }));
+}
+
 function helpSections(ctx: PaletteContext): ResultSection[] {
     return [
-        { id: "help:actions", items: [scopeHelpItem(ACTIONS_SCOPE)], title: "Actions" },
         { id: "help:scopes", items: availableScopes(ctx).map(scopeHelpItem), title: "Scopes" },
+        { id: "help:actions", items: actionHelpItems(ctx), title: "Actions" },
         { id: "help:keys", items: helpKeyItems(), title: "Keys" },
     ].map((section) => ({ ...section, items: rankPaletteItems(section.items, query.value) }));
 }
