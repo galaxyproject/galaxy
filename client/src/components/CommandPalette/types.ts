@@ -39,6 +39,17 @@ export interface PaletteItem {
     icon?: IconDefinition;
     /** Extra search corpus, never displayed */
     keywords?: string;
+    /**
+     * Identity under which the palette remembers this item once it is opened
+     * (see `useRecentPaletteItems`). Recorded centrally by the palette, so a
+     * provider only declares it and never writes the MRU list itself.
+     */
+    mru?: {
+        /** Entity type, e.g. "history" — one MRU bucket per type */
+        type: string;
+        /** Entity id, unique within its type */
+        id: string;
+    };
     /** Alternative run triggered with shift+enter */
     secondaryAction?: {
         label: string;
