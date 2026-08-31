@@ -8,7 +8,7 @@ import { useUserStore } from "@/stores/userStore";
 import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
-import { rankPaletteItems } from "../utilities";
+import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { PaletteFetchError } from "./errors";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -19,6 +19,8 @@ export const PAGE_MRU_TYPE = "page";
 /** Per section cap, small enough to keep the scoped view scannable */
 const SECTION_LIMIT = 8;
 const RECENT_LIMIT = 5;
+/** How many rows the root fan-out asks the published listing for */
+const ROOT_VARIANT_LIMIT = 3;
 /** Below this length an unscoped query fans out too broadly to be useful */
 const MIN_ROOT_QUERY_LENGTH = 2;
 
@@ -128,6 +130,41 @@ async function storeFirstItems(
     return items.slice(0, limit);
 }
 
+/**
+ * The published pages matching the query. Only the backend can answer for pages
+ * the user does not own, and a failing search contributes nothing rather than
+ * costing the fan-out the rows it already has.
+ */
+async function publishedItems(query: string, limit: number): Promise<PaletteItem[]> {
+    const pageStore = usePageStore();
+    try {
+        const pages = (await pageStore.fetchPages("published", { search: query, limit })) ?? [];
+        return rankPaletteItems(
+            pages.map((page) => pageToItem(page, "published")),
+            query,
+        );
+    } catch (error) {
+        console.debug("Command palette could not fetch published pages", error);
+        return [];
+    }
+}
+
+/**
+ * Root mode results: the cached own pages answer the keystroke instantly, while
+ * the published ones are searched on the backend — the palette is the one place
+ * that finds a page without being told whose it is. A page listed twice
+ * collapses into the own row, which knows about its editor; the palette's
+ * debounce keeps the request volume down. An anonymous visitor has no own pages,
+ * so the public ones are the whole answer.
+ */
+async function rootItems(query: string, isAnonymous: boolean): Promise<PaletteItem[]> {
+    // the search starts before the cache is filtered, so the two run in parallel
+    const published = publishedItems(query, ROOT_VARIANT_LIMIT);
+    const own = isAnonymous ? [] : await storeFirstItems("my", query, RECENT_LIMIT, true);
+    const merged = dedupePaletteItemsByEntity([...own, ...(await published)]);
+    return rankPaletteItems(merged, query).slice(0, RECENT_LIMIT + ROOT_VARIANT_LIMIT);
+}
+
 /** Items the user opened through the palette before, best match first */
 function recentItems(query: string, limit: number): PaletteItem[] {
     const pageStore = usePageStore();
@@ -159,13 +196,13 @@ export const pagesProvider: CommandPaletteProvider = {
         }
         return recentItems("", RECENT_LIMIT);
     },
-    /** Unscoped fan-out over the cached own pages, without a request */
+    /** Unscoped fan-out over the cached own pages and the published ones */
     async search(query: string, ctx: PaletteContext) {
         const trimmed = query.trim();
-        if (ctx.isAnonymous || trimmed.length < MIN_ROOT_QUERY_LENGTH) {
+        if (trimmed.length < MIN_ROOT_QUERY_LENGTH) {
             return [];
         }
-        return storeFirstItems("my", trimmed, RECENT_LIMIT, true);
+        return rootItems(trimmed, ctx.isAnonymous);
     },
     /**
      * `p:` own pages as Recent + list sections, `pp:` the published list alone.
