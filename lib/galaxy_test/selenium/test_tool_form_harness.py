@@ -175,7 +175,6 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "filter_multiple_splitter_1": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
     "filter_param_value_ref_attribute_2": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
     "filter_param_value_ref_attribute_4": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
-    "filter_param_value_ref_attribute_5": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
     "format_source_in_conditional_1": "a data parameter two conditionals deep never becomes clickable",
     "implicit_conversion_optional_param_0": "test data uses a datatype the instance does not know",
     "inheritance_simple_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",

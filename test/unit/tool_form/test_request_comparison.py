@@ -140,3 +140,22 @@ def test_any_copy_of_a_file_staged_twice_matches():
     ids = {"a.bed": ["first", "second"]}
     assert declared_mismatches(declared, {"i": {"src": "hda", "id": "first"}}, dataset_ids=ids) == []
     assert declared_mismatches(declared, {"i": {"src": "hda", "id": "second"}}, dataset_ids=ids) == []
+
+
+def test_numbers_compare_numerically():
+    """A test case writes numbers as text; the request carries them typed."""
+    assert declared_mismatches({"n": "1.0"}, {"n": 1}) == []
+    assert declared_mismatches({"n": 5.0}, {"n": 5}) == []
+    assert declared_mismatches({"n": "1.0"}, {"n": 2}) == ["n (2 not '1.0')"]
+
+
+def test_comma_joined_matches_a_submitted_list():
+    assert declared_mismatches({"c": "1,2,3"}, {"c": [1, 2, 3]}) == []
+
+
+def test_comma_joined_of_a_different_length_is_reported():
+    assert declared_mismatches({"c": "1,2,3"}, {"c": [1, 2]}) == ["c (2 values, not 3)"]
+
+
+def test_text_that_is_not_a_number_still_differs():
+    assert declared_mismatches({"t": "abc"}, {"t": "abd"}) == ["t ('abd' not 'abc')"]
