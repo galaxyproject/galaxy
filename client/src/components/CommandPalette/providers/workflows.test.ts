@@ -217,11 +217,27 @@ describe("workflowsProvider", () => {
     it("falls back to the remembered name for workflows missing from the store", async () => {
         recent = [{ type: "workflow", id: "wf9", name: "Forgotten workflow" }];
 
-        const sections = await scopedSections(SHARED_SCOPE);
+        const sections = await scopedSections(OWN_SCOPE);
         const [item] = sections.find((s) => s.id === "recent")?.items ?? [];
 
         expect(item?.title).toBe("Forgotten workflow");
         expect(item?.to).toBe("/workflows/run?id=wf9");
+    });
+
+    it("keeps the palette recents out of the shared and published scopes", async () => {
+        // the MRU is one list per entity type, so a private workflow opened
+        // through `w:` must not leak into the shared or published scopes
+        recent = [{ type: "workflow", id: "wf2", name: "Variant calling" }];
+
+        const shared = await scopedSections(SHARED_SCOPE);
+        const published = await scopedSections(PUBLISHED_SCOPE);
+
+        expect(shared.map((s) => s.id)).not.toContain("recent");
+        expect(published.map((s) => s.id)).not.toContain("recent");
+        expect(shared.flatMap((s) => s.items.map((i) => i.title))).not.toContain("Variant calling");
+        expect(published.flatMap((s) => s.items.map((i) => i.title))).not.toContain("Variant calling");
+        // the base scope still offers them
+        expect((await scopedSections(OWN_SCOPE)).map((s) => s.id)).toContain("recent");
     });
 
     it("stays out of the unscoped fan-out for short queries and anonymous users", async () => {

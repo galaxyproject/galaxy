@@ -130,6 +130,18 @@ describe("pagesProvider", () => {
             expect(sections[1]?.items.map((item) => item.id)).toEqual(["pages:b"]);
         });
 
+        it("keeps the palette recents out of the published scope", async () => {
+            // the MRU is one list per entity type, so a page opened through
+            // `p:` must not leak into the published scope
+            useRecentPaletteItems().addRecentItem({ type: "page", id: "a", name: "Page a" });
+            mockPages([mockPage("b")]);
+
+            const sections = (await pagesProvider.searchScoped?.(scope("pp"), "", makeCtx())) ?? [];
+
+            expect(sections.map((section) => section.id)).toEqual(["published"]);
+            expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:b"]);
+        });
+
         it("sorts the list section by update time, newest first", async () => {
             mockPages([
                 mockPage("old", { update_time: "2026-01-01T10:00:00" }),

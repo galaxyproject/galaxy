@@ -318,16 +318,20 @@ export const historiesProvider: CommandPaletteProvider = {
         return listItems("my", trimmed, ROOT_LIMIT, true);
     },
     /**
-     * `h:`, `hs:`, `hp:` and `ha:` all show the palette recents on top of the
-     * matching listing. The query filters both sections; an empty query leaves
-     * the listing showing the most recently updated histories.
+     * `h:` shows the palette recents on top of the user's own listing; `hs:`,
+     * `hp:` and `ha:` show their listing alone. The palette remembers one list
+     * per entity type rather than per scope, so the recents belong to the base
+     * scope only — the user's private (and unarchived) histories have no
+     * business showing up under "shared", "public" or "archived". The query
+     * filters both sections; an empty query leaves the listing showing the most
+     * recently updated histories.
      */
     async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = listVariant(scope.variant);
         const trimmed = query.trim();
         const results = await listItems(variant, trimmed, RESULTS_LIMIT);
         return [
-            ...section("recent", "Recent", recentItems(trimmed)),
+            ...section("recent", "Recent", variant === "my" ? recentItems(trimmed) : []),
             ...section(variant, resultsTitle(scope, trimmed), results),
         ];
     },

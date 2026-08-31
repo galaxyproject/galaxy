@@ -233,8 +233,10 @@ export const workflowsProvider: CommandPaletteProvider = {
     },
     /**
      * `w:` shows bookmarks, palette recents and the user's latest workflows;
-     * `ws:`/`wp:` show recents and the shared/published list. The query filters
-     * every section.
+     * `ws:`/`wp:` show the shared/published list alone. The palette recents are
+     * one list per entity type rather than per scope, so they are only offered
+     * by the base scope — a private workflow has no business showing up under
+     * "shared" or "public". The query filters every section.
      */
     async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = listVariant(scope.variant);
@@ -245,7 +247,7 @@ export const workflowsProvider: CommandPaletteProvider = {
         ]);
         return [
             ...section("bookmarked", "Bookmarked", bookmarked),
-            ...section("recent", "Recent", recentItems(trimmed)),
+            ...section("recent", "Recent", variant === "my" ? recentItems(trimmed) : []),
             ...section(variant, resultsTitle(scope, trimmed), results),
         ];
     },
