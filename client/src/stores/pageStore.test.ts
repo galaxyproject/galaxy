@@ -76,6 +76,17 @@ describe("usePageStore", () => {
             });
         });
 
+        it("keeps an unrecorded search out of the listing while caching its summaries", async () => {
+            vi.mocked(loadPages).mockResolvedValue(mockResult([mockPage("p1")], 42));
+
+            const pages = await pageStore.fetchPages("published", { search: "rna", record: false });
+
+            expect(pages.map((page) => page.id)).toEqual(["p1"]);
+            expect(pageStore.getPageById("p1")?.title).toBe("Page p1");
+            expect(pageStore.publishedPages).toEqual([]);
+            expect(pageStore.isLoaded("published")).toBe(false);
+        });
+
         it("merges search results into the cache without duplicating entries", async () => {
             vi.mocked(loadPages).mockResolvedValueOnce(mockResult([mockPage("a"), mockPage("b")], 2));
             await pageStore.fetchPages("my");

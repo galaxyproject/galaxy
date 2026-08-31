@@ -133,12 +133,14 @@ async function storeFirstItems(
 /**
  * The published pages matching the query. Only the backend can answer for pages
  * the user does not own, and a failing search contributes nothing rather than
- * costing the fan-out the rows it already has.
+ * costing the fan-out the rows it already has. A handful of hits for one query
+ * is not the listing, so `record: false` keeps them out of it: `pp:` still finds
+ * its listing unfetched and fetches it itself.
  */
 async function publishedItems(query: string, limit: number): Promise<PaletteItem[]> {
     const pageStore = usePageStore();
     try {
-        const pages = (await pageStore.fetchPages("published", { search: query, limit })) ?? [];
+        const pages = (await pageStore.fetchPages("published", { search: query, limit, record: false })) ?? [];
         return rankPaletteItems(
             pages.map((page) => pageToItem(page, "published")),
             query,
