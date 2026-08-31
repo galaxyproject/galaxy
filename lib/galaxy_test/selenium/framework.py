@@ -1311,11 +1311,23 @@ class RunsToolTests(NavigatesGalaxyMixin):
         self.tool_set_value(expanded_id, text, expected_type="select")
 
     def _set_boolean_value(self, expanded_id: str, value):
+        """Set a boolean, keeping an unset optional one distinct from a declared false.
+
+        An optional boolean starts null and renders the same as false, so reaching an
+        explicit false takes a toggle on and back off.
+        """
         checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
         is_checked = checkbox.is_selected()
+        if value is None:
+            if is_checked:
+                self.execute_script("arguments[0].click();", checkbox)
+            return
         want_checked = str(value).lower() in ("true", "1", "yes")
         if is_checked != want_checked:
             self.execute_script("arguments[0].click();", checkbox)
+        elif not want_checked:
+            for _ in range(2):
+                self.execute_script("arguments[0].click();", checkbox)
 
     def _set_checkbox_select_value(self, expanded_id: str, values: list):
         all_checkboxes = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).all()
