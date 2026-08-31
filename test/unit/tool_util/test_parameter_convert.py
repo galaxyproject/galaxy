@@ -291,6 +291,9 @@ def test_fill_defaults():
     with_defaults = fill_state_for({}, "parameters/gx_boolean")
     assert with_defaults["parameter"] is False
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional")
+    # Profiles before 26.2 keep reporting false for an unset optional boolean.
+    assert with_defaults["parameter"] is False
+    with_defaults = fill_state_for({}, "parameters/gx_boolean_optional_26_2")
     assert with_defaults["parameter"] is None
     with_defaults = fill_state_for({}, "parameters/gx_boolean_checked")
     assert with_defaults["parameter"] is True

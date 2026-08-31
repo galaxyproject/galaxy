@@ -637,9 +637,12 @@ class BooleanToolParameter(ToolParameter):
     >>> value = p.to_json(True, trans.app, use_security=False)
     >>> assert isinstance(value, bool)
     >>> assert value == True
-    >>> optional = BooleanToolParameter(None, XML('<param name="_name" type="boolean" optional="true" />'))
-    >>> assert optional.get_initial_value(trans, {}) is None
-    >>> required = BooleanToolParameter(None, XML('<param name="_name" type="boolean" />'))
+    >>> optional_xml = XML('<param name="_name" type="boolean" optional="true" />')
+    >>> legacy = BooleanToolParameter(Bunch(profile="24.0", app=None), optional_xml)
+    >>> assert legacy.get_initial_value(trans, {}) is False
+    >>> current = BooleanToolParameter(Bunch(profile="26.2", app=None), optional_xml)
+    >>> assert current.get_initial_value(trans, {}) is None
+    >>> required = BooleanToolParameter(Bunch(profile="26.2", app=None), XML('<param name="_name" type="boolean" />'))
     >>> assert required.get_initial_value(trans, {}) is False
     """
 
@@ -654,7 +657,7 @@ class BooleanToolParameter(ToolParameter):
         self.truevalue = truevalue
         self.falsevalue = falsevalue
         self.optional = input_source.get_bool("optional", False)
-        self.checked = boolean_is_checked(input_source)
+        self.checked = boolean_is_checked(input_source, profile)
 
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         return self.to_python(value)

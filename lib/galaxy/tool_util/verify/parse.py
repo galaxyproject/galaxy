@@ -529,7 +529,7 @@ def _matching_case_for_value(
     if test_param_type == "boolean":
         if declared_value is None:
             # No explicit value for param in test case, determine from default
-            query_value = bool(boolean_is_checked(test_param))
+            query_value = boolean_is_checked(test_param)
         else:
             query_value = _process_bool_param_value(test_param, declared_value, allow_legacy_test_case_parameters)
 

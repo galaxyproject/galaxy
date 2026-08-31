@@ -59,9 +59,9 @@ def parse_tool_version_with_defaults(id: str | None, tool_source: "ToolSource", 
     return version
 
 
-def boolean_is_checked(input_source: "InputSource"):
+def boolean_is_checked(input_source: "InputSource", profile: float | str | None = None):
     nullable = input_source.get_bool("optional", False)
-    if nullable:
+    if nullable and profile and Version(str(profile)) >= Version("26.2"):
         # An optional boolean starts unset; get_bool would read that as unchecked.
         return input_source.get_bool_or_none("checked", None)
     return input_source.get_bool("checked", False)
