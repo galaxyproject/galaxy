@@ -88,10 +88,33 @@ describe("usePaletteMachine", () => {
         expect(enabled.text.value).toBe("jupyter");
     });
 
-    it("never gates the actions sigil", () => {
+    it("never gates the actions sigil on the login", () => {
         const machine = usePaletteMachine(() => makeCtx({ isAnonymous: true }));
         machine.setText("> up");
         expect(machine.mode.value).toEqual({ type: "scoped", scope: ACTIONS_SCOPE });
+    });
+
+    it("keeps the token of a disabled provider as plain text", () => {
+        const disabled = { command_palette_disabled_providers: ["workflows"] };
+        const machine = usePaletteMachine(() => makeCtx({ config: disabled }));
+        machine.setText("w: rna");
+        expect(machine.mode.value).toEqual({ type: "root" });
+        expect(machine.text.value).toBe("w: rna");
+        // a variant of the same provider is gone with it
+        machine.setText("ws: rna");
+        expect(machine.mode.value).toEqual({ type: "root" });
+        // every other provider still scopes normally
+        machine.setText("t: align");
+        expect(machine.scope.value?.key).toBe("t");
+    });
+
+    it("keeps the actions sigil as plain text once its provider is disabled", () => {
+        const machine = usePaletteMachine(() =>
+            makeCtx({ config: { command_palette_disabled_providers: ["actions"] } }),
+        );
+        machine.setText("> up");
+        expect(machine.mode.value).toEqual({ type: "root" });
+        expect(machine.text.value).toBe("> up");
     });
 
     it("switches directly from one scope to another", () => {
