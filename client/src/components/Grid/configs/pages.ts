@@ -11,11 +11,12 @@ import {
 import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
+import { loadPages, type PageSortBy } from "@/api/pages";
 import { getGalaxyInstance } from "@/app";
 import { GRID_LABELS } from "@/components/Page/constants";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
-import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
@@ -24,39 +25,23 @@ const { emit } = useEventBus<string>("grid-router-push");
 /**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
 type PageEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    if (search.includes("is:standalone")) {
-        // Pages that are not attached to a history have their type set to "standalone" on the backend
-        // We convert the search term here before sending to the backend
-        search = search.replace("is:standalone", "type:standalone");
-    }
-
-    const { response, data, error } = await GalaxyApi().GET("/api/pages", {
-        params: {
-            query: {
-                limit,
-                offset,
-                search: search,
-                sort_by: sort_by as SortKeyLiteral,
-                sort_desc,
-                show_published: false,
-                show_own: true,
-                show_shared: false,
-            },
-        },
+    const { data, totalMatches } = await loadPages({
+        limit,
+        offset,
+        search,
+        sortBy: sort_by as PageSortBy,
+        sortDesc: sort_desc,
+        showOwn: true,
+        showShared: false,
+        showPublished: false,
     });
 
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 
