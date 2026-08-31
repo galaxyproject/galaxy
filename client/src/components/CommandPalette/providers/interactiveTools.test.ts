@@ -124,6 +124,18 @@ describe("interactiveToolsProvider", () => {
         expect(axios.get).not.toHaveBeenCalled();
     });
 
+    it("does not refetch the entry points of a user with nothing running", async () => {
+        mockApi();
+        await scopedSearch("");
+        vi.mocked(axios.get).mockClear();
+
+        await scopedSearch("r");
+        await scopedSearch("rs");
+
+        // an empty list is an answer, not a reason to ask the backend again
+        expect(axios.get).not.toHaveBeenCalled();
+    });
+
     it("stops a running tool through the secondary action", async () => {
         mockApi([ENTRY_POINT]);
         vi.mocked(axios.delete).mockResolvedValue({ data: {} });
