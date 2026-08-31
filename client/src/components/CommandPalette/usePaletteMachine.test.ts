@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 
 import { ACTIONS_SCOPE, findScope } from "./providers/scopes";
-import type { PaletteItem } from "./types";
+import type { PaletteContext, PaletteItem } from "./types";
 import { usePaletteMachine } from "./usePaletteMachine";
 
 const WORKFLOWS = findScope("w")!;
 
 const NEW_HISTORY: PaletteItem = { id: "actions:new-history", title: "Create new history" };
+
+function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
+    return {
+        canUseUnprivilegedTools: false,
+        config: { interactivetools_enable: false, llm_api_configured: false },
+        isAdmin: false,
+        isAnonymous: false,
+        ...overrides,
+    };
+}
 
 describe("usePaletteMachine", () => {
     it("starts in root mode with an empty input", () => {
@@ -54,6 +64,34 @@ describe("usePaletteMachine", () => {
         machine.setText("name:fastqc");
         expect(machine.mode.value).toEqual({ type: "root" });
         expect(machine.text.value).toBe("name:fastqc");
+    });
+
+    it("keeps a login-only token as plain text for anonymous users", () => {
+        const machine = usePaletteMachine(() => makeCtx({ isAnonymous: true }));
+        machine.setText("hs: shared");
+        expect(machine.mode.value).toEqual({ type: "root" });
+        expect(machine.text.value).toBe("hs: shared");
+        // an ungated scope still works while anonymous
+        machine.setText("t: align");
+        expect(machine.scope.value?.key).toBe("t");
+    });
+
+    it("keeps a config-gated token as plain text until the config allows it", () => {
+        const gated = usePaletteMachine(() => makeCtx());
+        gated.setText("it: jupyter");
+        expect(gated.mode.value).toEqual({ type: "root" });
+        expect(gated.text.value).toBe("it: jupyter");
+
+        const enabled = usePaletteMachine(() => makeCtx({ config: { interactivetools_enable: true } }));
+        enabled.setText("it: jupyter");
+        expect(enabled.scope.value?.key).toBe("it");
+        expect(enabled.text.value).toBe("jupyter");
+    });
+
+    it("never gates the actions sigil", () => {
+        const machine = usePaletteMachine(() => makeCtx({ isAnonymous: true }));
+        machine.setText("> up");
+        expect(machine.mode.value).toEqual({ type: "scoped", scope: ACTIONS_SCOPE });
     });
 
     it("switches directly from one scope to another", () => {
