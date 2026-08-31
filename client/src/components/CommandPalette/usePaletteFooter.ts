@@ -8,6 +8,9 @@ import type { PaletteMode } from "./usePaletteMachine";
 const ROOT_PLACEHOLDER = "Search Galaxy…  > actions · w: t: … scopes · ? help";
 const HELP_PLACEHOLDER = "Search shortcuts…";
 
+/** Hints a narrow footer drops first, keeping the bindings that run something or leave the palette */
+export const OPTIONAL_HINTS = ["navigate", "category", "remove-scope", "remove-action"];
+
 /** One key hint rendered in the footer, driven by the current palette mode */
 export interface FooterHint {
     /** Emphasized hint — the binding the next `↵` would trigger */
