@@ -20,21 +20,28 @@ export interface ScopeDefinition {
     configGate?: (ctx: PaletteContext) => boolean;
 }
 
-/** Ordered scope registry — also the order of the rows in the help panel */
+/**
+ * Ordered scope registry — also the order of the rows in the help panel.
+ *
+ * The `wp:`, `hp:` and `pp:` scopes carry no `requiresLogin`: published entities
+ * are public, and their listings are exactly what an anonymous visitor may
+ * browse. Everything an account owns — the own and shared-with-me scopes
+ * included — stays behind a login.
+ */
 export const PALETTE_SCOPES: ScopeDefinition[] = [
     { key: "w", label: "My workflows", providerId: "workflows", requiresLogin: true },
     { key: "ws", label: "Shared workflows", providerId: "workflows", variant: "shared", requiresLogin: true },
-    { key: "wp", label: "Public workflows", providerId: "workflows", variant: "published", requiresLogin: true },
+    { key: "wp", label: "Public workflows", providerId: "workflows", variant: "published" },
     { key: "t", label: "Tools", providerId: "tools" },
     { key: "h", label: "My histories", providerId: "histories", requiresLogin: true },
     { key: "hs", label: "Shared histories", providerId: "histories", variant: "shared", requiresLogin: true },
-    { key: "hp", label: "Public histories", providerId: "histories", variant: "published", requiresLogin: true },
+    { key: "hp", label: "Public histories", providerId: "histories", variant: "published" },
     { key: "ha", label: "Archived histories", providerId: "histories", variant: "archived", requiresLogin: true },
     { key: "d", label: "Datasets", providerId: "datasets", requiresLogin: true },
     { key: "v", label: "Visualizations", providerId: "visualizations", requiresLogin: true },
     { key: "i", label: "Invocations", providerId: "invocations", requiresLogin: true },
     { key: "p", label: "My pages", providerId: "pages", requiresLogin: true },
-    { key: "pp", label: "Public pages", providerId: "pages", variant: "published", requiresLogin: true },
+    { key: "pp", label: "Public pages", providerId: "pages", variant: "published" },
     {
         key: "it",
         label: "Interactive tools",
