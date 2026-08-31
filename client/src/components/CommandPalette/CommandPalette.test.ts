@@ -344,11 +344,33 @@ describe("CommandPalette", () => {
         expect(text).toContain("w:");
         // gated behind interactivetools_enable, which the mocked config leaves off
         expect(text).not.toContain("Search interactive tools");
+        // the scopes lead, then the actions, then the key bindings
+        expect(sectionIds()).toEqual([
+            "palette section help:scopes",
+            "palette section help:actions",
+            "palette section help:keys",
+        ]);
 
         await press("Enter");
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().text()).toContain("My workflows");
+    });
+
+    it("lists one help row per action, applying the action scope with it", async () => {
+        await type("?");
+        const uploadRow = optionRow("Upload data");
+        expect(uploadRow).toBeDefined();
+        // every action row documents the sigil that reaches it
+        expect(uploadRow?.text()).toContain(">");
+        expect(wrapper.text()).toContain("Create workflow");
+
+        await uploadRow?.trigger("click");
+        await settle();
+
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         expect(badge().text()).toContain("Actions");
-        expect(wrapper.text()).toContain("Upload data");
+        expect(inputValue()).toBe("Upload data");
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Upload data");
     });
 
     it("documents every binding in the help keys section", async () => {
@@ -357,8 +379,6 @@ describe("CommandPalette", () => {
         expect(text).toContain("Keys");
         expect(text).toContain("Open the selected result");
         expect(text).toContain("Remove the active filter");
-        // the actions row stays listed above the scopes and the keys
-        expect(text).toContain("Search actions");
         expect(input().attributes("placeholder")).toContain("shortcuts");
 
         // the key badge is decorative, so the row names its shortcut itself
