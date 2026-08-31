@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { usePageStore } from "@/stores/pageStore";
@@ -916,6 +917,41 @@ describe("CommandPalette", () => {
         await type("it: jupyter");
         expect(badge().exists()).toBe(false);
         expect(inputValue()).toBe("it: jupyter");
+    });
+
+    it("never searches, tabs or lists a provider the instance disabled", async () => {
+        wrapper.destroy();
+        useCommandPalette().closePalette();
+        setMockConfig({ command_palette_disabled_providers: ["workflows"] });
+        const search = vi.spyOn(workflowsProvider, "search");
+        try {
+            wrapper = mount(MountTarget as object, {
+                localVue,
+                router,
+                pinia: createTestingPinia({ createSpy: vi.fn, stubActions: true }),
+            });
+            useCommandPalette().openPalette();
+            await settle();
+
+            await type("workflow");
+            expect(sectionIds()).not.toContain("palette section workflows");
+            expect(search).not.toHaveBeenCalled();
+            // the category row loses the tab with it, the other providers keep theirs
+            expect(category("workflows").exists()).toBe(false);
+            expect(category("histories").exists()).toBe(true);
+
+            // the scopes of a disabled provider are neither typeable nor offered
+            await type("w: rna");
+            expect(badge().exists()).toBe(false);
+            expect(inputValue()).toBe("w: rna");
+
+            await type("?");
+            expect(wrapper.text()).not.toContain("Search my workflows");
+            expect(wrapper.text()).toContain("Search my histories");
+        } finally {
+            search.mockRestore();
+            resetMockConfig();
+        }
     });
 
     it("re-runs the search once the tool store finishes hydrating", async () => {

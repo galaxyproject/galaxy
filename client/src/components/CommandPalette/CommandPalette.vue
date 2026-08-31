@@ -17,10 +17,10 @@ import { useUserStore } from "@/stores/userStore";
 import { localize } from "@/utils/localization";
 
 import { helpSections } from "./paletteHelp";
-import { findPaletteProvider, paletteProviders } from "./providers";
+import { enabledPaletteProviders, findPaletteProvider } from "./providers";
 import { ALL_CATEGORY, availableCategories, categoryProviderId, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
-import type { ScopeDefinition } from "./providers/scopes";
+import { isProviderEnabled, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
 import { usePaletteDialog } from "./usePaletteDialog";
 import { OPTIONAL_HINTS, secondaryLabelFor, usePaletteFooter } from "./usePaletteFooter";
@@ -229,7 +229,8 @@ function withoutFailing<T>(providerId: string, run: () => T | Promise<T>, fallba
 
 async function providerItems(providerId: string, ctx: PaletteContext): Promise<PaletteItem[]> {
     const provider = findPaletteProvider(providerId);
-    if (!provider) {
+    // a remembered category or scope must not reach a provider turned off since
+    if (!provider || !isProviderEnabled(providerId, ctx)) {
         return [];
     }
     return withoutFailing(
@@ -286,12 +287,19 @@ function assignSections(next: ResultSection[], keepCategoryRow: boolean) {
  */
 function fanOutIncrementally(ctx: PaletteContext, epoch: number, keepCategoryRow: boolean) {
     const limit = query.value ? MAX_ROOT_SECTION_ITEMS : MAX_EMPTY_QUERY_ITEMS;
-    let pending = paletteProviders.length;
+    const providers = enabledPaletteProviders(ctx);
+    let pending = providers.length;
     assignSections(
-        paletteProviders.map((provider) => ({ id: provider.id, items: [], loading: true, title: provider.title })),
+        providers.map((provider) => ({ id: provider.id, items: [], loading: true, title: provider.title })),
         keepCategoryRow,
     );
-    paletteProviders.forEach((provider) => {
+    if (pending === 0) {
+        // an instance may turn every provider off, and nothing would land to
+        // stop the spinner then
+        searching.value = false;
+        return;
+    }
+    providers.forEach((provider) => {
         providerItems(provider.id, ctx)
             // the root fan-out only reads what the stores already hold, so a
             // rejection here is a provider breaking that contract: it costs its
@@ -349,7 +357,7 @@ async function rootSections(ctx: PaletteContext): Promise<ResultSection[]> {
 async function categorySections(category: PaletteCategory, ctx: PaletteContext): Promise<ResultSection[]> {
     const providerId = categoryProviderId(category);
     const provider = providerId ? findPaletteProvider(providerId) : undefined;
-    if (!provider) {
+    if (!provider || !isProviderEnabled(provider.id, ctx)) {
         return [];
     }
     return providerSections(provider, category.scope, ctx);
@@ -369,6 +377,9 @@ async function providerSections(
 
 async function scopedSections(scope: ScopeDefinition, ctx: PaletteContext): Promise<ResultSection[]> {
     const provider = findPaletteProvider(scope.providerId);
+    if (provider && !isProviderEnabled(provider.id, ctx)) {
+        return [];
+    }
     // a variant (shared, published, …) can only be served by a scoped search
     if (!provider || (scope.variant && !provider.searchScoped)) {
         pendingScope.value = scope;

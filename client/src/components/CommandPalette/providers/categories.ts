@@ -1,5 +1,5 @@
 import type { PaletteContext } from "../types";
-import { findScope, isScopeAvailable, type ScopeDefinition } from "./scopes";
+import { findScope, isProviderEnabled, isScopeAvailable, type ScopeDefinition } from "./scopes";
 
 /** A root-row tab; all but "All" narrow to one provider, through its scope when it has one */
 export interface PaletteCategory {
@@ -40,11 +40,15 @@ export function categoryProviderId(category: PaletteCategory): string | undefine
 /**
  * The categories usable by the current user, "All" first. A category backed by
  * a scope inherits that scope's gating, so an anonymous user is not offered a
- * filter that can never hold anything.
+ * filter that can never hold anything. One without a scope only has its
+ * provider to answer for it.
  */
 export function availableCategories(ctx: PaletteContext): PaletteCategory[] {
-    const usable = PALETTE_CATEGORIES.filter((category) =>
-        category.scope ? isScopeAvailable(category.scope, ctx) : true,
-    );
+    const usable = PALETTE_CATEGORIES.filter((category) => {
+        if (category.scope) {
+            return isScopeAvailable(category.scope, ctx);
+        }
+        return category.providerId ? isProviderEnabled(category.providerId, ctx) : true;
+    });
     return [ALL_CATEGORY, ...usable];
 }

@@ -46,4 +46,17 @@ describe("availableCategories", () => {
         const categories = availableCategories(makeCtx({ isAnonymous: true }));
         expect(categories.map((category) => category.id)).toEqual(["all", "tools", "navigation"]);
     });
+
+    it("hides the scopeless navigation category once its provider is disabled", () => {
+        const ctx = makeCtx({ config: { command_palette_disabled_providers: ["navigation"] } });
+        expect(availableCategories(ctx).map((category) => category.id)).not.toContain("navigation");
+    });
+
+    it("hides a scoped category once its provider is disabled", () => {
+        const ctx = makeCtx({ config: { command_palette_disabled_providers: ["workflows", "tools"] } });
+        const ids = availableCategories(ctx).map((category) => category.id);
+        expect(ids).not.toContain("workflows");
+        expect(ids).not.toContain("tools");
+        expect(ids).toContain("histories");
+    });
 });
