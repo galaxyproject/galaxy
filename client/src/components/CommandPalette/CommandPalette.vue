@@ -5,6 +5,7 @@ import { useEventListener, watchDebounced, watchImmediate } from "@vueuse/core";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { useStartNewChat } from "@/components/GalaxyAI/useStartNewChat";
 import { useFilteredUploadMethods } from "@/components/Panels/Upload/uploadMethodRegistry";
 import { useConfig } from "@/composables/config";
 import { useCommandPalette } from "@/composables/useCommandPalette";
@@ -49,9 +50,10 @@ interface FooterHint {
 
 const { isPaletteOpen, closePalette, togglePalette } = useCommandPalette();
 const { addRecentItem } = useRecentPaletteItems();
-// the registry composable needs a component instance, so the palette resolves
-// the upload methods once and hands them to the providers through the context
+// these composables need a component instance, so the palette resolves them once
+// and hands them to the providers through the context
 const uploadMethods = useFilteredUploadMethods();
+const startNewChat = useStartNewChat();
 const router = useRouter();
 const { config } = useConfig();
 const eventStore = useEventStore();
@@ -183,6 +185,12 @@ function buildContext(): PaletteContext {
         },
         isAdmin: userStore.isAdmin,
         isAnonymous: userStore.isAnonymous,
+        navigate: (to: string) => {
+            router.push(to).catch(() => {
+                // duplicate navigation to the current route is fine
+            });
+        },
+        startNewChat,
         uploadMethods: uploadMethods.value,
     };
 }

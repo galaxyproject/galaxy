@@ -21,6 +21,16 @@ export interface PaletteContext {
     /** Whether no user is logged in */
     isAnonymous: boolean;
     /**
+     * Router push, for handlers that only know their target once an api call
+     * came back (creating a page, for instance). Supplied by the palette.
+     */
+    navigate?: (to: string) => void;
+    /**
+     * Opens a fresh GalaxyAI conversation (`useStartNewChat`). Supplied by the
+     * palette because the composable needs a component instance.
+     */
+    startNewChat?: (center: boolean) => void;
+    /**
      * Upload methods available to the current user, already filtered by config
      * and login. Supplied by the palette because `useFilteredUploadMethods`
      * needs a component instance.

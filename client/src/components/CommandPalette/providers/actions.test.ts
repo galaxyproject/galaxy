@@ -3,16 +3,37 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type * as HistoriesApi from "@/api/histories";
 import { createNewHistory } from "@/api/histories";
+import type * as PagesApi from "@/api/pages";
+import { createPage } from "@/api/pages";
+import type { WorkflowSummary } from "@/api/workflows";
+import { loadWorkflows } from "@/api/workflows";
+import type { ChatHistoryItem } from "@/components/GalaxyAI/chatTypes";
 import { uploadMethodRegistry } from "@/components/Panels/Upload/uploadMethodRegistry";
+import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { PaletteContext, PaletteItem } from "../types";
-import { actionsProvider } from "./actions";
+import { actionsProvider, slugify } from "./actions";
 
 vi.mock("@/api/histories", async (importOriginal) => ({
     ...(await importOriginal<typeof HistoriesApi>()),
-    createNewHistory: vi.fn().mockResolvedValue({ id: "hist-1" }),
+    createNewHistory: vi.fn(),
 }));
+
+vi.mock("@/api/pages", async (importOriginal) => ({
+    ...(await importOriginal<typeof PagesApi>()),
+    createPage: vi.fn(),
+}));
+
+vi.mock("@/api/workflows", () => ({
+    loadWorkflows: vi.fn(),
+}));
+
+vi.mock("@/components/Workflow/workflows.services", () => ({
+    getWorkflowFull: vi.fn(),
+}));
+
+const RNA_SEQ = { id: "wf1", name: "RNA-seq analysis", owner: "me", tags: [] } as unknown as WorkflowSummary;
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
     return {
@@ -49,6 +70,8 @@ describe("actionsProvider", () => {
         setActivePinia(createPinia());
         vi.clearAllMocks();
         vi.mocked(createNewHistory).mockResolvedValue({ id: "hist-1" } as never);
+        vi.mocked(createPage).mockResolvedValue({ id: "page-1" } as never);
+        vi.mocked(loadWorkflows).mockResolvedValue({ data: [RNA_SEQ], totalMatches: 1 });
     });
 
     it("lists all actions on an empty query", () => {
@@ -100,5 +123,101 @@ describe("actionsProvider", () => {
 
         const importItem = (await search("import workflow", makeCtx())).find((i) => i.id === "actions:import-workflow");
         expect(importItem?.to).toBe("/workflows/import");
+    });
+
+    it("creates a page from the typed title and opens its editor", async () => {
+        const createItem = await action("actions:create-page");
+        expect(createItem.to).toBe("/pages/create");
+        expect(await argumentItems("actions:create-page", "   ")).toEqual([]);
+
+        const navigate = vi.fn();
+        const ctx = makeCtx({ navigate });
+        const [item] = await argumentItems("actions:create-page", " My New Page ", ctx);
+        expect(item?.title).toBe("Create page titled 'My New Page'");
+
+        item?.handler?.(ctx);
+        await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-1"));
+        expect(createPage).toHaveBeenCalledWith({
+            title: "My New Page",
+            slug: "my-new-page",
+            content_format: "markdown",
+        });
+    });
+
+    it("retries a conflicting page slug once with a suffix", async () => {
+        vi.mocked(createPage)
+            .mockRejectedValueOnce(new Error("Page identifier must be unique"))
+            .mockResolvedValueOnce({ id: "page-2" } as never);
+
+        const navigate = vi.fn();
+        const ctx = makeCtx({ navigate });
+        const [item] = await argumentItems("actions:create-page", "Lab notes", ctx);
+        item?.handler?.(ctx);
+
+        await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-2"));
+        expect(createPage).toHaveBeenNthCalledWith(2, expect.objectContaining({ slug: "lab-notes-2" }));
+    });
+
+    it("picks the workflow to run as an argument, with no plain enter target", async () => {
+        const runWorkflow = await action("actions:run-workflow");
+        expect(runWorkflow.to).toBeUndefined();
+        expect(runWorkflow.handler).toBeUndefined();
+        // nothing useful to do without a workflow, so enter opens the picker too
+        expect(runWorkflow.argumentMode?.immediate).toBe(true);
+
+        const items = await argumentItems("actions:run-workflow", "rna");
+        expect(items[0]?.title).toBe("RNA-seq analysis");
+        expect(items[0]?.to).toBe("/workflows/run?id=wf1");
+    });
+
+    it("hides GalaxyAI unless the assistant is configured", async () => {
+        const ids = (ctx: PaletteContext) => (actionsProvider.emptyQueryItems?.(ctx) ?? []).map((item) => item.id);
+        expect(ids(makeCtx())).not.toContain("actions:galaxy-ai");
+        expect(ids(makeCtx({ config: { llm_api_configured: true } }))).toContain("actions:galaxy-ai");
+        expect(ids(makeCtx({ config: { llm_api_configured: true }, isAnonymous: true }))).not.toContain(
+            "actions:galaxy-ai",
+        );
+    });
+
+    it("starts a GalaxyAI conversation and seeds one from the typed question", async () => {
+        const startNewChat = vi.fn();
+        const ctx = makeCtx({ config: { llm_api_configured: true }, startNewChat });
+        const galaxyAi = await action("actions:galaxy-ai", ctx);
+
+        galaxyAi.handler?.(ctx);
+        expect(startNewChat).toHaveBeenCalledWith(true);
+
+        const chatStore = useChatStore();
+        chatStore.chatHistory = [
+            { id: "chat-1", query: "How do I filter a fastq file?", response: "Use the filter tool" },
+        ] as ChatHistoryItem[];
+        const loadHistory = vi.spyOn(chatStore, "loadHistory");
+
+        const items = await argumentItems("actions:galaxy-ai", "filter", ctx);
+        expect(items[0]).toMatchObject({ title: "New chat: 'filter'", to: "/galaxyai/new?q=filter" });
+        expect(items[1]?.to).toBe("/galaxyai/chat-1");
+        // the cache already holds the conversations, so no request is needed
+        expect(loadHistory).not.toHaveBeenCalled();
+    });
+
+    it("loads the GalaxyAI history into the store and encodes the seeded question", async () => {
+        const ctx = makeCtx({ config: { llm_api_configured: true } });
+        const chatStore = useChatStore();
+        const loadHistory = vi.spyOn(chatStore, "loadHistory").mockResolvedValue(undefined);
+
+        const items = await argumentItems("actions:galaxy-ai", "trim my reads", ctx);
+        expect(loadHistory).toHaveBeenCalled();
+        expect(items[0]?.to).toBe("/galaxyai/new?q=trim%20my%20reads");
+    });
+});
+
+describe("slugify", () => {
+    it("lowercases, collapses non alphanumeric runs and trims dashes", () => {
+        expect(slugify("  My New Page!! ")).toBe("my-new-page");
+        expect(slugify("RNA-seq 2026 — draft")).toBe("rna-seq-2026-draft");
+    });
+
+    it("falls back for a title without a single usable character", () => {
+        expect(slugify("???")).toBe("page");
     });
 });

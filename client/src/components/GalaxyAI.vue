@@ -31,12 +31,15 @@ import Heading from "@/components/Common/Heading.vue";
 const props = withDefaults(
     defineProps<{
         exchangeId?: string;
+        /** Question handed over through `/galaxyai/new?q=…`, prefilled once */
+        initialQuestion?: string;
         compact?: boolean;
         docked?: boolean;
         panel?: boolean;
     }>(),
     {
         exchangeId: undefined,
+        initialQuestion: undefined,
         compact: false,
         docked: false,
         panel: false,
@@ -139,6 +142,7 @@ onMounted(async () => {
         await fetchConversation(props.exchangeId);
     } else if (props.exchangeId === "new") {
         startNewChat();
+        consumeSeededQuestion();
     } else if (props.docked || props.panel) {
         const ctx = activeContext.value;
         // For notebook pages, always prefer the per-page cached exchange over the global
@@ -206,6 +210,32 @@ watch(
     () => chatStore.newChatRequestCount,
     () => startNewChat(),
 );
+
+// A seeded question can also arrive while this view is already showing a new
+// chat, where neither the route param nor the mount hook would notice it.
+watch(
+    () => props.initialQuestion,
+    (question) => {
+        if (question) {
+            startNewChat();
+            consumeSeededQuestion();
+        }
+    },
+);
+
+/**
+ * Takes over the question seeded through `/galaxyai/new?q=…` — the command
+ * palette starts conversations that way. It is only prefilled, never sent on the
+ * user's behalf, and the query parameter is dropped so a reload starts empty.
+ */
+function consumeSeededQuestion() {
+    if (!props.initialQuestion) {
+        return;
+    }
+    query.value = props.initialQuestion;
+    // consumed: the same path without the parameter, and without a history entry
+    router.replace({ path: route.path });
+}
 
 function showWelcome() {
     messages.value.push({
