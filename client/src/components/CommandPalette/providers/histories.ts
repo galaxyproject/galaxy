@@ -285,14 +285,16 @@ function rootVariants(isAnonymous: boolean): HistoryListVariant[] {
 
 /**
  * One backend search for the root fan-out, answering with the matches it
- * returned rather than with the whole cached listing. A failing listing
- * contributes nothing rather than costing the section its other rows.
+ * returned rather than with the whole cached listing. A handful of hits for one
+ * query is not the listing, so `record: false` keeps them out of it: `hs:` and
+ * `hp:` still find their listing unhydrated and hydrate it themselves. A failing
+ * listing contributes nothing rather than costing the section its other rows.
  */
 async function variantItems(variant: HistoryListVariant, query: string): Promise<PaletteItem[]> {
     const historyStore = useHistoryStore();
     const entries =
         (await fetchQuietly(() =>
-            historyStore.fetchHistoryList(variant, { search: query, limit: ROOT_VARIANT_LIMIT }),
+            historyStore.fetchHistoryList(variant, { search: query, limit: ROOT_VARIANT_LIMIT, record: false }),
         )) ?? [];
     return rankHistories(entries as unknown as HistoryEntryLike[], variant, query);
 }

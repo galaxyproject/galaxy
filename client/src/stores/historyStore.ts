@@ -81,7 +81,13 @@ export interface FetchHistoryListOptions {
     sortDesc?: boolean;
     /** Discard the cached ids of this variant instead of merging into them. */
     replace?: boolean;
-    /** Merge summaries by id without recording this request as the canonical variant listing. */
+    /**
+     * Whether the fetched entries make up the cached listing of this variant.
+     * Defaults to `true`. A one-off search that is not the listing (the command
+     * palette's root fan-out, say) sets it to `false`: the entries are still
+     * cached as summaries, but the variant's id list, total and loaded flag are
+     * left alone, so a later listing is neither shortened nor skipped.
+     */
     record?: boolean;
 }
 
@@ -554,7 +560,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * histories are updated in place.
      *
      * @param variant Which listing to fetch
-     * @param options Pagination, sorting and search options
+     * @param options Pagination, sorting, search and caching options
      * @returns The fetched entries, in the order the backend returned them
      */
     function fetchHistoryList(
@@ -618,6 +624,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 listedHistoriesTotal.value[variant] = result.total;
                 listedHistoriesLoaded.value[variant] = true;
             } else {
+                // the entries answer this request alone, so they are cached as
+                // summaries without joining (or completing) the listing
                 mergeListedHistories(result.data);
             }
             return result.data.map((history) => listedHistories.value[history.id] ?? history);
