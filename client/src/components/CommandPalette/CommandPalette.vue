@@ -194,6 +194,9 @@ function buildContext(): PaletteContext {
     return {
         canUseUnprivilegedTools: unprivilegedToolStore.canUseUnprivilegedTools ?? false,
         config: {
+            allow_local_account_creation: config.value?.allow_local_account_creation,
+            // an unset list arrives as null, so it is normalized once here
+            command_palette_disabled_providers: config.value?.command_palette_disabled_providers ?? [],
             enable_notification_system: config.value?.enable_notification_system,
             interactivetools_enable: config.value?.interactivetools_enable,
             llm_api_configured: config.value?.llm_api_configured,
@@ -747,11 +750,7 @@ watchImmediate(isPaletteOpen, (open) => {
         @close="onDialogClose"
         @mousedown="onDialogMousedown">
         <div class="palette-input">
-            <FontAwesomeIcon
-                class="palette-input-icon"
-                fixed-width
-                :icon="inputIcon"
-                :spin="searching" />
+            <FontAwesomeIcon class="palette-input-icon" fixed-width :icon="inputIcon" :spin="searching" />
 
             <button
                 v-if="badgeText"
