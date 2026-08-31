@@ -103,6 +103,10 @@ describe("CommandPalette", () => {
         await settle();
     }
 
+    function optionRow(text: string) {
+        return wrapper.findAll("[data-description='palette option']").wrappers.find((row) => row.text().includes(text));
+    }
+
     function sectionIds() {
         return wrapper
             .findAll("[data-description^='palette section ']")
@@ -474,6 +478,19 @@ describe("CommandPalette", () => {
 
         await type("workflows");
         expect(category("all").attributes("aria-selected")).toBe("true");
+    });
+
+    it("renders entity names verbatim instead of looking them up in the locale", async () => {
+        const pageStore = usePageStore();
+        // a name colliding with an object property: localizing it would render
+        // whatever the locale dictionary resolves that key to
+        pageStore.summariesById = { p1: { id: "p1", title: "constructor", slug: "notes" } as never };
+        pageStore.idsByVariant.my = ["p1"];
+
+        await type("constructor");
+        const row = optionRow("constructor");
+        expect(row).toBeDefined();
+        expect(row?.text()).not.toContain("native code");
     });
 
     it("keeps a scope token the user may not use as plain text", async () => {
