@@ -18,8 +18,9 @@ import { useUserStore } from "@/stores/userStore";
 import { localize } from "@/utils/localization";
 
 import { findPaletteProvider, paletteProviders, rankPaletteItems } from "./providers";
+import { ALL_CATEGORY, availableCategories, categoryScope, type PaletteCategory } from "./providers/categories";
 import { ACTIONS_SCOPE, availableScopes, type ScopeDefinition } from "./providers/scopes";
-import type { PaletteContext, PaletteItem } from "./types";
+import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "./types";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
 import { scorePaletteItems } from "./utilities";
 
@@ -28,6 +29,12 @@ import CommandPaletteItem from "./CommandPaletteItem.vue";
 const SEARCH_DEBOUNCE = 150;
 /** Cap per section on an empty query so defaults stay scannable */
 const MAX_EMPTY_QUERY_ITEMS = 8;
+/** Cap per section of the "All" fan-out, so every provider stays visible */
+const MAX_ROOT_SECTION_ITEMS = 5;
+/** Cap per section once a single category narrows the results */
+const MAX_CATEGORY_SECTION_ITEMS = 15;
+/** `selectedIndex` value selecting the category row instead of a result */
+const CATEGORY_ROW_INDEX = -1;
 /** Safety net for environments that never fire `transitionend` (jsdom, backgrounded tabs) */
 const CLOSE_TRANSITION_FALLBACK = 200;
 
@@ -69,6 +76,8 @@ const inputElement = ref<HTMLInputElement | null>(null);
 const searching = ref(false);
 const sections = ref<ResultSection[]>([]);
 const selectedIndex = ref(0);
+/** Category the root results are narrowed to, "All" while nothing is picked */
+const activeCategoryId = ref(ALL_CATEGORY.id);
 /** Whether ctrl/cmd is currently down, so the palette can preview "new tab" */
 const modifierHeld = ref(false);
 /** Scope whose provider has not landed yet; renders the temporary hint row */
@@ -84,6 +93,23 @@ const selectedItem = computed(() => flatItems.value[selectedIndex.value]);
 const activeDescendant = computed(() => (selectedItem.value ? optionId(selectedIndex.value) : undefined));
 
 const modifierLabel = computed(() => (eventStore.isMac ? "⌘" : "Ctrl+"));
+
+const paletteCategories = computed(() => availableCategories(buildContext()));
+
+/** The row only narrows an unscoped search, so it needs a query to narrow */
+const showCategoryRow = computed(() => mode.value.type === "root" && query.value !== "");
+
+/** Whether the arrow keys currently move the category instead of the selection */
+const categoryRowSelected = computed(() => showCategoryRow.value && selectedIndex.value === CATEGORY_ROW_INDEX);
+
+/** Category narrowing the results, unset while "All" is active or hidden */
+const activeCategory = computed(() => {
+    if (!showCategoryRow.value) {
+        return undefined;
+    }
+    const category = paletteCategories.value.find((entry) => entry.id === activeCategoryId.value);
+    return category?.providerId ? category : undefined;
+});
 
 const badgeAriaLabel = computed(() => `${localize("Remove filter")}: ${badgeLabel.value}`);
 
@@ -122,6 +148,14 @@ const footerHints = computed<FooterHint[]>(() => {
     const activeMode = mode.value;
     const hints: FooterHint[] = [{ id: "navigate", keys: "↑↓", label: localize("navigate") }];
 
+    if (showCategoryRow.value) {
+        hints.push({
+            active: categoryRowSelected.value,
+            id: "category",
+            keys: "←→",
+            label: localize("category"),
+        });
+    }
     if (activeMode.type === "action") {
         hints.push({ id: "run", keys: "↵", label: localize("run") });
     } else if (activeMode.type === "help") {
@@ -238,8 +272,14 @@ async function providerItems(providerId: string, ctx: PaletteContext): Promise<P
     );
 }
 
+function limitSections(list: ResultSection[], limit: number): ResultSection[] {
+    return list.map((section) =>
+        section.items.length > limit ? { ...section, items: section.items.slice(0, limit) } : section,
+    );
+}
+
 /** Unscoped search: every provider contributes a section, best match first */
-async function rootSections(ctx: PaletteContext): Promise<ResultSection[]> {
+async function fanOutSections(ctx: PaletteContext): Promise<ResultSection[]> {
     const scored = await Promise.all(
         paletteProviders.map(async (provider) => {
             const items = await providerItems(provider.id, ctx);
@@ -259,6 +299,44 @@ async function rootSections(ctx: PaletteContext): Promise<ResultSection[]> {
     return scored.sort((a, b) => b.score - a.score).map(({ score: _score, ...section }) => section);
 }
 
+/**
+ * Root mode: the fan-out over every provider, or — once the category row picked
+ * one — that single provider searched through its own scope.
+ */
+async function rootSections(ctx: PaletteContext): Promise<ResultSection[]> {
+    const category = activeCategory.value;
+    if (category) {
+        return limitSections(await categorySections(category, ctx), MAX_CATEGORY_SECTION_ITEMS);
+    }
+    const fanOut = await fanOutSections(ctx);
+    return query.value ? limitSections(fanOut, MAX_ROOT_SECTION_ITEMS) : fanOut;
+}
+
+/**
+ * A category is a soft scope: the provider's own scoped search runs it where
+ * there is one, everything else falls back to its unscoped — and therefore
+ * cache-only — root search.
+ */
+async function categorySections(category: PaletteCategory, ctx: PaletteContext): Promise<ResultSection[]> {
+    const provider = category.providerId ? findPaletteProvider(category.providerId) : undefined;
+    if (!provider) {
+        return [];
+    }
+    return providerSections(provider, categoryScope(category), ctx);
+}
+
+async function providerSections(
+    provider: CommandPaletteProvider,
+    scope: ScopeDefinition | undefined,
+    ctx: PaletteContext,
+): Promise<ResultSection[]> {
+    if (scope && provider.searchScoped) {
+        const scoped = await withoutFailing(provider.id, () => provider.searchScoped!(scope, query.value, ctx), []);
+        return scoped.map((section) => ({ ...section, id: `${provider.id}:${section.id}` }));
+    }
+    return [{ id: provider.id, items: await providerItems(provider.id, ctx), title: provider.title }];
+}
+
 async function scopedSections(scope: ScopeDefinition, ctx: PaletteContext): Promise<ResultSection[]> {
     const provider = findPaletteProvider(scope.providerId);
     // a variant (shared, published, …) can only be served by a scoped search
@@ -266,11 +344,7 @@ async function scopedSections(scope: ScopeDefinition, ctx: PaletteContext): Prom
         pendingScope.value = scope;
         return [];
     }
-    if (provider.searchScoped) {
-        const scoped = await withoutFailing(provider.id, () => provider.searchScoped!(scope, query.value, ctx), []);
-        return scoped.map((section) => ({ ...section, id: `${provider.id}:${section.id}` }));
-    }
-    return [{ id: provider.id, items: await providerItems(provider.id, ctx), title: provider.title }];
+    return providerSections(provider, scope, ctx);
 }
 
 /**
@@ -305,13 +379,16 @@ let searchEpoch = 0;
 async function runSearch() {
     const epoch = ++searchEpoch;
     const ctx = buildContext();
+    // picking a category reruns the search; the row keeps the selection so the
+    // next ←→ moves on to the neighboring category
+    const keepCategoryRow = categoryRowSelected.value;
     pendingScope.value = null;
     searching.value = true;
     try {
         const results = await modeSections(mode.value, ctx);
         if (epoch === searchEpoch) {
             sections.value = results.filter((section) => section.items.length > 0);
-            selectedIndex.value = 0;
+            selectedIndex.value = keepCategoryRow && showCategoryRow.value ? CATEGORY_ROW_INDEX : 0;
         }
     } finally {
         if (epoch === searchEpoch) {
@@ -400,6 +477,47 @@ function onInput(event: Event) {
         // a recognized token was converted into a badge
         input.value = text.value;
     }
+    if (categoryRowSelected.value) {
+        // typing is about the results again, so the selection returns to them
+        selectedIndex.value = 0;
+    }
+}
+
+/**
+ * Vertical traversal. The category row rides along as one more stop above the
+ * first result, so ↑ from it — or wrapping past the last item — selects it.
+ */
+function moveSelection(delta: 1 | -1) {
+    const count = flatItems.value.length;
+    if (!showCategoryRow.value) {
+        if (count > 0) {
+            selectedIndex.value = (Math.max(selectedIndex.value, 0) + delta + count) % count;
+        }
+        return;
+    }
+    const stops = count + 1;
+    const position = selectedIndex.value + 1;
+    selectedIndex.value = ((position + delta + stops) % stops) - 1;
+}
+
+/** Moving onto a category applies it right away, no confirmation needed */
+function selectCategory(categoryId: string) {
+    activeCategoryId.value = categoryId;
+    selectedIndex.value = CATEGORY_ROW_INDEX;
+    runSearch();
+}
+
+function moveCategory(delta: 1 | -1) {
+    const categories = paletteCategories.value;
+    const current = categories.findIndex((category) => category.id === activeCategoryId.value);
+    const next = categories[(Math.max(current, 0) + delta + categories.length) % categories.length];
+    if (next) {
+        selectCategory(next.id);
+    }
+}
+
+function resetCategory() {
+    activeCategoryId.value = ALL_CATEGORY.id;
 }
 
 function dismissBadge() {
@@ -408,18 +526,22 @@ function dismissBadge() {
 }
 
 function onKeydown(event: KeyboardEvent) {
-    const count = flatItems.value.length;
     switch (event.key) {
         case "ArrowDown":
             event.preventDefault();
-            if (count > 0) {
-                selectedIndex.value = (selectedIndex.value + 1) % count;
-            }
+            moveSelection(1);
             break;
         case "ArrowUp":
             event.preventDefault();
-            if (count > 0) {
-                selectedIndex.value = (selectedIndex.value - 1 + count) % count;
+            moveSelection(-1);
+            break;
+        case "ArrowLeft":
+        case "ArrowRight":
+            // hijacked only while the category row is selected — everywhere else
+            // the arrows keep moving the caret through the typed text
+            if (categoryRowSelected.value) {
+                event.preventDefault();
+                moveCategory(event.key === "ArrowRight" ? 1 : -1);
             }
             break;
         case "Backspace": {
@@ -432,6 +554,11 @@ function onKeydown(event: KeyboardEvent) {
         }
         case "Enter":
             event.preventDefault();
+            if (categoryRowSelected.value) {
+                // the category is already applied, enter just returns to the list
+                selectedIndex.value = 0;
+                break;
+            }
             runItem(selectedItem.value, event);
             break;
         case "Escape":
@@ -463,6 +590,14 @@ function onDialogClose() {
 watch(selectedIndex, () => {
     if (selectedItem.value) {
         document.getElementById(optionId(selectedIndex.value))?.scrollIntoView({ block: "nearest" });
+    }
+});
+
+// a narrowed search only ever survives the query it was picked for
+watch(mode, resetCategory);
+watch(showCategoryRow, (visible) => {
+    if (!visible) {
+        resetCategory();
     }
 });
 
@@ -586,6 +721,7 @@ onBeforeUnmount(() => {
 watchImmediate(isPaletteOpen, (open) => {
     if (open) {
         reset();
+        resetCategory();
         // hydrate the tool store so recent tools resolve to names
         toolStore.fetchTools()?.catch?.(() => {});
         runSearch();
@@ -642,6 +778,29 @@ watchImmediate(isPaletteOpen, (open) => {
                 :aria-activedescendant="activeDescendant"
                 @input="onInput"
                 @keydown="onKeydown" />
+        </div>
+
+        <!-- Focus stays in the combobox input; the row is driven by ↑↓←→ -->
+        <div
+            v-if="showCategoryRow"
+            class="palette-categories"
+            :class="{ 'row-selected': categoryRowSelected }"
+            role="tablist"
+            :aria-label="localize('Result categories')"
+            data-description="palette categories">
+            <button
+                v-for="category in paletteCategories"
+                :key="category.id"
+                class="palette-category"
+                :class="{ active: category.id === activeCategoryId }"
+                type="button"
+                role="tab"
+                tabindex="-1"
+                :aria-selected="category.id === activeCategoryId ? 'true' : 'false'"
+                :data-description="`palette category ${category.id}`"
+                @click="selectCategory(category.id)">
+                {{ localize(category.label) }}
+            </button>
         </div>
 
         <div :id="listboxId" class="palette-results" role="listbox" aria-label="Search results">
@@ -771,6 +930,39 @@ $palette-transition: 130ms ease-out;
             &::placeholder {
                 color: var(--color-grey-400);
             }
+        }
+    }
+
+    .palette-categories {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-1);
+        padding: var(--spacing-2) var(--spacing-3);
+        border-bottom: 1px solid var(--color-grey-200);
+        overflow-x: auto;
+
+        .palette-category {
+            flex: none;
+            padding: 0 var(--spacing-2);
+            border: 1px solid transparent;
+            border-radius: var(--spacing-2);
+            background: none;
+            color: var(--color-grey-600);
+            font-size: var(--font-size-small);
+            white-space: nowrap;
+
+            &.active {
+                border-color: var(--color-blue-300);
+                background-color: var(--color-blue-100);
+                color: var(--color-blue-800);
+                font-weight: 600;
+            }
+        }
+
+        // the row is one stop of the arrow key traversal, so it shows whether
+        // the next ←→ would move the category or the caret
+        &.row-selected .palette-category.active {
+            box-shadow: 0 0 0 2px var(--color-blue-600);
         }
     }
 
