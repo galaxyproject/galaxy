@@ -293,6 +293,31 @@ describe("CommandPalette", () => {
         expect(wrapper.text()).toContain("Upload data");
     });
 
+    it("documents every binding in the help keys section", async () => {
+        await type("?");
+        const text = wrapper.text();
+        expect(text).toContain("Keys");
+        expect(text).toContain("Open the selected result");
+        expect(text).toContain("Remove the active filter");
+        // the actions row stays listed above the scopes and the keys
+        expect(text).toContain("Search actions");
+        expect(input().attributes("placeholder")).toContain("shortcuts");
+
+        // the key badge is decorative, so the row names its shortcut itself
+        const keyRow = wrapper
+            .findAll("[data-description='palette option']")
+            .wrappers.find((row) => row.text().includes("Open the selected result"));
+        expect(keyRow?.attributes("aria-label")).toBe("Open the selected result (↵)");
+    });
+
+    it("names the syntax in the root placeholder and the filter in a scoped one", async () => {
+        expect(input().attributes("placeholder")).toContain("> actions");
+        expect(input().attributes("placeholder")).toContain("? help");
+
+        await type("t:");
+        expect(input().attributes("placeholder")).toBe("Search tools…");
+    });
+
     it("navigates to the selected item on enter and closes", async () => {
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
         await type("workflows");
@@ -347,7 +372,7 @@ describe("CommandPalette", () => {
 
         await type("t: align");
         expect(hint("escape").text()).toContain("clear");
-        expect(hint("remove-scope").exists()).toBe(true);
+        expect(hint("remove-scope").text()).toContain("remove filter");
         expect(hint("help").exists()).toBe(false);
 
         await press("Escape");

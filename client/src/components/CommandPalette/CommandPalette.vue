@@ -38,7 +38,8 @@ const CATEGORY_ROW_INDEX = -1;
 /** Safety net for environments that never fire `transitionend` (jsdom, backgrounded tabs) */
 const CLOSE_TRANSITION_FALLBACK = 200;
 
-const ROOT_PLACEHOLDER = "Search Galaxy…  (> actions, w: t: … scopes, ? help)";
+const ROOT_PLACEHOLDER = "Search Galaxy…  > actions · w: t: … scopes · ? help";
+const HELP_PLACEHOLDER = "Search shortcuts…";
 
 interface ResultSection {
     id: string;
@@ -111,15 +112,22 @@ const activeCategory = computed(() => {
     return category?.providerId ? category : undefined;
 });
 
-const badgeAriaLabel = computed(() => `${localize("Remove filter")}: ${badgeLabel.value}`);
+/** Badge text, localized here because the providers keep their strings in English */
+const badgeText = computed(() => (badgeLabel.value ? localize(badgeLabel.value) : undefined));
+
+const badgeAriaLabel = computed(() => `${localize("Remove filter")}: ${badgeText.value}`);
 
 const placeholder = computed(() => {
     const activeMode = mode.value;
     if (activeMode.type === "action") {
-        return activeMode.action.argumentMode?.placeholder ?? searchLabel(activeMode.action.title);
+        const argumentMode = activeMode.action.argumentMode;
+        return argumentMode ? localize(argumentMode.placeholder) : searchLabel(localize(activeMode.action.title));
     }
     if (activeMode.type === "scoped") {
         return searchLabel(localize(activeMode.scope.label));
+    }
+    if (activeMode.type === "help") {
+        return localize(HELP_PLACEHOLDER);
     }
     return localize(ROOT_PLACEHOLDER);
 });
@@ -139,7 +147,7 @@ const escapeLabel = computed(() => {
 const secondaryLabel = computed(() => {
     const item = selectedItem.value;
     if (item?.argumentMode) {
-        return localize(item.argumentMode.label ?? "add an argument");
+        return localize(item.argumentMode.label ?? "options");
     }
     return item?.secondaryAction ? localize(item.secondaryAction.label) : undefined;
 });
@@ -174,9 +182,9 @@ const footerHints = computed<FooterHint[]>(() => {
         hints.push({ id: "secondary", keys: "⇧↵", label: secondaryLabel.value });
     }
     if (activeMode.type === "scoped") {
-        hints.push({ id: "remove-scope", keys: "⌫", label: localize("remove scope") });
+        hints.push({ id: "remove-scope", keys: "⌫", label: localize("remove filter") });
     } else if (activeMode.type === "action") {
-        hints.push({ id: "remove-action", keys: "⌫", label: localize("remove action") });
+        hints.push({ id: "remove-action", keys: "⌫", label: localize("remove filter") });
     }
 
     hints.push({ id: "escape", keys: "esc", label: escapeLabel.value });
@@ -191,7 +199,7 @@ const scopeHint = computed(() => {
     if (!scope) {
         return undefined;
     }
-    return `${scope.key}: ${localize("searches")} ${localize(scope.label)} — ${localize("provider loading soon")}`;
+    return `${localize(scope.label)} — ${localize("this filter has no results provider yet.")}`;
 });
 
 function searchLabel(subject: string) {
@@ -240,10 +248,34 @@ function scopeHelpItem(scope: ScopeDefinition): PaletteItem {
     };
 }
 
+/** A key binding row: the description reads as the title, the keys as the badge */
+function helpKeyItem(id: string, keys: string, title: string, keywords: string): PaletteItem {
+    return { id: `help:key:${id}`, keywords, shortcut: keys, title: localize(title) };
+}
+
+/** The bindings the palette answers to, documented in the help panel */
+function helpKeyItems(): PaletteItem[] {
+    return [
+        helpKeyItem("open", "↵", "Open the selected result", "enter return open run"),
+        helpKeyItem("secondary", "⇧↵", "Secondary action, or the options of an action", "shift enter options argument"),
+        helpKeyItem(
+            "new-tab",
+            `${modifierLabel.value}↵`,
+            "Open in a new tab, keeping the palette open",
+            "command control meta enter tab window",
+        ),
+        helpKeyItem("navigate", "↑↓", "Move through the results", "arrow up down navigate select"),
+        helpKeyItem("category", "←→", "Move between categories, once the category row is selected", "arrow left right"),
+        helpKeyItem("remove", "⌫", "Remove the active filter", "backspace delete scope action badge"),
+        helpKeyItem("escape", "esc", "Clear the text, then the filter, then close", "escape back close clear"),
+    ];
+}
+
 function helpSections(ctx: PaletteContext): ResultSection[] {
     return [
-        { id: "help:actions", items: [scopeHelpItem(ACTIONS_SCOPE)], title: localize("Actions") },
-        { id: "help:scopes", items: availableScopes(ctx).map(scopeHelpItem), title: localize("Scopes") },
+        { id: "help:actions", items: [scopeHelpItem(ACTIONS_SCOPE)], title: "Actions" },
+        { id: "help:scopes", items: availableScopes(ctx).map(scopeHelpItem), title: "Scopes" },
+        { id: "help:keys", items: helpKeyItems(), title: "Keys" },
     ].map((section) => ({ ...section, items: rankPaletteItems(section.items, query.value) }));
 }
 
@@ -740,7 +772,7 @@ watchImmediate(isPaletteOpen, (open) => {
         ref="dialogElement"
         class="command-palette"
         :class="{ 'palette-open': paletteVisible }"
-        aria-label="Command palette"
+        :aria-label="localize('Command palette')"
         @click="onClickDialog"
         @close="onDialogClose">
         <div class="palette-input">
@@ -751,13 +783,13 @@ watchImmediate(isPaletteOpen, (open) => {
                 :spin="searching" />
 
             <button
-                v-if="badgeLabel"
+                v-if="badgeText"
                 class="palette-badge"
                 type="button"
                 data-description="palette badge"
                 :aria-label="badgeAriaLabel"
                 @click="dismissBadge">
-                {{ badgeLabel }}
+                {{ badgeText }}
 
                 <FontAwesomeIcon :icon="faTimes" />
             </button>
@@ -769,8 +801,8 @@ watchImmediate(isPaletteOpen, (open) => {
                 role="combobox"
                 autocomplete="off"
                 spellcheck="false"
-                aria-label="Search Galaxy"
                 aria-haspopup="listbox"
+                :aria-label="localize('Search Galaxy')"
                 aria-expanded="true"
                 :placeholder="placeholder"
                 :value="text"
@@ -803,14 +835,14 @@ watchImmediate(isPaletteOpen, (open) => {
             </button>
         </div>
 
-        <div :id="listboxId" class="palette-results" role="listbox" aria-label="Search results">
+        <div :id="listboxId" class="palette-results" role="listbox" :aria-label="localize('Search results')">
             <div
                 v-for="(section, sectionIdx) in sections"
                 :key="section.id"
                 role="group"
-                :aria-label="section.title"
+                :aria-label="localize(section.title)"
                 :data-description="`palette section ${section.id}`">
-                <div class="palette-section-title" aria-hidden="true">{{ section.title }}</div>
+                <div class="palette-section-title" aria-hidden="true">{{ localize(section.title) }}</div>
 
                 <CommandPaletteItem
                     v-for="(item, itemIdx) in section.items"
