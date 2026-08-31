@@ -990,6 +990,17 @@ class SelectToolParameter(ToolParameter):
     [('argument', None), ('display', None), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('textable', False), ('type', 'select'), ('value', ['y', 'z'])]
     >>> print(p.to_param_dict_string(["y", "z"]))
     y,z
+    >>> one = SelectToolParameter(None, XML(
+    ... '''
+    ... <param name="_name" type="select" multiple="true">
+    ...     <option value="x">x_label</option>
+    ...     <option value="y" selected="true">y_label</option>
+    ... </param>
+    ... '''))
+    >>> one.get_initial_value(trans, {})
+    ['y']
+    >>> print(one.to_param_dict_string(["y"]))
+    y
     """
 
     value_label: str
