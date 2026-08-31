@@ -9,6 +9,7 @@ import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 /** Entity type this provider records in the palette MRU (`useRecentPaletteItems`) */
@@ -71,20 +72,20 @@ function itemId(sectionId: string, historyId: string): string {
 /**
  * Whether the current user may make this history their current one.
  *
- * `h:` and `ha:` list the user's own histories by definition. The shared and
- * published listings may mix owners, and are requested with the `username` key
- * so the owner is known. Own histories are serialized without `username`, but
- * the store deliberately keeps foreign listings out of `storedHistories`, so
- * being cached there identifies a history as the user's own.
+ * The owner decides it: the shared and published listings may mix owners and
+ * are requested with the `username` key, so whenever an owner is known it is
+ * matched against the current user. Being cached in `storedHistories` is not
+ * proof of ownership -- any history opened by id lands there, including foreign
+ * published ones. Only the listings that are the user's own by definition (`h:`
+ * and `ha:`, both served by endpoints that never return another user's history)
+ * count an entry without an owner as owned.
  */
 function ownsHistory(history: HistoryEntryLike, variant: HistoryVariant): boolean {
-    if (variant === "archived") {
-        return true;
+    const owner = history.username ?? history.owner;
+    if (owner) {
+        return useUserStore().matchesCurrentUsername(owner);
     }
-    if (history.username) {
-        return useUserStore().matchesCurrentUsername(history.username);
-    }
-    return Boolean(useHistoryStore().storedHistories[history.id]);
+    return variant === "my" || variant === "archived";
 }
 
 function updatedLabel(updateTime?: string): string | undefined {
@@ -172,18 +173,32 @@ function cachedHistories(variant: HistoryVariant): HistoryEntryLike[] {
     return historyStore.getListedHistories(variant) as unknown as HistoryEntryLike[];
 }
 
-/** Fills an empty cache once; a populated cache answers the keystroke as is */
+/**
+ * Fills an empty cache once; a populated cache answers the keystroke as is and
+ * is only refreshed in the background (see {@link refreshListWhenStale}).
+ *
+ * Both store calls share whatever request is already running, so a keystroke
+ * landing during the very first fetch waits for it instead of rendering the
+ * still empty cache as "no results".
+ */
 async function ensureHydrated(variant: HistoryVariant): Promise<void> {
     const historyStore = useHistoryStore();
+    const key = `histories:${variant}`;
     if (variant === "my") {
-        if (historyStore.histories.length === 0 && !historyStore.historiesLoading) {
+        if (historyStore.histories.length === 0) {
             // unpaginated: the whole own list, so later keystrokes stay local
             await fetchQuietly(() => historyStore.loadHistories(false));
+            markListRefreshed(key);
+        } else {
+            refreshListWhenStale(key, () => historyStore.loadHistories(false));
         }
         return;
     }
     if (!historyStore.hasLoadedHistoryList(variant)) {
         await fetchQuietly(() => historyStore.ensureHistoryListLoaded(variant, { limit: LIST_PAGE_SIZE }));
+        markListRefreshed(key);
+    } else {
+        refreshListWhenStale(key, () => historyStore.fetchHistoryList(variant, { limit: LIST_PAGE_SIZE }));
     }
 }
 

@@ -4,10 +4,12 @@ import { format } from "date-fns";
 import type { PageSummary } from "@/api/pages";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { type PageListVariant, usePageStore } from "@/stores/pageStore";
+import { useUserStore } from "@/stores/userStore";
 import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 /** Entity type used for the palette's most-recently-used list */
@@ -40,6 +42,17 @@ function formatUpdateTime(updateTime: unknown): string {
     }
 }
 
+/**
+ * Whether the page editor may be offered for this row. The `p:` listing is
+ * requested with `showOwn` alone, so everything it returns is the user's own;
+ * every other source (the `pp:` listing, and the palette's own recents, which
+ * remember pages from both scopes) may hold foreign pages and is decided by the
+ * owner's username.
+ */
+function ownsPage(page: PageSummary, variant: PageListVariant): boolean {
+    return variant === "my" || useUserStore().matchesCurrentUsername(page.username);
+}
+
 function pageToItem(page: PageSummary, variant: PageListVariant): PaletteItem {
     const item: PaletteItem = {
         id: `pages:${page.id}`,
@@ -50,7 +63,7 @@ function pageToItem(page: PageSummary, variant: PageListVariant): PaletteItem {
         title: page.title,
         to: pageDisplayPath(page.id),
     };
-    if (variant === "my") {
+    if (ownsPage(page, variant)) {
         item.secondaryAction = { label: "Edit content", to: pageEditorPath(page.id) };
     }
     return item;
@@ -69,24 +82,13 @@ function cachedItems(variant: PageListVariant): PaletteItem[] {
 }
 
 /**
- * Whether the cached id list can answer any query on its own. `totalMatches` is
- * only recorded for full listings, so a cache filled by searches alone (total 0
- * with entries cached) still has to ask the backend.
- */
-function isCacheComplete(variant: PageListVariant): boolean {
-    const pageStore = usePageStore();
-    if (!pageStore.isLoaded(variant)) {
-        return false;
-    }
-    const cached = pageStore.idsByVariant[variant].length;
-    const total = pageStore.totalMatchesByVariant[variant];
-    return total === 0 ? cached === 0 : cached >= total;
-}
-
-/**
  * Renders from the store cache first and only asks the backend when the cache
  * was never filled or cannot hold enough matches; results are merged into the
  * store by `fetchPages`, so nothing is duplicated palette side.
+ *
+ * Completeness comes from `pageStore.isComplete`, which only trusts the total
+ * reported by an unfiltered listing: a search that found nothing says nothing
+ * about the rest of the list and must not silence later requests.
  *
  * @param cacheOnly never request anything, not even to fill an empty cache —
  * the unscoped root fan-out runs on every provider at once and only filters what
@@ -104,7 +106,7 @@ async function storeFirstItems(
         return items.slice(0, limit);
     }
 
-    const needsMore = items.length < limit && !isCacheComplete(variant);
+    const needsMore = items.length < limit && !pageStore.isComplete(variant);
     if (!pageStore.isLoaded(variant) || needsMore) {
         try {
             await pageStore.fetchPages(variant, query ? { search: query, limit } : { limit: SECTION_LIMIT });
@@ -112,6 +114,9 @@ async function storeFirstItems(
         } catch {
             // keep whatever the cache holds; the palette never blocks on errors
         }
+        markListRefreshed(`pages:${variant}`);
+    } else {
+        refreshListWhenStale(`pages:${variant}`, () => pageStore.fetchPages(variant, { limit: SECTION_LIMIT }));
     }
     return items.slice(0, limit);
 }
@@ -123,7 +128,9 @@ function recentItems(query: string, limit: number): PaletteItem[] {
     const items = readRecentItems(PAGE_MRU_TYPE).map((recent) => {
         const page = pageStore.getPageById(recent.id);
         return page
-            ? { ...pageToItem(page, "my"), to: recent.to ?? pageDisplayPath(recent.id) }
+            ? // the palette remembers pages from both scopes, so the editor is
+              // offered on the owner's username rather than on the scope
+              { ...pageToItem(page, "published"), to: recent.to ?? pageDisplayPath(recent.id) }
             : {
                   id: `pages:${recent.id}`,
                   icon: faFileAlt,
