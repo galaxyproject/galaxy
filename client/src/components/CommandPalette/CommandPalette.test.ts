@@ -575,6 +575,34 @@ describe("CommandPalette", () => {
         expect(focus).toHaveBeenCalled();
     });
 
+    it("routes a native dialog cancel through the stepwise escape", async () => {
+        await type("t: align");
+        const dialog = wrapper.find("dialog");
+
+        function sendCancel() {
+            const event = new Event("cancel", { cancelable: true });
+            dialog.element.dispatchEvent(event);
+            return event;
+        }
+
+        // the browser would close the dialog outright, the palette clears first
+        const cleared = sendCancel();
+        await settle();
+        expect(cleared.defaultPrevented).toBe(true);
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(inputValue()).toBe("");
+        expect(badge().exists()).toBe(true);
+
+        sendCancel();
+        await settle();
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().exists()).toBe(false);
+
+        sendCancel();
+        await settle();
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
     it("hands the selection back to the results when the query is emptied on the category row", async () => {
         await type("workflows");
         await press("ArrowUp");
