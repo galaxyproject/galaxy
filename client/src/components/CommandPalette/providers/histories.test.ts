@@ -8,6 +8,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import type { PaletteContext } from "../types";
 import { historiesProvider } from "./histories";
+import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 const sseState = vi.hoisted(() => ({
@@ -168,6 +169,7 @@ describe("historiesProvider", () => {
         setActivePinia(createPinia());
         recent = [];
         vi.clearAllMocks();
+        resetListRefreshTracking();
         mockHistoriesApi();
         signIn();
     });
@@ -259,6 +261,50 @@ describe("historiesProvider", () => {
         expect(getArchivedHistories).toHaveBeenCalled();
         expect(item?.title).toBe("Archived assembly");
         expect(item?.secondaryAction?.label).toBe("Set as current");
+    });
+
+    it("hides set-as-current for a foreign listing entry that happens to be cached", async () => {
+        // no `username` on the entry, but the user opened it before, so it sits
+        // in `storedHistories` alongside their own histories
+        const foreign = history("h7", "Public assembly", "2026-08-25T10:00:00");
+        getPublishedHistories.mockResolvedValue({ data: [foreign], total: 1 });
+        useHistoryStore().setHistory(foreign as never);
+
+        const [item] = (await scopedSections(PUBLISHED_SCOPE)).at(-1)?.items ?? [];
+
+        expect(item?.title).toBe("Public assembly");
+        expect(item?.secondaryAction).toBeUndefined();
+    });
+
+    it("waits for the own-history fetch a keystroke arrives during", async () => {
+        // both calls start while nothing is cached: the second must await the
+        // first request instead of rendering the still empty cache
+        const [, searched] = await Promise.all([scopedSections(OWN_SCOPE), scopedSections(OWN_SCOPE, "variant")]);
+
+        expect(searched.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling"]);
+        expect(getHistoryList).toHaveBeenCalledTimes(1);
+    });
+
+    it("waits for the listing fetch a keystroke arrives during", async () => {
+        const [, searched] = await Promise.all([
+            scopedSections(SHARED_SCOPE),
+            scopedSections(SHARED_SCOPE, "alignment"),
+        ]);
+
+        expect(searched.at(-1)?.items.map((i) => i.title)).toEqual(["Shared alignment"]);
+        expect(getSharedHistories).toHaveBeenCalledTimes(1);
+    });
+
+    it("refreshes a hydrated list in the background once the palette reopens later", async () => {
+        await scopedSections(OWN_SCOPE);
+        const callsAfterHydration = getHistoryList.mock.calls.length;
+
+        // a later palette session, past the refresh interval
+        resetListRefreshTracking();
+        const sections = await scopedSections(OWN_SCOPE);
+
+        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
+        expect(getHistoryList.mock.calls.length).toBe(callsAfterHydration + 1);
     });
 
     it("filters the hydrated cache locally, without another backend request", async () => {

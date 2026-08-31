@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadPages, type PageSummary } from "@/api/pages";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { usePageStore } from "@/stores/pageStore";
+import { useUserStore } from "@/stores/userStore";
 
 import type { PaletteContext } from "../types";
 import { pagesProvider } from "./pages";
+import { resetListRefreshTracking } from "./refresh";
 import { findScope, type ScopeDefinition } from "./scopes";
 
 vi.mock("@/api/pages", () => ({
@@ -32,6 +34,16 @@ function mockPages(pages: PageSummary[]) {
     vi.mocked(loadPages).mockResolvedValue({ data: pages, totalMatches: pages.length });
 }
 
+/** Signed in as "me"; `mockPage` hands its pages to "owner" unless told otherwise */
+function signIn(username = "me") {
+    useUserStore().currentUser = {
+        id: "user-1",
+        email: "me@example.org",
+        username,
+        isAnonymous: false,
+    } as never;
+}
+
 function scope(key: string): ScopeDefinition {
     const found = findScope(key);
     if (!found) {
@@ -44,8 +56,10 @@ describe("pagesProvider", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.clearAllMocks();
+        resetListRefreshTracking();
         localStorage.clear();
         useRecentPaletteItems().clearRecentItems();
+        signIn();
     });
 
     describe("searchScoped", () => {
@@ -80,9 +94,9 @@ describe("pagesProvider", () => {
         });
 
         it("renders from the store cache without a request when it can answer", async () => {
-            const pageStore = usePageStore();
             mockPages([mockPage("a", { title: "Notes" }), mockPage("b", { title: "Other" })]);
-            await pageStore.fetchPages("my");
+            // hydrate through the palette, the way opening the scope does
+            await pagesProvider.searchScoped?.(scope("p"), "", makeCtx());
             vi.mocked(loadPages).mockClear();
 
             const sections = (await pagesProvider.searchScoped?.(scope("p"), "Notes", makeCtx())) ?? [];
@@ -132,6 +146,34 @@ describe("pagesProvider", () => {
 
             expect(sections).toEqual([]);
             expect(loadPages).not.toHaveBeenCalled();
+        });
+
+        it("keeps querying the backend after a search that found nothing", async () => {
+            const pageStore = usePageStore();
+            // the first thing this session ever fetched was a fruitless search:
+            // it says nothing about the rest of the list
+            mockPages([]);
+            await pageStore.fetchPages("my", { search: "zzz" });
+            vi.mocked(loadPages).mockClear();
+            mockPages([mockPage("a", { title: "Notes" })]);
+
+            const sections = (await pagesProvider.searchScoped?.(scope("p"), "Notes", makeCtx())) ?? [];
+
+            expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "Notes" }));
+            expect(sections.at(-1)?.items.map((item) => item.id)).toEqual(["pages:a"]);
+        });
+
+        it("refreshes a complete cache in the background once it goes stale", async () => {
+            mockPages([mockPage("a")]);
+            await pagesProvider.searchScoped?.(scope("p"), "", makeCtx());
+            expect(loadPages).toHaveBeenCalledTimes(1);
+
+            // a later palette session, past the refresh interval
+            resetListRefreshTracking();
+            const sections = (await pagesProvider.searchScoped?.(scope("p"), "", makeCtx())) ?? [];
+
+            expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
+            expect(loadPages).toHaveBeenCalledTimes(2);
         });
 
         it("keeps serving the cache when the request fails", async () => {
@@ -187,6 +229,21 @@ describe("pagesProvider", () => {
             expect(items[1]?.title).toBe("Page a");
             expect(items[1]?.subtitle).toBe("page-a · Aug 30, 2026");
             expect(items[0]?.title).toBe("Uncached");
+        });
+
+        it("offers the editor on a remembered page only when the user owns it", () => {
+            usePageStore().savePages("published", [
+                mockPage("mine", { username: "me" }),
+                mockPage("theirs", { username: "someone-else" }),
+            ]);
+            useRecentPaletteItems().addRecentItem({ type: "page", id: "theirs", name: "Page theirs" });
+            useRecentPaletteItems().addRecentItem({ type: "page", id: "mine", name: "Page mine" });
+
+            const items = pagesProvider.emptyQueryItems?.(makeCtx()) ?? [];
+
+            expect(items.map((item) => item.id)).toEqual(["pages:mine", "pages:theirs"]);
+            expect(items[0]?.secondaryAction).toEqual({ label: "Edit content", to: "/pages/editor?id=mine" });
+            expect(items[1]?.secondaryAction).toBeUndefined();
         });
 
         it("is empty for anonymous users", () => {
