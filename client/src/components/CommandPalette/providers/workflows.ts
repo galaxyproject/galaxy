@@ -8,7 +8,7 @@ import { useWorkflowStore, type WorkflowListVariant } from "@/stores/workflowSto
 import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
-import { rankPaletteItems } from "../utilities";
+import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { fetchOrFail } from "./errors";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -21,6 +21,9 @@ const RESULTS_LIMIT = 8;
 const BOOKMARKED_LIMIT = 5;
 const RECENT_LIMIT = 5;
 const ROOT_LIMIT = 5;
+
+/** How many rows the root fan-out asks each searched list for */
+const ROOT_VARIANT_LIMIT = 3;
 
 /** Unscoped search only joins the fan-out once the query is specific enough */
 const MIN_ROOT_QUERY_LENGTH = 2;
@@ -97,24 +100,13 @@ function latestFirst(workflows: WorkflowSummary[]): WorkflowSummary[] {
     return [...workflows].sort((a, b) => (b.update_time ?? "").localeCompare(a.update_time ?? ""));
 }
 
-function dedupeById(items: PaletteItem[]): PaletteItem[] {
-    const seen = new Set<string>();
-    const unique: PaletteItem[] = [];
-    items.forEach((item) => {
-        if (!seen.has(item.id)) {
-            seen.add(item.id);
-            unique.push(item);
-        }
-    });
-    return unique;
-}
-
 /** A failing background fetch degrades to whatever the store already holds */
-async function fetchQuietly(fetch: () => Promise<unknown>) {
+async function fetchQuietly<T>(fetch: () => Promise<T>): Promise<T | undefined> {
     try {
-        await fetch();
+        return await fetch();
     } catch (error) {
         console.debug("Command palette could not fetch workflows", error);
+        return undefined;
     }
 }
 
@@ -176,7 +168,40 @@ async function listItems(
     const remote = workflowStore.getWorkflowList(variant, query).map((workflow) => workflowItem(workflow, variant));
     // the backend over-matches short searches (`search=zqx` comes back with the
     // whole list), so the merged rows are ranked locally just like the cache is
-    return rankPaletteItems(dedupeById([...local, ...remote]), query).slice(0, limit);
+    return rankPaletteItems(dedupePaletteItemsByEntity([...local, ...remote]), query).slice(0, limit);
+}
+
+/** The lists the root fan-out searches on the backend, next to the own cache */
+function rootVariants(isAnonymous: boolean): WorkflowListVariant[] {
+    // an anonymous visitor has neither own nor shared-with-me workflows
+    return isAnonymous ? ["published"] : ["shared", "published"];
+}
+
+/**
+ * One backend search for the root fan-out. The store keys its lists by variant
+ * and query, so the fetched rows are the matches for this query alone; a failing
+ * variant contributes nothing rather than costing the whole section.
+ */
+async function variantItems(variant: WorkflowListVariant, query: string): Promise<PaletteItem[]> {
+    const workflowStore = useWorkflowStore();
+    const workflows =
+        (await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: ROOT_VARIANT_LIMIT }))) ?? [];
+    return workflows.map((workflow) => workflowItem(workflow, variant));
+}
+
+/**
+ * Root mode results: the cached own workflows answer the keystroke instantly,
+ * while the shared and published lists are searched on the backend — the
+ * palette is the one place that finds a workflow without being told where it
+ * lives. Copies of one workflow collapse into the own row, which knows about
+ * its editor; the palette's debounce keeps the request volume down.
+ */
+async function rootItems(query: string, isAnonymous: boolean): Promise<PaletteItem[]> {
+    // the searches start before the cache is filtered, so they run in parallel
+    const listed = Promise.all(rootVariants(isAnonymous).map((variant) => variantItems(variant, query)));
+    const own = isAnonymous ? [] : await listItems("my", query, ROOT_LIMIT, { cacheOnly: true });
+    const merged = dedupePaletteItemsByEntity([own, ...(await listed)].flat());
+    return rankPaletteItems(merged, query).slice(0, ROOT_LIMIT + ROOT_VARIANT_LIMIT);
 }
 
 /** Workflows opened through the palette before, most recently used first */
@@ -227,13 +252,13 @@ export const workflowsProvider: CommandPaletteProvider = {
         }
         return recentItems("", ROOT_LIMIT);
     },
-    /** Root mode fan-out, filtering the cached own list without any request */
+    /** Root mode fan-out over the cached own list and the public ones */
     async search(query: string, ctx: PaletteContext) {
         const trimmed = query.trim();
-        if (ctx.isAnonymous || trimmed.length < MIN_ROOT_QUERY_LENGTH) {
+        if (trimmed.length < MIN_ROOT_QUERY_LENGTH) {
             return [];
         }
-        return listItems("my", trimmed, ROOT_LIMIT, { cacheOnly: true });
+        return rootItems(trimmed, ctx.isAnonymous);
     },
     /**
      * `w:` shows bookmarks, palette recents and the user's latest workflows;

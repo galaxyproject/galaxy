@@ -87,3 +87,23 @@ export function scorePaletteItems(items: PaletteItem[], query: string): ScoredPa
 export function rankPaletteItems(items: PaletteItem[], query: string): PaletteItem[] {
     return scorePaletteItems(items, query).map((scored) => scored.item);
 }
+
+/**
+ * Drops repeated entities from a merged list, keeping the first row of each.
+ *
+ * Item ids are section scoped — `workflows:my:42` and `workflows:published:42`
+ * are one workflow listed twice — so the entity a row stands for is what tells
+ * the copies apart. Callers put the rows they would rather keep first: the own
+ * one, which knows about its editor, wins over the public copy of it.
+ */
+export function dedupePaletteItemsByEntity(items: PaletteItem[]): PaletteItem[] {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+        const key = item.mru ? `${item.mru.type}:${item.mru.id}` : item.id;
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
+}
