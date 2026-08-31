@@ -1118,7 +1118,7 @@ watchImmediate(isPaletteOpen, (open) => {
             <span
                 v-for="hint in footerHints"
                 :key="hint.id"
-                :class="{ 'hint-active': hint.active }"
+                :class="{ 'hint-active': hint.active, 'hint-right': hint.id === 'help' }"
                 :data-description="`palette hint ${hint.id}`">
                 <kbd>{{ hint.keys }}</kbd>
 
@@ -1271,19 +1271,37 @@ $palette-transition: 130ms ease-out;
 
     .palette-footer {
         display: flex;
+        // the hint list grows with the mode, so it wraps rather than overflows
+        flex-wrap: wrap;
         gap: var(--spacing-3);
+        row-gap: var(--spacing-1);
         padding: var(--spacing-1) var(--spacing-3);
         background-color: var(--color-grey-100);
         border-top: 1px solid var(--color-grey-200);
         color: var(--color-grey-600);
         font-size: var(--font-size-small);
 
+        span {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-1);
+            white-space: nowrap;
+        }
+
+        // help is the odd one out: it sits opposite the bindings it explains
+        .hint-right {
+            margin-left: auto;
+        }
+
         kbd {
             background-color: var(--background-color);
             border: 1px solid var(--color-grey-300);
             border-radius: var(--spacing);
             color: var(--color-grey-600);
+            // the ↑↓ ⇧↵ ⌫ glyphs are missing from the monospace default on some platforms
+            font-family: inherit;
             font-size: inherit;
+            line-height: 1.4;
             padding: 0 var(--spacing-1);
         }
 
