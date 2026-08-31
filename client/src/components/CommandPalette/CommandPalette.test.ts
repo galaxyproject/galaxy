@@ -174,9 +174,14 @@ describe("CommandPalette", () => {
             .wrappers.map((section) => section.attributes("data-description"));
     }
 
-    async function holdModifier(down: boolean) {
-        window.dispatchEvent(new KeyboardEvent(down ? "keydown" : "keyup", { key: "Control" }));
+    /** Presses or releases a modifier on the window, as holding it down would */
+    async function holdKey(key: string, down: boolean) {
+        window.dispatchEvent(new KeyboardEvent(down ? "keydown" : "keyup", { key }));
         await wrapper.vm.$nextTick();
+    }
+
+    function secondaryHints() {
+        return wrapper.findAll("[data-description='palette option secondary']");
     }
 
     it("shows actions and navigation sections for an empty query", () => {
@@ -428,19 +433,49 @@ describe("CommandPalette", () => {
         expect(hint("new-tab").classes()).not.toContain("hint-active");
         expect(wrapper.find("[data-description='palette option external']").exists()).toBe(false);
 
-        await holdModifier(true);
+        await holdKey("Control", true);
         expect(hint("open").classes()).not.toContain("hint-active");
         expect(hint("new-tab").classes()).toContain("hint-active");
         // only the selected row previews the external open
         expect(wrapper.findAll("[data-description='palette option external']").length).toBe(1);
 
-        await holdModifier(false);
+        await holdKey("Control", false);
         expect(hint("new-tab").classes()).not.toContain("hint-active");
+    });
+
+    it("previews the secondary binding while shift is held", async () => {
+        await type("> upload");
+        expect(hint("secondary").classes()).not.toContain("hint-active");
+        expect(secondaryHints().length).toBe(0);
+
+        await holdKey("Shift", true);
+        expect(hint("secondary").classes()).toContain("hint-active");
+        expect(hint("open").classes()).not.toContain("hint-active");
+        // only the selected row previews what shift + enter would do
+        expect(secondaryHints().length).toBe(1);
+        expect(secondaryHints().at(0).text()).toContain("pick a method");
+
+        await holdKey("Shift", false);
+        expect(hint("secondary").classes()).not.toContain("hint-active");
+        expect(secondaryHints().length).toBe(0);
+    });
+
+    it("lets shift win over ctrl/cmd while both are held", async () => {
+        await type("> upload");
+        await holdKey("Control", true);
+        expect(wrapper.findAll("[data-description='palette option external']").length).toBe(1);
+
+        // shift+enter runs the secondary behavior, so the row previews that instead
+        await holdKey("Shift", true);
+        expect(hint("secondary").classes()).toContain("hint-active");
+        expect(hint("new-tab").classes()).not.toContain("hint-active");
+        expect(secondaryHints().length).toBe(1);
+        expect(wrapper.find("[data-description='palette option external']").exists()).toBe(false);
     });
 
     it("resets the held modifier when the window loses focus", async () => {
         await type("workflows");
-        await holdModifier(true);
+        await holdKey("Control", true);
         expect(hint("new-tab").classes()).toContain("hint-active");
 
         // opening a new tab steals focus, so the keyup never reaches the window
@@ -448,6 +483,17 @@ describe("CommandPalette", () => {
         await wrapper.vm.$nextTick();
         expect(hint("new-tab").classes()).not.toContain("hint-active");
         expect(hint("open").classes()).toContain("hint-active");
+    });
+
+    it("resets the held shift when the window loses focus", async () => {
+        await type("> upload");
+        await holdKey("Shift", true);
+        expect(hint("secondary").classes()).toContain("hint-active");
+
+        window.dispatchEvent(new Event("blur"));
+        await wrapper.vm.$nextTick();
+        expect(hint("secondary").classes()).not.toContain("hint-active");
+        expect(secondaryHints().length).toBe(0);
     });
 
     it("flips the escape hint between close, clear and back", async () => {
