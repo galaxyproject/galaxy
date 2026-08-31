@@ -7,10 +7,17 @@ import {
     type HistoryContentsStats,
     type HistoryDetailed,
     type HistoryDevDetailed,
+    type HistorySortByLiteral,
     type HistorySummary,
     type HistorySummaryExtended,
 } from "@/api";
-import type { UpdateHistoryPayload } from "@/api/histories";
+import {
+    type AnyHistoryEntry,
+    getArchivedHistories,
+    getPublishedHistories,
+    getSharedHistories,
+    type UpdateHistoryPayload,
+} from "@/api/histories";
 import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { getGalaxyInstance } from "@/app";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -42,6 +49,51 @@ const isLoadingHistory = new Set<string>();
 const retryCounts: { [key: string]: number } = {};
 const CONTENT_STATS_KEYS = ["size", "contents_active", "update_time"] as const;
 
+/** Default number of entries requested per history listing fetch. */
+const HISTORY_LIST_LIMIT = 25;
+
+/**
+ * The cached history listings that are not the current user's own histories.
+ *
+ * Own histories are cached in `storedHistories` (see `loadHistories`), which
+ * also backs the current-history selection. Shared, published and archived
+ * listings are kept apart from it on purpose: they may contain histories owned
+ * by other users, which must never become candidates for the current history.
+ */
+export type HistoryListVariant = "shared" | "published" | "archived";
+
+/** Options for fetching one of the cached history listings. */
+export interface FetchHistoryListOptions {
+    /** Optional free-text search forwarded to the backend. */
+    search?: string;
+    /** Maximum number of entries to fetch. Defaults to `HISTORY_LIST_LIMIT`. */
+    limit?: number;
+    /** Offset of the first entry to fetch. Defaults to `0`. */
+    offset?: number;
+    /** Field to sort by on the backend. Defaults to `update_time`. */
+    sortBy?: HistorySortByLiteral;
+    /** Sort direction on the backend. Defaults to `true` (most recent first). */
+    sortDesc?: boolean;
+    /** Discard the cached ids of this variant instead of merging into them. */
+    replace?: boolean;
+}
+
+function emptyHistoryListIds(): Record<HistoryListVariant, string[]> {
+    return { shared: [], published: [], archived: [] };
+}
+
+function historyListFlags(value: boolean): Record<HistoryListVariant, boolean> {
+    return { shared: value, published: value, archived: value };
+}
+
+function historyListCounts(): Record<HistoryListVariant, number> {
+    return { shared: 0, published: 0, archived: 0 };
+}
+
+function byUpdateTimeDesc(a: AnyHistoryEntry, b: AnyHistoryEntry) {
+    return (b.update_time ?? "").localeCompare(a.update_time ?? "");
+}
+
 export const useHistoryStore = defineStore("historyStore", () => {
     const historiesLoading = ref(false);
     const historiesOffset = ref(0);
@@ -53,6 +105,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const historyLoadErrors = ref<{ [key: string]: Error }>({});
     const changingCurrentHistory = ref(false);
     const knownHistorySizes = new Map<string, number>();
+    /** Summaries of every listed history, keyed by id, shared by all variants. */
+    const listedHistories = ref<{ [key: string]: AnyHistoryEntry }>({});
+    /** Ordered (and deduplicated) history ids per cached listing. */
+    const listedHistoryIds = ref<Record<HistoryListVariant, string[]>>(emptyHistoryListIds());
+    const listedHistoriesLoading = ref<Record<HistoryListVariant, boolean>>(historyListFlags(false));
+    const listedHistoriesLoaded = ref<Record<HistoryListVariant, boolean>>(historyListFlags(false));
+    const listedHistoriesTotal = ref<Record<HistoryListVariant, number>>(historyListCounts());
 
     const histories = computed(() => {
         return Object.values(storedHistories.value)
@@ -119,6 +178,39 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 return "...";
             }
         };
+    });
+
+    /**
+     * Returns the cached entries of a history listing, most recently updated
+     * first. The entries returned by `fetchHistoryList` keep the order the
+     * backend replied with instead.
+     */
+    const getListedHistories = computed(() => {
+        return (variant: HistoryListVariant): AnyHistoryEntry[] => {
+            return listedHistoryIds.value[variant]
+                .map((historyId) => listedHistories.value[historyId])
+                .filter((history): history is AnyHistoryEntry => history !== undefined)
+                .sort(byUpdateTimeDesc);
+        };
+    });
+
+    const sharedHistories = computed(() => getListedHistories.value("shared"));
+    const publishedHistories = computed(() => getListedHistories.value("published"));
+    const archivedHistories = computed(() => getListedHistories.value("archived"));
+
+    /** Whether a listing fetch is currently in flight for the given variant. */
+    const isHistoryListLoading = computed(() => {
+        return (variant: HistoryListVariant) => listedHistoriesLoading.value[variant];
+    });
+
+    /** Whether the given listing has been fetched at least once. */
+    const hasLoadedHistoryList = computed(() => {
+        return (variant: HistoryListVariant) => listedHistoriesLoaded.value[variant];
+    });
+
+    /** Total number of entries the backend reported for the given listing. */
+    const getHistoryListTotal = computed(() => {
+        return (variant: HistoryListVariant) => listedHistoriesTotal.value[variant];
     });
 
     async function setCurrentHistory(historyId: string) {
@@ -397,6 +489,88 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
+    /**
+     * Merges fetched entries into the shared summary map and updates the
+     * ordered id list of the given variant, keeping ids unique.
+     */
+    function setListedHistories(variant: HistoryListVariant, histories: AnyHistoryEntry[], replace = false) {
+        histories.forEach((history) => {
+            const storedHistory = listedHistories.value[history.id];
+            // Incoming summaries may carry fewer fields than what is already
+            // cached (e.g. a search result after a detailed listing), so merge
+            // instead of overwriting.
+            set(listedHistories.value, history.id, storedHistory ? { ...storedHistory, ...history } : history);
+        });
+        const incomingIds = histories.map((history) => history.id);
+        const mergedIds = replace ? incomingIds : [...listedHistoryIds.value[variant], ...incomingIds];
+        listedHistoryIds.value[variant] = Array.from(new Set(mergedIds));
+    }
+
+    /**
+     * Fetches one of the cached history listings and merges the result into the
+     * store. Only the entries which are not cached yet are added; already known
+     * histories are updated in place.
+     *
+     * @param variant Which listing to fetch
+     * @param options Pagination, sorting and search options
+     * @returns The fetched entries, in the order the backend returned them
+     */
+    async function fetchHistoryList(
+        variant: HistoryListVariant,
+        options: FetchHistoryListOptions = {},
+    ): Promise<AnyHistoryEntry[]> {
+        const {
+            search = "",
+            limit = HISTORY_LIST_LIMIT,
+            offset = 0,
+            sortBy = "update_time",
+            sortDesc = true,
+            replace = false,
+        } = options;
+        const requestOptions = { limit, offset, search, sortBy, sortDesc };
+
+        listedHistoriesLoading.value[variant] = true;
+        try {
+            let result: { data: AnyHistoryEntry[]; total: number };
+            if (variant === "shared") {
+                result = await getSharedHistories(requestOptions);
+            } else if (variant === "published") {
+                result = await getPublishedHistories(requestOptions);
+            } else {
+                result = await getArchivedHistories(requestOptions);
+            }
+            setListedHistories(variant, result.data, replace);
+            listedHistoriesTotal.value[variant] = result.total;
+            listedHistoriesLoaded.value[variant] = true;
+            return result.data.map((history) => listedHistories.value[history.id] ?? history);
+        } catch (error) {
+            rethrowSimple(error);
+        } finally {
+            listedHistoriesLoading.value[variant] = false;
+        }
+    }
+
+    /**
+     * Fetches a history listing only if it has not been fetched before, so that
+     * consumers can hydrate a listing without hitting the backend repeatedly.
+     */
+    async function ensureHistoryListLoaded(
+        variant: HistoryListVariant,
+        options: FetchHistoryListOptions = {},
+    ): Promise<AnyHistoryEntry[]> {
+        if (listedHistoriesLoaded.value[variant] || listedHistoriesLoading.value[variant]) {
+            return getListedHistories.value(variant);
+        }
+        return fetchHistoryList(variant, options);
+    }
+
+    /** Drops the cached ids of a listing (the summaries themselves are kept). */
+    function clearHistoryList(variant: HistoryListVariant) {
+        listedHistoryIds.value[variant] = [];
+        listedHistoriesLoaded.value[variant] = false;
+        listedHistoriesTotal.value[variant] = 0;
+    }
+
     function watchHistory() {
         const app = getGalaxyInstance();
         return watchHistorySuppliedApp(app);
@@ -664,6 +838,19 @@ export const useHistoryStore = defineStore("historyStore", () => {
         loadCurrentHistoryId,
         loadHistories,
         loadHistoryById,
+        listedHistories,
+        listedHistoryIds,
+        getListedHistories,
+        sharedHistories,
+        publishedHistories,
+        archivedHistories,
+        isHistoryListLoading,
+        hasLoadedHistoryList,
+        getHistoryListTotal,
+        setListedHistories,
+        fetchHistoryList,
+        ensureHistoryListLoaded,
+        clearHistoryList,
         secureHistory,
         updateHistory,
         archiveHistoryById,
