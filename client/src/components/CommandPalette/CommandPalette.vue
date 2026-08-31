@@ -550,11 +550,14 @@ function moveSelection(delta: 1 | -1) {
     selectedIndex.value = ((position + delta + stops) % stops) - 1;
 }
 
-/** Moving onto a category applies it right away, no confirmation needed */
+/**
+ * Moving onto a category applies it right away, no confirmation needed. The
+ * rerun rides the shared debounce, so holding ←→ across the row costs one
+ * search instead of one per category passed over.
+ */
 function selectCategory(categoryId: string) {
     activeCategoryId.value = categoryId;
     selectedIndex.value = CATEGORY_ROW_INDEX;
-    runSearch();
 }
 
 /** The row is keyboard driven, so a clicked chip hands the focus straight back */
@@ -683,7 +686,8 @@ useEventListener(window, "blur", () => {
     modifierHeld.value = false;
 });
 
-watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });
+// the category is part of what is being searched, so it shares the debounce
+watchDebounced([text, mode, activeCategoryId], runSearch, { debounce: SEARCH_DEBOUNCE });
 
 /** Drives the enter/leave transition; the dialog element itself stays mounted */
 const paletteVisible = ref(false);

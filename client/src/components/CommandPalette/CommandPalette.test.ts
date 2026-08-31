@@ -12,6 +12,11 @@ import { usePageStore } from "@/stores/pageStore";
 import { useUserStore } from "@/stores/userStore";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
+import { datasetsProvider } from "./providers/datasets";
+import { historiesProvider } from "./providers/histories";
+import { workflowsProvider } from "./providers/workflows";
+import type { CommandPaletteProvider } from "./types";
+
 import MountTarget from "./CommandPalette.vue";
 
 vi.mock("@/composables/config");
@@ -26,6 +31,27 @@ const DEBOUNCE_WAIT = 250;
 async function settle() {
     await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_WAIT));
     await flushPromises();
+}
+
+interface SearchCounter {
+    calls: number;
+    restore: () => void;
+}
+
+/** Counts how often a provider was asked for its scoped results */
+function countScopedSearches(provider: CommandPaletteProvider): SearchCounter {
+    const original = provider.searchScoped;
+    const counter: SearchCounter = {
+        calls: 0,
+        restore: () => {
+            provider.searchScoped = original;
+        },
+    };
+    provider.searchScoped = (scope, searchQuery, ctx) => {
+        counter.calls++;
+        return original!(scope, searchQuery, ctx);
+    };
+    return counter;
 }
 
 describe("CommandPalette", () => {
@@ -76,6 +102,11 @@ describe("CommandPalette", () => {
     async function press(key: string, options: Record<string, unknown> = {}) {
         await input().trigger("keydown", { key, ...options });
         await settle();
+    }
+
+    /** A key press without waiting it out, for simulating a held-down key */
+    async function pressNow(key: string, options: Record<string, unknown> = {}) {
+        await input().trigger("keydown", { key, ...options });
     }
 
     /** Dispatches a real event, so the test can tell whether it was prevented */
@@ -492,6 +523,32 @@ describe("CommandPalette", () => {
         expect(focus).toHaveBeenCalled();
         // the row keeps the selection, so the arrows keep moving the category
         expect(categoryRow().classes()).toContain("row-selected");
+    });
+
+    it("runs a single search while the arrow keys sweep across the category row", async () => {
+        await type("rna");
+        await press("ArrowUp");
+        expect(categoryRow().classes()).toContain("row-selected");
+
+        const workflows = countScopedSearches(workflowsProvider);
+        const histories = countScopedSearches(historiesProvider);
+        const datasets = countScopedSearches(datasetsProvider);
+        try {
+            // a held arrow key sweeps over the categories in between
+            await pressNow("ArrowRight");
+            await pressNow("ArrowRight");
+            await pressNow("ArrowRight");
+            await settle();
+
+            expect(category("datasets").attributes("aria-selected")).toBe("true");
+            expect(workflows.calls).toBe(0);
+            expect(histories.calls).toBe(0);
+            expect(datasets.calls).toBe(1);
+        } finally {
+            workflows.restore();
+            histories.restore();
+            datasets.restore();
+        }
     });
 
     it("returns focus to the input when a clicked help row keeps the palette open", async () => {
