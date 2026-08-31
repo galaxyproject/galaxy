@@ -237,6 +237,11 @@ class ConfigSerializer(base.ModelSerializer):
             "tool_training_recommendations_link": _use_config,
             "tool_training_recommendations_api_url": _use_config,
             "enable_notification_system": _use_config,
+            # The command palette options are intentionally visible to anonymous users
+            "enable_command_palette": _use_config,
+            "command_palette_allow_anonymous": _use_config,
+            "command_palette_disabled_providers": _use_config,
+            "command_palette_placeholder": _use_config,
             "enable_sse_updates": _use_config,
             "instance_resource_url": _use_config,
             "instance_access_url": _use_config,
