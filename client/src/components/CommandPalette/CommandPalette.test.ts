@@ -7,6 +7,8 @@ import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useCommandPalette } from "@/composables/useCommandPalette";
+import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
+import { useVisualizationStore } from "@/stores/visualizationStore";
 
 import MountTarget from "./CommandPalette.vue";
 
@@ -46,6 +48,8 @@ describe("CommandPalette", () => {
 
     afterEach(() => {
         useCommandPalette().closePalette();
+        // the MRU list is a module level singleton, shared by every test here
+        useRecentPaletteItems().clearRecentItems();
         wrapper?.destroy();
     });
 
@@ -115,6 +119,25 @@ describe("CommandPalette", () => {
         // the workflow store is empty here, so the scope has nothing to offer
         expect(wrapper.find("[data-description='palette scope hint']").exists()).toBe(false);
         expect(wrapper.find("[data-description='palette empty']").exists()).toBe(true);
+    });
+
+    it("remembers an opened entity in the palette recents", async () => {
+        const visualizationStore = useVisualizationStore();
+        visualizationStore.storedVisualizations = {
+            "viz-1": { id: "viz-1", title: "ATAC peaks", type: "nvd3_bar" } as never,
+        };
+        visualizationStore.visualizationIdsByVariant.my = ["viz-1"];
+        vi.spyOn(router, "push").mockResolvedValue(undefined as never);
+
+        await type("atac");
+        const option = wrapper
+            .findAll("[data-description='palette option']")
+            .wrappers.find((row) => row.text().includes("ATAC peaks"));
+        await option?.trigger("click");
+
+        expect(useRecentPaletteItems().recentItems("visualization")).toMatchObject([
+            { id: "viz-1", name: "ATAC peaks", type: "visualization" },
+        ]);
     });
 
     it("pops the badge on backspace with the caret at the start", async () => {

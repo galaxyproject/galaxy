@@ -7,6 +7,7 @@ import { useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
 import { useCommandPalette } from "@/composables/useCommandPalette";
+import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useUid } from "@/composables/utils/uid";
 import { useEventStore } from "@/stores/eventStore";
 import { useToolStore } from "@/stores/toolStore";
@@ -46,6 +47,7 @@ interface FooterHint {
 }
 
 const { isPaletteOpen, closePalette, togglePalette } = useCommandPalette();
+const { addRecentItem } = useRecentPaletteItems();
 const router = useRouter();
 const { config } = useConfig();
 const eventStore = useEventStore();
@@ -281,6 +283,18 @@ async function runSearch() {
     }
 }
 
+/**
+ * Remembers an opened entity so its provider can offer it in a "Recent"
+ * section next time. Only items declaring an `mru` identity are recorded —
+ * tools keep their own recent list in `userStore`.
+ */
+function recordRecentItem(item: PaletteItem) {
+    if (!item.mru) {
+        return;
+    }
+    addRecentItem({ ...item.mru, name: item.title, ...(item.to ? { to: item.to } : {}) });
+}
+
 function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEvent) {
     if (!item) {
         return;
@@ -290,6 +304,8 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
         item.handler?.();
         return;
     }
+    // an item sent to a new tab counts as opened just as much as a navigation
+    recordRecentItem(item);
     if (item.to) {
         if (event && (event.ctrlKey || event.metaKey)) {
             // the palette stays open so several items can be sent to tabs in a row
