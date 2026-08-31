@@ -10,6 +10,7 @@ import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 /** MRU entity type recorded for invocations opened through the palette */
@@ -17,6 +18,9 @@ export const INVOCATION_RECENT_TYPE = "invocation";
 
 /** How many invocations are pulled into the store on scope entry */
 const LATEST_LIMIT = 15;
+
+/** Identity of the cached list in the palette's refresh bookkeeping */
+const REFRESH_KEY = "invocations:latest";
 
 /** Maximum rows rendered per section */
 const SECTION_CAP = 8;
@@ -37,9 +41,9 @@ function formatCreateTime(createTime: string | null | undefined): string | undef
 }
 
 /**
- * Names come from the history and workflow stores, which the invocations grid
- * `getData` (used by `fetchLatestInvocations`) side-populates -- never fetched
- * here, so rendering a row never triggers a request.
+ * Names come from the history and workflow stores, which `fetchLatestInvocations`
+ * populates (and awaits) before it resolves -- never fetched here, so rendering a
+ * row never triggers a request.
  */
 function invocationNames(invocation: WorkflowInvocation) {
     const historyStore = useHistoryStore();
@@ -66,15 +70,25 @@ function invocationToItem(invocation: WorkflowInvocation): PaletteItem {
 }
 
 /**
- * Store-first hydration: the caller renders whatever the store already holds,
- * and this only awaits the fetch when the cache cannot answer on its own
- * (empty, or fewer local matches than one section shows). Concurrent calls
- * share the store's single in-flight request.
+ * Store-first hydration: the store is filled once per session and every later
+ * keystroke is answered from it. The invocations index has no free-text search,
+ * so refetching for a query would only repeat the identical unfiltered request;
+ * the list is instead refreshed in the background once it goes stale.
+ *
+ * A failing fetch degrades to whatever the store holds rather than emptying the
+ * scope.
  */
-async function ensureLatestInvocations(localMatches: number): Promise<WorkflowInvocation[]> {
+async function ensureLatestInvocations(): Promise<WorkflowInvocation[]> {
     const invocationStore = useInvocationStore();
-    if (invocationStore.latestInvocations.length === 0 || localMatches < SECTION_CAP) {
-        await invocationStore.fetchLatestInvocations(LATEST_LIMIT);
+    if (!invocationStore.hasLoadedLatestInvocations) {
+        try {
+            await invocationStore.fetchLatestInvocations(LATEST_LIMIT);
+        } catch (error) {
+            console.debug("Command palette could not fetch invocations", error);
+        }
+        markListRefreshed(REFRESH_KEY);
+    } else {
+        refreshListWhenStale(REFRESH_KEY, () => invocationStore.fetchLatestInvocations(LATEST_LIMIT));
     }
     return invocationStore.latestInvocations;
 }
@@ -132,9 +146,7 @@ export const invocationsProvider: CommandPaletteProvider = {
     },
     async searchScoped(_scope: ScopeDefinition, query: string): Promise<ScopedSection[]> {
         const trimmed = query.trim();
-        const invocations = await ensureLatestInvocations(
-            trimmed ? filterInvocations(useInvocationStore().latestInvocations, trimmed).length : 0,
-        );
+        const invocations = await ensureLatestInvocations();
         if (!trimmed) {
             // "Latest" keeps the server's order (most recently created first) and drops
             // whatever the "Recent" section already shows.
