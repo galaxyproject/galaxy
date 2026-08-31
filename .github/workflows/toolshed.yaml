@@ -1,9 +1,6 @@
 name: Toolshed tests
 on:
   push:
-    branches:
-      - dev
-      - release_*
     paths-ignore:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'

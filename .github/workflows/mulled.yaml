@@ -1,9 +1,6 @@
 name: Mulled Unit Tests
 on:
   push:
-    branches:
-      - dev
-      - release_*
     paths-ignore:
       - 'client/**'
       - 'doc/**'

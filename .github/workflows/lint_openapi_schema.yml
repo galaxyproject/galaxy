@@ -1,9 +1,6 @@
 name: OpenAPI linting
 on:
   push:
-    branches:
-      - dev
-      - release_*
     paths-ignore:
       - 'client/**'
       - 'doc/**'

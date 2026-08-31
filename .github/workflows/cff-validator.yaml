@@ -2,9 +2,6 @@ name: Validate CITATION.cff
 
 on:
   push:
-    branches:
-      - dev
-      - release_*
     paths:
       - "CITATION.cff"
   pull_request:

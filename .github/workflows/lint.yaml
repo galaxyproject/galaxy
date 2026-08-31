@@ -1,9 +1,6 @@
 name: Python linting
 on:
   push:
-    branches:
-      - dev
-      - release_*
     paths:
       - '**.py'
       - '.github/workflows/lint.yaml'

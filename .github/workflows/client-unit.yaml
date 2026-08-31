@@ -1,9 +1,6 @@
 name: Client Unit Testing
 on:
   push:
-    branches:
-      - dev
-      - release_*
     paths:
       - 'client/**'
       - '.github/workflows/client-unit.yaml'

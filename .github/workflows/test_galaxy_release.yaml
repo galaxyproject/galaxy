@@ -1,9 +1,6 @@
 name: Test Galaxy release script
 on:
   push:
-    branches:
-      - dev
-      - release_*
     paths:
       - '.github/workflows/test_galaxy_release.yaml'
       - lib/galaxy/dependencies/**

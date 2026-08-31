@@ -1,9 +1,6 @@
 name: Client API Testing
 on:
   push:
-    branches:
-      - dev
-      - release_*
     paths:
       - 'client/packages/api-client/**'
       - 'client/pnpm-workspace.yaml'
