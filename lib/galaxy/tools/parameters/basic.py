@@ -1777,6 +1777,9 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                     val,
                 )
             rval.append(val)
+        if not self.multiple:
+            # A single drill down holds one value; the typed request model rejects a list.
+            return rval[0] if rval else None
         return rval
 
     def to_param_dict_string(self, value, other_values=None):
@@ -1807,6 +1810,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
         if value is None:
             return "None"
+        if not isinstance(value, list):
+            value = [value]
         rval = []
         if self.hierarchy == "exact":
             rval = value
@@ -1842,6 +1847,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         recurse_options(initial_values, options)
         if len(initial_values) == 0:
             return None
+        if not self.multiple:
+            return initial_values[0]
         return initial_values
 
     def to_text(self, value):
