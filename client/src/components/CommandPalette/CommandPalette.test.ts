@@ -78,8 +78,35 @@ describe("CommandPalette", () => {
         await settle();
     }
 
+    /** Dispatches a real event, so the test can tell whether it was prevented */
+    async function sendKey(key: string, options: Record<string, unknown> = {}) {
+        const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...options });
+        input().element.dispatchEvent(event);
+        await settle();
+        return event;
+    }
+
     function hint(id: string) {
         return wrapper.find(`[data-description='palette hint ${id}']`);
+    }
+
+    function categoryRow() {
+        return wrapper.find("[data-description='palette categories']");
+    }
+
+    function category(id: string) {
+        return wrapper.find(`[data-description='palette category ${id}']`);
+    }
+
+    async function pickCategory(id: string) {
+        await category(id).trigger("click");
+        await settle();
+    }
+
+    function sectionIds() {
+        return wrapper
+            .findAll("[data-description^='palette section ']")
+            .wrappers.map((section) => section.attributes("data-description"));
     }
 
     async function holdModifier(down: boolean) {
@@ -325,6 +352,103 @@ describe("CommandPalette", () => {
 
         await press("Escape");
         expect(hint("escape").text()).toContain("back");
+    });
+
+    it("shows the category row only for an unscoped query", async () => {
+        expect(categoryRow().exists()).toBe(false);
+        expect(hint("category").exists()).toBe(false);
+
+        await type("workflows");
+        expect(categoryRow().exists()).toBe(true);
+        expect(categoryRow().text()).toContain("All");
+        expect(categoryRow().text()).toContain("Navigation");
+        // actions have no category of their own, they only show under "All"
+        expect(category("actions").exists()).toBe(false);
+        expect(hint("category").text()).toContain("category");
+
+        await type("t: align");
+        expect(categoryRow().exists()).toBe(false);
+    });
+
+    it("reaches the category row with arrow up and hands the selection back", async () => {
+        await type("workflows");
+        expect(input().attributes("aria-activedescendant")).toBeTruthy();
+
+        await press("ArrowUp");
+        expect(categoryRow().classes()).toContain("row-selected");
+        expect(hint("category").classes()).toContain("hint-active");
+        // no result is selected while the row is
+        expect(input().attributes("aria-activedescendant")).toBeUndefined();
+
+        await press("ArrowDown");
+        expect(categoryRow().classes()).not.toContain("row-selected");
+        expect(input().attributes("aria-activedescendant")).toBeTruthy();
+
+        // enter on the row is a way back to the list, never a navigation
+        const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
+        await press("ArrowUp");
+        await press("Enter");
+        expect(push).not.toHaveBeenCalled();
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(categoryRow().classes()).not.toContain("row-selected");
+        expect(input().attributes("aria-activedescendant")).toBeTruthy();
+    });
+
+    it("moves the category with left and right only while the row is selected", async () => {
+        await type("workflows");
+        const element = input().element as HTMLInputElement;
+        element.setSelectionRange(3, 3);
+
+        // the caret keeps the arrows while a result is selected
+        const ignored = await sendKey("ArrowRight");
+        expect(ignored.defaultPrevented).toBe(false);
+        expect(element.selectionStart).toBe(3);
+        expect(category("all").attributes("aria-selected")).toBe("true");
+
+        await press("ArrowUp");
+        const handled = await sendKey("ArrowRight");
+        expect(handled.defaultPrevented).toBe(true);
+        expect(element.selectionStart).toBe(3);
+        expect(category("all").attributes("aria-selected")).toBe("false");
+        expect(category("workflows").attributes("aria-selected")).toBe("true");
+        // the row keeps the selection, so the next arrow moves on
+        expect(categoryRow().classes()).toContain("row-selected");
+
+        await sendKey("ArrowLeft");
+        expect(category("all").attributes("aria-selected")).toBe("true");
+    });
+
+    it("narrows the sections to the picked category", async () => {
+        const pageStore = usePageStore();
+        pageStore.summariesById = { p1: { id: "p1", title: "Lab notes", slug: "lab-notes" } as never };
+        pageStore.idsByVariant.my = ["p1"];
+
+        await type("lab notes");
+        expect(sectionIds()).toContain("palette section pages");
+
+        await pickCategory("pages");
+        expect(category("pages").attributes("aria-selected")).toBe("true");
+        // only the pages provider runs, through its own scoped search
+        expect(sectionIds()).toEqual(["palette section pages:latest"]);
+        expect(wrapper.text()).toContain("Lab notes");
+
+        await pickCategory("navigation");
+        expect(sectionIds()).not.toContain("palette section pages");
+
+        await pickCategory("all");
+        expect(sectionIds()).toContain("palette section pages");
+    });
+
+    it("resets the category when the query is cleared", async () => {
+        await type("workflows");
+        await pickCategory("tools");
+        expect(category("tools").attributes("aria-selected")).toBe("true");
+
+        await press("Escape");
+        expect(categoryRow().exists()).toBe(false);
+
+        await type("workflows");
+        expect(category("all").attributes("aria-selected")).toBe("true");
     });
 
     it("animates in and closes through the transition fallback", async () => {
