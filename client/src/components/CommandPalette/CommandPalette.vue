@@ -522,12 +522,16 @@ function showExternalIcon(index: number, item: PaletteItem) {
 
 function onInput(event: Event) {
     const input = event.target as HTMLInputElement;
+    // read before the text changes: emptying the query — or typing a scope
+    // token — hides the category row, and the selection would then be stranded
+    // on a row that no longer exists, leaving enter with nothing to run
+    const leavingCategoryRow = categoryRowSelected.value;
     setText(input.value);
     if (input.value !== text.value) {
         // a recognized token was converted into a badge
         input.value = text.value;
     }
-    if (categoryRowSelected.value) {
+    if (leavingCategoryRow) {
         // typing is about the results again, so the selection returns to them
         selectedIndex.value = 0;
     }
