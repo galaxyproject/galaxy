@@ -205,7 +205,6 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "gx_drill_down_code_0": "the option element id is built from the option name, which the test declares by value",
     "gx_drill_down_exact_multiple_0": "the form adds every descendant of a chosen option, which an exact hierarchy must not",
     "gx_drill_down_exact_multiple_1": "the form adds every descendant of a chosen option, which an exact hierarchy must not",
-    "gx_drill_down_exact_with_selection_2": "a single drill down submits its default selection as a list the typed request rejects",
     "gx_drill_down_recurse_multiple_0": "the form adds the inner nodes a recurse hierarchy leaves out",
     "gx_drill_down_recurse_multiple_1": "the form adds the inner nodes a recurse hierarchy leaves out",
     "gx_genomebuild_multiple_0": "only one of the declared builds reaches the request",
