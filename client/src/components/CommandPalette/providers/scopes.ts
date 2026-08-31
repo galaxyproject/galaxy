@@ -41,6 +41,9 @@ export const PALETTE_SCOPES: ScopeDefinition[] = [
         providerId: "interactiveTools",
         configGate: (ctx) => Boolean(ctx.config.interactivetools_enable),
     },
+    // no `requiresLogin`: the provider already drops the rows an anonymous user
+    // cannot reach, so the scope stays useful without an account
+    { key: "n", label: "Navigation", providerId: "navigation" },
 ];
 
 /**

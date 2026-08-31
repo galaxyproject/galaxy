@@ -3,7 +3,7 @@ import { faBell, faInfoCircle, faMapSigns, faPuzzlePiece, faUserCog } from "@for
 import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 
-import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "../types";
+import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
 
 /** Activities owned by the actions provider instead */
@@ -138,5 +138,15 @@ export const navigationProvider: CommandPaletteProvider = {
     },
     search(query: string, ctx: PaletteContext) {
         return rankPaletteItems(navigationItems(ctx), query);
+    },
+    /**
+     * `n:` scope — one section over the same destinations the root mode ranks,
+     * headed like the other providers' scoped results: the matches for a query,
+     * the full list of destinations without one.
+     */
+    searchScoped(_scope, query: string, ctx: PaletteContext): ScopedSection[] {
+        const trimmed = query.trim();
+        const items = trimmed ? rankPaletteItems(navigationItems(ctx), trimmed) : navigationItems(ctx);
+        return [{ id: "results", items, title: trimmed ? "Navigation" : "Destinations" }];
     },
 };
