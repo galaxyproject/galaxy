@@ -1,7 +1,7 @@
 import { localize } from "@/utils/localization";
 
 import { actionsProvider } from "./providers/actions";
-import { ACTIONS_SCOPE, availableScopes, type ScopeDefinition } from "./providers/scopes";
+import { ACTIONS_SCOPE, availableScopes, isProviderEnabled, type ScopeDefinition } from "./providers/scopes";
 import type { PaletteContext, PaletteItem, ResultSection } from "./types";
 import { rankPaletteItems } from "./utilities";
 
@@ -74,13 +74,17 @@ export function helpSections(
     modifierLabel: string,
     handlers: PaletteHelpHandlers,
 ): ResultSection[] {
-    return [
+    const help: ResultSection[] = [
         {
             id: "help:scopes",
             items: availableScopes(ctx).map((scope) => scopeHelpItem(scope, handlers.enterScope)),
             title: "Scopes",
         },
-        { id: "help:actions", items: actionHelpItems(ctx, handlers), title: "Actions" },
-        { id: "help:keys", items: helpKeyItems(modifierLabel), title: "Keys" },
-    ].map((section) => ({ ...section, items: rankPaletteItems(section.items, query) }));
+    ];
+    // the actions provider is asked directly here, so it is gated here as well
+    if (isProviderEnabled(actionsProvider.id, ctx)) {
+        help.push({ id: "help:actions", items: actionHelpItems(ctx, handlers), title: "Actions" });
+    }
+    help.push({ id: "help:keys", items: helpKeyItems(modifierLabel), title: "Keys" });
+    return help.map((section) => ({ ...section, items: rankPaletteItems(section.items, query) }));
 }

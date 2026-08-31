@@ -1,4 +1,4 @@
-import type { CommandPaletteProvider } from "../types";
+import type { CommandPaletteProvider, PaletteContext } from "../types";
 import { type ParsedPaletteQuery, parsePaletteQuery, rankPaletteItems } from "../utilities";
 import { actionsProvider } from "./actions";
 import { datasetsProvider } from "./datasets";
@@ -7,6 +7,7 @@ import { interactiveToolsProvider } from "./interactiveTools";
 import { invocationsProvider } from "./invocations";
 import { navigationProvider } from "./navigation";
 import { pagesProvider } from "./pages";
+import { isProviderEnabled } from "./scopes";
 import { toolsProvider } from "./tools";
 import { visualizationsProvider } from "./visualizations";
 import { workflowsProvider } from "./workflows";
@@ -34,6 +35,15 @@ export const paletteProviders: CommandPaletteProvider[] = [
 /** Provider serving a scope, or undefined while it is not implemented yet */
 export function findPaletteProvider(providerId: string): CommandPaletteProvider | undefined {
     return paletteProviders.find((provider) => provider.id === providerId);
+}
+
+/**
+ * The providers this instance left on, in registry order — what the unscoped
+ * fan-out asks. A provider named in `command_palette_disabled_providers` is
+ * never searched, and neither its scopes nor its category are offered.
+ */
+export function enabledPaletteProviders(ctx: PaletteContext): CommandPaletteProvider[] {
+    return paletteProviders.filter((provider) => isProviderEnabled(provider.id, ctx));
 }
 
 export { parsePaletteQuery, rankPaletteItems };
