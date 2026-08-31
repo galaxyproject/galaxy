@@ -655,17 +655,30 @@ class BaseJobRunner:
                     tool_stdout = self._job_io_for_db(stdout_file)
                 with open(tool_stderr_path, "rb") as stderr_file:
                     tool_stderr = self._job_io_for_db(stderr_file)
-            except FileNotFoundError:
+            except FileNotFoundError as e:
                 if job.state in (model.Job.states.DELETING, model.Job.states.DELETED):
                     # We killed the job, so we may not even have the tool stdout / tool stderr
                     tool_stdout = ""
                     tool_stderr = "Job cancelled"
                 else:
-                    # Missing tool output files — likely a premature job death.
-                    # Continue with empty strings so check_tool_output can still
-                    # evaluate the exit code and runner state.
-                    tool_stdout = ""
-                    tool_stderr = ""
+                    # Neither tool_stdout nor tool_stderr was written: the job died
+                    # prematurely (runner misconfiguration, node loss, ...) or the
+                    # command never even started. Without them we cannot tell
+                    # whether the command succeeded, so this is a fatal error:
+                    # fail the job instead of possibly marking it OK.
+                    log.warning(
+                        "(%s/%s) Missing tool output files in %s; failing job",
+                        job_id,
+                        external_job_id,
+                        outputs_directory,
+                    )
+                    self.fail_job(
+                        job_state,
+                        message=f"Job finished without tool output files "
+                        f"({e.filename} missing from {outputs_directory}); the command "
+                        "may not have run at all or the outputs were lost.",
+                    )
+                    return
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
                 tool_stderr,
