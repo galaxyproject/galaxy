@@ -38,9 +38,12 @@ export const useDatasetListStore = defineStore("datasetListStore", () => {
             .filter((dataset): dataset is HDASummary => Boolean(dataset)),
     );
 
-    function getDatasetSummary(id: string): HDASummary | undefined {
-        return storedDatasets.value[id];
-    }
+    /** Getter, not an action: reading the cache never touches the backend. */
+    const getDatasetSummary = computed(
+        () =>
+            (id: string): HDASummary | undefined =>
+                storedDatasets.value[id],
+    );
 
     /** Merges dataset summaries into the cache, keyed (and deduped) by id. */
     function saveDatasets(datasets: HDASummary[]) {
@@ -91,13 +94,17 @@ export const useDatasetListStore = defineStore("datasetListStore", () => {
         return latestDatasets.value;
     }
 
-    /** Client-side name filter over everything currently cached. */
-    function searchCachedDatasets(query: string, limit = DEFAULT_LIMIT): HDASummary[] {
+    /**
+     * Client-side name filter over everything currently cached. A getter rather
+     * than an action, so consumers that must not hit the backend (the command
+     * palette's unscoped fan-out) cannot accidentally trigger a request.
+     */
+    const searchCachedDatasets = computed(() => (query: string, limit = DEFAULT_LIMIT): HDASummary[] => {
         const term = query.trim().toLowerCase();
         const cached = Object.values(storedDatasets.value);
         const matches = term ? cached.filter((dataset) => dataset.name?.toLowerCase().includes(term)) : cached;
         return matches.slice(0, limit);
-    }
+    });
 
     return {
         storedDatasets,
