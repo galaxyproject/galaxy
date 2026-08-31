@@ -1,6 +1,5 @@
 import { faFileImport, faPlus, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "../types";
@@ -19,10 +18,7 @@ const ACTIONS: ActionDefinition[] = [
         keywords: "data import files url paste",
         subtitle: "Upload files from disk, URL or pasted content",
         title: "Upload data",
-        handler: () => {
-            const { openGlobalUploadModal } = useGlobalUploadModal();
-            openGlobalUploadModal();
-        },
+        to: "/upload",
     },
     {
         id: "actions:new-history",
