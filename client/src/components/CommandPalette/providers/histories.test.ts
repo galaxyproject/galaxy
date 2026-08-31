@@ -320,6 +320,20 @@ describe("historiesProvider", () => {
         expect(getHistoryList.mock.calls.length).toBe(callsAfterHydration);
     });
 
+    it("caps the own-history fetch, like every other scope", async () => {
+        await scopedSections(OWN_SCOPE);
+        // `getHistoryList(offset, limit, queryString)` — an unbounded own list
+        // would pull every history the user ever created to render eight rows
+        expect(getHistoryList).toHaveBeenCalledWith(0, 25, undefined);
+
+        // the cache is a short page, so a query only reaches the backend once
+        // the store knows there is more to fetch
+        useHistoryStore().totalHistoryCount = 42;
+        await scopedSections(OWN_SCOPE, "zebrafish");
+
+        expect(getHistoryList.mock.calls.every(([, limit]) => limit === 25)).toBe(true);
+    });
+
     it("stays local for a single character", async () => {
         await scopedSections(OWN_SCOPE);
         const callsAfterHydration = getHistoryList.mock.calls.length;
