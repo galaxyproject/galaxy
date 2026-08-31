@@ -1023,6 +1023,19 @@ describe("CommandPalette", () => {
         }
     });
 
+    it("leads the placeholder with the phrase the instance configured", async () => {
+        const hint = "…  > actions · w: t: … scopes · ? help";
+        expect(input().attributes("placeholder")).toBe(`Search Galaxy${hint}`);
+
+        try {
+            setMockConfig({ command_palette_placeholder: "Search UseGalaxy.eu" });
+            await wrapper.vm.$nextTick();
+            expect(input().attributes("placeholder")).toBe(`Search UseGalaxy.eu${hint}`);
+        } finally {
+            resetMockConfig();
+        }
+    });
+
     it("re-runs the search once the tool store finishes hydrating", async () => {
         wrapper.destroy();
         useCommandPalette().closePalette();

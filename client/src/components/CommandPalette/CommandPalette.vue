@@ -57,7 +57,10 @@ const SKELETON_ROWS = 3;
 /** Safety net for environments that never fire `transitionend` (jsdom, backgrounded tabs) */
 const CLOSE_TRANSITION_FALLBACK = 200;
 
-const ROOT_PLACEHOLDER = "Search Galaxy…  > actions · w: t: … scopes · ? help";
+/** Leading phrase of the root placeholder, unless the instance configures its own */
+const ROOT_PLACEHOLDER_PHRASE = "Search Galaxy";
+/** Key hints trailing whichever leading phrase the root placeholder uses */
+const ROOT_PLACEHOLDER_HINT = "…  > actions · w: t: … scopes · ? help";
 const HELP_PLACEHOLDER = "Search shortcuts…";
 
 interface ResultSection {
@@ -209,7 +212,9 @@ const placeholder = computed(() => {
     if (activeMode.type === "help") {
         return localize(HELP_PLACEHOLDER);
     }
-    return localize(ROOT_PLACEHOLDER);
+    // an instance-configured phrase is admin copy, so it is used verbatim
+    const phrase = config.value?.command_palette_placeholder || localize(ROOT_PLACEHOLDER_PHRASE);
+    return `${phrase}${localize(ROOT_PLACEHOLDER_HINT)}`;
 });
 
 /** A running search still owns the icon; help mode otherwise names itself */
