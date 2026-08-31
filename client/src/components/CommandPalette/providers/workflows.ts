@@ -172,7 +172,9 @@ async function listItems(
     }
     await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: LIST_PAGE_SIZE }));
     const remote = workflowStore.getWorkflowList(variant, query).map((workflow) => workflowItem(workflow, variant));
-    return dedupeById([...local, ...remote]).slice(0, limit);
+    // the backend over-matches short searches (`search=zqx` comes back with the
+    // whole list), so the merged rows are ranked locally just like the cache is
+    return rankPaletteItems(dedupeById([...local, ...remote]), query).slice(0, limit);
 }
 
 /** Workflows opened through the palette before, most recently used first */

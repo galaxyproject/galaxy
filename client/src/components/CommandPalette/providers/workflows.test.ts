@@ -203,6 +203,23 @@ describe("workflowsProvider", () => {
         expect(vi.mocked(loadWorkflows).mock.calls.some(([args]) => args.filterText === "zebrafish")).toBe(true);
     });
 
+    it("drops backend rows the query does not match", async () => {
+        // a full page keeps the cache incomplete, so the query reaches the
+        // backend — which answers a short search with everything it has
+        const page = Array.from({ length: 25 }, (_, index) => workflow(`filler-${index}`, `Filler ${index}`));
+        vi.mocked(loadWorkflows).mockImplementation(async ({ filterText = "" }: LoadArgs) => {
+            if (filterText.includes("is:bookmarked")) {
+                return { data: [], totalMatches: 0 };
+            }
+            return { data: page, totalMatches: page.length };
+        });
+
+        const sections = await scopedSections(OWN_SCOPE, "zqx");
+
+        expect(vi.mocked(loadWorkflows).mock.calls.some(([args]) => args.filterText === "zqx")).toBe(true);
+        expect(sections.flatMap((s) => s.items)).toEqual([]);
+    });
+
     it("keeps the same workflow addressable in several sections", async () => {
         recent = [{ type: "workflow", id: "wf2", name: "Variant calling" }];
 
