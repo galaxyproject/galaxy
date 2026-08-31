@@ -650,6 +650,33 @@ describe("CommandPalette", () => {
         expect(row?.text()).not.toContain("native code");
     });
 
+    it("drops the previous results while the new scope is still fetching", async () => {
+        expect(wrapper.text()).toContain("Upload data");
+
+        const original = workflowsProvider.searchScoped;
+        let land: () => void = () => {};
+        const pending = new Promise<never[]>((resolve) => {
+            land = () => resolve([]);
+        });
+        workflowsProvider.searchScoped = () => pending;
+        try {
+            await type("w: rna");
+
+            expect(badge().text()).toContain("My workflows");
+            // the root actions may not keep rendering under the new badge
+            expect(wrapper.text()).not.toContain("Upload data");
+            expect(wrapper.find("[data-description='palette searching']").exists()).toBe(true);
+            expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
+
+            land();
+            await settle();
+            expect(wrapper.find("[data-description='palette searching']").exists()).toBe(false);
+            expect(wrapper.find("[data-description='palette empty']").exists()).toBe(true);
+        } finally {
+            workflowsProvider.searchScoped = original;
+        }
+    });
+
     it("keeps a scope token the user may not use as plain text", async () => {
         // interactivetools_enable is off in the mocked config
         await type("it: jupyter");
