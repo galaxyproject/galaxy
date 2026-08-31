@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faQuestionCircle, faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchDebounced, watchImmediate } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
@@ -120,6 +120,14 @@ const { footerHints, placeholder } = usePaletteFooter({
     shiftHeld,
     showCategoryRow,
     text,
+});
+
+/** A running search still owns the icon; help mode otherwise names itself */
+const inputIcon = computed(() => {
+    if (searching.value) {
+        return faSpinner;
+    }
+    return mode.value.type === "help" ? faQuestionCircle : faSearch;
 });
 
 const scopeHint = computed(() => {
@@ -653,7 +661,7 @@ watchImmediate(isPaletteOpen, (open) => {
             <FontAwesomeIcon
                 class="palette-input-icon"
                 fixed-width
-                :icon="searching ? faSpinner : faSearch"
+                :icon="inputIcon"
                 :spin="searching" />
 
             <button

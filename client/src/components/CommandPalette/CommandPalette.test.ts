@@ -112,6 +112,11 @@ describe("CommandPalette", () => {
         return wrapper.find("[data-description='palette badge']");
     }
 
+    /** Icon names rendered in the input row, the leading mode icon included */
+    function inputIcons() {
+        return wrapper.findAll(".palette-input svg").wrappers.map((icon) => icon.attributes("data-icon"));
+    }
+
     async function type(query: string) {
         (input().element as HTMLInputElement).value = query;
         await input().trigger("input");
@@ -366,6 +371,14 @@ describe("CommandPalette", () => {
         await press("Enter");
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         expect(badge().text()).toContain("My workflows");
+    });
+
+    it("marks help mode with a question mark in place of the search icon", async () => {
+        expect(inputIcons()).toContain("search");
+
+        await type("?");
+        expect(inputIcons()).toContain("question-circle");
+        expect(inputIcons()).not.toContain("search");
     });
 
     it("lists one help row per action, applying the action scope with it", async () => {
