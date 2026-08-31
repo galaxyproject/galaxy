@@ -44,6 +44,15 @@ export function parsePaletteQuery(raw: string): ParsedPaletteQuery {
     return { type: "text", query: trimmed };
 }
 
+/**
+ * Whether the text still reads as a scope token — `w:`, or the `xy:` of a scope
+ * this instance does not offer. Such a token is a filter the user is typing, not
+ * something worth sending to a backend as a search term.
+ */
+export function isScopeTokenLike(text: string): boolean {
+    return SCOPE_TOKEN.test(text.trim());
+}
+
 export interface ScoredPaletteItem {
     item: PaletteItem;
     /** Match quality from the shared scorer, higher is better */

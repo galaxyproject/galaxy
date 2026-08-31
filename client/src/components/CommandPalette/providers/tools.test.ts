@@ -103,6 +103,18 @@ describe("toolsProvider", () => {
         expect(backendSearches()).toEqual([]);
     });
 
+    it("keeps an unknown scope token out of the backend search", async () => {
+        mockToolsApi();
+        await hydrateToolStore();
+        vi.mocked(axios.get).mockClear();
+
+        // `it:` is gated off on this instance, so it stays plain root text —
+        // but it is a filter the user is typing, not a tool to search for
+        await toolsProvider.search("it:", makeCtx());
+
+        expect(backendSearches()).toEqual([]);
+    });
+
     it("lists recently used tools for an empty query", async () => {
         mockToolsApi();
         await hydrateToolStore();
