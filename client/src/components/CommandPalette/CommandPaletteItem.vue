@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+
+import { localize } from "@/utils/localization";
 
 import type { PaletteItem } from "./types";
 
@@ -21,6 +24,17 @@ const emit = defineEmits<{
     (e: "select", event: MouseEvent): void;
     (e: "highlight"): void;
 }>();
+
+// providers keep their strings in English, the rows are localized where they render
+const title = computed(() => localize(props.item.title));
+
+const subtitle = computed(() => (props.item.subtitle ? localize(props.item.subtitle) : undefined));
+
+/**
+ * The key badge is decorative markup, so a row carrying one names itself and its
+ * shortcut explicitly instead of leaving the key out of the accessible name.
+ */
+const ariaLabel = computed(() => (props.item.shortcut ? `${title.value} (${props.item.shortcut})` : undefined));
 </script>
 
 <template>
@@ -31,6 +45,7 @@ const emit = defineEmits<{
         class="command-palette-item"
         :class="{ active: props.active }"
         role="option"
+        :aria-label="ariaLabel"
         :aria-selected="props.active ? 'true' : 'false'"
         data-description="palette option"
         @click="emit('select', $event)"
@@ -40,9 +55,9 @@ const emit = defineEmits<{
         </span>
 
         <span class="item-text">
-            <span class="item-title">{{ props.item.title }}</span>
+            <span class="item-title">{{ title }}</span>
 
-            <span v-if="props.item.subtitle" class="item-subtitle">{{ props.item.subtitle }}</span>
+            <span v-if="subtitle" class="item-subtitle">{{ subtitle }}</span>
         </span>
 
         <FontAwesomeIcon
