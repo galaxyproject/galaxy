@@ -51,6 +51,14 @@ describe("usePaletteMachine", () => {
         expect(machine.text.value).toBe("shared");
     });
 
+    it("converts the navigation token into a badge for anonymous users too", () => {
+        const machine = usePaletteMachine(() => makeCtx({ isAnonymous: true }));
+        machine.setText("n: about");
+        expect(machine.scope.value?.providerId).toBe("navigation");
+        expect(machine.badgeLabel.value).toBe("Navigation");
+        expect(machine.text.value).toBe("about");
+    });
+
     it("converts '>' into the actions badge", () => {
         const machine = usePaletteMachine();
         machine.setText("> up");

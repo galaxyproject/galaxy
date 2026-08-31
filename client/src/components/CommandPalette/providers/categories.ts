@@ -29,7 +29,7 @@ export const PALETTE_CATEGORIES: PaletteCategory[] = [
     { id: "invocations", label: "Invocations", scope: findScope("i") },
     { id: "pages", label: "Pages", scope: findScope("p") },
     { id: "tools", label: "Tools", scope: findScope("t") },
-    { id: "navigation", label: "Navigation", providerId: "navigation" },
+    { id: "navigation", label: "Navigation", scope: findScope("n") },
 ];
 
 /** Provider a category narrows the results to, unset for {@link ALL_CATEGORY} */
