@@ -78,6 +78,7 @@ const { badgeLabel, enterAction, enterScope, handleEscape, mode, popMode, query,
 
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const inputElement = ref<HTMLInputElement | null>(null);
+const resultsElement = ref<HTMLElement | null>(null);
 const searching = ref(false);
 const sections = ref<ResultSection[]>([]);
 const selectedIndex = ref(0);
@@ -720,6 +721,26 @@ function onKeydown(event: KeyboardEvent) {
     }
 }
 
+/**
+ * Pressing anywhere but a control keeps the caret in the input: a border, the
+ * footer, a section title or the gap between two rows would otherwise take the
+ * focus and leave the palette unusable by keyboard. Only the mousedown default
+ * is dropped, so the click still lands — a row is still picked, a chip still
+ * applies, the backdrop still closes — and selecting the typed text is untouched.
+ */
+function onDialogMousedown(event: MouseEvent) {
+    const target = event.target as HTMLElement | null;
+    if (!target || target.closest("input, button")) {
+        return;
+    }
+    // Firefox drives a scrollbar drag off the same default, so a press on the
+    // result list's own scrollbar track is left to the browser
+    if (target === resultsElement.value && event.offsetX >= target.clientWidth) {
+        return;
+    }
+    event.preventDefault();
+}
+
 function onClickDialog(event: MouseEvent) {
     if ((event.target as HTMLElement | null)?.tagName === "DIALOG") {
         const rect = dialogElement.value?.getBoundingClientRect();
@@ -962,7 +983,8 @@ watchImmediate(isPaletteOpen, (open) => {
         :aria-label="localize('Command palette')"
         @cancel="onDialogCancel"
         @click="onClickDialog"
-        @close="onDialogClose">
+        @close="onDialogClose"
+        @mousedown="onDialogMousedown">
         <div class="palette-input">
             <FontAwesomeIcon
                 class="palette-input-icon"
@@ -1023,7 +1045,12 @@ watchImmediate(isPaletteOpen, (open) => {
             </button>
         </div>
 
-        <div :id="listboxId" class="palette-results" role="listbox" :aria-label="localize('Search results')">
+        <div
+            :id="listboxId"
+            ref="resultsElement"
+            class="palette-results"
+            role="listbox"
+            :aria-label="localize('Search results')">
             <div
                 v-for="(section, sectionIdx) in sections"
                 :key="section.id"

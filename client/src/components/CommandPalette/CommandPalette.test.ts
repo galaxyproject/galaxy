@@ -136,6 +136,13 @@ describe("CommandPalette", () => {
         return event;
     }
 
+    /** Dispatches a real event, so the test can tell whether it was prevented */
+    function sendMousedown(target: Element) {
+        const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
+        target.dispatchEvent(event);
+        return event;
+    }
+
     function hint(id: string) {
         return wrapper.find(`[data-description='palette hint ${id}']`);
     }
@@ -612,6 +619,17 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         expect(badge().text()).toContain("Upload data");
         expect(focus).toHaveBeenCalled();
+    });
+
+    it("holds the focus in the input when the dialog chrome is pressed", async () => {
+        // the footer, a section title and every other gap around the controls
+        // would take the focus away, leaving the palette unusable by keyboard
+        expect(sendMousedown(wrapper.find(".palette-footer").element).defaultPrevented).toBe(true);
+        expect(sendMousedown(wrapper.find(".palette-section-title").element).defaultPrevented).toBe(true);
+
+        // the input keeps its own default, so the caret and the text selection
+        // still answer to the mouse
+        expect(sendMousedown(input().element).defaultPrevented).toBe(false);
     });
 
     it("routes a native dialog cancel through the stepwise escape", async () => {
