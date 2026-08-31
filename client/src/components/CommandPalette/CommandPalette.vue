@@ -184,6 +184,9 @@ function secondaryLabelFor(item: PaletteItem | undefined) {
 /** What `⇧↵` would do with the selected item, unset when it offers nothing */
 const secondaryLabel = computed(() => secondaryLabelFor(selectedItem.value));
 
+/** Hints a narrow footer drops first, keeping the bindings that run something or leave the palette */
+const OPTIONAL_HINTS = ["navigate", "category", "remove-scope", "remove-action"];
+
 const footerHints = computed<FooterHint[]>(() => {
     const activeMode = mode.value;
     const hints: FooterHint[] = [{ id: "navigate", keys: "↑↓", label: localize("navigate") }];
@@ -1255,7 +1258,11 @@ watchImmediate(isPaletteOpen, (open) => {
             <span
                 v-for="hint in footerHints"
                 :key="hint.id"
-                :class="{ 'hint-active': hint.active, 'hint-right': hint.id === 'help' }"
+                :class="{
+                    'hint-active': hint.active,
+                    'hint-right': hint.id === 'help',
+                    'hint-optional': OPTIONAL_HINTS.includes(hint.id),
+                }"
                 :data-description="`palette hint ${hint.id}`">
                 <kbd>{{ hint.keys }}</kbd>
 
@@ -1311,6 +1318,17 @@ $palette-transition: 130ms ease-out;
         &::backdrop {
             transition: none;
         }
+    }
+
+    // a short viewport has no room for the drop, so the dialog rides near the top
+    @media (max-height: 40rem) {
+        margin-top: var(--spacing-3);
+    }
+
+    // a phone-width viewport gives the dialog everything but a thin gutter
+    @media (max-width: 30rem) {
+        width: calc(100vw - var(--spacing-3));
+        border-radius: var(--spacing-1);
     }
 
     .palette-input {
@@ -1387,8 +1405,10 @@ $palette-transition: 130ms ease-out;
 
     .palette-results {
         // fixed rather than capped, so the dialog keeps one height across every
-        // result set, the help mode and the empty states
-        height: 21rem;
+        // result set, the help mode and the empty states — until the viewport is
+        // too short for it, where the 14rem reserve keeps input and footer on screen
+        height: min(21rem, calc(100vh - 14rem));
+        height: min(21rem, calc(100dvh - 14rem));
         display: flex;
         flex-direction: column;
         overflow-y: auto;
@@ -1475,6 +1495,13 @@ $palette-transition: 130ms ease-out;
         // help is the odd one out: it sits opposite the bindings it explains
         .hint-right {
             margin-left: auto;
+        }
+
+        // a narrow footer keeps only what runs an item or leaves the palette
+        @media (max-width: 30rem) {
+            .hint-optional {
+                display: none;
+            }
         }
 
         kbd {
