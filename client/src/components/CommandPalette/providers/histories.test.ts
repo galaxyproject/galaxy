@@ -7,6 +7,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import type { PaletteContext } from "../types";
+import { PaletteFetchError } from "./errors";
 import { historiesProvider } from "./histories";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -388,6 +389,13 @@ describe("historiesProvider", () => {
         }
         // the base scope still offers them
         expect((await scopedSections(OWN_SCOPE)).map((s) => s.id)).toContain("recent");
+    });
+
+    it("reports a scope whose very first fetch failed", async () => {
+        getHistoryList.mockRejectedValue(new Error("boom"));
+
+        // nothing is cached, so "no results" would be a lie
+        await expect(scopedSections(OWN_SCOPE)).rejects.toBeInstanceOf(PaletteFetchError);
     });
 
     it("keeps the same history addressable in several sections", async () => {

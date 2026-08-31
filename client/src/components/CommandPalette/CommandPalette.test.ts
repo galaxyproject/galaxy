@@ -14,6 +14,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
 import { datasetsProvider } from "./providers/datasets";
+import { PaletteFetchError } from "./providers/errors";
 import { historiesProvider } from "./providers/histories";
 import { navigationProvider } from "./providers/navigation";
 import { workflowsProvider } from "./providers/workflows";
@@ -675,6 +676,25 @@ describe("CommandPalette", () => {
         } finally {
             workflowsProvider.searchScoped = original;
         }
+    });
+
+    it("says a scope could not be loaded instead of calling it empty", async () => {
+        const original = workflowsProvider.searchScoped;
+        workflowsProvider.searchScoped = () => Promise.reject(new PaletteFetchError());
+        try {
+            await type("w: rna");
+
+            const error = wrapper.find("[data-description='palette error']");
+            expect(error.exists()).toBe(true);
+            expect(error.text()).toContain("Couldn't load my workflows");
+            expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
+        } finally {
+            workflowsProvider.searchScoped = original;
+        }
+
+        // the next search clears it again
+        await type("t: align");
+        expect(wrapper.find("[data-description='palette error']").exists()).toBe(false);
     });
 
     it("keeps a scope token the user may not use as plain text", async () => {

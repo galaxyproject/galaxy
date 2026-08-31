@@ -9,6 +9,7 @@ import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { PaletteFetchError } from "./errors";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
@@ -106,12 +107,18 @@ async function storeFirstItems(
         return items.slice(0, limit);
     }
 
+    const nothingCached = pageStore.getPages(variant).length === 0;
     const needsMore = items.length < limit && !pageStore.isComplete(variant);
     if (!pageStore.isLoaded(variant) || needsMore) {
         try {
             await pageStore.fetchPages(variant, query ? { search: query, limit } : { limit: SECTION_LIMIT });
             items = rankPaletteItems(cachedItems(variant), query);
-        } catch {
+        } catch (error) {
+            if (nothingCached) {
+                // nothing to fall back on, so a failure is reported rather than
+                // rendered as an empty scope
+                throw new PaletteFetchError(error);
+            }
             // keep whatever the cache holds; the palette never blocks on errors
         }
         markListRefreshed(`pages:${variant}`);

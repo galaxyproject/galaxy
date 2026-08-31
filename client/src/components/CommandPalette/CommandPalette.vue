@@ -19,6 +19,7 @@ import { localize } from "@/utils/localization";
 
 import { findPaletteProvider, paletteProviders, rankPaletteItems } from "./providers";
 import { ALL_CATEGORY, availableCategories, categoryScope, type PaletteCategory } from "./providers/categories";
+import { isPaletteFetchError } from "./providers/errors";
 import { ACTIONS_SCOPE, availableScopes, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "./types";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
@@ -85,6 +86,8 @@ const activeCategoryId = ref(ALL_CATEGORY.id);
 const modifierHeld = ref(false);
 /** Scope whose provider has not landed yet; renders the temporary hint row */
 const pendingScope = ref<ScopeDefinition | null>(null);
+/** What the palette could not load, naming the scope in the error row */
+const failedSubject = ref<string | null>(null);
 
 const uid = useUid("command-palette");
 const listboxId = computed(() => `${uid.value}-listbox`);
@@ -204,8 +207,26 @@ const scopeHint = computed(() => {
     return `${localize(scope.label)} — ${localize("this filter has no results provider yet.")}`;
 });
 
+/** Says a scope is broken rather than empty, once its very first fetch failed */
+const errorHint = computed(() => {
+    const subject = failedSubject.value;
+    return subject ? `${localize("Couldn't load")} ${subject}. ${localize("Try again.")}` : undefined;
+});
+
 function searchLabel(subject: string) {
     return `${localize("Search")} ${subject.toLowerCase()}…`;
+}
+
+/** What the current search is *of*, as the error row would name it */
+function searchSubject(activeMode: PaletteMode): string {
+    if (activeMode.type === "scoped") {
+        return localize(activeMode.scope.label).toLowerCase();
+    }
+    if (activeMode.type === "action") {
+        return localize(activeMode.action.title).toLowerCase();
+    }
+    const category = activeCategory.value;
+    return category ? localize(category.label).toLowerCase() : localize("the results");
 }
 
 function optionId(index: number) {
@@ -287,6 +308,11 @@ function withoutFailing<T>(providerId: string, run: () => T | Promise<T>, fallba
     return Promise.resolve()
         .then(run)
         .catch((error) => {
+            if (isPaletteFetchError(error)) {
+                // a scope that could not be loaded at all says so, rather than
+                // rendering as an empty one — see `runSearch`
+                throw error;
+            }
             console.debug(`Command palette provider "${providerId}" failed`, error);
             return fallback;
         });
@@ -439,6 +465,7 @@ async function runSearch() {
     const keepCategoryRow = categoryRowSelected.value;
     const identity = searchIdentity(mode.value);
     pendingScope.value = null;
+    failedSubject.value = null;
     if (identity !== renderedIdentity) {
         // a scope's fetch can take a while; the previous mode's results must
         // never keep rendering under the badge of the new one
@@ -452,6 +479,15 @@ async function runSearch() {
         if (epoch === searchEpoch) {
             sections.value = results.filter((section) => section.items.length > 0);
             selectedIndex.value = keepCategoryRow && showCategoryRow.value ? CATEGORY_ROW_INDEX : 0;
+        }
+    } catch (error) {
+        // only a scope that could not be loaded at all reaches this, everything
+        // else is degraded to an empty section by `withoutFailing`
+        console.debug("Command palette could not load the current scope", error);
+        if (epoch === searchEpoch) {
+            sections.value = [];
+            selectedIndex.value = 0;
+            failedSubject.value = searchSubject(mode.value);
         }
     } finally {
         if (epoch === searchEpoch) {
@@ -959,6 +995,10 @@ watchImmediate(isPaletteOpen, (open) => {
 
             <div v-if="scopeHint" class="palette-hint" data-description="palette scope hint">
                 {{ scopeHint }}
+            </div>
+
+            <div v-else-if="errorHint" class="palette-hint" data-description="palette error">
+                {{ errorHint }}
             </div>
 
             <div
