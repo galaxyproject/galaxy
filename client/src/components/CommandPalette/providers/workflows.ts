@@ -183,6 +183,14 @@ function recentItems(query: string, limit = RECENT_LIMIT): PaletteItem[] {
     return rankPaletteItems(items, query).slice(0, limit);
 }
 
+/**
+ * The user's own workflows as run rows, store first like the `w:` scope. Used by
+ * the "Run workflow" action, which collects its workflow as an argument.
+ */
+export function myWorkflowItems(query: string, limit = RESULTS_LIMIT): Promise<PaletteItem[]> {
+    return listItems("my", query.trim(), limit);
+}
+
 function resultsTitle(scope: ScopeDefinition, query: string): string {
     if (!query) {
         return "Latest";

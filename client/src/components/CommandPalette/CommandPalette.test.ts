@@ -9,6 +9,7 @@ import { useServerMock } from "@/api/client/__mocks__";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { usePageStore } from "@/stores/pageStore";
+import { useUserStore } from "@/stores/userStore";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
 import MountTarget from "./CommandPalette.vue";
@@ -174,6 +175,17 @@ describe("CommandPalette", () => {
         await press("Enter");
         expect(push).toHaveBeenCalledWith("/upload/paste-content");
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
+    it("opens the picker on plain enter for an action without a default", async () => {
+        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
+
+        await type("> run workflow");
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Run workflow");
+
+        await press("Enter");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().text()).toContain("Run workflow");
     });
 
     it("leaves an action's argument badge on backspace at the start", async () => {

@@ -1,17 +1,34 @@
-import { faFileImport, faPlus, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
+import {
+    faComments,
+    faFileAlt,
+    faFileImport,
+    faMagic,
+    faPlay,
+    faPlus,
+    faSitemap,
+    faUpload,
+} from "@fortawesome/free-solid-svg-icons";
 
 import { createNewHistory } from "@/api/histories";
+import { createPage } from "@/api/pages";
 import { Toast } from "@/composables/toast";
+import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { myWorkflowItems } from "./workflows";
 
 interface ActionDefinition extends PaletteItem {
     /** Whether the action is available without a logged-in user */
     anonymous: boolean;
+    /** Extra availability check against the Galaxy configuration */
+    configGate?: (ctx: PaletteContext) => boolean;
 }
+
+/** Per argument section cap, matching the scoped providers */
+const ARGUMENT_LIMIT = 8;
 
 /** Upload methods, filtered by config and login exactly like the upload panel */
 function uploadMethodItems(argQuery: string, ctx: PaletteContext): PaletteItem[] {
@@ -54,6 +71,96 @@ function namedHistoryItems(argQuery: string): PaletteItem[] {
             },
         },
     ];
+}
+
+/**
+ * Page identifier the backend accepts: lowercase, every run of other characters
+ * turned into a single dash, no dash at either end.
+ */
+export function slugify(title: string): string {
+    const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    // a title made of punctuation alone would leave nothing to send
+    return slug || "page";
+}
+
+/** The backend rejects a slug that the user already has with this message */
+function isSlugConflict(error: unknown): boolean {
+    return /must be unique/i.test(String(errorMessageAsString(error, "")));
+}
+
+async function createTitledPage(title: string, ctx: PaletteContext) {
+    const slug = slugify(title);
+    try {
+        let page;
+        try {
+            page = await createPage({ title, slug, content_format: "markdown" });
+        } catch (error) {
+            if (!isSlugConflict(error)) {
+                throw error;
+            }
+            // one retry is enough: the suffixed slug is free unless the user
+            // already owns both, which is worth reporting
+            page = await createPage({ title, slug: `${slug}-2`, content_format: "markdown" });
+        }
+        ctx.navigate?.(`/pages/editor?id=${page.id}`);
+    } catch (error) {
+        Toast.error(errorMessageAsString(error), "Failed to create page");
+    }
+}
+
+/** Free text action: the typed title is the row enter runs */
+function titledPageItems(argQuery: string): PaletteItem[] {
+    const title = argQuery.trim();
+    if (!title) {
+        return [];
+    }
+    return [
+        {
+            id: "actions:create-page:titled",
+            icon: faFileAlt,
+            title: `Create page titled '${title}'`,
+            handler: (ctx: PaletteContext) => {
+                void createTitledPage(title, ctx);
+            },
+        },
+    ];
+}
+
+/**
+ * GalaxyAI rows: the typed question seeds a fresh conversation through
+ * `/galaxyai/new?q=`, the existing conversations open where they left off.
+ */
+async function galaxyAiItems(argQuery: string): Promise<PaletteItem[]> {
+    const chatStore = useChatStore();
+    const question = argQuery.trim();
+    if (chatStore.chatHistory.length === 0 && !chatStore.loading) {
+        try {
+            await chatStore.loadHistory();
+        } catch (error) {
+            console.debug("Command palette could not load the GalaxyAI history", error);
+        }
+    }
+    const existing = chatStore.chatHistory.map((chat) => ({
+        id: `actions:galaxy-ai:${chat.id}`,
+        icon: faComments,
+        title: chat.query || "Untitled conversation",
+        subtitle: chat.response,
+        to: `/galaxyai/${chat.id}`,
+    }));
+    const seeded = question
+        ? [
+              {
+                  id: "actions:galaxy-ai:new",
+                  icon: faMagic,
+                  title: `New chat: '${question}'`,
+                  to: `/galaxyai/new?q=${encodeURIComponent(question)}`,
+              },
+          ]
+        : [];
+    return [...seeded, ...rankPaletteItems(existing, question).slice(0, ARGUMENT_LIMIT)];
 }
 
 const ACTIONS: ActionDefinition[] = [
@@ -105,11 +212,55 @@ const ACTIONS: ActionDefinition[] = [
         title: "Import workflow",
         to: "/workflows/import",
     },
+    {
+        id: "actions:create-page",
+        anonymous: false,
+        icon: faFileAlt,
+        keywords: "markdown document report notebook new",
+        subtitle: "Create a new page and open the editor",
+        title: "Create new page",
+        to: "/pages/create",
+        argumentMode: {
+            getItems: (argQuery: string) => titledPageItems(argQuery),
+            label: "title it",
+            placeholder: "Title the new page…",
+        },
+    },
+    {
+        id: "actions:run-workflow",
+        anonymous: false,
+        icon: faPlay,
+        keywords: "execute launch invoke start",
+        subtitle: "Pick one of your workflows and open its run form",
+        title: "Run workflow",
+        argumentMode: {
+            getItems: (argQuery: string) => myWorkflowItems(argQuery, ARGUMENT_LIMIT),
+            // there is nothing to run without picking a workflow first
+            immediate: true,
+            label: "pick a workflow",
+            placeholder: "Search my workflows…",
+        },
+    },
+    {
+        id: "actions:galaxy-ai",
+        anonymous: false,
+        configGate: (ctx) => Boolean(ctx.config.llm_api_configured),
+        icon: faMagic,
+        keywords: "chat assistant llm question help",
+        subtitle: "Ask the Galaxy assistant about tools, workflows or errors",
+        title: "Ask GalaxyAI",
+        handler: (ctx: PaletteContext) => ctx.startNewChat?.(true),
+        argumentMode: {
+            getItems: (argQuery: string) => galaxyAiItems(argQuery),
+            label: "ask a question",
+            placeholder: "Ask GalaxyAI…",
+        },
+    },
 ];
 
 function actionItems(ctx: PaletteContext): PaletteItem[] {
-    return ACTIONS.filter((action) => action.anonymous || !ctx.isAnonymous).map(
-        ({ anonymous: _anonymous, ...item }) => item,
+    return ACTIONS.filter((action) => (action.anonymous || !ctx.isAnonymous) && (action.configGate?.(ctx) ?? true)).map(
+        ({ anonymous: _anonymous, configGate: _configGate, ...item }) => item,
     );
 }
 

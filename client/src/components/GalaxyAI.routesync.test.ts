@@ -149,6 +149,23 @@ describe("GalaxyAI route sync", () => {
         expect(routerMock.replace).toHaveBeenCalledWith("/galaxyai/exchange-123");
     });
 
+    it("prefills a question seeded through the route and drops the parameter", async () => {
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        const wrapper = mount(GalaxyAI as object, {
+            localVue,
+            pinia,
+            propsData: { panel: true, exchangeId: "new", initialQuestion: "trim my reads" },
+            stubs: { FontAwesomeIcon: true, BSkeleton: true },
+        });
+        await flushPromises();
+
+        expect(wrapper.findComponent(ChatInputStub).props("value")).toBe("trim my reads");
+        // the seeded question is only prefilled, never sent on the user's behalf
+        expect(mockPost).not.toHaveBeenCalled();
+        expect(routerMock.replace).toHaveBeenCalledWith({ path: "/galaxyai" });
+    });
+
     it("does not route back to the previous exchange when a new chat is started", async () => {
         mockPost.mockResolvedValue({
             data: { response: "Here you go", exchange_id: "exchange-123" },
