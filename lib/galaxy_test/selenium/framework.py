@@ -1001,8 +1001,13 @@ class RunsToolTests(NavigatesGalaxyMixin):
         repeat_params.sort(key=fill_order)
 
         deferred = []
-        # Datasets first: a data column or a dynamic select reads its options from them.
-        # A dataset inside a repeat waits for its instance to be inserted below.
+        # Datasets and collections first: a data column, a group tag or a dynamic select
+        # reads its options from them. A dataset inside a repeat waits for its instance
+        # to be inserted below.
+        for key, coll_def in collection_params:
+            hid = collection_hid_map.get(key)
+            assert hid is not None, f"No staged collection for param {key}"
+            self.tool_set_value(key, f"{hid}: {coll_def.get('name', '')}", expected_type="data")
         repeat_data_params = [kv for kv in data_params if self._parse_repeat_key(kv[0])]
         for key, value in data_params:
             if (key, value) in repeat_data_params:
@@ -1056,12 +1061,6 @@ class RunsToolTests(NavigatesGalaxyMixin):
             if len(still_deferred) == len(deferred):
                 break
             deferred = still_deferred
-
-        for key, coll_def in collection_params:
-            hid = collection_hid_map.get(key)
-            assert hid is not None, f"No staged collection for param {key}"
-            coll_name = coll_def.get("name", "")
-            self.tool_set_value(key, f"{hid}: {coll_name}", expected_type="data")
 
     def _select_labels(self, tool_id: str) -> dict[str, dict[str, str]]:
         """Per parameter, the option value -> displayed label the select renders.
