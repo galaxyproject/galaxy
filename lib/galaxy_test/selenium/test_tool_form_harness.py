@@ -9,7 +9,10 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
+from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.toolbox.base import walk_tool_directories
+from galaxy.util import string_as_bool
 from galaxy.util.unittest_utils import skip_unless_environ
 from galaxy_test.base.api import UsesCeleryTasks
 from .framework import (
@@ -128,6 +131,20 @@ FRAMEWORK_TOOLS_DIR = os.path.join(
 FRAMEWORK_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_tool_conf.xml")
 
 
+def _add_tool_tests(pairs: set, path: str) -> None:
+    """Record every (tool_id, test_index) pair a tool file declares."""
+    if not os.path.exists(path):
+        return
+    try:
+        tool_source = get_tool_source(path)
+        tool_id = tool_source.parse_id()
+        test_count = len(tool_source.parse_tests_to_dict()["tests"])
+    except Exception:
+        return
+    if tool_id:
+        pairs.update((tool_id, index) for index in range(test_count))
+
+
 def _framework_tool_tests():
     """Every (tool_id, test_index) pair in the framework tool suite.
 
@@ -142,18 +159,19 @@ def _framework_tool_tests():
         return [(str(tool_id), int(test_index)) for tool_id, test_index in json.loads(spec)]
     # A tool can be listed more than once in the panel; test ids have to stay unique.
     pairs: set[tuple[str, int]] = set()
-    for tool in ET.parse(FRAMEWORK_TOOL_CONF).getroot().iter("tool"):
-        path = os.path.join(FRAMEWORK_TOOLS_DIR, tool.get("file") or "")
-        if not os.path.exists(path):
+    root = ET.parse(FRAMEWORK_TOOL_CONF).getroot()
+    for tool in root.iter("tool"):
+        _add_tool_tests(pairs, os.path.join(FRAMEWORK_TOOLS_DIR, tool.get("file") or ""))
+    # The panel also loads whole directories, which hold the typed parameter fixtures.
+    for tool_dir in root.iter("tool_dir"):
+        directory = os.path.join(FRAMEWORK_TOOLS_DIR, tool_dir.get("dir") or "")
+        if not os.path.isdir(directory):
             continue
-        try:
-            tool_source = get_tool_source(path)
-            tool_id = tool_source.parse_id()
-            test_count = len(tool_source.parse_tests_to_dict()["tests"])
-        except Exception:
-            continue
-        if tool_id:
-            pairs.update((tool_id, index) for index in range(test_count))
+        for _, files in walk_tool_directories(directory, string_as_bool(tool_dir.get("recursive", True))):
+            for path in files:
+                # The directory also holds macros and option-generating scripts.
+                if looks_like_a_tool(path, enable_beta_formats=True):
+                    _add_tool_tests(pairs, path)
     return sorted(pairs)
 
 
