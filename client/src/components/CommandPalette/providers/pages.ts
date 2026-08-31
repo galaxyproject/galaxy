@@ -172,12 +172,15 @@ export const pagesProvider: CommandPaletteProvider = {
      * The palette remembers one list per entity type rather than per scope, so
      * the recents are offered by the base scope only — a page the user opened
      * from `p:` has no business showing up under "public".
+     *
+     * Published pages are public, so `pp:` serves anonymous visitors too; only
+     * the own listing needs an account to hold anything.
      */
     async searchScoped(scope: ScopeDefinition, query: string, ctx: PaletteContext) {
-        if (ctx.isAnonymous) {
+        const variant = variantOf(scope);
+        if (ctx.isAnonymous && variant === "my") {
             return [];
         }
-        const variant = variantOf(scope);
         const trimmed = query.trim();
         const recent = variant === "my" ? recentItems(trimmed, RECENT_LIMIT) : [];
         const recentIds = new Set(recent.map((item) => item.id));

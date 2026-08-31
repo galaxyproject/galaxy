@@ -32,9 +32,14 @@ describe("PALETTE_SCOPES", () => {
         expect(histories.map((scope) => scope.key)).toEqual(["h", "hs", "hp", "ha"]);
     });
 
-    it("requires a login for everything but tools, interactive tools and navigation", () => {
+    it("leaves the public scopes, tools and navigation open to anonymous users", () => {
         const anonymous = PALETTE_SCOPES.filter((scope) => !scope.requiresLogin).map((scope) => scope.key);
-        expect(anonymous).toEqual(["t", "it", "n"]);
+        expect(anonymous).toEqual(["wp", "t", "hp", "pp", "it", "n"]);
+    });
+
+    it("keeps the own and shared-with-me scopes behind a login", () => {
+        const gated = PALETTE_SCOPES.filter((scope) => scope.requiresLogin).map((scope) => scope.key);
+        expect(gated).toEqual(["w", "ws", "h", "hs", "ha", "d", "v", "i", "p"]);
     });
 });
 
@@ -80,8 +85,16 @@ describe("isScopeAvailable", () => {
     it("hides login-only scopes from anonymous users", () => {
         const ctx = makeCtx({ isAnonymous: true });
         expect(isScopeAvailable(findScope("w")!, ctx)).toBe(false);
+        expect(isScopeAvailable(findScope("ws")!, ctx)).toBe(false);
         expect(isScopeAvailable(findScope("t")!, ctx)).toBe(true);
         expect(isScopeAvailable(findScope("n")!, ctx)).toBe(true);
+    });
+
+    it("offers the public scopes to anonymous users", () => {
+        const ctx = makeCtx({ isAnonymous: true });
+        expect(isScopeAvailable(findScope("wp")!, ctx)).toBe(true);
+        expect(isScopeAvailable(findScope("hp")!, ctx)).toBe(true);
+        expect(isScopeAvailable(findScope("pp")!, ctx)).toBe(true);
     });
 
     it("hides interactive tools unless they are enabled", () => {
@@ -111,6 +124,12 @@ describe("isScopeAvailable", () => {
     });
 
     it("keeps the registry order while filtering", () => {
-        expect(availableScopes(makeCtx({ isAnonymous: true })).map((scope) => scope.key)).toEqual(["t", "n"]);
+        expect(availableScopes(makeCtx({ isAnonymous: true })).map((scope) => scope.key)).toEqual([
+            "wp",
+            "t",
+            "hp",
+            "pp",
+            "n",
+        ]);
     });
 });
