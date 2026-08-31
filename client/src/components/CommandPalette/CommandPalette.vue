@@ -55,7 +55,8 @@ const toolStore = useToolStore();
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const userStore = useUserStore();
 
-const { badgeLabel, enterScope, handleEscape, mode, popMode, query, reset, setText, text } = usePaletteMachine();
+const { badgeLabel, enterAction, enterScope, handleEscape, mode, popMode, query, reset, setText, text } =
+    usePaletteMachine();
 
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const inputElement = ref<HTMLInputElement | null>(null);
@@ -295,6 +296,31 @@ function recordRecentItem(item: PaletteItem) {
     addRecentItem({ ...item.mru, name: item.title, ...(item.to ? { to: item.to } : {}) });
 }
 
+/**
+ * Shift+enter runs the secondary behavior of the selected item: an action that
+ * takes an argument turns into a badge collecting it, every other item runs its
+ * `secondaryAction`. An item offering neither ignores the key.
+ */
+function runSecondary(item: PaletteItem) {
+    if (item.argumentMode) {
+        enterAction(item);
+        return;
+    }
+    const secondary = item.secondaryAction;
+    if (!secondary) {
+        return;
+    }
+    recordRecentItem(item);
+    if (secondary.to) {
+        router.push(secondary.to).catch(() => {
+            // duplicate navigation to the current route is fine
+        });
+    } else {
+        secondary.run?.(buildContext());
+    }
+    closePalette();
+}
+
 function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEvent) {
     if (!item) {
         return;
@@ -302,6 +328,10 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
     if (mode.value.type === "help") {
         // help rows only rewrite the input, the palette stays open
         item.handler?.();
+        return;
+    }
+    if (event?.shiftKey) {
+        runSecondary(item);
         return;
     }
     // an item sent to a new tab counts as opened just as much as a navigation

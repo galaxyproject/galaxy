@@ -8,6 +8,7 @@ import VueRouter from "vue-router";
 import { useServerMock } from "@/api/client/__mocks__";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
+import { usePageStore } from "@/stores/pageStore";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
 import MountTarget from "./CommandPalette.vue";
@@ -138,6 +139,29 @@ describe("CommandPalette", () => {
         expect(useRecentPaletteItems().recentItems("visualization")).toMatchObject([
             { id: "viz-1", name: "ATAC peaks", type: "visualization" },
         ]);
+    });
+
+    it("runs the secondary action of the selected item on shift+enter", async () => {
+        const pageStore = usePageStore();
+        pageStore.summariesById = { p1: { id: "p1", title: "Lab notes", slug: "lab-notes" } as never };
+        pageStore.idsByVariant.my = ["p1"];
+        const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
+
+        await type("lab notes");
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Lab notes");
+
+        await press("Enter", { shiftKey: true });
+        expect(push).toHaveBeenCalledWith("/pages/editor?id=p1");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
+    it("ignores shift+enter on an item without a secondary behavior", async () => {
+        const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
+
+        await type("workflows");
+        await press("Enter", { shiftKey: true });
+        expect(push).not.toHaveBeenCalled();
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
     });
 
     it("pops the badge on backspace with the caret at the start", async () => {
