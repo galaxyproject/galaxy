@@ -62,6 +62,33 @@ describe("navigationProvider", () => {
         expect(preferences).toBeDefined();
     });
 
+    it("hides login-only curated destinations from anonymous users", async () => {
+        const items = await search("preferences", makeCtx({ isAnonymous: true }));
+        expect(items.some((i) => i.to === "/user")).toBe(false);
+    });
+
+    it("keeps the curated destinations anonymous users may reach", async () => {
+        const ctx = makeCtx({ isAnonymous: true });
+        expect((await search("about", ctx)).some((i) => i.to === "/about")).toBe(true);
+        expect((await search("tours", ctx)).some((i) => i.to === "/tours")).toBe(true);
+        expect((await search("datatypes", ctx)).some((i) => i.to === "/datatypes")).toBe(true);
+    });
+
+    it("hides notifications unless the notification system is enabled", async () => {
+        const disabled = await search("notifications", makeCtx());
+        expect(disabled.some((i) => i.to === "/user/notifications")).toBe(false);
+
+        const enabled = await search("notifications", makeCtx({ config: { enable_notification_system: true } }));
+        expect(enabled.some((i) => i.to === "/user/notifications")).toBe(true);
+    });
+
+    it("does not leak the gating flags onto the rendered rows", async () => {
+        const items = await search("preferences", makeCtx());
+        const preferences = items.find((i) => i.to === "/user");
+        expect(preferences).not.toHaveProperty("anonymous");
+        expect(preferences).not.toHaveProperty("available");
+    });
+
     it("does not offer the upload activity (owned by the actions provider)", async () => {
         const items = await search("upload", makeCtx());
         expect(items.some((i) => i.id.startsWith("navigation:upload"))).toBe(false);
