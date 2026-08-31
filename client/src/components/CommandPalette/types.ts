@@ -103,7 +103,12 @@ export interface ScopedSection {
 }
 
 /** A titled group of rows as the palette renders it, whichever search produced it */
-export type ResultSection = ScopedSection;
+export interface ResultSection extends ScopedSection {
+    /** Whether the provider is still answering, so the section renders skeletons */
+    loading?: boolean;
+    /** Match quality of the provider's results, sorting the fan-out sections */
+    score?: number;
+}
 
 /**
  * A source of palette results. Sync providers (navigation, actions) filter
