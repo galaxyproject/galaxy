@@ -185,7 +185,8 @@ function rootVariants(isAnonymous: boolean): WorkflowListVariant[] {
 async function variantItems(variant: WorkflowListVariant, query: string): Promise<PaletteItem[]> {
     const workflowStore = useWorkflowStore();
     const workflows =
-        (await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: ROOT_VARIANT_LIMIT }))) ?? [];
+        (await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: ROOT_VARIANT_LIMIT }))) ??
+        [];
     return workflows.map((workflow) => workflowItem(workflow, variant));
 }
 
