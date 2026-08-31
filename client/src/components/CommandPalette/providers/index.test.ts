@@ -1,11 +1,26 @@
 import { describe, expect, it } from "vitest";
 
-import type { PaletteItem } from "../types";
-import { findPaletteProvider, paletteProviders, parsePaletteQuery, rankPaletteItems } from "./index";
+import type { PaletteContext, PaletteItem } from "../types";
+import {
+    enabledPaletteProviders,
+    findPaletteProvider,
+    paletteProviders,
+    parsePaletteQuery,
+    rankPaletteItems,
+} from "./index";
 import { ACTIONS_SCOPE, PALETTE_SCOPES } from "./scopes";
 
 function item(id: string, title: string, extras: Partial<PaletteItem> = {}): PaletteItem {
     return { id, title, ...extras };
+}
+
+function makeCtx(disabled: string[] = []): PaletteContext {
+    return {
+        canUseUnprivilegedTools: false,
+        config: { command_palette_disabled_providers: disabled },
+        isAdmin: false,
+        isAnonymous: false,
+    };
 }
 
 /** Key of the scope a query resolves to, or undefined when it is plain text */
@@ -24,6 +39,16 @@ describe("paletteProviders", () => {
     it("registers each provider exactly once", () => {
         const ids = paletteProviders.map((provider) => provider.id);
         expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it("drops the providers the instance disabled, keeping the registry order", () => {
+        expect(enabledPaletteProviders(makeCtx())).toEqual(paletteProviders);
+        const enabled = enabledPaletteProviders(makeCtx(["workflows", "tools"])).map((provider) => provider.id);
+        expect(enabled).not.toContain("workflows");
+        expect(enabled).not.toContain("tools");
+        expect(enabled).toEqual(
+            paletteProviders.map((provider) => provider.id).filter((id) => !["workflows", "tools"].includes(id)),
+        );
     });
 
     it("gives every scope variant a sectioned search", () => {

@@ -55,8 +55,23 @@ export function findScope(key: string): ScopeDefinition | undefined {
     return PALETTE_SCOPES.find((scope) => scope.key === normalized);
 }
 
+/**
+ * Whether the instance left a provider on. Lives here rather than in
+ * `providers/index.ts` because every provider imports this module, and the
+ * registry imports every provider — the check has to sit below both.
+ */
+export function isProviderEnabled(providerId: string, ctx: PaletteContext): boolean {
+    return !(ctx.config.command_palette_disabled_providers ?? []).includes(providerId);
+}
+
 /** Whether a scope may be used by the current user on this Galaxy instance */
 export function isScopeAvailable(scope: ScopeDefinition, ctx: PaletteContext): boolean {
+    // a scope is only a way into its provider, so a disabled one has none: this
+    // covers the help panel rows, the category tabs, the `x:` tokens the machine
+    // would otherwise turn into a badge, and the `>` sigil alike
+    if (!isProviderEnabled(scope.providerId, ctx)) {
+        return false;
+    }
     if (scope.requiresLogin && ctx.isAnonymous) {
         return false;
     }
