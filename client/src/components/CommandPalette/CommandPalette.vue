@@ -1249,9 +1249,18 @@ $palette-transition: 130ms ease-out;
     }
 
     .palette-results {
-        max-height: 21rem;
+        // fixed rather than capped, so the dialog keeps one height across every
+        // result set, the help mode and the empty states
+        height: 21rem;
+        display: flex;
+        flex-direction: column;
         overflow-y: auto;
         padding-bottom: var(--spacing-1);
+
+        // sections keep their natural height; only the hint takes the slack
+        > * {
+            flex: none;
+        }
 
         .palette-section-title {
             font-size: var(--font-size-small);
@@ -1263,6 +1272,8 @@ $palette-transition: 130ms ease-out;
         }
 
         .palette-hint {
+            // centered in whatever is left, so a lone hint sits mid-dialog
+            margin: auto;
             padding: var(--spacing-3);
             text-align: center;
             color: var(--color-grey-600);
