@@ -204,10 +204,6 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "validation_hdf5_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
     "gx_boolean_optional_checked_1": "a checked optional boolean cannot be returned to unset",
     "gx_drill_down_code_0": "the option element id is built from the option name, which the test declares by value",
-    "gx_drill_down_exact_multiple_0": "the form adds every descendant of a chosen option, which an exact hierarchy must not",
-    "gx_drill_down_exact_multiple_1": "the form adds every descendant of a chosen option, which an exact hierarchy must not",
-    "gx_drill_down_recurse_multiple_0": "the form adds the inner nodes a recurse hierarchy leaves out",
-    "gx_drill_down_recurse_multiple_1": "the form adds the inner nodes a recurse hierarchy leaves out",
     "gx_genomebuild_multiple_0": "only one of the declared builds reaches the request",
     "gx_genomebuild_multiple_1": "the search toggles fail the accessibility baseline this suite asserts",
     "gx_group_tag_0": "the harness does not stage a collection whose elements carry group tags",
@@ -215,9 +211,9 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "gx_group_tag_multiple_1": "the harness does not stage a collection whose elements carry group tags",
     "gx_group_tag_optional_0": "the harness does not stage a collection whose elements carry group tags",
     "gx_group_tag_optional_1": "the harness does not stage a collection whose elements carry group tags",
-    "gx_hidden_0": "a hidden parameter keeps its tool default instead of the declared value",
-    "gx_hidden_data_1": "a hidden data parameter is not set from the staged dataset",
-    "gx_hidden_optional_0": "an optional hidden parameter submits null instead of the declared value",
+    "gx_hidden_0": "a hidden parameter renders no control, so the declared value cannot be set in the browser",
+    "gx_hidden_data_1": "a hidden parameter renders no control, so the declared value cannot be set in the browser",
+    "gx_hidden_optional_0": "a hidden parameter renders no control, so the declared value cannot be set in the browser",
     "gx_repeat_select_dynamic_1": "a dynamic select inside a repeat never becomes clickable",
 }
 
