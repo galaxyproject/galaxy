@@ -14,6 +14,7 @@ import { createPage } from "@/api/pages";
 import { Toast } from "@/composables/toast";
 import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { usePageStore } from "@/stores/pageStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "../types";
@@ -45,13 +46,23 @@ function uploadMethodItems(argQuery: string, ctx: PaletteContext): PaletteItem[]
 }
 
 async function createNamedHistory(name: string) {
+    const historyStore = useHistoryStore();
     try {
         // the store's own creation takes no name, so the api call is followed by
         // the same switch it would have done
         const history = await createNewHistory(name);
-        await useHistoryStore().setCurrentHistory(history.id);
+        await historyStore.setCurrentHistory(history.id);
     } catch (error) {
         Toast.error(errorMessageAsString(error), "Failed to create history");
+        return;
+    }
+    try {
+        // the history exists either way: keep the store's paginated total and
+        // offset in step with it, exactly like `historyStore.createNewHistory`
+        await historyStore.handleTotalCountChange(1);
+    } catch (error) {
+        // a stale count is not worth reporting as a failed creation
+        console.debug("Command palette could not refresh the history count", error);
     }
 }
 
@@ -105,6 +116,9 @@ async function createTitledPage(title: string, ctx: PaletteContext) {
             // already owns both, which is worth reporting
             page = await createPage({ title, slug: `${slug}-2`, content_format: "markdown" });
         }
+        // the `p:` scope renders from the store and stops asking the backend once
+        // it holds every page, so the new one has to be seeded or it stays hidden
+        usePageStore().savePages("my", [page], true);
         ctx.navigate?.(`/pages/editor?id=${page.id}`);
     } catch (error) {
         Toast.error(errorMessageAsString(error), "Failed to create page");

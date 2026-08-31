@@ -9,8 +9,10 @@ import type { WorkflowSummary } from "@/api/workflows";
 import { loadWorkflows } from "@/api/workflows";
 import type { ChatHistoryItem } from "@/components/GalaxyAI/chatTypes";
 import { uploadMethodRegistry } from "@/components/Panels/Upload/uploadMethodRegistry";
+import { Toast } from "@/composables/toast";
 import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { usePageStore } from "@/stores/pageStore";
 
 import type { PaletteContext, PaletteItem } from "../types";
 import { actionsProvider, slugify } from "./actions";
@@ -27,6 +29,10 @@ vi.mock("@/api/pages", async (importOriginal) => ({
 
 vi.mock("@/api/workflows", () => ({
     loadWorkflows: vi.fn(),
+}));
+
+vi.mock("@/composables/toast", () => ({
+    Toast: { error: vi.fn(), success: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
 
 vi.mock("@/components/Workflow/workflows.services", () => ({
@@ -112,9 +118,40 @@ describe("actionsProvider", () => {
 
         const historyStore = useHistoryStore();
         const setCurrentHistory = vi.spyOn(historyStore, "setCurrentHistory").mockResolvedValue(undefined);
+        const handleTotalCountChange = vi.spyOn(historyStore, "handleTotalCountChange").mockResolvedValue(undefined);
         item?.handler?.(makeCtx());
         await vi.waitFor(() => expect(setCurrentHistory).toHaveBeenCalledWith("hist-1"));
         expect(createNewHistory).toHaveBeenCalledWith("RNA run");
+        // the store's own creation refreshes the paginated total, and so must this one
+        await vi.waitFor(() => expect(handleTotalCountChange).toHaveBeenCalledWith(1));
+    });
+
+    it("reports a failed history creation without touching the total count", async () => {
+        vi.mocked(createNewHistory).mockRejectedValueOnce(new Error("nope"));
+
+        const historyStore = useHistoryStore();
+        const setCurrentHistory = vi.spyOn(historyStore, "setCurrentHistory").mockResolvedValue(undefined);
+        const handleTotalCountChange = vi.spyOn(historyStore, "handleTotalCountChange").mockResolvedValue(undefined);
+
+        const [item] = await argumentItems("actions:new-history", "RNA run");
+        item?.handler?.(makeCtx());
+
+        await vi.waitFor(() => expect(Toast.error).toHaveBeenCalled());
+        expect(setCurrentHistory).not.toHaveBeenCalled();
+        expect(handleTotalCountChange).not.toHaveBeenCalled();
+    });
+
+    it("keeps a stale count from looking like a failed history creation", async () => {
+        const historyStore = useHistoryStore();
+        const setCurrentHistory = vi.spyOn(historyStore, "setCurrentHistory").mockResolvedValue(undefined);
+        vi.spyOn(historyStore, "handleTotalCountChange").mockRejectedValue(new Error("count is down"));
+
+        const [item] = await argumentItems("actions:new-history", "RNA run");
+        item?.handler?.(makeCtx());
+
+        await vi.waitFor(() => expect(setCurrentHistory).toHaveBeenCalledWith("hist-1"));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(Toast.error).not.toHaveBeenCalled();
     });
 
     it("routes workflow creation and import", async () => {
@@ -142,6 +179,43 @@ describe("actionsProvider", () => {
             slug: "my-new-page",
             content_format: "markdown",
         });
+    });
+
+    it("seeds the created page into the page store, ahead of the cached ones", async () => {
+        vi.mocked(createPage).mockResolvedValue({
+            id: "page-1",
+            title: "My New Page",
+            slug: "my-new-page",
+            update_time: "2026-01-02T00:00:00",
+        } as never);
+
+        const pageStore = usePageStore();
+        // a cache the `p:` scope would otherwise consider complete, so a missing
+        // seed would leave the new page invisible until the next unfiltered fetch
+        pageStore.savePages("my", [{ id: "page-0", title: "Older page" } as never]);
+
+        const navigate = vi.fn();
+        const ctx = makeCtx({ navigate });
+        const [item] = await argumentItems("actions:create-page", "My New Page", ctx);
+        item?.handler?.(ctx);
+
+        await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-1"));
+        expect(pageStore.getPageById("page-1")).toMatchObject({ title: "My New Page" });
+        expect(pageStore.getPages("my").map((page) => page.id)).toEqual(["page-1", "page-0"]);
+    });
+
+    it("leaves the page store untouched when the creation fails", async () => {
+        vi.mocked(createPage).mockRejectedValue(new Error("nope"));
+
+        const pageStore = usePageStore();
+        const navigate = vi.fn();
+        const ctx = makeCtx({ navigate });
+        const [item] = await argumentItems("actions:create-page", "My New Page", ctx);
+        item?.handler?.(ctx);
+
+        await vi.waitFor(() => expect(Toast.error).toHaveBeenCalled());
+        expect(navigate).not.toHaveBeenCalled();
+        expect(pageStore.getPages("my")).toEqual([]);
     });
 
     it("retries a conflicting page slug once with a suffix", async () => {
