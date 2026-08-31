@@ -169,3 +169,18 @@ describe("toolsProvider", () => {
         });
     });
 });
+
+describe("prototype-colliding queries", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        vi.mocked(axios.get).mockReset();
+    });
+
+    it("fetches and returns results for a query that collides with Object.prototype", async () => {
+        mockToolsApi([]);
+        const items = await toolsProvider.search("constructor", makeCtx());
+        expect(items).toEqual([]);
+        // the prototype's `constructor` must not pass as a cached search result
+        expect(backendSearches().length).toBe(1);
+    });
+});

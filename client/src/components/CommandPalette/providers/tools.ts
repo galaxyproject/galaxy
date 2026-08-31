@@ -78,7 +78,9 @@ async function searchTools(query: string, limit: number): Promise<PaletteItem[]>
     }
     const toolStore = useToolStore();
     await toolStore.fetchTools(trimmed);
-    return itemsForToolIds(toolStore.toolResults[trimmed] ?? []).slice(0, limit);
+    // guarded lookup: a query like "constructor" must not resolve through the prototype chain
+    const resultIds = Object.hasOwn(toolStore.toolResults, trimmed) ? toolStore.toolResults[trimmed] : [];
+    return itemsForToolIds(resultIds ?? []).slice(0, limit);
 }
 
 function favoriteToolItems(): PaletteItem[] {

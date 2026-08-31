@@ -260,8 +260,11 @@ export const useToolStore = defineStore("toolStore", () => {
             // Backend search
             if (q?.trim()) {
                 // We have either cached the backend search result,
-                // or it is a favorites search (which we always repeat for changes)
-                if (!toolResults.value[q] || FAVORITES_KEYS.includes(q.trim())) {
+                // or it is a favorites search (which we always repeat for changes).
+                // Own-property check: a query like "constructor" must not resolve
+                // through the prototype chain and pass as a cached result.
+                const cached = Object.hasOwn(toolResults.value, q) ? toolResults.value[q] : undefined;
+                if (!cached || FAVORITES_KEYS.includes(q.trim())) {
                     const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { q } });
                     saveToolResults(q, data);
                 }
