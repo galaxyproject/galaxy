@@ -7,6 +7,7 @@ import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useUserStore } from "@/stores/userStore";
 
 import type { PaletteContext } from "../types";
+import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 import { workflowsProvider } from "./workflows";
 
@@ -68,12 +69,18 @@ function mockWorkflowsApi() {
         let data: WorkflowSummary[];
         if (filterText.includes("is:bookmarked")) {
             data = [BOOKMARKED];
-        } else if (showShared) {
+        } else if (filterText.includes("is:shared_with_me")) {
             data = [SHARED];
         } else if (showPublished) {
             data = [PUBLISHED];
         } else {
             data = query ? [RNA, VARIANTS, REMOTE_ONLY] : [RNA, VARIANTS];
+            if (showShared !== false) {
+                // `show_shared` defaults to true on the backend and an
+                // `undefined` value never reaches it, so anything but an
+                // explicit `false` mixes shared-with-me workflows in
+                data = [...data, SHARED];
+            }
         }
         const matched = query ? data.filter((entry) => entry.name.toLowerCase().includes(query)) : data;
         return { data: matched, totalMatches: matched.length };
@@ -98,6 +105,7 @@ describe("workflowsProvider", () => {
         setActivePinia(createPinia());
         recent = [];
         vi.mocked(loadWorkflows).mockReset();
+        resetListRefreshTracking();
         mockWorkflowsApi();
         signIn();
     });
@@ -134,6 +142,17 @@ describe("workflowsProvider", () => {
         expect(item?.secondaryAction).toBeUndefined();
     });
 
+    it("keeps workflows shared with the user out of the own and bookmarked lists", async () => {
+        const sections = await scopedSections(OWN_SCOPE);
+
+        const ownRequests = vi
+            .mocked(loadWorkflows)
+            .mock.calls.filter(([args]) => !args.filterText?.includes("is:shared_with_me"));
+        expect(ownRequests.length).toBeGreaterThan(0);
+        ownRequests.forEach(([args]) => expect(args.showShared).toBe(false));
+        expect(sections.flatMap((s) => s.items.map((i) => i.title))).not.toContain("Shared alignment");
+    });
+
     it("reads the shared list for the `ws:` scope", async () => {
         const sections = await scopedSections(SHARED_SCOPE, "alignment");
 
@@ -152,6 +171,19 @@ describe("workflowsProvider", () => {
         // "Workflows" replaces "Latest" once a query narrows the section
         expect(sections.at(-1)?.title).toBe("Workflows");
         expect(vi.mocked(loadWorkflows).mock.calls.length).toBe(callsAfterHydration);
+    });
+
+    it("refreshes a cached list in the background once the palette reopens later", async () => {
+        await scopedSections(OWN_SCOPE);
+        const callsAfterHydration = vi.mocked(loadWorkflows).mock.calls.length;
+
+        // a later palette session, past the refresh interval
+        resetListRefreshTracking();
+        const sections = await scopedSections(OWN_SCOPE);
+
+        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
+        // one refresh per cached list the scope renders (bookmarked and my)
+        expect(vi.mocked(loadWorkflows).mock.calls.length).toBe(callsAfterHydration + 2);
     });
 
     it("queries the backend and merges the extra matches when the cache is a full page", async () => {

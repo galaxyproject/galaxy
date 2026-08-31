@@ -9,6 +9,7 @@ import { galaxyTimeToDate } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 /** Entity type this provider records in the palette MRU (`useRecentPaletteItems`) */
@@ -147,8 +148,18 @@ async function listItems(
 ): Promise<PaletteItem[]> {
     const { cacheOnly = false, queryBackend = true } = options;
     const workflowStore = useWorkflowStore();
-    if (!cacheOnly && !workflowStore.isWorkflowListLoaded(variant)) {
-        await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, "", { limit: LIST_PAGE_SIZE }));
+    const refreshKey = `workflows:${variant}`;
+    if (!cacheOnly) {
+        if (!workflowStore.isWorkflowListLoaded(variant)) {
+            await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, "", { limit: LIST_PAGE_SIZE }));
+            markListRefreshed(refreshKey);
+        } else {
+            // stale-while-revalidate: the cached rows render now, the refreshed
+            // ones land in the store for the next keystroke
+            refreshListWhenStale(refreshKey, () =>
+                workflowStore.fetchWorkflowList(variant, "", { limit: LIST_PAGE_SIZE }),
+            );
+        }
     }
     const cached = workflowStore.getWorkflowList(variant);
     const local = rankPaletteItems(
