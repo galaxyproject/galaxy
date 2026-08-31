@@ -221,26 +221,72 @@ describe("pagesProvider", () => {
     });
 
     describe("search", () => {
-        it("filters the cached own pages and never fetches for a root query", async () => {
+        it("filters the cached own pages without fetching them", async () => {
             mockPages([mockPage("a", { title: "Notes" })]);
-            // nothing cached yet: the fan-out contributes nothing rather than fetching
-            expect(await pagesProvider.search("notes", makeCtx())).toEqual([]);
-            expect(loadPages).not.toHaveBeenCalled();
+            await usePageStore().fetchPages("my");
+            vi.mocked(loadPages).mockClear();
+            mockPages([]);
 
+            const items = await pagesProvider.search("notes", makeCtx());
+
+            expect(items.map((item) => item.id)).toEqual(["pages:a"]);
+            // the own list is only ever fetched by the `p:` scope
+            expect(loadPages).not.toHaveBeenCalledWith(expect.objectContaining({ showOwn: true }));
+        });
+
+        it("merges the published matches into the fan-out", async () => {
+            mockPages([mockPage("a", { title: "Notes", username: "me" })]);
+            await usePageStore().fetchPages("my");
+            vi.mocked(loadPages).mockClear();
+            mockPages([mockPage("z", { title: "Notes of a stranger" })]);
+
+            const items = await pagesProvider.search("notes", makeCtx());
+
+            expect(items.map((item) => item.id).sort()).toEqual(["pages:a", "pages:z"]);
+            // a handful of public rows is enough next to the user's own pages
+            expect(loadPages).toHaveBeenCalledWith(
+                expect.objectContaining({ showPublished: true, search: "notes", limit: 3 }),
+            );
+        });
+
+        it("keeps one row per page in the fan-out, preferring the user's own", async () => {
+            // `mockPage` hands its pages to "owner", so only the own listing
+            // proves that the page belongs to the current user
+            mockPages([mockPage("a", { title: "Notes" })]);
             await usePageStore().fetchPages("my");
             vi.mocked(loadPages).mockClear();
 
             const items = await pagesProvider.search("notes", makeCtx());
 
             expect(items.map((item) => item.id)).toEqual(["pages:a"]);
-            expect(loadPages).not.toHaveBeenCalled();
+            expect(items[0]?.secondaryAction).toEqual({ label: "Edit content", to: "/pages/editor?id=a" });
         });
 
-        it("skips single character and anonymous queries", async () => {
+        it("searches the published pages alone for an anonymous root query", async () => {
+            mockPages([mockPage("p1", { title: "Public notes" })]);
+
+            const items = await pagesProvider.search("notes", makeCtx({ isAnonymous: true }));
+
+            expect(items.map((item) => item.id)).toEqual(["pages:p1"]);
+            expect(loadPages).toHaveBeenCalledTimes(1);
+            expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ showOwn: false, showPublished: true }));
+        });
+
+        it("keeps the cached own rows when the published search fails", async () => {
+            mockPages([mockPage("a", { title: "Notes" })]);
+            await usePageStore().fetchPages("my");
+            vi.mocked(loadPages).mockRejectedValue(new Error("boom"));
+
+            const items = await pagesProvider.search("notes", makeCtx());
+
+            expect(items.map((item) => item.id)).toEqual(["pages:a"]);
+        });
+
+        it("skips single character queries", async () => {
             mockPages([mockPage("a")]);
 
             expect(await pagesProvider.search("n", makeCtx())).toEqual([]);
-            expect(await pagesProvider.search("notes", makeCtx({ isAnonymous: true }))).toEqual([]);
+            expect(await pagesProvider.search("n", makeCtx({ isAnonymous: true }))).toEqual([]);
             expect(loadPages).not.toHaveBeenCalled();
         });
     });
