@@ -29,11 +29,6 @@ from galaxy.datatypes.util import gff_util
 from galaxy.tools.util.galaxyops import parse_cols_arg
 
 
-def stop_err(msg):
-    sys.stderr.write(msg)
-    sys.exit(1)
-
-
 def reverse_complement(s):
     complement_dna = {
         "A": "T",
@@ -139,12 +134,12 @@ def __main__():
             if returncode != 0:
                 raise Exception(stderr)
         except Exception as e:
-            stop_err("Error running faToTwoBit. " + str(e))
+            sys.exit("Error running faToTwoBit. " + str(e))
     else:
         seq_path = check_seq_file(dbkey, GALAXY_DATA_INDEX_DIR)
         if not os.path.exists(seq_path):
             # If this occurs, we need to fix the metadata validator.
-            stop_err("No sequences are available for '%s', request them by reporting this error." % dbkey)
+            sys.exit("No sequences are available for '%s', request them by reporting this error." % dbkey)
 
     #
     # Fetch sequences.
