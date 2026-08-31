@@ -34,6 +34,7 @@ from collections.abc import Callable
 from functools import partial
 from typing import (
     Any,
+    cast,
     Generic,
     NamedTuple,
     Optional,
@@ -44,6 +45,7 @@ from typing import (
 
 import sqlalchemy
 from sqlalchemy.orm import Query
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.scoping import scoped_session
 from typing_extensions import Protocol
 
@@ -1296,6 +1298,49 @@ def parse_bool(bool_string: Union[str, bool]) -> bool:
 
 def raise_filter_err(attr, op, val, msg):
     raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
+
+
+# Both an ORM attribute (History.name) and a core column expression (func.lower(...)) can be
+# ordered by, and both carry the .type needed to tell text columns apart.
+SortableColumn = Union["sqlalchemy.ColumnElement[T]", "InstrumentedAttribute[T]"]
+SelectT = TypeVar("SelectT", bound="sqlalchemy.Select[Any]")
+
+
+def sort_expression(column: SortableColumn[T]) -> SortableColumn[T]:
+    """Return the ORDER BY expression for ``column``, ordering text case-insensitively.
+
+    Raw text ordering follows the database collation, so every capitalised value sorts
+    ahead of every lowercase one under SQLite or a C-collation Postgres but not under a
+    locale collation. Filtering already ignores case, so ordering does too. ASCII only:
+    SQLite's lower() folds nothing else and Postgres' is locale dependent.
+    """
+    affinity = column.type._type_affinity
+    if affinity is not None and issubclass(affinity, sqlalchemy.String):
+        return sqlalchemy.func.lower(column)
+    return column
+
+
+def apply_sort_column(
+    stmt: SelectT,
+    column: SortableColumn[Any],
+    sort_desc: Optional[bool],
+    tiebreaker: SortableColumn[Any],
+) -> SelectT:
+    """Order a ``SELECT DISTINCT`` statement by ``column``, breaking ties on ``tiebreaker``.
+
+    Without the tiebreaker, paging with limit/offset over a column holding duplicate
+    values can return a row on two pages, or on none.
+    """
+    expression = sort_expression(column)
+    if expression is not column:
+        # Postgres rejects ordering a SELECT DISTINCT by an expression missing from the
+        # select list. Selecting it cannot change which rows are distinct -- it derives
+        # from a column that is already selected. add_columns() widens the row type, but
+        # the extra column trails the entity that callers read back with scalars().
+        stmt = cast(SelectT, stmt.add_columns(expression))
+    if sort_desc:
+        return stmt.order_by(expression.desc(), tiebreaker.desc())
+    return stmt.order_by(expression, tiebreaker)
 
 
 class SortableManager:
