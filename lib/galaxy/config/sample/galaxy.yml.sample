@@ -3353,6 +3353,33 @@ galaxy:
   # to name a few examples.
   #enable_notification_system: false
 
+  # Master toggle for the command palette, the searchable overlay that
+  # lets users jump to tools, workflows, histories, datasets and other
+  # Galaxy resources from anywhere in the interface.
+  # When disabled, the search button in the masthead is hidden and the
+  # Ctrl/Cmd-K keyboard shortcut that opens the palette is not
+  # registered.
+  #enable_command_palette: true
+
+  # Whether anonymous (not logged in) users may use the command palette.
+  # When false, the palette is only available to logged in users. This
+  # option is only relevant when ``enable_command_palette`` is true.
+  #command_palette_allow_anonymous: true
+
+  # List of command palette providers to disable.
+  # Valid provider ids are: ``actions``, ``navigation``, ``tools``,
+  # ``workflows``, ``histories``, ``datasets``, ``visualizations``,
+  # ``invocations``, ``pages`` and ``interactiveTools``.
+  # Disabling a provider removes its search scopes, its category tab and
+  # its results from the palette.
+  #command_palette_disabled_providers: null
+
+  # Overrides the leading phrase of the command palette input
+  # placeholder and the text and tooltip of the search button in the
+  # masthead.
+  # When unset, the client uses a localized "Search Galaxy".
+  #command_palette_placeholder: null
+
   # Enable the Model Context Protocol (MCP) server integration.
   # MCP allows AI assistants (like Claude, ChatGPT, etc.) to interact
   # with Galaxy programmatically through a standardized protocol. When

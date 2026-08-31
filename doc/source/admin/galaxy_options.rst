@@ -6190,6 +6190,62 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_command_palette``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Master toggle for the command palette, the searchable overlay that
+    lets users jump to tools, workflows, histories, datasets and other
+    Galaxy resources from anywhere in the interface.
+    When disabled, the search button in the masthead is hidden and the
+    Ctrl/Cmd-K keyboard shortcut that opens the palette is not
+    registered.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``command_palette_allow_anonymous``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Whether anonymous (not logged in) users may use the command
+    palette.
+    When false, the palette is only available to logged in users. This
+    option is only relevant when ``enable_command_palette`` is true.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``command_palette_disabled_providers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    List of command palette providers to disable.
+    Valid provider ids are: ``actions``, ``navigation``, ``tools``,
+    ``workflows``, ``histories``, ``datasets``, ``visualizations``,
+    ``invocations``, ``pages`` and ``interactiveTools``.
+    Disabling a provider removes its search scopes, its category tab
+    and its results from the palette.
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``command_palette_placeholder``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Overrides the leading phrase of the command palette input
+    placeholder and the text and tooltip of the search button in the
+    masthead.
+    When unset, the client uses a localized "Search Galaxy".
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``enable_mcp_server``
 ~~~~~~~~~~~~~~~~~~~~~
