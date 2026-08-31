@@ -1209,7 +1209,7 @@ class SelectToolParameter(ToolParameter):
                 value2: str | list[str] | None = options[0].value
             else:
                 value2 = None
-        elif len(value) == 1 or not self.multiple:
+        elif not self.multiple:
             value2 = value[0]
         else:
             value2 = value
