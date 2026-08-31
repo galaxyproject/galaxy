@@ -24,7 +24,7 @@ const ROOT_LIMIT = 5;
 /** Neither the unscoped fan-out nor a backend query runs on a single character */
 const MIN_QUERY_LENGTH = 2;
 
-/** Entries requested per fetch of one of the cached (foreign) listings */
+/** Entries requested per fetch, for the own histories and the listings alike */
 const LIST_PAGE_SIZE = 25;
 
 /** Which cached list a scope reads: the user's own histories, or a listing */
@@ -181,6 +181,10 @@ function cachedHistories(variant: HistoryVariant): HistoryEntryLike[] {
  * Both store calls share whatever request is already running, so a keystroke
  * landing during the very first fetch waits for it instead of rendering the
  * still empty cache as "no results".
+ *
+ * Every variant is fetched one page at a time, the own histories included: the
+ * palette renders a handful of rows and asks the backend again for anything the
+ * page cannot answer, so pulling an unbounded list would be wasted work.
  */
 async function ensureHydrated(variant: HistoryVariant): Promise<void> {
     const historyStore = useHistoryStore();
@@ -188,10 +192,10 @@ async function ensureHydrated(variant: HistoryVariant): Promise<void> {
     if (variant === "my") {
         if (historyStore.histories.length === 0) {
             // nothing cached to fall back on, so a failure is reported
-            await fetchOrFail(() => historyStore.loadHistories(false));
+            await fetchOrFail(() => historyStore.loadHistories(false, undefined, LIST_PAGE_SIZE));
             markListRefreshed(key);
         } else {
-            refreshListWhenStale(key, () => historyStore.loadHistories(false));
+            refreshListWhenStale(key, () => historyStore.loadHistories(false, undefined, LIST_PAGE_SIZE));
         }
         return;
     }
@@ -207,7 +211,9 @@ async function ensureHydrated(variant: HistoryVariant): Promise<void> {
 async function searchBackend(variant: HistoryVariant, query: string): Promise<void> {
     const historyStore = useHistoryStore();
     if (variant === "my") {
-        await fetchQuietly(() => historyStore.loadHistories(false, HistoriesFilters.getQueryString(query)));
+        await fetchQuietly(() =>
+            historyStore.loadHistories(false, HistoriesFilters.getQueryString(query), LIST_PAGE_SIZE),
+        );
         return;
     }
     await fetchQuietly(() => historyStore.fetchHistoryList(variant, { search: query, limit: LIST_PAGE_SIZE }));
@@ -224,14 +230,13 @@ function rankHistories(histories: HistoryEntryLike[], variant: HistoryVariant, q
  * Whether the cache holds everything the backend has, in which case it can
  * answer any query on its own.
  *
- * The listings are fetched a page at a time, so a short page is the whole list.
- * The own histories are fetched unpaginated instead, which leaves the total
- * unknown (zero) — it is only set when the app itself paginated the list, and
- * then it says how much of it is still missing.
+ * Every list is fetched a page at a time, so a short page is the whole list.
+ * The own histories additionally carry a total whenever the app paginated the
+ * list itself — it stays zero otherwise, and a short page is all there is.
  */
 function cacheIsComplete(variant: HistoryVariant, cached: HistoryEntryLike[]): boolean {
     if (variant === "my") {
-        return cached.length >= useHistoryStore().totalHistoryCount;
+        return cached.length < LIST_PAGE_SIZE && cached.length >= useHistoryStore().totalHistoryCount;
     }
     return cached.length < LIST_PAGE_SIZE;
 }
