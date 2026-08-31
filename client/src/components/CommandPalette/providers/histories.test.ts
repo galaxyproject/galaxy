@@ -471,6 +471,23 @@ describe("historiesProvider", () => {
         expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 3 }));
     });
 
+    it("keeps the fan-out's listing hits out of the cached listing", async () => {
+        await useHistoryStore().loadHistories(false);
+
+        await historiesProvider.search("metagenomics", makeCtx());
+
+        const historyStore = useHistoryStore();
+        // the hits answered one query, so the listing itself is still unfetched
+        expect(historyStore.hasLoadedHistoryList("published")).toBe(false);
+        expect(historyStore.publishedHistories).toEqual([]);
+
+        const sections = await scopedSections(PUBLISHED_SCOPE);
+
+        // …and `hp:` hydrates it with a full, unfiltered page of its own
+        expect(getPublishedHistories).toHaveBeenLastCalledWith(expect.objectContaining({ search: "", limit: 25 }));
+        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Public metagenomics"]);
+    });
+
     it("keeps one row per history in the fan-out, preferring the user's own", async () => {
         await useHistoryStore().loadHistories(false);
         // the published listing answers with a history the user owns
