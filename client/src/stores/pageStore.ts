@@ -25,6 +25,12 @@ export const usePageStore = defineStore("pageStore", () => {
     const totalMatchesByVariant = ref<Record<PageListVariant, number>>({ my: 0, published: 0 });
     const loadedVariants = ref<Record<PageListVariant, boolean>>({ my: false, published: false });
     const loadingVariants = ref<Record<PageListVariant, boolean>>({ my: false, published: false });
+    /**
+     * Whether an *unfiltered* listing of the variant has been fetched. Only such
+     * a fetch reports how many pages exist in total, so only it can tell whether
+     * the cached ids are the complete list.
+     */
+    const fullyListedVariants = ref<Record<PageListVariant, boolean>>({ my: false, published: false });
 
     /** In-flight requests, keyed by variant and query, to avoid duplicate fetches. */
     const fetchPromises = new Map<string, Promise<PageSummary[]>>();
@@ -48,10 +54,15 @@ export const usePageStore = defineStore("pageStore", () => {
     const isLoaded = computed(() => (variant: PageListVariant) => loadedVariants.value[variant]);
     const isLoading = computed(() => (variant: PageListVariant) => loadingVariants.value[variant]);
 
-    /** True when the cached id list is known to hold every page of that variant. */
+    /**
+     * True when the cached id list is known to hold every page of that variant.
+     * A search that came back empty proves nothing about the full list, so this
+     * stays false until an unfiltered listing has reported the total.
+     */
     const isComplete = computed(
         () => (variant: PageListVariant) =>
-            loadedVariants.value[variant] && idsByVariant.value[variant].length >= totalMatchesByVariant.value[variant],
+            fullyListedVariants.value[variant] &&
+            idsByVariant.value[variant].length >= totalMatchesByVariant.value[variant],
     );
 
     function mergeIds(existing: string[], incoming: string[], atFront: boolean) {
@@ -114,6 +125,7 @@ export const usePageStore = defineStore("pageStore", () => {
                 savePages(variant, data, isFullListing);
                 if (isFullListing) {
                     set(totalMatchesByVariant.value, variant, totalMatches);
+                    set(fullyListedVariants.value, variant, true);
                 }
                 set(loadedVariants.value, variant, true);
                 return data;

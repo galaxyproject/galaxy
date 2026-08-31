@@ -172,6 +172,25 @@ describe("usePageStore", () => {
             await pageStore.fetchPages("my");
             expect(pageStore.isComplete("my")).toBe(true);
         });
+
+        it("stays false after a search that found nothing", async () => {
+            vi.mocked(loadPages).mockResolvedValue(mockResult([], 0));
+
+            await pageStore.fetchPages("my", { search: "nothing matches this" });
+
+            // the variant counts as loaded, but a filtered fetch never reports
+            // how many pages exist, so completeness cannot follow from it
+            expect(pageStore.isLoaded("my")).toBe(true);
+            expect(pageStore.isComplete("my")).toBe(false);
+        });
+
+        it("is true for an unfiltered listing that came back empty", async () => {
+            vi.mocked(loadPages).mockResolvedValue(mockResult([], 0));
+
+            await pageStore.fetchPages("my");
+
+            expect(pageStore.isComplete("my")).toBe(true);
+        });
     });
 
     describe("savePages and removePage", () => {
