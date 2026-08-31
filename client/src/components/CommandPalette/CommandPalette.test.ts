@@ -290,6 +290,25 @@ describe("CommandPalette", () => {
         expect(badge().text()).toContain("Run workflow");
     });
 
+    it("prompts for a free text argument instead of reporting no results", async () => {
+        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
+
+        await type("> create new history");
+        await press("Enter", { shiftKey: true });
+        expect(badge().text()).toContain("Create new history");
+
+        const prompt = () => wrapper.find("[data-description='palette argument hint']");
+        expect(prompt().text()).toContain("Type a name for the new history");
+        expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
+
+        await type("rna seq");
+        expect(prompt().exists()).toBe(false);
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("rna seq");
+
+        await type("");
+        expect(prompt().exists()).toBe(true);
+    });
+
     it("leaves an action's argument badge on backspace at the start", async () => {
         await type("> upload");
         await press("Enter", { shiftKey: true });
