@@ -92,3 +92,21 @@ export function isScopeAvailable(scope: ScopeDefinition, ctx: PaletteContext): b
 export function availableScopes(ctx: PaletteContext): ScopeDefinition[] {
     return PALETTE_SCOPES.filter((scope) => isScopeAvailable(scope, ctx));
 }
+
+/**
+ * Whether an account is the only thing between the current user and a scope.
+ * A provider the instance turned off — or a scope whose own config gate is
+ * unmet — does not exist on this Galaxy at all, so it stays hidden rather than
+ * asking for a login that would not unlock it either.
+ */
+export function isScopeLoginGated(scope: ScopeDefinition, ctx: PaletteContext): boolean {
+    if (!scope.requiresLogin || !ctx.isAnonymous || !isProviderEnabled(scope.providerId, ctx)) {
+        return false;
+    }
+    return scope.configGate ? scope.configGate(ctx) : true;
+}
+
+/** The scopes logging in would add, in registry order — empty for a known user */
+export function loginGatedScopes(ctx: PaletteContext): ScopeDefinition[] {
+    return PALETTE_SCOPES.filter((scope) => isScopeLoginGated(scope, ctx));
+}
