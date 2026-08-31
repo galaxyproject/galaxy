@@ -46,16 +46,18 @@ function toolToItem(tool: Tool): PaletteItem {
 /**
  * Running interactive tools, store-first: the entry point store is kept fresh
  * by the app-wide SSE/polling watcher, so its cache is only hydrated here when
- * it is still empty (first palette use before the watcher's baseline fetch).
+ * it was never fetched (first palette use before the watcher's baseline fetch).
+ *
+ * The store's own "loaded" flag decides that, not the length of the list: for
+ * the many users with nothing running, an empty list is the answer, and reading
+ * it as "not hydrated yet" would re-request `/api/entry_points` per keystroke.
  */
 async function runningItems(): Promise<PaletteItem[]> {
     const entryPointStore = useEntryPointStore();
-    if (entryPointStore.entryPoints.length === 0) {
-        try {
-            await entryPointStore.fetchEntryPoints();
-        } catch (e) {
-            console.warn("Command palette could not load running interactive tools", e);
-        }
+    try {
+        await entryPointStore.ensureEntryPointsLoaded();
+    } catch (e) {
+        console.warn("Command palette could not load running interactive tools", e);
     }
     return entryPointStore.entryPoints.map(entryPointToItem);
 }
