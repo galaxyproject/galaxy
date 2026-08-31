@@ -499,6 +499,8 @@ describe("CommandPalette", () => {
     it("flips the escape hint between close, clear and back", async () => {
         expect(hint("escape").text()).toContain("close");
         expect(hint("help").exists()).toBe(true);
+        // help sits opposite the bindings it explains
+        expect(hint("help").classes()).toContain("hint-right");
         expect(hint("remove-scope").exists()).toBe(false);
 
         await type("t: align");
