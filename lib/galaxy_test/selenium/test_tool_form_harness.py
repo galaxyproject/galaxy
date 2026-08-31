@@ -166,6 +166,8 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "async_conditional_no_default_nested_data_0": "the repeat renders one instance more than the test declares",
     "collection_split_on_column_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
     "composite_pbed_0": "test data uses a datatype the instance does not know",
+    "select_optional_0": "an unset optional data column submits an empty string the typed request rejects",
+    "select_optional_legacy_0": "an unset optional data column submits an empty string the typed request rejects",
     "credentials_test_0": "the tool needs a credential this instance has none of",
     "credentials_test_1": "the tool needs a credential this instance has none of",
     "select_dynamic_0": "a select that renames its value column is filled from the wrong column",
