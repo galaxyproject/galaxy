@@ -154,11 +154,22 @@ describe("pagesProvider", () => {
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:new", "pages:old"]);
         });
 
-        it("returns nothing for anonymous users", async () => {
+        it("returns nothing for the own scope of an anonymous user", async () => {
             const sections = (await pagesProvider.searchScoped?.(scope("p"), "", makeCtx({ isAnonymous: true }))) ?? [];
 
             expect(sections).toEqual([]);
             expect(loadPages).not.toHaveBeenCalled();
+        });
+
+        it("serves the published scope to anonymous users", async () => {
+            mockPages([mockPage("p1")]);
+
+            const sections =
+                (await pagesProvider.searchScoped?.(scope("pp"), "", makeCtx({ isAnonymous: true }))) ?? [];
+
+            expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ showOwn: false, showPublished: true }));
+            expect(sections.map((section) => section.id)).toEqual(["published"]);
+            expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:p1"]);
         });
 
         it("keeps querying the backend after a search that found nothing", async () => {
