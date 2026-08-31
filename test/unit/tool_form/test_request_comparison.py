@@ -72,7 +72,7 @@ def test_repeat_value_mismatch_is_reported():
 def test_missing_repeat_instance_is_reported():
     declared = {"r": [{"p": "a"}, {"p": "b"}]}
     submitted = {"r": [{"p": "a"}]}
-    assert declared_mismatches(declared, submitted) == ["r (1 values, not 2)"]
+    assert declared_mismatches(declared, submitted) == ["r ([{'p': 'a'}] not [{'p': 'a'}, {'p': 'b'}])"]
 
 
 def test_list_of_scalars_matches():
@@ -154,7 +154,7 @@ def test_comma_joined_matches_a_submitted_list():
 
 
 def test_comma_joined_of_a_different_length_is_reported():
-    assert declared_mismatches({"c": "1,2,3"}, {"c": [1, 2]}) == ["c (2 values, not 3)"]
+    assert declared_mismatches({"c": "1,2,3"}, {"c": [1, 2]}) == ["c ([1, 2] not ['1', '2', '3'])"]
 
 
 def test_text_that_is_not_a_number_still_differs():
