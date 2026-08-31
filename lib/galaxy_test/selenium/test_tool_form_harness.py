@@ -204,7 +204,6 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "validation_hdf5_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
     "gx_boolean_optional_checked_1": "a checked optional boolean cannot be returned to unset",
     "gx_drill_down_code_0": "the option element id is built from the option name, which the test declares by value",
-    "gx_genomebuild_multiple_0": "only one of the declared builds reaches the request",
     "gx_genomebuild_multiple_1": "the search toggles fail the accessibility baseline this suite asserts",
     "gx_group_tag_0": "the harness does not stage a collection whose elements carry group tags",
     "gx_group_tag_multiple_0": "the harness does not stage a collection whose elements carry group tags",

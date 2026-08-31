@@ -1205,6 +1205,8 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
         if not tf.parameter_color_input(parameter=expanded_id).is_absent:
             return "color"
+        if not tf.parameter_select_many(parameter=expanded_id).is_absent:
+            return "select_many"
         if not tf.parameter_select(parameter=expanded_id).is_absent:
             return "select"
 
@@ -1229,6 +1231,11 @@ class RunsToolTests(NavigatesGalaxyMixin):
             self._set_boolean_value(key, value)
         elif param_type == "color":
             self._set_color_value(key, value)
+        elif param_type == "select_many":
+            items = self._select_values(value, by_value)
+            self._set_select_many_value(key, items, by_value)
+            missing = [item for item in items if not self._select_many_holds(key, by_value.get(item, item))]
+            assert not missing, f"Select {key} has no option for {missing}"
         elif param_type == "select":
             items = self._select_values(value, by_value)
             if len(items) > 1 or self._is_multi_data_param(key):
@@ -1272,6 +1279,68 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 "return false;",
                 f"form-element-{expanded_id.replace('|', '-')}",
                 text,
+            )
+        )
+
+    @staticmethod
+    def _form_element_id(expanded_id: str) -> str:
+        return f"form-element-{expanded_id.replace('|', '-')}"
+
+    def _set_select_many_value(self, expanded_id: str, values: list, by_value: dict):
+        """Drive the two column widget a parameter with many options renders.
+
+        A select switches to it past five hundred options, so the multiselect the rest
+        of the suite drives is simply not in the page.
+        """
+        element_id = self._form_element_id(expanded_id)
+        # Declared values are the whole selection, not an addition to the default.
+        self.execute_script(
+            "const root = document.getElementById(arguments[0]).querySelector('.form-select-many');"
+            "const clear = root && root.querySelector('.selection-button.deselect');"
+            "if (clear) { clear.click(); }",
+            element_id,
+        )
+        self.sleep_for(self.wait_types.UX_RENDER)
+        for value in values:
+            label = by_value.get(value, value)
+            # The search box is debounced, so the list settles a moment after typing.
+            self.execute_script(
+                "const root = document.getElementById(arguments[0]).querySelector('.form-select-many');"
+                "const box = root && root.querySelector('.search-input input');"
+                "if (box) {"
+                "  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;"
+                "  setter.call(box, arguments[1]);"
+                "  box.dispatchEvent(new Event('input', { bubbles: true }));"
+                "}",
+                element_id,
+                str(label),
+            )
+            self.sleep_for(self.wait_types.UX_TRANSITION)
+            self.execute_script(
+                "const root = document.getElementById(arguments[0]).querySelector('.form-select-many');"
+                "const wanted = arguments[1];"
+                "for (const option of root.querySelectorAll('.options-list.unselected button')) {"
+                "  if (option.textContent.trim() === wanted) { option.click(); return true; }"
+                "}"
+                "return false;",
+                element_id,
+                str(label),
+            )
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+    def _select_many_holds(self, expanded_id: str, label) -> bool:
+        """Whether the parameter now lists this option as selected."""
+        return bool(
+            self.execute_script(
+                "const root = document.getElementById(arguments[0]).querySelector('.form-select-many');"
+                "if (!root) { return false; }"
+                "const wanted = arguments[1];"
+                "for (const option of root.querySelectorAll('.options-list.selected button')) {"
+                "  if (option.textContent.trim() === wanted) { return true; }"
+                "}"
+                "return false;",
+                self._form_element_id(expanded_id),
+                str(label),
             )
         )
 
@@ -1436,7 +1505,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
             expected = cls._as_values(expected)
             actual = cls._as_values(actual)
             if len(actual) != len(expected):
-                return [f"{here} ({len(actual)} values, not {len(expected)})"]
+                return [f"{here} ({actual!r} not {expected!r})"]
             nested = []
             for index, item in enumerate(expected):
                 nested.extend(cls._compare(item, actual[index], f"{here}|{index}", dataset_ids, select_labels))

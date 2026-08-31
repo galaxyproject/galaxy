@@ -758,6 +758,7 @@ tool_form:
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_checkbox_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="checkbox"]'
     parameter_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
+    parameter_select_many: 'div.ui-form-element[id="form-element-${parameter}"] .form-select-many'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
     parameter_data_input_single: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Single dataset"]'
