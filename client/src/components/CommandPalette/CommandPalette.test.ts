@@ -575,6 +575,22 @@ describe("CommandPalette", () => {
         expect(focus).toHaveBeenCalled();
     });
 
+    it("hands the selection back to the results when the query is emptied on the category row", async () => {
+        await type("workflows");
+        await press("ArrowUp");
+        expect(input().attributes("aria-activedescendant")).toBeUndefined();
+
+        (input().element as HTMLInputElement).value = "";
+        await input().trigger("input");
+        // the row is gone the moment the query is, so the selection may not
+        // stay on it - enter has to keep working before the search catches up
+        expect(categoryRow().exists()).toBe(false);
+        expect(input().attributes("aria-activedescendant")).toBeTruthy();
+
+        await settle();
+        expect(input().attributes("aria-activedescendant")).toBeTruthy();
+    });
+
     it("renders entity names verbatim instead of looking them up in the locale", async () => {
         const pageStore = usePageStore();
         // a name colliding with an object property: localizing it would render
