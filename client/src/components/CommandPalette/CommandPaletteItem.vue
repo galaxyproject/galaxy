@@ -42,7 +42,9 @@ const emit = defineEmits<{
             <span v-if="props.item.subtitle" class="item-subtitle">{{ props.item.subtitle }}</span>
         </span>
 
-        <kbd v-if="props.active" class="item-enter" aria-hidden="true">↵</kbd>
+        <kbd v-if="props.item.shortcut" class="item-shortcut" aria-hidden="true">{{ props.item.shortcut }}</kbd>
+
+        <kbd v-else-if="props.active" class="item-enter" aria-hidden="true">↵</kbd>
     </div>
 </template>
 
@@ -85,6 +87,16 @@ const emit = defineEmits<{
         font-size: var(--font-size-small);
         color: var(--color-grey-600);
         background: none;
+    }
+
+    .item-shortcut {
+        margin-left: auto;
+        padding: 0 var(--spacing-1);
+        border: 1px solid var(--color-grey-300);
+        border-radius: var(--spacing);
+        background-color: var(--color-grey-100);
+        color: var(--color-grey-600);
+        font-size: var(--font-size-small);
     }
 
     &.active {
