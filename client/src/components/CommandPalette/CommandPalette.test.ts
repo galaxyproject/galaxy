@@ -9,11 +9,13 @@ import { useServerMock } from "@/api/client/__mocks__";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { usePageStore } from "@/stores/pageStore";
+import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
 import { datasetsProvider } from "./providers/datasets";
 import { historiesProvider } from "./providers/histories";
+import { navigationProvider } from "./providers/navigation";
 import { workflowsProvider } from "./providers/workflows";
 import type { CommandPaletteProvider } from "./types";
 
@@ -50,6 +52,22 @@ function countScopedSearches(provider: CommandPaletteProvider): SearchCounter {
     provider.searchScoped = (scope, searchQuery, ctx) => {
         counter.calls++;
         return original!(scope, searchQuery, ctx);
+    };
+    return counter;
+}
+
+/** Counts how often a provider answered a search that carried no query */
+function countEmptyQuerySearches(provider: CommandPaletteProvider): SearchCounter {
+    const original = provider.emptyQueryItems;
+    const counter: SearchCounter = {
+        calls: 0,
+        restore: () => {
+            provider.emptyQueryItems = original;
+        },
+    };
+    provider.emptyQueryItems = (ctx) => {
+        counter.calls++;
+        return original!(ctx);
     };
     return counter;
 }
@@ -637,6 +655,43 @@ describe("CommandPalette", () => {
         await type("it: jupyter");
         expect(badge().exists()).toBe(false);
         expect(inputValue()).toBe("it: jupyter");
+    });
+
+    it("re-runs the search once the tool store finishes hydrating", async () => {
+        wrapper.destroy();
+        useCommandPalette().closePalette();
+
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: true });
+        const toolStore = useToolStore();
+        let hydrate: () => void = () => {};
+        const fetching = new Promise<void>((resolve) => {
+            hydrate = resolve;
+        });
+        vi.mocked(toolStore.fetchTools).mockReturnValue(fetching as never);
+
+        const searches = countEmptyQuerySearches(navigationProvider);
+        try {
+            wrapper = mount(MountTarget as object, { localVue, router, pinia });
+            useCommandPalette().openPalette();
+            await settle();
+
+            const beforeHydration = searches.calls;
+            expect(beforeHydration).toBeGreaterThan(0);
+
+            hydrate();
+            await settle();
+            // the first open searched an empty tool cache, so it is run again
+            expect(searches.calls).toBeGreaterThan(beforeHydration);
+
+            // and only once - a second open must not hydrate, nor rerun, again
+            useCommandPalette().closePalette();
+            await settle();
+            useCommandPalette().openPalette();
+            await settle();
+            expect(vi.mocked(toolStore.fetchTools)).toHaveBeenCalledTimes(1);
+        } finally {
+            searches.restore();
+        }
     });
 
     it("animates in and closes through the transition fallback", async () => {

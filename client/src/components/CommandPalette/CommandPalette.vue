@@ -795,12 +795,40 @@ onBeforeUnmount(() => {
     clearCloseTimeout();
 });
 
+/** Bumped by every open, so a hydration landing after a close is dropped */
+let openEpoch = 0;
+/** Whether the one-off tool store hydration already succeeded this session */
+let toolsHydrated = false;
+
+/**
+ * Fills the tool store on the first open so recent tools resolve to names, then
+ * reruns the search that was already answered from the empty cache. Guarded by
+ * both the epoch and the flag, so it can never rerun more than once per open
+ * and never at all once the store is filled.
+ */
+async function hydrateTools() {
+    if (toolsHydrated) {
+        return;
+    }
+    const epoch = openEpoch;
+    try {
+        await toolStore.fetchTools();
+    } catch (e) {
+        // a failed hydration is retried the next time the palette opens
+        return;
+    }
+    toolsHydrated = true;
+    if (epoch === openEpoch && isPaletteOpen.value) {
+        runSearch();
+    }
+}
+
 watchImmediate(isPaletteOpen, (open) => {
     if (open) {
+        openEpoch++;
         reset();
         resetCategory();
-        // hydrate the tool store so recent tools resolve to names
-        toolStore.fetchTools()?.catch?.(() => {});
+        hydrateTools();
         runSearch();
         openDialog();
     } else {
