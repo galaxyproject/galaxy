@@ -34,7 +34,7 @@ export const PALETTE_CATEGORIES: PaletteCategory[] = [
     { id: "invocations", label: "Invocations", providerId: "invocations", scopeKey: "i" },
     { id: "pages", label: "Pages", providerId: "pages", scopeKey: "p" },
     { id: "tools", label: "Tools", providerId: "tools", scopeKey: "t" },
-    { id: "navigation", label: "Navigation", providerId: "navigation" },
+    { id: "navigation", label: "Navigation", providerId: "navigation", scopeKey: "n" },
 ];
 
 /** Scope a category runs its narrowed search through, if it has one */

@@ -32,9 +32,9 @@ describe("PALETTE_SCOPES", () => {
         expect(histories.map((scope) => scope.key)).toEqual(["h", "hs", "hp", "ha"]);
     });
 
-    it("requires a login for everything but tools and interactive tools", () => {
+    it("requires a login for everything but tools, interactive tools and navigation", () => {
         const anonymous = PALETTE_SCOPES.filter((scope) => !scope.requiresLogin).map((scope) => scope.key);
-        expect(anonymous).toEqual(["t", "it"]);
+        expect(anonymous).toEqual(["t", "it", "n"]);
     });
 });
 
@@ -44,6 +44,7 @@ describe("findScope", () => {
         expect(findScope("W")?.label).toBe("My workflows");
         expect(findScope("hs")?.variant).toBe("shared");
         expect(findScope("IT")?.providerId).toBe("interactiveTools");
+        expect(findScope("n")?.providerId).toBe("navigation");
     });
 
     it("never falls back to a shorter or longer key", () => {
@@ -80,6 +81,7 @@ describe("isScopeAvailable", () => {
         const ctx = makeCtx({ isAnonymous: true });
         expect(isScopeAvailable(findScope("w")!, ctx)).toBe(false);
         expect(isScopeAvailable(findScope("t")!, ctx)).toBe(true);
+        expect(isScopeAvailable(findScope("n")!, ctx)).toBe(true);
     });
 
     it("hides interactive tools unless they are enabled", () => {
@@ -109,6 +111,6 @@ describe("isScopeAvailable", () => {
     });
 
     it("keeps the registry order while filtering", () => {
-        expect(availableScopes(makeCtx({ isAnonymous: true })).map((scope) => scope.key)).toEqual(["t"]);
+        expect(availableScopes(makeCtx({ isAnonymous: true })).map((scope) => scope.key)).toEqual(["t", "n"]);
     });
 });

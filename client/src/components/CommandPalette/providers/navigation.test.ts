@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PaletteContext } from "../types";
 import { navigationProvider } from "./navigation";
+import { findScope } from "./scopes";
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
     return {
@@ -93,5 +94,34 @@ describe("navigationProvider", () => {
         const items = await search("upload", makeCtx());
         expect(items.some((i) => i.id.startsWith("navigation:upload"))).toBe(false);
         expect(items.some((i) => i.id.startsWith("navigation:beta-upload"))).toBe(false);
+    });
+
+    describe("the n: scope", () => {
+        const scope = findScope("n")!;
+
+        async function searchScoped(query: string, ctx: PaletteContext) {
+            return navigationProvider.searchScoped!(scope, query, ctx);
+        }
+
+        it("heads the matches of a query with the provider title", async () => {
+            const sections = await searchScoped("workflows", makeCtx());
+            expect(sections).toHaveLength(1);
+            expect(sections[0]?.title).toBe("Navigation");
+            expect(sections[0]?.items.some((i) => i.id === "navigation:workflows")).toBe(true);
+        });
+
+        it("lists every destination without a query", async () => {
+            const sections = await searchScoped("", makeCtx());
+            expect(sections[0]?.title).toBe("Destinations");
+            expect(sections[0]?.items.map((i) => i.id)).toEqual(
+                navigationProvider.emptyQueryItems!(makeCtx()).map((i) => i.id),
+            );
+        });
+
+        it("drops the destinations an anonymous user cannot reach", async () => {
+            const sections = await searchScoped("", makeCtx({ isAnonymous: true }));
+            expect(sections[0]?.items.some((i) => i.to === "/user")).toBe(false);
+            expect(sections[0]?.items.some((i) => i.to === "/about")).toBe(true);
+        });
     });
 });
