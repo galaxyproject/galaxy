@@ -1,5 +1,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
+import type { UploadMethodConfig } from "@/components/Panels/Upload/types";
+
 import type { ScopeDefinition } from "./providers/scopes";
 
 /**
@@ -18,6 +20,12 @@ export interface PaletteContext {
     isAdmin: boolean;
     /** Whether no user is logged in */
     isAnonymous: boolean;
+    /**
+     * Upload methods available to the current user, already filtered by config
+     * and login. Supplied by the palette because `useFilteredUploadMethods`
+     * needs a component instance.
+     */
+    uploadMethods?: UploadMethodConfig[];
 }
 
 /**
