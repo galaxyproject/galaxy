@@ -1302,8 +1302,8 @@ def raise_filter_err(attr, op, val, msg):
 
 # Both an ORM attribute (History.name) and a core column expression (func.lower(...)) can be
 # ordered by, and both carry the .type needed to tell text columns apart.
-SortableColumn = Union["sqlalchemy.ColumnElement[T]", "InstrumentedAttribute[T]"]
-SelectT = TypeVar("SelectT", bound="sqlalchemy.Select[Any]")
+SortableColumn = Union[sqlalchemy.ColumnElement[T], InstrumentedAttribute[T]]
+SelectT = TypeVar("SelectT", bound=sqlalchemy.Select[Any])
 
 
 def sort_expression(column: SortableColumn[T]) -> SortableColumn[T]:
