@@ -42,6 +42,7 @@ from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
     SessionlessJobContext,
+    validate_unnamed_outputs,
 )
 from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
 from galaxy.model import (
@@ -55,7 +56,11 @@ from galaxy.model import (
 from galaxy.model.custom_types import total_size
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.store import SessionlessContext
-from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
+from galaxy.model.store.discover import (
+    ensure_path_in_directory,
+    MaxDiscoveredFilesExceededError,
+    OutputCollectionSecurityError,
+)
 from galaxy.objectstore import (
     build_object_store_from_config,
     ObjectStore,
@@ -64,16 +69,23 @@ from galaxy.tool_util.output_checker import (
     AnyJobMessage,
     check_output,
     DETECTED_JOB_STATE,
+    MaxDiscoveredFilesJobMessage,
+    OutputCollectionSecurityJobMessage,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
     ToolStdioExitCode,
     ToolStdioRegex,
 )
-from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
+from galaxy.tool_util.provided_metadata import (
+    BaseToolProvidedMetadata,
+    NullToolProvidedMetadata,
+    parse_tool_provided_metadata,
+)
 from galaxy.util import (
     safe_contains,
     stringify_dictionary_keys,
+    StrPath,
     unicodify,
 )
 from galaxy.util.expressions import ExpressionContext
@@ -194,11 +206,19 @@ def set_metadata_portable(
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
     job_metadata = tool_job_working_directory / metadata_params["job_metadata"]
     provided_metadata_style = metadata_params.get("provided_metadata_style")
+    # Params created before capability serialization omitted this key and
+    # always loaded tool-provided metadata. Keep already-running jobs viable.
+    uses_tool_provided_metadata = metadata_params.get("uses_tool_provided_metadata", True)
     max_metadata_value_size = metadata_params.get("max_metadata_value_size") or 0
     max_discovered_files = metadata_params.get("max_discovered_files")
     outputs = metadata_params["outputs"]
 
-    tool_provided_metadata = load_job_metadata(job_metadata, provided_metadata_style)
+    tool_provided_metadata = load_job_metadata(
+        job_metadata,
+        provided_metadata_style,
+        uses_tool_provided_metadata=uses_tool_provided_metadata,
+        job_working_directory=tool_job_working_directory / "working",
+    )
 
     def set_meta(new_dataset_instance, file_dict):
         if not extended_metadata_collection:
@@ -324,6 +344,13 @@ def set_metadata_portable(
         job=job,
     )
 
+    output_collection_security_error = None
+    try:
+        unnamed_outputs = validate_unnamed_outputs(job_context)
+    except OutputCollectionSecurityError as e:
+        output_collection_security_error = e
+        unnamed_outputs = []
+
     if extended_metadata_collection:
         if not export_store:
             # Can't happen, but type system doesn't know
@@ -343,24 +370,34 @@ def set_metadata_portable(
 
         input_ext = json.loads(metadata_params["job_params"].get("__input_ext") or '"data"')
         try:
+            if output_collection_security_error:
+                raise output_collection_security_error
             collect_primary_datasets(
                 job_context,
                 output_instances,
                 input_ext=input_ext,
             )
             collect_dynamic_outputs(job_context, output_collections)
-        except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError) as e:
+        except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError, OutputCollectionSecurityError) as e:
             log.warning("Job failed during extended metadata output discovery: %s", e)
             discovery_failed = True
             final_job_state = Job.states.ERROR
-            job_messages.append(
-                {
-                    "type": "max_discovered_files",
-                    "desc": str(e),
-                    "code_desc": None,
-                    "error_level": StdioErrorLevel.FATAL,
-                }
-            )
+            message: AnyJobMessage
+            if isinstance(e, OutputCollectionSecurityError):
+                message = OutputCollectionSecurityJobMessage(
+                    type="output_collection_security",
+                    desc=str(e),
+                    code_desc=None,
+                    error_level=StdioErrorLevel.FATAL,
+                )
+            else:
+                message = MaxDiscoveredFilesJobMessage(
+                    type="max_discovered_files",
+                    desc=str(e),
+                    code_desc=None,
+                    error_level=StdioErrorLevel.FATAL,
+                )
+            job_messages.append(message)
 
         if job:
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
@@ -377,7 +414,7 @@ def set_metadata_portable(
 
     unnamed_id_to_path = {}
     unnamed_is_deferred = {}
-    for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
+    for unnamed_output_dict in unnamed_outputs:
         destination = unnamed_output_dict["destination"]
         elements = unnamed_output_dict["elements"]
         destination_type = destination["type"]
@@ -408,6 +445,8 @@ def set_metadata_portable(
         )  # load kwds; need to ensure our keywords are not unicode
         object_store_update_actions = []
         try:
+            if output_collection_security_error:
+                raise output_collection_security_error
             is_deferred = bool(unnamed_is_deferred.get(dataset_instance_id))
             dataset.metadata_deferred = is_deferred
             if not is_deferred:
@@ -578,7 +617,15 @@ def validate_and_load_datatypes_config(datatypes_config):
     return datatypes_registry
 
 
-def load_job_metadata(job_metadata, provided_metadata_style):
+def load_job_metadata(
+    job_metadata: StrPath,
+    provided_metadata_style: Optional[str],
+    uses_tool_provided_metadata: bool,
+    job_working_directory: StrPath,
+) -> BaseToolProvidedMetadata:
+    if not uses_tool_provided_metadata:
+        return NullToolProvidedMetadata()
+    ensure_path_in_directory(job_metadata, job_working_directory)
     return parse_tool_provided_metadata(job_metadata, provided_metadata_style=provided_metadata_style)
 
 
