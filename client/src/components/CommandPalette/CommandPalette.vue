@@ -37,6 +37,8 @@ const MAX_ROOT_SECTION_ITEMS = 5;
 const MAX_CATEGORY_SECTION_ITEMS = 15;
 /** `selectedIndex` value selecting the category row instead of a result */
 const CATEGORY_ROW_INDEX = -1;
+/** Placeholder rows standing in for a provider that has not answered yet */
+const SKELETON_ROWS = 3;
 /** Safety net for environments that never fire `transitionend` (jsdom, backgrounded tabs) */
 const CLOSE_TRANSITION_FALLBACK = 200;
 
@@ -46,6 +48,10 @@ const HELP_PLACEHOLDER = "Search shortcuts…";
 interface ResultSection {
     id: string;
     items: PaletteItem[];
+    /** Whether the provider is still answering, so the section renders skeletons */
+    loading?: boolean;
+    /** Match quality of the provider's results, sorting the fan-out sections */
+    score?: number;
     title: string;
 }
 
@@ -96,7 +102,14 @@ const failedSubject = ref<string | null>(null);
 const uid = useUid("command-palette");
 const listboxId = computed(() => `${uid.value}-listbox`);
 
-const flatItems = computed(() => sections.value.flatMap((section) => section.items));
+/**
+ * Sections worth a heading: one still loading holds its place with skeletons, one
+ * that answered with nothing is dropped the moment it does — a bare title over no
+ * rows is worse than the gap it leaves.
+ */
+const visibleSections = computed(() => sections.value.filter((section) => section.loading || section.items.length > 0));
+
+const flatItems = computed(() => visibleSections.value.flatMap((section) => section.items));
 
 const selectedItem = computed(() => flatItems.value[selectedIndex.value]);
 
@@ -269,7 +282,7 @@ function optionId(index: number) {
 function optionIndex(sectionIndex: number, itemIndex: number) {
     let offset = 0;
     for (let i = 0; i < sectionIndex; i++) {
-        offset += sections.value[i]?.items.length ?? 0;
+        offset += visibleSections.value[i]?.items.length ?? 0;
     }
     return offset + itemIndex;
 }
@@ -394,38 +407,101 @@ function limitSections(list: ResultSection[], limit: number): ResultSection[] {
     );
 }
 
-/** Unscoped search: every provider contributes a section, best match first */
-async function fanOutSections(ctx: PaletteContext): Promise<ResultSection[]> {
-    const scored = await Promise.all(
-        paletteProviders.map(async (provider) => {
-            const items = await providerItems(provider.id, ctx);
-            // sections are shown best-match first; backend-ranked tools carry
-            // no scores, so they slot between "starts with" (4) and plain name
-            // matches (3) of the local providers
-            let score = 0;
-            if (query.value) {
-                score =
-                    provider.id === "tools"
-                        ? 3.5
-                        : Math.max(0, ...scorePaletteItems(items, query.value).map((match) => match.order));
-            }
-            return { id: provider.id, items, score, title: provider.title };
-        }),
-    );
-    return scored.sort((a, b) => b.score - a.score).map(({ score: _score, ...section }) => section);
+/**
+ * How well a provider answered, deciding where its section ends up. Backend
+ * ranked tools carry no scores, so they slot between "starts with" (4) and plain
+ * name matches (3) of the local providers.
+ */
+function sectionScore(provider: CommandPaletteProvider, items: PaletteItem[]): number {
+    if (!query.value) {
+        return 0;
+    }
+    return provider.id === "tools"
+        ? 3.5
+        : Math.max(0, ...scorePaletteItems(items, query.value).map((match) => match.order));
 }
 
 /**
- * Root mode: the fan-out over every provider, or — once the category row picked
- * one — that single provider searched through its own scope.
+ * Renders a new set of sections without losing the selected row: a selection the
+ * user moved off the top follows its item wherever the new set puts it, and one
+ * that is gone falls back to the first row. A rerun the category row started
+ * keeps the selection on the row, so the next ←→ moves on to its neighbor.
+ */
+function assignSections(next: ResultSection[], keepCategoryRow: boolean) {
+    // the top of the list is where every search starts and where it stays, so
+    // only a selection that was moved away from it is worth following
+    const selectedId = selectedIndex.value > 0 ? selectedItem.value?.id : undefined;
+    sections.value = next;
+    if (keepCategoryRow && showCategoryRow.value) {
+        selectedIndex.value = CATEGORY_ROW_INDEX;
+        return;
+    }
+    const index = selectedId ? flatItems.value.findIndex((item) => item.id === selectedId) : -1;
+    selectedIndex.value = index >= 0 ? index : 0;
+}
+
+/**
+ * Unscoped search: every provider contributes a section, rendered the moment it
+ * answers rather than once the slowest one has — until then a placeholder holds
+ * its place. The sections keep the registry order while the results arrive and
+ * are sorted best match first exactly once, when the last provider settled, so
+ * no row is pulled out from under the cursor mid-search.
+ */
+function fanOutIncrementally(ctx: PaletteContext, epoch: number, keepCategoryRow: boolean) {
+    const limit = query.value ? MAX_ROOT_SECTION_ITEMS : MAX_EMPTY_QUERY_ITEMS;
+    let pending = paletteProviders.length;
+    assignSections(
+        paletteProviders.map((provider) => ({ id: provider.id, items: [], loading: true, title: provider.title })),
+        keepCategoryRow,
+    );
+    paletteProviders.forEach((provider) => {
+        providerItems(provider.id, ctx)
+            // the root fan-out only reads what the stores already hold, so a
+            // rejection here is a provider breaking that contract: it costs its
+            // own section rather than the spinner it would leave running
+            .catch(() => [] as PaletteItem[])
+            .then((items) => {
+                if (epoch !== searchEpoch) {
+                    // a newer search owns the results now, these are dropped whole
+                    return;
+                }
+                const landed: ResultSection = {
+                    id: provider.id,
+                    items: items.slice(0, limit),
+                    score: sectionScore(provider, items),
+                    title: provider.title,
+                };
+                // a fresh array every time — Vue 2 never sees a section replaced
+                // in place
+                assignSections(
+                    sections.value.map((section) => (section.id === provider.id ? landed : section)),
+                    keepCategoryRow,
+                );
+                pending--;
+                if (pending === 0) {
+                    assignSections(
+                        sections.value
+                            .filter((section) => section.items.length > 0)
+                            .sort((a, b) => (b.score ?? 0) - (a.score ?? 0)),
+                        keepCategoryRow,
+                    );
+                    searching.value = false;
+                }
+            });
+    });
+}
+
+/**
+ * Root mode once the category row narrowed it to a single provider, searched
+ * through that provider's own scope. Unscoped "All" never reaches here — it
+ * renders provider by provider, see {@link fanOutIncrementally}.
  */
 async function rootSections(ctx: PaletteContext): Promise<ResultSection[]> {
     const category = activeCategory.value;
-    if (category) {
-        return limitSections(await categorySections(category, ctx), MAX_CATEGORY_SECTION_ITEMS);
+    if (!category) {
+        return [];
     }
-    const fanOut = await fanOutSections(ctx);
-    return query.value ? limitSections(fanOut, MAX_ROOT_SECTION_ITEMS) : fanOut;
+    return limitSections(await categorySections(category, ctx), MAX_CATEGORY_SECTION_ITEMS);
 }
 
 /**
@@ -529,6 +605,12 @@ async function runSearch() {
         selectedIndex.value = 0;
     }
     searching.value = true;
+    if (mode.value.type === "root" && !activeCategory.value) {
+        // the fan-out renders every provider as it answers, so it owns the
+        // sections, the selection and the spinner from here on
+        fanOutIncrementally(ctx, epoch, keepCategoryRow);
+        return;
+    }
     try {
         const results = await modeSections(mode.value, ctx);
         if (epoch === searchEpoch) {
@@ -1106,23 +1188,39 @@ watchImmediate(isPaletteOpen, (open) => {
             role="listbox"
             :aria-label="localize('Search results')">
             <div
-                v-for="(section, sectionIdx) in sections"
+                v-for="(section, sectionIdx) in visibleSections"
                 :key="section.id"
                 role="group"
                 :aria-label="localize(section.title)"
                 :data-description="`palette section ${section.id}`">
                 <div class="palette-section-title" aria-hidden="true">{{ localize(section.title) }}</div>
 
-                <CommandPaletteItem
-                    v-for="(item, itemIdx) in section.items"
-                    :id="optionId(optionIndex(sectionIdx, itemIdx))"
-                    :key="item.id"
-                    :active="optionIndex(sectionIdx, itemIdx) === selectedIndex"
-                    :item="item"
-                    :secondary-hint="secondaryHint(optionIndex(sectionIdx, itemIdx), item)"
-                    :show-external="showExternalIcon(optionIndex(sectionIdx, itemIdx), item)"
-                    @select="runItem(item, $event)"
-                    @highlight="selectedIndex = optionIndex(sectionIdx, itemIdx)" />
+                <!-- The provider has not answered yet, so the section holds its place -->
+                <template v-if="section.loading">
+                    <div
+                        v-for="row in SKELETON_ROWS"
+                        :key="row"
+                        class="palette-skeleton"
+                        aria-hidden="true"
+                        data-description="palette skeleton">
+                        <span class="skeleton-bar skeleton-title"></span>
+
+                        <span class="skeleton-bar skeleton-subtitle"></span>
+                    </div>
+                </template>
+
+                <template v-else>
+                    <CommandPaletteItem
+                        v-for="(item, itemIdx) in section.items"
+                        :id="optionId(optionIndex(sectionIdx, itemIdx))"
+                        :key="item.id"
+                        :active="optionIndex(sectionIdx, itemIdx) === selectedIndex"
+                        :item="item"
+                        :secondary-hint="secondaryHint(optionIndex(sectionIdx, itemIdx), item)"
+                        :show-external="showExternalIcon(optionIndex(sectionIdx, itemIdx), item)"
+                        @select="runItem(item, $event)"
+                        @highlight="selectedIndex = optionIndex(sectionIdx, itemIdx)" />
+                </template>
             </div>
 
             <div v-if="scopeHint" class="palette-hint" data-description="palette scope hint">
@@ -1133,21 +1231,22 @@ watchImmediate(isPaletteOpen, (open) => {
                 {{ errorHint }}
             </div>
 
+            <!-- A section still loading speaks for itself, so the hints only stand in for nothing at all -->
             <div
-                v-else-if="flatItems.length === 0 && argumentHint"
+                v-else-if="visibleSections.length === 0 && argumentHint"
                 class="palette-hint"
                 data-description="palette argument hint">
                 {{ argumentHint }}
             </div>
 
             <div
-                v-else-if="flatItems.length === 0 && searching"
+                v-else-if="visibleSections.length === 0 && searching"
                 class="palette-hint"
                 data-description="palette searching">
                 {{ localize("Searching…") }}
             </div>
 
-            <div v-else-if="flatItems.length === 0" class="palette-hint" data-description="palette empty">
+            <div v-else-if="visibleSections.length === 0" class="palette-hint" data-description="palette empty">
                 {{ localize("No results.") }}
             </div>
         </div>
@@ -1309,6 +1408,42 @@ $palette-transition: 130ms ease-out;
             padding: var(--spacing-2) var(--spacing-3) var(--spacing-1);
         }
 
+        // stands in for a row of a provider that has not answered yet, laid out
+        // like the title and subtitle it will be replaced by
+        .palette-skeleton {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-1);
+            padding: var(--spacing-2) var(--spacing-3);
+
+            .skeleton-bar {
+                height: 0.55rem;
+                border-radius: var(--spacing);
+                background-image: linear-gradient(
+                    90deg,
+                    var(--color-grey-200) 25%,
+                    var(--color-grey-100) 37%,
+                    var(--color-grey-200) 63%
+                );
+                background-size: 400% 100%;
+                animation: palette-skeleton-shimmer 1.4s ease infinite;
+            }
+
+            .skeleton-title {
+                width: 40%;
+            }
+
+            .skeleton-subtitle {
+                width: 25%;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .skeleton-bar {
+                    animation: none;
+                }
+            }
+        }
+
         .palette-hint {
             // centered in whatever is left, so a lone hint sits mid-dialog
             margin: auto;
@@ -1365,6 +1500,16 @@ $palette-transition: 130ms ease-out;
                 color: var(--color-blue-800);
             }
         }
+    }
+}
+
+@keyframes palette-skeleton-shimmer {
+    from {
+        background-position: 100% 50%;
+    }
+
+    to {
+        background-position: 0 50%;
     }
 }
 </style>

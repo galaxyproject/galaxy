@@ -17,8 +17,10 @@ import { datasetsProvider } from "./providers/datasets";
 import { PaletteFetchError } from "./providers/errors";
 import { historiesProvider } from "./providers/histories";
 import { navigationProvider } from "./providers/navigation";
+import { pagesProvider } from "./providers/pages";
+import { toolsProvider } from "./providers/tools";
 import { workflowsProvider } from "./providers/workflows";
-import type { CommandPaletteProvider } from "./types";
+import type { CommandPaletteProvider, PaletteItem } from "./types";
 
 import MountTarget from "./CommandPalette.vue";
 
@@ -55,6 +57,28 @@ function countScopedSearches(provider: CommandPaletteProvider): SearchCounter {
         return original!(scope, searchQuery, ctx);
     };
     return counter;
+}
+
+interface StalledSearch {
+    /** Lets the held search answer with these items */
+    land: (items: PaletteItem[]) => void;
+    restore: () => void;
+}
+
+/** Holds a provider's unscoped search open until the test lets it answer */
+function stallSearch(provider: CommandPaletteProvider): StalledSearch {
+    const original = provider.search;
+    let land: (items: PaletteItem[]) => void = () => {};
+    const pending = new Promise<PaletteItem[]>((resolve) => {
+        land = resolve;
+    });
+    provider.search = () => pending;
+    return {
+        land: (items) => land(items),
+        restore: () => {
+            provider.search = original;
+        },
+    };
 }
 
 /** Counts how often a provider answered a search that carried no query */
@@ -177,6 +201,15 @@ describe("CommandPalette", () => {
         return wrapper
             .findAll("[data-description^='palette section ']")
             .wrappers.map((section) => section.attributes("data-description"));
+    }
+
+    /** Placeholder rows standing in for a provider that has not answered yet */
+    function skeletons() {
+        return wrapper.findAll("[data-description='palette skeleton']");
+    }
+
+    function selectedRow() {
+        return wrapper.find("[data-description='palette option'][aria-selected='true']");
     }
 
     /** Presses or releases a modifier on the window, as holding it down would */
@@ -793,6 +826,69 @@ describe("CommandPalette", () => {
             expect(wrapper.find("[data-description='palette empty']").exists()).toBe(true);
         } finally {
             workflowsProvider.searchScoped = original;
+        }
+    });
+
+    it("renders every provider as it answers and holds the slow one's place", async () => {
+        const tools = stallSearch(toolsProvider);
+        try {
+            await type("workflows");
+
+            // one slow provider may not cost the sections that already answered
+            expect(optionRow("Workflows")).toBeDefined();
+            expect(sectionIds()).toContain("palette section tools");
+            expect(skeletons().length).toBe(3);
+            expect(inputIcons()).toContain("spinner");
+
+            tools.land([{ id: "tools:filter", title: "Filter workflows", to: "/?tool_id=filter" }]);
+            await settle();
+
+            expect(skeletons().length).toBe(0);
+            expect(inputIcons()).not.toContain("spinner");
+            expect(wrapper.text()).toContain("Filter workflows");
+            // sorted best match first, once, now that every provider landed
+            expect(sectionIds()[0]).toBe("palette section navigation");
+        } finally {
+            tools.restore();
+        }
+    });
+
+    it("drops the results of a fan-out a newer search has replaced", async () => {
+        const tools = stallSearch(toolsProvider);
+        try {
+            await type("workflows");
+
+            // the next keystroke owns the sections now
+            toolsProvider.search = () => [{ id: "tools:fresh", title: "Fresh tool", to: "/?tool_id=fresh" }];
+            await type("workflow");
+
+            tools.land([{ id: "tools:stale", title: "Stale tool", to: "/?tool_id=stale" }]);
+            await settle();
+
+            expect(wrapper.text()).not.toContain("Stale tool");
+            expect(wrapper.text()).toContain("Fresh tool");
+        } finally {
+            tools.restore();
+        }
+    });
+
+    it("keeps the selection on the same row across the final sort", async () => {
+        const pages = stallSearch(pagesProvider);
+        try {
+            await type("workflow");
+            await press("ArrowDown");
+            const selected = selectedRow().text();
+            expect(selected).toBeTruthy();
+
+            // an exact match landing last outranks every section on screen, so
+            // the sort pushes the selected row down the list
+            pages.land([{ id: "pages:p1", title: "workflow", to: "/pages/p1" }]);
+            await settle();
+
+            expect(sectionIds()[0]).toBe("palette section pages");
+            expect(selectedRow().text()).toBe(selected);
+        } finally {
+            pages.restore();
         }
     });
 
