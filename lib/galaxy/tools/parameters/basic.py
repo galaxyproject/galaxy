@@ -637,6 +637,10 @@ class BooleanToolParameter(ToolParameter):
     >>> value = p.to_json(True, trans.app, use_security=False)
     >>> assert isinstance(value, bool)
     >>> assert value == True
+    >>> optional = BooleanToolParameter(None, XML('<param name="_name" type="boolean" optional="true" />'))
+    >>> assert optional.get_initial_value(trans, {}) is None
+    >>> required = BooleanToolParameter(None, XML('<param name="_name" type="boolean" />'))
+    >>> assert required.get_initial_value(trans, {}) is False
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -1778,7 +1782,6 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 )
             rval.append(val)
         if not self.multiple:
-            # A single drill down holds one value; the typed request model rejects a list.
             return rval[0] if rval else None
         return rval
 

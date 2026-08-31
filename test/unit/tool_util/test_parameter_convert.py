@@ -291,8 +291,7 @@ def test_fill_defaults():
     with_defaults = fill_state_for({}, "parameters/gx_boolean")
     assert with_defaults["parameter"] is False
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional")
-    # This is False unfortunately - see comments in gx_boolean_optional XML.
-    assert with_defaults["parameter"] is False
+    assert with_defaults["parameter"] is None
     with_defaults = fill_state_for({}, "parameters/gx_boolean_checked")
     assert with_defaults["parameter"] is True
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional_checked")

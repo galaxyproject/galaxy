@@ -488,9 +488,7 @@ def _fill_default_for(tool_state: dict[str, Any], parameter: ToolParameterT) -> 
     parameter_name = parameter.name
     if isinstance(parameter, BooleanParameterModel):
         if parameter_name not in tool_state:
-            # even optional parameters default to false if not in the body of the request :_(
-            # see test_tools.py -> expression_null_handling_boolean or test cases for gx_boolean_optional.xml
-            tool_state[parameter_name] = parameter.value or False
+            tool_state[parameter_name] = parameter.value
 
     if isinstance(parameter, (IntegerParameterModel, FloatParameterModel, HiddenParameterModel, ColorParameterModel)):
         if parameter_name not in tool_state:
