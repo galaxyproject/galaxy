@@ -107,6 +107,10 @@ describe("CommandPalette", () => {
         return wrapper.findAll("[data-description='palette option']").wrappers.find((row) => row.text().includes(text));
     }
 
+    function spyOnInputFocus() {
+        return vi.spyOn(input().element as HTMLInputElement, "focus");
+    }
+
     function sectionIds() {
         return wrapper
             .findAll("[data-description^='palette section ']")
@@ -478,6 +482,40 @@ describe("CommandPalette", () => {
 
         await type("workflows");
         expect(category("all").attributes("aria-selected")).toBe("true");
+    });
+
+    it("hands focus back to the input after a category chip is clicked", async () => {
+        await type("workflows");
+        const focus = spyOnInputFocus();
+
+        await pickCategory("tools");
+        expect(focus).toHaveBeenCalled();
+        // the row keeps the selection, so the arrows keep moving the category
+        expect(categoryRow().classes()).toContain("row-selected");
+    });
+
+    it("returns focus to the input when a clicked help row keeps the palette open", async () => {
+        await type("?");
+        const focus = spyOnInputFocus();
+
+        await optionRow("Search my workflows")?.trigger("click");
+        await settle();
+
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().text()).toContain("My workflows");
+        expect(focus).toHaveBeenCalled();
+    });
+
+    it("returns focus to the input when a clicked row enters argument mode", async () => {
+        await type("> upload");
+        const focus = spyOnInputFocus();
+
+        await optionRow("Upload data")?.trigger("click", { shiftKey: true });
+        await settle();
+
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().text()).toContain("Upload data");
+        expect(focus).toHaveBeenCalled();
     });
 
     it("renders entity names verbatim instead of looking them up in the locale", async () => {

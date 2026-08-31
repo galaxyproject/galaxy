@@ -469,6 +469,17 @@ function runSecondary(item: PaletteItem) {
     closePalette();
 }
 
+/**
+ * Hands typing back to the combobox. A row activated with the mouse leaves the
+ * focus on the clicked element, so every path that keeps the palette open has
+ * to return it — otherwise the keyboard is dead until the input is clicked.
+ */
+function refocusInput() {
+    if (isPaletteOpen.value) {
+        inputElement.value?.focus();
+    }
+}
+
 function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEvent) {
     if (!item) {
         return;
@@ -476,11 +487,14 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
     if (mode.value.type === "help") {
         // help rows only rewrite the input, the palette stays open
         item.handler?.(buildContext());
+        refocusInput();
         return;
     }
     if (event?.shiftKey || item.argumentMode?.immediate) {
         // an action without a useful default enters its argument mode on plain enter too
         runSecondary(item);
+        // no-op once the secondary closed the palette
+        refocusInput();
         return;
     }
     // an item sent to a new tab counts as opened just as much as a navigation
@@ -489,6 +503,7 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
         if (event && (event.ctrlKey || event.metaKey)) {
             // the palette stays open so several items can be sent to tabs in a row
             window.open(router.resolve(item.to).href, "_blank", "noopener");
+            refocusInput();
             return;
         }
         router.push(item.to).catch(() => {
@@ -540,6 +555,12 @@ function selectCategory(categoryId: string) {
     activeCategoryId.value = categoryId;
     selectedIndex.value = CATEGORY_ROW_INDEX;
     runSearch();
+}
+
+/** The row is keyboard driven, so a clicked chip hands the focus straight back */
+function onCategoryClick(categoryId: string) {
+    selectCategory(categoryId);
+    refocusInput();
 }
 
 function moveCategory(delta: 1 | -1) {
@@ -833,7 +854,7 @@ watchImmediate(isPaletteOpen, (open) => {
                 tabindex="-1"
                 :aria-selected="category.id === activeCategoryId ? 'true' : 'false'"
                 :data-description="`palette category ${category.id}`"
-                @click="selectCategory(category.id)">
+                @click="onCategoryClick(category.id)">
                 {{ localize(category.label) }}
             </button>
         </div>
