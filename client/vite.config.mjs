@@ -158,8 +158,12 @@ export default defineConfig(({ command }) => ({
         port: process.env.VITE_PORT || 5173,
         host: "0.0.0.0",
         proxy: {
-            // Proxy everything except Vite's own routes to Galaxy backend
-            "^/(?!(@|src/|node_modules/|__vite))": {
+            // Proxy everything except Vite's own routes to Galaxy backend.
+            // `packages/` is served by Vite as well: the workspace packages are
+            // aliased to their sources (see `resolve.alias`), so proxying them
+            // to Galaxy would leave `@galaxyproject/galaxy-ui` unresolved and
+            // the client would never boot on the dev server.
+            "^/(?!(@|src/|packages/|node_modules/|__vite))": {
                 target: process.env.GALAXY_URL || "http://127.0.0.1:8080",
                 changeOrigin: true,
                 secure: false,
