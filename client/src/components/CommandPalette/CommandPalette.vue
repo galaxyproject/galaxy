@@ -509,14 +509,17 @@ function limitSections(list: ResultSection[], limit: number): ResultSection[] {
  * How well a provider answered, deciding where its section ends up. Backend
  * ranked tools carry no scores, so they slot between "starts with" (4) and plain
  * name matches (3) of the local providers.
+ *
+ * @param searched the query the items were fetched for, which the input may have
+ * moved on from while the provider was answering
  */
-function sectionScore(provider: CommandPaletteProvider, items: PaletteItem[]): number {
-    if (!query.value) {
+function sectionScore(provider: CommandPaletteProvider, items: PaletteItem[], searched: string): number {
+    if (!searched) {
         return 0;
     }
     return provider.id === "tools"
         ? 3.5
-        : Math.max(0, ...scorePaletteItems(items, query.value).map((match) => match.order));
+        : Math.max(0, ...scorePaletteItems(items, searched).map((match) => match.order));
 }
 
 /**
@@ -546,7 +549,10 @@ function assignSections(next: ResultSection[], keepCategoryRow: boolean) {
  * no row is pulled out from under the cursor mid-search.
  */
 function fanOutIncrementally(ctx: PaletteContext, epoch: number, keepCategoryRow: boolean) {
-    const limit = query.value ? MAX_ROOT_SECTION_ITEMS : MAX_EMPTY_QUERY_ITEMS;
+    // what this fan-out is answering; the input may have moved on by the time a
+    // provider lands, and its rows are still the results of this query
+    const searched = query.value;
+    const limit = searched ? MAX_ROOT_SECTION_ITEMS : MAX_EMPTY_QUERY_ITEMS;
     const providers = enabledPaletteProviders(ctx);
     let pending = providers.length;
     assignSections(
@@ -573,7 +579,7 @@ function fanOutIncrementally(ctx: PaletteContext, epoch: number, keepCategoryRow
                 const landed: ResultSection = {
                     id: provider.id,
                     items: items.slice(0, limit),
-                    score: sectionScore(provider, items),
+                    score: sectionScore(provider, items, searched),
                     title: provider.title,
                 };
                 // a fresh array every time — Vue 2 never sees a section replaced
