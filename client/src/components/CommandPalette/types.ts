@@ -1,5 +1,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
+import type { ScopeDefinition } from "./providers/scopes";
+
 /**
  * Everything a provider may need to decide which items exist for the current
  * user. Passed in by the palette component so providers stay testable.
@@ -26,17 +28,38 @@ export interface PaletteContext {
 export interface PaletteItem {
     /** Unique across providers, by convention `${providerId}:${localId}` */
     id: string;
+    /** Turns the item into a badge collecting a second value before it runs */
+    argumentMode?: {
+        placeholder: string;
+        getItems(argQuery: string, ctx: PaletteContext): PaletteItem[] | Promise<PaletteItem[]>;
+    };
     /** Imperative action to run on selection */
     handler?: () => void;
     /** Icon shown in front of the title */
     icon?: IconDefinition;
     /** Extra search corpus, never displayed */
     keywords?: string;
+    /** Alternative run triggered with shift+enter */
+    secondaryAction?: {
+        label: string;
+        run?: (ctx: PaletteContext) => void;
+        to?: string;
+    };
+    /** Key hint rendered right-aligned on the row (help panel rows) */
+    shortcut?: string;
     /** Secondary line under the title */
     subtitle?: string;
     title: string;
     /** Router location to navigate to on selection */
     to?: string;
+}
+
+/** A titled group of items returned by a scoped provider search */
+export interface ScopedSection {
+    /** Unique within the provider, e.g. "recent" */
+    id: string;
+    items: PaletteItem[];
+    title: string;
 }
 
 /**
@@ -48,9 +71,15 @@ export interface CommandPaletteProvider {
     id: string;
     /** Items shown when the query is empty (recents, defaults) */
     emptyQueryItems?(ctx: PaletteContext): PaletteItem[];
-    /** Single-letter query prefix (e.g. "t") scoping search to this provider */
+    /** Legacy single-letter prefix; scoping lives in `providers/scopes.ts` */
     prefix?: string;
     search(query: string, ctx: PaletteContext): PaletteItem[] | Promise<PaletteItem[]>;
+    /** Multi-section search for one of the provider's scopes */
+    searchScoped?(
+        scope: ScopeDefinition,
+        query: string,
+        ctx: PaletteContext,
+    ): ScopedSection[] | Promise<ScopedSection[]>;
     /** Section heading shown above this provider's results */
     title: string;
 }
