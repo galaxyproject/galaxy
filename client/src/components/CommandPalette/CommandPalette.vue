@@ -2,7 +2,7 @@
 import { faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventListener, watchDebounced, watchImmediate } from "@vueuse/core";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
@@ -25,6 +25,8 @@ import CommandPaletteItem from "./CommandPaletteItem.vue";
 const SEARCH_DEBOUNCE = 150;
 /** Cap per section on an empty query so defaults stay scannable */
 const MAX_EMPTY_QUERY_ITEMS = 8;
+/** Safety net for environments that never fire `transitionend` (jsdom, backgrounded tabs) */
+const CLOSE_TRANSITION_FALLBACK = 200;
 
 const ROOT_PLACEHOLDER = "Search Galaxy…  (> actions, w: t: … scopes, ? help)";
 
@@ -317,21 +319,104 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
 
 watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });
 
-watchImmediate(isPaletteOpen, async (open) => {
+/** Drives the enter/leave transition; the dialog element itself stays mounted */
+const paletteVisible = ref(false);
+/** Bumped by every open and close so a rapid toggle cancels the transition in flight */
+let transitionEpoch = 0;
+let closeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function prefersReducedMotion() {
+    return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Two frames: the first paints the closed state, the second starts the transition */
+function afterNextFrame(callback: () => void) {
+    if (typeof requestAnimationFrame !== "function") {
+        callback();
+        return;
+    }
+    requestAnimationFrame(() => requestAnimationFrame(callback));
+}
+
+function clearCloseTimeout() {
+    if (closeTimeout !== null) {
+        clearTimeout(closeTimeout);
+        closeTimeout = null;
+    }
+}
+
+async function openDialog() {
+    const epoch = ++transitionEpoch;
+    // a close still waiting on its transition must not fire after we reopen
+    clearCloseTimeout();
+    await nextTick();
+    const dialog = dialogElement.value;
+    if (!dialog || epoch !== transitionEpoch) {
+        return;
+    }
+    if (!dialog.open) {
+        try {
+            dialog.showModal();
+        } catch (e) {
+            // dialog may already be open, or the test environment lacks support
+        }
+    }
+    inputElement.value?.focus();
+    if (prefersReducedMotion()) {
+        paletteVisible.value = true;
+        return;
+    }
+    afterNextFrame(() => {
+        if (epoch === transitionEpoch) {
+            paletteVisible.value = true;
+        }
+    });
+}
+
+function closeDialog() {
+    const epoch = ++transitionEpoch;
+    clearCloseTimeout();
+    paletteVisible.value = false;
+    const dialog = dialogElement.value;
+    if (!dialog?.open) {
+        return;
+    }
+    function finishClose() {
+        dialog?.removeEventListener("transitionend", onTransitionEnd);
+        if (epoch !== transitionEpoch) {
+            // reopened mid-transition, the newer open owns the dialog now
+            return;
+        }
+        clearCloseTimeout();
+        dialog?.close();
+    }
+    function onTransitionEnd(event: TransitionEvent) {
+        if (event.target === dialog) {
+            finishClose();
+        }
+    }
+    if (prefersReducedMotion()) {
+        finishClose();
+        return;
+    }
+    dialog.addEventListener("transitionend", onTransitionEnd);
+    closeTimeout = setTimeout(finishClose, CLOSE_TRANSITION_FALLBACK);
+}
+
+onBeforeUnmount(() => {
+    transitionEpoch++;
+    clearCloseTimeout();
+});
+
+watchImmediate(isPaletteOpen, (open) => {
     if (open) {
         reset();
         // hydrate the tool store so recent tools resolve to names
         toolStore.fetchTools()?.catch?.(() => {});
         runSearch();
-        await nextTick();
-        try {
-            dialogElement.value?.showModal();
-        } catch (e) {
-            // dialog may already be open, or the test environment lacks support
-        }
-        inputElement.value?.focus();
+        openDialog();
     } else {
-        dialogElement.value?.close();
+        closeDialog();
     }
 });
 </script>
@@ -342,6 +427,7 @@ watchImmediate(isPaletteOpen, async (open) => {
     <dialog
         ref="dialogElement"
         class="command-palette"
+        :class="{ 'palette-open': paletteVisible }"
         aria-label="Command palette"
         @click="onClickDialog"
         @close="onDialogClose">
@@ -429,6 +515,10 @@ watchImmediate(isPaletteOpen, async (open) => {
 </template>
 
 <style scoped lang="scss">
+// Firefox ESR is still in the browserslist target, so the enter transition is
+// driven by a class toggled after two frames rather than by @starting-style
+$palette-transition: 130ms ease-out;
+
 .command-palette {
     width: min(40rem, calc(100vw - 2rem));
     margin-top: 15vh;
@@ -441,10 +531,35 @@ watchImmediate(isPaletteOpen, async (open) => {
 
     background-color: var(--background-color);
 
+    opacity: 0;
+    transform: scale(0.98);
+    transition:
+        opacity $palette-transition,
+        transform $palette-transition;
+
     // same backdrop treatment as GModal
     &::backdrop {
         background-color: var(--color-blue-800);
-        opacity: 0.33;
+        opacity: 0;
+        transition: opacity $palette-transition;
+    }
+
+    &.palette-open {
+        opacity: 1;
+        transform: scale(1);
+
+        &::backdrop {
+            opacity: 0.33;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transform: none;
+        transition: none;
+
+        &::backdrop {
+            transition: none;
+        }
     }
 
     .palette-input {
