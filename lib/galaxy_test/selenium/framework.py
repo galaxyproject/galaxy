@@ -1405,11 +1405,12 @@ class RunsToolTests(NavigatesGalaxyMixin):
             return []
         if isinstance(expected, dict):
             return cls._declared_mismatches(expected, actual, here, dataset_ids, select_labels)
-        if isinstance(expected, list):
-            # Repeats arrive as a list of instances, compared position by position.
-            if not isinstance(actual, list) or len(actual) != len(expected):
-                count = len(actual) if isinstance(actual, list) else 0
-                return [f"{here} ({count} values, not {len(expected)})"]
+        if isinstance(expected, list) or isinstance(actual, list):
+            # A multi-value parameter may be declared comma joined and submitted as a list.
+            expected = cls._as_values(expected)
+            actual = cls._as_values(actual)
+            if len(actual) != len(expected):
+                return [f"{here} ({len(actual)} values, not {len(expected)})"]
             nested = []
             for index, item in enumerate(expected):
                 nested.extend(cls._compare(item, actual[index], f"{here}|{index}", dataset_ids, select_labels))
@@ -1423,17 +1424,30 @@ class RunsToolTests(NavigatesGalaxyMixin):
         return [f"{here} ({actual!r} not {expected!r})"]
 
     @staticmethod
+    def _as_values(value) -> list:
+        """A multi-value parameter as a list, however it was written down."""
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str) and "," in value:
+            return [item for item in value.split(",") if item]
+        return [value]
+
+    @staticmethod
     def _same_scalar(expected, actual) -> bool:
         """Whether a declared scalar and a submitted one mean the same thing.
 
-        A colour input always reports the leading hash a test case may leave out.
+        A colour input reports the leading hash a test case may leave out, and a number
+        is declared as text but submitted typed.
         """
         left, right = str(expected), str(actual)
         if left == right:
             return True
         if "#" in (left + right):
             return left.lstrip("#").lower() == right.lstrip("#").lower()
-        return False
+        try:
+            return float(left) == float(right)
+        except ValueError:
+            return False
 
     @staticmethod
     def _is_dataset_reference(value) -> bool:
