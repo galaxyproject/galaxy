@@ -227,6 +227,19 @@ const scopeHint = computed(() => {
     return `${localize(scope.label)} — ${localize("this filter has no results provider yet.")}`;
 });
 
+/**
+ * Prompt for a free text argument that has nothing to offer until something is
+ * typed, so the mode asks for a value instead of reporting no results.
+ */
+const argumentHint = computed(() => {
+    const activeMode = mode.value;
+    if (activeMode.type !== "action" || text.value !== "") {
+        return undefined;
+    }
+    const hint = activeMode.action.argumentMode?.emptyHint;
+    return hint ? localize(hint) : undefined;
+});
+
 /** Says a scope is broken rather than empty, once its very first fetch failed */
 const errorHint = computed(() => {
     const subject = failedSubject.value;
@@ -1118,6 +1131,13 @@ watchImmediate(isPaletteOpen, (open) => {
 
             <div v-else-if="errorHint" class="palette-hint" data-description="palette error">
                 {{ errorHint }}
+            </div>
+
+            <div
+                v-else-if="flatItems.length === 0 && argumentHint"
+                class="palette-hint"
+                data-description="palette argument hint">
+                {{ argumentHint }}
             </div>
 
             <div

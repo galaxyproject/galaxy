@@ -49,6 +49,11 @@ export interface PaletteItem {
     id: string;
     /** Turns the item into a badge collecting a second value before it runs */
     argumentMode?: {
+        /**
+         * Prompt shown instead of "No results." while nothing is typed yet —
+         * for free text arguments, where an empty query has nothing to match.
+         */
+        emptyHint?: string;
         getItems(argQuery: string, ctx: PaletteContext): PaletteItem[] | Promise<PaletteItem[]>;
         /**
          * Whether plain enter enters the argument mode as well — for actions
