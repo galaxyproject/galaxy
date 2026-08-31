@@ -4,7 +4,7 @@ import { type Tool, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
-import { rankPaletteItems } from "../utilities";
+import { isScopeTokenLike, rankPaletteItems } from "../utilities";
 import type { ScopeDefinition } from "./scopes";
 
 /**
@@ -116,6 +116,12 @@ export const toolsProvider: CommandPaletteProvider = {
         return recentToolItems();
     },
     async search(query: string) {
+        // an unknown or gated `xy:` token is a filter mid-typing, not a tool
+        // name — matching it locally keeps it away from the backend
+        if (isScopeTokenLike(query)) {
+            await ensureHydrated();
+            return localMatches(query.trim(), MAX_RESULTS);
+        }
         return searchTools(query, MAX_RESULTS);
     },
     /**
