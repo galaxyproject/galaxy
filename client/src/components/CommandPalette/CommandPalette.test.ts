@@ -223,6 +223,16 @@ describe("CommandPalette", () => {
         return wrapper.findAll("[data-description='palette option secondary']");
     }
 
+    /** The offer standing in for a scope an anonymous visitor cannot reach */
+    function loginPrompt() {
+        return wrapper.find("[data-description='palette section login-prompt']");
+    }
+
+    /** Turns the current user into a visitor without an account */
+    function browseAnonymously() {
+        useUserStore().currentUser = { id: "anon", isAnonymous: true } as never;
+    }
+
     it("shows actions and navigation sections for an empty query", () => {
         const text = wrapper.text();
         expect(text).toContain("Actions");
@@ -257,6 +267,8 @@ describe("CommandPalette", () => {
         // the workflow store is empty here, so the scope has nothing to offer
         expect(wrapper.find("[data-description='palette scope hint']").exists()).toBe(false);
         expect(wrapper.find("[data-description='palette empty']").exists()).toBe(true);
+        // a known user is never asked to log in for a scope they already have
+        expect(loginPrompt().exists()).toBe(false);
     });
 
     it("remembers an opened entity in the palette recents", async () => {
@@ -917,6 +929,63 @@ describe("CommandPalette", () => {
         await type("it: jupyter");
         expect(badge().exists()).toBe(false);
         expect(inputValue()).toBe("it: jupyter");
+    });
+
+    it("offers a login when an anonymous visitor types a scope that needs one", async () => {
+        browseAnonymously();
+        const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
+
+        await type("w:rna");
+        // the token never became a badge, so the offer stands in its place
+        expect(badge().exists()).toBe(false);
+        expect(loginPrompt().text()).toContain("Log in to search my workflows");
+        expect(loginPrompt().text()).toContain("Create a Galaxy account");
+
+        // the offer is made of ordinary rows, so enter reaches it like any result
+        await press("Enter");
+        expect(push).toHaveBeenCalledWith(`/login/start?redirect=${encodeURIComponent("/")}`);
+    });
+
+    it("says nothing about a scope this instance does not offer at all", async () => {
+        browseAnonymously();
+
+        // interactivetools_enable is off in the mocked config, so an account
+        // would not unlock the scope either
+        await type("it:jupyter");
+        expect(loginPrompt().exists()).toBe(false);
+        expect(inputValue()).toBe("it:jupyter");
+    });
+
+    it("hides the register row where the instance creates no local accounts", async () => {
+        browseAnonymously();
+        setMockConfig({ allow_local_account_creation: false });
+        try {
+            await type("h:");
+            expect(loginPrompt().text()).toContain("Log in to search my histories");
+            expect(loginPrompt().text()).not.toContain("Create a Galaxy account");
+        } finally {
+            resetMockConfig();
+        }
+    });
+
+    it("lists the scopes an account would add behind a lock in help mode", async () => {
+        browseAnonymously();
+
+        await type("?");
+        // what an anonymous visitor may search is listed as it always is
+        expect(wrapper.text()).toContain("Search public workflows");
+
+        const locked = optionRow("Search my workflows");
+        expect(locked?.find(".item-icon svg").attributes("data-icon")).toBe("lock");
+
+        await locked?.trigger("click");
+        await settle();
+
+        // picking one types its token, which answers with the same login offer
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        expect(badge().exists()).toBe(false);
+        expect(inputValue()).toBe("w: ");
+        expect(loginPrompt().text()).toContain("Log in to search my workflows");
     });
 
     it("never searches, tabs or lists a provider the instance disabled", async () => {

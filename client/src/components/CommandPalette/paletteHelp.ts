@@ -1,13 +1,22 @@
+import { faLock } from "@fortawesome/free-solid-svg-icons";
+
 import { localize } from "@/utils/localization";
 
 import { actionsProvider } from "./providers/actions";
-import { ACTIONS_SCOPE, availableScopes, isProviderEnabled, type ScopeDefinition } from "./providers/scopes";
+import {
+    ACTIONS_SCOPE,
+    availableScopes,
+    isProviderEnabled,
+    loginGatedScopes,
+    type ScopeDefinition,
+} from "./providers/scopes";
 import type { PaletteContext, PaletteItem, ResultSection } from "./types";
 import { rankPaletteItems } from "./utilities";
 
 /** What the help rows need from the palette to apply the scope or action they document */
 export interface PaletteHelpHandlers {
     enterScope: (scope: ScopeDefinition) => void;
+    popMode: () => void;
     setText: (text: string) => void;
 }
 
@@ -18,6 +27,25 @@ export function scopeHelpItem(scope: ScopeDefinition, enterScope: PaletteHelpHan
         handler: () => enterScope(scope),
         keywords: scope.key,
         shortcut: scope.key === ACTIONS_SCOPE.key ? scope.key : `${scope.key}:`,
+        title: `${localize("Search")} ${localize(scope.label).toLowerCase()}`,
+    };
+}
+
+/**
+ * A scope only an account reaches, listed so an anonymous visitor can see what
+ * logging in would add. Selecting it types the token the row documents, which
+ * answers with the login offer — the same one typing it by hand would get.
+ */
+export function lockedScopeHelpItem(scope: ScopeDefinition, handlers: PaletteHelpHandlers): PaletteItem {
+    return {
+        id: `help:locked:${scope.key}`,
+        handler: () => {
+            handlers.popMode();
+            handlers.setText(`${scope.key}: `);
+        },
+        icon: faLock,
+        keywords: scope.key,
+        shortcut: `${scope.key}:`,
         title: `${localize("Search")} ${localize(scope.label).toLowerCase()}`,
     };
 }
@@ -77,7 +105,11 @@ export function helpSections(
     const help: ResultSection[] = [
         {
             id: "help:scopes",
-            items: availableScopes(ctx).map((scope) => scopeHelpItem(scope, handlers.enterScope)),
+            // what the user can search now, then what an account would add
+            items: [
+                ...availableScopes(ctx).map((scope) => scopeHelpItem(scope, handlers.enterScope)),
+                ...loginGatedScopes(ctx).map((scope) => lockedScopeHelpItem(scope, handlers)),
+            ],
             title: "Scopes",
         },
     ];

@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { faQuestionCircle, faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+    faQuestionCircle,
+    faSearch,
+    faSignInAlt,
+    faSpinner,
+    faTimes,
+    faUserPlus,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchDebounced, watchImmediate } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router/composables";
 
 import { useStartNewChat } from "@/components/GalaxyAI/useStartNewChat";
 import { useFilteredUploadMethods } from "@/components/Panels/Upload/uploadMethodRegistry";
@@ -20,14 +27,14 @@ import { helpSections } from "./paletteHelp";
 import { enabledPaletteProviders, findPaletteProvider } from "./providers";
 import { ALL_CATEGORY, availableCategories, categoryProviderId, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
-import { isProviderEnabled, type ScopeDefinition } from "./providers/scopes";
+import { isProviderEnabled, isScopeLoginGated, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
 import { usePaletteDialog } from "./usePaletteDialog";
 import { OPTIONAL_HINTS, secondaryLabelFor, usePaletteFooter } from "./usePaletteFooter";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
 import { usePaletteModifiers } from "./usePaletteModifiers";
 import { useScrollEdges } from "./useScrollEdges";
-import { BACKEND_RANKED_SCORE, scorePaletteItems } from "./utilities";
+import { BACKEND_RANKED_SCORE, parsePaletteQuery, scorePaletteItems } from "./utilities";
 
 import CommandPaletteItem from "./CommandPaletteItem.vue";
 
@@ -49,6 +56,7 @@ const { addRecentItem } = useRecentPaletteItems();
 // and hands them to the providers through the context
 const uploadMethods = useFilteredUploadMethods();
 const startNewChat = useStartNewChat();
+const route = useRoute();
 const router = useRouter();
 const { config } = useConfig();
 const toolStore = useToolStore();
@@ -92,12 +100,54 @@ const failedSubject = ref<string | null>(null);
 const uid = useUid("command-palette");
 const listboxId = computed(() => `${uid.value}-listbox`);
 
+/** Where a login has to land the user again once it is done */
+const loginRedirect = computed(() => `/login/start?redirect=${encodeURIComponent(route.fullPath)}`);
+
+/**
+ * The way in for an anonymous visitor who typed a scope only an account reaches.
+ * The machine refuses the badge for such a token, so it is still sitting in the
+ * input to be read here — and the offer is a section of ordinary rows rather
+ * than a banner, so ↑↓ and enter reach it like any other result.
+ */
+const loginPromptSection = computed<ResultSection | undefined>(() => {
+    if (mode.value.type !== "root") {
+        return undefined;
+    }
+    const parsed = parsePaletteQuery(text.value);
+    const ctx = buildContext();
+    if (parsed.type !== "scope" || !isScopeLoginGated(parsed.scope, ctx)) {
+        return undefined;
+    }
+    const items: PaletteItem[] = [
+        {
+            id: "login-prompt:login",
+            icon: faSignInAlt,
+            title: `${localize("Log in to search")} ${localize(parsed.scope.label).toLowerCase()}`,
+            to: loginRedirect.value,
+        },
+    ];
+    // registering is offered exactly where the masthead offers it
+    if (ctx.config.allow_local_account_creation) {
+        items.push({
+            id: "login-prompt:register",
+            icon: faUserPlus,
+            title: localize("Create a Galaxy account"),
+            to: "/register/start",
+        });
+    }
+    return { id: "login-prompt", items, title: "Log in required" };
+});
+
 /**
  * Sections worth a heading: one still loading holds its place with skeletons, one
  * that answered with nothing is dropped the moment it does — a bare title over no
- * rows is worse than the gap it leaves.
+ * rows is worse than the gap it leaves. The login offer leads where there is one,
+ * over whatever the literal text still finds underneath it.
  */
-const visibleSections = computed(() => sections.value.filter((section) => section.loading || section.items.length > 0));
+const visibleSections = computed(() => {
+    const answered = sections.value.filter((section) => section.loading || section.items.length > 0);
+    return loginPromptSection.value ? [loginPromptSection.value, ...answered] : answered;
+});
 
 const flatItems = computed(() => visibleSections.value.flatMap((section) => section.items));
 
@@ -405,7 +455,7 @@ async function actionSections(action: PaletteItem, ctx: PaletteContext): Promise
 function modeSections(activeMode: PaletteMode, ctx: PaletteContext): Promise<ResultSection[]> | ResultSection[] {
     switch (activeMode.type) {
         case "help":
-            return helpSections(ctx, query.value, modifierLabel.value, { enterScope, setText });
+            return helpSections(ctx, query.value, modifierLabel.value, { enterScope, popMode, setText });
         case "action":
             return actionSections(activeMode.action, ctx);
         case "scoped":
