@@ -69,8 +69,10 @@ const toolStore = useToolStore();
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const userStore = useUserStore();
 
+// the machine needs the context to reject scope tokens the user may not use;
+// `buildContext` is a hoisted declaration, so it is safe to hand over here
 const { badgeLabel, enterAction, enterScope, handleEscape, mode, popMode, query, reset, setText, text } =
-    usePaletteMachine();
+    usePaletteMachine(buildContext);
 
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const inputElement = ref<HTMLInputElement | null>(null);

@@ -1,7 +1,7 @@
 import { computed, shallowRef } from "vue";
 
-import type { ScopeDefinition } from "./providers/scopes";
-import type { PaletteItem } from "./types";
+import { isScopeAvailable, type ScopeDefinition } from "./providers/scopes";
+import type { PaletteContext, PaletteItem } from "./types";
 import { parsePaletteQuery } from "./utilities";
 
 /**
@@ -24,8 +24,13 @@ export type EscapeResult = "cleared-text" | "popped-mode" | "close";
  * Palette-local by design — one instance per palette component, so it stays a
  * plain composable instead of a store, and every transition is a pure function
  * of the current state.
+ *
+ * @param getContext Resolves the current palette context, used to reject scope
+ * tokens the user may not use at all — `hs:` while anonymous, `it:` on an
+ * instance without interactive tools. Omitting it treats every scope as
+ * available, which keeps the parsing tests context free.
  */
-export function usePaletteMachine() {
+export function usePaletteMachine(getContext?: () => PaletteContext) {
     const mode = shallowRef<PaletteMode>({ type: "root" });
     const text = shallowRef("");
 
@@ -45,6 +50,16 @@ export function usePaletteMachine() {
                 return undefined;
         }
     });
+
+    /**
+     * Whether a token typed into the input may turn into a badge. A scope the
+     * help panel never offers must not be reachable by typing it either, so a
+     * gated token stays plain search text.
+     */
+    function scopeAllowed(next: ScopeDefinition) {
+        const ctx = getContext?.();
+        return ctx ? isScopeAvailable(next, ctx) : true;
+    }
 
     /** Converts a scope into a badge and clears the input */
     function enterScope(next: ScopeDefinition) {
@@ -74,7 +89,8 @@ export function usePaletteMachine() {
      * Applies raw input. A recognized token (`>` or `x:`) becomes a badge and
      * is stripped, a lone `?` in root opens help, anything else is kept as
      * typed — trailing spaces included, so words can be typed normally. While
-     * an action collects its argument nothing is parsed at all.
+     * an action collects its argument nothing is parsed at all. A token naming
+     * a scope the current user may not use stays plain text as well.
      */
     function setText(next: string) {
         if (mode.value.type === "action") {
@@ -83,7 +99,7 @@ export function usePaletteMachine() {
             return;
         }
         const parsed = parsePaletteQuery(next);
-        if (parsed.type === "scope") {
+        if (parsed.type === "scope" && scopeAllowed(parsed.scope)) {
             enterScope(parsed.scope);
             text.value = parsed.query;
             return;

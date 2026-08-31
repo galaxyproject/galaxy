@@ -476,6 +476,13 @@ describe("CommandPalette", () => {
         expect(category("all").attributes("aria-selected")).toBe("true");
     });
 
+    it("keeps a scope token the user may not use as plain text", async () => {
+        // interactivetools_enable is off in the mocked config
+        await type("it: jupyter");
+        expect(badge().exists()).toBe(false);
+        expect(inputValue()).toBe("it: jupyter");
+    });
+
     it("animates in and closes through the transition fallback", async () => {
         const dialog = wrapper.find("dialog");
         expect(dialog.classes()).toContain("palette-open");
