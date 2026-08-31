@@ -130,6 +130,19 @@ describe("toolsProvider", () => {
             expect(backendSearches()).toEqual([]);
         });
 
+        it("falls back to the toolbox when nothing is favorited or recent", async () => {
+            const userStore = useUserStore();
+            userStore.currentPreferences = { favorites: { tools: [] } };
+            userStore.recentTools = [];
+
+            const sections = (await toolsProvider.searchScoped?.(TOOLS_SCOPE, "", makeCtx())) ?? [];
+
+            expect(sections.map((s) => s.id)).toEqual(["results"]);
+            // alphabetical, so the scope is never blank on a fresh account
+            expect(sections[0]?.items.map((i) => i.id)).toEqual(["tools:bowtie_id", "tools:fastqc_id"]);
+            expect(backendSearches()).toEqual([]);
+        });
+
         it("keeps a favorite out of the recent section", async () => {
             const userStore = useUserStore();
             userStore.currentPreferences = { favorites: { tools: [FASTQC.id] } };
