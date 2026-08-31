@@ -72,6 +72,15 @@ describe("CommandPalette", () => {
         await settle();
     }
 
+    function hint(id: string) {
+        return wrapper.find(`[data-description='palette hint ${id}']`);
+    }
+
+    async function holdModifier(down: boolean) {
+        window.dispatchEvent(new KeyboardEvent(down ? "keydown" : "keyup", { key: "Control" }));
+        await wrapper.vm.$nextTick();
+    }
+
     it("shows actions and navigation sections for an empty query", () => {
         const text = wrapper.text();
         expect(text).toContain("Actions");
@@ -173,13 +182,57 @@ describe("CommandPalette", () => {
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
     });
 
-    it("opens in a new tab on ctrl/cmd+enter", async () => {
+    it("opens in a new tab on ctrl/cmd+enter and stays open", async () => {
         const open = vi.spyOn(window, "open").mockImplementation(() => null);
         const push = vi.spyOn(router, "push");
         await type("workflows");
         await input().trigger("keydown", { key: "Enter", ctrlKey: true });
         expect(open).toHaveBeenCalledWith(router.resolve("/workflows/list").href, "_blank", "noopener");
         expect(push).not.toHaveBeenCalled();
+        // several items can be sent to tabs in a row without reopening
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+    });
+
+    it("previews the new tab binding while ctrl/cmd is held", async () => {
+        await type("workflows");
+        expect(hint("open").classes()).toContain("hint-active");
+        expect(hint("new-tab").classes()).not.toContain("hint-active");
+        expect(wrapper.find("[data-description='palette option external']").exists()).toBe(false);
+
+        await holdModifier(true);
+        expect(hint("open").classes()).not.toContain("hint-active");
+        expect(hint("new-tab").classes()).toContain("hint-active");
+        // only the selected row previews the external open
+        expect(wrapper.findAll("[data-description='palette option external']").length).toBe(1);
+
+        await holdModifier(false);
+        expect(hint("new-tab").classes()).not.toContain("hint-active");
+    });
+
+    it("resets the held modifier when the window loses focus", async () => {
+        await type("workflows");
+        await holdModifier(true);
+        expect(hint("new-tab").classes()).toContain("hint-active");
+
+        // opening a new tab steals focus, so the keyup never reaches the window
+        window.dispatchEvent(new Event("blur"));
+        await wrapper.vm.$nextTick();
+        expect(hint("new-tab").classes()).not.toContain("hint-active");
+        expect(hint("open").classes()).toContain("hint-active");
+    });
+
+    it("flips the escape hint between close, clear and back", async () => {
+        expect(hint("escape").text()).toContain("close");
+        expect(hint("help").exists()).toBe(true);
+        expect(hint("remove-scope").exists()).toBe(false);
+
+        await type("t: align");
+        expect(hint("escape").text()).toContain("clear");
+        expect(hint("remove-scope").exists()).toBe(true);
+        expect(hint("help").exists()).toBe(false);
+
+        await press("Escape");
+        expect(hint("escape").text()).toContain("back");
     });
 
     it("animates in and closes through the transition fallback", async () => {

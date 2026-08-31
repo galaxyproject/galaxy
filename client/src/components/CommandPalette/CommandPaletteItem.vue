@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { PaletteItem } from "./types";
@@ -10,9 +11,11 @@ interface Props {
     id: string;
     /** The palette item to render */
     item: PaletteItem;
+    /** Previews that ctrl/cmd + enter would open this item in a new tab */
+    showExternal?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), { showExternal: false });
 
 const emit = defineEmits<{
     (e: "select", event: MouseEvent): void;
@@ -42,7 +45,14 @@ const emit = defineEmits<{
             <span v-if="props.item.subtitle" class="item-subtitle">{{ props.item.subtitle }}</span>
         </span>
 
-        <kbd v-if="props.item.shortcut" class="item-shortcut" aria-hidden="true">{{ props.item.shortcut }}</kbd>
+        <FontAwesomeIcon
+            v-if="props.showExternal"
+            class="item-external"
+            data-description="palette option external"
+            fixed-width
+            :icon="faExternalLinkAlt" />
+
+        <kbd v-else-if="props.item.shortcut" class="item-shortcut" aria-hidden="true">{{ props.item.shortcut }}</kbd>
 
         <kbd v-else-if="props.active" class="item-enter" aria-hidden="true">↵</kbd>
     </div>
@@ -87,6 +97,11 @@ const emit = defineEmits<{
         font-size: var(--font-size-small);
         color: var(--color-grey-600);
         background: none;
+    }
+
+    .item-external {
+        margin-left: auto;
+        color: var(--color-blue-600);
     }
 
     .item-shortcut {

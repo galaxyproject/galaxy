@@ -36,6 +36,15 @@ interface ResultSection {
     title: string;
 }
 
+/** One key hint rendered in the footer, driven by the current palette mode */
+interface FooterHint {
+    /** Emphasized hint — the binding the next `↵` would trigger */
+    active?: boolean;
+    id: string;
+    keys: string;
+    label: string;
+}
+
 const { isPaletteOpen, closePalette, togglePalette } = useCommandPalette();
 const router = useRouter();
 const { config } = useConfig();
@@ -51,6 +60,8 @@ const inputElement = ref<HTMLInputElement | null>(null);
 const searching = ref(false);
 const sections = ref<ResultSection[]>([]);
 const selectedIndex = ref(0);
+/** Whether ctrl/cmd is currently down, so the palette can preview "new tab" */
+const modifierHeld = ref(false);
 /** Scope whose provider has not landed yet; renders the temporary hint row */
 const pendingScope = ref<ScopeDefinition | null>(null);
 
@@ -76,6 +87,50 @@ const placeholder = computed(() => {
         return searchLabel(localize(activeMode.scope.label));
     }
     return localize(ROOT_PLACEHOLDER);
+});
+
+/** Escape steps through clearing the text, then the badge, then closing */
+const escapeLabel = computed(() => {
+    if (text.value !== "") {
+        return localize("clear");
+    }
+    if (mode.value.type !== "root") {
+        return localize("back");
+    }
+    return localize("close");
+});
+
+const footerHints = computed<FooterHint[]>(() => {
+    const activeMode = mode.value;
+    const hints: FooterHint[] = [{ id: "navigate", keys: "↑↓", label: localize("navigate") }];
+
+    if (activeMode.type === "action") {
+        hints.push({ id: "run", keys: "↵", label: localize("run") });
+    } else if (activeMode.type === "help") {
+        hints.push({ id: "apply", keys: "↵", label: localize("apply") });
+    } else {
+        hints.push({ active: !modifierHeld.value, id: "open", keys: "↵", label: localize("open") });
+        hints.push({
+            active: modifierHeld.value,
+            id: "new-tab",
+            keys: `${modifierLabel.value}↵`,
+            label: localize("new tab"),
+        });
+    }
+
+    const secondaryAction = selectedItem.value?.secondaryAction;
+    if (secondaryAction) {
+        hints.push({ id: "secondary", keys: "⇧↵", label: localize(secondaryAction.label) });
+    }
+    if (activeMode.type === "scoped") {
+        hints.push({ id: "remove-scope", keys: "⌫", label: localize("remove scope") });
+    }
+
+    hints.push({ id: "escape", keys: "esc", label: escapeLabel.value });
+    if (activeMode.type === "root") {
+        hints.push({ id: "help", keys: "?", label: localize("help") });
+    }
+    return hints;
 });
 
 const scopeHint = computed(() => {
@@ -222,18 +277,23 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
         return;
     }
     if (item.to) {
-        const newTab = Boolean(event && (event.ctrlKey || event.metaKey));
-        if (newTab) {
+        if (event && (event.ctrlKey || event.metaKey)) {
+            // the palette stays open so several items can be sent to tabs in a row
             window.open(router.resolve(item.to).href, "_blank", "noopener");
-        } else {
-            router.push(item.to).catch(() => {
-                // duplicate navigation to the current route is fine
-            });
+            return;
         }
+        router.push(item.to).catch(() => {
+            // duplicate navigation to the current route is fine
+        });
     } else {
         item.handler?.();
     }
     closePalette();
+}
+
+/** Previews what ctrl/cmd + enter would do on the selected, navigable item */
+function showExternalIcon(index: number, item: PaletteItem) {
+    return modifierHeld.value && index === selectedIndex.value && Boolean(item.to);
 }
 
 function onInput(event: Event) {
@@ -309,12 +369,30 @@ watch(selectedIndex, () => {
     }
 });
 
+function isNewTabModifier(key: string) {
+    return key === "Meta" || key === "Control";
+}
+
 useEventListener(window, "keydown", (event: KeyboardEvent) => {
+    if (isNewTabModifier(event.key)) {
+        modifierHeld.value = true;
+    }
     const platformModifier = eventStore.isMac ? event.metaKey : event.ctrlKey;
     if (event.key.toLowerCase() === "k" && platformModifier && !event.shiftKey && !event.altKey && !event.repeat) {
         event.preventDefault();
         togglePalette();
     }
+});
+
+useEventListener(window, "keyup", (event: KeyboardEvent) => {
+    if (isNewTabModifier(event.key)) {
+        modifierHeld.value = false;
+    }
+});
+
+// opening a new tab moves focus away, so the matching keyup never arrives here
+useEventListener(window, "blur", () => {
+    modifierHeld.value = false;
 });
 
 watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });
@@ -416,6 +494,7 @@ watchImmediate(isPaletteOpen, (open) => {
         runSearch();
         openDialog();
     } else {
+        modifierHeld.value = false;
         closeDialog();
     }
 });
@@ -483,6 +562,7 @@ watchImmediate(isPaletteOpen, (open) => {
                     :key="item.id"
                     :active="optionIndex(sectionIdx, itemIdx) === selectedIndex"
                     :item="item"
+                    :show-external="showExternalIcon(optionIndex(sectionIdx, itemIdx), item)"
                     @select="runItem(item, $event)"
                     @highlight="selectedIndex = optionIndex(sectionIdx, itemIdx)" />
             </div>
@@ -497,19 +577,15 @@ watchImmediate(isPaletteOpen, (open) => {
         </div>
 
         <div class="palette-footer">
-            <span><kbd>↑↓</kbd> navigate</span>
-
-            <span><kbd>↵</kbd> open</span>
-
             <span
-                ><kbd>{{ modifierLabel }}↵</kbd> new tab</span
-            >
+                v-for="hint in footerHints"
+                :key="hint.id"
+                :class="{ 'hint-active': hint.active }"
+                :data-description="`palette hint ${hint.id}`">
+                <kbd>{{ hint.keys }}</kbd>
 
-            <span v-if="badgeLabel"><kbd>⌫</kbd> remove filter</span>
-
-            <span><kbd>esc</kbd> clear/close</span>
-
-            <span><kbd>?</kbd> help</span>
+                {{ hint.label }}
+            </span>
         </div>
     </dialog>
 </template>
@@ -638,6 +714,18 @@ $palette-transition: 130ms ease-out;
             color: var(--color-grey-600);
             font-size: inherit;
             padding: 0 var(--spacing-1);
+        }
+
+        // the binding the next enter would trigger, swapped while ctrl/cmd is held
+        .hint-active {
+            color: var(--color-blue-800);
+            font-weight: bold;
+
+            kbd {
+                border-color: var(--color-blue-300);
+                background-color: var(--color-blue-100);
+                color: var(--color-blue-800);
+            }
         }
     }
 }
