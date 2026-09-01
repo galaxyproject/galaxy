@@ -238,6 +238,13 @@ class ToolPanelViewSearch:
         )
 
         with AsyncWriter(self.index) as writer:
+            # AsyncWriter commits from its own non-daemon thread and retries a held
+            # write lock forever. A writer that dies while holding the lock (the
+            # index directory can disappear under it during embedded-test teardown)
+            # leaves every later writer for this index spinning, and those threads
+            # then keep the interpreter from ever exiting. The index is disposable
+            # state, rebuilt on startup, so it must never outlive the process.
+            writer.daemon = True
             for tool_id in tool_ids_to_remove:
                 writer.delete_by_term("id", tool_id)
             for tool in tools_to_index:
