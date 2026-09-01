@@ -88,8 +88,9 @@ async function ensureHydrated(): Promise<void> {
  * into the same store, so the two sources dedupe by id.
  *
  * @param cacheOnly never request anything, not even to hydrate an empty cache —
- * the unscoped root fan-out runs on every provider at once and only filters what
- * the stores already hold; the `v:` scope does the fetching.
+ * this provider answers the root fan-out from the cache alone, unlike the
+ * histories, workflows, pages and tools ones, which search the backend there
+ * too; the `v:` scope does the fetching.
  */
 async function searchVisualizations(query: string, limit = MAX_RESULTS, cacheOnly = false): Promise<PaletteItem[]> {
     const store = useVisualizationStore();

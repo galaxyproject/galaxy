@@ -93,9 +93,9 @@ function cachedItems(variant: PageListVariant): PaletteItem[] {
  * reported by an unfiltered listing: a search that found nothing says nothing
  * about the rest of the list and must not silence later requests.
  *
- * @param cacheOnly never request anything, not even to fill an empty cache —
- * the unscoped root fan-out runs on every provider at once and only filters what
- * the stores already hold; the `p:`/`pp:` scopes do the fetching.
+ * @param cacheOnly never request anything, not even to fill an empty cache. The
+ * root fan-out passes it for the user's own pages, which it filters locally; the
+ * published ones it does search on the backend, see {@link publishedItems}.
  */
 async function storeFirstItems(
     variant: PageListVariant,

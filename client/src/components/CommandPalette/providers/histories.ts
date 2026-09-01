@@ -255,9 +255,9 @@ function cacheIsComplete(variant: HistoryVariant, cached: HistoryEntryLike[]): b
  * @param variant which cached list to read
  * @param query free text filter, already trimmed
  * @param limit section cap
- * @param cacheOnly never request anything, not even to hydrate an empty cache —
- * the unscoped root fan-out runs on every provider at once and only filters
- * what the stores already hold; the scopes do the fetching.
+ * @param cacheOnly never request anything, not even to hydrate an empty cache.
+ * The root fan-out passes it for the user's own histories, which it filters
+ * locally; the listings it does search on the backend, see {@link variantItems}.
  */
 async function listItems(
     variant: HistoryVariant,

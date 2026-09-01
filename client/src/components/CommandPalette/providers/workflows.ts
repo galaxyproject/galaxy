@@ -113,9 +113,9 @@ async function fetchQuietly<T>(fetch: () => Promise<T>): Promise<T | undefined> 
 /** How far a section may go to fill itself */
 interface ListOptions {
     /**
-     * Never issue a request, not even to hydrate an empty cache. The unscoped
-     * root fan-out runs on every provider at once, so it only ever filters what
-     * the stores already hold; the scopes do the fetching.
+     * Never issue a request, not even to hydrate an empty cache. The root
+     * fan-out passes it for the user's own workflows, which it filters locally;
+     * the shared and published lists it does search, see {@link variantItems}.
      */
     cacheOnly?: boolean;
     /** Whether a query the cache cannot answer may trigger a search request */

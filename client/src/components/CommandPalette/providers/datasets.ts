@@ -100,8 +100,9 @@ async function ensureLatestHydrated(): Promise<void> {
  * so the next keystroke is local again.
  *
  * @param cacheOnly never request anything, not even to hydrate an empty cache —
- * the unscoped root fan-out runs on every provider at once and only filters what
- * the stores already hold; the `d:` scope does the fetching.
+ * this provider answers the root fan-out from the cache alone, unlike the
+ * histories, workflows, pages and tools ones, which search the backend there
+ * too; the `d:` scope does the fetching.
  */
 async function matchingDatasets(query: string, cacheOnly = false): Promise<HDASummary[]> {
     const datasetListStore = useDatasetListStore();

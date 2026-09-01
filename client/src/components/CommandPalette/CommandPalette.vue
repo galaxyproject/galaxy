@@ -591,9 +591,10 @@ function fanOutIncrementally(ctx: PaletteContext, epoch: number, keepCategoryRow
     }
     providers.forEach((provider) => {
         providerItems(provider.id, ctx)
-            // the root fan-out only reads what the stores already hold, so a
-            // rejection here is a provider breaking that contract: it costs its
-            // own section rather than the spinner it would leave running
+            // root mode is not local for every provider — tools, and the
+            // listing searches of histories, workflows and pages, do reach the
+            // backend — so a rejection is ordinary here: it costs its own
+            // section rather than the spinner it would leave running
             .catch(() => [] as PaletteItem[])
             .then((items) => {
                 if (epoch !== searchEpoch) {
