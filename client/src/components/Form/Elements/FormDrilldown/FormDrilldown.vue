@@ -59,6 +59,7 @@ const selectAllIndeterminate: ComputedRef<boolean> = computed(() => {
 function handleClick(clickedElement: string, value: string): void {
     if (props.multiple) {
         // Only the chosen option is submitted; the server expands a recurse hierarchy.
+        // Covered by FormDrilldown.test.js and the drill_down tool tests.
         const selectedElements: string[] = setElementValues(currentValue.value, [clickedElement], value);
         if (selectedElements.length === 0) {
             emit("input", null);

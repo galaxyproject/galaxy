@@ -498,6 +498,7 @@ def _fill_default_for(
                 tool_state[parameter_name] = parameter.value
             else:
                 # Older profiles report an unset optional boolean as false.
+                # Both branches asserted by test_parameter_convert.test_fill_defaults.
                 tool_state[parameter_name] = parameter.value or False
 
     if isinstance(parameter, (IntegerParameterModel, FloatParameterModel, HiddenParameterModel, ColorParameterModel)):

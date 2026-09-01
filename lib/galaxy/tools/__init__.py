@@ -2037,6 +2037,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                         )
                         group_c.test_param.optional = False
                         if isinstance(group_c.test_param, BooleanToolParameter) and group_c.test_param.checked is None:
+                            # Covered by parameters/gx_conditional_boolean_optional.
                             group_c.test_param.checked = False
                     possible_cases = list(
                         group_c.test_param.legal_values

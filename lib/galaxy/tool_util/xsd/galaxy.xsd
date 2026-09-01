@@ -76,6 +76,12 @@ List of behavior changes associated with profile versions:
 
 - Do not use user preferences to store credentials for tools anymore. Use the new `<credentials>` tag in the `<requirements>` section of the tool XML instead.
 
+### 26.2
+
+- An `optional` `boolean` parameter with no `checked` attribute defaults to `None` instead of `False`, so an unset
+  value stays distinct from an explicit false. Older tools keep reporting `False`. The templated command line is
+  unchanged, since `None` still renders the `falsevalue`.
+
 ### Examples
 
 A normal tool:

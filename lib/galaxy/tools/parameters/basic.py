@@ -1224,6 +1224,7 @@ class SelectToolParameter(ToolParameter):
             else:
                 value2 = None
         elif not self.multiple:
+            # A multiple select keeps its list. Covered by parameters/gx_select_multiple_one_default.
             value2 = value[0]
         else:
             value2 = value
@@ -1809,6 +1810,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 )
             rval.append(val)
         if not self.multiple:
+            # Covered by parameters/gx_drill_down_exact_with_selection.
             return rval[0] if rval else None
         return rval
 

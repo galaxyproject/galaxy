@@ -63,6 +63,7 @@ def boolean_is_checked(input_source: "InputSource", profile: float | str | None 
     nullable = input_source.get_bool("optional", False)
     if nullable and profile and Version(str(profile)) >= Version("26.2"):
         # An optional boolean starts unset; get_bool would read that as unchecked.
+        # Covered by parameters/gx_boolean_optional_26_2, and gx_boolean_optional below 26.2.
         return input_source.get_bool_or_none("checked", None)
     return input_source.get_bool("checked", False)
 
