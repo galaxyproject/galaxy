@@ -799,10 +799,6 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
-                        path: "workflows/create",
-                        redirect: "/workflows/edit",
-                    },
-                    {
                         path: "workflows/export",
                         component: WorkflowExport,
                         props: (route) => ({
