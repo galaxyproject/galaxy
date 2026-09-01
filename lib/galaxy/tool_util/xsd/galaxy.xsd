@@ -79,8 +79,7 @@ List of behavior changes associated with profile versions:
 ### 26.2
 
 - An `optional` `boolean` parameter with no `checked` attribute defaults to `None` instead of `False`, so an unset
-  value stays distinct from an explicit false. Older tools keep reporting `False`. The templated command line is
-  unchanged, since `None` still renders the `falsevalue`.
+  value stays distinct from an explicit false. Older profiles keep reporting `False`.
 
 ### Examples
 
