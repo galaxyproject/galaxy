@@ -47,7 +47,7 @@ describe("availableCategories", () => {
         expect(categories.map((category) => category.id)).toEqual(["all", "tools", "navigation"]);
     });
 
-    it("hides the scopeless navigation category once its provider is disabled", () => {
+    it("hides the navigation category through its scope once its provider is disabled", () => {
         const ctx = makeCtx({ config: { command_palette_disabled_providers: ["navigation"] } });
         expect(availableCategories(ctx).map((category) => category.id)).not.toContain("navigation");
     });
