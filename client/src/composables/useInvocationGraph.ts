@@ -66,6 +66,8 @@ export const iconClasses: Record<GraphStepState, { icon: IconDefinition; spin?: 
     running: { icon: faSpinner, spin: true },
     upload: { icon: faSpinner, spin: true },
     setting_metadata: { icon: faSpinner, spin: true },
+    // finishing brackets the metadata step, so it mirrors setting_metadata
+    finishing: { icon: faSpinner, spin: true },
     // paused / info
     paused: { icon: faPause, class: "text-primary" },
     deferred: { icon: faCloud, class: "text-info" },
