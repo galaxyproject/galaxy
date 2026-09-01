@@ -1024,6 +1024,27 @@ describe("CommandPalette", () => {
         }
     });
 
+    it("registers through the single OIDC provider where local accounts are off", async () => {
+        browseAnonymously();
+        setMockConfig({
+            allow_local_account_creation: false,
+            oidc: { okta: { end_user_registration_endpoint: "https://okta.example.org/register" } },
+        });
+        const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+        try {
+            await type("h:");
+            // the masthead offers a Register button here, so the palette does too
+            const register = optionRow("Create a Galaxy account");
+            expect(register).toBeDefined();
+
+            await register?.trigger("click");
+            expect(assign).toHaveBeenCalledWith("https://okta.example.org/register");
+        } finally {
+            assign.mockRestore();
+            resetMockConfig();
+        }
+    });
+
     it("lists the scopes an account would add behind a lock in help mode", async () => {
         browseAnonymously();
 
