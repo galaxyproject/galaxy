@@ -361,16 +361,27 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Configure network for NFS access (required when using NFS volumes)
         if parsed_volumes:
             network_interface = batch_v1.AllocationPolicy.NetworkInterface()
-            network_interface.network = f"global/networks/{params.get('network', 'default')}"
-            network_interface.subnetwork = f"regions/{params['region']}/subnetworks/{params.get('subnet', 'default')}"
+            # Qualify bare names with the project so Batch resolves them in project_id's
+            # VPC, not the (possibly different, e.g. a Terra pet) project the Batch VMs are
+            # provisioned in -- a relative "global/networks/<name>" resolves against the
+            # latter and 404s. A value that is already a full/relative path is passed through.
+            project_id = params["project_id"]
+            network = params.get("network", "default")
+            subnet = params.get("subnet", "default")
+            network_interface.network = (
+                network if "/" in network else f"projects/{project_id}/global/networks/{network}"
+            )
+            network_interface.subnetwork = (
+                subnet if "/" in subnet else f"projects/{project_id}/regions/{params['region']}/subnetworks/{subnet}"
+            )
 
             network_policy = batch_v1.AllocationPolicy.NetworkPolicy()
             network_policy.network_interfaces = [network_interface]
             allocation_policy.network = network_policy
             log.debug(
-                "Configured network for NFS access: %s/%s for job %s",
-                params.get("network", "default"),
-                params.get("subnet", "default"),
+                "Configured network for NFS access: %s / %s for job %s",
+                network_interface.network,
+                network_interface.subnetwork,
                 job_wrapper.get_id_tag(),
             )
 
@@ -780,6 +791,16 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             log.error("Error checking status of Batch job %s: %s", batch_job_name, e)
             # Return job_state to continue monitoring - might be temporary error
             return job_state
+
+    def finish_job(self, job_state: AsynchronousJobState) -> None:
+        # The Batch task's job script is built with include_metadata=False
+        # (queue_job above), so the remote task never runs the metadata
+        # command and never writes the metadata/metadata_results_* files
+        # the default (directory) metadata strategy expects at finish.
+        # Run the external set_meta script handler-side instead, as the
+        # Kubernetes and Pulsar runners do.
+        self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
+        super().finish_job(job_state)
 
     def stop_job(self, job_wrapper):
         """Stop a job running on Google Cloud Batch."""

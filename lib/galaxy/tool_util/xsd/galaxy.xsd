@@ -76,6 +76,13 @@ List of behavior changes associated with profile versions:
 
 - Do not use user preferences to store credentials for tools anymore. Use the new `<credentials>` tag in the `<requirements>` section of the tool XML instead.
 
+### 26.2
+
+- Do not implicitly load the default `galaxy.json` tool-provided metadata file. Tools must opt in by explicitly setting
+  `provided_metadata_file` or `provided_metadata_style`, using `format="auto"`, or declaring a
+  `discover_datasets` collector with `from_provided_metadata="true"` (represented as
+  `discover_via="tool_provided_metadata"` in YAML tool definitions).
+
 ### Examples
 
 A normal tool:
@@ -6209,6 +6216,14 @@ named by Galaxy. You specify the number and type of your output files using the
 contained ``<data>`` and ``<collection>`` tags. These may be passed to your tool
 executable through using line variables just like the parameters described in
 the ``<inputs>`` documentation.
+
+For compatibility, ordinary non-interactive XML tools with profiles up to and
+including 26.1 implicitly load the default ``galaxy.json`` file. Ordinary XML
+tools with profiles 26.2 and newer and interactive tools load tool-provided
+metadata only when the outputs explicitly request it through ``provided_metadata_file``,
+``provided_metadata_style``, ``format="auto"``, or a
+``from_provided_metadata="true"`` collector (represented as
+``discover_via="tool_provided_metadata"`` in YAML tool definitions).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>

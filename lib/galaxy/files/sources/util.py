@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from typing import (
+    Any,
     Optional,
 )
 from urllib.parse import quote
@@ -14,6 +15,7 @@ from galaxy.files import (
 from galaxy.files.models import (
     FilesSourceOptions,
     PartialFilesSourceProperties,
+    RealizedSourceMetadata,
 )
 from galaxy.files.uris import stream_url_to_file
 from galaxy.util import (
@@ -27,6 +29,45 @@ log = logging.getLogger(__name__)
 
 # Constants
 CHUNK_SIZE = 8192
+
+# POSIX NAME_MAX is 255 *bytes*, and dataset names are stored as TrimmedString(255)
+# characters, so a 255-byte cap satisfies both limits at once.
+MAX_DRS_NAME_BYTES = 255
+
+
+def sanitize_drs_name(name: Any) -> Optional[str]:
+    """Reduce an untrusted DRS object ``name`` to something safe to use as a dataset name.
+
+    A DRS server can put anything in this field, and it ends up both as a dataset name and
+    as an input to downstream filename construction, so strip it down to a single path
+    component with no control characters. Returns None if nothing usable is left.
+
+    Not :func:`galaxy.util.sanitize_for_filename` - that mangles legitimate Unicode and
+    substitutes a random id rather than reporting failure.
+    """
+    if not isinstance(name, str):
+        return None
+    # Keep only the last path component so a name like "../../etc/passwd" cannot steer
+    # anything downstream out of its intended directory.
+    candidate = name.replace("\\", "/").split("/")[-1]
+    candidate = "".join(c for c in candidate if c.isprintable()).strip()
+    candidate = _truncate_to_bytes(candidate, MAX_DRS_NAME_BYTES).strip()
+    if candidate in ("", ".", ".."):
+        return None
+    return candidate
+
+
+def _truncate_to_bytes(value: str, max_bytes: int) -> str:
+    """Trim ``value`` to at most ``max_bytes`` UTF-8 bytes without splitting a character.
+
+    Counting characters isn't enough: 255 emoji are 255 characters but 1020 bytes, which
+    overruns NAME_MAX the moment the name is used to build a path.
+    """
+    encoded = value.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return value
+    # errors="ignore" drops the partial character the byte-wise cut may have left behind.
+    return encoded[:max_bytes].decode("utf-8", errors="ignore")
 
 
 def _not_implemented(drs_uri: str, desc: str) -> NotImplementedError:
@@ -324,8 +365,16 @@ def fetch_drs_to_file(
     retry_options: RetryOptions | None = None,
     headers: dict | None = None,
     fetch_url_allowlist: list[IpAllowedListEntryT] | None = None,
+    metadata_out: RealizedSourceMetadata | None = None,
 ):
-    """Fetch contents of drs:// URI to a target path."""
+    """Fetch contents of drs:// URI to a target path.
+
+    If ``metadata_out`` is supplied and the DRS object declares a usable ``name``, it is
+    reported back under the ``name`` key so callers can name the dataset something better
+    than the opaque identifier in the URI. It is populated on a best-effort basis and is
+    never cleared, so callers should pass a dict scoped to a single fetch rather than
+    reusing one and assuming a missing key means this call reported nothing.
+    """
     if not drs_uri.startswith("drs://"):
         raise ValueError(f"Unknown scheme for drs_uri {drs_uri}")
 
@@ -361,6 +410,11 @@ def fetch_drs_to_file(
     access_methods = response_object.get("access_methods", [])
     if len(access_methods) == 0:
         raise ValueError(f"No access methods found in DRS response for {drs_uri}")
+
+    if metadata_out is not None:
+        drs_name = sanitize_drs_name(response_object.get("name"))
+        if drs_name:
+            metadata_out["name"] = drs_name
 
     downloaded = False
     for access_method in access_methods:

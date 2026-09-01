@@ -39,6 +39,7 @@ from galaxy.objectstore import (
 from galaxy.util import (
     chunk_iterable,
     ExecutionTimer,
+    StrPath,
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
 
@@ -68,7 +69,38 @@ class MaxDiscoveredFilesExceededError(ValueError):
     pass
 
 
+class OutputCollectionSecurityError(ValueError):
+    """Raised when job-provided output metadata crosses a collection trust boundary."""
+
+
+class InvalidDiscoveredFilePathError(OutputCollectionSecurityError):
+    def __init__(self):
+        super().__init__("Job output refers to a file outside its allowed working directory.")
+
+
+class UntrustedToolProvidedMetadataError(OutputCollectionSecurityError):
+    def __init__(self):
+        super().__init__("This tool is not permitted to create unnamed outputs.")
+
+
+class ExternalOutputPathNotAllowedError(OutputCollectionSecurityError):
+    def __init__(self):
+        super().__init__("This tool is not permitted to collect output files from outside its working directory.")
+
+
 CollectorT = Union["DatasetCollector", "ToolMetadataDatasetCollector"]
+
+
+def ensure_path_in_directory(path: StrPath, directory: StrPath) -> StrPath:
+    if not util.in_directory(path, directory):
+        raise InvalidDiscoveredFilePathError()
+    return path
+
+
+def safe_path_from_directory(path: StrPath, directory: StrPath) -> str:
+    joined = os.path.join(directory, path)
+    ensure_path_in_directory(joined, directory)
+    return joined
 
 
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
@@ -81,6 +113,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     job_working_directory: str  # TODO: rename
     max_discovered_files = float("inf")
     discovered_file_count: int
+
+    allows_external_output_paths: bool = False
 
     def get_job(self) -> galaxy.model.Job | None:
         return getattr(self, "job", None)
@@ -258,6 +292,10 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.dataset.file_size = Decimal(0)
             primary_data.dataset.total_size = Decimal(0)
             return
+        if not link_data:
+            ensure_path_in_directory(filename, self.job_working_directory)
+        if extra_files:
+            extra_files = safe_path_from_directory(extra_files, self.job_working_directory)
         # Move data from temp location to dataset location
         if not link_data:
             dataset = primary_data.dataset
@@ -381,6 +419,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             "datasets": [],
             "tag_lists": [],
             "paths": [],
+            "link_data": [],
             "extra_files": [],
             "rows": [],
         }
@@ -439,6 +478,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             element_datasets["datasets"].append(dataset)
             element_datasets["tag_lists"].append(discovered_file.match.tag_list)
             element_datasets["paths"].append(filename)
+            element_datasets["link_data"].append(link_data)
             element_datasets["rows"].append(discovered_file.match.row)
 
         self.add_tags_to_datasets(datasets=element_datasets["datasets"], tag_lists=element_datasets["tag_lists"])
@@ -469,6 +509,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         self.update_object_store_with_datasets(
             datasets=element_datasets["datasets"],
             paths=element_datasets["paths"],
+            link_data=element_datasets["link_data"],
             extra_files=element_datasets["extra_files"],
             output_name=name,
         )
@@ -485,18 +526,37 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             for dataset, tags in zip(datasets, tag_lists):
                 self.tag_handler.add_tags_from_list(self.user, dataset, tags, flush=False)
 
-    def update_object_store_with_datasets(self, datasets, paths, extra_files, output_name):
+    def update_object_store_with_datasets(
+        self,
+        datasets: list["DatasetInstance"],
+        paths: list[Optional[str]],
+        link_data: list[bool],
+        extra_files: list[Optional[str]],
+        output_name: str,
+    ) -> None:
         assert self.object_store
-        for dataset, path, extra_file in zip(datasets, paths, extra_files):
+        for dataset, path, link_data_only, extra_file in zip(datasets, paths, link_data, extra_files):
+            assert dataset.dataset
+            if path and not link_data_only:
+                ensure_path_in_directory(path, self.job_working_directory)
+            if extra_file:
+                extra_file = safe_path_from_directory(extra_file, self.job_working_directory)
             object_store_id = self.override_object_store_id(output_name)
             if object_store_id:
                 dataset.dataset.object_store_id = object_store_id
 
-            self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
+            if link_data_only:
+                if path:
+                    dataset.link_to(path)
+            else:
+                # Deferred datasets have no path yet, but still need object-store
+                # creation to select a concrete backend and initialize their
+                # storage identity.
+                self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
             if extra_file:
                 persist_extra_files(self.object_store, extra_file, dataset)
                 dataset.set_size()
-            else:
+            elif not link_data_only:
                 dataset.set_size(no_extra_files=True)
 
     @property
@@ -657,7 +717,11 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
     """A variant of ModelPersistenceContext that persists to an export store instead of database directly."""
 
     def __init__(
-        self, object_store: ObjectStore | None, export_store: Optional["ModelExportStore"], working_directory: str
+        self,
+        object_store: ObjectStore | None,
+        export_store: Optional["ModelExportStore"],
+        working_directory: str,
+        allows_external_output_paths: bool = False,
     ) -> None:
         self._permission_provider = UnusedPermissionProvider()
         self._metadata_source_provider = UnusedMetadataSourceProvider()
@@ -667,6 +731,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         self.discovered_file_count = 0
         self.max_discovered_files = float("inf")
         self.job_working_directory = working_directory  # TODO: rename...
+        self.allows_external_output_paths = allows_external_output_paths
 
     @property
     def tag_handler(self):
@@ -766,7 +831,9 @@ def persist_target_to_export_store(
     work_directory: str,
 ):
     replace_request_syntax_sugar(target_dict)
-    model_persistence_context = SessionlessModelPersistenceContext(object_store, export_store, work_directory)
+    model_persistence_context = SessionlessModelPersistenceContext(
+        object_store, export_store, work_directory, allows_external_output_paths=True
+    )
 
     assert "destination" in target_dict
     assert "elements" in target_dict
@@ -1038,7 +1105,7 @@ class DiscoveredDeferredFile(NamedTuple):
         return DiscoveredResultState(info, state)
 
     @property
-    def path(self):
+    def path(self) -> None:
         return None
 
 
@@ -1064,15 +1131,13 @@ def discovered_file_for_element(
                 collector, JsonCollectedDatasetMatch(dataset, collector, None, parent_identifiers=parent_identifiers)
             )
 
-        # handle link_data_only here, verify filename is in directory if not linking...
-        if not dataset.get("link_data_only"):
-            path = os.path.join(target_directory, filename)
-            if not util.in_directory(path, target_directory):
-                raise Exception(
-                    "Problem with tool configuration, attempting to pull in datasets from outside working directory."
-                )
-        else:
+        # link_data_only is a privileged import capability; ordinary job metadata remains confined.
+        if dataset.get("link_data_only"):
+            if not model_persistence_context.allows_external_output_paths:
+                raise ExternalOutputPathNotAllowedError()
             path = filename
+        else:
+            path = safe_path_from_directory(filename, target_directory)
         return DiscoveredFile(
             path,
             collector,
@@ -1089,12 +1154,7 @@ def discovered_file_for_element(
 
 def discover_target_directory(dir_name, job_working_directory):
     if dir_name:
-        directory = os.path.join(job_working_directory, dir_name)
-        if not util.in_directory(directory, job_working_directory):
-            raise Exception(
-                "Problem with tool configuration, attempting to pull in datasets from outside working directory."
-            )
-        return directory
+        return safe_path_from_directory(dir_name, job_working_directory)
     else:
         return job_working_directory
 

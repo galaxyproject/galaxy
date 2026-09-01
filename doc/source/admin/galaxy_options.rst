@@ -5603,12 +5603,11 @@
     others to also reload, lock jobs, etc. For connection examples,
     see
     https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
-    Without specifying anything here, galaxy will first attempt to use
-    your specified database_connection above.  If that's not specified
-    either, Galaxy will automatically create and use a separate sqlite
-    database located in your <galaxy>/database folder (indicated in
-    the commented out line below).
-:Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
+    When this option is not specified, Galaxy uses the configured
+    database_connection with the SQLAlchemy transport. If
+    database_connection is not explicitly configured, Galaxy creates
+    a separate SQLite database at <data_dir>/control.sqlite.
+:Default: ``None``
 :Type: str
 
 

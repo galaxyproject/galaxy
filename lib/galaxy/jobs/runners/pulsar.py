@@ -53,6 +53,7 @@ from galaxy.jobs.runners import (
     JobState,
 )
 from galaxy.model.base import check_database_connection
+from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.tool_util.deps import dependencies
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.parser.output_objects import ToolOutput
@@ -68,6 +69,7 @@ if TYPE_CHECKING:
     from pulsar.client.client import BaseJobClient
 
     from galaxy.jobs import MinimalJobWrapper
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -93,6 +95,23 @@ FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitori
 LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
 
 UPGRADE_PULSAR_ERROR = "Galaxy is misconfigured, please contact administrator. The target Pulsar server is unsupported, this version of Galaxy requires Pulsar version %s or newer."
+
+
+def _tool_provided_metadata_client_outputs(
+    tool: "Tool", tool_working_directory: str
+) -> tuple[Optional[str], list[dict[str, str]]]:
+    if not tool.uses_tool_provided_metadata:
+        return None, []
+    safe_path_from_directory(tool.provided_metadata_file, tool_working_directory)
+    dynamic_output = re.escape(tool.provided_metadata_file)
+    dynamic_file_sources = [
+        {
+            "path": tool.provided_metadata_file,
+            "type": "galaxy" if tool.provided_metadata_style == "default" else "legacy_galaxy",
+        }
+    ]
+    return dynamic_output, dynamic_file_sources
+
 
 # Is there a good way to infer some default for this? Can only use
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
@@ -911,8 +930,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         metadata_strategy = job_wrapper.get_destination_configuration("metadata_strategy", None)
         assert job_wrapper.tool is not None
         tool = job_wrapper.tool
-        tool_provided_metadata_file_path = tool.provided_metadata_file
-        tool_provided_metadata_style = tool.provided_metadata_style
+        tool_provided_metadata_dynamic_output, dynamic_file_sources = _tool_provided_metadata_client_outputs(
+            tool, job_wrapper.tool_working_directory
+        )
 
         dynamic_outputs = None  # use default
         dataset_collector_descriptions = []
@@ -968,16 +988,11 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             else:
                 # grab discovered outputs...
                 dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
-            # grab tool provided metadata (galaxy.json) also...
-            dynamic_outputs.append(re.escape(tool_provided_metadata_file_path))
+            if tool_provided_metadata_dynamic_output is not None:
+                # Grab explicitly enabled tool-provided metadata also.
+                dynamic_outputs.append(tool_provided_metadata_dynamic_output)
             output_files = self.get_output_files(job_wrapper)
             work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
-        dynamic_file_sources = [
-            {
-                "path": tool_provided_metadata_file_path,
-                "type": "galaxy" if tool_provided_metadata_style == "default" else "legacy_galaxy",
-            }
-        ]
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
             metadata_directory=metadata_directory,

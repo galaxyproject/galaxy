@@ -10,6 +10,7 @@ import type { WriteStoreToPayload } from "@/api/exports";
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
 import type { ToolIdentifier } from "@/api/tools";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import { DEFAULT_OPTIONS_PAGE_SIZE } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
@@ -54,6 +55,8 @@ interface Props {
     isRerun?: boolean;
     landingUuid?: string;
 }
+
+type PaginatedDataOption = Pick<DataOption, "id" | "src" | "name" | "hid" | "keep" | "tags">;
 
 const props = withDefaults(defineProps<Props>(), {
     targetHistory: "current",
@@ -133,14 +136,6 @@ const computedActiveNodeId = computed<number | undefined>(() => {
     return undefined;
 });
 
-// Build the form inputs once into a stable ref so paginated mutations
-// (``onLoadMore`` / ``onSearchChange`` set ``input.options`` / ``options_meta``
-// on the matching step-input object below) don't rebuild the array. Vue's
-// ``v-for`` in the child ``FormDisplay`` then doesn't unmount the dropdown's
-// ``<input>`` element across paginated refreshes — important for selenium
-// tests like ``test_workflow_rerun`` that ``select_set_value`` against the
-// dropdown (type → wait UX_RENDER → send Enter on the same element ref).
-//
 // ``stepInputByIndex`` maps ``step.step_index`` (as string) to the live
 // step-input object inside ``formInputs.value`` so the paginated-fetch
 // handlers can locate and mutate it in O(1) without walking the array.
@@ -315,7 +310,7 @@ function onChange(data: any) {
     formData.value = data;
 }
 
-function shapeContentsRow(row: any) {
+function shapeContentsRow(row: any): PaginatedDataOption {
     const src = row.history_content_type === "dataset_collection" ? "hdca" : "hda";
     return {
         id: row.id,
@@ -331,51 +326,51 @@ async function fetchStepOptions(
     name: string,
     src: string,
     payload: { offset?: number; limit?: number; search?: string } = {},
-    mode: "append" | "replace" = "append",
 ) {
-    // Locate the live step-input object inside ``formInputs.value`` and
-    // mutate it in place — ``formInputs`` is a stable ref built once, so
-    // mutating ``input.options`` / ``input.options_meta`` doesn't rebuild
-    // the array and doesn't unmount the dropdown's ``<input>`` element.
-    // (``stepAsInput`` is a local copy built in ``buildFormInputs``; this
-    // is not prop mutation.)
+    // ``stepAsInput`` is a local copy built in ``buildFormInputs``, so this
+    // does not mutate the model prop.
     const input = stepInputByIndex.get(String(name));
     if (!input) {
         return;
     }
     const type = src === "hdca" ? "dataset_collection" : "dataset";
     const extensions = (input.acceptable_extensions || []) as string[];
-    const limit = payload.limit || 50;
+    const limit = payload.limit || DEFAULT_OPTIONS_PAGE_SIZE;
     const offset = payload.offset || 0;
     try {
         const rows = await searchHistoryContents(props.model.historyId, {
             extensions,
             type,
+            tag: input.tag,
+            // ``data_collection`` parameters offer hidden collections too.
+            visibleOnly: input.type !== "data_collection",
             search: payload.search,
             offset,
             limit,
         });
-        const shaped = (rows || []).map(shapeContentsRow);
-        let merged: any[];
-        if (mode === "replace") {
-            merged = shaped;
-        } else {
-            const seen = new Set<string>();
-            const base = (input.options?.[src] as any[]) || [];
-            merged = [...base, ...shaped].filter((item) => {
-                const k = `${item.id}_${item.src}`;
-                if (seen.has(k)) {
+        const shaped: PaginatedDataOption[] = (rows || []).map(shapeContentsRow);
+        const base = (input.options?.[src] as PaginatedDataOption[]) || [];
+        const seen = new Set<string>(base.map((item) => `${item.id}_${item.src}`));
+        const merged = base.concat(
+            shaped.filter((item) => {
+                const key = `${item.id}_${item.src}`;
+                if (seen.has(key)) {
                     return false;
                 }
-                seen.add(k);
+                seen.add(key);
                 return true;
-            });
-        }
+            }),
+        );
         input.options = { ...(input.options || {}), [src]: merged };
         input.options_meta = {
             ...(input.options_meta || {}),
             [src]: { offset, limit, has_more: shaped.length === limit },
         };
+        // FormDisplay renders from an internal clone and only syncs
+        // server-owned attributes when the inputs prop changes by identity.
+        // A shallow array copy triggers that sync while preserving the clone's
+        // client-owned value and focused multiselect input.
+        formInputs.value = [...formInputs.value];
     } catch (e) {
         // intentionally silent — paging failures don't block the rest of the form
         console.warn("history-contents pagination failed", e);
@@ -395,11 +390,11 @@ function onLoadMore({
     limit: number;
     search?: string;
 }) {
-    fetchStepOptions(name, src, { offset, limit, search }, "append");
+    fetchStepOptions(name, src, { offset, limit, search });
 }
 
 function onSearchChange({ name, src, query, limit }: { name: string; src: string; query: string; limit?: number }) {
-    fetchStepOptions(name, src, { offset: 0, limit: limit || 50, search: query }, "replace");
+    fetchStepOptions(name, src, { offset: 0, limit: limit || DEFAULT_OPTIONS_PAGE_SIZE, search: query });
 }
 
 function onStorageUpdate(objectStoreId: string | null, intermediate: boolean) {

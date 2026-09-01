@@ -65,6 +65,7 @@ from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.pagination import (
     DataOptionsBuilder,
+    DEFAULT_OPTIONS_PAGE_SIZE,
     make_dce_entry,
     make_hda_entry,
     make_hdca_entry,
@@ -1916,9 +1917,10 @@ def _paginated_visible_datasets(
     *,
     extensions: set[str] | None,
     valid_states: tuple[str, ...] | None,
+    tag: str | None = None,
     search: str | None = None,
     offset: int = 0,
-    limit: int = 50,
+    limit: int = DEFAULT_OPTIONS_PAGE_SIZE,
 ) -> tuple[list[HistoryDatasetAssociation], int]:
     """``history.paginated_active_visible_datasets`` memoized on the request.
 
@@ -1936,6 +1938,7 @@ def _paginated_visible_datasets(
         history.id,
         frozenset(extensions) if extensions is not None else None,
         tuple(valid_states) if valid_states is not None else None,
+        tag or None,
         search or None,
         offset,
         limit,
@@ -1943,7 +1946,7 @@ def _paginated_visible_datasets(
     return trans.get_or_set_cache_value(
         key,
         lambda: history.paginated_active_visible_datasets(
-            extensions=extensions, valid_states=valid_states, search=search, offset=offset, limit=limit
+            extensions=extensions, valid_states=valid_states, tag=tag, search=search, offset=offset, limit=limit
         ),
     )
 
@@ -1953,23 +1956,25 @@ def _paginated_dataset_collections(
     history: "History",
     *,
     visible_only: bool,
+    tag: str | None = None,
     search: str | None = None,
     offset: int = 0,
-    limit: int = 50,
+    limit: int = DEFAULT_OPTIONS_PAGE_SIZE,
 ) -> tuple[list[HistoryDatasetCollectionAssociation], int]:
     """``history.paginated_active_dataset_collections`` memoized on the request
     context's short-term cache (see :func:`_paginated_visible_datasets`)."""
-    key = ("data_param_hdca_page", history.id, bool(visible_only), search or None, offset, limit)
+    key = ("data_param_hdca_page", history.id, bool(visible_only), tag or None, search or None, offset, limit)
     return trans.get_or_set_cache_value(
         key,
         lambda: history.paginated_active_dataset_collections(
-            visible_only=visible_only, search=search, offset=offset, limit=limit
+            visible_only=visible_only, tag=tag, search=search, offset=offset, limit=limit
         ),
     )
 
 
 class BaseDataToolParameter(ToolParameter):
     multiple: bool
+    tag: Optional[str]
 
     # Sentinel distinguishing "cache not yet populated" from "cache populated
     # with None" (which is a legitimate return for parameters with no formats).
@@ -2096,6 +2101,7 @@ class BaseDataToolParameter(ToolParameter):
                         history,
                         extensions=self._acceptable_extensions(),
                         valid_states=dataset_matcher_factory.valid_input_states,
+                        tag=self.tag,
                         offset=db_offset,
                         limit=chunk_size,
                     )
@@ -2117,6 +2123,7 @@ class BaseDataToolParameter(ToolParameter):
                         trans,
                         history,
                         visible_only=True,
+                        tag=self.tag,
                         offset=db_offset,
                         limit=chunk_size,
                     )
@@ -2680,6 +2687,7 @@ class DataToolParameter(BaseDataToolParameter):
                 history,
                 extensions=acceptable_extensions,
                 valid_states=valid_states,
+                tag=self.tag,
                 search=hda_search,
                 offset=offset,
                 limit=limit,
@@ -2786,7 +2794,7 @@ class DataToolParameter(BaseDataToolParameter):
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=True, search=hdca_search, offset=offset, limit=limit
+                trans, history, visible_only=True, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -3019,7 +3027,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=False, search=hdca_search, offset=offset, limit=limit
+                trans, history, visible_only=False, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
