@@ -211,7 +211,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         """
         Create an ``aiohttp`` session.
         """
-        connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS)
+        connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS, ssl=requests.create_ssl_context())
         return aiohttp.ClientSession(
             connector=connector,
             raise_for_status=True,

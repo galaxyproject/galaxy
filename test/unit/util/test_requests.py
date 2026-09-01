@@ -1,6 +1,8 @@
 import socket
+import ssl
 import threading
 
+import certifi
 import pytest
 import responses
 from requests.adapters import HTTPAdapter
@@ -10,6 +12,15 @@ from galaxy.util.requests import DEFAULT_RETRIES
 from galaxy.util.user_agent import get_default_headers
 
 EXPECTED_USER_AGENT = get_default_headers()["user-agent"]
+
+
+def test_create_ssl_context_uses_certifi_ca_bundle():
+    context = galaxy_requests.create_ssl_context()
+    certifi_context = ssl.create_default_context(cafile=certifi.where())
+    assert context.get_ca_certs()
+    assert context.get_ca_certs() == certifi_context.get_ca_certs()
+    assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.check_hostname
 
 
 # --- User-Agent header injection ---

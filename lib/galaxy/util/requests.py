@@ -1,3 +1,4 @@
+import ssl
 from collections.abc import Callable
 
 import requests
@@ -7,6 +8,7 @@ from requests import (  # noqa: F401
     Response as Response,
 )
 from requests.adapters import HTTPAdapter
+from requests.certs import where as requests_ca_bundle_path  # type: ignore[attr-defined]
 from requests.packages.urllib3.util.retry import Retry
 from typing_extensions import ParamSpec
 
@@ -14,6 +16,11 @@ from .user_agent import get_default_headers
 
 DEFAULT_RETRIES = 3
 DEFAULT_BACKOFF_FACTOR = 0.1
+
+
+def create_ssl_context() -> ssl.SSLContext:
+    """Create an SSL context using the CA bundle trusted by ``requests``."""
+    return ssl.create_default_context(cafile=requests_ca_bundle_path())
 
 
 class Session(requests.Session):

@@ -282,6 +282,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             return DrillDownParameterModel(
                 type="drill_down",
                 name=input_source.parse_name(),
+                optional=input_source.parse_optional(),
                 multiple=multiple,
                 hierarchy=hierarchy,
                 options=static_options,
@@ -328,8 +329,8 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "genomebuild":
-            optional = input_source.parse_optional()
             multiple = input_source.get_bool("multiple", False)
+            optional = input_source.parse_optional(multiple)
             return GenomeBuildParameterModel(
                 type="genomebuild",
                 name=input_source.parse_name(),

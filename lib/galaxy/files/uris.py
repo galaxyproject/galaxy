@@ -20,7 +20,7 @@ from galaxy.files.models import (
     RealizedSourceMetadata,
 )
 from galaxy.util import (
-    stream_to_open_named_file,
+    stream_to_path,
     unicodify,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
@@ -78,7 +78,8 @@ def ensure_file_sources(file_sources: Optional["ConfiguredFileSources"]) -> "Con
 def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
     """Writes a stream to a temporary file, returns the temporary file's name"""
     fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
-    return stream_to_open_named_file(stream, fd, temp_name, **kwd)
+    os.close(fd)
+    return stream_to_path(stream, temp_name, **kwd)
 
 
 def validate_uri_access(uri: str, is_admin: bool, ip_allowlist: list[IpAllowedListEntryT]) -> None:
