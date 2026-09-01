@@ -246,12 +246,4 @@ describe("usePaletteMachine", () => {
         expect(root.mode.value).toEqual({ type: "root" });
         expect(root.text.value).toBe("rna");
     });
-
-    it("resets mode and text", () => {
-        const machine = usePaletteMachine();
-        machine.setText("w: rna");
-        machine.reset();
-        expect(machine.mode.value).toEqual({ type: "root" });
-        expect(machine.text.value).toBe("");
-    });
 });
