@@ -59,6 +59,10 @@ class TestToolBoxSearch(BaseToolBoxTestCase):
         schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
         for option in SEARCH_OPTIONS:
             setattr(self.app.config, option, schema.defaults[option])
+        # ToolSearchTuning.from_config also reads index_tool_help, which is not a
+        # schema option (GalaxyAppConfiguration sets it from raw kwargs), so the
+        # schema-defaults loop above cannot provide it.
+        self.app.config.index_tool_help = True
         index_dir = os.path.join(self.test_directory, "tool_search_index")
         self.app.config.tool_search_index_dir = index_dir
         return ToolBoxSearch(self.toolbox, index_dir=index_dir)
