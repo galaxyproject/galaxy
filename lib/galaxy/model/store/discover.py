@@ -529,9 +529,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def update_object_store_with_datasets(
         self,
         datasets: list["DatasetInstance"],
-        paths: list[Optional[str]],
+        paths: list[str | None],
         link_data: list[bool],
-        extra_files: list[Optional[str]],
+        extra_files: list[str | None],
         output_name: str,
     ) -> None:
         assert self.object_store

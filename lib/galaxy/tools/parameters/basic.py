@@ -1974,7 +1974,7 @@ def _paginated_dataset_collections(
 
 class BaseDataToolParameter(ToolParameter):
     multiple: bool
-    tag: Optional[str]
+    tag: str | None
 
     # Sentinel distinguishing "cache not yet populated" from "cache populated
     # with None" (which is a legitimate return for parameters with no formats).

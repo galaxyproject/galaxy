@@ -99,7 +99,7 @@ UPGRADE_PULSAR_ERROR = "Galaxy is misconfigured, please contact administrator. T
 
 def _tool_provided_metadata_client_outputs(
     tool: "Tool", tool_working_directory: str
-) -> tuple[Optional[str], list[dict[str, str]]]:
+) -> tuple[str | None, list[dict[str, str]]]:
     if not tool.uses_tool_provided_metadata:
         return None, []
     safe_path_from_directory(tool.provided_metadata_file, tool_working_directory)

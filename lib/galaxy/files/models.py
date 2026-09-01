@@ -464,7 +464,7 @@ class FilesSourceRuntimeContext(Generic[TResolvedConfig]):
     optional channel for a source to report metadata back to the caller."""
 
     def __init__(
-        self, user_data: UserData, config: TResolvedConfig, metadata_out: Optional[RealizedSourceMetadata] = None
+        self, user_data: UserData, config: TResolvedConfig, metadata_out: RealizedSourceMetadata | None = None
     ):
         self._user_data = user_data
         self._config = config
@@ -481,7 +481,7 @@ class FilesSourceRuntimeContext(Generic[TResolvedConfig]):
         return self._config
 
     @property
-    def metadata_out(self) -> Optional[RealizedSourceMetadata]:
+    def metadata_out(self) -> RealizedSourceMetadata | None:
         """Caller-supplied dict a file source may populate with metadata about the realized source.
 
         This is how a file source reports back things it learns while realizing a

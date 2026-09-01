@@ -43,7 +43,7 @@ class DataManagerHandler:
     def _wait_for_data_managers_reload(
         self, reload_count: int, timeout: int | float = INSTALLATION_RELOAD_TIMEOUT
     ) -> None:
-        def data_managers_reloaded() -> Optional[bool]:
+        def data_managers_reloaded() -> bool | None:
             if self.app.data_managers._reload_count > reload_count:
                 return True
             return None

@@ -468,7 +468,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self,
         opts: FilesSourceOptions | None = None,
         user_context: "OptionalUserContext" = None,
-        metadata_out: Optional[RealizedSourceMetadata] = None,
+        metadata_out: RealizedSourceMetadata | None = None,
     ) -> FilesSourceRuntimeContext:
         """
         Get the runtime context for this file source, resolving the template configuration

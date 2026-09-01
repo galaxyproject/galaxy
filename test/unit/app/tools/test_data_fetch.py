@@ -7,7 +7,6 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from typing import (
     Any,
-    Optional,
 )
 
 import pytest
@@ -170,7 +169,7 @@ def _bed_content_url(mock_http_server) -> str:
     )
 
 
-def _mock_drs_object(content_url: str, name: Any = None, access_id: Optional[str] = None) -> None:
+def _mock_drs_object(content_url: str, name: Any = None, access_id: str | None = None) -> None:
     """Register mock responses for a DRS object resolving to ``content_url``."""
     access_method: dict[str, Any] = {"type": "https"}
     if access_id is not None:
@@ -184,7 +183,7 @@ def _mock_drs_object(content_url: str, name: Any = None, access_id: Optional[str
     responses.add(responses.GET, DRS_OBJECT_URL, json=drs_object)
 
 
-def _fetch_drs_element(name: Optional[str] = None) -> dict[str, Any]:
+def _fetch_drs_element(name: str | None = None) -> dict[str, Any]:
     element: dict[str, Any] = {"src": "url", "url": DRS_URI}
     if name is not None:
         element["name"] = name

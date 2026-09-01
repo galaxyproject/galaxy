@@ -35,7 +35,7 @@ CHUNK_SIZE = 8192
 MAX_DRS_NAME_BYTES = 255
 
 
-def sanitize_drs_name(name: Any) -> Optional[str]:
+def sanitize_drs_name(name: Any) -> str | None:
     """Reduce an untrusted DRS object ``name`` to something safe to use as a dataset name.
 
     A DRS server can put anything in this field, and it ends up both as a dataset name and

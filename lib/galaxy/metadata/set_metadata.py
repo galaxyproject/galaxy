@@ -616,7 +616,7 @@ def validate_and_load_datatypes_config(datatypes_config):
 
 def load_job_metadata(
     job_metadata: StrPath,
-    provided_metadata_style: Optional[str],
+    provided_metadata_style: str | None,
     uses_tool_provided_metadata: bool,
     job_working_directory: StrPath,
 ) -> BaseToolProvidedMetadata:
