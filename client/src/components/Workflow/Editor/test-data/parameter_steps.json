@@ -1526,5 +1526,68 @@
       "left": 12.8729248046875,
       "top": 1001.7839660644531
     }
+  },
+  "34": {
+    "id": 34,
+    "type": "subworkflow",
+    "label": "subworkflow",
+    "content_id": "subworkflow",
+    "name": "sub",
+    "tool_state": {},
+    "errors": null,
+    "inputs": [
+      {
+        "name": "mapped_dataset",
+        "label": "mapped_dataset",
+        "multiple": false,
+        "input_type": "dataset",
+        "optional": false,
+        "extensions": [
+          "data"
+        ],
+        "input_subworkflow_step_id": 0
+      },
+      {
+        "name": "inner_collection",
+        "label": "inner_collection",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": [
+          "list"
+        ],
+        "optional": false,
+        "extensions": [
+          "data"
+        ],
+        "input_subworkflow_step_id": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "inherited_mapping_output",
+        "extensions": [
+          "input"
+        ],
+        "type": "data",
+        "optional": false
+      },
+      {
+        "name": "local_mapping_output",
+        "extensions": [
+          "input"
+        ],
+        "collection": true,
+        "collection_type": "list",
+        "optional": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.8729248046875,
+      "top": 1101.7839660644531
+    }
   }
 }
