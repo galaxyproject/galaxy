@@ -718,6 +718,16 @@ def test_map_over_data_param_with_list_of_lists(target_history: TargetHistory, r
     execute.assert_creates_implicit_collection(0)
 
 
+@requires_tool_id("gx_data")
+def test_job_cache_with_dataset_hash(target_history: TargetHistory, required_tool: RequiredTool) -> None:
+    hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    _ = required_tool.execute().with_inputs({"parameter": hda.src_dict}).assert_has_single_job
+    new_hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    execution = required_tool.execute(use_cached_job=True).with_inputs({"parameter": new_hda.src_dict})
+    job = execution.assert_has_single_job
+    assert job.final_details["copied_from_job_id"]
+
+
 @requires_tool_id("gx_repeat_boolean_min")
 def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, required_tool: RequiredTool):
     # we have a tool test for this but I wanted to verify it wasn't just the

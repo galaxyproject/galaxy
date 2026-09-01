@@ -192,6 +192,42 @@ def safe_aliased(model_class: type[T], name: str) -> type[T]:
     return aliased(model_class, name=safe_label_or_none(name))
 
 
+def has_same_hash(
+    stmt: "Select[tuple[int]]", a: type[model.HistoryDatasetAssociation], b: type[model.HistoryDatasetAssociation]
+) -> "Select[tuple[int]]":
+    """Join ``b`` to ``a``, matching either on identical dataset or identical dataset hash.
+
+    Datasets with extra files (e.g. composite datasets) are excluded from hash-based matching
+    for now.
+    """
+    a_hash = aliased(model.DatasetHash)
+    b_hash = aliased(model.DatasetHash)
+    stmt = stmt.join(
+        b,
+        or_(
+            # Direct dataset match
+            b.dataset_id == a.dataset_id,
+            # Hash match: b's dataset has a primary-file hash equal to a's primary-file hash
+            b.dataset_id.in_(
+                select(b_hash.dataset_id)
+                .join(
+                    a_hash,
+                    and_(
+                        a_hash.hash_function == b_hash.hash_function,
+                        a_hash.hash_value == b_hash.hash_value,
+                    ),
+                )
+                .where(
+                    a_hash.dataset_id == a.dataset_id,
+                    a_hash.extra_files_path.is_(None),
+                    b_hash.extra_files_path.is_(None),
+                )
+            ),
+        ),
+    )
+    return stmt
+
+
 class JobManager:
     def __init__(self, app: StructuredApp, history_manager: HistoryManager):
         self.app = app
@@ -828,7 +864,8 @@ class JobSearch:
         used_ids.append(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
+        stmt = stmt.join(b, a.dataset_id == b.id)
+        stmt = has_same_hash(stmt, b, c)
         name_condition = []
         hda_history_join_conditions = [
             e.history_dataset_association_id == b.id,
