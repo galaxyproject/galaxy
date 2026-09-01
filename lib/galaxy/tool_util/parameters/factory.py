@@ -14,7 +14,6 @@ from galaxy.tool_util.parser.interface import (
 )
 from galaxy.tool_util.parser.parameter_validators import static_validators
 from galaxy.tool_util.parser.util import (
-    boolean_is_checked,
     multiple_select_value_split,
     parse_profile_version,
     text_input_is_optional,
@@ -128,7 +127,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             )
         elif param_type == "boolean":
             nullable = input_source.parse_optional()
-            value = boolean_is_checked(input_source, profile)
+            value = input_source.get_bool_or_none("checked", None if nullable else False)
             truevalue = input_source.get("truevalue", None)
             falsevalue = input_source.get("falsevalue", None)
             return BooleanParameterModel(
