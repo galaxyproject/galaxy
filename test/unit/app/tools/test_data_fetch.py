@@ -171,6 +171,10 @@ def _bed_content_url(mock_http_server) -> str:
 
 def _mock_drs_object(content_url: str, name: Any = None, access_id: str | None = None) -> None:
     """Register mock responses for a DRS object resolving to ``content_url``."""
+    # The DRS API endpoints are mocked below, but the payload itself is served by the
+    # real local mock_http_server; the download also goes through requests now, so it
+    # has to be exempted from the responses mock.
+    responses.add_passthru(content_url)
     access_method: dict[str, Any] = {"type": "https"}
     if access_id is not None:
         access_method["access_id"] = access_id
