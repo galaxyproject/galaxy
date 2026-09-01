@@ -927,6 +927,27 @@ describe("CommandPalette", () => {
         }
     });
 
+    it("keeps a selection moved back to the first row across the final sort", async () => {
+        const pages = stallSearch(pagesProvider);
+        try {
+            await type("workflow");
+            await press("ArrowDown");
+            await press("ArrowUp");
+            const selected = selectedRow().text();
+            expect(selected).toBeTruthy();
+
+            // the row the user pointed at may not be swapped for the exact match
+            // the sort brings to the top, first row or not
+            pages.land([{ id: "pages:p1", title: "workflow", to: "/pages/p1" }]);
+            await settle();
+
+            expect(sectionIds()[0]).toBe("palette section pages");
+            expect(selectedRow().text()).toBe(selected);
+        } finally {
+            pages.restore();
+        }
+    });
+
     it("says a scope could not be loaded instead of calling it empty", async () => {
         const original = workflowsProvider.searchScoped;
         workflowsProvider.searchScoped = () => Promise.reject(new PaletteFetchError());

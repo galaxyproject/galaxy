@@ -107,6 +107,13 @@ const resultsElement = ref<HTMLElement | null>(null);
 const searching = ref(false);
 const sections = ref<ResultSection[]>([]);
 const selectedIndex = ref(0);
+/**
+ * Whether the user placed the selection themselves since this search started.
+ * An untouched selection belongs to the results and rides on the first row,
+ * best match included; one the user put somewhere follows its own row instead,
+ * even back on the first one — see {@link assignSections}.
+ */
+let selectionTouched = false;
 /** Category the root results are narrowed to, "All" while nothing is picked */
 const activeCategoryId = ref(ALL_CATEGORY.id);
 /** Whether ctrl/cmd is currently down, so the palette can preview "new tab" */
@@ -527,11 +534,17 @@ function sectionScore(provider: CommandPaletteProvider, items: PaletteItem[], se
  * user moved off the top follows its item wherever the new set puts it, and one
  * that is gone falls back to the first row. A rerun the category row started
  * keeps the selection on the row, so the next ←→ moves on to its neighbor.
+ *
+ * @param followTopRow whether a selection still sitting on the first row follows
+ * its item too. Reordering rows already on screen asks for it once the user
+ * placed that selection — the fan-out's closing sort must not swap the row they
+ * pointed at — while an untouched one belongs to the results and stays on the
+ * best match the sort brings to the top.
  */
-function assignSections(next: ResultSection[], keepCategoryRow: boolean) {
+function assignSections(next: ResultSection[], keepCategoryRow: boolean, followTopRow = false) {
     // the top of the list is where every search starts and where it stays, so
-    // only a selection that was moved away from it is worth following
-    const selectedId = selectedIndex.value > 0 ? selectedItem.value?.id : undefined;
+    // outside a reorder only a selection moved away from it is worth following
+    const selectedId = followTopRow || selectedIndex.value > 0 ? selectedItem.value?.id : undefined;
     sections.value = next;
     if (keepCategoryRow && showCategoryRow.value) {
         selectedIndex.value = CATEGORY_ROW_INDEX;
@@ -546,8 +559,9 @@ function assignSections(next: ResultSection[], keepCategoryRow: boolean) {
  * answers rather than once the slowest one has — until then the rows it answered
  * the previous keystroke with hold its place, and a placeholder does where there
  * are none. The sections keep the registry order while the results arrive and
- * are sorted best match first exactly once, when the last provider settled, so
- * no row is pulled out from under the cursor mid-search.
+ * are sorted best match first exactly once, when the last provider settled; a
+ * selection the user placed follows its row through that sort, so no row is
+ * pulled out from under the cursor mid-search.
  */
 function fanOutIncrementally(ctx: PaletteContext, epoch: number, keepCategoryRow: boolean) {
     // what this fan-out is answering; the input may have moved on by the time a
@@ -605,6 +619,10 @@ function fanOutIncrementally(ctx: PaletteContext, epoch: number, keepCategoryRow
                             .filter((section) => section.items.length > 0)
                             .sort((a, b) => (b.score ?? 0) - (a.score ?? 0)),
                         keepCategoryRow,
+                        // the sort moves rows the user may already be pointing
+                        // at, the first one included, so a selection they placed
+                        // follows its item rather than the position it sat at
+                        selectionTouched,
                     );
                     searching.value = false;
                 }
@@ -719,6 +737,9 @@ async function runSearch() {
     // next ←→ moves on to the neighboring category
     const keepCategoryRow = categoryRowSelected.value;
     const identity = searchIdentity(mode.value);
+    // typing is about the results again, so the selection is the search's until
+    // the user places it somewhere themselves
+    selectionTouched = false;
     pendingScope.value = null;
     failedSubject.value = null;
     if (identity !== renderedIdentity) {
@@ -872,6 +893,7 @@ function onInput(event: Event) {
  * first result, so ↑ from it — or wrapping past the last item — selects it.
  */
 function moveSelection(delta: 1 | -1) {
+    selectionTouched = true;
     const count = flatItems.value.length;
     if (!showCategoryRow.value) {
         if (count > 0) {
@@ -882,6 +904,12 @@ function moveSelection(delta: 1 | -1) {
     const stops = count + 1;
     const position = selectedIndex.value + 1;
     selectedIndex.value = ((position + delta + stops) % stops) - 1;
+}
+
+/** Hovering a row selects it, which is the user placing the selection as well */
+function highlightItem(index: number) {
+    selectionTouched = true;
+    selectedIndex.value = index;
 }
 
 /**
@@ -1339,7 +1367,7 @@ watchImmediate(isPaletteOpen, (open) => {
                         :secondary-hint="secondaryHint(optionIndex(sectionIdx, itemIdx), item)"
                         :show-external="showExternalIcon(optionIndex(sectionIdx, itemIdx), item)"
                         @select="runItem(item, $event)"
-                        @highlight="selectedIndex = optionIndex(sectionIdx, itemIdx)" />
+                        @highlight="highlightItem(optionIndex(sectionIdx, itemIdx))" />
                 </template>
             </div>
 
