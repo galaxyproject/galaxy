@@ -1,8 +1,8 @@
 class: GalaxyWorkflow
 doc: |
   Test that mapping is resolved per step inside a mapped subworkflow. The child
-  workflow runs as a single invocation, so consume_outer_mapping_source maps over
-  the collection mapped over the subworkflow while consume_inner_mapping_source
+  workflow runs as a single invocation, so cat_outer_mapping_source maps over
+  the collection mapped over the subworkflow while cat_inner_mapping_source
   maps over the collection connected to the subworkflow's own collection input.
   Each output matches only the collection its step mapped over - the differing
   element counts show the two are neither multiplied together nor matched up
@@ -30,16 +30,16 @@ steps:
           collection_type: list
       outputs:
         inherited_mapping_output:
-          outputSource: consume_outer_mapping_source/out_file1
+          outputSource: cat_outer_mapping_source/out_file1
         local_mapping_output:
-          outputSource: consume_inner_mapping_source/out_file1
+          outputSource: cat_inner_mapping_source/out_file1
       steps:
-        consume_outer_mapping_source:
+        cat_outer_mapping_source:
           tool_id: cat
           in:
             input1:
               source: mapped_dataset
-        consume_inner_mapping_source:
+        cat_inner_mapping_source:
           tool_id: cat
           in:
             input1:
