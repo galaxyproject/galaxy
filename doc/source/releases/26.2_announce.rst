@@ -12,4 +12,6 @@ Workflow ``when`` expressions no longer expose connected nested tool inputs
 through Galaxy's internal pipe-prefixed connection names (for example,
 ``inputs["cond|param"]``). Use the nested tool-state form instead, such as
 ``inputs.cond.param`` or ``inputs["cond"]["param"]``. Ordinary top-level inputs
-and extra expression inputs such as ``inputs.when`` remain unchanged.
+and extra expression inputs such as ``inputs.when`` remain unchanged. Workflow
+imports now reject the removed spelling instead of allowing a condition that may
+silently produce the wrong result at run time.

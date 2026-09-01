@@ -146,6 +146,7 @@ from galaxy.workflow.steps import (
     has_cycles,
 )
 from galaxy.workflow.trs_proxy import TrsProxy
+from galaxy.workflow.when_expression import analyze_input_references
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import ScalarResult
@@ -2222,7 +2223,21 @@ class WorkflowContentsManager(UsesAnnotations):
                     step_input.default_value_set = True
 
         if "when" in step_dict:
-            step.when_expression = step_dict["when"]
+            when_expression = step_dict["when"]
+            if step.type == "tool" and isinstance(when_expression, str):
+                for path in analyze_input_references(when_expression).static_paths:
+                    if len(path) == 1 and isinstance(path[0], str) and "|" in path[0]:
+                        flat_reference = path[0]
+                        step_description = f" [{external_id}]"
+                        if step.label:
+                            step_description += f" ({step.label!r})"
+                        raise exceptions.RequestParameterInvalidException(
+                            f"Workflow step{step_description} has an invalid nested input reference "
+                            f"inputs[{json.dumps(flat_reference)}] in its when expression. "
+                            'Use the nested tool-state path instead, such as inputs["cond"]["input1"] '
+                            "for the connection cond|input1."
+                        )
+            step.when_expression = when_expression
         if dry_run and step in trans.sa_session:
             trans.sa_session.expunge(step)
 

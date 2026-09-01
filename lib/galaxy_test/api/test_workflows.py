@@ -15,6 +15,7 @@ from uuid import uuid4
 
 import pytest
 import yaml
+from gxformat2 import python_to_workflow
 from requests import (
     delete,
     get,
@@ -99,6 +100,28 @@ steps:
     in:
       input1: input1
 """
+
+
+def workflow_with_conditional_tool_when(expression: str) -> dict[str, Any]:
+    workflow = python_to_workflow(
+        yaml.safe_load("""class: GalaxyWorkflow
+inputs:
+  source: data
+steps:
+  gated:
+    tool_id: format_source_in_conditional
+    state:
+      cond:
+        select: no_extra_nesting
+        input1:
+          $link: source
+"""),
+        galaxy_interface=None,
+    )
+    workflow["name"] = "test_import"
+    workflow["steps"]["1"]["when"] = expression
+    return workflow
+
 
 NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
 class: GalaxyWorkflow
@@ -2245,6 +2268,55 @@ steps:
         del workflow["steps"]["2"]["tool_id"]
         create_response = self.__test_upload(workflow=workflow, assert_ok=False)
         self._assert_status_code_is(create_response, 400)
+
+    def test_import_rejects_flat_nested_tool_when_reference(self):
+        workflow = workflow_with_conditional_tool_when('$(inputs["cond|input1"] !== null)')
+
+        create_response = self.__test_upload(workflow=workflow, assert_ok=False)
+
+        self._assert_status_code_is(create_response, 400)
+        assert_error_message_contains(create_response, "Workflow step [1] ('gated')")
+        assert_error_message_contains(create_response, 'inputs["cond|input1"]')
+        assert_error_message_contains(create_response, 'inputs["cond"]["input1"]')
+
+    def test_import_rejects_flat_nested_tool_when_reference_alongside_dynamic_access(self):
+        workflow = workflow_with_conditional_tool_when('$(inputs["cond|input1"] !== null && inputs[someKey] !== null)')
+
+        create_response = self.__test_upload(workflow=workflow, assert_ok=False)
+
+        self._assert_status_code_is(create_response, 400)
+        assert_error_message_contains(create_response, 'inputs["cond|input1"]')
+
+    def test_import_allows_dynamic_tool_when_reference(self):
+        workflow = workflow_with_conditional_tool_when("$(inputs[someKey])")
+
+        self.__test_upload(workflow=workflow)
+
+    def test_import_allows_nested_tool_when_references(self):
+        for expression in ("$(inputs.cond.input1 !== null)", '$(inputs["cond"]["input1"] !== null)'):
+            workflow = workflow_with_conditional_tool_when(expression)
+
+            self.__test_upload(workflow=workflow)
+
+    def test_import_allows_flat_subworkflow_when_reference(self):
+        self._upload_yaml_workflow("""class: GalaxyWorkflow
+inputs:
+  source: data
+steps:
+  gated_subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        "sample|reads": data
+      steps:
+        consume:
+          tool_id: cat1
+          in:
+            input1: sample|reads
+    in:
+      "sample|reads": source
+    when: $(inputs["sample|reads"] !== null)
+""")
 
     def test_import_export_with_runtime_inputs(self):
         workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_with_runtime_input")
