@@ -7,9 +7,14 @@ on the floor, wedging it out of every non-terminal state.
 """
 
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import patch
 
 from galaxy import model
+from galaxy.jobs import (
+    JobWrapper,
+    MinimalJobWrapper,
+)
 from galaxy.jobs.handler import JobHandlerQueue
 from galaxy.jobs.runners import BaseJobRunner
 from galaxy.jobs.runners.local import LocalJobRunner
@@ -87,14 +92,14 @@ def test_pulsar_job_runners_recover_finishing_jobs():
 @patch("galaxy.celery.tasks.set_job_metadata")
 def test_handle_metadata_externally_skips_finishing_for_non_recovering_runner(set_job_metadata):
     job_wrapper = MockJobWrapper()
-    BaseJobRunner._handle_metadata_externally(_runner(BaseJobRunner), job_wrapper)
+    BaseJobRunner._handle_metadata_externally(_runner(BaseJobRunner), cast(MinimalJobWrapper, job_wrapper))
     assert job_wrapper.states_set == []
 
 
 @patch("galaxy.celery.tasks.set_job_metadata")
 def test_handle_metadata_externally_marks_finishing_for_recovering_runner(set_job_metadata):
     job_wrapper = MockJobWrapper()
-    BaseJobRunner._handle_metadata_externally(_runner(PulsarJobRunner), job_wrapper)
+    BaseJobRunner._handle_metadata_externally(_runner(PulsarJobRunner), cast(MinimalJobWrapper, job_wrapper))
     assert job_wrapper.states_set == [model.Job.states.FINISHING]
 
 
@@ -119,7 +124,7 @@ def test_recover_queues_the_tail_not_the_whole_finish_job():
     job_wrapper = MockJobWrapper()
     job_state = object()
     with patch.object(PulsarJobRunner, "_job_state", return_value=job_state):
-        PulsarJobRunner.recover(runner, job, job_wrapper)
+        PulsarJobRunner.recover(runner, cast(model.Job, job), cast(MinimalJobWrapper, job_wrapper))
     assert runner.work_queue.items == [(runner._finish_staged_job, job_state)]
 
 
@@ -163,7 +168,10 @@ def _async_update_runner(job, server_name="handler1"):
     runner = _runner(PulsarJobRunner)
     runner.sa_session = RecordingSession()
     job_queue = object.__new__(JobHandlerQueue)
-    job_queue.job_pair_for_id = lambda job_id: (job, MockJobWrapper())
+    job_queue.job_pair_for_id = lambda id: (  # type: ignore[method-assign]
+        cast(model.Job, job),
+        cast(JobWrapper, MockJobWrapper()),
+    )
     runner.app = SimpleNamespace(
         config=SimpleNamespace(server_name=server_name),
         job_manager=SimpleNamespace(job_handler=SimpleNamespace(job_queue=job_queue)),
