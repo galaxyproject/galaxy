@@ -153,11 +153,6 @@ export function usePaletteMachine(getContext?: () => PaletteContext) {
         return "close";
     }
 
-    function reset() {
-        mode.value = { type: "root" };
-        text.value = "";
-    }
-
     return {
         badgeLabel,
         category,
@@ -169,7 +164,6 @@ export function usePaletteMachine(getContext?: () => PaletteContext) {
         mode,
         popMode,
         query,
-        reset,
         scope,
         selectCategory,
         setText,
