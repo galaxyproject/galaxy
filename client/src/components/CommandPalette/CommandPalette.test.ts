@@ -538,6 +538,19 @@ describe("CommandPalette", () => {
         expect(secondaryHints().length).toBe(0);
     });
 
+    it("stops previewing the secondary binding once shift types a capital", async () => {
+        await type("> upload");
+        await holdKey("Shift", true);
+        expect(hint("secondary").classes()).toContain("hint-active");
+
+        // the capital of "Upload" is shift doing text entry, not a `⇧↵` preview
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "U", shiftKey: true }));
+        await wrapper.vm.$nextTick();
+
+        expect(hint("secondary").classes()).not.toContain("hint-active");
+        expect(secondaryHints().length).toBe(0);
+    });
+
     it("lets shift win over ctrl/cmd while both are held", async () => {
         await type("> upload");
         await holdKey("Control", true);
