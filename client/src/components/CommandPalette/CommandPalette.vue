@@ -543,8 +543,9 @@ function assignSections(next: ResultSection[], keepCategoryRow: boolean) {
 
 /**
  * Unscoped search: every provider contributes a section, rendered the moment it
- * answers rather than once the slowest one has — until then a placeholder holds
- * its place. The sections keep the registry order while the results arrive and
+ * answers rather than once the slowest one has — until then the rows it answered
+ * the previous keystroke with hold its place, and a placeholder does where there
+ * are none. The sections keep the registry order while the results arrive and
  * are sorted best match first exactly once, when the last provider settled, so
  * no row is pulled out from under the cursor mid-search.
  */
@@ -555,8 +556,17 @@ function fanOutIncrementally(ctx: PaletteContext, epoch: number, keepCategoryRow
     const limit = searched ? MAX_ROOT_SECTION_ITEMS : MAX_EMPTY_QUERY_ITEMS;
     const providers = enabledPaletteProviders(ctx);
     let pending = providers.length;
+    // a keystroke is not a new search subject: whatever a provider answered the
+    // previous one with keeps rendering until it answers this one, so a search
+    // that now reaches the backend does not blank the results on every letter
+    const rendered = new Map(sections.value.map((section) => [section.id, section.items]));
     assignSections(
-        providers.map((provider) => ({ id: provider.id, items: [], loading: true, title: provider.title })),
+        providers.map((provider) => ({
+            id: provider.id,
+            items: rendered.get(provider.id) ?? [],
+            loading: true,
+            title: provider.title,
+        })),
         keepCategoryRow,
     );
     if (pending === 0) {
@@ -1305,8 +1315,8 @@ watchImmediate(isPaletteOpen, (open) => {
                 :data-description="`palette section ${section.id}`">
                 <div class="palette-section-title" aria-hidden="true">{{ localize(section.title) }}</div>
 
-                <!-- The provider has not answered yet, so the section holds its place -->
-                <template v-if="section.loading">
+                <!-- Nothing rendered and nothing answered yet, so the section holds its place -->
+                <template v-if="section.loading && section.items.length === 0">
                     <div
                         v-for="row in SKELETON_ROWS"
                         :key="row"

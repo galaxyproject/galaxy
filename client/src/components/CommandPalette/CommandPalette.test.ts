@@ -866,6 +866,28 @@ describe("CommandPalette", () => {
         }
     });
 
+    it("keeps the rendered rows while the next keystroke is searched", async () => {
+        await type("workflows");
+        expect(optionRow("Workflows")).toBeDefined();
+
+        const navigation = stallSearch(navigationProvider);
+        try {
+            await type("workflowsx");
+
+            // the rows of the previous keystroke stand until the provider answers
+            expect(optionRow("Workflows")).toBeDefined();
+            expect(sectionIds()).toContain("palette section navigation");
+            expect(skeletons().length).toBe(0);
+
+            navigation.land([]);
+            await settle();
+
+            expect(optionRow("Workflows")).toBeUndefined();
+        } finally {
+            navigation.restore();
+        }
+    });
+
     it("drops the results of a fan-out a newer search has replaced", async () => {
         const tools = stallSearch(toolsProvider);
         try {
