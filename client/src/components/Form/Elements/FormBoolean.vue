@@ -2,7 +2,7 @@
 import { computed } from "vue";
 
 export interface FormBooleanProps {
-    value: boolean | string;
+    value?: boolean | string | null;
     noLabel?: boolean;
 }
 
