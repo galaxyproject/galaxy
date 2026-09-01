@@ -3117,25 +3117,23 @@ class ToolModule(WorkflowModule):
                 extra_step_state = {}
                 for step_input in step.inputs:
                     step_input_name = step_input.name
-                    input_in_execution_state = step_input_name not in execution_state.inputs
-                    if input_in_execution_state:
-                        if step_input_name in all_inputs_by_name:
-                            if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
-                                value = iteration_elements[step_input_name]  # noqa: B023
-                            else:
-                                value = progress.replacement_for_input(trans, step, all_inputs_by_name[step_input_name])
-                            # TODO: only do this for values... is everything with a default
-                            # this way a field parameter? I guess not?
-                            extra_step_state[step_input_name] = value
-                        # Might be needed someday...
-                        # elif step_input.default_value_set:
-                        #    extra_step_state[step_input_name] = step_input.default_value
+                    if step_input_name in execution_state.inputs:
+                        continue
+                    if step_input_name in all_inputs_by_name:
+                        if step_input_name and "|" in step_input_name:
+                            # Nested tool inputs have flat connection names but are already represented
+                            # by their nested shape in the execution state.
+                            continue
+                        if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
+                            value = iteration_elements[step_input_name]  # noqa: B023
                         else:
-                            if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
-                                value = iteration_elements[step_input_name]  # noqa: B023
-                            else:
-                                value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
-                            extra_step_state[step_input_name] = value
+                            value = progress.replacement_for_input(trans, step, all_inputs_by_name[step_input_name])
+                    else:
+                        if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
+                            value = iteration_elements[step_input_name]  # noqa: B023
+                        else:
+                            value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
+                    extra_step_state[step_input_name] = value
 
                 if when_value is not False:
                     when_value = evaluate_value_from_expressions(
