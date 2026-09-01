@@ -2075,7 +2075,10 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
         if self.multiple:
             py_type = list_type(py_type)
 
-        return py_type
+        # unlike select, multiple does not imply optional here - DrillDownSelectToolParameter
+        # calls ToolParameter.__init__ rather than SelectToolParameter.__init__, so at runtime
+        # it reads a bare parse_optional() with no multiple-derived default.
+        return optional_if_needed(py_type, self.optional)
 
     @property
     def py_type_test_case_xml(self) -> builtins.type:
@@ -2095,6 +2098,8 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
+        if self.optional:
+            return False
         if options := self.options:
             # if any of these are selected, they seem to serve as defaults - check out test_tools -> test_drill_down_first_by_default
             return not any_drill_down_options_selected(options)
