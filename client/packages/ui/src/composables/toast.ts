@@ -21,6 +21,13 @@ export interface ToastProps extends Required<Omit<ToastOptions, "href">> {
     href: string;
 }
 
+const TITLE_DEFAULTS = {
+    success: "Success",
+    info: "Info",
+    warning: "Warning",
+    danger: "Error",
+} as const;
+
 const DEFAULT_DURATION = 3000;
 
 // Toasts are a singleton: every caller pushes onto the same queue, which the
@@ -73,7 +80,7 @@ export function useToast() {
         const toast: ToastProps = {
             id,
             message,
-            title: options.title ?? "",
+            title: options.title ?? TITLE_DEFAULTS[options.variant ?? "info"],
             variant: options.variant ?? "info",
             href: options.href ?? "",
             duration: options.duration ?? DEFAULT_DURATION,
@@ -101,16 +108,16 @@ export function useToast() {
     }
 
     // Main methods to use to raise toasts
-    function success(message: string, title = "Success", href = "") {
+    function success(message: string, title = TITLE_DEFAULTS.success, href = "") {
         addToast(message, { title, variant: "success", href });
     }
-    function info(message: string, title = "Info", href = "") {
+    function info(message: string, title = TITLE_DEFAULTS.info, href = "") {
         addToast(message, { title, variant: "info", href });
     }
-    function warning(message: string, title = "Warning", href = "") {
+    function warning(message: string, title = TITLE_DEFAULTS.warning, href = "") {
         addToast(message, { title, variant: "warning", href });
     }
-    function error(message: string, title = "Error", href = "") {
+    function error(message: string, title = TITLE_DEFAULTS.danger, href = "") {
         addToast(message, { title, variant: "danger", href });
     }
 
