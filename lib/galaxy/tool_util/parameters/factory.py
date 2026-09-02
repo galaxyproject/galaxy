@@ -354,6 +354,10 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             BooleanParameterModel | SelectParameterModel,
             _from_input_source_galaxy(test_param_input_source, profile),
         )
+        if isinstance(test_parameter, BooleanParameterModel) and test_parameter.optional:
+            test_parameter.optional = False
+            if test_parameter.value is None:
+                test_parameter.value = False
         whens = []
         default_test_value = cond_test_parameter_default_value(test_parameter)
         for value, case_inputs_sources in input_source.parse_when_input_sources():

@@ -418,7 +418,7 @@ def _merge_into_state(
         handled_inputs.update(_merge_into_state(test_parameter, context, conditional_state, state_path))
         # If the discriminator was omitted, record the when _select_which_when chose so the state
         # validates against that branch rather than the phantom __absent__ branch.
-        if test_parameter.name not in conditional_state and when.discriminator is not None:
+        if when.discriminator is not None and conditional_state.get(test_parameter.name) is None:
             conditional_state[test_parameter.name] = when.discriminator
         # Mark this conditional's discriminator consumed so a nested conditional's loose fallbacks
         # do not re-match it.
@@ -545,7 +545,14 @@ def _select_which_when(
     matched_name = test_input["name"] if test_input else None
     explicit_test_value = test_input["value"] if test_input else None
     if is_boolean and isinstance(explicit_test_value, str):
-        explicit_test_value = asbool(explicit_test_value)
+        truevalue = getattr(test_parameter, "truevalue", None)
+        falsevalue = getattr(test_parameter, "falsevalue", None)
+        if truevalue is not None and explicit_test_value == truevalue:
+            explicit_test_value = True
+        elif falsevalue is not None and explicit_test_value == falsevalue:
+            explicit_test_value = False
+        else:
+            explicit_test_value = asbool(explicit_test_value)
     test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
     if test_value is None:
         # Discriminator omitted: infer the active when from the params the test provides (like
