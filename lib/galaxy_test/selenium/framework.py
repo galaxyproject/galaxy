@@ -1001,13 +1001,8 @@ class RunsToolTests(NavigatesGalaxyMixin):
         repeat_params.sort(key=fill_order)
 
         deferred = []
-        # Datasets and collections first: a data column, a group tag or a dynamic select
-        # reads its options from them. A dataset inside a repeat waits for its instance
-        # to be inserted below.
-        for key, coll_def in collection_params:
-            hid = collection_hid_map.get(key)
-            assert hid is not None, f"No staged collection for param {key}"
-            self.tool_set_value(key, f"{hid}: {coll_def.get('name', '')}", expected_type="data")
+        # Datasets first: a data column or a dynamic select reads its options from them.
+        # A dataset inside a repeat waits for its instance to be inserted below.
         repeat_data_params = [kv for kv in data_params if self._parse_repeat_key(kv[0])]
         for key, value in data_params:
             if (key, value) in repeat_data_params:
@@ -1023,6 +1018,14 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 self.sleep_for(self.wait_types.UX_RENDER)
             except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
                 deferred.append((key, value))
+
+        # Collections come after the conditional selectors, since a branch that is not
+        # showing has no control to bind to, and before the retry pass so a group tag
+        # reading from one can still be filled.
+        for key, coll_def in collection_params:
+            hid = collection_hid_map.get(key)
+            assert hid is not None, f"No staged collection for param {key}"
+            self.tool_set_value(key, f"{hid}: {coll_def.get('name', '')}", expected_type="data")
 
         for repeat_name, count in repeat_counts.items():
             self._add_repeat_instances(repeat_name, count)
