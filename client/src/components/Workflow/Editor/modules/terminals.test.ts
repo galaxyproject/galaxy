@@ -18,6 +18,7 @@ import {
 
 import advancedStepsJson from "../test-data/parameter_steps.json";
 import simpleStepsJson from "../test-data/simple_steps.json";
+import subworkflowMappingStepsJson from "../test-data/subworkflow_mapping_steps.json";
 import {
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
@@ -38,6 +39,7 @@ import {
 
 const advancedSteps = advancedStepsJson as Steps;
 const simpleSteps = simpleStepsJson as Steps;
+const subworkflowMappingSteps = subworkflowMappingStepsJson as Steps;
 
 function useStores(id = "mock-workflow") {
     const connectionStore = useConnectionStore(id);
@@ -1000,76 +1002,85 @@ describe("producesAcceptableDatatype", () => {
     });
 });
 
-const LIST_MAP_OVER = { collectionType: "list", isCollection: true, rank: 1 };
-const LIST_LIST_MAP_OVER = { collectionType: "list:list", isCollection: true, rank: 2 };
+type DataOutputTerminal = OutputTerminal | OutputCollectionTerminal;
+
+function effectiveOutputType(output: DataOutputTerminal) {
+    const declaredType = output.collectionType ?? NULL_COLLECTION_TYPE_DESCRIPTION;
+    const effectiveType = output.mapOver.append(declaredType);
+    return effectiveType.collectionType ?? "data";
+}
 
 describe("subworkflow map over", () => {
-    let terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
-    let stepStore: ReturnType<typeof useWorkflowStepStore>;
+    let listOutput: OutputCollectionTerminal;
+    let mappedItemInput: InputTerminal;
+    let independentItemsInput: InputCollectionTerminal;
+    let outputFromMappedItem: OutputTerminal;
+    let outputFromIndependentItems: OutputCollectionTerminal;
+
     beforeEach(() => {
         setActivePinia(createPinia());
-        terminals = setupAdvanced();
-        stepStore = useWorkflowStepStore("mock-workflow");
-        Object.values(JSON.parse(JSON.stringify(advancedSteps)) as Steps).map((step) => {
-            stepStore.addStep(step);
-        });
+        const stores = useStores();
+        const listSource = subworkflowMappingSteps[0]!;
+        const subworkflow = subworkflowMappingSteps[1]!;
+        stores.stepStore.addStep(listSource);
+        stores.stepStore.addStep(subworkflow);
+
+        listOutput = terminalFactory(
+            listSource.id,
+            listSource.outputs[0]!,
+            testDatatypesMapper,
+            stores,
+        ) as OutputCollectionTerminal;
+        mappedItemInput = terminalFactory(
+            subworkflow.id,
+            subworkflow.inputs[0]!,
+            testDatatypesMapper,
+            stores,
+        ) as InputTerminal;
+        independentItemsInput = terminalFactory(
+            subworkflow.id,
+            subworkflow.inputs[1]!,
+            testDatatypesMapper,
+            stores,
+        ) as InputCollectionTerminal;
+        outputFromMappedItem = terminalFactory(
+            subworkflow.id,
+            subworkflow.outputs[0]!,
+            testDatatypesMapper,
+            stores,
+        ) as OutputTerminal;
+        outputFromIndependentItems = terminalFactory(
+            subworkflow.id,
+            subworkflow.outputs[1]!,
+            testDatatypesMapper,
+            stores,
+        ) as OutputCollectionTerminal;
     });
 
-    function listOutput() {
-        return terminals["list input"]!["output"] as OutputCollectionTerminal;
+    function outputTypes() {
+        return [effectiveOutputType(outputFromMappedItem), effectiveOutputType(outputFromIndependentItems)];
     }
 
-    function mapSubworkflowOverList() {
-        const datasetIn = terminals["subworkflow"]!["mapped_dataset"] as InputTerminal;
-        datasetIn.connect(listOutput());
-        return rebuildTerminal(datasetIn);
-    }
-
-    function connectInnerCollection() {
-        const collectionIn = terminals["subworkflow"]!["inner_collection"] as InputCollectionTerminal;
-        collectionIn.connect(listOutput());
-        return rebuildTerminal(collectionIn);
-    }
-
-    /** Map over of the downstream step consuming one of the subworkflow's outputs. */
-    function consumedMapOver(consumerLabel: string, outputName: string) {
-        const consumerIn = terminals[consumerLabel]!["input"] as InputTerminal;
-        consumerIn.connect(rebuildTerminal(terminals["subworkflow"]![outputName] as OutputTerminal));
-        return rebuildTerminal(consumerIn).mapOver;
-    }
-
-    it("describes an unmapped subworkflow by its declared interface", () => {
-        const inheritedOut = terminals["subworkflow"]!["inherited_mapping_output"] as OutputTerminal;
-        const localOut = terminals["subworkflow"]!["local_mapping_output"] as OutputCollectionTerminal;
-        expect(inheritedOut.isCollection).toBeFalsy();
-        expect(localOut.collectionType).toStrictEqual(new CollectionTypeDescription("list"));
-        expect(localOut.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    it("exposes (data, list<data>) before mapping", () => {
+        expect(outputTypes()).toEqual(["data", "list"]);
     });
 
-    it("maps the whole step over a list connected to one dataset input", () => {
-        const datasetIn = mapSubworkflowOverList();
-        expect(datasetIn.mapOver).toEqual(LIST_MAP_OVER);
-        expect(stepStore.stepMapOver[datasetIn.stepId]).toEqual(LIST_MAP_OVER);
-    });
+    it.each(["mapped item", "independent items"])(
+        "exposes (list<data>, list:list<data>) with %s connected first",
+        (firstInput) => {
+            const inputs =
+                firstInput === "mapped item"
+                    ? [mappedItemInput, independentItemsInput]
+                    : [independentItemsInput, mappedItemInput];
 
-    it("adds the map over to every output, not only the one whose step consumes it", () => {
-        mapSubworkflowOverList();
-        expect(consumedMapOver("simple data", "inherited_mapping_output")).toEqual(LIST_MAP_OVER);
-        expect(consumedMapOver("simple data 2", "local_mapping_output")).toEqual(LIST_LIST_MAP_OVER);
-    });
+            for (const input of inputs) {
+                expect(input.canAccept(listOutput).canAccept).toBe(true);
+                input.connect(listOutput);
+            }
 
-    it("keeps accepting a plain list on the collection input of a mapped over step", () => {
-        mapSubworkflowOverList();
-        const collectionIn = rebuildTerminal(terminals["subworkflow"]!["inner_collection"] as InputCollectionTerminal);
-        expect(collectionIn.canAccept(listOutput()).canAccept).toBe(true);
-        expect(connectInnerCollection().localMapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
-        expect(stepStore.stepMapOver[collectionIn.stepId]).toEqual(LIST_MAP_OVER);
-    });
-
-    it("reports the same output types whichever input is connected first", () => {
-        connectInnerCollection();
-        mapSubworkflowOverList();
-        expect(consumedMapOver("simple data", "inherited_mapping_output")).toEqual(LIST_MAP_OVER);
-        expect(consumedMapOver("simple data 2", "local_mapping_output")).toEqual(LIST_LIST_MAP_OVER);
-    });
+            expect(mappedItemInput.localMapOver.collectionType).toBe("list");
+            expect(independentItemsInput.localMapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+            expect(outputTypes()).toEqual(["list", "list:list"]);
+        },
+    );
 });

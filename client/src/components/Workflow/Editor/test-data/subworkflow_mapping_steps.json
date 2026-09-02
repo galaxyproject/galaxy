@@ -1,0 +1,64 @@
+{
+  "0": {
+    "id": 0,
+    "type": "data_collection_input",
+    "label": "list source",
+    "name": "Input dataset collection",
+    "tool_state": {},
+    "input_connections": {},
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": ["input"],
+        "collection": true,
+        "collection_type": "list",
+        "optional": false
+      }
+    ]
+  },
+  "1": {
+    "id": 1,
+    "type": "subworkflow",
+    "label": "subworkflow",
+    "name": "sub",
+    "tool_state": {},
+    "input_connections": {},
+    "inputs": [
+      {
+        "name": "mapped_item",
+        "label": "mapped_item",
+        "multiple": false,
+        "input_type": "dataset",
+        "optional": false,
+        "extensions": ["data"],
+        "input_subworkflow_step_id": 0
+      },
+      {
+        "name": "independent_items",
+        "label": "independent_items",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": ["list"],
+        "optional": false,
+        "extensions": ["data"],
+        "input_subworkflow_step_id": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "output_from_mapped_item",
+        "extensions": ["input"],
+        "type": "data",
+        "optional": false
+      },
+      {
+        "name": "output_from_independent_items",
+        "extensions": ["input"],
+        "collection": true,
+        "collection_type": "list",
+        "optional": false
+      }
+    ]
+  }
+}
