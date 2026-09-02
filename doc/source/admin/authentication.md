@@ -24,6 +24,22 @@ Leveraging OpenID Connect (OIDC) protocol, we enable login to Galaxy without exp
 
 The configuration is explained with provider-specific details at [User Authentication Configuration](https://galaxyproject.org/authnz/config/oidc/). How to authenticate from the user perspective we describe [here](https://galaxyproject.org/authnz/use/oidc/).
 
+### Removing or renaming a provider
+
+When a user logs in through an OIDC provider, Galaxy stores the link between the Galaxy account and the external identity as a row in the `oidc_user_authnz_tokens` table, keyed by the provider name used in `oidc_backends_config_file`. If you later remove a provider from that file, or change its name, these rows stay in the database.
+
+Such rows are harmless: Galaxy does not attempt to refresh their tokens, and users cannot log in through a provider that is not configured. Affected users still see the old entry under _User > Preferences > Manage Third-Party Identities_, labelled with the raw provider name, and cannot disconnect it themselves because there is no configured backend to disconnect from.
+
+If you renamed a provider, users need to log in once through the new name; Galaxy then creates a fresh row under the new provider name and associates it with the existing account through the normal e-mail matching flow. The old row is not migrated.
+
+To remove stale rows for a provider that is gone for good, run for example:
+
+```sql
+DELETE FROM oidc_user_authnz_tokens WHERE provider = 'elixir';
+```
+
+Do this only if the provider will not come back under the same name. The row is what ties the external identity to the Galaxy account, so after deleting it a user who logs in through a re-added provider is treated as connecting a new identity and goes through the account association flow again.
+
 ## Authentication Framework
 
 Galaxy is distributed with a plugin-driven authentication framework for which the default database authentication is
