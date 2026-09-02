@@ -13,13 +13,17 @@ from typing import (
 )
 
 from galaxy.util.compression_utils import CompressedFile
-from galaxy_test.api.test_workflows import RunsWorkflowFixtures
+from galaxy_test.api.test_workflows import (
+    RunsWorkflowFixtures,
+    WORKFLOW_SIMPLE,
+)
 from galaxy_test.base import api_asserts
 from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     RunJobsSummary,
+    skip_without_tool,
     WorkflowPopulator,
 )
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
@@ -73,6 +77,17 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
         with open(bco_path) as f:
             bco = json.load(f)
         self.workflow_populator.validate_biocompute_object(bco)
+
+    @skip_without_tool("cat1")
+    def test_export_invocation_bco(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
+            invocation_id = summary.invocation_id
+            bco_path = self.workflow_populator.download_invocation_to_store(invocation_id, extension="bco.json")
+            with open(bco_path) as f:
+                bco = json.load(f)
+            self.workflow_populator.validate_biocompute_object(bco)
+            assert bco["provenance_domain"]["name"] == "Simple Workflow"
 
     def test_export_ro_crate_with_optional_parameter_without_value(self):
         """Test exporting invocation with optional text parameter that has no value.

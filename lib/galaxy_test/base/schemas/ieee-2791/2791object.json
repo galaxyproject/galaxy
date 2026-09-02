@@ -1,0 +1,178 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://w3id.org/ieee/ieee-2791-schema/2791object.json",
+    "type": "object",
+    "title": "Base type for all IEEE-2791 Objects",
+    "description": "All IEEE-2791 object types must adhear to this type in order to be compliant with IEEE-2791 standard",
+    "required": [
+        "object_id",
+        "spec_version",
+        "etag",
+        "provenance_domain",
+        "usability_domain",
+        "description_domain",
+        "execution_domain",
+        "io_domain"
+    ],
+    "definitions": {
+        "object_id": {
+            "type": "string",
+            "description": "A unique identifier that should be applied to each IEEE-2791 Object instance, generated and assigned by a IEEE-2791 database engine. IDs should never be reused"
+        },
+        "uri": {
+            "type": "object",
+            "description": "Any of the four Resource Identifers defined at https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-7.3.5",
+            "additionalProperties": false,
+            "required": [
+                "uri"
+            ],
+            "properties": {
+                "filename": {
+                    "type": "string"
+                },
+                "uri": {
+                    "type": "string",
+                    "format": "uri"
+                },
+                "access_time": {
+                    "type": "string",
+                    "description": "Time stamp of when the request for this data was submitted",
+                    "format": "date-time"
+                },
+                "sha1_checksum": {
+                    "type": "string",
+                    "description": "output of hash function that produces a message digest",
+                    "pattern": "[A-Za-z0-9]+"
+                }
+            }
+        }, 
+        "contributor": {
+            "type": "object",
+            "description": "Contributor identifier and type of contribution (determined according to PAV ontology) is required",
+            "required": [
+                "contribution",
+                "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of contributor",
+                    "examples": [
+                        "Charles Darwin"
+                    ]
+                },
+                "affiliation": {
+                    "type": "string",
+                    "description": "Organization the particular contributor is affiliated with",
+                    "examples": [
+                        "HMS Beagle"
+                    ]
+                },
+                "email": {
+                    "type": "string",
+                    "description": "electronic means for identification and communication purposes",
+                    "examples": [
+                        "name@example.edu"
+                    ],
+                    "format": "email"
+                },
+                "contribution": {
+                    "type": "array",
+                    "description": "type of contribution determined according to PAV ontology",
+                    "reference": "https://doi.org/10.1186/2041-1480-4-37",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "authoredBy",
+                            "contributedBy",
+                            "createdAt",
+                            "createdBy",
+                            "createdWith",
+                            "curatedBy",
+                            "derivedFrom",
+                            "importedBy",
+                            "importedFrom",
+                            "providedBy",
+                            "retrievedBy",
+                            "retrievedFrom",
+                            "sourceAccessedBy"
+                        ]
+                    }
+                },
+                "orcid": {
+                    "type": "string",
+                    "description": "Field to record author information. ORCID identifiers allow for the author to curate their information after submission. ORCID identifiers must be valid and must have the prefix ‘https://orcid.org/’",
+                    "examples": [
+                        "http://orcid.org/0000-0002-1825-0097"
+                    ],
+                    "format": "uri"
+                }
+            }
+        }
+    },
+    "additionalProperties": false,
+    "properties": {
+        "object_id": {
+            "$ref": "#/definitions/object_id",
+            "readOnly": true
+        },
+        "spec_version": {
+            "type": "string",
+            "description": "Version of the IEEE-2791 specification used to define this document",
+            "examples": [
+                "https://w3id.org/ieee/ieee-2791-schema/"
+            ],
+            "readOnly": true,
+            "format": "uri"
+        },
+        "etag": {
+            "type": "string",
+            "description": "See https://tools.ietf.org/html/rfc7232#section-2.1 for full description. It is recommended that the ETag be deleted or updated if the object file is changed (except in cases using weak ETags in which the entirety of the change comprises a simple re-writing of the JSON).",
+            "examples": [
+                "5986B05969341343E77A95B4023600FC8FEF48B7E79F355E58B0B404A4F50995"
+            ],
+            "readOnly": true,
+            "pattern": "^([A-Za-z0-9]+)$"
+        },
+        "provenance_domain": {
+            "$ref": "provenance_domain.json"
+        },
+        "usability_domain": {
+            "$ref": "usability_domain.json"
+        },
+        "extension_domain": {
+            "type": "array",
+            "description": "An optional domain that contains user-defined fields.",
+            "items":{
+                "required":[
+                    "extension_schema"
+                ],
+                "additionalProperties": true,
+                "properties": {
+                    "extension_schema":{
+                        "title": "Extension Schema",
+                        "description": "resolving this URI should provide this extension's JSON Schema",
+                        "type": "string",
+                        "format": "uri"
+                    }
+                }
+            }
+        },
+        "description_domain": {
+            "$ref": "description_domain.json"
+        },
+        "execution_domain": {
+            "$ref": "execution_domain.json"
+        },
+        "parametric_domain": {
+            "$ref": "parametric_domain.json"
+        },
+        "io_domain": {
+            "$ref": "io_domain.json"
+        },
+        "error_domain": {
+            "$ref": "error_domain.json"
+        }
+    }
+}
