@@ -727,6 +727,12 @@ def test_job_cache_with_dataset_hash(target_history: TargetHistory, required_too
     job = execution.assert_has_single_job
     assert job.final_details["copied_from_job_id"]
 
+    # A dataset with different content (and hence a different hash) must not be cached.
+    other_hda = target_history.with_dataset("4\t5\t6", "dataset2")
+    other_execution = required_tool.execute(use_cached_job=True).with_inputs({"parameter": other_hda.src_dict})
+    other_job = other_execution.assert_has_single_job
+    assert not other_job.final_details["copied_from_job_id"]
+
 
 @requires_tool_id("gx_repeat_boolean_min")
 def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, required_tool: RequiredTool):
