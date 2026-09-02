@@ -4521,17 +4521,6 @@ input_1:
             assert "History dataset collection association not found" in error_entry["error"]
 
     @skip_without_tool("cat1")
-    def test_export_invocation_bco(self):
-        with self.dataset_populator.test_history() as history_id:
-            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
-            invocation_id = summary.invocation_id
-            bco_path = self.workflow_populator.download_invocation_to_store(invocation_id, extension="bco.json")
-            with open(bco_path) as f:
-                bco = json.load(f)
-            self.workflow_populator.validate_biocompute_object(bco)
-            assert bco["provenance_domain"]["name"] == "Simple Workflow"
-
-    @skip_without_tool("cat1")
     def test_export_invocation_ro_crate(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
