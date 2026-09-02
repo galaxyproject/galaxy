@@ -7,7 +7,9 @@ keep things like testing other tool APIs in ./test_tools.py (index, search, tool
 files, etc..).
 """
 
+import copy
 from dataclasses import dataclass
+from typing import Any
 
 import pytest
 
@@ -732,6 +734,34 @@ def test_job_cache_with_dataset_hash(target_history: TargetHistory, required_too
     other_execution = required_tool.execute(use_cached_job=True).with_inputs({"parameter": other_hda.src_dict})
     other_job = other_execution.assert_has_single_job
     assert not other_job.final_details["copied_from_job_id"]
+
+
+@requires_tool_id("gx_data")
+def test_job_cache_not_used_for_datasets_with_different_extra_files(
+    target_history: TargetHistory, required_tool: RequiredTool
+) -> None:
+    velvet_upload_request: dict[str, Any] = {
+        "src": "composite",
+        "ext": "velvet",
+        "composite": {
+            "items": [
+                {"src": "pasted", "paste_content": "sequences content"},
+                {"src": "pasted", "paste_content": "roadmaps content"},
+                {"src": "pasted", "paste_content": "log content"},
+            ]
+        },
+    }
+    velvet1_hda = target_history._dataset_populator.fetch_hda(target_history.id, velvet_upload_request, wait=True)
+    velvet1 = {"src": "hda", "id": velvet1_hda["id"]}
+    _ = required_tool.execute().with_inputs({"parameter": velvet1}).assert_has_single_job
+
+    # Same primary file ("sequences"), but a different extra file ("roadmaps").
+    velvet_modified_request = copy.deepcopy(velvet_upload_request)
+    velvet_modified_request["composite"]["items"][1]["paste_content"] = "roadmaps content MODIFIED"
+    velvet2_hda = target_history._dataset_populator.fetch_hda(target_history.id, velvet_modified_request, wait=True)
+    velvet2 = {"src": "hda", "id": velvet2_hda["id"]}
+    job = required_tool.execute(use_cached_job=True).with_inputs({"parameter": velvet2}).assert_has_single_job
+    assert not job.final_details["copied_from_job_id"]
 
 
 @requires_tool_id("gx_repeat_boolean_min")
