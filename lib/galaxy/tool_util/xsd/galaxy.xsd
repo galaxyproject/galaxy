@@ -82,6 +82,8 @@ List of behavior changes associated with profile versions:
   `provided_metadata_file` or `provided_metadata_style`, using `format="auto"`, or declaring a
   `discover_datasets` collector with `from_provided_metadata="true"` (represented as
   `discover_via="tool_provided_metadata"` in YAML tool definitions).
+- An `optional` `boolean` parameter with no `checked` attribute defaults to `None` instead of `False`, so an unset
+  value stays distinct from an explicit false. Older profiles keep reporting `False`.
 
 ### Examples
 

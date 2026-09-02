@@ -638,6 +638,13 @@ class BooleanToolParameter(ToolParameter):
     >>> value = p.to_json(True, trans.app, use_security=False)
     >>> assert isinstance(value, bool)
     >>> assert value == True
+    >>> optional_xml = XML('<param name="_name" type="boolean" optional="true" />')
+    >>> legacy = BooleanToolParameter(Bunch(profile="24.0", app=None), optional_xml)
+    >>> assert legacy.get_initial_value(trans, {}) is False
+    >>> current = BooleanToolParameter(Bunch(profile="26.2", app=None), optional_xml)
+    >>> assert current.get_initial_value(trans, {}) is None
+    >>> required = BooleanToolParameter(Bunch(profile="26.2", app=None), XML('<param name="_name" type="boolean" />'))
+    >>> assert required.get_initial_value(trans, {}) is False
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -651,7 +658,7 @@ class BooleanToolParameter(ToolParameter):
         self.truevalue = truevalue
         self.falsevalue = falsevalue
         self.optional = input_source.get_bool("optional", False)
-        self.checked = boolean_is_checked(input_source)
+        self.checked = boolean_is_checked(input_source, profile)
 
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         return self.to_python(value)
@@ -984,6 +991,17 @@ class SelectToolParameter(ToolParameter):
     [('argument', None), ('display', None), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('textable', False), ('type', 'select'), ('value', ['y', 'z'])]
     >>> print(p.to_param_dict_string(["y", "z"]))
     y,z
+    >>> one = SelectToolParameter(None, XML(
+    ... '''
+    ... <param name="_name" type="select" multiple="true">
+    ...     <option value="x">x_label</option>
+    ...     <option value="y" selected="true">y_label</option>
+    ... </param>
+    ... '''))
+    >>> one.get_initial_value(trans, {})
+    ['y']
+    >>> print(one.to_param_dict_string(["y"]))
+    y
     """
 
     value_label: str
@@ -1206,7 +1224,7 @@ class SelectToolParameter(ToolParameter):
                 value2: str | list[str] | None = options[0].value
             else:
                 value2 = None
-        elif len(value) == 1 or not self.multiple:
+        elif not self.multiple:
             value2 = value[0]
         else:
             value2 = value
@@ -1657,7 +1675,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> app = Bunch(config=Bunch(tool_data_path=None))
-    >>> tool = Bunch(app=app)
+    >>> tool = Bunch(app=app, options=Bunch(sanitize=False))
     >>> trans = Bunch(app=app, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None), security=lambda x: x)
     >>> p = DrillDownSelectToolParameter(tool, XML(
     ... '''
@@ -1694,6 +1712,19 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> assert d['options'][0]['options'][2]['options'][1]['value'] == 'option4'
     >>> assert d['options'][1]['name'] == 'Option 5'
     >>> assert d['options'][1]['value'] == 'option5'
+    >>> assert p.from_json(['option5'], trans) == ['option5']
+    >>> single = DrillDownSelectToolParameter(tool, XML(
+    ... '''
+    ... <param name="_name" type="drill_down" display="checkbox" hierarchy="exact">
+    ...   <options>
+    ...    <option name="Option 1" value="option1" selected="true"/>
+    ...    <option name="Option 2" value="option2"/>
+    ...   </options>
+    ... </param>
+    ... '''))
+    >>> assert single.from_json(['option1'], trans) == 'option1'
+    >>> assert single.get_initial_value(trans, {}) == 'option1'
+    >>> assert single.to_param_dict_string('option1') == 'option1'
     """
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
@@ -1778,6 +1809,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                     val,
                 )
             rval.append(val)
+        if not self.multiple:
+            return rval[0] if rval else None
         return rval
 
     def to_param_dict_string(self, value, other_values=None):
@@ -1808,6 +1841,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
         if value is None:
             return "None"
+        if not isinstance(value, list):
+            value = [value]
         rval = []
         if self.hierarchy == "exact":
             rval = value
@@ -1843,6 +1878,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         recurse_options(initial_values, options)
         if len(initial_values) == 0:
             return None
+        if not self.multiple:
+            return initial_values[0]
         return initial_values
 
     def to_text(self, value):
