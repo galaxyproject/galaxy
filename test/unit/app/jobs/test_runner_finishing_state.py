@@ -55,7 +55,7 @@ class TestPulsarFinishingRecovery(TestCase, UsesTools):
         self.setup_app()
         self._init_tool()
         self.job_wrapper = MockJobWrapper(self.app, self.test_directory, self.tool)
-        self.runner = cast(PulsarJobRunner, object.__new__(PulsarJobRunner))
+        self.runner = object.__new__(PulsarJobRunner)
         self.runner.app = self.app
         self.runner.work_queue = cast("TypedQueue[tuple]", Queue())
 
@@ -97,5 +97,5 @@ class TestPulsarFinishingRecovery(TestCase, UsesTools):
         assert self.job_wrapper.fail_message == "Unable to recover job interrupted while setting metadata"
         assert not hasattr(self.job_wrapper, "exit_code")
 
-    def _job_state(self):
-        return cast("AsynchronousJobState", self.runner._job_state(self.job_wrapper.job, self.job_wrapper))
+    def _job_state(self) -> "AsynchronousJobState":
+        return self.runner._job_state(self.job_wrapper.job, cast(MinimalJobWrapper, self.job_wrapper))

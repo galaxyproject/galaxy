@@ -101,9 +101,10 @@ class TestPulsarFinishingRecoveryIntegration(integration_util.IntegrationTestCas
         working_directory = JobWorkingDirectory(job, self._app.object_store).resolve()
         assert os.path.exists(os.path.join(working_directory, f"galaxy_{job.id}.ec"))
 
-        job_queue = self._app.job_manager.job_handler.job_queue
+        dispatcher = self._app.job_manager.job_handler.dispatcher
+        assert dispatcher is not None
         assert job.job_runner_name is not None
-        runner = job_queue.dispatcher.job_runners[job.job_runner_name]
+        runner = dispatcher.job_runners[job.job_runner_name]
         assert isinstance(runner, PulsarJobRunner)
         runner.get_client(job.destination_params or {}, job.id, external_id=job.get_job_runner_external_id()).clean()
 
