@@ -193,7 +193,6 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "filter_multiple_splitter_1": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
     "filter_param_value_ref_attribute_2": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
     "filter_param_value_ref_attribute_4": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
-    "format_source_in_conditional_1": "a data parameter two conditionals deep never becomes clickable",
     "implicit_conversion_optional_param_0": "test data uses a datatype the instance does not know",
     "inheritance_simple_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
     "output_format_input_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
@@ -211,6 +210,19 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "gx_hidden_data_1": "a hidden parameter renders no control, so the declared value cannot be set in the browser",
     "gx_hidden_optional_0": "a hidden parameter renders no control, so the declared value cannot be set in the browser",
     "gx_repeat_select_dynamic_1": "a dynamic select inside a repeat never becomes clickable",
+    "expression_null_handling_boolean_2": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "gx_boolean_optional_1": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_2": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_4": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_5": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_9": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_10": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_11": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "select_from_dataset_0": "the dataset option never becomes clickable",
+    "test_CONVERTER_biom_0": "a converter data parameter is not set from the staged dataset",
+    "test_CONVERTER_biom_1": "a converter data parameter is not set from the staged dataset",
+    "collection_two_paired_1": "the second paired collection control never renders",
+    "output_action_change_format_1": "a conditional selector two levels deep does not take",
 }
 
 
