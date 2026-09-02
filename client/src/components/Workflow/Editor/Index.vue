@@ -1354,7 +1354,6 @@ initializeWorkflowEditor();
 
         <ActivityBar
             ref="activityBar"
-            :inert="loadingWorkflow ? '' : undefined"
             data-description="workflow editor activity bar"
             :default-activities="workflowActivities"
             :special-activities="specialActivities"
@@ -1474,7 +1473,7 @@ initializeWorkflowEditor();
             </MarkdownEditor>
         </template>
         <template v-else>
-            <div id="center" class="workflow-center" :inert="loadingWorkflow ? '' : undefined">
+            <div id="center" class="workflow-center">
                 <div class="editor-top-bar" unselectable="on">
                     <span>
                         <span class="sr-only">Workflow Editor</span>
