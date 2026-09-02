@@ -462,6 +462,8 @@ interface Rootworkflow_editor extends Component {
     change_datatype: SelectorTemplate;
     select_datatype_text_search: SelectorTemplate;
     select_datatype: SelectorTemplate;
+    select_datatype_option_not_matching: SelectorTemplate;
+    selected_datatype: SelectorTemplate;
     add_tags: SelectorTemplate;
     remove_tags: SelectorTemplate;
     tool_version_button: SelectorTemplate;
