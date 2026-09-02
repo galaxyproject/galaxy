@@ -6608,6 +6608,47 @@ test_data:
         assert len(elements) == 1
         assert elements[0]["element_identifier"] == "test_level_1"
 
+    @skip_without_tool("cat")
+    def test_subworkflow_mapping_callable_boundary_job_cardinality(self, history_id):
+        workflow_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "workflow",
+            "subworkflow_mapping_per_step.gxwf.yml",
+        )
+        tests_path = workflow_path.replace(".gxwf.yml", ".gxwf-tests.yml")
+        with open(tests_path) as tests_file:
+            test_job = yaml.safe_load(tests_file)[0]["job"]
+
+        summary = self._run_workflow(
+            workflow_path,
+            test_data=test_job,
+            history_id=history_id,
+            source_type="path",
+            wait=True,
+            assert_ok=True,
+        )
+        parent_invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+        child_invocation_ids = {
+            step["subworkflow_invocation_id"]
+            for step in parent_invocation["steps"]
+            if step.get("subworkflow_invocation_id")
+        }
+        assert len(child_invocation_ids) == 1
+
+        child_invocation = self.workflow_populator.get_invocation(child_invocation_ids.pop(), step_details=True)
+        child_steps = {step["workflow_step_label"]: step for step in child_invocation["steps"]}
+        assert len(child_steps["cat_outer_mapping_source"]["jobs"]) == 2
+        assert len(child_steps["cat_inner_mapping_source"]["jobs"]) == 6
+
+        output_id = parent_invocation["output_collections"]["local_mapping_output"]["id"]
+        output = self.dataset_populator.get_history_collection_details(history_id, content_id=output_id)
+        assert output["collection_type"] == "list:list"
+        assert len(output["elements"]) == 2
+        assert all(len(element["object"]["elements"]) == 3 for element in output["elements"])
+        leaf_hda_ids = {leaf["object"]["id"] for outer in output["elements"] for leaf in outer["object"]["elements"]}
+        assert len(leaf_hda_ids) == 6
+
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over_inner_collection(self, history_id):
         summary = self._run_workflow(

@@ -1,0 +1,46 @@
+class: GalaxyWorkflow
+doc: |
+  Test callable-boundary mapping semantics for a subworkflow. The child remains
+  one invocation, but every executable child step inherits the subworkflow's
+  outer mapping axis. A child step with its own local mapping axis executes over
+  the cross product of the inherited and local axes.
+inputs:
+  outer_mapping_source:
+    type: collection
+    collection_type: list
+  inner_mapping_source:
+    type: collection
+    collection_type: list
+outputs:
+  inherited_mapping_output:
+    outputSource: sub/inherited_mapping_output
+  local_mapping_output:
+    outputSource: sub/local_mapping_output
+steps:
+  sub:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        mapped_dataset: data
+        inner_collection:
+          type: collection
+          collection_type: list
+      outputs:
+        inherited_mapping_output:
+          outputSource: cat_outer_mapping_source/out_file1
+        local_mapping_output:
+          outputSource: cat_inner_mapping_source/out_file1
+      steps:
+        cat_outer_mapping_source:
+          tool_id: cat
+          in:
+            input1:
+              source: mapped_dataset
+        cat_inner_mapping_source:
+          tool_id: cat
+          in:
+            input1:
+              source: inner_collection
+    in:
+      mapped_dataset: outer_mapping_source
+      inner_collection: inner_mapping_source

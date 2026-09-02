@@ -22,7 +22,9 @@ from galaxy.util import (
     bunch,
     now,
 )
-from galaxy.workflow import modules
+from galaxy.workflow import (
+    modules,
+)
 from .workflow_support import (
     MockTrans,
     yaml_to_model,
