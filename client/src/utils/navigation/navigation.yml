@@ -1111,15 +1111,11 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Rename dataset']//input
-    change_datatype:
-      type: xpath
-      selector: >
-        //div[@data-label='Change datatype']//div[contains(@class, 'multiselect')]
-    select_datatype_text_search: "div[data-label='Change datatype'] .multiselect__input"
-    select_datatype:
-      type: xpath
-      selector: >
-        //div[@data-label='Change datatype']//li[contains(@class,"multiselect__element")]//span[normalize-space()="${datatype}"]
+    change_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox']"
+    select_datatype_text_search: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox'] input"
+    select_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value='${datatype}']"
+    select_datatype_option_not_matching: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value]:not([data-option-value*='${text}' i])"
+    selected_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-selected-value]"
     add_tags_button:
       type: xpath
       selector: >
