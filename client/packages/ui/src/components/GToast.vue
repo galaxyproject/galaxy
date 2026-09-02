@@ -42,7 +42,7 @@ function onClick(toast: ToastProps) {
 </script>
 
 <template>
-    <div class="g-toast-stack" aria-live="polite" aria-atomic="false">
+    <TransitionGroup tag="div" name="g-toast" class="g-toast-stack" aria-live="polite" aria-atomic="false">
         <div
             v-for="toast in toasts"
             :key="toast.id"
@@ -62,7 +62,7 @@ function onClick(toast: ToastProps) {
             </div>
             <div class="g-toast-body">{{ toast.message }}</div>
         </div>
-    </div>
+    </TransitionGroup>
 </template>
 
 <style scoped lang="scss">
@@ -118,6 +118,41 @@ function onClick(toast: ToastProps) {
 
     .g-toast-body {
         margin-top: 0.25rem;
+    }
+}
+
+// Slide in from / out to the right; siblings ease into their new position.
+.g-toast-enter-active,
+.g-toast-leave-active,
+.g-toast-move {
+    transition:
+        transform 0.3s ease,
+        opacity 0.3s ease;
+}
+
+.g-toast-enter,
+.g-toast-leave-to {
+    opacity: 0;
+    transform: translateX(110%);
+}
+
+// Take the leaving toast out of flow so the survivors collapse up smoothly.
+.g-toast-leave-active {
+    position: absolute;
+    right: 0;
+    width: 100%;
+}
+
+@media (prefers-reduced-motion) {
+    .g-toast-enter-active,
+    .g-toast-leave-active,
+    .g-toast-move {
+        transition: none;
+    }
+
+    .g-toast-enter,
+    .g-toast-leave-to {
+        transform: none;
     }
 }
 </style>

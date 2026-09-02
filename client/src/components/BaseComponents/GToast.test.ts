@@ -7,7 +7,7 @@ import { nextTick } from "vue";
 import GToast from "./GToast.vue";
 
 const localVue = getLocalVue();
-const { addToast, clearToasts } = useToast();
+const { toasts, addToast, clearToasts } = useToast();
 
 afterEach(() => {
     clearToasts();
@@ -35,7 +35,9 @@ describe("GToast.vue", () => {
         expect(wrapper.findAll(".g-toast")).toHaveLength(1);
 
         await wrapper.get(".g-toast-header button").trigger("click");
-        expect(wrapper.findAll(".g-toast")).toHaveLength(0);
+        expect(toasts.value).toHaveLength(0);
+        await nextTick();
+        expect(wrapper.get(".g-toast").classes()).toContain("g-toast-leave-active");
     });
 
     it("auto-dismisses a toast after its duration elapses", async () => {
@@ -47,8 +49,9 @@ describe("GToast.vue", () => {
         expect(wrapper.findAll(".g-toast")).toHaveLength(1);
 
         vi.advanceTimersByTime(1000);
+        expect(toasts.value).toHaveLength(0);
         await nextTick();
-        expect(wrapper.findAll(".g-toast")).toHaveLength(0);
+        expect(wrapper.get(".g-toast").classes()).toContain("g-toast-leave-active");
     });
 
     it.each([
