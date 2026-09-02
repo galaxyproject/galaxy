@@ -603,6 +603,11 @@ describe("Index", () => {
 
             expect(mockSaveWorkflow).toHaveBeenCalled();
             expect(mockPush).not.toHaveBeenCalled();
+
+            // The modal latches `busy` on Save and only clears it when it is shown again,
+            // so leaving it open here would disable Cancel/Don't Save/Save with no way
+            // back but the close icon. It must close so the error modal is visible.
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
         });
 
         it("appends the current version to the URL when appendVersion is true", async () => {

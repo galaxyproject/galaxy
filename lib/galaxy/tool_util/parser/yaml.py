@@ -76,6 +76,9 @@ class YamlToolSource(ToolSource):
     def parse_class(self):
         return self.root_dict.get("class")
 
+    def allows_tool_provided_metadata(self) -> bool:
+        return self.parse_class() in (None, "GalaxyTool")
+
     def parse_tool_type(self):
         return self.root_dict.get("tool_type")
 

@@ -607,6 +607,9 @@ export default {
                 if (errorMsg) {
                     this.errorMessage = errorMsg;
                     this.submissionRequestFailed = true;
+                    this.showError = true;
+                    this.errorTitle = "Job submission failed.";
+                    this.errorContent = jobDef;
                     return;
                 }
 

@@ -166,6 +166,7 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
 )
 from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.model.tag_filter import build_tag_filter
 from galaxy.objectstore import (
     ObjectStoreAuth,
     USER_OBJECTS_SCHEME,
@@ -4146,12 +4147,13 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
         *,
         extensions: set[str] | None = None,
         valid_states: tuple[str, ...] | None = None,
+        tag: str | None = None,
         search: str | None = None,
         offset: int = 0,
         limit: int = 50,
     ) -> tuple[list["HistoryDatasetAssociation"], int]:
-        """Active, visible HDAs filtered by extension, dataset state, and an
-        optional ``search`` term, paginated.
+        """Active, visible HDAs filtered by extension, dataset state, tag,
+        and an optional ``search`` term, paginated.
 
         Returns ``(rows, total)`` where ``total`` is the count under the same WHERE
         clause. Used by data-tool-parameter ``to_dict`` to avoid loading the entire
@@ -4167,6 +4169,10 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
             filters.append(HistoryDatasetAssociation.extension.in_(extensions))
         if valid_states is not None:
             filters.append(HistoryDatasetAssociation.dataset.has(Dataset.state.in_(valid_states)))
+        if tag:
+            filters.append(
+                build_tag_filter(HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation, "eq", tag)
+            )
         if search:
             name_match = HistoryDatasetAssociation.name.ilike(f"%{search}%")
             if search.isdigit():
@@ -4251,17 +4257,18 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
         self,
         *,
         visible_only: bool = True,
+        tag: str | None = None,
         search: str | None = None,
         offset: int = 0,
         limit: int = 50,
     ) -> tuple[list["HistoryDatasetCollectionAssociation"], int]:
-        """Active HDCAs paginated. Pass ``visible_only=False`` to include
-        hidden collections (matches the legacy ``active_dataset_collections``
-        semantics used by some tool-form paths). ``search`` matches
-        case-insensitively against the collection name and (when numeric)
-        against the hid. Extension filtering for collections is exposed via
-        the history-contents filter parser (see
-        :py:meth:`_hdca_extensions_only_in_clause`).
+        """Active HDCAs filtered by tag and an optional ``search`` term,
+        paginated. Pass ``visible_only=False`` to include hidden collections
+        (matches the legacy ``active_dataset_collections`` semantics used by
+        some tool-form paths). ``search`` matches case-insensitively against
+        the collection name and (when numeric) against the hid. Extension
+        filtering for collections is exposed via the history-contents filter
+        parser (see :py:meth:`_hdca_extensions_only_in_clause`).
         """
         filters = [
             HistoryDatasetCollectionAssociation.history_id == self.id,
@@ -4269,6 +4276,10 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
         ]
         if visible_only:
             filters.append(HistoryDatasetCollectionAssociation.visible.is_(True))
+        if tag:
+            filters.append(
+                build_tag_filter(HistoryDatasetCollectionAssociation, HistoryDatasetCollectionTagAssociation, "eq", tag)
+            )
         if search:
             name_match = HistoryDatasetCollectionAssociation.name.ilike(f"%{search}%")
             if search.isdigit():

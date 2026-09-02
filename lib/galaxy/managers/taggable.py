@@ -7,13 +7,9 @@ Mixins for Taggable model managers and serializers.
 import logging
 import re
 
-from sqlalchemy import (
-    func,
-    sql,
-)
-
 from galaxy import model
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.model.tag_filter import build_tag_filter
 from galaxy.model.tags import GalaxyTagHandler
 from .base import (
     ModelValidator,
@@ -86,19 +82,7 @@ class TaggableFilterMixin:
                 # Unfortunately we were a little inconsistent with our naming scheme
                 class_name = "HistoryDatasetCollection"
             target_model = getattr(model, f"{class_name}TagAssociation")
-            id_column = f"{target_model.table.name.rsplit('_tag_association')[0]}_id"
-            column = target_model.table.c.user_tname + ":" + target_model.table.c.user_value
-            lower_val = val.lower()  # Ignore case
-            if op == "eq":
-                if ":" not in lower_val:
-                    # We require an exact match and the tag to look for has no user_value,
-                    # so we can't just concatenate user_tname, ':' and user_vale
-                    cond = func.lower(target_model.table.c.user_tname) == lower_val
-                else:
-                    cond = func.lower(column) == lower_val
-            else:
-                cond = func.lower(column).contains(lower_val, autoescape=True)
-            return sql.expression.and_(model_class.table.c.id == getattr(target_model.table.c, id_column), cond)
+            return build_tag_filter(model_class, target_model, op, val)
 
         return _create_tag_filter
 

@@ -82,6 +82,12 @@ class DynamicToolManager(ModelManager[DynamicTool]):
         if not any(role.type == model.Role.types.USER_TOOL_EXECUTE and not role.deleted for role in user.all_roles()):
             raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
 
+    def ensure_beta_tool_formats_enabled(self) -> None:
+        if not self.app.config.enable_beta_tool_formats:
+            raise exceptions.ConfigDoesNotAllowException(
+                "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
+            )
+
     def get_tool_by_id_or_uuid(self, id_or_uuid: int | str) -> DynamicTool | None:
         if isinstance(id_or_uuid, int):
             return self.get_tool_by_id(id_or_uuid)
@@ -119,10 +125,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
         return self.session().scalars(stmt).one_or_none()
 
     def create_tool(self, tool_payload: DynamicToolPayload):
-        if not getattr(self.app.config, "enable_beta_tool_formats", False):
-            raise exceptions.ConfigDoesNotAllowException(
-                "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
-            )
+        self.ensure_beta_tool_formats_enabled()
 
         uuid = model.get_uuid()
         tool_directory: str | None = None
@@ -183,10 +186,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
     def create_unprivileged_tool(
         self, user: model.User, tool_payload: DynamicUnprivilegedToolCreatePayload
     ) -> DynamicTool:
-        if not getattr(self.app.config, "enable_beta_tool_formats", False):
-            raise exceptions.ConfigDoesNotAllowException(
-                "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
-            )
+        self.ensure_beta_tool_formats_enabled()
         self.ensure_can_use_unprivileged_tool(user)
         if lint_errors := lint_user_tool_source(tool_payload.representation):
             raise exceptions.RequestParameterInvalidException("Tool failed lint checks: " + "; ".join(lint_errors))
