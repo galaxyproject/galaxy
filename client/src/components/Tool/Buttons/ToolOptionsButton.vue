@@ -2,7 +2,6 @@
 import { faCopy, faEye } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faDownload, faExternalLinkAlt, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -16,6 +15,8 @@ import { copyId, copyLink, downloadTool, openLink } from "../utilities";
 
 import ToolTourGeneratorItem from "./ToolTourGeneratorItem.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import ToolSource from "@/components/Tool/ToolSource.vue";
 
@@ -80,7 +81,7 @@ loadToolMenuWebhooks();
 
 <template>
     <div>
-        <BDropdown
+        <GDropdown
             no-caret
             right
             role="button"
@@ -96,32 +97,32 @@ loadToolMenuWebhooks();
                 </GButton>
             </template>
 
-            <BDropdownItem @click="onCopyLink">
+            <GDropdownItem @click="onCopyLink">
                 <FontAwesomeIcon :icon="faLink" /><span v-localize>Copy Link</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem @click="onCopyId">
+            <GDropdownItem @click="onCopyId">
                 <FontAwesomeIcon :icon="faCopy" /><span v-localize>Copy Tool ID</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem v-if="showDownload" @click="onDownload">
+            <GDropdownItem v-if="showDownload" @click="onDownload">
                 <FontAwesomeIcon :icon="faDownload" /><span v-localize>Download</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem v-if="config.enable_tool_source_display || isAdmin" @click="showToolSource = true">
+            <GDropdownItem v-if="config.enable_tool_source_display || isAdmin" @click="showToolSource = true">
                 <FontAwesomeIcon :icon="faEye" /><span v-localize>View Tool source</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem v-if="showLink" @click="onLink">
+            <GDropdownItem v-if="showLink" @click="onLink">
                 <FontAwesomeIcon :icon="faExternalLinkAlt" /><span v-localize>See in Tool Shed</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
             <ToolTourGeneratorItem v-if="props.allowGeneratedTours" :tool-id="props.id" :tool-version="props.version" />
 
-            <BDropdownItem v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
+            <GDropdownItem v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
                 <span :class="w.icon" />{{ localize(w.title) }}
-            </BDropdownItem>
-        </BDropdown>
+            </GDropdownItem>
+        </GDropdown>
 
         <GModal :show.sync="showToolSource" fullscreen :title="`Tool Source for ${id}`">
             <ToolSource v-if="showToolSource" :tool-id="id" :tool-uuid="toolUuid || undefined" />

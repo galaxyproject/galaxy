@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faPuzzlePiece } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -13,6 +12,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useTourStore } from "@/stores/tourStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{
@@ -112,7 +112,7 @@ function reset() {
 </script>
 
 <template>
-    <BDropdownItem
+    <GDropdownItem
         v-if="!currentTour?.id"
         data-description="click to generate tour"
         :disabled="generatingTour"
@@ -121,5 +121,5 @@ function reset() {
             <FontAwesomeIcon :icon="faPuzzlePiece" /><span v-localize>Generate Tour</span>
         </span>
         <LoadingSpan v-else message="Generating Tour" />
-    </BDropdownItem>
+    </GDropdownItem>
 </template>
