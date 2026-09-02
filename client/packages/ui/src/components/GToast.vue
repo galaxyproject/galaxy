@@ -16,12 +16,14 @@ import {
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useRouter } from "vue-router/composables";
 
 import { type ToastProps, useToast } from "../composables/toast";
 
 import GButton from "./GButton.vue";
 
 const { toasts, removeToast } = useToast();
+const router = useRouter();
 
 const variantIcon: Record<ToastProps["variant"], IconDefinition> = {
     success: faCheckCircle,
@@ -31,7 +33,9 @@ const variantIcon: Record<ToastProps["variant"], IconDefinition> = {
 };
 
 function onClick(toast: ToastProps) {
-    if (toast.href) {
+    if (toast.to) {
+        router.push(toast.to);
+    } else if (toast.href) {
         window.location.href = toast.href;
     }
 }
@@ -43,7 +47,7 @@ function onClick(toast: ToastProps) {
             v-for="toast in toasts"
             :key="toast.id"
             class="g-toast"
-            :class="[`g-toast-${toast.variant}`, { 'g-toast-clickable': toast.href }]"
+            :class="[`g-toast-${toast.variant}`, { 'g-toast-clickable': toast.href || toast.to }]"
             role="alert"
             @click="onClick(toast)">
             <div class="g-toast-header">

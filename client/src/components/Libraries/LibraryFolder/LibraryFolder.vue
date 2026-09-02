@@ -651,7 +651,7 @@ export default {
                         this.refreshTable();
                         Toast.addToast("Dataset undeleted. Click here to see it.", {
                             variant: "success",
-                            href: `${getAppRoot()}libraries/folders/${parent_folder}/dataset/${element.id}`,
+                            to: `/libraries/folders/${parent_folder}/dataset/${element.id}`,
                         });
                     },
                     onError,

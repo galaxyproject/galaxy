@@ -11,6 +11,8 @@ export interface ToastOptions {
     variant?: ToastVariant;
     /** If set, clicking the toast navigates here. Must be a fully-resolved URL. */
     href?: string;
+    /** Internal site route to navigate to on click. Uses the internal router. */
+    to?: string;
     /** Milliseconds before the toast auto-dismisses. `0` disables auto-dismiss. */
     duration?: number;
 }
@@ -69,6 +71,7 @@ function addToast(message: string, options: ToastOptions = {}): number {
         title: options.title ?? TITLE_DEFAULTS[options.variant ?? "info"],
         variant: options.variant ?? "info",
         href: options.href ?? "",
+        to: options.to ?? "",
         duration: options.duration ?? DEFAULT_DURATION,
     };
 
