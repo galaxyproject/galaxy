@@ -199,30 +199,30 @@ def has_same_hash(
 
     Datasets with extra files (e.g. composite datasets) are excluded from hash-based matching
     for now.
+
+    The hash match is expressed as plain joins to ``a``'s and ``b``'s primary-file hash rows
+    (at most one each, since a dataset's hash is only ever computed once) rather than a
+    correlated subquery, so the planner can fold it into the surrounding join graph instead of
+    re-evaluating it once per candidate ``b`` row.
     """
     a_hash = aliased(model.DatasetHash)
     b_hash = aliased(model.DatasetHash)
+    stmt = stmt.outerjoin(a_hash, and_(a_hash.dataset_id == a.dataset_id, a_hash.extra_files_path.is_(None)))
+    stmt = stmt.outerjoin(
+        b_hash,
+        and_(
+            b_hash.hash_function == a_hash.hash_function,
+            b_hash.hash_value == a_hash.hash_value,
+            b_hash.extra_files_path.is_(None),
+        ),
+    )
     stmt = stmt.join(
         b,
         or_(
             # Direct dataset match
             b.dataset_id == a.dataset_id,
             # Hash match: b's dataset has a primary-file hash equal to a's primary-file hash
-            b.dataset_id.in_(
-                select(b_hash.dataset_id)
-                .join(
-                    a_hash,
-                    and_(
-                        a_hash.hash_function == b_hash.hash_function,
-                        a_hash.hash_value == b_hash.hash_value,
-                    ),
-                )
-                .where(
-                    a_hash.dataset_id == a.dataset_id,
-                    a_hash.extra_files_path.is_(None),
-                    b_hash.extra_files_path.is_(None),
-                )
-            ),
+            b.dataset_id == b_hash.dataset_id,
         ),
     )
     return stmt
