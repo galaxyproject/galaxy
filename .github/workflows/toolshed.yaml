@@ -19,6 +19,11 @@ concurrency:
 permissions: {}
 jobs:
   test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Test
     runs-on: ubuntu-latest
     strategy:
