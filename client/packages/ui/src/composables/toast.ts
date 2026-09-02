@@ -9,7 +9,7 @@ export interface ToastOptions {
     title?: string;
     /** Contextual colour of the toast. */
     variant?: ToastVariant;
-    /** If set, clicking the toast navigates here. */
+    /** If set, clicking the toast navigates here. Must be a fully-resolved URL. */
     href?: string;
     /** Milliseconds before the toast auto-dismisses. `0` disables auto-dismiss. */
     duration?: number;
