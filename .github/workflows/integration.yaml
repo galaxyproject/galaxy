@@ -53,6 +53,7 @@ jobs:
         uses: medyagh/setup-minikube@latest
         with:
           driver: none
+          container-runtime: docker
           kubernetes-version: '1.28.0'
       - name: Check pods
         run: kubectl get pods -A
