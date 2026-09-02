@@ -1,0 +1,58 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://w3id.org/ieee/ieee-2791-schema/io_domain.json",
+    "type": "object",
+    "title": "Input and Output Domain",
+    "description": "The list of global input and output files created by the computational workflow, excluding the intermediate files. Custom to every specific IEEE-2791 Object implementation, these fields are pointers to objects that can reside in the system performing the computation or any other accessible system.",
+    "required": [
+        "input_subdomain",
+        "output_subdomain"
+    ],
+    "properties": {
+        "input_subdomain": {
+            "type": "array",
+            "title": "input_domain",
+            "description": "A record of the references and input files for the entire pipeline. Each type of input file is listed under a key for that type.",
+            "items": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "uri"
+                ],
+                "properties": {
+                    "uri": {
+                        "$ref": "2791object.json#/definitions/uri"
+                    }
+                }
+            }
+        },
+        "output_subdomain": {
+            "type": "array",
+            "title": "output_subdomain",
+            "description": "A record of the outputs for the entire pipeline.",
+            "items": {
+                "type": "object",
+                "title": "The Items Schema",
+                "required": [
+                    "mediatype",
+                    "uri"
+                ],
+                "properties": {
+                    "mediatype": {
+                        "type": "string",
+                        "title": "mediatype",
+                        "description": "https://www.iana.org/assignments/media-types/",
+                        "default": "application/octet-stream",
+                        "examples": [
+                            "text/csv"
+                        ],
+                        "pattern": "^(.*)$"
+                    },
+                    "uri": {
+                        "$ref": "2791object.json#/definitions/uri"
+                    }
+                }
+            }
+        }
+    }
+}
