@@ -63,6 +63,7 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
+import ChangesIndicator from "@/components/Common/ChangesIndicator.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
@@ -488,6 +489,9 @@ const graphOffset = ref({
     update: () => {},
 });
 
+/** Ref for the `ChangesIndicator` component from which we call the `flashSavedIndicator` method. */
+const changesIndicator = ref<InstanceType<typeof ChangesIndicator> | null>(null);
+
 // Several watchers ----------------------------------------------------------
 
 watch(
@@ -896,6 +900,7 @@ async function onCreate(): Promise<boolean> {
         return false;
     }
 
+    loadingWorkflow.value = true;
     try {
         const { id: createdId, name: createdName, number_of_steps } = await services.createWorkflow(workflowData.value);
         const message = `Created new workflow '${createdName}' with ${number_of_steps} steps.`;
@@ -905,10 +910,13 @@ async function onCreate(): Promise<boolean> {
 
         await routeToWorkflow(createdId);
 
+        changesIndicator.value?.flashSavedIndicator();
         Toast.success(message);
     } catch (e) {
         onWorkflowError("Creating workflow failed", errorMessageAsString(e, "Please contact an administrator."));
         return false;
+    } finally {
+        loadingWorkflow.value = false;
     }
     return true;
 }
@@ -1045,25 +1053,27 @@ async function onSave(): Promise<boolean> {
     const lastActiveNodeId = activeNodeId.value;
 
     try {
-        const data = await saveWorkflow(workflowData.value);
+        const serializedWorkflowData = JSON.stringify(workflowData.value);
+        const workflowToSave = JSON.parse(serializedWorkflowData) as Workflow;
+        const data = await saveWorkflow(workflowToSave);
 
         versions.value = await getVersions(id.value);
 
+        const hasNewerChanges = JSON.stringify(workflowData.value) !== serializedWorkflowData;
+
         // Mirror loadEditorData and only take fields the response actually carries,
         // otherwise a partial response blanks out the in-memory workflow.
-        if (data.name !== undefined) {
+        if (!hasNewerChanges && data.name !== undefined) {
             name.value = data.name;
         }
         if (data.version !== undefined) {
             version.value = data.version as number;
         }
-        if (data.annotation !== undefined) {
+        if (!hasNewerChanges && data.annotation !== undefined) {
             annotation.value = data.annotation;
         }
 
         hideErrorModal();
-
-        // TODO: Should we add a Toast here?
 
         // If version is not defined, set it to the latest version
         const latestVersion = versions.value[versions.value.length - 1]?.version;
@@ -1071,8 +1081,17 @@ async function onSave(): Promise<boolean> {
             version.value = latestVersion;
         }
 
+        if (hasNewerChanges) {
+            hasChanges.value = true;
+            syncVersionToRoute(version.value ?? undefined, true);
+            return true;
+        }
+
         await loadCurrent(id.value, version.value);
         syncVersionToRoute(version.value ?? undefined, true);
+
+        // `loadCurrent` settles `hasChanges` back to false; flash the indicator now that it will actually be visible.
+        changesIndicator.value?.flashSavedIndicator();
     } catch (response) {
         onWorkflowError("Saving workflow failed...", errorMessageAsString(response));
         return false;
@@ -1422,6 +1441,12 @@ initializeWorkflowEditor();
                 :steps="steps"
                 @update="onReportUpdate">
                 <template v-slot:buttons>
+                    <ChangesIndicator
+                        ref="changesIndicator"
+                        class="pr-2"
+                        :has-changes="hasChanges"
+                        object-namespace="workflow" />
+
                     <GButton
                         tooltip
                         title="Generate AI GalaxyAI report based on the workflow and its expected results"
@@ -1453,13 +1478,16 @@ initializeWorkflowEditor();
                     <span>
                         <span class="sr-only">Workflow Editor</span>
                         <LoadingSpan v-if="initialLoading" message="Loading Editor" />
-                        <span v-else class="editor-title" :title="name">
-                            {{ name }}
-                            <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
-                        </span>
+                        <span v-else class="editor-title" :title="name">{{ name }}</span>
                     </span>
 
                     <div class="d-flex align-items-center flex-gapx-1">
+                        <ChangesIndicator
+                            ref="changesIndicator"
+                            class="pr-2"
+                            :has-changes="hasChanges"
+                            object-namespace="workflow" />
+
                         <BDropdown
                             v-if="credentialSteps.length > 0"
                             no-caret
