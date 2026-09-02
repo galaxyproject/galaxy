@@ -3,7 +3,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 import jsonschema
@@ -57,7 +56,7 @@ class JsonSchemaValidator:
         JsonSchemaValidator.validate(instance, schema, registry=registry)
 
     @staticmethod
-    def validate(instance: dict, schema: dict, registry: Optional[Registry] = None):
+    def validate(instance: dict, schema: dict, registry: Registry | None = None):
         try:
             schema_version = schema.get("$id", "Unknown schema version")
             if registry is not None:
