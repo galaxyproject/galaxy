@@ -34,6 +34,176 @@ def test_lists_of_different_cardinality_do_not_match():
     assert_cannot_match(list_2, list_1)
 
 
+def test_independent_mapping_axes_cross_product_in_stable_order():
+    outer = list_instance(ids=["X", "Y"])
+    inner = list_instance(ids=["P", "Q", "R"])
+    to_match = matching.CollectionsToMatch()
+    to_match.add("outer", outer, linked=False)
+    to_match.add("inner", inner)
+
+    matched = matching.MatchingCollections.for_collections(to_match, TYPE_DESCRIPTION_FACTORY)
+    assert matched
+    slices = list(matched.slice_collections())
+
+    assert [
+        (items["outer"].element_identifier, items["inner"].element_identifier, when_value)
+        for items, when_value in slices
+    ] == [
+        ("X", "P", None),
+        ("X", "Q", None),
+        ("X", "R", None),
+        ("Y", "P", None),
+        ("Y", "Q", None),
+        ("Y", "R", None),
+    ]
+    assert matched.structure.collection_type_description.collection_type == "list:list"
+
+
+def test_linked_inputs_slice_in_zip_order():
+    left = list_instance(ids=["L1", "L2"])
+    right = list_instance(ids=["R1", "R2"])
+    matched = build_matching_collections(("left", left), ("right", right))
+
+    assert [
+        (items["left"].element_identifier, items["right"].element_identifier)
+        for items, _when_value in matched.slice_collections()
+    ] == [("L1", "R1"), ("L2", "R2")]
+
+
+def test_empty_axis_produces_no_slices_and_keeps_output_type():
+    empty = collection_instance(collection_type="list", elements=[])
+    matched = build_matching_collections(("empty", empty))
+
+    assert list(matched.slice_collections()) == []
+    assert matched.structure.collection_type_description.collection_type == "list"
+
+
+def test_structure_only_axis_repeats_local_slices_and_conditions():
+    outer = list_instance(ids=["X", "Y"])
+    inner = list_instance(ids=["P", "Q", "R"])
+    outer_match = build_matching_collections(("outer", outer))
+    inner_match = build_matching_collections(("inner", inner))
+    outer_match.when_values = [True, False]
+    combined = inner_match.with_inherited_mapping(outer_match)
+
+    slices = list(combined.slice_collections())
+
+    assert [(items["inner"].element_identifier, when_value) for items, when_value in slices] == [
+        ("P", True),
+        ("Q", True),
+        ("R", True),
+        ("P", False),
+        ("Q", False),
+        ("R", False),
+    ]
+    assert combined.structure.collection_type_description.collection_type == "list:list"
+
+
+def test_inherited_axis_preserves_identity_without_parent_binding():
+    source = list_instance(ids=["X", "Y"])
+    to_match = matching.CollectionsToMatch()
+    to_match.add("source", source, axis_id=("invocation", 1, "boundary", 2))
+    matched = matching.MatchingCollections.for_collections(to_match, TYPE_DESCRIPTION_FACTORY)
+    assert matched
+
+    local = build_matching_collections(("local", list_instance(ids=["P", "Q"])))
+    combined = local.with_inherited_mapping(matched)
+
+    assert combined.mapping_axes[0].axis_id == ("invocation", 1, "boundary", 2)
+    assert "source" not in combined.bindings
+
+
+def test_binding_can_span_multiple_axes():
+    outer = build_matching_collections(("outer", list_instance(ids=["X", "Y"]))).mapping_axes[0]
+    inner = build_matching_collections(("inner", list_instance(ids=["P", "Q", "R"]))).mapping_axes[0]
+    nested = collection_instance(
+        collection_type="list:list",
+        elements=[
+            collection_element("X", list_instance(ids=["XP", "XQ", "XR"]).collection),
+            collection_element("Y", list_instance(ids=["YP", "YQ", "YR"]).collection),
+        ],
+    )
+    combined = matching.MatchingCollections.from_axes(
+        [outer, inner],
+        bindings={
+            "nested": matching.MatchingCollectionBinding(
+                collection=nested,
+                axis_indices=(0, 1),
+            )
+        },
+    )
+
+    slices = list(combined.slice_collections())
+
+    assert [items["nested"].element_identifier for items, _when_value in slices] == [
+        "XP",
+        "XQ",
+        "XR",
+        "YP",
+        "YQ",
+        "YR",
+    ]
+
+
+def test_nested_axis_conditions_are_indexed_by_leaf_coordinate():
+    nested = collection_instance(
+        collection_type="list:list",
+        elements=[
+            collection_element("X", list_instance(ids=["XP", "XQ"]).collection),
+            collection_element("Y", list_instance(ids=["YP", "YQ"]).collection),
+        ],
+    )
+    matched = build_matching_collections(("nested", nested))
+    matched.when_values = [True, False, True, False]
+
+    assert [when_value for _items, when_value in matched.slice_collections()] == [True, False, True, False]
+
+
+def test_product_condition_can_depend_on_every_axis():
+    outer = build_matching_collections(("outer", list_instance(ids=["X", "Y"]))).mapping_axes[0]
+    inner_match = build_matching_collections(("inner", list_instance(ids=["P", "Q", "R"])))
+    inherited = matching.MatchingCollections.from_axes([outer])
+    combined = inner_match.with_inherited_mapping(inherited)
+    combined.when_values = [True, False, True, False, True, False]
+
+    assert [when_value for _items, when_value in combined.slice_collections()] == [
+        True,
+        False,
+        True,
+        False,
+        True,
+        False,
+    ]
+
+
+def test_equal_axis_identity_is_shared_when_composing_mapping():
+    source = list_instance(ids=["X", "Y"])
+    inherited = build_matching_collections_with_axis_id("boundary", source)
+    local = build_matching_collections_with_axis_id("tool_input", source)
+    local.mapping_axes[0].axis_id = inherited.mapping_axes[0].axis_id
+
+    combined = local.with_inherited_mapping(inherited)
+
+    assert len(combined.mapping_axes) == 1
+    assert [items["tool_input"].element_identifier for items, _when in combined.slice_collections()] == ["X", "Y"]
+
+
+def test_same_collection_in_distinct_semantic_roles_remains_two_axes():
+    source = list_instance(ids=["X", "Y"])
+    inherited = build_matching_collections_with_axis_id("boundary", source)
+    local = build_matching_collections_with_axis_id("tool_input", source)
+
+    combined = local.with_inherited_mapping(inherited)
+
+    assert len(combined.mapping_axes) == 2
+    assert [items["tool_input"].element_identifier for items, _when in combined.slice_collections()] == [
+        "X",
+        "Y",
+        "X",
+        "Y",
+    ]
+
+
 def test_valid_collection_subcollection_matching():
     flat_list = list_instance(ids=["data1", "data2", "data3"])
     nested_list = example_list_of_paired_datasets()
@@ -138,6 +308,23 @@ def build_collections_to_match(*items):
             collection_instance, subcollection_type = item, None
         to_match.add(f"input_{i}", collection_instance, subcollection_type)
     return to_match
+
+
+def build_matching_collections(*named_items):
+    to_match = matching.CollectionsToMatch()
+    for name, collection in named_items:
+        to_match.add(name, collection)
+    matched = matching.MatchingCollections.for_collections(to_match, TYPE_DESCRIPTION_FACTORY)
+    assert matched
+    return matched
+
+
+def build_matching_collections_with_axis_id(name, collection):
+    to_match = matching.CollectionsToMatch()
+    to_match.add(name, collection, axis_id=("source-terminal", name))
+    matched = matching.MatchingCollections.for_collections(to_match, TYPE_DESCRIPTION_FACTORY)
+    assert matched
+    return matched
 
 
 def example_list_of_paired_datasets():
@@ -258,6 +445,9 @@ class MockCollection:
         self.elements = elements
         self.populated = True
         self.column_definitions = None
+
+    def __getitem__(self, index):
+        return self.elements[index]
 
 
 class MockCollectionElement:

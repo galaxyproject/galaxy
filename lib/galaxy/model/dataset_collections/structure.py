@@ -114,6 +114,15 @@ class Tree(BaseTree):
     def walk_collections(self, collection_dict):
         return self._walk_collections(collection_dict)
 
+    def walk_coordinates(self, prefix=()):
+        """Yield the index path for every leaf in stable collection order."""
+        for index, (_identifier, substructure) in enumerate(self.children):
+            path = (*prefix, index)
+            if substructure.is_leaf:
+                yield path
+            else:
+                yield from substructure.walk_coordinates(path)
+
     def _walk_collections(self, collection_dict):
         for index, (_identifier, substructure) in enumerate(self.children):
 
