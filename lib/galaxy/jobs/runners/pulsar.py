@@ -834,13 +834,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         remote_metadata_directory=None,
         handle_metadata_externally=True,
     ):
-        """Set metadata and finish the job, once outputs are already staged back.
-
-        Split out of ``finish_job`` so recovery can redo just this part. By the time it
-        runs, ``pulsar_finish_job`` has staged the outputs down and - under the default
-        ``cleanup_job: always`` - already deleted the remote job, so re-entering
-        ``finish_job`` would query a job Pulsar no longer has.
-        """
+        """Set metadata and finish the job, once outputs are already staged back."""
         if handle_metadata_externally:
             # we need an actual exit code file in the job working directory to detect job errors in the metadata script
             with open(
@@ -865,18 +859,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=job_metrics_directory)
 
     def _finish_staged_job(self, job_state):
-        """Redo the tail of ``finish_job`` for a job interrupted during external metadata.
-
-        Runs on the work queue rather than inline in ``recover()``, because
-        ``_handle_metadata_externally`` blocks on the celery result and ``recover()`` is
-        called while the handler is still starting up.
-
-        The remote job is already gone, so the inputs ``finish()`` needs come back off the
-        working directory: the exit code file written immediately before the metadata step,
-        and the tool streams staged down with the outputs. ``job_stdout``/``job_stderr``
-        came from the Pulsar status response and are not persisted locally, so they are
-        left unset - the job record loses the job script's streams, but not the tool's.
-        """
+        """Redo the tail of ``finish_job`` for a job interrupted during external metadata."""
         job_wrapper = job_state.job_wrapper
         working_directory = job_wrapper.working_directory
         exit_code_path = os.path.join(working_directory, f"galaxy_{job_wrapper.job_id}.ec")

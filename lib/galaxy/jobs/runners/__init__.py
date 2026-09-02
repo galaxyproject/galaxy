@@ -101,9 +101,7 @@ class BaseJobRunner:
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     #: Whether ``recover()`` knows how to resume a job left in the FINISHING state by an
-    #: interrupted ``_handle_metadata_externally``. Runners that cannot are not marked
-    #: FINISHING at all, since ``get_jobs_to_check_at_startup`` would hand them back a job
-    #: their ``recover()`` silently drops, wedging it out of every non-terminal state.
+    #: interrupted ``_handle_metadata_externally``.
     recovers_finishing_jobs = False
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
