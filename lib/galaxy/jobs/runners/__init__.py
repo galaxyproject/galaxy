@@ -666,7 +666,7 @@ class BaseJobRunner:
                     # command never even started. Without them we cannot tell
                     # whether the command succeeded, so this is a fatal error:
                     # fail the job instead of possibly marking it OK.
-                    log.warning(
+                    log.error(
                         "(%s/%s) Missing tool output files in %s; failing job",
                         job_id,
                         external_job_id,
