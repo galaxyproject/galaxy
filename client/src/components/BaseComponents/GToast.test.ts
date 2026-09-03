@@ -3,10 +3,12 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
+import VueRouter from "vue-router";
 
 import GToast from "./GToast.vue";
 
 const localVue = getLocalVue();
+localVue.use(VueRouter);
 const { toasts, addToast, clearToasts } = useToast();
 
 afterEach(() => {
@@ -70,5 +72,19 @@ describe("GToast.vue", () => {
         expect(toast.classes()).toContain(variantClass);
         expect(toast.text()).toContain(defaultTitle);
         expect(toast.text()).toContain("A message");
+    });
+
+    it("navigates via the router when a toast with `to` is clicked", async () => {
+        const router = new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/histories/view" }] });
+        const wrapper = mount(GToast as object, { localVue, router });
+
+        addToast("Click here to see it.", { to: "/histories/view", duration: 0 });
+        await nextTick();
+
+        const toast = wrapper.get(".g-toast");
+        expect(toast.classes()).toContain("g-toast-clickable");
+
+        await toast.trigger("click");
+        expect(router.currentRoute.path).toBe("/histories/view");
     });
 });
