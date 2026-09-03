@@ -48,7 +48,10 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
-from galaxy.util.wait import wait_on
+from galaxy.util.wait import (
+    TimeoutAssertionError,
+    wait_on,
+)
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
@@ -1277,6 +1280,35 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         license_selector_option = self.components.workflow_editor.license_selector_option
         license_selector_option.wait_for_and_click()
+
+    def workflow_editor_change_output_datatype(self, output: str, datatype: str) -> None:
+        """Pick ``datatype`` in the "Change datatype" multiselect of the output card for ``output``.
+
+        Typing into the search box re-filters the option list asynchronously and vue-multiselect
+        keys its option elements by index, so an option located before the filtered list is
+        rendered stays attached but ends up bound to whichever datatype occupies that index
+        afterwards. Only click once every option that does not match the search text is gone, then
+        check what the control reports as selected.
+        """
+        editor = self.components.workflow_editor
+        editor.change_datatype(output=output).wait_for_and_click()
+        editor.select_datatype_text_search(output=output).wait_for_and_send_keys(datatype)
+        editor.select_datatype_option_not_matching(output=output, text=datatype).wait_for_absent()
+        editor.select_datatype(output=output, datatype=datatype).wait_for_and_click()
+
+        selected = editor.selected_datatype(output=output)
+        selected.wait_for_present()
+        try:
+            self._wait_on(
+                lambda: selected.data_value("selected-value") == datatype or None,
+                f"'Change datatype' selection for output [{output}] to be [{datatype}]",
+                wait_type=WAIT_TYPES.UX_TRANSITION,
+            )
+        except TimeoutAssertionError as e:
+            raise AssertionError(
+                f"Selected [{selected.data_value('selected-value')}] in 'Change datatype' for "
+                f"output [{output}] instead of [{datatype}]"
+            ) from e
 
     def workflow_editor_license_text(self) -> str:
         editor = self.components.workflow_editor
