@@ -246,7 +246,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
         try:
             panel_view = self.deps.config.default_panel_view or "default"
-            toolbox_search = self.deps.trans.app.toolbox_search  # type: ignore[attr-defined]
+            toolbox_search = self.deps.trans.app.toolbox_search
             tool_ids = toolbox_search.search(query, panel_view, self.deps.config)
 
             tools = []
@@ -276,6 +276,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             tool = self.deps.toolbox.get_tool(tool_id)
             if not tool:
                 return {"id": tool_id, "error": "Tool not found"}
+            tool = self.deps.toolbox.materialize_tool(tool, reason="detail")
 
             details: dict[str, Any] = {
                 "id": tool.id,

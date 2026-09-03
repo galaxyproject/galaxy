@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     from social_core.strategy import HttpResponseProtocol
 
     from galaxy.managers.context import ProvidesAppContext
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -84,6 +85,7 @@ BACKENDS = {
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
+    "helmholtz": "social_core.backends.helmholtz.HelmholtzOpenIdConnect",
     "oidc": "galaxy.authnz.oidc.GalaxyOpenIdConnect",
     "tapis": "galaxy.authnz.tapis.TapisOAuth2",
     "keycloak": "galaxy.authnz.keycloak.KeycloakOpenIdConnect",
@@ -101,6 +103,7 @@ BACKENDS_NAME = {
     "okta": "okta-openidconnect",
     "azure": "azuread-v2-tenant-oauth2",
     "egi_checkin": "egi-checkin",
+    "helmholtz": "helmholtz",
     "oidc": "oidc",
     "tapis": "tapis",
     "keycloak": "keycloak",
@@ -293,7 +296,7 @@ class PSAAuthnz(IdentityProvider):
         extra_data["expires"] = int(expires - time.time())
         user_authnz_token.set_extra_data(extra_data)
 
-    def refresh(self, trans, user_authnz_token):
+    def refresh(self, trans: "GalaxyWebTransaction", user_authnz_token):
         if (
             not user_authnz_token
             or not user_authnz_token.extra_data
@@ -318,13 +321,13 @@ class PSAAuthnz(IdentityProvider):
     def _try_to_locate_token_expiration(self, extra_data):
         return locate_token_expiration(extra_data)
 
-    def authenticate(self, trans, idphint=None) -> "HttpResponseProtocol":
+    def authenticate(self, trans: "GalaxyWebTransaction", idphint=None) -> "HttpResponseProtocol":
         on_the_fly_config(trans.sa_session)
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
         return do_auth(backend)
 
-    def callback(self, state_token, authz_code, trans, login_redirect_url):
+    def callback(self, state_token, authz_code, trans: "GalaxyWebTransaction", login_redirect_url):
         on_the_fly_config(trans.sa_session)
         # Always set LOGIN_REDIRECT_URL to the base URL for pipeline steps
         # We'll adjust the final redirect based on fixed_delegated_auth after do_complete
@@ -384,7 +387,9 @@ class PSAAuthnz(IdentityProvider):
 
         return redirect_url, user
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
+    def disconnect(
+        self, provider, trans: "GalaxyWebTransaction", disconnect_redirect_url=None, email=None, association_id=None
+    ):
         on_the_fly_config(trans.sa_session)
         self.config[setting_name("DISCONNECT_REDIRECT_URL")] = (
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
@@ -397,7 +402,7 @@ class PSAAuthnz(IdentityProvider):
             return True, "", response_url
         return response.get("success", False), response.get("message", ""), ""
 
-    def logout(self, trans, post_user_logout_href=None):
+    def logout(self, trans: "GalaxyWebTransaction", post_user_logout_href=None):
         """
         Logout from the identity provider.
 
@@ -846,7 +851,7 @@ def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
         _send_oidc_profile_update_notification(trans, user, updates)
 
 
-def _send_oidc_profile_update_notification(trans, user, updates: list[str]) -> None:
+def _send_oidc_profile_update_notification(trans: "ProvidesAppContext", user, updates: list[str]) -> None:
     if not trans.app.notification_manager.notifications_enabled:
         return
     try:

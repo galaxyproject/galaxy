@@ -3,11 +3,19 @@
 import json
 import logging
 import os
+from collections.abc import Iterable
+from typing import (
+    Any,
+)
 
 import h5py
 import numpy as np
 import yaml
 
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+)
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import (
@@ -115,7 +123,7 @@ class ToolRecommendations:
         outputs = Dense(vocab_size, activation="sigmoid")(x)
         return Model(inputs=inputs, outputs=[outputs, weights])
 
-    def get_predictions(self, trans, tool_sequence, remote_model_url):
+    def get_predictions(self, trans: ProvidesHistoryContext, tool_sequence, remote_model_url):
         """
         Compute tool predictions
         """
@@ -126,7 +134,7 @@ class ToolRecommendations:
         recommended_tools = self.__compute_tool_prediction(trans, tool_sequence)
         return tool_sequence, recommended_tools
 
-    def __set_model(self, trans, remote_model_url):
+    def __set_model(self, trans: ProvidesAppContext, remote_model_url):
         """
         Create model and associated dictionaries for recommendations
         """
@@ -185,7 +193,7 @@ class ToolRecommendations:
             model_file.write(model_binary.content)
             return local_dir
 
-    def __get_tool_extensions(self, trans, tool_id):
+    def __get_tool_extensions(self, trans: ProvidesHistoryContext, tool_id):
         """
         Get the input and output extensions of a tool
         """
@@ -194,7 +202,7 @@ class ToolRecommendations:
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         module = module_factory.from_dict(trans, payload)
         if "tool_state" not in payload:
-            module_state = {}
+            module_state: dict[str, Any] = {}
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
             module.recover_state(module_state)
         inputs = module.get_all_inputs(connectable_only=True)
@@ -207,7 +215,9 @@ class ToolRecommendations:
             output_extensions.extend(o_ext["extensions"])
         return input_extensions, output_extensions
 
-    def __filter_tool_predictions(self, trans, prediction_data, tool_ids, tool_scores, last_tool_name):
+    def __filter_tool_predictions(
+        self, trans: ProvidesHistoryContext, prediction_data, tool_ids, tool_scores, last_tool_name
+    ):
         """
         Filter tool predictions based on datatype compatibility and tool connections.
         Add admin preferences to recommendations.
@@ -216,7 +226,7 @@ class ToolRecommendations:
         # get the list of datatype extensions of the last tool of the tool sequence
         _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
         prediction_data["o_extensions"] = list(set(last_output_extensions))
-        t_ids_scores = zip(tool_ids, tool_scores)
+        t_ids_scores: Iterable[tuple[Any, Any]] = zip(tool_ids, tool_scores)
         # form the payload of the predicted tools to be shown
         for child, score in t_ids_scores:
             c_dict = {}
@@ -327,14 +337,14 @@ class ToolRecommendations:
         sorted_c_t, sorted_c_v = self.__get_predicted_tools(last_base_tools, pred_tool_names, last_tool_name, topk)
         return sorted_c_t, sorted_c_v
 
-    def __compute_tool_prediction(self, trans, tool_sequence):
+    def __compute_tool_prediction(self, trans: ProvidesHistoryContext, tool_sequence):
         """
         Compute the predicted tools for a tool sequences
         Return a payload with the tool sequences and recommended tools
         Return an empty payload with just the tool sequence if anything goes wrong within the try block
         """
         topk = trans.app.config.topk_recommendations
-        prediction_data = {}
+        prediction_data: dict[str, Any] = {}
         tool_sequence = tool_sequence.split(",")[::-1]
         prediction_data["name"] = ",".join(tool_sequence)
         prediction_data["children"] = []
@@ -351,15 +361,14 @@ class ToolRecommendations:
                 except Exception:
                     log.exception(f"Failed to find tool {tool_name} in model")
                     return prediction_data
-            sample = np.reshape(sample, (1, self.max_seq_len))
+            model_input = np.reshape(sample, (1, self.max_seq_len))
             # boost the predicted scores using tools' usage
             weight_values = list(self.tool_weights_sorted.values())
             # predict next tools for a test path
             try:
                 import tensorflow as tf
 
-                sample = tf.convert_to_tensor(sample, dtype=tf.int64)
-                prediction, _ = self.loaded_model(sample, training=False)
+                prediction, _ = self.loaded_model(tf.convert_to_tensor(model_input, dtype=tf.int64), training=False)
             except Exception as e:
                 log.exception(e)
                 return prediction_data

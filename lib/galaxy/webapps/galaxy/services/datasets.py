@@ -27,7 +27,11 @@ from galaxy.celery.tasks import compute_dataset_hash
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.datasets import (
     DatasetAssociationManager,
     DatasetManager,
@@ -47,7 +51,10 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     resolve_job_markdown,
 )
-from galaxy.objectstore import ObjectStoreAuth
+from galaxy.objectstore import (
+    DataStream,
+    ObjectStoreAuth,
+)
 from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
@@ -703,6 +710,46 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 headers["Content-Length"] = str(size)
         return headers
 
+    def _stream_from_object_store(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_instance,
+        filename: str | None,
+        to_ext: str | None,
+        offset: int | None,
+        ck_size: int | None,
+    ) -> tuple[DataStream, dict[str, str]] | None:
+        """Proxy a whole-file download straight from the backing store, warming the cache on the way.
+
+        Returns None -- meaning the caller should pull the object into the cache and serve it from
+        there -- when the request is not a plain whole-file download, or when the store has no
+        streaming read (a disk store, or an object already in the cache).
+        """
+        datatype = dataset_instance.datatype
+        is_archive = datatype.is_archive_download(trans.app.datatypes_registry, dataset_instance.extension)
+        if not is_direct_download_candidate(filename, to_ext, False, offset, ck_size, is_archive):
+            return None
+        headers = {
+            # Force octet-stream so Safari doesn't append mime extensions to the filename.
+            "content-type": "application/octet-stream",
+            "Content-Disposition": datatype.download_content_disposition(dataset_instance, to_ext),
+        }
+        size = trans.app.object_store.size(dataset_instance.dataset)
+        if size:
+            # Known up front from the store's metadata, so clients still get a progress bar.
+            headers["Content-Length"] = str(size)
+        # Opened last so that nothing between here and the response can fail with a read already in
+        # flight: an open stream is only released once something starts consuming it.
+        stream = trans.app.object_store.get_data_stream(dataset_instance.dataset)
+        if stream is None:
+            return None
+        try:
+            trans.log_event(f"Download dataset id: {str(dataset_instance.id)}")
+        except BaseException:
+            stream.close()
+            raise
+        return stream, headers
+
     def display(
         self,
         trans: ProvidesHistoryContext,
@@ -714,6 +761,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         raw: bool = False,
         offset: int | None = None,
         ck_size: int | None = None,
+        allow_stream: bool = False,
         **kwd,
     ):
         """
@@ -722,6 +770,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         The query parameter 'raw' should be considered experimental and may be dropped at
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the default if raw is unspecified or explicitly false.
+
+        ``allow_stream`` says the caller can consume a forward-only stream of the whole object (a
+        plain GET with no Range header). Whole-file downloads are then proxied straight from the
+        backing store, so the client gets its first byte immediately instead of waiting for the
+        object to be pulled into the cache. Callers that need a seekable file -- HEAD and Range
+        requests, and every legacy controller -- leave it False and get today's behavior.
         """
         headers: dict[str, str] = {}
         rval: Any = ""
@@ -732,6 +786,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             if filename and filename.startswith("/"):
                 # Path needs to relative to extra files path
                 filename = filename.lstrip("/")
+            if allow_stream and not raw:
+                streamed = self._stream_from_object_store(trans, dataset_instance, filename, to_ext, offset, ck_size)
+                if streamed is not None:
+                    return streamed
             if raw:
                 if filename and filename != "index":
                     object_store = trans.app.object_store
@@ -915,12 +973,14 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             raise galaxy_exceptions.InternalServerError(f"Could not get content for dataset: {util.unicodify(e)}")
         return content, headers
 
-    def update_object_store_id(self, trans, dataset_id: DecodedDatabaseIdField, payload: UpdateObjectStoreIdPayload):
+    def update_object_store_id(
+        self, trans: ProvidesUserContext, dataset_id: DecodedDatabaseIdField, payload: UpdateObjectStoreIdPayload
+    ):
         hda = self.hda_manager.get_accessible(dataset_id, trans.user)
         dataset = hda.dataset
         self.dataset_manager.update_object_store_id(trans, dataset, payload.object_store_id)
 
-    def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
+    def _get_or_create_converted(self, trans: ProvidesUserContext, original: model.DatasetInstance, target_ext: str):
         try:
             original.get_converted_dataset(trans, target_ext)
             converted = original.get_converted_files_by_type(target_ext)
@@ -950,7 +1010,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _converted_datasets_state(
         self,
-        trans,
+        trans: ProvidesUserContext,
         dataset: model.DatasetInstance,
         chrom: str | None = None,
         retry: bool = False,
@@ -988,7 +1048,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _search_features(
         self,
-        trans,
+        trans: ProvidesUserContext,
         dataset: model.DatasetInstance,
         query: str | None,
     ) -> list[list[str]]:
@@ -1116,7 +1176,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def _raw_data(
         self,
-        trans,
+        trans: ProvidesAppContext,
         dataset,
         provider=None,
         **kwargs,
@@ -1155,7 +1215,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         return data
 
-    def _get_indexer(self, trans, dataset):
+    def _get_indexer(self, trans: ProvidesAppContext, dataset):
         indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
         if indexer is None:
             msg = f"No indexer available for dataset {self.encode_id(dataset.id)}"

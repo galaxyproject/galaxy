@@ -2,9 +2,14 @@ import os
 import shutil
 import tempfile
 
+import pytest
 import yaml
+from pykwalify.core import Core
+from pykwalify.errors import SchemaError
 
+from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH
 from galaxy.config.config_manage import main
+from galaxy.config.schema import AppSchema
 
 THIS_DIR = os.path.dirname(__file__)
 
@@ -77,6 +82,37 @@ def test_validate_simple_config():
 def test_validate_embedded_config():
     with _config_directory("embedded") as config_dir:
         config_dir.manage_cli(["validate", "galaxy"])
+
+
+def test_validate_subdomain_switcher():
+    switcher = [
+        {"label": "Base site", "url": "https://usegalaxy.example.org"},
+        {"label": "Single Cell Omics", "url": "http://singlecell.usegalaxy.example.org/"},
+    ]
+
+    _validate_subdomain_switcher([])
+    _validate_subdomain_switcher(switcher)
+
+
+@pytest.mark.parametrize(
+    "site",
+    [
+        {"label": "", "url": "https://usegalaxy.example.org"},
+        {"label": "Base site", "url": "/relative/url"},
+        {"label": "Base site", "url": "ftp://usegalaxy.example.org"},
+        {"label": "Base site"},
+        {"url": "https://usegalaxy.example.org"},
+    ],
+)
+def test_reject_invalid_subdomain_switcher_entries(site):
+    with pytest.raises(SchemaError):
+        _validate_subdomain_switcher([site])
+
+
+def _validate_subdomain_switcher(value):
+    option_schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, "galaxy").app_schema["subdomain_switcher"].copy()
+    option_schema.pop("default")
+    Core(source_data=value, schema_data=option_schema).validate()
 
 
 class _TestConfigDirectory:

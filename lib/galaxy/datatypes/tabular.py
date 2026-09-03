@@ -14,6 +14,7 @@ import tempfile
 from json import dumps
 from typing import (
     cast,
+    TYPE_CHECKING,
 )
 
 import pysam
@@ -73,6 +74,10 @@ from galaxy.util.markdown import (
     pre_formatted_contents,
 )
 from . import dataproviders
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesAppContext
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -142,7 +147,9 @@ class TabularData(Text):
         except Exception:
             return False
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
+    def get_chunk(
+        self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
+    ) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         return dumps(
             {
@@ -152,7 +159,7 @@ class TabularData(Text):
             }
         )
 
-    def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: int | None = None):
+    def _read_chunk(self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int, ck_size: int | None = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
             f.seek(offset)
             try:
@@ -173,7 +180,7 @@ class TabularData(Text):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: str | None = None,
@@ -1631,7 +1638,9 @@ class ConnectivityTable(Tabular):
                 i += 1
         return False
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
+    def get_chunk(
+        self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
+    ) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         try:
             # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.

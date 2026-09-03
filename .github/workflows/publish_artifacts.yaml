@@ -41,12 +41,12 @@ jobs:
     name: Build Python packages for PyPI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || '' }}
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: false
           python-version: '3.10'
@@ -82,7 +82,7 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: ${{ (github.event_name == 'workflow_dispatch' && inputs.release_type == 'prerelease') || (github.event_name == 'release' && github.event.release.prerelease) && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          repository-url: ${{ ((github.event_name == 'workflow_dispatch' && inputs.release_type == 'prerelease') || (github.event_name == 'release' && github.event.release.prerelease)) && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
 
   build-and-publish-npm:
     if: |
@@ -95,7 +95,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || '' }}
           persist-credentials: false
@@ -109,6 +109,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
+        with:
+          package_json_file: client/package.json
       # TODO(post-26.1): the @galaxyproject/galaxy-client npm publish is now
       # redundant with the galaxy-web-client PyPI wheel used by
       # scripts/common_startup.sh and the install-client make target.  Keep
@@ -118,8 +120,10 @@ jobs:
       - name: build client
         run: pnpm install && pnpm build-production
         working-directory: 'client'
-      # Ensure npm 11.5.1 or later for trusted publishing
-      - run: npm install -g npm@latest
+      # Ensure npm 11.5.1 or later for trusted publishing.  Stay on the 11.x
+      # line: npm 12 requires node ^22.22.2, and client/.node_version pins
+      # 22.20.0.
+      - run: npm install -g npm@11
         working-directory: 'client'
       - name: publish client
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)

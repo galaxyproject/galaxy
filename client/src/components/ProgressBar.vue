@@ -46,6 +46,8 @@ const props = withDefaults(defineProps<Props>(), {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
 }
 .progress-container {
     position: relative;

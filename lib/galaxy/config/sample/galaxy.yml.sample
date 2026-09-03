@@ -588,6 +588,19 @@ galaxy:
   # an attribute in the <toolbox> tag.
   #tool_path: tools
 
+  # When true, use the CachedToolBox which loads tools on demand from
+  # the tool source store. Otherwise (the default), the traditional
+  # eager ToolBox is used and any per-conf ``store="..."`` attributes on
+  # tool_conf files are ignored. Opt-in is explicit: a populated tool
+  # source store does not flip a default deployment to cached-toolbox
+  # mode.
+  #use_cached_toolbox: false
+
+  # Maximum number of fully constructed Tool objects the CachedToolBox
+  # keeps in its in-memory LRU cache. Larger values reduce repeat
+  # parsing cost for popular tools at the expense of memory.
+  #cached_toolbox_cache_size: 500
+
   # SQLAlchemy connection string for the tool source store, a
   # rebuildable cache of pre-parsed tool sources kept outside Galaxy's
   # main database. Multi-host deployments should point every Galaxy
@@ -606,9 +619,12 @@ galaxy:
   # process composes its named store with the default
   # (``tool_source_database_connection``) store at runtime, with reads
   # tried in declared order and writes always landing on the default.
-  # Each entry takes a SQLAlchemy ``url`` and an optional ``read_only:
-  # true`` flag. For SQLite connection-level read-only, use a SQLite URI
-  # with ``mode=ro&uri=true``.
+  # Each entry takes either a normal SQLAlchemy ``url`` or an
+  # ``external_store_directory`` of versioned publisher bundles. Manifests
+  # are ignored for normal URL stores. Galaxy automatically selects the
+  # newest manifest-compatible bundle from an external directory, which is
+  # always read-only. For an explicit SQLite URL, use ``mode=ro&uri=true``
+  # when connection-level read-only behavior is wanted.
   # For details see
   # https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
   #tool_source_stores: null
@@ -1410,6 +1426,13 @@ galaxy:
   # for tracking with Matomo (https://matomo.org/).
   #matomo_site_id: null
 
+  # Run Matomo in "cookieless" mode. When set to true (the default),
+  # Galaxy instructs the Matomo tracker to disable all tracking cookies
+  # by calling _paq.push(['disableCookies']) before tracking the page
+  # view. Set to false to allow Matomo to use cookies. See
+  # https://matomo.org/faq/general/faq_157/ for details.
+  #matomo_disable_cookies: true
+
   # Galaxy can display data at various external browsers.  These options
   # specify which browsers should be available.  URLs and builds
   # available at these browsers are defined in the specified files.
@@ -1600,6 +1623,15 @@ galaxy:
 
   # The custom brand image source.
   #logo_src_secondary: null
+
+  # Sites to display in the masthead's "Switch sites" menu. Each entry
+  # requires a non-empty label and an absolute HTTP or HTTPS URL.
+  # Entries are displayed in the configured order, excluding the site
+  # matching the current URL origin.
+  # Example value: ``[{label: Base site, url:
+  # https://usegalaxy.example.org}, {label: Single Cell Omics, url:
+  # https://singlecell.usegalaxy.example.org}]``
+  #subdomain_switcher: []
 
   # The URL linked by the "Galaxy Help" link in the "Help" menu.
   #helpsite_url: https://help.galaxyproject.org/
@@ -3015,12 +3047,11 @@ galaxy:
   # the process that handled that particular request will tell all
   # others to also reload, lock jobs, etc. For connection examples, see
   # https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
-  # Without specifying anything here, galaxy will first attempt to use
-  # your specified database_connection above.  If that's not specified
-  # either, Galaxy will automatically create and use a separate sqlite
-  # database located in your <galaxy>/database folder (indicated in the
-  # commented out line below).
-  #amqp_internal_connection: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
+  # When this option is not specified, Galaxy uses the configured
+  # database_connection with the SQLAlchemy transport. If
+  # database_connection is not explicitly configured, Galaxy creates a
+  # separate SQLite database at <data_dir>/control.sqlite.
+  #amqp_internal_connection: null
 
   # Offload long-running tasks to a Celery task queue. Activate this
   # only if you have setup a Celery worker for Galaxy and you have
@@ -3418,4 +3449,3 @@ galaxy:
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
-

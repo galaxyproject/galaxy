@@ -29,13 +29,13 @@ from typing import (
 import yaml
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import User
 from galaxy.schema.agents import (
     ActionSuggestion,
     ActionType,
     ConfidenceLevel,
 )
+from galaxy.work.context import SessionRequestContext
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
@@ -89,6 +89,33 @@ MAX_HISTORY_MESSAGES = 40
 
 TOOL_HELPER_HISTORY_MESSAGES = 8
 """Tighter history cap for sub-agents invoked from inside a ``@agent.tool`` call."""
+
+DEFAULT_MAX_QUERY_LENGTH = 10000
+"""Fallback cap on a single query, overridable per agent via ``max_query_length``."""
+
+JOB_LOG_EXCERPT_CHARS = 4000
+"""Budget for any single job stream (stderr/stdout/info) shown to a model.
+
+One budget for every excerpt, so the same log can't reach the model at four
+different sizes depending on which agent asked for it. Set to the largest of the
+values it replaces -- middle-trimming already buys more per character than the
+head slices it supersedes, and lowering a shipped diagnostic budget would need
+evidence this change does not have.
+"""
+
+_TRUNCATION_MARKER = "\n\n[... {omitted} characters omitted ...]\n\n"
+
+# Phrases that only show up in a deliberate injection attempt, so every agent scans
+# for them. Kept separate from the role markers below, which tool logs print for
+# ordinary reasons ("Operating System:", "Filesystem:").
+_INJECTION_PHRASES = (
+    "ignore previous instructions",
+    "ignore all previous",
+    "disregard all previous",
+    "forget all previous",
+    "new instructions:",
+)
+_ROLE_MARKERS = ("system:", "assistant:")
 
 # Hardcoded fallback if the capability YAML can't be located. Mirrors the
 # previous behaviour (deepseek -> no structured output, everything else yes).
@@ -170,16 +197,47 @@ __all__ = [
     "BaseGalaxyAgent",
     "ConfidenceLevel",
     "ConfidenceLiteral",
+    "DEFAULT_MAX_QUERY_LENGTH",
     "extract_result_content",
     "extract_structured_output",
     "extract_usage_info",
     "GalaxyAgentDependencies",
+    "JOB_LOG_EXCERPT_CHARS",
     "MAX_HISTORY_MESSAGES",
     "normalize_llm_text",
     "SimpleGalaxyAgent",
     "TOOL_HELPER_HISTORY_MESSAGES",
     "truncate_message_history",
+    "truncate_middle",
 ]
+
+
+def truncate_middle(text: str, max_length: int) -> str:
+    """Trim ``text`` to ``max_length`` characters, keeping its head and tail.
+
+    Tool logs bury the actual failure at the end, so a plain head slice throws away
+    the part that matters most. A third of the budget goes to the head (invocation
+    and setup lines) and the rest to the tail.
+
+    Deliberately not ``galaxy.util.shrink_string_by_size``, which shrinks these same
+    streams on their way into the database: it splits evenly and its ``join_by`` is a
+    fixed string, so it can express neither the tail bias nor the omitted-character
+    count the model needs to know it is reading a fragment.
+    """
+    if max_length <= 0:
+        return ""
+    if len(text) <= max_length:
+        return text
+
+    # Size the marker against the whole input: the rendered omitted count is always
+    # smaller, so the result can only come in under the budget, never over.
+    budget = max_length - len(_TRUNCATION_MARKER.format(omitted=len(text)))
+    if budget <= 0:
+        return text[:max_length]
+
+    head_length = budget // 3
+    tail_length = budget - head_length
+    return text[:head_length] + _TRUNCATION_MARKER.format(omitted=len(text) - budget) + text[-tail_length:]
 
 
 def truncate_message_history(history: list[ModelMessage], limit: int = MAX_HISTORY_MESSAGES) -> list[ModelMessage]:
@@ -353,7 +411,7 @@ class AgentRunState:
 class GalaxyAgentDependencies:
     """Dependencies passed to Galaxy agents via dependency injection."""
 
-    trans: ProvidesUserContext
+    trans: SessionRequestContext
     user: User
     config: "GalaxyAppConfiguration"
     # Callable to get agent instances, avoids circular import in base.py
@@ -390,6 +448,12 @@ class BaseGalaxyAgent(ABC):
     # produce conforming output before the run fails.
     DEFAULT_AGENT_RETRIES = 3
 
+    # Whether to scan the query for conversational role markers ("system:",
+    # "assistant:"). Agents whose "query" is machine-generated text turn this off --
+    # tool logs print them innocently. See ErrorAnalysisAgent. The instruction-phrase
+    # patterns are always scanned.
+    SCAN_QUERY_FOR_ROLE_MARKERS = True
+
     def __init__(self, deps: GalaxyAgentDependencies):
         self.deps = deps
 
@@ -406,25 +470,52 @@ class BaseGalaxyAgent(ABC):
     def get_system_prompt(self) -> str:
         pass
 
+    def _resolve_max_query_length(self) -> int:
+        """Resolve the configured query cap, falling back to the default on bad input.
+
+        ``inference_services`` is a free-form dict, so a stray value here would
+        otherwise reach a slice index and either blow up mid-request or, worse,
+        silently trim every query down to nothing.
+        """
+        configured = self._get_agent_config("max_query_length", DEFAULT_MAX_QUERY_LENGTH)
+        if isinstance(configured, bool):
+            # bool is an int subclass and YAML reads `yes`/`true` as one, so int()
+            # would quietly turn `max_query_length: yes` into a one-character cap.
+            resolved = 0
+        else:
+            try:
+                resolved = int(configured)
+            except (TypeError, ValueError, OverflowError):
+                # OverflowError is int(inf) -- YAML spells that `.inf`.
+                resolved = 0
+        # Only nonsense falls back. An explicitly configured small cap is an admin
+        # decision -- quietly raising it would defeat a limit set for cost or safety.
+        if resolved <= 0:
+            # Log the type, not the value: _get_agent_config is the same accessor that
+            # serves api_key, so echoing whatever it returned into the log is a habit
+            # worth not having. The type is enough to find the offending YAML line.
+            log.warning(
+                "Ignoring invalid max_query_length of type %s for the %s agent; using %d.",
+                type(configured).__name__,
+                self.agent_type,
+                DEFAULT_MAX_QUERY_LENGTH,
+            )
+            return DEFAULT_MAX_QUERY_LENGTH
+        return resolved
+
     def _validate_query(self, query: str) -> str | None:
         """Validate query input. Returns None if valid, error message if not."""
         if not query or not isinstance(query, str):
             return "Query must be a non-empty string"
 
-        max_length = self._get_agent_config("max_query_length", 10000)
+        max_length = self._resolve_max_query_length()
 
         if len(query) > max_length:
             return f"Query too long ({len(query)} chars). Maximum is {max_length} characters."
 
-        suspicious_patterns = [
-            "ignore previous instructions",
-            "ignore all previous",
-            "disregard all previous",
-            "forget all previous",
-            "new instructions:",
-            "system:",
-            "assistant:",
-        ]
+        suspicious_patterns = list(_INJECTION_PHRASES)
+        if self.SCAN_QUERY_FOR_ROLE_MARKERS:
+            suspicious_patterns += _ROLE_MARKERS
 
         query_lower = query.lower()
         for pattern in suspicious_patterns:

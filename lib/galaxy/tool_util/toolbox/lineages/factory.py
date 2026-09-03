@@ -1,3 +1,7 @@
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from typing import (
     TYPE_CHECKING,
 )
@@ -7,33 +11,45 @@ from .interface import ToolLineage
 
 if TYPE_CHECKING:
     from galaxy.tools import Tool
+    from ..base import AbstractToolBox
 
 
 class LineageMap:
     """Map each unique tool id to a lineage object."""
 
-    def __init__(self, app):
+    def __init__(self, toolbox: "AbstractToolBox"):
         self.lineage_map: dict[str, ToolLineage] = {}
-        self.app = app
+        self.toolbox = toolbox
 
     def register(self, tool: "Tool") -> ToolLineage:
         tool_id = tool.id
         assert tool_id
-        versionless_tool_id = remove_version_from_guid(tool_id)
-        lineage: ToolLineage
-        if versionless_tool_id not in self.lineage_map:
-            lineage = ToolLineage.from_tool(tool)
-        else:
-            lineage = self.lineage_map[versionless_tool_id]
-            # A lineage for a tool with the same versionless_tool_id exists,
-            # but this lineage may not have the current tools' version,
-            # so we add tool.version to the lineage
-            lineage.register_version(tool.version)
-        if versionless_tool_id and versionless_tool_id not in self.lineage_map:
-            self.lineage_map[versionless_tool_id] = lineage
-        if tool_id not in self.lineage_map:
-            self.lineage_map[tool_id] = lineage
+        # An existing lineage may not have the current tool's version yet, so
+        # register it either way. The map entry can be an older, unshared
+        # lineage (`get` aliases a tool_id without its versionless key), and
+        # that is what callers have always been handed back.
+        lineage = self._shared_lineage(tool_id, lambda: ToolLineage.from_tool(tool))
+        lineage.register_version(tool.version)
         return self.lineage_map[tool_id]
+
+    def _shared_lineage(self, tool_id: str, build: Callable[[], ToolLineage]) -> ToolLineage:
+        """Return the lineage `tool_id` contributes its versions to.
+
+        Every tool_id sharing a versionless guid resolves to one lineage
+        object, and the map is keyed under both. Callers depend on that
+        sharing: `ToolSection.copy(merge_tools=True)` dedups panel entries by
+        lineage, so two installed revisions of the same tool must collapse.
+        The versionless key wins, so a lineage reached by any one version
+        accumulates them all; `build` runs only when neither key is mapped.
+        """
+        versionless_tool_id = remove_version_from_guid(tool_id)
+        lineage = self.lineage_map.get(versionless_tool_id) if versionless_tool_id else None
+        if lineage is None:
+            lineage = self.lineage_map.get(tool_id) or build()
+        if versionless_tool_id:
+            self.lineage_map.setdefault(versionless_tool_id, lineage)
+        self.lineage_map.setdefault(tool_id, lineage)
+        return lineage
 
     def get(self, tool_id: str) -> ToolLineage | None:
         """
@@ -47,18 +63,12 @@ class LineageMap:
         if lineage:
             return lineage
         if tool_id not in self.lineage_map:
-            toolbox = None
-            try:
-                toolbox = self.app.toolbox
-            except AttributeError:
-                # We're building the lineage map while building the toolbox,
-                # so app.toolbox may not be available.
-                # TODO: is the fallback really needed / can it be fixed by improving _get_versionless ?
-                pass
-            tool = toolbox and toolbox._tools_by_id.get(tool_id)
-            if tool:
-                lineage = ToolLineage.from_tool(tool)
-                self.lineage_map[tool_id] = lineage
+            # Not every tool reaches the toolbox through `__add_tool`, which is
+            # what registers a lineage: built-in converters, hidden tools and
+            # single-tool reloads all go straight to `register_tool`. Derive the
+            # lineage for those on first lookup.
+            if tool := self.toolbox._tools_by_id.get(tool_id):
+                return self.register(tool)
         return self.lineage_map.get(tool_id)
 
     def _get_versionless(self, tool_id: str) -> ToolLineage | None:
@@ -68,4 +78,47 @@ class LineageMap:
         return self.lineage_map.get(versionless_tool_id)
 
 
-__all__ = ("LineageMap",)
+class CachedLineageMap(LineageMap):
+    """Lineage map that derives versions from a callable on first access.
+
+    Used by ``galaxy.tools.cached_toolbox.CachedToolBox`` so the lineage view
+    over ``ToolIndex.entries_by_version`` doesn't need a boot-time pass to
+    seed every tool's version set into ``ToolLineage.tool_versions``.
+    Lineage data is already serialised inside the index
+    (``ToolIndex.to_dict``); this class just exposes it as a ``LineageMap``
+    on demand.
+    """
+
+    def __init__(self, toolbox: "AbstractToolBox", versions_for: Callable[[str], Iterable[str]] | None = None):
+        super().__init__(toolbox)
+        self._versions_for = versions_for
+
+    def get(self, tool_id: str) -> ToolLineage | None:
+        # An eager toolbox seeds every version through ``register`` as it
+        # loads tools, so ``LineageMap.get`` is only ever a lookup. Nothing
+        # walks the tools here, so ``get`` is the construction path and has
+        # to source versions from the index — the inherited fallback would
+        # build a lineage from a single just-loaded ``Tool`` and memoise it,
+        # freezing ``tool_versions`` at one entry and hiding the rest. That
+        # breaks ``get_safe_version`` (``ToolModule.__init__`` maps a
+        # pinned-but-missing tool_version onto the nearest safe upgrade,
+        # e.g. ``__BUILD_LIST__`` 1.0.0 → 1.1.0): a one-element ``[1.2.0]``
+        # lineage misses 1.1.0, so the workflow binds to 1.2.0 with state
+        # shaped for 1.0.0.
+        if self._versions_for is not None:
+            try:
+                versions = list(self._versions_for(tool_id))
+            except Exception:
+                versions = []
+            if versions:
+                lineage = self._shared_lineage(tool_id, lambda: ToolLineage(tool_id))
+                for version in versions:
+                    if version:
+                        lineage.register_version(version)
+                return lineage
+        # Index has no entry for this tool_id — fall back to whatever the
+        # parent class can derive (a registered Tool, etc.).
+        return super().get(tool_id)
+
+
+__all__ = ("CachedLineageMap", "LineageMap")

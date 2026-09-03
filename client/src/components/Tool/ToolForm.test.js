@@ -147,4 +147,23 @@ describe("ToolForm", () => {
 
         expect(wrapper.vm.formConfig.errors).toBeNull();
     });
+
+    it("shows an error alert when tool submission returns an error message", async () => {
+        const errorMessage = "New identifier [duplicate] appears twice in resulting collection.";
+        server.use(
+            http.untyped.post("/api/tools", () => {
+                return HttpResponse.json({ err_msg: errorMessage }, { status: 400 });
+            }),
+        );
+        await flushPromises();
+        await wrapper.setData({ formData: {} });
+
+        const button = wrapper.find("[data-description='run tool button']");
+        await button.trigger("click");
+        await flushPromises();
+
+        expect(wrapper.vm.showError).toBe(true);
+        expect(wrapper.vm.errorMessage).toBe(errorMessage);
+        expect(wrapper.text()).toContain(errorMessage);
+    });
 });

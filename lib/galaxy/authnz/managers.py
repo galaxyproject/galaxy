@@ -40,7 +40,10 @@ from .psa_authnz import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.managers.context import ProvidesAppContext
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 OIDC_BACKEND_SCHEMA = resource_path(__name__, "xsd/oidc_backends_config.xsd")
@@ -300,7 +303,7 @@ class AuthnzManager:
             return None
 
     @staticmethod
-    def can_user_assume_authn(trans, authn_id):
+    def can_user_assume_authn(trans: ProvidesUserContext, authn_id):
         qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
         if qres is None:
             msg = f"Authentication record with the given `authn_id` (`{trans.security.encode_id(authn_id)}`) not found."
@@ -405,9 +408,13 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, None
 
-    def callback(self, provider, state_token, authz_code, trans, login_redirect_url, idphint=None):
+    def callback(
+        self, provider, state_token, authz_code, trans: GalaxyWebTransaction, login_redirect_url, idphint=None
+    ):
         try:
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
+            if backend is None:
+                return False, f"Provider `{provider}` not found", (None, None)
             if success is False:
                 return False, message, (None, None)
             return success, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
@@ -505,7 +512,7 @@ class AuthnzManager:
                 return user
         return None
 
-    def logout(self, provider, trans, post_user_logout_href=None):
+    def logout(self, provider, trans: GalaxyWebTransaction, post_user_logout_href=None):
         """
         Log the user out of the identity provider.
 
@@ -525,6 +532,8 @@ class AuthnzManager:
                 return False, f"IDP logout is not enabled for {provider}", None
 
             success, message, backend = self._get_authnz_backend(provider)
+            if backend is None:
+                return False, f"Provider `{provider}` not found", None
             if success is False:
                 return False, message, None
             return True, message, backend.logout(trans, post_user_logout_href)
@@ -533,9 +542,11 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, None
 
-    def disconnect(self, provider, trans, email=None, disconnect_redirect_url=None, idphint=None):
+    def disconnect(self, provider, trans: GalaxyWebTransaction, email=None, disconnect_redirect_url=None, idphint=None):
         try:
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
+            if backend is None:
+                return False, f"Provider `{provider}` not found", None
             if success is False:
                 return False, message, None
             return backend.disconnect(provider, trans, disconnect_redirect_url, email=email)

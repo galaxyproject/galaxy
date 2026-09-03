@@ -4,6 +4,13 @@
  */
 import type { FieldDict, SampleSheetColumnDefinition } from "@/api";
 
+/**
+ * Options fetched per page. Mirrors ``DEFAULT_OPTIONS_PAGE_SIZE`` in
+ * ``galaxy.tools.parameters.pagination``, which sizes the first page the
+ * server renders into a data parameter.
+ */
+export const DEFAULT_OPTIONS_PAGE_SIZE = 50;
+
 interface DatasetHash {
     hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
     hash_value: string;

@@ -14,6 +14,9 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 // Constants
 const WORKFLOW_OWNER = "test-user";
 const OTHER_USER = "other-user";
+// `getFakeRegisteredUser` always defaults to this id, regardless of `username`
+const CURRENT_USER_ID = "fake_user_id";
+const OTHER_USER_ID = "other-user-id";
 const TEST_WORKFLOW = {
     id: "workflow-id",
     name: "workflow-name",
@@ -25,10 +28,12 @@ const TEST_WORKFLOW = {
     title: "workflow-title",
 };
 const SHARED_WORKFLOW_ID = "shared-workflow-id";
+const UNOWNED_HISTORY_ID = "unowned-history-id";
 const TEST_HISTORY = {
     id: "test-history-id",
     name: "test-history-name",
     archived: false,
+    user_id: CURRENT_USER_ID,
 };
 const TEST_HISTORY_POST_SHARE = {
     ...TEST_HISTORY,
@@ -101,6 +106,7 @@ vi.mock("@/stores/historyStore", async () => {
                     ...TEST_HISTORY,
                     id: historyId,
                     importable: historyId === `${TEST_HISTORY.id}-importable`,
+                    user_id: historyId === UNOWNED_HISTORY_ID ? OTHER_USER_ID : CURRENT_USER_ID,
                 };
             }),
             getHistoryNameById: vi.fn().mockImplementation(() => {
@@ -118,9 +124,10 @@ const localVue = getLocalVue();
  * Mounts the WorkflowInvocationShare component with props/stores adjusted given the parameters
  * @param ownsWorkflow Whether the user owns the workflow associated with the invocation
  * @param bothShareable Whether the workflow and history are already shareable
+ * @param ownsHistory Whether the user owns the history associated with the invocation
  * @returns The wrapper object
  */
-async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable = false) {
+async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable = false, ownsHistory = true) {
     server.use(
         http.put("/api/workflows/{workflow_id}/enable_link_access", ({ response }) => {
             return response(200).json({
@@ -138,11 +145,14 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
         propsData: {
             invocationId: "invocation-id",
             workflowId: bothShareable ? SHARED_WORKFLOW_ID : TEST_WORKFLOW.id,
-            historyId: bothShareable ? `${TEST_HISTORY.id}-importable` : TEST_HISTORY.id,
+            historyId: bothShareable
+                ? `${TEST_HISTORY.id}-importable`
+                : !ownsHistory
+                  ? UNOWNED_HISTORY_ID
+                  : TEST_HISTORY.id,
         },
         stubs: {
             FontAwesomeIcon: true,
-            BModal: true,
         },
         localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),
@@ -204,6 +214,18 @@ describe("WorkflowInvocationShare", () => {
 
     it("renders nothing when the user does not own the workflow", async () => {
         const { wrapper } = await mountWorkflowInvocationShare(false);
+        expect(wrapper.find(SELECTORS.SHARE_ICON_BUTTON).exists()).toBe(false);
+        expect(wrapper.findComponent(GModal).exists()).toBeFalsy();
+    });
+
+    it("renders nothing when the user owns the workflow but not the history", async () => {
+        const { wrapper } = await mountWorkflowInvocationShare(true, false, false);
+        expect(wrapper.find(SELECTORS.SHARE_ICON_BUTTON).exists()).toBe(false);
+        expect(wrapper.findComponent(GModal).exists()).toBeFalsy();
+    });
+
+    it("renders nothing when the user owns the history but not the workflow", async () => {
+        const { wrapper } = await mountWorkflowInvocationShare(false, false, true);
         expect(wrapper.find(SELECTORS.SHARE_ICON_BUTTON).exists()).toBe(false);
         expect(wrapper.findComponent(GModal).exists()).toBeFalsy();
     });

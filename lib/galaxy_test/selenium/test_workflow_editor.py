@@ -73,7 +73,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
         # shouldn't have changes on fresh load
         save_button = self.components.workflow_editor.save_button
-        save_button.assert_disabled()
+        assert save_button.has_class("g-disabled")
 
         self.screenshot("workflow_editor_blank")
 
@@ -752,9 +752,7 @@ steps:
         node = editor.node._(label="create_2")
         node.wait_for_and_click()
         editor.configure_output(output="out_file1").wait_for_and_click()
-        editor.change_datatype.wait_for_and_click()
-        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
-        editor.select_datatype(datatype="bam").wait_for_and_click()
+        self.workflow_editor_change_output_datatype("out_file1", "bam")
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
         self.assert_connection_invalid("create_2#out_file1", "checksum#input")
         # Assert save button
@@ -765,9 +763,7 @@ steps:
         self.components.confirm_dialog._.wait_for_absent_or_hidden()
         # Make connection valid again
         editor.configure_output(output="out_file1").wait_for_and_click()
-        editor.change_datatype.wait_for_and_click()
-        editor.select_datatype_text_search.wait_for_and_send_keys("tabular")
-        editor.select_datatype(datatype="tabular").wait_for_and_click()
+        self.workflow_editor_change_output_datatype("out_file1", "tabular")
         # Assert connection is valid
         self.assert_connected("create_2#out_file1", "checksum#input")
 
@@ -864,9 +860,7 @@ steps:
         output_label = editor.label_output(output="out_file1")
         self.set_text_element(output_label, "workflow output label")
         self.set_text_element(editor.rename_output, "renamed_output")
-        editor.change_datatype.wait_for_and_click()
-        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
-        editor.select_datatype(datatype="bam").wait_for_and_click()
+        self.workflow_editor_change_output_datatype("out_file1", "bam")
         editor.add_tags_button.wait_for_and_click()
         editor.add_tags_input.wait_for_and_send_keys("#crazynewtag" + Keys.ENTER + Keys.ESCAPE)
         editor.remove_tags_button.wait_for_and_click()
@@ -1139,9 +1133,7 @@ steps:
         pick_node.wait_for_and_click()
         # Expand the output card — PJA controls are inside a collapsed FormCard
         editor.configure_output(output="output").wait_for_and_click()
-        editor.change_datatype.wait_for_and_click()
-        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
-        editor.select_datatype(datatype="bam").wait_for_and_click()
+        self.workflow_editor_change_output_datatype("output", "bam")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
@@ -1330,7 +1322,7 @@ steps:
         save_button = self.components.workflow_editor.save_button
         save_button.wait_for_visible()
         # TODO: hook up best practice panel, disable save when "when" not connected
-        # assert save_button.has_class("disabled")
+        # assert save_button.has_class("g-disabled")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test

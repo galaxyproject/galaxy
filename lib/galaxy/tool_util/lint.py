@@ -249,8 +249,8 @@ class LintContext:
         try:
             lint_func(lint_target, self)
         except ParseException as e:
-            # Several linters parse requirements; report a malformed source once
-            # and attribute it to parsing rather than to the first such linter.
+            # Attribute the error to parsing, not whichever linter happened to
+            # encounter the unparseable part of the tool source first.
             self._report_failure(f"Tool could not be parsed: {unicodify(e)}", "ToolParse")
 
         if self.level < LintLevel.SILENT:
@@ -297,6 +297,8 @@ class LintContext:
         self.__handle_message("info", message, linter, *args, **kwargs)
 
     def _report_failure(self, message: str, linter: str) -> None:
+        # Several linters parse the same tool source, so an unparseable tool would
+        # otherwise report the same failure once per linter.
         if message in self._reported_failures:
             return
         self._reported_failures.add(message)

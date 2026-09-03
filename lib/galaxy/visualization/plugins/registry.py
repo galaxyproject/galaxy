@@ -20,6 +20,7 @@ from galaxy.visualization.plugins.datasource_testing import is_object_applicable
 from galaxy.visualization.plugins.plugin import VisualizationPlugin
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesAppContext
     from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
@@ -138,7 +139,9 @@ class VisualizationsRegistry:
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
-                return VisualizationPlugin(plugin_path, plugin_name, config)
+                app = self.app()
+                url_prefix = app.config.galaxy_url_prefix.rstrip("/") if app is not None else ""
+                return VisualizationPlugin(plugin_path, plugin_name, config, url_prefix=url_prefix)
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
 
     def get_plugin(self, key):
@@ -150,7 +153,7 @@ class VisualizationsRegistry:
         return self.plugins[key]
 
     # -- building links to visualizations from objects --
-    def get_visualizations(self, trans, target_object=None, embeddable=None):
+    def get_visualizations(self, trans: "ProvidesAppContext", target_object=None, embeddable=None):
         """
         Get the names of visualizations usable on the `target_object` and
         the urls to call in order to render the visualizations.
@@ -166,7 +169,7 @@ class VisualizationsRegistry:
             result.append(vis_plugin.to_dict())
         return sorted(result, key=lambda k: k.get("html"))
 
-    def get_visualization(self, trans, visualization_name, target_object):
+    def get_visualization(self, trans: "ProvidesAppContext", visualization_name, target_object):
         """
         Return data to build a url to the visualization with the given
         `visualization_name` if it's applicable to `target_object` or

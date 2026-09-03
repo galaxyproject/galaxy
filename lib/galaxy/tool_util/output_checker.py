@@ -31,7 +31,7 @@ class DETECTED_JOB_STATE(str, Enum):
 ERROR_PEEK_SIZE = 2000
 
 
-JobMessageTypeLiteral = Literal["regex", "exit_code", "max_discovered_files"]
+JobMessageTypeLiteral = Literal["regex", "exit_code", "max_discovered_files", "output_collection_security"]
 
 
 class JobMessage(TypedDict):
@@ -55,7 +55,11 @@ class MaxDiscoveredFilesJobMessage(JobMessage):
     type: Literal["max_discovered_files"]
 
 
-AnyJobMessage = ExitCodeJobMessage | RegexJobMessage | MaxDiscoveredFilesJobMessage
+class OutputCollectionSecurityJobMessage(JobMessage):
+    type: Literal["output_collection_security"]
+
+
+AnyJobMessage = ExitCodeJobMessage | RegexJobMessage | MaxDiscoveredFilesJobMessage | OutputCollectionSecurityJobMessage
 
 
 def check_output_regex(

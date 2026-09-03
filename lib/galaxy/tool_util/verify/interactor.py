@@ -441,8 +441,8 @@ class GalaxyInteractorApi:
         """Check dataset metadata.
 
         ftype on output maps to `file_ext` on the hda's API description, `name`, `info`,
-        `dbkey` and `tags` all map to the API description directly. Other metadata attributes
-        are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
+        `dbkey`, `tags` and `visible` all map to the API description directly. Other metadata
+        attributes are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
         """
 
         if metadata := get_metadata_to_test(attributes):
@@ -838,13 +838,15 @@ class GalaxyInteractorApi:
             parameters = request_schema["parameters"]
 
             def adapt_datasets(test_input: JsonTestDatasetDefDict) -> DataRequestHda | DataRequestUri:
+                # if path is not set it might be a composite file with a path,
+                # e.g. composite_shapefile
+                test_input_path = test_input.get("path", "")
+                if test_input_path in self.uploads:
+                    return DataRequestHda(**self.uploads[test_input_path])
                 location = test_input.get("location")
                 if location:
                     ext = test_input.get("filetype") or "auto"
                     return DataRequestUri(url=location, ext=ext)
-                # if path is not set it might be a composite file with a path,
-                # e.g. composite_shapefile
-                test_input_path = test_input.get("path", "")
                 return DataRequestHda(**self.uploads[test_input_path])
 
             def adapt_collections(test_input: JsonTestCollectionDefDict) -> DataCollectionRequest:
@@ -2318,4 +2320,6 @@ def get_metadata_to_test(test_properties: dict) -> dict:
             del metadata["info"]
     if expected_file_type := test_properties.get("ftype", None):
         metadata["file_ext"] = expected_file_type
+    if (expected_visible := test_properties.get("visible", None)) is not None:
+        metadata["visible"] = expected_visible
     return metadata

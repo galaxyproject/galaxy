@@ -108,13 +108,14 @@ The `inference_services` dictionary allows fine-grained control over individual 
 
 Supported keys within each agent block:
 
-| Key            | Description                                                                                                 |
-| -------------- | ----------------------------------------------------------------------------------------------------------- |
-| `model`        | Model name with optional provider prefix (e.g. `gpt-4o`, `anthropic:claude-sonnet-4-5`)                     |
-| `api_key`      | API key override for this agent or default                                                                  |
-| `api_base_url` | Base URL override for this agent or default                                                                 |
-| `temperature`  | Sampling temperature (0.0 - 1.0)                                                                            |
-| `max_tokens`   | Maximum tokens in the response (default: 8192; 16384 for the history, orchestrator, and custom_tool agents) |
+| Key                | Description                                                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`            | Model name with optional provider prefix (e.g. `gpt-4o`, `anthropic:claude-sonnet-4-5`)                                                                        |
+| `api_key`          | API key override for this agent or default                                                                                                                     |
+| `api_base_url`     | Base URL override for this agent or default                                                                                                                    |
+| `temperature`      | Sampling temperature (0.0 - 1.0)                                                                                                                               |
+| `max_tokens`       | Maximum tokens in the response (default: 8192; 16384 for the history, orchestrator, and custom_tool agents)                                                    |
+| `max_query_length` | Maximum characters accepted in a query (default: 10000; 50000 for workflow_report). `error_analysis` trims an oversized query to fit rather than rejecting it. |
 
 ### Example: Per-Agent Overrides
 

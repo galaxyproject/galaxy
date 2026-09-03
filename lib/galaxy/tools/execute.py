@@ -49,13 +49,13 @@ from galaxy.tools.execution_helpers import (
 )
 from galaxy.tools.parameters.workflow_utils import is_runtime_value
 from galaxy.util.json import swap_inf_nan
-from galaxy.work.context import WorkRequestContext
 from ._types import (
     ToolRequestT,
     ToolStateJobInstancePopulatedT,
 )
 
 if typing.TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ class MappingParameters(NamedTuple):
         assert self.validated_param_template is not None
         assert self.validated_param_combinations is not None
 
-    def example_params(self, trans: WorkRequestContext) -> ToolStateJobInstancePopulatedT:
+    def example_params(self, trans: "ProvidesHistoryContext") -> ToolStateJobInstancePopulatedT:
         """Representative per-job params for output-structure determination.
 
         Normally returns ``param_combinations[0]``. When the request
@@ -113,11 +113,11 @@ class MappingParameters(NamedTuple):
         return _resolve_template(self.param_template, trans)
 
 
-def _resolve_template(template: ToolRequestT, trans: WorkRequestContext) -> ToolStateJobInstancePopulatedT:
+def _resolve_template(template: ToolRequestT, trans: "ProvidesHistoryContext") -> ToolStateJobInstancePopulatedT:
     return {key: _resolve_template_value(value, trans) for key, value in template.items()}
 
 
-def _resolve_template_value(value: Any, trans: WorkRequestContext) -> Any:
+def _resolve_template_value(value: Any, trans: "ProvidesHistoryContext") -> Any:
     if isinstance(value, dict):
         values = value.get("values")
         if (
@@ -138,7 +138,7 @@ def _resolve_template_value(value: Any, trans: WorkRequestContext) -> Any:
 
 def _resolve_collection_ref(
     ref: dict[str, Any],
-    trans: WorkRequestContext,
+    trans: "ProvidesHistoryContext",
     raw_fallback: Any,
 ) -> model.HistoryDatasetCollectionAssociation | model.DatasetCollectionElement | Any:
     src = ref.get("src")
@@ -163,7 +163,7 @@ def _resolve_collection_ref(
 
 
 def execute_async(
-    trans,
+    trans: "ProvidesHistoryContext",
     tool: "Tool",
     mapping_params: MappingParameters,
     history: model.History,
@@ -204,7 +204,7 @@ def execute_async(
 
 
 def execute(
-    trans,
+    trans: "ProvidesHistoryContext",
     tool: "Tool",
     mapping_params: MappingParameters,
     history: model.History,
@@ -247,7 +247,7 @@ def execute(
 
 
 def _execute(
-    trans,
+    trans: "ProvidesHistoryContext",
     tool: "Tool",
     mapping_params: MappingParameters,
     history: model.History,
@@ -465,7 +465,7 @@ class ExecutionTracker:
 
     def __init__(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         tool: "Tool",
         mapping_params: MappingParameters,
         collection_info: MatchingCollections | None,
@@ -555,7 +555,7 @@ class ExecutionTracker:
             )
         return self._on_text
 
-    def output_name(self, trans, history, params, output):
+    def output_name(self, trans: "ProvidesHistoryContext", history, params, output):
         on_text = self.on_text
 
         try:
@@ -619,7 +619,7 @@ class ExecutionTracker:
             leaf_subcollection_type=subcollection_mapping_type,
         )
 
-    def _structure_for_output(self, trans, tool_output):
+    def _structure_for_output(self, trans: "ProvidesHistoryContext", tool_output):
         collection_info = self.collection_info
         assert collection_info
         structure = collection_info.structure
@@ -640,7 +640,7 @@ class ExecutionTracker:
 
         return structure
 
-    def _mapped_output_structure(self, trans, tool_output):
+    def _mapped_output_structure(self, trans: "ProvidesHistoryContext", tool_output):
         collections_manager = trans.app.dataset_collection_manager
         output_structure = tool_output_to_structure(
             self.sliced_input_collection_structure, tool_output, collections_manager
@@ -727,7 +727,7 @@ class ExecutionTracker:
         else:
             return None
 
-    def finalize_dataset_collections(self, trans):
+    def finalize_dataset_collections(self, trans: "ProvidesHistoryContext"):
         # TODO: this probably needs to be reworked some, we should have the collection methods
         # return a list of changed objects to add to the session and flush and we should only
         # be finalizing collections to a depth of self.collection_info.structure. So for instance
@@ -848,7 +848,7 @@ class ExecutionTracker:
 class ToolExecutionTracker(ExecutionTracker):
     def __init__(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         tool: "Tool",
         mapping_params: MappingParameters,
         collection_info: MatchingCollections | None,
@@ -893,7 +893,7 @@ class ToolExecutionTracker(ExecutionTracker):
 class WorkflowStepExecutionTracker(ExecutionTracker):
     def __init__(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         tool: "Tool",
         mapping_params: MappingParameters,
         collection_info: MatchingCollections | None,

@@ -154,6 +154,18 @@ class Container(metaclass=ABCMeta):
             return SOURCE_CONDA_ACTIVATE
         return ""
 
+    @property
+    def image_identifier_is_path(self) -> bool:
+        """Whether ``container_id`` refers to a local filesystem path.
+
+        Most container identifiers are registry references (e.g.
+        ``quay.io/biocontainers/...`` or ``docker://...``) rather than paths.
+        Only when the identifier is a local path does it make sense to rewrite
+        it for a compute node with a different filesystem layout (e.g. a
+        Singularity/Apptainer image cached on CVMFS).
+        """
+        return False
+
     @abstractmethod
     def containerize_command(self, command: str) -> str:
         """
@@ -518,6 +530,14 @@ def docker_cache_path(cache_directory: str, container_id: str) -> str:
 
 class SingularityContainer(Container, HasDockerLikeVolumes):
     container_type = SINGULARITY_CONTAINER_TYPE
+
+    @property
+    def image_identifier_is_path(self) -> bool:
+        # A Singularity/Apptainer image identifier is either a local path (e.g.
+        # a ``.sif`` file or a CVMFS-cached image) or a URI with a scheme such
+        # as ``docker://``, ``library://``, ``shub://``, or ``oras://``. Only
+        # absolute paths are read from the (compute-node) filesystem.
+        return os.path.isabs(self.container_id)
 
     def get_singularity_target_kwds(self) -> dict[str, Any]:
         return dict(

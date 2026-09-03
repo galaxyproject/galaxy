@@ -8,6 +8,7 @@ import { ExternalIdentities } from "@/components/User/ExternalIdentities";
 import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import AdminRoutes from "@/entry/analysis/routes/admin-routes";
 import LibraryRoutes from "@/entry/analysis/routes/library-routes";
+import LoginRoutes from "@/entry/analysis/routes/login-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
@@ -103,14 +104,11 @@ import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished
 import WorkflowRerun from "@/components/Workflow/Run/WorkflowRerun.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import StoredWorkflowInvocations from "@/components/Workflow/StoredWorkflowInvocations.vue";
-import WorkflowCreate from "@/components/Workflow/WorkflowCreate.vue";
 import WorkflowExport from "@/components/Workflow/WorkflowExport.vue";
 import WorkflowImport from "@/components/Workflow/WorkflowImport.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 import Analysis from "@/entry/analysis/modules/Analysis.vue";
 import Home from "@/entry/analysis/modules/Home.vue";
-import Login from "@/entry/analysis/modules/Login.vue";
-import Register from "@/entry/analysis/modules/Register.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
 Vue.use(VueRouter);
@@ -145,14 +143,6 @@ function redirectAnon(redirect = "") {
     }
 }
 
-// redirect logged in users
-function redirectLoggedIn() {
-    const Galaxy = getGalaxyInstance();
-    if (Galaxy.user.id) {
-        return "/";
-    }
-}
-
 function redirectIf(condition, path) {
     if (condition) {
         return path;
@@ -165,18 +155,8 @@ export function getRouter(Galaxy) {
         base: getAppRoot(),
         mode: "history",
         routes: [
-            /** Login entry route */
-            {
-                path: "/login/start",
-                component: Login,
-                redirect: redirectLoggedIn(),
-            },
-            /** Registration entry route */
-            {
-                path: "/register/start",
-                component: Register,
-                redirect: redirectLoggedIn(),
-            },
+            /** Login and registration entry routes */
+            ...LoginRoutes,
             /** Workflow editor */
             {
                 path: "/workflows/edit",
@@ -816,11 +796,6 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "shared",
                         },
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "workflows/create",
-                        component: WorkflowCreate,
                         redirect: redirectAnon(),
                     },
                     {

@@ -95,18 +95,22 @@ spec:
     return KubeSetupConfigTuple(path=volume_claim.name)
 
 
-def job_config(jobs_directory: str) -> Config:
+def job_config(
+    jobs_directory: str,
+    jobs_directory_claim: str = "jobs-directory-claim",
+    tool_directory_claim: str = "tool-directory-claim",
+) -> Config:
     job_conf_template = string.Template("""<job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
         <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
-            <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
+            <param id="k8s_persistent_volume_claims">$jobs_directory_claim:$jobs_directory,$tool_directory_claim:$tool_directory</param>
             <param id="k8s_config_path">$k8s_config_path</param>
             <param id="k8s_galaxy_instance_id">gx-short-id</param>
             <param id="k8s_run_as_user_id">$$uid</param>
         </plugin>
         <plugin id="k8s_walltime_short" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
-            <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
+            <param id="k8s_persistent_volume_claims">$jobs_directory_claim:$jobs_directory,$tool_directory_claim:$tool_directory</param>
             <param id="k8s_config_path">$k8s_config_path</param>
             <param id="k8s_galaxy_instance_id">gx-short-id</param>
             <param id="k8s_walltime_limit">10</param>
@@ -139,7 +143,9 @@ def job_config(jobs_directory: str) -> Config:
 """)
     job_conf_str = job_conf_template.substitute(
         jobs_directory=jobs_directory,
+        jobs_directory_claim=jobs_directory_claim,
         tool_directory=TOOL_DIR,
+        tool_directory_claim=tool_directory_claim,
         k8s_config_path=integration_util.k8s_config_path(),
     )
     with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf.xml", mode="w", delete=False) as job_conf:

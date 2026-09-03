@@ -21,6 +21,8 @@ from galaxy.tool_util.toolbox.base import AbstractToolBox
 if TYPE_CHECKING:
     from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 
+INSTALLATION_RELOAD_TIMEOUT = 60
+
 
 class DataManagerInterface(Protocol):
     GUID_TYPE: str = "data_manager"
@@ -62,3 +64,5 @@ class InstallationTarget(HasToolBox, Protocol[ToolBoxType]):
     def tool_data_tables(self) -> ToolDataTableManager: ...
 
     def wait_for_toolbox_reload(self, old_toolbox: ToolBoxType) -> None: ...
+
+    def reindex_tool_search(self) -> None: ...

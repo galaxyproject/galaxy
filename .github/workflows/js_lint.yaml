@@ -14,9 +14,14 @@ concurrency:
 permissions: {}
 jobs:
   client-unit-test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Read Node.js version
@@ -41,3 +46,6 @@ jobs:
       - name: Run vue-tsc
         working-directory: client
         run: pnpm type-check
+      - name: Run vue-tsc (galaxy-ui package)
+        working-directory: client
+        run: pnpm --filter @galaxyproject/galaxy-ui type-check

@@ -13270,7 +13270,8 @@ export interface components {
                 | "iiif"
                 | "mavedb"
                 | "omero"
-                | "ssh";
+                | "ssh"
+                | "ckan";
             /** Variables */
             variables?:
                 | (
@@ -20068,6 +20069,20 @@ export interface components {
              */
             url: string;
         };
+        /** OutputCollectionSecurityJobMessage */
+        OutputCollectionSecurityJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "output_collection_security";
+        };
         /**
          * OutputCompareType
          * @enum {string}
@@ -22989,6 +23004,7 @@ export interface components {
                       | components["schemas"]["ExitCodeJobMessage"]
                       | components["schemas"]["RegexJobMessage"]
                       | components["schemas"]["MaxDiscoveredFilesJobMessage"]
+                      | components["schemas"]["OutputCollectionSecurityJobMessage"]
                   )[]
                 | null;
             /**
@@ -24190,6 +24206,11 @@ export interface components {
              * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
              */
             sort?: boolean | null;
+            /**
+             * Visible
+             * @description If specified, this value is checked against whether the corresponding output is shown in the history. Use to test outputs a tool or workflow is expected to hide, for instance via a `HideDatasetAction` post job action.
+             */
+            visible?: boolean | null;
         };
         /** TestCollectionDatasetElementAssertions */
         "TestCollectionDatasetElementAssertions-Output": {
@@ -24268,6 +24289,11 @@ export interface components {
              * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
              */
             sort?: boolean | null;
+            /**
+             * Visible
+             * @description If specified, this value is checked against whether the corresponding output is shown in the history. Use to test outputs a tool or workflow is expected to hide, for instance via a `HideDatasetAction` post job action.
+             */
+            visible?: boolean | null;
         };
         /** TestCollectionOutputAssertions */
         "TestCollectionOutputAssertions-Input": {
@@ -24398,6 +24424,11 @@ export interface components {
              * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
              */
             sort?: boolean | null;
+            /**
+             * Visible
+             * @description If specified, this value is checked against whether the corresponding output is shown in the history. Use to test outputs a tool or workflow is expected to hide, for instance via a `HideDatasetAction` post job action.
+             */
+            visible?: boolean | null;
         };
         /** TestDataOutputAssertions */
         "TestDataOutputAssertions-Output": {
@@ -24476,6 +24507,11 @@ export interface components {
              * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
              */
             sort?: boolean | null;
+            /**
+             * Visible
+             * @description If specified, this value is checked against whether the corresponding output is shown in the history. Use to test outputs a tool or workflow is expected to hide, for instance via a `HideDatasetAction` post job action.
+             */
+            visible?: boolean | null;
         };
         /** TestUpdateInstancePayload */
         TestUpdateInstancePayload: {
@@ -25978,7 +26014,8 @@ export interface components {
                 | "iiif"
                 | "mavedb"
                 | "omero"
-                | "ssh";
+                | "ssh"
+                | "ckan";
             /** Uri Root */
             uri_root: string;
             /**
@@ -26334,7 +26371,7 @@ export interface components {
              * @description Container image to use for this tool.
              * @example quay.io/biocontainers/python:3.13
              */
-            container?: string | null;
+            container: string;
             /**
              * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
@@ -26387,15 +26424,11 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description JavaScript helpers and compute resource requests needed to execute this tool.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool. Set the container image with the top-level container field.
              * @default []
              */
             requirements:
-                | (
-                      | components["schemas"]["JavascriptRequirement"]
-                      | components["schemas"]["ResourceRequirement"]
-                      | components["schemas"]["ContainerRequirement"]
-                  )[]
+                | (components["schemas"]["JavascriptRequirement"] | components["schemas"]["ResourceRequirement"])[]
                 | null;
             /**
              * shell_command
@@ -26441,7 +26474,7 @@ export interface components {
              * @description Container image to use for this tool.
              * @example quay.io/biocontainers/python:3.13
              */
-            container?: string | null;
+            container: string;
             /**
              * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
@@ -26494,15 +26527,11 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description JavaScript helpers and compute resource requests needed to execute this tool.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool. Set the container image with the top-level container field.
              * @default []
              */
             requirements:
-                | (
-                      | components["schemas"]["JavascriptRequirement"]
-                      | components["schemas"]["ResourceRequirement"]
-                      | components["schemas"]["ContainerRequirement"]
-                  )[]
+                | (components["schemas"]["JavascriptRequirement"] | components["schemas"]["ResourceRequirement"])[]
                 | null;
             /**
              * shell_command
@@ -28298,7 +28327,7 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description JavaScript helpers and compute resource requests needed to execute this tool.
+             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
              * @default []
              */
             requirements:

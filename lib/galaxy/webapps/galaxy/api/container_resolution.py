@@ -11,6 +11,7 @@ from galaxy.web import (
     expose_api,
     require_admin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
 
     @expose_api
     @require_admin
-    def index(self, trans, **kwd):
+    def index(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/container_resolvers
         """
@@ -31,7 +32,7 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
 
     @expose_api
     @require_admin
-    def show(self, trans, index):
+    def show(self, trans: GalaxyWebTransaction, index):
         """
         GET /api/container_resolvers/<id>
         """
@@ -39,7 +40,7 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
 
     @expose_api
     @require_admin
-    def resolve(self, trans, index=None, **kwds):
+    def resolve(self, trans: GalaxyWebTransaction, index=None, **kwds):
         """
         GET /api/container_resolvers/resolve
         GET /api/container_resolvers/{index}/resolve
@@ -69,7 +70,7 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
 
     @expose_api
     @require_admin
-    def resolve_toolbox(self, trans, **kwds):
+    def resolve_toolbox(self, trans: GalaxyWebTransaction, **kwds):
         """
         GET /api/container_resolvers/toolbox
         GET /api/container_resolvers/{index}/toolbox
@@ -89,7 +90,7 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
 
     @expose_api
     @require_admin
-    def resolve_toolbox_with_install(self, trans, payload, **kwds):
+    def resolve_toolbox_with_install(self, trans: GalaxyWebTransaction, payload, **kwds):
         """
         POST /api/container_resolvers/toolbox/install
         POST /api/container_resolvers/{index}/toolbox/install
@@ -108,7 +109,7 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
 
     @expose_api
     @require_admin
-    def resolve_with_install(self, trans, payload, **kwds):
+    def resolve_with_install(self, trans: GalaxyWebTransaction, payload, **kwds):
         """
         POST /api/container_resolvers/resolve/install
         POST /api/container_resolvers/{index}/resolve/install

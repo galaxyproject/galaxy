@@ -14,11 +14,10 @@ import sys
 import tempfile
 import threading
 import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    Any,
-    NamedTuple,
-)
+from typing import Any
 from urllib.parse import urlparse
 
 from a2wsgi import WSGIMiddleware
@@ -43,9 +42,7 @@ from galaxy.util import (
     download_to_file,
     galaxy_directory,
 )
-from galaxy.util.properties import load_app_properties
 from galaxy.webapps.base.api import build_route_name_index
-from galaxy.webapps.galaxy import buildapp
 from galaxy.webapps.galaxy.fast_app import (
     _build_merged_openapi,
     add_galaxy_middleware,
@@ -53,6 +50,11 @@ from galaxy.webapps.galaxy.fast_app import (
     include_tus,
     initialize_fast_app as init_galaxy_fast_app,
     XFrameOptionsMiddleware,
+)
+from galaxy.webapps.galaxy.fast_factory import (
+    build_galaxy_web_app as build_galaxy_web_app_bundle,
+    FastAppFactory,
+    GalaxyWebApp,
 )
 from galaxy_test.base.api_util import (
     get_admin_api_key,
@@ -215,7 +217,7 @@ def setup_galaxy_config(
         allow_user_deletion=True,
         api_allow_run_as="test@bx.psu.edu",
         auto_configure_logging=logging_config_file is None,
-        chunk_upload_size=100,
+        chunk_upload_size=1048576,
         conda_prefix=conda_prefix,
         conda_auto_init=conda_auto_init,
         conda_auto_install=conda_auto_install,
@@ -576,19 +578,18 @@ def cleanup_directory(tempdir: str) -> None:
         pass
 
 
-def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
-    """Build a Galaxy app object from a simple keyword arguments.
-
-    Construct paste style complex dictionary and use load_app_properties so
-    Galaxy override variables are respected. Also setup "global" references
-    to sqlalchemy database context for Galaxy and install databases.
-    """
+def build_galaxy_web_app(simple_kwargs, init_fast_app: FastAppFactory = init_galaxy_fast_app) -> GalaxyWebApp:
+    """Build Galaxy's application objects for an embedded test server."""
     log.info("Galaxy database connection: %s", simple_kwargs["database_connection"])
-    simple_kwargs["global_conf"] = get_webapp_global_conf()
-    simple_kwargs["global_conf"]["__file__"] = "lib/galaxy/config/sample/galaxy.yml.sample"
-    simple_kwargs = load_app_properties(kwds=simple_kwargs)
-    # Build the Universe Application
-    app = GalaxyUniverseApplication(**simple_kwargs, is_webapp=True)
+    global_conf = get_webapp_global_conf()
+    global_conf["__file__"] = "lib/galaxy/config/sample/galaxy.yml.sample"
+    web_app = build_galaxy_web_app_bundle(
+        simple_kwargs,
+        global_conf=global_conf,
+        register_shutdown_at_exit=False,
+        init_fast_app=init_fast_app,
+    )
+    app = web_app.galaxy_app
     log.info("Embedded Galaxy application started")
 
     global install_context
@@ -601,7 +602,12 @@ def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     # pretty fast with the limited toolset
     app.reindex_tool_search()
 
-    return app
+    return web_app
+
+
+def build_galaxy_app(simple_kwargs):
+    """Compatibility wrapper returning only the Galaxy application object."""
+    return build_galaxy_web_app(simple_kwargs).galaxy_app
 
 
 def explicitly_configured_host_and_port(prefix, config_object):
@@ -815,8 +821,13 @@ def _rebind_tus_routes(app: FastAPI, gx_app, original_lifespan_context) -> None:
 
 
 def _is_tus_route(route) -> bool:
-    path = getattr(route, "path", None)
-    return bool(path and any(path.startswith(p) for p in _TUS_PREFIXES))
+    """Recognize the routes ``include_tus`` contributed, however FastAPI stored them.
+
+    An included router may appear as one ``_IncludedRouter`` entry carrying no ``path``
+    of its own, in which case its prefix identifies it.
+    """
+    prefix = getattr(route, "path", None) or getattr(getattr(route, "original_router", None), "prefix", None)
+    return bool(prefix and prefix.startswith(_TUS_PREFIXES))
 
 
 def _rebind_galaxy_middleware(app: FastAPI, gx_app) -> None:
@@ -881,66 +892,55 @@ def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app, original_l
     app.openapi = _lazy_openapi  # type: ignore[method-assign]
 
 
-class TusState(NamedTuple):
-    upload_files_dir: str
-    job_files_dir: str
-    maximum_upload_file_size: int | None
-
-
 def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
     """Drop-in replacement for ``init_galaxy_fast_app`` that reuses the
     FastAPI app across repeated embedded-server launches in the same
     Python process.
 
-    Single injection point: this callable is passed to ``launch_server``
-    via its ``init_fast_app`` parameter. Production ``launch_server``
-    callers (outside the test driver) keep using the default
-    uncached ``init_galaxy_fast_app``.
+    Single injection point: ``GalaxyTestDriver`` passes this callable to
+    ``build_galaxy_web_app`` as its ``init_fast_app``. Other callers keep
+    using the default uncached ``init_galaxy_fast_app``.
 
-    Falls back to a fresh build when the topology differs from the
-    cached shell (non-default ``galaxy_url_prefix`` or MCP enabled),
-    because those paths produce a parent wrapper / lifespan-bound
-    app that is awkward to re-bind.
+    Builds a fresh app for shapes ``_rebind_fast_app_for_launch`` cannot produce:
+    a non-default ``galaxy_url_prefix`` or MCP (parent wrapper / lifespan-bound
+    app), and ``use_access_logging_middleware`` (middleware chosen at build time).
     """
 
-    def _build_and_cache_app() -> FastAPI:
-        app = init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
-        slot["app"] = app
-        slot["lifespan_context"] = app.router.lifespan_context
-        slot["tus_state"] = tus_state
-        return app
-
-    topology_differs = gx_app.config.galaxy_url_prefix != "/" or gx_app.config.enable_mcp_server
+    config = gx_app.config
+    topology_differs = (
+        config.galaxy_url_prefix != "/" or config.enable_mcp_server or config.use_access_logging_middleware
+    )
     if topology_differs:
         return init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
     slot = _test_fast_app_slot()
     existing = slot.get("app")
-    tus_state = TusState(
-        upload_files_dir=gx_app.config.tus_upload_store or gx_app.config.new_file_path,
-        job_files_dir=gx_app.config.tus_upload_store_job_files
-        or gx_app.config.tus_upload_store
-        or gx_app.config.new_file_path,
-        maximum_upload_file_size=gx_app.config.maximum_upload_file_size,
-    )
     if existing is None:
         log.debug("Creating cached FastAPI app")
-        return _build_and_cache_app()
-    if slot.get("tus_state") != tus_state:
-        log.debug(
-            "Rebuilding cached FastAPI app because TUS state changed from %s to %s", slot.get("tus_state"), tus_state
-        )
-        return _build_and_cache_app()
+        app = init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
+        slot["app"] = app
+        slot["lifespan_context"] = app.router.lifespan_context
+        return app
     _rebind_fast_app_for_launch(existing, gx_wsgi_webapp, gx_app, slot["lifespan_context"])
     return existing
 
 
+@dataclass(frozen=True)
+class WebAppBundle:
+    """The application objects ``launch_server`` needs to serve an embedded server."""
+
+    app: Any
+    asgi_app: FastAPI
+
+    @classmethod
+    def from_galaxy_web_app(cls, web_app: GalaxyWebApp) -> "WebAppBundle":
+        return cls(app=web_app.galaxy_app, asgi_app=web_app.asgi_app)
+
+
 def launch_server(
-    app_factory,
-    webapp_factory,
+    webapp_bundle_factory: Callable[[], WebAppBundle],
     prefix=DEFAULT_CONFIG_PREFIX,
     galaxy_config=None,
     config_object=None,
-    init_fast_app=init_galaxy_fast_app,
 ):
     name = prefix.lower()
     host, port = explicitly_configured_host_and_port(prefix, config_object)
@@ -966,18 +966,11 @@ def launch_server(
         gravity_wrapper.wait_for_server()
         return gravity_wrapper
 
-    app = app_factory()
+    web_app = webapp_bundle_factory()
+    app = web_app.app
     url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
-    wsgi_webapp = webapp_factory(
-        galaxy_config["global_conf"],
-        app=app,
-        use_translogger=False,
-        static_enabled=True,
-        register_shutdown_at_exit=False,
-    )
-    asgi_app = init_fast_app(wsgi_webapp, app)
 
-    server, port, thread = uvicorn_serve(asgi_app, host=host, port=port)
+    server, port, thread = uvicorn_serve(web_app.asgi_app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
     log.debug(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
     return EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)
@@ -1126,24 +1119,29 @@ class GalaxyTestDriver(TestDriver):
                 if handle_galaxy_config_kwds is not None:
                     handle_galaxy_config_kwds(galaxy_config)
 
-            launch_kwargs: dict[str, Any] = dict(
-                app_factory=lambda: self.build_galaxy_app(galaxy_config),
-                webapp_factory=lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
-                galaxy_config=galaxy_config,
-                config_object=config_object,
-                init_fast_app=caching_fast_app_factory,
-            )
+            init_fast_app = caching_fast_app_factory
             custom_init_fast_app = getattr(config_object, "init_fast_app", None)
             if custom_init_fast_app is not None:
-                launch_kwargs["init_fast_app"] = custom_init_fast_app
-            server_wrapper = launch_server(**launch_kwargs)
+                init_fast_app = custom_init_fast_app
+            server_wrapper = launch_server(
+                lambda: WebAppBundle.from_galaxy_web_app(
+                    self.build_galaxy_web_app(galaxy_config, init_fast_app=init_fast_app)
+                ),
+                galaxy_config=galaxy_config,
+                config_object=config_object,
+            )
             self.server_wrappers.append(server_wrapper)
         else:
             log.info(f"Functional tests will be run against test external Galaxy server {self.external_galaxy}")
             # Ensure test file directory setup even though galaxy config isn't built.
             ensure_test_file_dir_set()
 
-    def build_galaxy_app(self, galaxy_config) -> GalaxyUniverseApplication:
+    def build_galaxy_web_app(self, galaxy_config, init_fast_app: FastAppFactory = init_galaxy_fast_app) -> GalaxyWebApp:
+        web_app = build_galaxy_web_app(galaxy_config, init_fast_app=init_fast_app)
+        self.app = web_app.galaxy_app
+        return web_app
+
+    def build_galaxy_app(self, galaxy_config):
         self.app = build_galaxy_app(galaxy_config)
         return self.app
 

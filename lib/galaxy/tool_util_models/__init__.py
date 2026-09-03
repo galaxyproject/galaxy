@@ -154,7 +154,9 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     ] = None
     requirements: Annotated[
         list[JavascriptRequirement | ResourceRequirement | ContainerRequirement] | None,
-        Field(description="JavaScript helpers and compute resource requests needed to execute this tool."),
+        Field(
+            description="A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images."
+        ),
     ] = []
     shell_command: Annotated[
         str,
@@ -288,9 +290,14 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
 
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     container: Annotated[
-        str | None,
-        Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"]),
-    ] = None
+        str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
+    ]
+    requirements: Annotated[
+        list[JavascriptRequirement | ResourceRequirement] | None,
+        Field(
+            description="JavaScript helpers and compute resource requests needed to execute this tool. Set the container image with the top-level container field."
+        ),
+    ] = []  # type: ignore[assignment]  # Deliberately narrow the UDT schema inherited from the general YAML model.
     # Required here (it's optional on the base for stored/legacy rows). Galaxy's
     # linter rejects a versionless tool, so forcing it into the structured-output
     # ``required`` set stops the model dropping it -- notably on a retry, where the
@@ -334,25 +341,27 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
 
     @field_validator("container", mode="after")
     @classmethod
-    def _reject_blank_container(cls, value: str | None) -> str | None:
-        if value is not None and not value.strip():
+    def _reject_blank_container(cls, value: str) -> str:
+        if not value or not value.strip():
             raise PydanticCustomError(
                 "dynamic_tool.blank_container",
                 "container must not be empty",
             )
         return value
 
-    @model_validator(mode="after")
-    def _require_container(self) -> "UserToolSourceAuthoringView":
-        has_container_requirement = any(
-            isinstance(requirement, ContainerRequirement) for requirement in self.requirements or []
-        )
-        if not self.container and not has_container_requirement:
+    @field_validator("requirements", mode="before")
+    @classmethod
+    def _reject_container_requirements(cls, value):
+        if isinstance(value, list) and any(
+            isinstance(requirement, ContainerRequirement)
+            or (isinstance(requirement, dict) and requirement.get("type") == "container")
+            for requirement in value
+        ):
             raise PydanticCustomError(
-                "dynamic_tool.container_required",
-                "set the top-level container field",
+                "dynamic_tool.container_requirement",
+                "container requirements are not supported for user-defined tools; set the top-level container field",
             )
-        return self
+        return value
 
     @model_serializer(mode="wrap")
     def _canonical_order(self, handler: SerializerFunctionWrapHandler, info: Any):
@@ -560,6 +569,17 @@ class BaseTestOutputModel(StrictModel):
             description=(
                 "If specified, this value is checked against the corresponding output's data type. "
                 "If these do not match, the test will fail."
+            ),
+        ),
+    ] = None
+    visible: Annotated[
+        bool | None,
+        Field(
+            title="Visible",
+            description=(
+                "If specified, this value is checked against whether the corresponding output is shown "
+                "in the history. Use to test outputs a tool or workflow is expected to hide, for "
+                "instance via a `HideDatasetAction` post job action."
             ),
         ),
     ] = None

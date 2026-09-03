@@ -146,12 +146,13 @@ dataset_details:
 
 object_store_details:
   selectors:
-    stored_by_name: '.display-os-by-name'
-    badge_of_type: '.object-store-badge-wrapper [data-badge-type="${type}"]'
-    usage_details: '.quota-usage-bar'
-    usage_bytes: '.quota-usage'
-    usage_percent: '.quota-percent-text'
-    usage_progress: '.quota-usage-bar .progress'
+    _: '[aria-labelledby="dataset-details-heading"]'
+    stored_by_name: '[aria-labelledby="dataset-details-heading"] .display-os-by-name'
+    badge_of_type: '[aria-labelledby="dataset-details-heading"] .object-store-badge-wrapper [data-badge-type="${type}"]'
+    usage_details: '[aria-labelledby="dataset-details-heading"] .quota-usage-bar'
+    usage_bytes: '[aria-labelledby="dataset-details-heading"] .quota-usage'
+    usage_percent: '[aria-labelledby="dataset-details-heading"] .quota-percent-text'
+    usage_progress: '[aria-labelledby="dataset-details-heading"] .quota-usage-bar .progress'
 
 confirm_dialog:
   selectors:
@@ -300,7 +301,7 @@ history_panel:
       option_cards: '[id^="g-card-"][data-source-option-card-id]'
       option_card: '#g-card-${object_store_id}'
       option_card_select: '#g-card-action-select-${object_store_id}'
-      confirm_button: '#modal-select-history-storage-location .btn-primary'
+      confirm_button: '#modal-select-history-storage-location .g-modal-confirm-buttons button:last-child'
 
   selectors:
     _: '#current-history-panel'
@@ -539,7 +540,7 @@ histories:
       make_private: '[data-description="history make private"]'
       permissions_change_required: '[data-description="sharing permissions change required"]'
       permissions_change_required_how: '[data-description="sharing permissions change required how"]'
-      permissions_change_required_ok: '[data-description="sharing permissions change required"] .btn-primary'
+      permissions_change_required_ok: '[data-description="sharing permissions change required"] .g-modal-confirm-buttons button:last-child'
 
     labels:
       unshare: 'Unshare'
@@ -551,6 +552,7 @@ files_dialog:
     row: 'span[title="label-${uri}"]'
     back_btn: '#back-btn'
     options_ready: '[data-description="selection dialog options"] .selection-dialog-table[aria-busy="false"]'
+    ok: '[data-description="selection dialog ok"]'
 
 history_export:
   selectors:
@@ -769,8 +771,10 @@ tool_form:
     parameter_drilldown_option: 'div.ui-form-element[id="form-element-${parameter}"] #drilldown-option-${value}'
 
     repeat_insert: '[data-description="repeat insert"]'
+    repeat_insert_named: '[data-description="repeat insert"][data-repeat-name="${name}"]'
     repeat_move_up: '#${parameter}_up'
     repeat_move_down: '#${parameter}_down'
+    repeat_clone: '#${parameter}_clone'
     section_header: '.ui-portlet-section .portlet-header'
     reference: '.formatted-reference'
     about: '.tool-footer'
@@ -893,28 +897,13 @@ trs_import:
     url_input: "#trs-import-url-input"
     url_import_button: "#trs-url-import-button"
 
-# not meant as a stand-alone component - just using for the anchor
-upload_mixin:
-  selectors: &upload_mixin
-    create_button: '${_} #btn-new'
-    paste_option: '${_} #upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
-    paste_content: '${_} #upload-row-${n} .upload-text-content'
-    title: '${_} #upload-row-${n} .upload-title'
-    row: '${_} #upload-row-${n}'
-    embedded_start_button: '${_} #btn-start'
-    use_button: '${_} #btn-emit'
-    use_button_disabled: '${_} #btn-emit.g-disabled'
-
 workflow_run:
   input:
     selectors:
       _: '[data-label="${label}"]'
       upload: '${_} [data-description="upload"]'
-      upload_beta: '${_} [data-description="upload-beta"]'
       collection_tab_build_link: '${_} [data-description="collection create tab build"]'
-      collection_tab_upload_link: '${_} [data-description="collection create tab upload"]'
-      # data inputs
-      <<: *upload_mixin
+      collection_tab_upload: '${_} [data-description="collection create tab upload"]'
 
     collection_builder:
       selectors:
@@ -922,7 +911,6 @@ workflow_run:
         create: '${_} .create-collection'
         select_all: "${_} [data-description='select many select all']"
         element_by_hid: "${_} [data-description='list dataset collection element'][data-hid='${hid}'] [data-description='dataset hid']"
-        <<: *upload_mixin
 
     sample_sheet:
       selectors:
@@ -1111,15 +1099,11 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Rename dataset']//input
-    change_datatype:
-      type: xpath
-      selector: >
-        //div[@data-label='Change datatype']//div[contains(@class, 'multiselect')]
-    select_datatype_text_search: "div[data-label='Change datatype'] .multiselect__input"
-    select_datatype:
-      type: xpath
-      selector: >
-        //div[@data-label='Change datatype']//div[@role='combobox' and not(@data-filter-pending)]//li[contains(@class,"multiselect__element")]//span[normalize-space()="${datatype}"]
+    change_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox']"
+    select_datatype_text_search: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox'] input"
+    select_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value='${datatype}']"
+    select_datatype_option_not_matching: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value]:not([data-option-value*='${text}' i])"
+    selected_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-selected-value]"
     add_tags_button:
       type: xpath
       selector: >
@@ -1401,7 +1385,7 @@ libraries:
         selector: '//button[contains(text(), "Import")]'
       import_datasets_cancel_button:
         type: xpath
-        selector: '//button[contains(text(), "Close")]'
+        selector: '//button[contains(text(), "Cancel")]'
       export_to_history_options: '#library-collection-type-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
@@ -1437,7 +1421,7 @@ libraries:
       access_dataset_roles: '.access_dataset_roles .multiselect__tag span'
       private_dataset_icon: '.fa-key'
       open_location_details_btn: '.details-btn'
-      location_details_ok_btn: '#details-modal .btn-primary'
+      location_details_ok_btn: '#details-modal .g-modal-close-button'
 
     labels:
       from_history: 'from History'
@@ -1465,49 +1449,13 @@ gies:
     spinner: 'img#spinner'
     iframe: 'body iframe[seamless="seamless"]'
 
-# TODO: use the newer upload_mixin to avoid duplication
-upload:
+upload_activity:
   selectors:
-    build_button: '#rule-based #btn-build'
-    close_button: '#regular #btn-close'
-    composite_close_button: '#composite #btn-close'
-    create_button: '#btn-new'
-    file_dialog: '#btn-remote-files'
-    file_dialog_ok: '[data-description="selection dialog ok"]'
-    file_source_selector:
-      type: xpath
-      selector: '//span[contains(@title, "${path}")]'
-    paste_option: '#upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
-    paste_content: '#upload-row-${n} .upload-text-content'
-    row: '#upload-row-${n}'
-    status: '[data-description="upload state alert"]'
-    rule_dataset_dialog: '[data-description="rules dataset dialog"]'
-    rule_dataset_selector:
-      selector: '.selection-dialog-modal'
-    rule_dataset_selector_row:
-      selector: '.selection-dialog-modal [aria-rowindex="${rowindex}"]'
-    rule_select_data_type: '.rule-data-type'
-    rule_source_content: 'textarea.upload-rule-source-content'
-    tab: '#tab-title-link-${tab}'
-    title: '#upload-row-${n} .upload-title'
-    settings: '.upload-settings-table'
-    settings_button: '#upload-row-${n} .upload-settings span'
-    setting_deferred: '.upload-deferred'
-    setting_space_to_tab: '.upload-space-to-tab'
-    source_button: '#upload-row-${n} .upload-source'
-    start: '#activity-upload'
-    start_button: '#regular #btn-start'
-    local_button: '#btn-local'
-    explore_archive_button: '.btn-explore-archive'
-
-beta_upload:
-  selectors:
-    activity:
-      type: xpath
-      selector: '//button[contains(., "Beta Upload")]'
+    activity: '#activity-upload'
     method_card: '[data-method-id="${method_id}"]'
     local_file_input: '#local-file-input'
     paste_content_textarea: '.paste-textarea'
+    add_another_dataset_button: '[data-test-id="add-another-dataset"]'
     paste_textarea: '#paste-links-textarea'
     add_urls_button: '[data-test-id="add-urls"]'
     collection_section: '[data-test-id="collection-toggle"] label'
@@ -1571,12 +1519,10 @@ beta_upload:
       selector: '//span[contains(@data-test-id, "data-library-browser-item-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
     data_library_add_selected: '[data-test-id="data-library-add-selected"]'
 
-upload_method_modal:
+upload_method_inline:
   selectors:
-    start_button: '[data-test-id="upload-method-modal-start"]'
-    cancel_button:
-      type: xpath
-      selector: '//button[normalize-space() = "Cancel"]'
+    start_button: '[data-test-id="upload-method-inline-start"]'
+    cancel_button: '[data-test-id="upload-method-inline-cancel"]'
 
 new_user_welcome:
   selectors:
@@ -1688,6 +1634,8 @@ zip_import_wizard:
   selectors:
     _: '.zip-import-wizard'
     loading_indicator: '#g-card-content-zip-preview-loading-indicator'
+    local_file_input: 'input[type="file"]'
+    remote_url_input: 'input[type="text"]#zip-url'
     preview_title: '#g-card-title-text-rocrate-summary'
     zip_file_count_badge: '#g-card-badge-file-count-regular-zip-summary-card'
     selected_files_to_import_count_badge: '#g-card-badge-file-count-zip-files-summary'
@@ -1696,6 +1644,23 @@ zip_import_wizard:
     wizard_import_button: '.wizard-actions .go-next-btn.btn-primary'
     search_input: '.zip-file-selector-search input'
     select_all_checkbox: '.list-header-select-all'
+    select_file:
+      type: xpath
+      selector: "//div[@role='button' and contains(@id, 'g-card-${file_path}')]"
+    item_card: '.zip-file-selector .g-card'
+
+file_set_wizard:
+  selectors:
+    _: '.rule-based-import-wizard'
+    creating_what_datasets: '[data-creating-what="datasets"]'
+    creating_what_collections: '[data-creating-what="collections"]'
+    source_pasted_table: '[data-import-source-from="pasted_table"]'
+    source_dataset_as_table: '[data-import-source-from="dataset_as_table"]'
+    source_remote_files: '[data-import-source-from="remote_files"]'
+    source_workbook: '[data-import-source-from="workbook"]'
+    paste_textarea: '.paste-data textarea'
+    wizard_next_button: '.wizard-actions .go-next-btn'
+    wizard_submit_button: '.wizard-actions .go-next-btn.btn-primary'
     select_file:
       type: xpath
       selector: "//div[@role='button' and contains(@id, 'g-card-${file_path}')]"

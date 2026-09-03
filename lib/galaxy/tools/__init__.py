@@ -14,6 +14,7 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
+from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -49,6 +50,7 @@ from galaxy.job_execution.output_collect import (
     MetadataSourceProvider,
     PermissionProvider,
 )
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.managers.credentials import build_credentials_context_response
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
@@ -65,6 +67,7 @@ from galaxy.model import (
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.types.paired_or_unpaired import SINGLETON_IDENTIFIER
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
+from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
@@ -105,6 +108,12 @@ from galaxy.tool_util.parser.interface import (
     PageSource,
     ToolSource,
 )
+from galaxy.tool_util.parser.output_objects import (
+    ToolExpressionOutput,
+    ToolOutput,
+    ToolOutputBase,
+    ToolOutputCollection,
+)
 from galaxy.tool_util.parser.util import (
     parse_profile_version,
     parse_tool_version_with_defaults,
@@ -114,7 +123,10 @@ from galaxy.tool_util.parser.xml import (
     XmlToolSource,
 )
 from galaxy.tool_util.parser.yaml import YamlToolSource
-from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
+from galaxy.tool_util.provided_metadata import (
+    NullToolProvidedMetadata,
+    parse_tool_provided_metadata,
+)
 from galaxy.tool_util.toolbox import (
     AbstractToolBox,
     AbstractToolTagManager,
@@ -267,7 +279,11 @@ if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
     from galaxy.jobs import JobToolConfiguration
     from galaxy.jobs.job_destination import JobDestination
-    from galaxy.managers.context import ProvidesUserContext
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesHistoryContext,
+        ProvidesUserContext,
+    )
     from galaxy.managers.jobs import JobSearch
     from galaxy.model import (
         DynamicTool,
@@ -277,10 +293,6 @@ if TYPE_CHECKING:
     from galaxy.model.tool_shed_install import ToolShedRepository
     from galaxy.objectstore import ObjectStore
     from galaxy.schema.schema import JobState
-    from galaxy.tool_util.parser.output_objects import (
-        ToolOutputBase,
-        ToolOutputCollection,
-    )
     from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
     from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
     from galaxy.tools.actions.metadata import SetMetadataToolAction
@@ -364,6 +376,78 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "winSplitter": parse_version("1.0.1"),
     "Interval2Maf1": parse_version("1.0.1+galaxy0"),
 }
+
+
+def parse_tool_version_for_comparison(version: str):
+    """Parse Galaxy's numeric ``+galaxyN`` suffix as a PEP 440 version."""
+    suffix_marker = "+galaxy"
+    if suffix_marker in version:
+        base, suffix = version.split(suffix_marker, 1)
+        if suffix:
+            version = f"{base}{suffix_marker}.{suffix.lstrip('.')}"
+    return parse_version(version)
+
+
+def tool_requires_galaxy_python_environment(
+    *,
+    tool_type: str,
+    profile: float,
+    preserve_python_environment: str,
+    tool_shed: str | None,
+    old_id: str | None,
+    version: str | None,
+) -> bool:
+    """Return the runtime-environment policy from metadata available at population time."""
+    if tool_type not in {
+        "default",
+        "manage_data",
+        "interactive",
+        "data_source",
+        "data_source_async",
+        "user_defined",
+    }:
+        return True
+    if tool_type == "manage_data" and Version(str(profile)) < Version("18.09"):
+        return True
+    if tool_type == "data_source" and Version(str(profile)) < Version("21.09"):
+        return True
+    if tool_type == "data_source_async" and profile < 24.0:
+        return True
+    if preserve_python_environment == "always":
+        return True
+    if preserve_python_environment == "legacy_and_local" and tool_shed is None:
+        return True
+    if old_id in GALAXY_LIB_TOOLS_UNVERSIONED:
+        return True
+    if old_id is None:
+        return False
+    fixed_version = GALAXY_LIB_TOOLS_VERSIONED.get(old_id)
+    if fixed_version is None:
+        return False
+    parsed_version = parse_tool_version_for_comparison(version or "")
+    return parsed_version < fixed_version
+
+
+def load_tool_action_class(module_name: str, class_name: str) -> type[ToolAction]:
+    """Load and validate a configured tool action class."""
+    module = __import__(module_name, globals(), locals(), [class_name])
+    try:
+        action_class: object = getattr(module, class_name)
+    except AttributeError as exc:
+        raise AttributeError(f"Tool action module {module_name!r} has no class {class_name!r}") from exc
+    if not isinstance(action_class, type) or not issubclass(action_class, ToolAction):
+        raise TypeError(f"Configured tool action {module_name}.{class_name} is not a ToolAction subclass")
+    return action_class
+
+
+def tool_produces_real_jobs(tool_type: str, action_module: tuple[str, str] | None) -> bool:
+    """Return the action policy without constructing a complete tool."""
+    if action_module is not None:
+        action_class = load_tool_action_class(*action_module)
+    else:
+        action_class = tool_types.get(tool_type, Tool).default_tool_action
+    return action_class.produces_real_jobs
+
 
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
@@ -520,6 +604,8 @@ class ToolBox(AbstractToolBox):
         self, config_filenames: list[str], tool_root_dir, app, save_integrated_tool_panel: bool = True
     ) -> None:
         self._reload_count = 0
+        self._tools_loaded_from_store = 0
+        self._tools_parsed_from_file = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
@@ -539,14 +625,44 @@ class ToolBox(AbstractToolBox):
             view_sources=view_sources,
             default_panel_view=default_panel_view,
             save_integrated_tool_panel=save_integrated_tool_panel,
+            load_panel_views=not app.config.display_builtin_converters,
         )
         # Load built-in converters
         if app.config.display_builtin_converters:
             self.load_builtin_converters()
-        if old_toolbox := getattr(app, "toolbox", None):
+        if old_toolbox := app.toolbox_or_none:
             self.dependency_manager = old_toolbox.dependency_manager
         else:
             self._init_dependency_manager()
+
+        # Log tool loading summary
+        self._log_tool_loading_summary()
+
+    def _log_tool_loading_summary(self):
+        """Log a summary of how tools were loaded (from store vs parsed from file)."""
+        total_tools = len(self._tools_by_id)
+        store_count = self._tools_loaded_from_store
+        file_count = self._tools_parsed_from_file
+
+        if store_count > 0 or file_count > 0:
+            store = self.app.tool_source_store
+            backend = "unknown"
+            if store:
+                try:
+                    stats = store.get_stats()
+                    backend = stats.get("backend", "unknown")
+                except Exception:
+                    pass
+
+            if store_count > 0 and file_count == 0:
+                log.info(f"Loaded {total_tools} tools from tool source store ({backend}), 0 parsed from files")
+            elif store_count == 0:
+                log.info(f"Loaded {total_tools} tools by parsing from files (no store configured or empty)")
+            else:
+                log.info(
+                    f"Loaded {total_tools} tools: {store_count} from store ({backend}), "
+                    f"{file_count} parsed from files"
+                )
 
     def tool_tag_manager(self):
         if hasattr(self.app.config, "get_bool") and self.app.config.get_bool("enable_tool_tags", False):
@@ -616,20 +732,85 @@ class ToolBox(AbstractToolBox):
         return self._tools_by_id
 
     def create_tool(self, config_file: StrPath, **kwds) -> "Tool":
-        tool_source = self.get_expanded_tool_source(config_file)
+        # Pass guid to enable direct store lookup for shed tools
+        guid = kwds.get("guid")
+        tool_source = self.get_expanded_tool_source(config_file, tool_id=guid)
         return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
-    def get_expanded_tool_source(self, config_file: StrPath) -> ToolSource:
+    def get_expanded_tool_source(self, config_file: StrPath, tool_id: str | None = None) -> ToolSource:
+        # Try to load from tool source store first (pre-parsed, macro-expanded)
+        tool_source = self._get_tool_source_from_store(config_file, tool_id=tool_id)
+        if tool_source is not None:
+            self._tools_loaded_from_store += 1
+            return tool_source
+
+        # Fall back to parsing from file
         try:
-            return get_tool_source(
+            tool_source = get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
             )
+            self._tools_parsed_from_file += 1
+            return tool_source
         except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
+
+    def _get_tool_source_from_store(self, config_file: StrPath, tool_id: str | None = None) -> ToolSource | None:
+        """
+        Try to load tool source from the pre-parsed store.
+
+        Args:
+            config_file: Path to the tool XML file.
+            tool_id: Optional tool ID (guid for shed tools) to look up directly.
+
+        Returns:
+            ToolSource if found in store, None otherwise.
+        """
+        # Default (eager) deployments parse from disk; only consult the store
+        # when the operator opted into ``use_cached_toolbox``. The silent-wrong-source
+        # defect that used to live on this path only manifested under the cached
+        # toolbox, so default deployments stay on the eager parse path.
+        if not self.app.config.use_cached_toolbox:
+            return None
+
+        store = self.app.tool_source_store
+        if store is None:
+            return None
+
+        # Resolve by the on-disk file path first. ``source_path`` is recorded
+        # at populate time and the populator updates that per-path row in place,
+        # so a hit here is content-current and exact (no regex shortcut, no
+        # ``sources[0]`` fallback that could silently return a different tool's
+        # source).
+        stored = store.get_by_source_path(os.path.abspath(str(config_file)))
+
+        # Shed installs hand us the full guid; fall back to it only when the
+        # path lookup misses. ``get_by_tool_id`` has no ORDER BY and the
+        # append-only store accumulates superseded content rows for the same
+        # tool_id, so pick the most recently stored one rather than an
+        # arbitrary row.
+        if stored is None and tool_id:
+            sources = store.get_by_tool_id(tool_id)
+            if sources:
+                stored = max(sources, key=lambda s: (s.stored_at is not None, s.stored_at or datetime.min))
+
+        if stored is None:
+            return None
+
+        # Create tool source from stored content
+        try:
+            tool_source = get_tool_source(
+                raw_tool_source=stored.raw_source,
+                tool_source_class=stored.tool_source_class,
+            )
+            log.debug(f"Loaded tool source from store: {stored.tool_id} ({config_file})")
+            return tool_source
+        except Exception as e:
+            log.warning(f"Error loading tool source from store for {config_file}: {e}")
+            return None
 
     def _create_tool_from_source(self, tool_source: ToolSource, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
@@ -687,7 +868,8 @@ class ToolBox(AbstractToolBox):
                     raise exceptions.ItemAccessibilityException("Tool not accessible.")
                 return tool
             return self.dynamic_tool_to_tool(dynamic_tool)
-        return self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
+        tool_like = self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
+        return self.materialize_tool(tool_like, reason="execution") if tool_like else None
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
         tool = self.dynamic_tool_to_tool(dynamic_tool)
@@ -760,7 +942,7 @@ class DefaultToolState:
         self.rerun_remap_job_id = None
         self.inputs = {}
 
-    def initialize(self, trans, tool):
+    def initialize(self, trans: "ProvidesHistoryContext", tool):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
         with default values for inputs. Grouping elements are filled in recursively.
@@ -834,6 +1016,8 @@ class JobContext(BaseJobContext):
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
         self._tag_handler = None
+        self.allows_unnamed_outputs = tool.allows_unnamed_outputs
+        self.allows_external_output_paths = tool.allows_external_output_paths
 
     @property
     def change_datatype_actions(self):
@@ -1000,6 +1184,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     job_search: "JobSearch"
     version: str
+    uses_tool_provided_metadata: bool
+    allows_unnamed_outputs: bool
 
     def __init__(
         self,
@@ -1124,22 +1310,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def version_object(self):
         """Parse version string, handling special Galaxy version format."""
-        GALAXY_VERSION_SUFFIX = "+galaxy"
-        version = self.version
-
-        # Check if version has Galaxy suffix that we need to modify (e.g., "1.0+galaxy123")
-        if GALAXY_VERSION_SUFFIX not in version:
-            return parse_version(version)
-
-        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
-
-        # Handle Galaxy versions that need numeric sorting
-        if suffix:
-            # Per PEP-440 a version like <base_version>+galaxy<suffix> would be sorted lexicographically if not separated by a '.'.
-            # Injecting a '.' here will force a numeric sort if the suffix is an integer, otherwise the outcome will be the same.
-            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
-
-        return parse_version(version)
+        return parse_tool_version_for_comparison(self.version)
 
     @property
     def sa_session(self):
@@ -1216,42 +1387,18 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def requires_galaxy_python_environment(self):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
-        # All special tool types (data source, history import/export, etc...)
-        # seem to require Galaxy's Python.
-        # FIXME: the (instantiated) tool class should emit this behavior, and not
-        #        use inspection by string check
-        if self.tool_type not in [
-            "default",
-            "manage_data",
-            "interactive",
-            "data_source",
-            "data_source_async",
-            "user_defined",
-        ]:
-            return True
+        return tool_requires_galaxy_python_environment(
+            tool_type=self.tool_type,
+            profile=self.profile,
+            preserve_python_environment=self.app.config.preserve_python_environment,
+            tool_shed=self.tool_shed,
+            old_id=self.old_id,
+            version=self.version,
+        )
 
-        if self.tool_type == "manage_data" and Version(str(self.profile)) < Version("18.09"):
-            return True
-
-        if self.tool_type == "data_source" and Version(str(self.profile)) < Version("21.09"):
-            return True
-
-        if self.tool_type == "data_source_async" and self.profile < 24.0:
-            return True
-
-        config = self.app.config
-        preserve_python_environment = config.preserve_python_environment
-        if preserve_python_environment == "always":
-            return True
-        elif preserve_python_environment == "legacy_and_local" and self.tool_shed is None:
-            return True
-        else:
-            unversioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_UNVERSIONED
-            versioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_VERSIONED
-            legacy_tool = unversioned_legacy_tool or (
-                versioned_legacy_tool and self.old_id and self.version_object < GALAXY_LIB_TOOLS_VERSIONED[self.old_id]
-            )
-            return legacy_tool
+    @property
+    def produces_real_jobs(self) -> bool:
+        return self.tool_action.produces_real_jobs
 
     def __get_job_tool_configuration(self, job_params: dict | None = None) -> "JobToolConfiguration":
         """Generalized method for getting this tool's job configuration.
@@ -1482,6 +1629,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         # Read in name of galaxy.json metadata file and how to parse it.
         self.provided_metadata_file = tool_source.parse_provided_metadata_file()
         self.provided_metadata_style = tool_source.parse_provided_metadata_style()
+        self.uses_tool_provided_metadata = self._uses_tool_provided_metadata(tool_source)
+        self.allows_unnamed_outputs = tool_source.allows_tool_provided_metadata()
 
         # Parse result handling for tool exit codes and stdout/stderr messages:
         self.parse_stdio(tool_source)
@@ -1496,8 +1645,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             self.tool_action = self.default_tool_action()
         else:
             module, cls = action
-            mod = __import__(module, globals(), locals(), [cls])
-            self.tool_action = getattr(mod, cls)()
+            self.tool_action = load_tool_action_class(module, cls)()
             if getattr(self.tool_action, "requires_js_runtime", False):
                 try:
                     expressions.find_engine(self.app.config)
@@ -1607,7 +1755,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.config_files.extend(tool_source.parse_template_configfiles())
         self.config_files.extend(tool_source.parse_file_sources())
 
-    def parse_tests(self):
+    def parse_tests(self) -> None:
         self.__tests_parsed = True
         source = self.tool_source
         if source is None:
@@ -1695,10 +1843,44 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                         return result
 
     def tool_provided_metadata(self, job_wrapper):
-        meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
+        if not self.uses_tool_provided_metadata:
+            return NullToolProvidedMetadata()
+        meta_file = safe_path_from_directory(self.provided_metadata_file, job_wrapper.tool_working_directory)
         return parse_tool_provided_metadata(
             meta_file, provided_metadata_style=self.provided_metadata_style, job_wrapper=job_wrapper
         )
+
+    @property
+    def allows_external_output_paths(self) -> bool:
+        return self.old_id == "__DATA_FETCH__" and self.dynamic_tool_id is None
+
+    def _uses_tool_provided_metadata(self, tool_source: ToolSource) -> bool:
+        if not tool_source.allows_tool_provided_metadata():
+            return False
+        if self.old_id in ("upload1", "__DATA_FETCH__") or tool_source.parse_provided_metadata_is_explicit():
+            return True
+
+        def output_uses_tool_provided_metadata(output: ToolOutputBase) -> bool:
+            if isinstance(output, ToolOutputCollection):
+                if any(
+                    description.discover_via == "tool_provided_metadata"
+                    for description in output.structure.dataset_collector_descriptions or []
+                ):
+                    return True
+                return any(output_uses_tool_provided_metadata(child) for child in output.outputs.values())
+
+            assert isinstance(output, (ToolOutput, ToolExpressionOutput))
+            if output.format == "auto":
+                return True
+            return any(
+                description.discover_via == "tool_provided_metadata"
+                for description in output.dataset_collector_descriptions
+            )
+
+        if any(output_uses_tool_provided_metadata(output) for output in self.outputs.values()):
+            return True
+
+        return not (self.tool_type == "interactive" or Version(str(self.profile)) >= Version("26.2"))
 
     def parse_command(self, tool_source):
         """ """
@@ -1900,6 +2082,9 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                             f"Tool with id '{self.id}': declares a conditional test parameter as optional, this is invalid and will be ignored."
                         )
                         group_c.test_param.optional = False
+                        if isinstance(group_c.test_param, BooleanToolParameter) and group_c.test_param.checked is None:
+                            # Covered by parameters/gx_conditional_boolean_optional.
+                            group_c.test_param.checked = False
                     possible_cases = list(
                         group_c.test_param.legal_values
                     )  # store possible cases, undefined whens will have no inputs
@@ -2102,7 +2287,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         #       outputs?
         return True
 
-    def new_state(self, trans):
+    def new_state(self, trans: "ProvidesHistoryContext"):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
         with default values for inputs. Grouping elements are filled in recursively.
@@ -2333,7 +2518,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def completed_jobs(
         self,
-        trans,
+        trans: "ProvidesUserContext",
         use_cached_job: bool,
         all_params: list[ToolStateJobInstancePopulatedT],
     ) -> dict[int, Job | None]:
@@ -2391,7 +2576,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def handle_input(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         incoming: ToolRequestT,
         history: History | None = None,
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
@@ -2480,7 +2665,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def handle_single_execution(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         rerun_remap_job_id: int | None,
         execution_slice: ExecutionSlice,
         history: History,
@@ -2569,7 +2754,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                     params.append(input_param)
         return params
 
-    def get_static_param_values(self, trans):
+    def get_static_param_values(self, trans: "ProvidesHistoryContext"):
         """
         Returns a map of parameter names and values if the tool does not
         require any user input. Will raise an exception if any parameter
@@ -2589,7 +2774,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def execute(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         incoming: ToolStateJobInstancePopulatedT | None = None,
         history: History | None = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
@@ -2617,7 +2802,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def _execute(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         incoming: ToolStateJobInstancePopulatedT | None = None,
         validated_parameters: JobInternalToolState | None = None,
         history: History | None = None,
@@ -2678,7 +2863,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         return self.params_from_strings(param_dict, ignore_errors=ignore_errors)
 
     def check_and_update_param_values(
-        self, values, trans, update_values: bool = True, workflow_building_mode: bool = False
+        self, values, trans: "ProvidesHistoryContext", update_values: bool = True, workflow_building_mode: bool = False
     ):
         """
         Check that all parameters have values, and fill in with default
@@ -3000,7 +3185,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             os.remove(temp_file)
         return tarball_archive
 
-    def to_panel_entry(self, trans) -> dict[str, Any]:
+    def to_panel_entry(self, trans: "ProvidesUserContext") -> dict[str, Any]:
         """The complete per-tool panel/listing payload — see
         :class:`galaxy.tool_util.toolbox.entry.ToolPanelEntry` for the
         contract. ``to_dict`` layers io/help extras on top of this.
@@ -3041,7 +3226,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             kwargs["config_file"] = None if not self.config_file else os.path.abspath(self.config_file)
         return ToolPanelEntry(**kwargs).model_dump(exclude_unset=True)
 
-    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
+    def to_dict(self, trans: "ProvidesHistoryContext", link_details=False, io_details=False, tool_help=False):
         """Returns dict of tool.
 
         ``link_details`` is accepted for backwards compatibility and no
@@ -3072,7 +3257,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def to_json(
         self,
-        trans,
+        trans: "ProvidesHistoryContext",
         kwd=None,
         job: Job | None = None,
         workflow_building_mode=False,
@@ -3093,7 +3278,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             or workflow_building_mode is workflow_building_modes.DISABLED
         ):
             # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
-            history = history or trans.get_history()
+            history = history or trans.history
             if history is None and job is not None:
                 assert job.history
                 history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
@@ -3293,6 +3478,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 raise exceptions.MessageException(
                     f"This dataset was created by an obsolete tool ({tool_id}). Can't re-run."
                 )
+            tool = self.app.toolbox.materialize_tool(tool, reason="detail")
             assert tool_id
             if (self.id != tool_id and self.old_id != tool_id) or self.version != tool_version:
                 if self.id == tool_id:
@@ -3319,7 +3505,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             raise exceptions.MessageException(unicodify(e))
         return message
 
-    def get_default_history_by_trans(self, trans, create=False):
+    def get_default_history_by_trans(self, trans: "ProvidesHistoryContext", create=False):
         return trans.get_history(create=create)
 
     @classmethod
@@ -3648,8 +3834,12 @@ class SetMetadataTool(Tool):
     tool_action: "SetMetadataToolAction"
 
     def regenerate_imported_metadata_if_needed(
-        self, hda: HistoryDatasetAssociation, history: History, user: model.User, session_id: int
-    ):
+        self,
+        hda: HistoryDatasetAssociation,
+        history: History,
+        user: model.User | None,
+        session_id: int | None,
+    ) -> None:
         if hda.has_metadata_files:
             job, *_ = self.tool_action.execute_via_app(
                 self,
@@ -3663,7 +3853,7 @@ class SetMetadataTool(Tool):
             self.app.job_manager.enqueue(job=job, tool=self)
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
-        working_directory = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
+        working_directory = JobWorkingDirectory(job, app.object_store).resolve()
         for name, dataset in inp_data.items():
             external_metadata = get_metadata_compute_strategy(app.config, job.id, tool_id=self.id)
             sa_session = app.model.context
@@ -3832,7 +4022,7 @@ class DataManagerTool(OutputParameterJSONTool):
         else:
             raise Exception("Unknown data manager mode encountered type...")
 
-    def get_default_history_by_trans(self, trans, create=False):
+    def get_default_history_by_trans(self, trans: "ProvidesHistoryContext", create=False):
         def _create_data_manager_history(user):
             history = History(name="Data Manager History (automatically created)", user=user)
             data_manager_association = model.DataManagerHistoryAssociation(user=user, history=history)
@@ -3967,7 +4157,7 @@ class UnzipCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -3993,7 +4183,7 @@ class ZipCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         forward_o = incoming["input_forward"]
         reverse_o = incoming["input_reverse"]
 
@@ -4015,7 +4205,7 @@ class CrossProductFlatCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
         join_identifier = incoming["join_identifier"]
@@ -4051,7 +4241,7 @@ class CrossProductNestedCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
 
@@ -4103,7 +4293,7 @@ class BuildListCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         new_elements = {}
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
@@ -4134,7 +4324,7 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -4218,7 +4408,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -4261,7 +4451,7 @@ class MergeCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         input_lists = []
 
         for incoming_repeat in incoming["inputs"]:
@@ -4370,7 +4560,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
         assert isinstance(element_object, model.DatasetInstance)
         return element_object.is_ok
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         collection = incoming["input"]
         replacement_dataset = incoming.get("replacement")
         if hasattr(collection, "element_object"):
@@ -4493,7 +4683,7 @@ class FlattenTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
         new_elements = {}
@@ -4531,7 +4721,7 @@ class NestTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         new_elements = {}
         copied_datasets = []
@@ -4563,7 +4753,7 @@ class SortTool(DatabaseOperationTool):
     require_terminal_states = True
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         sorttype = incoming["sort_type"]["sort_type"]
         new_elements = {}
@@ -4631,7 +4821,7 @@ class HarmonizeTool(DatabaseOperationTool):
         }
         super().check_inputs_ready(input_datasets, filtered_collections, security)
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca1 = incoming["input1"]
         hdca2 = incoming.get("input2")
         elements1 = hdca1.collection.elements
@@ -4690,7 +4880,9 @@ class HarmonizeTool(DatabaseOperationTool):
         output_with_selected_identifiers(old_elements1_dict, "output1")
         output_with_selected_identifiers(old_elements2_dict, "output2")
 
-    def _produce_outputs_with_optional_nulls(self, trans, output_collections, hdca1, elements1, history):
+    def _produce_outputs_with_optional_nulls(
+        self, trans: "ProvidesUserContext", output_collections, hdca1, elements1, history
+    ):
         """When input2 is not provided, output1 is a copy of input1 and output2
         mirrors input1's structure but with expression.json null datasets."""
         object_store_populator = ObjectStorePopulator(trans.app, trans.user)
@@ -4738,7 +4930,7 @@ class HarmonizeTool(DatabaseOperationTool):
             propagate_hda_tags=False,
         )
 
-    def _create_null_dataset(self, trans, history, object_store_populator):
+    def _create_null_dataset(self, trans: "ProvidesUserContext", history, object_store_populator):
         """Create a new HDA with expression.json null content (skipped marker)."""
         null_hda = HistoryDatasetAssociation(
             extension="expression.json",
@@ -4763,7 +4955,7 @@ class HarmonizeTool(DatabaseOperationTool):
 class RelabelFromFileTool(DatabaseOperationTool):
     tool_type = "relabel_from_file"
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how_type = incoming["how"]["how_select"]
         new_labels_dataset_assoc = incoming["how"]["labels"]
@@ -4846,7 +5038,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
 class ApplyRulesTool(DatabaseOperationTool):
     tool_type = "apply_rules"
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
@@ -4884,7 +5076,7 @@ class TagFromFileTool(DatabaseOperationTool):
     # require_terminal_states = True
     # require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how = incoming["how"]
         new_tags_dataset_assoc = incoming["tags"]
@@ -4961,7 +5153,7 @@ class TagFromFileTool(DatabaseOperationTool):
 class FilterFromFileTool(DatabaseOperationTool):
     tool_type = "filter_from_file"
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how_filter = incoming["how"]["how_filter"]
         filter_dataset_assoc = incoming["how"]["filter_source"]
@@ -5017,7 +5209,7 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hda = incoming["input"]
         number = int(incoming["number"])
         element_identifier = incoming["element_identifier"]
@@ -5042,7 +5234,7 @@ class ConvertSampleSheetTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -5117,7 +5309,7 @@ tool_types = {tool_class.tool_type: tool_class for tool_class in TOOL_CLASSES}
 # ---- Utility classes to be factored out -----------------------------------
 
 
-def _rerun_remap_job_id(trans, incoming, tool_id: str | None) -> int | None:
+def _rerun_remap_job_id(trans: "ProvidesAppContext", incoming, tool_id: str | None) -> int | None:
     rerun_remap_job_id = None
     if "rerun_remap_job_id" in incoming:
         try:

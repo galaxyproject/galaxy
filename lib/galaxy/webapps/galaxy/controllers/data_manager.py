@@ -14,6 +14,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.webapps.base.controller import BaseUIController
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ log = logging.getLogger(__name__)
 class DataManager(BaseUIController):
     @web.expose
     @web.json
-    def data_managers_list(self, trans, **kwd):
+    def data_managers_list(self, trans: GalaxyWebTransaction, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized(
@@ -56,7 +57,7 @@ class DataManager(BaseUIController):
 
     @web.expose
     @web.json
-    def jobs_list(self, trans, **kwd):
+    def jobs_list(self, trans: GalaxyWebTransaction, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized(
@@ -101,7 +102,7 @@ class DataManager(BaseUIController):
 
     @web.expose
     @web.json
-    def job_info(self, trans, **kwd):
+    def job_info(self, trans: GalaxyWebTransaction, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized(

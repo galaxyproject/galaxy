@@ -5,6 +5,7 @@ from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
 from galaxy_test.base.uses_shed_api import UsesShedApi
+from galaxy_test.driver import integration_util
 from .test_containerized_jobs import ContainerizedIntegrationTestCase
 
 
@@ -107,3 +108,10 @@ test_data:
                 # the 60s default invocation timeout is sized for lightweight tools.
                 timeout=180,
             )
+
+
+class TestCachedDataManagerWorkflowInvocation(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestDataManagerWorkflowInvocation,
+):
+    pass

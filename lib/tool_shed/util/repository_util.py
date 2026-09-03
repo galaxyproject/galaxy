@@ -123,10 +123,14 @@ def create_repo_info_dict(
     repository_dependencies will be None.
     """
     repo_info_dict = {}
-    repository = get_repository_by_name_and_owner(app.model.context, repository_name, repository_owner)
+    if repository is None:
+        repository = get_repository_by_name_and_owner(app.model.context, repository_name, repository_owner)
     if app.name == "tool_shed":
         # We're in the tool shed.
-        repository_metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changeset_revision)
+        if repository_metadata is None:
+            repository_metadata = repository_metadata_by_changeset_revision(
+                app.model, repository.id, changeset_revision
+            )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -264,11 +268,24 @@ def get_repository_in_tool_shed(app: "ToolShedApp", id, eagerload_columns=None):
     return app.model.context.get(model.Repository, app.security.decode_id(id), options=options)
 
 
-def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, changeset_revision):
+def get_repo_info_dict(
+    trans: "ProvidesRepositoriesContext",
+    repository_id,
+    changeset_revision,
+    repository=None,
+    repository_metadata=None,
+):
+    """Build the repo info dict for a repository revision.
+
+    Callers that have already loaded the repository and the metadata record for
+    changeset_revision can pass them in to avoid re-querying for them.
+    """
     app = trans.app
-    repository = get_repository_in_tool_shed(app, repository_id)
+    if repository is None:
+        repository = get_repository_in_tool_shed(app, repository_id)
     repository_clone_url = generate_clone_url_for(trans, repository)
-    repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
+    if repository_metadata is None:
+        repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
     if not repository_metadata:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
         # in the repository's changelog.  This generally occurs only with repositories of type
@@ -307,8 +324,17 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
-    repo_path = repository.repo_path(app)
-    ctx_rev = str(changeset2rev(repo_path, changeset_revision))
+    # repository_metadata may describe the next installable revision rather than the requested
+    # one, in which case it says nothing about changeset_revision itself.
+    if repository_metadata is not None and repository_metadata.changeset_revision == changeset_revision:
+        metadata_for_changeset = repository_metadata
+    else:
+        metadata_for_changeset = None
+    # Deliberately not read from repository_metadata.numeric_revision: when a push updates
+    # the metadata record in place its changeset_revision advances to the new tip while
+    # numeric_revision keeps pointing at the previous changeset, and Galaxy clones at
+    # whatever ctx_rev we hand it.
+    ctx_rev = str(changeset2rev(repository.hg_repo, changeset_revision))
     repo_info_dict = create_repo_info_dict(
         app=app,
         repository_clone_url=repository_clone_url,
@@ -317,7 +343,7 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         repository_owner=repository.user.username,
         repository_name=repository.name,
         repository=repository,
-        repository_metadata=repository_metadata,
+        repository_metadata=metadata_for_changeset,
         tool_dependencies=None,
         repository_dependencies=None,
         trans=trans,

@@ -1,16 +1,52 @@
+import faulthandler
 import json
 import os
+import sys
 import tempfile
+import threading
 
 import pytest
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
 from galaxy.tool_util.deps.mulled.util import NAMESPACE_HAS_REPO_NAME_KEY
-from galaxy_test.conftest import (  # noqa: F401
-    pytest_configure,
-    pytest_plugins,
+from galaxy_test import shard
+from galaxy_test.conftest import pytest_plugins  # noqa: F401
+from galaxy_test.conftest import (
+    pytest_configure as _base_pytest_configure,
 )
+from galaxy_test.shard import (  # noqa: F401
+    pytest_collection_modifyitems,
+    pytest_report_collectionfinish,
+)
+
+
+def pytest_configure(config):
+    _base_pytest_configure(config)
+    shard.pytest_configure(config)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # An integration shard boots dozens of embedded Galaxy apps in this one process,
+    # and a stray non-daemon thread from any of them keeps the interpreter from ever
+    # exiting -- the shard then sits at 100% until the CI job limit kills it. Give
+    # shutdown two minutes; after that, name the threads that held it up and leave
+    # with the real test status.
+    def _report_and_exit():
+        print(
+            f"pytest session finished {threading.active_count()} threads still alive; "
+            "dumping stacks of the threads preventing interpreter exit",
+            file=sys.stderr,
+            flush=True,
+        )
+        for thread in threading.enumerate():
+            print(f"  alive: {thread!r} daemon={thread.daemon}", file=sys.stderr, flush=True)
+        faulthandler.dump_traceback(all_threads=True)
+        os._exit(exitstatus)
+
+    watchdog = threading.Timer(120, _report_and_exit)
+    watchdog.daemon = True
+    watchdog.start()
 
 
 @pytest.fixture(scope="session", autouse=True)

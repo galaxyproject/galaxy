@@ -19,7 +19,7 @@ function navigateToImport() {
     router.push("/workflows/import");
 }
 
-function navigateToOldCreate() {
+function navigateToCreate() {
     router.push("/workflows/edit");
 }
 </script>
@@ -36,7 +36,7 @@ function navigateToOldCreate() {
             :title="localize('Create new workflow')"
             disabled-title="Log in to create workflow"
             :disabled="isAnonymous"
-            @click="navigateToOldCreate">
+            @click="navigateToCreate">
             <FontAwesomeIcon :icon="faPlus" />
             <span v-localize>Create</span>
         </GButton>

@@ -45,12 +45,17 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.job_metrics import (
     RawMetric,
     Safety,
 )
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import (
     dereference_input_to_hda,
@@ -384,7 +389,7 @@ class JobManager:
         return job.history is not None and self.history_manager.is_accessible(job.history, user)
 
     def get_job_console_output(
-        self, trans, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0
+        self, trans: ProvidesAppContext, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0
     ):
         if job is None:
             raise ObjectNotFound()
@@ -398,9 +403,7 @@ class JobManager:
         console_output = {}
         console_output["state"] = job.state
         if job.state == job.states.RUNNING:
-            working_directory = trans.app.object_store.get_filename(
-                job, base_dir="job_work", dir_only=True, obj_dir=True
-            )
+            working_directory = JobWorkingDirectory(job, trans.app.object_store).resolve()
             if stdout_length > -1 and stdout_position > -1:
                 try:
                     stdout_path = Path(working_directory) / STDOUT_LOCATION
@@ -1517,7 +1520,7 @@ class JobSearch:
             return stmt
 
 
-def view_show_job(trans, job: Job, full: bool) -> dict:
+def view_show_job(trans: ProvidesUserContext, job: Job, full: bool) -> dict:
     is_admin = trans.user_is_admin
     job_dict = job.to_dict("element", system_details=is_admin)
     if trans.app.config.expose_dataset_path and "command_line" not in job_dict:
@@ -1900,7 +1903,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source) -> JobsSummary | None:
     return rval
 
 
-def summarize_job_metrics(trans, job):
+def summarize_job_metrics(trans: ProvidesUserContext, job):
     """Produce a dict-ified version of job metrics ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
@@ -1927,7 +1930,7 @@ def summarize_metrics(trans: ProvidesUserContext, job_metrics):
     return [d.dict() for d in dictifiable_metrics]
 
 
-def summarize_destination_params(trans, job):
+def summarize_destination_params(trans: ProvidesUserContext, job):
     """Produce a dict-ified version of job destination parameters ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
@@ -1944,7 +1947,7 @@ def summarize_destination_params(trans, job):
     return destination_params
 
 
-def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, Any]:
+def summarize_job_parameters(trans: ProvidesHistoryContext, job: Job) -> dict[str, Any]:
     """Produce a dict-ified version of job parameters ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
@@ -2071,6 +2074,8 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, 
     if dynamic_tool := job.dynamic_tool:
         tool_uuid = dynamic_tool.uuid
     tool = toolbox.get_tool(job.tool_id, job.tool_version, tool_uuid=tool_uuid, user=trans.user)
+    if tool is not None:
+        tool = toolbox.materialize_tool(tool, reason="serialization")
 
     params_objects = None
     parameters = []
@@ -2262,7 +2267,11 @@ class JobSubmitter:
                 # API dataset materialization is immutable and produces new datasets
                 # here we just created the datasets - lets just materialize them in place
                 # and avoid extra and confusing input copies
-                self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
+                materialized = self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
+                if not materialized:
+                    raise RequestParameterInvalidException(
+                        f"Failed to fetch dataset from '{to_materialize.request.url}'"
+                    )
             if request.data_manager_mode:
                 tool_request.request["__data_manager_mode"] = request.data_manager_mode
             credentials_context = (

@@ -10,6 +10,7 @@ from abc import (
 )
 from typing import (
     Any,
+    Protocol,
 )
 
 from .. import formatting
@@ -20,6 +21,22 @@ from ..safety import (
 
 INSTRUMENT_FILE_PREFIX = "__instrument"
 InstrumentableT = str | list[str] | None
+
+
+class ProvidesJobMetricsContext(Protocol):
+    """The slice of a Galaxy job that plugins may read when metrics are collected.
+
+    Declared structurally instead of importing ``galaxy.model``: this package ships to
+    Pulsar compute nodes (see ``packages/packages_for_pulsar_by_dep_dag.txt``) and so
+    depends on ``galaxy-util`` alone. The app passes something Job-shaped in; nothing
+    here needs to know it is a Job.
+    """
+
+    @property
+    def id(self) -> int: ...
+
+    @property
+    def resubmission_count(self) -> int: ...
 
 
 class InstrumentPlugin(metaclass=ABCMeta):
@@ -54,6 +71,15 @@ class InstrumentPlugin(metaclass=ABCMeta):
         in job_directory with pre_execute_instrument and
         post_execute_instrument are available.
         """
+
+    def collect(self, job: ProvidesJobMetricsContext, job_directory: str) -> dict[str, Any]:
+        """Collect properties for this plugin, given the job they belong to.
+
+        The framework calls this rather than job_properties directly. Override it to read
+        the job itself; the default keeps plugins that only need the directory working
+        unchanged.
+        """
+        return self.job_properties(job.id, job_directory)
 
     def safety(self, metric_name: str) -> Safety:
         """Return safety level of metric."""

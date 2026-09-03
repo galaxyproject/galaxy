@@ -17,14 +17,11 @@
  *
  * @component WorkflowCredentialsManagement
  * @example
- * <WorkflowCredentialsManagement
- *   :tool-identifiers="toolIdentifiers"
- *   @close="onModalClose" />
+ * <WorkflowCredentialsManagement :show.sync="showModal" :tool-identifiers="toolIdentifiers" />
  */
 
 import { faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -34,10 +31,16 @@ import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredenti
 import { useToolStore } from "@/stores/toolStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
 
 interface Props {
+    /**
+     * Whether to show the modal for managing credentials
+     * @type {boolean}
+     */
+    show: boolean;
     /**
      * Array of tool identifiers for the workflow
      * @type {ToolIdentifier[]}
@@ -52,10 +55,10 @@ const props = defineProps<Props>();
  */
 const emit = defineEmits<{
     /**
-     * Emitted when the modal should be closed
-     * @event close
+     * Used to sync the prop `show` with the parent component when the modal is closed.
+     * @event update:show
      */
-    (e: "close"): void;
+    (e: "update:show", value: boolean): void;
 }>();
 
 const { getToolNameById } = useToolStore();
@@ -68,6 +71,14 @@ const { userServiceForTool, sourceCredentialsDefinitionFor, selectCurrentCredent
 
 /** Button text for saving group selection */
 const okTitle = "Save Group Selection";
+
+/** Computed toggle that handles showing and hiding the modal */
+const localShowToggle = computed({
+    get: () => props.show,
+    set: (value: boolean) => {
+        emit("update:show", value);
+    },
+});
 
 /**
  * Gets user service ID for a specific tool and service definition
@@ -133,21 +144,14 @@ function onSelectCredentials(): void {
 </script>
 
 <template>
-    <BModal
-        visible
-        scrollable
-        no-close-on-backdrop
-        no-close-on-esc
-        button-size="md"
-        size="lg"
-        modal-class="manage-workflow-credentials-modal"
-        body-class="manage-workflow-credentials-body"
+    <GModal
+        confirm
+        :show.sync="localShowToggle"
+        size="small"
         title="Manage & Select Credentials Groups for This Workflow"
-        :ok-title="okTitle"
-        cancel-title="Close"
-        cancel-variant="outline-danger"
-        @ok="onSelectCredentials"
-        @hide="emit('close')">
+        :ok-text="okTitle"
+        fixed-height
+        @ok="onSelectCredentials">
         <p class="mb-0">
             You can manage your credentials groups for each tool used in this workflow below. Any changes to credential
             groups will persist, but changes to the current group selection for services will only be saved when you
@@ -175,11 +179,5 @@ function onSelectCredentials(): void {
                 </ServiceCredentials>
             </div>
         </div>
-    </BModal>
+    </GModal>
 </template>
-
-<style>
-.manage-workflow-credentials-body {
-    height: 80vh;
-}
-</style>

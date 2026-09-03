@@ -4,6 +4,7 @@ from typing import (
     cast,
     Literal,
 )
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 from pydantic import (
@@ -26,6 +27,7 @@ from galaxy.files import (
     FileSourceScore,
     FileSourcesUserContext,
     ProvidesFileSourcesUserContext,
+    USER_FILE_SOURCES_SCHEME,
     UserDefinedFileSources,
 )
 from galaxy.files.plugins import (
@@ -53,6 +55,7 @@ from galaxy.files.templates.capabilities import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
+    get_uuid,
     User,
     UserFileSource,
 )
@@ -111,7 +114,21 @@ from ._config_templates import (
 
 log = logging.getLogger(__name__)
 
-USER_FILE_SOURCES_SCHEME = "gxuserfiles"
+
+def referenced_user_file_source_ids(referenced_uris: set[str]) -> set[str]:
+    """Return canonical UUID hex strings addressed by ``gxuserfiles`` URIs."""
+    ids: set[str] = set()
+    for uri in referenced_uris:
+        if not uri.startswith(f"{USER_FILE_SOURCES_SCHEME}://"):
+            continue
+        try:
+            split = urlsplit(uri)
+            if not split.netloc:
+                raise ValueError("URI has no authority")
+            ids.add(get_uuid(split.netloc).hex)
+        except ValueError as exc:
+            raise RequestParameterInvalidException(f"Invalid user file source URI [{uri}]") from exc
+    return ids
 
 
 class UserFileSourceModel(BaseModel):
@@ -563,7 +580,7 @@ class FileSourceInstancesManager:
     def _save(self, user_file_source: UserFileSource) -> None:
         save_template_instance(self._sa_session, user_file_source)
 
-    def _to_model(self, trans, persisted_file_source: UserFileSource) -> UserFileSourceModel:
+    def _to_model(self, trans: ProvidesUserContext, persisted_file_source: UserFileSource) -> UserFileSourceModel:
         file_source_type = persisted_file_source.template.configuration.type
         secrets = persisted_file_source.template_secrets or []
         uuid = str(persisted_file_source.uuid)
@@ -675,14 +692,23 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         )[0]
         return file_source
 
-    def _all_user_file_source_properties(self, user_context: FileSourcesUserContext) -> list[dict[str, Any]]:
+    def _all_user_file_source_properties(
+        self,
+        user_context: FileSourcesUserContext,
+        referenced_uris: set[str] | None = None,
+    ) -> list[dict[str, Any]]:
         username_filter = User.__table__.c.username == user_context.username
         user: User | None = self._sa_session.query(User).filter(username_filter).one_or_none()
         if user is None:
             return []
+        referenced_ids = None if referenced_uris is None else referenced_user_file_source_ids(referenced_uris)
         all_file_source_properties: list[dict[str, Any]] = []
         for user_file_source in user.file_sources:
             if user_file_source.hidden:
+                continue
+            # Filter before resolving properties because resolution can access the vault or mint
+            # an OAuth access token.
+            if referenced_ids is not None and get_uuid(user_file_source.uuid).hex not in referenced_ids:
                 continue
             try:
                 files_source_properties = self._file_source_properties(user_file_source)
@@ -736,13 +762,16 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         browsable_only: bool | None = False,
         include_kind: set[PluginKind] | None = None,
         exclude_kind: set[PluginKind] | None = None,
+        referenced_uris: set[str] | None = None,
     ) -> list[dict[str, Any]]:
         """Write out user file sources as list of config dictionaries."""
         if user_context.anonymous:
             return []
 
         as_dicts = []
-        for files_source_properties in self._all_user_file_source_properties(user_context):
+        for files_source_properties in self._all_user_file_source_properties(
+            user_context, referenced_uris=referenced_uris
+        ):
             files_source_type = files_source_properties["type"]
             plugin_type_class = self._plugin_loader.get_plugin_type_class(files_source_type)
             plugin_kind = plugin_type_class.plugin_kind

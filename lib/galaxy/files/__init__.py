@@ -26,7 +26,32 @@ from .plugins import (
     FileSourcePluginsConfig,
 )
 
+
+class ProvidesFileSourcesTransaction(Protocol):
+    """The slice of a Galaxy transaction ProvidesFileSourcesUserContext reads."""
+
+    @property
+    def anonymous(self) -> bool: ...
+
+    @property
+    def user(self) -> Any: ...
+
+    @property
+    def user_ftp_dir(self) -> str | None: ...
+
+    @property
+    def user_is_admin(self) -> bool: ...
+
+    @property
+    def user_vault(self) -> Any: ...
+
+    @property
+    def app(self) -> Any: ...
+
+
 log = logging.getLogger(__name__)
+
+USER_FILE_SOURCES_SCHEME = "gxuserfiles"
 
 
 class FileSourcePath(NamedTuple):
@@ -47,8 +72,7 @@ class UserDefinedFileSources(Protocol):
     """Entry-point for Galaxy to inject user-defined file sources.
 
     Supplied object of this class is used to write out concrete
-    description of file sources when serializing all file sources
-    available to a user.
+    descriptions of user file sources selected for serialization.
     """
 
     def validate_uri_root(self, uri: str, user_context: "FileSourcesUserContext") -> None:
@@ -64,6 +88,7 @@ class UserDefinedFileSources(Protocol):
         browsable_only: bool | None = False,
         include_kind: set[PluginKind] | None = None,
         exclude_kind: set[PluginKind] | None = None,
+        referenced_uris: set[str] | None = None,
     ) -> list[dict[str, Any]]:
         """Write out user file sources as list of config dictionaries."""
         # config_dicts: List[FilesSourceProperties] = []
@@ -88,6 +113,7 @@ class NullUserDefinedFileSources(UserDefinedFileSources):
         browsable_only: bool | None = False,
         include_kind: set[PluginKind] | None = None,
         exclude_kind: set[PluginKind] | None = None,
+        referenced_uris: set[str] | None = None,
     ) -> list[dict[str, Any]]:
         return []
 
@@ -186,6 +212,15 @@ class ConfiguredFileSources:
     def _parse_plugin_source(self, plugin_source: PluginConfigSource):
         return self._plugin_loader.load_plugins(plugin_source, self._file_sources_config)
 
+    @staticmethod
+    def _best_score(scores: list[FileSourceScore]) -> FileSourceScore | None:
+        best = max(scores, key=lambda candidate: candidate.score, default=None)
+        return best if best is not None and best.score > 0 else None
+
+    def _best_configured_match(self, url: str) -> FileSourceScore | None:
+        scores = [FileSourceScore(file_source, file_source.score_url_match(url)) for file_source in self._file_sources]
+        return self._best_score(scores)
+
     def find_best_match(self, url: str) -> BaseFilesSource | None:
         """Returns the best matching file source for handling a particular url. Each filesource scores its own
         ability to match a particular url, and the highest scorer with a score > 0 is selected."""
@@ -193,8 +228,8 @@ class ConfiguredFileSources:
         user_best_score = self._user_defined_file_sources.find_best_match(url)
         if user_best_score is not None:
             scores.append(user_best_score)
-        scores.sort(key=lambda f: f.score, reverse=True)
-        return next((fsscore.file_source for fsscore in scores if fsscore.score > 0), None)
+        best = self._best_score(scores)
+        return best.file_source if best is not None else None
 
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
@@ -257,8 +292,14 @@ class ConfiguredFileSources:
         browsable_only: bool | None = False,
         include_kind: set[PluginKind] | None = None,
         exclude_kind: set[PluginKind] | None = None,
+        referenced_uris: set[str] | None = None,
     ) -> list[dict[str, Any]]:
         rval: list[dict[str, Any]] = []
+        referenced_file_sources = None
+        if referenced_uris is not None:
+            referenced_file_sources = [
+                match.file_source for uri in referenced_uris if (match := self._best_configured_match(uri)) is not None
+            ]
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
                 continue
@@ -267,6 +308,9 @@ class ConfiguredFileSources:
             if exclude_kind and file_source.plugin_kind in exclude_kind:
                 continue
             if browsable_only and not file_source.get_browsable():
+                continue
+            # Skip sources that are not the best match for any URI required by this job.
+            if referenced_file_sources is not None and file_source not in referenced_file_sources:
                 continue
             el = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
             rval.append(el)
@@ -278,13 +322,23 @@ class ConfiguredFileSources:
                     browsable_only=browsable_only,
                     include_kind=include_kind,
                     exclude_kind=exclude_kind,
+                    referenced_uris=referenced_uris,
                 )
             )
         return rval
 
-    def to_dict(self, for_serialization: bool = False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
+    def to_dict(
+        self,
+        for_serialization: bool = False,
+        user_context: "OptionalUserContext" = None,
+        referenced_uris: set[str] | None = None,
+    ) -> dict[str, Any]:
         return {
-            "file_sources": self.plugins_to_dict(for_serialization=for_serialization, user_context=user_context),
+            "file_sources": self.plugins_to_dict(
+                for_serialization=for_serialization,
+                user_context=user_context,
+                referenced_uris=referenced_uris,
+            ),
             "config": self._file_sources_config.to_dict(),
         }
 
@@ -371,7 +425,7 @@ OptionalUserContext = FileSourcesUserContext | None
 class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
-    def __init__(self, trans, **kwargs):
+    def __init__(self, trans: ProvidesFileSourcesTransaction, **kwargs):
         self.trans = trans
 
     @property

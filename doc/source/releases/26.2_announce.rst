@@ -1,0 +1,15 @@
+
+:orphan:
+
+===========================================================
+26.2 Galaxy Release
+===========================================================
+
+Workflow expression compatibility
+=================================
+
+Workflow ``when`` expressions no longer expose connected nested tool inputs
+through Galaxy's internal pipe-prefixed connection names (for example,
+``inputs["cond|param"]``). Use the nested tool-state form instead, such as
+``inputs.cond.param`` or ``inputs["cond"]["param"]``. Ordinary top-level inputs
+and extra expression inputs such as ``inputs.when`` remain unchanged.

@@ -5,6 +5,7 @@ import tempfile
 
 import pytest
 
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.source_store import StoredToolSource
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.index import (
@@ -12,6 +13,7 @@ from galaxy.tools.source_store.index import (
     ToolIndexEntry,
 )
 from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore as SqliteToolSourceStore
+from galaxy.tools.source_store.unavailable import UnavailableToolSourceStore
 
 
 @pytest.fixture
@@ -199,3 +201,16 @@ def test_read_only_member_names(two_paths):
     read_only = SqliteToolSourceStore(url=_sqlite_url(pb), read_only=True)
     composite = CompositeToolSourceStore(members=[("ro", read_only), ("rw", writable)], default="rw")
     assert composite.read_only_member_names == {"ro"}
+
+
+def test_unavailable_read_only_member_disables_index_only_panel_initialization(two_paths):
+    writable_path, _unused = two_paths
+    writable = SqliteToolSourceStore(url=_sqlite_url(writable_path))
+    unavailable = UnavailableToolSourceStore("no compatible cohort")
+    composite = CompositeToolSourceStore(members=[("cvmfs", unavailable), ("rw", writable)], default="rw")
+    box = CachedToolBox.__new__(CachedToolBox)
+    box._store = composite
+    box._tool_index = ToolIndex(entries={"local": ToolIndexEntry(id="local")})
+
+    assert composite.unavailable_read_only_member_names == {"cvmfs"}
+    assert box._init_tools_from_index([]) is False

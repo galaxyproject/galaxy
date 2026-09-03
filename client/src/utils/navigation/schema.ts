@@ -298,6 +298,7 @@ interface Rootfiles_dialog extends Component {
     row: SelectorTemplate;
     back_btn: SelectorTemplate;
     options_ready: SelectorTemplate;
+    ok: SelectorTemplate;
 }
 interface Roothistory_export extends Component {
     export_link: SelectorTemplate;
@@ -461,6 +462,8 @@ interface Rootworkflow_editor extends Component {
     change_datatype: SelectorTemplate;
     select_datatype_text_search: SelectorTemplate;
     select_datatype: SelectorTemplate;
+    select_datatype_option_not_matching: SelectorTemplate;
+    selected_datatype: SelectorTemplate;
     add_tags: SelectorTemplate;
     remove_tags: SelectorTemplate;
     tool_version_button: SelectorTemplate;
@@ -703,7 +706,6 @@ interface Rootupload extends Component {
     rule_dataset_selector_row: SelectorTemplate;
     build_btn: SelectorTemplate;
     file_source_selector: SelectorTemplate;
-    file_dialog_ok: SelectorTemplate;
     paste_new: SelectorTemplate;
 }
 interface Rootrule_builder extends Component {

@@ -10,9 +10,10 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestCustomTools(SeleniumTestCase):
+class TestCustomTools(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     def assert_baseline_accessibility(self):
@@ -32,7 +33,7 @@ class TestCustomTools(SeleniumTestCase):
     @selenium_test
     def test_run_custom_tool(self):
         test_path = self.get_filename("1.fasta")
-        self.perform_upload(test_path, on_current_page=True)
+        self.upload_context("local-file").stage_local_file(test_path).start()
         self.history_panel_wait_for_hid_ok(1)
         with self.dataset_populator.user_tool_execute_permissions():
             tool_uuid = self.create_new_custom_tool()

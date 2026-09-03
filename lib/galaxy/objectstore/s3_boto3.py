@@ -30,8 +30,14 @@ except ImportError:
 
 from galaxy.util import asbool
 from galaxy.util.s3_checksum import s3_checksum_config_kwargs
-from ._caching_base import CachingConcreteObjectStore
+from ._caching_base import (
+    CachingConcreteObjectStore,
+    RemoteDataStream,
+    STREAM_CHUNK_SIZE,
+)
 from .caching import (
+    CacheShardManager,
+    CacheTarget,
     enable_cache_monitor,
     parse_caching_config_dict_from_xml,
 )
@@ -203,9 +209,8 @@ class S3ObjectStore(CachingConcreteObjectStore):
 
         self.region = connection_dict.get("region")
 
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
-        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
@@ -293,11 +298,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 "region": self.region,
             },
             "transfer": self.transfer_dict,
-            "cache": {
-                "size": self.cache_size,
-                "path": self.staging_path,
-                "cache_updated_data": self.cache_updated_data,
-            },
+            "cache": self._cache_config_to_dict(),
         }
 
     def to_dict(self):
@@ -325,11 +326,11 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 return False
             raise
 
-    def _download(self, rel_path: str) -> bool:
-        local_destination = self._get_cache_path(rel_path)
+    def _download(self, rel_path: str, *, cache_path: str, cache_target: CacheTarget) -> bool:
+        local_destination = cache_path
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
-            if not self._caching_allowed(rel_path):
+            if not self._caching_allowed(rel_path, cache_target=cache_target):
                 return False
             config = self._transfer_config("download")
             with self._atomic_download(local_destination) as tmp:
@@ -338,6 +339,10 @@ class S3ObjectStore(CachingConcreteObjectStore):
         except ClientError:
             log.exception("Failed to download file from S3")
         return False
+
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
+        body = self._client.get_object(Bucket=self.bucket, Key=rel_path)["Body"]
+        return RemoteDataStream(body.iter_chunks(chunk_size=STREAM_CHUNK_SIZE), body.close)
 
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:

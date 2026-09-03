@@ -1116,7 +1116,9 @@ class BaseDatasetPopulator(BasePopulator):
 
     @contextlib.contextmanager
     def test_history(self, require_new: bool = True, name: str | None = None) -> Generator[str, None, None]:
-        with self._test_history(require_new=require_new, cleanup_callback=self._cleanup_history) as history_id:
+        with self._test_history(
+            require_new=require_new, cleanup_callback=self._cleanup_history, name=name
+        ) as history_id:
             yield history_id
 
     @contextlib.contextmanager
@@ -2758,7 +2760,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def validate_biocompute_object(
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
     ):
-        JsonSchemaValidator.validate_using_schema_url(bco, expected_schema_version)
+        JsonSchemaValidator.validate_using_vendored_schema(bco, expected_schema_version)
 
     def get_ro_crate(self, invocation_id, include_files=False):
         crate_response = self.download_invocation_to_store(

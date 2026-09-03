@@ -1,18 +1,30 @@
-<tool id="comp1" name="Compare two Datasets" version="1.0.2" profile="24.2">
+<tool id="comp1" name="Compare two Datasets" version="1.0.3" profile="24.2">
   <description>to find common or distinct rows</description>
   <requirements>
-    <requirement type="package" version="8.31">coreutils</requirement>
-    <requirement type="package" version="5.3.1">gawk</requirement>
+    <requirement type="package" version="9.11">coreutils</requirement>
+    <requirement type="package" version="5.4.1">gawk</requirement>
   </requirements>
   <command><![CDATA[
+    if sort -C -t \$'\t' -k '${field1},${field1}' '$input1'; then
+      ln -s '$input1' input1;
+    else
+      sort -t \$'\t' -k '${field1},${field1}' '$input1' \${GALAXY_MEMORY_MB:+--buffer-size="\${GALAXY_MEMORY_MB}M"}  --parallel="\${GALAXY_SLOTS:-1}" > input1;
+    fi
+    &&
+    if sort -C -t \$'\t' -k '${field2},${field2}' '$input2'; then
+      ln -s '$input2' input2;
+    else
+      sort -t \$'\t' -k '${field2},${field2}' '$input2' \${GALAXY_MEMORY_MB:+--buffer-size="\${GALAXY_MEMORY_MB}M"}  --parallel="\${GALAXY_SLOTS:-1}" > input2;
+    fi
+    &&
     join --nocheck-order -t \$'\t'
       #if $mode == "V":
         -v 1
       #end if
       -o "\$(seq -s, -f '1.%g' 1 \$(head -n1 '$input1' | awk -F'\t' '{print NF}'))"
       -1 '$field1' -2 '$field2'
-      <(sort -t \$'\t' -k '${field1},${field1}' '$input1')
-      <(sort -t \$'\t' -k '${field2},${field2}' '$input2')
+      input1
+      input2
       > '$out_file1'
   ]]></command>
   <edam_operations>

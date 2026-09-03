@@ -25,12 +25,17 @@ from galaxy.managers import (
     secured,
     users,
 )
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import (
     Dataset,
     DatasetHash,
     DatasetInstance,
     DatasetPermissions,
     HistoryDatasetAssociation,
+    User,
 )
 from galaxy.model.db.role import (
     get_private_role_user_emails_dict,
@@ -133,7 +138,10 @@ class DatasetManager(
         roles = user.all_roles_exploiting_cache() if user else []
         return self.app.security_agent.can_access_dataset(roles, dataset)
 
-    def update_object_store_id(self, trans, dataset, object_store_id: str):
+    def update_object_store_id(self, trans: ProvidesUserContext, dataset, object_store_id: str):
+        return self.update_object_store_id_for_user(trans.user, dataset, object_store_id)
+
+    def update_object_store_id_for_user(self, user: User | None, dataset, object_store_id: str):
         device_source_map = self.app.object_store.get_device_source_map()
         old_object_store_id = dataset.object_store_id
         new_object_store_id = object_store_id
@@ -146,7 +154,7 @@ class DatasetManager(
                 "Cannot swap object store IDs for object stores that don't share a device ID."
             )
 
-        if not self.app.security_agent.can_change_object_store_id(trans.user, dataset):
+        if not self.app.security_agent.can_change_object_store_id(user, dataset):
             # TODO: probably want separate exceptions for doesn't own the dataset and dataset
             # has been shared.
             raise exceptions.InsufficientPermissionsException("Cannot change dataset permissions...")
@@ -228,7 +236,7 @@ class DatasetRBACPermissions:
         self.manage = rbac_secured.ManageDatasetRBACPermission(app)
 
     # TODO: temporary facade over security_agent
-    def available_roles(self, trans, dataset, controller="root"):
+    def available_roles(self, trans: ProvidesUserContext, dataset, controller="root"):
         return self.app.security_agent.get_legitimate_roles(trans, dataset, controller)
 
     def get(self, dataset, flush=True):
@@ -494,7 +502,7 @@ class DatasetAssociationManager(
             rval["modify_item_roles"] = role_name_id_pairs(modify_roles, private_role_emails, encode_id)
         return rval
 
-    def ensure_dataset_on_disk(self, trans, dataset: U):
+    def ensure_dataset_on_disk(self, trans: ProvidesUserContext, dataset: U):
         # Not a guarantee data is really present, but excludes a lot of expected cases
         if not dataset.dataset:
             raise exceptions.InternalServerError("Item has no associated dataset.")
@@ -546,7 +554,7 @@ class DatasetAssociationManager(
             )
         return True
 
-    def detect_datatype(self, trans, dataset_assoc: U):
+    def detect_datatype(self, trans: ProvidesHistoryContext, dataset_assoc: U):
         """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
         session = self.session()
         self.ensure_can_change_datatype(dataset_assoc)
@@ -558,19 +566,23 @@ class DatasetAssociationManager(
         session.commit()
         self.set_metadata(trans, dataset_assoc)
 
-    def set_metadata(self, trans, dataset_assoc: U, overwrite: bool = False, validate: bool = True) -> None:
+    def set_metadata(
+        self, trans: ProvidesHistoryContext, dataset_assoc: U, overwrite: bool = False, validate: bool = True
+    ) -> None:
         """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
         self.ensure_can_set_metadata(dataset_assoc)
         if overwrite:
             self.overwrite_metadata(dataset_assoc)
 
-        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_trans(
-            self.app.datatypes_registry.set_external_metadata_tool,
+        set_metadata_tool = self.app.datatypes_registry.set_external_metadata_tool
+        assert set_metadata_tool is not None
+        job, *_ = set_metadata_tool.tool_action.execute_via_trans(
+            set_metadata_tool,
             trans,
             incoming={"input1": dataset_assoc, "validate": validate},
             overwrite=overwrite,
         )
-        self.app.job_manager.enqueue(job, tool=self.app.datatypes_registry.set_external_metadata_tool)
+        self.app.job_manager.enqueue(job, tool=set_metadata_tool)
 
     def overwrite_metadata(self, data):
         for name, spec in data.metadata.spec.items():
@@ -579,7 +591,7 @@ class DatasetAssociationManager(
                 if spec.get("default"):
                     setattr(data.metadata, name, spec.unwrap(spec.get("default")))
 
-    def update_permissions(self, trans, dataset_assoc: U, **kwd):
+    def update_permissions(self, trans: ProvidesUserContext, dataset_assoc: U, **kwd):
         action = kwd.get("action", "set_permissions")
         if action not in ["remove_restrictions", "make_private", "set_permissions"]:
             raise exceptions.RequestParameterInvalidException(
@@ -632,7 +644,7 @@ class DatasetAssociationManager(
 
             self._set_permissions(trans, dataset_assoc, role_ids_dict)
 
-    def _set_permissions(self, trans, dataset_assoc: U, roles_dict):
+    def _set_permissions(self, trans: ProvidesUserContext, dataset_assoc: U, roles_dict):
         raise exceptions.NotImplemented()
 
 

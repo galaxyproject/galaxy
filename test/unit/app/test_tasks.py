@@ -71,105 +71,82 @@ def _make_job(state: str, age_days: int) -> model.Job:
 class TestCleanupJwds:
     """Tests for _cleanup_jwds using a real in-memory database with actual Job model instances."""
 
-    def test_no_failed_jobs_returns_zero(self, sa_session):
+    @pytest.fixture
+    def mock_jwd_delete(self, mocker):
+        """Patch ``JobWorkingDirectory.delete`` and return the mock.
+
+        The patched method returns ``True`` by default (simulating a successful
+        deletion); individual tests can configure side effects to simulate errors.
+        """
+        mock = mocker.patch("galaxy.celery.tasks.JobWorkingDirectory.delete")
+        mock.return_value = True
+        return mock
+
+    def test_no_failed_jobs_returns_zero(self, sa_session, mock_jwd_delete):
         object_store = MagicMock()
         result = _cleanup_jwds(sa_session, object_store, days=7)
         assert result == 0
-        object_store.get_filename.assert_not_called()
+        mock_jwd_delete.assert_not_called()
 
-    def test_deletes_jwd_for_old_failed_jobs(self, sa_session, tmp_path):
+    def test_deletes_jwd_for_old_failed_jobs(self, sa_session, mock_jwd_delete):
+        """A matching job is delegated to JobWorkingDirectory.delete and counted."""
         job = _make_job(state="error", age_days=10)
         sa_session.add(job)
         sa_session.commit()
 
-        jwd_path = tmp_path / "job_work" / str(job.id)
-        jwd_path.mkdir(parents=True)
-        (jwd_path / "some_file.txt").write_text("job output")
-
         object_store = MagicMock()
-        object_store.get_filename.return_value = str(jwd_path)
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 1
-        object_store.get_filename.assert_called_once()
-        assert isinstance(object_store.get_filename.call_args[0][0], model.Job)
-        assert not jwd_path.exists()
+        mock_jwd_delete.assert_called_once()
 
-    def test_deletes_multiple_old_failed_jobs(self, sa_session, tmp_path):
+    def test_deletes_multiple_old_failed_jobs(self, sa_session, mock_jwd_delete):
         jobs = [_make_job(state="error", age_days=10) for _ in range(3)]
         sa_session.add_all(jobs)
         sa_session.commit()
 
-        jwd_paths = []
-        for job in jobs:
-            jwd_path = tmp_path / "job_work" / str(job.id)
-            jwd_path.mkdir(parents=True)
-            jwd_paths.append(jwd_path)
-
         object_store = MagicMock()
-        object_store.get_filename.side_effect = [str(p) for p in jwd_paths]
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 3
-        assert object_store.get_filename.call_count == 3
-        assert all(not p.exists() for p in jwd_paths)
+        assert mock_jwd_delete.call_count == 3
 
-    def test_skips_jobs_not_old_enough(self, sa_session, tmp_path):
+    def test_skips_jobs_not_old_enough(self, sa_session, mock_jwd_delete):
         job = _make_job(state="error", age_days=1)
         sa_session.add(job)
         sa_session.commit()
 
-        jwd_path = tmp_path / "job_work" / str(job.id)
-        jwd_path.mkdir(parents=True)
-
         object_store = MagicMock()
-        object_store.get_filename.return_value = str(jwd_path)
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 0
-        object_store.get_filename.assert_not_called()
-        assert jwd_path.exists()
+        mock_jwd_delete.assert_not_called()
 
-    def test_skips_non_failed_jobs(self, sa_session, tmp_path):
+    def test_skips_non_failed_jobs(self, sa_session, mock_jwd_delete):
         job = _make_job(state="ok", age_days=30)
         sa_session.add(job)
         sa_session.commit()
 
-        jwd_path = tmp_path / "job_work" / str(job.id)
-        jwd_path.mkdir(parents=True)
-
         object_store = MagicMock()
-        object_store.get_filename.return_value = str(jwd_path)
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 0
-        object_store.get_filename.assert_not_called()
-        assert jwd_path.exists()
+        mock_jwd_delete.assert_not_called()
 
-    def test_deletes_jwd_for_jobs_without_object_store_id(self, sa_session, tmp_path):
+    def test_deletes_jwd_for_jobs_without_object_store_id(self, sa_session, mock_jwd_delete):
         """Jobs using the default object store have object_store_id=None but should still be cleaned up."""
         job = _make_job(state="error", age_days=10)
         job.object_store_id = None
         sa_session.add(job)
         sa_session.commit()
 
-        jwd_path = tmp_path / "job_work" / str(job.id)
-        jwd_path.mkdir(parents=True)
-
         object_store = MagicMock()
-        object_store.get_filename.return_value = str(jwd_path)
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 1
-        object_store.get_filename.assert_called_once()
-        assert not jwd_path.exists()
+        mock_jwd_delete.assert_called_once()
 
-    def test_only_deletes_matching_jobs_when_mixed(self, sa_session, tmp_path):
+    def test_only_deletes_matching_jobs_when_mixed(self, sa_session, mock_jwd_delete):
         """With both matching and non-matching jobs in the DB, only matching ones are deleted.
 
         This catches the 'Query is always truthy' bug: without .all(), the `if not failed_jobs`
@@ -187,28 +164,60 @@ class TestCleanupJwds:
         sa_session.add_all([old_failed, no_store, old_ok, recent_failed])
         sa_session.commit()
 
-        jwd_matching = tmp_path / "job_work" / str(old_failed.id)
-        jwd_matching.mkdir(parents=True)
-        jwd_no_store = tmp_path / "job_work" / str(no_store.id)
-        jwd_no_store.mkdir(parents=True)
-
         object_store = MagicMock()
-        object_store.get_filename.side_effect = [str(jwd_matching), str(jwd_no_store)]
-
         result = _cleanup_jwds(sa_session, object_store, days=7)
 
         assert result == 2
-        assert object_store.get_filename.call_count == 2
-        assert not jwd_matching.exists()
-        assert not jwd_no_store.exists()
+        assert mock_jwd_delete.call_count == 2
 
-    def test_handles_already_deleted_jwd(self, sa_session):
+    def test_handles_already_deleted_jwd(self, sa_session, mock_jwd_delete):
+        """When JobWorkingDirectory.delete raises ObjectNotFound, the job is skipped."""
         job = _make_job(state="error", age_days=10)
         sa_session.add(job)
         sa_session.commit()
 
-        object_store = MagicMock()
-        object_store.get_filename.side_effect = ObjectNotFound("JWD not found")
+        mock_jwd_delete.side_effect = ObjectNotFound("JWD not found")
 
+        object_store = MagicMock()
         result = _cleanup_jwds(sa_session, object_store, days=7)
         assert result == 0
+
+    def test_delete_returning_false_is_not_counted(self, sa_session, mock_jwd_delete):
+        """When JobWorkingDirectory.delete returns False (nothing deleted), the job is not counted."""
+        job = _make_job(state="error", age_days=10)
+        sa_session.add(job)
+        sa_session.commit()
+
+        mock_jwd_delete.return_value = False
+
+        object_store = MagicMock()
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+        assert result == 0
+
+    def test_handles_os_error_on_delete(self, sa_session, mock_jwd_delete):
+        """OSError from JobWorkingDirectory.delete is logged and the job is skipped."""
+        job = _make_job(state="error", age_days=10)
+        sa_session.add(job)
+        sa_session.commit()
+
+        mock_jwd_delete.side_effect = OSError("disk failure")
+
+        object_store = MagicMock()
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 0
+
+    def test_continues_after_error_on_one_job(self, sa_session, mock_jwd_delete):
+        """An error deleting one job's JWD does not prevent deleting subsequent jobs."""
+        jobs = [_make_job(state="error", age_days=10) for _ in range(3)]
+        sa_session.add_all(jobs)
+        sa_session.commit()
+
+        # The second job fails; the first and third should still be counted.
+        mock_jwd_delete.side_effect = [True, OSError("disk failure"), True]
+
+        object_store = MagicMock()
+        result = _cleanup_jwds(sa_session, object_store, days=7)
+
+        assert result == 2
+        assert mock_jwd_delete.call_count == 3

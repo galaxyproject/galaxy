@@ -21,6 +21,7 @@ from galaxy.files.unittest_utils import (
 from ._util import (
     assert_realizes_as,
     assert_realizes_throws_exception,
+    configured_file_sources,
     find,
     find_file_a,
     list_dir,
@@ -556,3 +557,33 @@ def test_get_file_source_path_strips_whitespace():
     resolved = file_sources.get_file_source_path("\ngxfiles://test1/a\n")
     assert resolved.file_source is not None
     assert resolved.path == "/a"
+
+
+def _two_posix_file_sources(tmp_path):
+    root_good = tmp_path / "good"
+    root_other = tmp_path / "other"
+    root_good.mkdir()
+    root_other.mkdir()
+    return configured_file_sources(
+        [
+            {"type": "posix", "id": "good", "root": str(root_good)},
+            {"type": "posix", "id": "other", "root": str(root_other)},
+        ]
+    )
+
+
+def test_plugins_to_dict_serializes_only_referenced_sources(tmp_path):
+    file_sources = _two_posix_file_sources(tmp_path)
+    plugins = file_sources.plugins_to_dict(for_serialization=True, referenced_uris={"gxfiles://good/some/file"})
+    assert [p["id"] for p in plugins] == ["good"]
+
+
+def test_plugins_to_dict_serializes_nothing_when_no_uris_referenced(tmp_path):
+    file_sources = _two_posix_file_sources(tmp_path)
+    assert file_sources.plugins_to_dict(for_serialization=True, referenced_uris=set()) == []
+
+
+def test_plugins_to_dict_serializes_all_when_referenced_uris_none(tmp_path):
+    file_sources = _two_posix_file_sources(tmp_path)
+    plugins = file_sources.plugins_to_dict(for_serialization=True)
+    assert {p["id"] for p in plugins} == {"good", "other"}

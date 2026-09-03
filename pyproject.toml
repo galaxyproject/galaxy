@@ -69,7 +69,7 @@ dependencies = [
     "paramiko!=2.9.0,!=2.9.1",  # https://github.com/paramiko/paramiko/issues/1961
     "Parsley",
     "Paste",
-    "pebble",
+    "pebble!=5.2.1",  # https://github.com/noxdafox/pebble/issues/164
     "pillow",
     "psutil",
     "pulsar-galaxy-lib>=0.15.15",
@@ -127,7 +127,7 @@ test = [
     "ase>=3.18.1",
     "axe-selenium-python",
     "boto3",
-    "cloudbridge",
+    "cloudbridge>=4.4.0",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
     "fluent-logger",
     "gcsfs",

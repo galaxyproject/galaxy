@@ -201,3 +201,10 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
     @classmethod
     def get_secure_ascii_digits(cls, n=12):
         return "".join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(12))
+
+
+class TestCachedDataManagerIntegration(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestDataManagerIntegration,
+):
+    pass

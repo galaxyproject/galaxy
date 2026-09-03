@@ -50,30 +50,6 @@
                 {{ item.email }}
             </b-button>
 
-            <b-modal
-                id="disconnectIDModal"
-                ref="deleteModal"
-                centered
-                title="Disconnect Identity?"
-                size="sm"
-                @ok="disconnectID"
-                @cancel="doomedItem = null"></b-modal>
-
-            <b-modal
-                id="disconnectAndResetModal"
-                ref="deleteAndResetModal"
-                centered
-                title="Deleting last external identity"
-                @ok="disconnectAndReset"
-                @cancel="doomedItem = null">
-                <p>
-                    This is your only defined external identity. If you delete this identity, you will be logged out. To
-                    log back in you will need to use a password associated with your account, or reconnect to this third
-                    party identity. If you don't know your Galaxy user password, you can reset it or contact an
-                    administrator for help.
-                </p>
-            </b-modal>
-
             <b-alert
                 dismissible
                 fade
@@ -98,6 +74,7 @@ import purify from "dompurify";
 import Vue from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { userLogout } from "@/utils/logout";
 import { capitalizeFirstLetter } from "@/utils/strings";
@@ -111,6 +88,12 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         ExternalLogin,
+    },
+    setup() {
+        const { confirm } = useConfirmDialog();
+        return {
+            confirm,
+        };
     },
     data() {
         const galaxy = getGalaxyInstance();
@@ -171,15 +154,39 @@ export default {
                 .catch(this.setError("Unable to load connected external identities."))
                 .finally(() => (this.loading = false));
         },
-        onDisconnect(doomed) {
+        async onDisconnect(doomed) {
             this.doomedItem = doomed;
             if (doomed.id) {
                 if (this.items.length > 1) {
                     // User must confirm that they want to disconnect the identity
-                    this.$refs.deleteModal.show();
+                    const confirmed = await this.confirm(
+                        `Are you sure you want to disconnect the external identity '${doomed.email}'?`,
+                        {
+                            title: "Disconnect Identity?",
+                            okText: "Disconnect",
+                            okColor: "red",
+                        },
+                    );
+                    if (confirmed) {
+                        this.disconnectID();
+                    } else {
+                        this.doomedItem = null;
+                    }
                 } else {
                     // User is notified to reset password to use regular Galaxy login and avoid lockout
-                    this.$refs.deleteAndResetModal.show();
+                    const confirmed = await this.confirm(
+                        "This is your only defined external identity. If you delete this identity, you will be logged out. To log back in you will need to use a password associated with your account, or reconnect to this third party identity. If you don't know your Galaxy user password, you can reset it or contact an administrator for help.",
+                        {
+                            title: "Deleting last external identity",
+                            okText: "Disconnect and Logout",
+                            okColor: "red",
+                        },
+                    );
+                    if (confirmed) {
+                        this.disconnectAndReset();
+                    } else {
+                        this.doomedItem = null;
+                    }
                     this.setError(
                         "Before disconnecting this identity, you need to set your account password, " +
                             "in order to avoid being locked out of your account.",
@@ -349,15 +356,5 @@ export default {
 .fade-enter,
 .fade-leave-to {
     opacity: 0;
-}
-
-// Delete modal
-#disconnectIDModal {
-    .modal-body {
-        display: none;
-    }
-    .modal-dialog {
-        max-width: 300px;
-    }
 }
 </style>

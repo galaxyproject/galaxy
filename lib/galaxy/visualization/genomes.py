@@ -10,6 +10,10 @@ from galaxy.exceptions import (
     ObjectNotFound,
     ReferenceDataError,
 )
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import (
     HistoryDatasetAssociation,
     User,
@@ -286,7 +290,7 @@ class Genomes:
 
         return dbkeys
 
-    def chroms(self, trans, dbkey=None, num=None, chrom=None, low=None):
+    def chroms(self, trans: ProvidesHistoryContext, dbkey=None, num=None, chrom=None, low=None):
         """
         Returns a naturally sorted list of chroms/contigs for a given dbkey.
         Use either chrom or low to specify the starting chrom in the return list.
@@ -364,7 +368,7 @@ class Genomes:
 
         return False
 
-    def reference(self, trans, dbkey, chrom, low, high):
+    def reference(self, trans: ProvidesUserContext, dbkey, chrom, low, high):
         """
         Return reference data for a build.
         """

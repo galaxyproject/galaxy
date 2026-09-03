@@ -4,6 +4,7 @@ import os
 import re
 from abc import abstractmethod
 from collections.abc import (
+    Iterable,
     Mapping,
     MutableMapping,
 )
@@ -24,7 +25,10 @@ from galaxy.exceptions import (
     ToolInputsNotReadyException,
 )
 from galaxy.job_execution.actions.post import ActionBox
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import (
     Dataset,
     History,
@@ -79,6 +83,7 @@ if TYPE_CHECKING:
     )
     from galaxy.tool_util.parser.output_objects import ToolOutput
     from galaxy.tools import Tool
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -93,11 +98,22 @@ class ToolAction:
     been converted and validated).
     """
 
+    produces_real_jobs: bool
+    file_source_uri_discovery_complete = False
+
+    def has_complete_file_source_uri_discovery(self) -> bool:
+        """Return whether this concrete action has audited URI discovery."""
+        return type(self).__dict__.get("file_source_uri_discovery_complete", False)
+
+    def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
+        """Yield file source URIs embedded in action-specific parameters."""
+        return ()
+
     @abstractmethod
     def execute(
         self,
         tool: "Tool",
-        trans,
+        trans: ProvidesHistoryContext,
         incoming: ToolStateJobInstancePopulatedT | None = None,
         history: History | None = None,
         job_params=None,
@@ -122,7 +138,7 @@ class ToolAction:
         dataset=None,
         tool=None,
         on_text=None,
-        trans=None,
+        trans: ProvidesHistoryContext | None = None,
         incoming=None,
         history=None,
         params=None,
@@ -135,6 +151,7 @@ class DefaultToolAction(ToolAction):
     """Default tool action is to run an external command"""
 
     produces_real_jobs: bool = True
+    file_source_uri_discovery_complete = True
 
     def _collect_input_datasets(
         self,
@@ -398,10 +415,12 @@ class DefaultToolAction(ToolAction):
         tool.visit_inputs(param_values, visitor)
         return input_dataset_collections
 
-    def _check_access(self, tool, trans):
+    def _check_access(self, tool, trans: ProvidesUserContext):
         assert tool.allow_user_access(trans.user), f"User ({trans.user}) is not allowed to access this tool."
 
-    def _collect_inputs(self, tool, trans, incoming, history, current_user_roles, collection_info):
+    def _collect_inputs(
+        self, tool, trans: ProvidesHistoryContext, incoming, history, current_user_roles, collection_info
+    ):
         """Collect history as well as input datasets and collections."""
         # Set history.
         if not history:
@@ -442,7 +461,7 @@ class DefaultToolAction(ToolAction):
     def execute(
         self,
         tool: "Tool",
-        trans,
+        trans: ProvidesHistoryContext,
         incoming: ToolStateJobInstancePopulatedT | None = None,
         history: History | None = None,
         job_params=None,
@@ -797,7 +816,7 @@ class DefaultToolAction(ToolAction):
             job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
             trans.sa_session.commit()
-            trans.response.send_redirect(redirect_url)
+            cast("GalaxyWebTransaction", trans).response.send_redirect(redirect_url)
         else:
             if flush_job:
                 # Set HID and add to history.
@@ -920,7 +939,7 @@ class DefaultToolAction(ToolAction):
 
     def _wrapped_params(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         tool: "Tool",
         incoming: "ToolStateJobInstancePopulatedT",
         input_datasets: LegacyUnprefixedDict | None = None,
@@ -950,7 +969,7 @@ class DefaultToolAction(ToolAction):
         return on_text_for_dataset_and_collections(dataset_hids=input_hids, collection_hids=collection_hids)
 
     def _new_job_for_session(
-        self, trans, tool: "Tool", history: History | None
+        self, trans: ProvidesHistoryContext, tool: "Tool", history: History | None
     ) -> tuple[Job, model.GalaxySession | None]:
         job = Job()
         job.galaxy_version = trans.app.config.version_major
@@ -995,7 +1014,7 @@ class DefaultToolAction(ToolAction):
             )
             sa_session.add(association)
 
-    def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections):
+    def _record_inputs(self, trans: ProvidesHistoryContext, tool, job, incoming, inp_data, inp_dataset_collections):
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
@@ -1070,7 +1089,7 @@ class DefaultToolAction(ToolAction):
             job.add_output_dataset_collection(name, dataset_collection_instance)
             dataset_collection_instance.job = job
 
-    def _record_input_datasets(self, trans, job, inp_data):
+    def _record_input_datasets(self, trans: ProvidesHistoryContext, job, inp_data):
         for name, dataset in inp_data.items():
             # TODO: figure out why can't pass dataset_id here.
             job.add_input_dataset(name, dataset=dataset)
@@ -1081,7 +1100,7 @@ class DefaultToolAction(ToolAction):
         dataset=None,
         tool=None,
         on_text=None,
-        trans=None,
+        trans: ProvidesHistoryContext | None = None,
         incoming=None,
         history=None,
         params=None,
@@ -1104,7 +1123,16 @@ class DefaultToolAction(ToolAction):
             )
 
     def _get_default_data_name(
-        self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd
+        self,
+        dataset,
+        tool,
+        on_text=None,
+        trans: ProvidesHistoryContext | None = None,
+        incoming=None,
+        history=None,
+        params=None,
+        job_params=None,
+        **kwd,
     ):
         name = tool.name
         if on_text:
@@ -1122,7 +1150,7 @@ class OutputCollections:
 
     def __init__(
         self,
-        trans,
+        trans: ProvidesHistoryContext,
         history,
         tool,
         tool_action,
@@ -1146,8 +1174,8 @@ class OutputCollections:
         self.incoming = incoming
         self.params = params
         self.job_params = job_params
-        self.out_collections = {}
-        self.out_collection_instances = {}
+        self.out_collections: dict[str, DatasetCollection] = {}
+        self.out_collection_instances: dict[str, HistoryDatasetCollectionAssociation] = {}
         self.tags = tags  # all inherited tags
         self.hdca_tags = hdca_tags  # only tags inherited from input HDCAs
 

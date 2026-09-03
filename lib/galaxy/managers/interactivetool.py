@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesUserContext
     from galaxy.structured_app import MinimalManagerApp
     from galaxy.tools import Tool
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -169,7 +170,11 @@ class InteractiveToolManager:
         self.dispatcher = dispatcher if dispatcher is not None else app.resolve_or_none(SSEEventDispatcher)
 
     def create_entry_points(
-        self, job: Job, tool: "Tool", entry_points=Iterable[dict[str, Any]] | None, flush: bool = True
+        self,
+        job: Job,
+        tool: "Tool",
+        entry_points: Iterable[dict[str, Any]] | None = None,
+        flush: bool = True,
     ) -> None:
         entry_points = entry_points or tool.ports
         for entry in entry_points:
@@ -301,7 +306,7 @@ class InteractiveToolManager:
             self.sa_session.commit()
         self.propagator.remove_entry_point(entry_point)
 
-    def target_if_active(self, trans, entry_point: InteractiveToolEntryPoint) -> str | None:
+    def target_if_active(self, trans: "GalaxyWebTransaction", entry_point: InteractiveToolEntryPoint) -> str | None:
         if entry_point.active and not entry_point.deleted:
             use_it_proxy_host_cfg = (
                 not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host
@@ -354,7 +359,7 @@ class InteractiveToolManager:
             url_path += entry_point.entry_url.lstrip("/")
         return url_path
 
-    def access_entry_point_target(self, trans: "ProvidesUserContext", entry_point_id: int) -> str | None:
+    def access_entry_point_target(self, trans: "GalaxyWebTransaction", entry_point_id: int) -> str | None:
         entry_point = self.sa_session.get(InteractiveToolEntryPoint, entry_point_id)
         assert entry_point
         if self.can_access_entry_point(trans, entry_point):

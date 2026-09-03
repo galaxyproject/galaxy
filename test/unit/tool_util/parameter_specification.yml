@@ -729,7 +729,7 @@ gx_select_multiple:
   request_valid:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
-  # ugh... but these aren't optional...
+  # multiple selects are optional by default
   - parameter: null
   - {}
   request_invalid:
@@ -754,7 +754,8 @@ gx_select_multiple:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
   - {}  # could come in linked...
-  # ... hmmm? this should maybe be invalid right?
+  # unrelated to optional-by-default: py_type_workflow_step is unconditionally optional,
+  # so this stays valid even for a required select. Still unclear it should be.
   - parameter: null
   job_internal_valid:
   - parameter: ["--ex1"]
@@ -780,12 +781,15 @@ gx_select_multiple:
   - parameter: "--ex1,ex2"
   - parameter: "--ex1"
   - parameter: ["--ex1"]
+  # optional-by-default reaches the test case states too
+  - parameter: null
   test_case_xml_invalid:
   - parameter: {}
   test_case_json_valid:
   # JSON test cases accept lists directly (no string splitting)
   - parameter: ["--ex1"]
   - parameter: ["--ex1", "ex2"]
+  - parameter: null
   test_case_json_invalid:
   - parameter: "--ex1"
   - parameter: {}
@@ -819,6 +823,27 @@ gx_select_no_options_validation:
   - {}
   job_runtime_valid:
   - parameter: "--ex1"
+  job_runtime_invalid:
+  - {}
+
+gx_select_multiple_no_options_validation:
+  request_valid:
+  - parameter: ["--ex1"]
+  # optional-by-default reaches the no_options validator - this is invalid for the
+  # single-select sibling gx_select_no_options_validation
+  - parameter: null
+  - {}
+  request_invalid:
+  - parameter: ["Ex1"]
+  - parameter: 5
+  job_internal_valid:
+  - parameter: ["--ex1"]
+  - parameter: null
+  job_internal_invalid:
+  - {}
+  job_runtime_valid:
+  - parameter: ["--ex1"]
+  - parameter: null
   job_runtime_invalid:
   - {}
 
@@ -883,19 +908,20 @@ gx_genomebuild_optional:
 
 gx_genomebuild_multiple:
   request_valid:
-  - parameter: ["hg18", hg19"]
-  # I don't love this but this is how the legacy API works and the tool parameters
-  # wrappers work this way also. Not sure how I would change this.
+  - parameter: ["hg18", "hg19"]
+  # multiple genomebuilds are optional by default, matching multiple selects -
+  # GenomeBuildParameter subclasses SelectToolParameter and inherits parse_optional(self.multiple)
   - parameter: null
+  - {}
   request_invalid:
   - parameter: 6
   job_internal_valid:
-  - parameter: ["hg18", hg19"]
+  - parameter: ["hg18", "hg19"]
   - parameter: null
   job_internal_invalid:
   - {}
   job_runtime_valid:
-  - parameter: ["hg18", hg19"]
+  - parameter: ["hg18", "hg19"]
   - parameter: null
   job_runtime_invalid:
   - {}
@@ -2296,6 +2322,29 @@ gx_drill_down_exact:
   - {}
   job_runtime_valid:
   - parameter: aa
+  job_runtime_invalid:
+  - parameter: c
+  - {}
+
+gx_drill_down_exact_optional:
+  request_valid:
+  - parameter: aa
+  - parameter: a
+  # explicitly optional - unlike gx_drill_down_exact these are accepted
+  - {}
+  - parameter: null
+  request_invalid:
+  - parameter: c
+  - parameter: {}
+  job_internal_valid:
+  - parameter: aa
+  - parameter: null
+  job_internal_invalid:
+  - parameter: c
+  - {}
+  job_runtime_valid:
+  - parameter: aa
+  - parameter: null
   job_runtime_invalid:
   - parameter: c
   - {}

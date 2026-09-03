@@ -8,19 +8,20 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 HG18_DBKEY_TEXT = "Human Mar. 2006 (NCBI36/hg18) (hg18)"
 HG18_TITLE = "Human (hg18)"
 HG38_TITLE = "Human (GRCh38/hg38)"
 
 
-class TestVisualizationsAnonymous(SeleniumTestCase):
+class TestVisualizationsAnonymous(SeleniumTestCase, UsesUploadActivity):
     @skip_without_datatype("png")
     @skip_without_visualization_plugin("annotate_image")
     @selenium_test
     def test_charts_image_annotate(self):
         hid = 1
-        self.perform_upload(self.get_filename("454Score.png"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("454Score.png")).start()
         self.history_panel_wait_for_hid_state(hid, state="ok")
 
         self.show_dataset_visualization(
@@ -35,7 +36,7 @@ class TestVisualizationsAnonymous(SeleniumTestCase):
     @skip_without_visualization_plugin("tabulator")
     def test_charts_tabulator(self):
         hid = 1
-        self.perform_upload(self.get_filename("1.tabular"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.tabular")).start()
         self.history_panel_wait_for_hid_state(hid, state="ok")
         self.show_dataset_visualization(
             hid, visualization_id="tabulator", screenshot_name="visualization_plugins_tabulator"
@@ -49,7 +50,7 @@ class TestVisualizationsAnonymous(SeleniumTestCase):
     @skip_without_visualization_plugin("h5web")
     def test_charts_h5web(self):
         hid = 1
-        self.perform_upload(self.get_filename("chopper.h5"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("chopper.h5")).start()
         self.history_panel_wait_for_hid_state(hid, state="ok")
         self.show_dataset_visualization(hid, visualization_id="h5web", screenshot_name="visualization_plugins_h5")
 
@@ -59,7 +60,7 @@ class TestVisualizationsAnonymous(SeleniumTestCase):
             self.screenshot("visualization_plugin_charts_h5web_landing")
 
 
-class TestVisualizations(SeleniumTestCase):
+class TestVisualizations(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     # Playwright strict mode violation: ".n-input__input input" resolves to 2 elements
@@ -70,7 +71,7 @@ class TestVisualizations(SeleniumTestCase):
     @skip_without_visualization_plugin("igv")
     def test_igv_loads_correct_genome(self):
         hid = 1
-        self.perform_upload(self.get_filename("1.bed"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.bed")).start()
         self.history_panel_wait_for_hid_state(hid, state="ok")
         self.show_dataset_visualization(hid, visualization_id="igv", screenshot_name="visualization_plugins_igv")
 

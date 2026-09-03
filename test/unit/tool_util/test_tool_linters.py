@@ -29,6 +29,7 @@ from galaxy.tool_util.linters import (
 )
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.interface import ToolSource
+from galaxy.tool_util.parser.util import ParameterParseException
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.util import (
@@ -1270,8 +1271,7 @@ def test_citations_legacy_doi_prefix(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX)
     run_lint_module(lint_ctx, citations, tool_source)
     assert lint_ctx.warn_messages == [
-        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
-        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; use the bare DOI '10.1186/1471-2105-11-485' instead."
     ]
     assert not lint_ctx.error_messages
 
@@ -1288,8 +1288,7 @@ def test_citations_legacy_doi_prefix_error_on_modern_profile(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX_MODERN)
     run_lint_module(lint_ctx, citations, tool_source)
     assert lint_ctx.error_messages == [
-        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
-        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; use the bare DOI '10.1186/1471-2105-11-485' instead."
     ]
     assert not lint_ctx.warn_messages
 
@@ -2597,6 +2596,34 @@ def test_linting_yml_tool(lint_ctx):
     assert len(lint_ctx.valid_messages) == 4
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
+
+
+def test_parser_failure_does_not_abort_or_repeat():
+    lint_ctx = LintContext("silent")
+
+    def fail_to_parse(tool_source, lint_ctx):
+        raise ParameterParseException("invalid parameter")
+
+    def complete_lint(tool_source, lint_ctx):
+        lint_ctx.valid("Linting continued.")
+
+    lint_ctx.lint("FirstParser", fail_to_parse, None)
+    lint_ctx.lint("SecondParser", fail_to_parse, None)
+    lint_ctx.lint("Complete", complete_lint, None)
+
+    assert lint_ctx.error_messages == ["Tool could not be parsed: invalid parameter"]
+    assert lint_ctx.error_messages[0].linter == "ToolParse"
+    assert lint_ctx.valid_messages == ["Linting continued."]
+
+
+def test_unexpected_linter_failure_is_not_swallowed():
+    lint_ctx = LintContext("silent")
+
+    def fail_unexpectedly(tool_source, lint_ctx):
+        raise RuntimeError("unexpected failure")
+
+    with pytest.raises(RuntimeError, match="unexpected failure"):
+        lint_ctx.lint("Broken", fail_unexpectedly, None)
 
 
 def test_linting_cwl_tool(lint_ctx):

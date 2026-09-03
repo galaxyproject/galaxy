@@ -25,7 +25,10 @@ from sqlalchemy.orm import joinedload
 from galaxy import exceptions
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.files.uris import stream_url_to_str
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.workflows import (
     RawWorkflowDescription,
     WorkflowContentsManager,
@@ -440,7 +443,7 @@ class WesService(ServiceBase):
 
     def submit_run(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         workflow_params: str | None = None,
         workflow_type: str | None = None,
         workflow_type_version: str | None = None,

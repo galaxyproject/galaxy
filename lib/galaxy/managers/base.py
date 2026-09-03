@@ -34,6 +34,7 @@ from collections.abc import Callable
 from functools import partial
 from typing import (
     Any,
+    cast,
     Generic,
     NamedTuple,
     TYPE_CHECKING,
@@ -42,6 +43,7 @@ from typing import (
 
 import sqlalchemy
 from sqlalchemy.orm import Query
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.scoping import scoped_session
 from typing_extensions import Protocol
 
@@ -65,7 +67,7 @@ from galaxy.structured_app import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.managers.context import ProvidesAppContext
+    from galaxy.managers.context import ProvidesUserContext
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +86,7 @@ FunctionFilterParsersType = dict[str, Any]
 
 
 # ==== accessors from base/controller.py
-def security_check(trans, item, check_ownership=False, check_accessible=False):
+def security_check(trans: "ProvidesUserContext", item, check_ownership=False, check_accessible=False):
     """
     Security checks for an item: checks if (a) user owns item or (b) item
     is accessible to user. This is a generic method for dealing with objects
@@ -162,7 +164,7 @@ def encode_with_security(security: IdEncodingHelper, id: Any, kind: str | None =
 
 
 def get_object(
-    trans: "ProvidesAppContext",
+    trans: "ProvidesUserContext",
     id,
     class_name,
     check_ownership: bool = False,
@@ -1294,6 +1296,49 @@ def parse_bool(bool_string: str | bool) -> bool:
 
 def raise_filter_err(attr, op, val, msg):
     raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
+
+
+# Both an ORM attribute (History.name) and a core column expression (func.lower(...)) can be
+# ordered by, and both carry the .type needed to tell text columns apart.
+SortableColumn = sqlalchemy.ColumnElement[T] | InstrumentedAttribute[T]
+SelectT = TypeVar("SelectT", bound=sqlalchemy.Select[Any])
+
+
+def sort_expression(column: SortableColumn[T]) -> SortableColumn[T]:
+    """Return the ORDER BY expression for ``column``, ordering text case-insensitively.
+
+    Raw text ordering follows the database collation, so every capitalised value sorts
+    ahead of every lowercase one under SQLite or a C-collation Postgres but not under a
+    locale collation. Filtering already ignores case, so ordering does too. ASCII only:
+    SQLite's lower() folds nothing else and Postgres' is locale dependent.
+    """
+    affinity = column.type._type_affinity
+    if affinity is not None and issubclass(affinity, sqlalchemy.String):
+        return sqlalchemy.func.lower(column)
+    return column
+
+
+def apply_sort_column(
+    stmt: SelectT,
+    column: SortableColumn[Any],
+    sort_desc: bool | None,
+    tiebreaker: SortableColumn[Any],
+) -> SelectT:
+    """Order a ``SELECT DISTINCT`` statement by ``column``, breaking ties on ``tiebreaker``.
+
+    Without the tiebreaker, paging with limit/offset over a column holding duplicate
+    values can return a row on two pages, or on none.
+    """
+    expression = sort_expression(column)
+    if expression is not column:
+        # Postgres rejects ordering a SELECT DISTINCT by an expression missing from the
+        # select list. Selecting it cannot change which rows are distinct -- it derives
+        # from a column that is already selected. add_columns() widens the row type, but
+        # the extra column trails the entity that callers read back with scalars().
+        stmt = cast(SelectT, stmt.add_columns(expression))
+    if sort_desc:
+        return stmt.order_by(expression.desc(), tiebreaker.desc())
+    return stmt.order_by(expression, tiebreaker)
 
 
 class SortableManager:
