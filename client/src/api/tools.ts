@@ -1,5 +1,7 @@
 import { type components, GalaxyApi } from "@/api";
 import { ERROR_STATES, type ShowFullJobResponse } from "@/api/jobs";
+import type { ServiceCredentialsContext } from "@/api/userCredentials";
+import type { FormInputNode } from "@/components/Form/composables/useFormState";
 import type { Tool, ToolPanelItem, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -22,6 +24,46 @@ export type ApiDataElement = FileDataElement | PastedDataElement | UrlDataElemen
 export interface ToolIdentifier {
     toolId: string;
     toolVersion: string;
+}
+
+/**
+ * The tool-form "build" model returned by `updateToolFormData` /
+ * `getToolFormData` in `client/src/components/Tool/services.js`
+ * (POST or GET `/api/tools/{id}/build`, or `/api/jobs/{jobId}/build_for_rerun`).
+ *
+ * TODO: Replace with generated schema once the backend models are typed and we can use them directly.
+ */
+export interface ToolFormConfig extends Tool {
+    /** Present for dynamic (user-defined) tools. */
+    uuid?: string;
+    inputs: FormInputNode[];
+    /** Per-parameter backend validation errors, keyed by dotted name; nulled out client-side once the user edits. */
+    errors: Record<string, unknown> | null;
+    /** Dumped-to-JSON tool state (encoded ids, `src` dicts), keyed by dotted name. */
+    state_inputs: Record<string, unknown>;
+    /** Non-fatal state warnings from `check_and_update_param_values`, or null. */
+    warnings: Record<string, unknown> | null;
+    /** Tool-version mismatch / rerun message; empty string when there is none. */
+    message: string;
+    /** Static tool-level configuration errors (bad XML etc.), or null. */
+    tool_errors: Record<string, unknown> | null;
+    /** Required service credentials for this tool; `[]` when none. */
+    credentials: ServiceCredentialsContext[];
+    /** Encoded id of the source job when built for rerun, else null. */
+    job_id: string | null;
+    /** Whether the source job's outputs can be remapped, else null. */
+    job_remap: boolean | "job_produced_collection_elements" | null;
+    /** Credentials context captured at the time the source job was created. */
+    job_credentials_context: Record<string, unknown> | null;
+    /** Encoded id of the history the form is bound to, else null. */
+    history_id: string | null;
+    /** Submission target URL. */
+    action: string;
+    /** Form submission method, e.g. `post`. */
+    method: string;
+    enctype: string;
+    /** How the tool renders its interface, e.g. `tabular`. */
+    display?: string;
 }
 
 export function getToolKey(toolId: string, toolVersion: string): string {

@@ -5,6 +5,7 @@ import { useRoute, useRouter } from "vue-router/composables";
 
 import { canMutateHistory as canMutateHistoryMethod } from "@/api";
 import type { JobRequest, JobResponse } from "@/api/jobs";
+import type { ToolFormConfig } from "@/api/tools";
 import type { FormData, FormInputNode } from "@/components/Form/composables/useFormState";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import { findInputByDottedName } from "@/components/Form/utilities";
@@ -60,8 +61,7 @@ const showEntryPoints = ref(false);
 const showRecommendation = ref(false);
 const showError = ref(false);
 const showExecuting = ref(false);
-// TODO: Needs to be typed
-const formConfig = ref<any>({});
+const formConfig = ref<ToolFormConfig>({} as ToolFormConfig);
 const formData = ref<FormData | undefined>(undefined);
 const remapAllowed = ref<boolean | "job_produced_collection_elements" | null>(false);
 const errorTitle = ref<string | null>(null);
@@ -172,8 +172,8 @@ const hasCredentialsErrors = computed(() => {
 
 const hasConfigOrValErrors = computed(
     () =>
-        (formConfig.value.errors && Object.values(formConfig.value.errors).length > 0) ||
-        validationInternal.value?.length,
+        Boolean(formConfig.value.errors && Object.values(formConfig.value.errors).length > 0) ||
+        Boolean(validationInternal.value?.length),
 );
 
 const runButtonDisabled = computed(
@@ -183,11 +183,6 @@ const runButtonDisabled = computed(
 watch([() => currentHistoryId.value, () => lastUpdateTime.value], () => {
     onHistoryChange();
 });
-
-// ...mapActions(useJobStore, ["saveLatestResponse"]),
-// ...mapActions(useTourStore, ["setTour"]),
-// ...mapActions(useHistoryStore, ["startWatchingHistory"]),
-// ...mapActions(useUserStore, ["addRecentTool"]),
 
 function onHistoryChange() {
     if (initialized.value) {
@@ -301,9 +296,7 @@ async function onSearchChange(payload: { name: string; src: string; query: strin
  * afterwards so the rendered clone picks up the new options (see
  * ``refreshInputs``).
  */
-function mergeFetchedOptions(name: string, src: string, data: any) {
-    // TODO: Type `data` here with the same type as `formConfig`
-
+function mergeFetchedOptions(name: string, src: string, data: ToolFormConfig) {
     const newInput: FormInputNode | null = findInputByDottedName(data.inputs, name) as FormInputNode | null;
     const target: FormInputNode | null = findInputByDottedName(formConfig.value.inputs, name) as FormInputNode | null;
     if (!newInput || !target) {
