@@ -7,7 +7,7 @@
     <span>
         <span :class="spinnerClasses" title="loading"></span>
         <span v-if="!spinnerOnly" class="loading-message" data-description="loading message">
-            {{ message }}.<span class="blinking">..</span>
+            {{ message }}
         </span>
     </span>
 </template>
