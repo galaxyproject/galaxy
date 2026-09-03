@@ -2183,6 +2183,10 @@ class PickValueModule(WorkflowModule):
             if value.extension == "expression.json":
                 if value.blurb == "skipped":
                     return True
+                if not value.is_ok:
+                    # A failed expression output has no readable value, but failure is
+                    # not null. Preserve it so downstream failure filters can handle it.
+                    return False
                 return read_expression_json(value, step=step) is None
         return False
 

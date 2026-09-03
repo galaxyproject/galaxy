@@ -579,7 +579,7 @@ class WorkflowProgress:
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if not_yet_available(replacement):
                     raise modules.DelayedWorkflowEvaluation()
-                if not replacement.is_ok:
+                if not is_data and not replacement.is_ok:
                     raise modules.FailWorkflowEvaluation(
                         why=InvocationFailureDatasetFailed(
                             reason=FailureReason.dataset_failed,
@@ -595,7 +595,7 @@ class WorkflowProgress:
                 for dataset_instance in replacement.dataset_instances:
                     if not_yet_available(dataset_instance):
                         pending = True
-                    elif not dataset_instance.is_ok:
+                    elif not is_data and not dataset_instance.is_ok:
                         raise modules.FailWorkflowEvaluation(
                             why=InvocationFailureDatasetFailed(
                                 reason=FailureReason.dataset_failed,

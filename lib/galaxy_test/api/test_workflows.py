@@ -3381,10 +3381,11 @@ test_data: {}
             assert picked_content == "42"
 
     @skip_without_tool("exit_code_from_file")
+    @skip_without_tool("__BUILD_LIST__")
+    @skip_without_tool("__FILTER_FAILED_DATASETS__")
     def test_pick_value_input_failed(self):
-        # pick_value reads its inputs while scheduling, so it has to wait for the jobs
-        # producing them - scheduling against an unfinished input would pick a dataset
-        # that only later turns out to have failed.
+        # Failure is terminal, not null. Preserve the failed dataset as the picked
+        # output so downstream failure filters can handle it without failing scheduling.
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
                 """class: GalaxyWorkflow
@@ -3402,9 +3403,26 @@ steps:
       mode: first_or_skip
     in:
       input_0: branch/out_file1
+  list:
+    tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: pick/output
+      datasets_1|input: exit_code
+    state:
+      datasets:
+      - id_cond:
+          id_select: id
+      - id_cond:
+          id_select: id
+  filter_failed:
+    tool_id: __FILTER_FAILED_DATASETS__
+    in:
+      input: list/output
 outputs:
   picked:
     outputSource: pick/output
+  filtered:
+    outputSource: filter_failed/output
 """,
                 test_data="""
 exit_code:
@@ -3416,10 +3434,19 @@ exit_code:
                 wait=True,
             )
             invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
-            assert invocation["state"] == "failed"
-            assert len(invocation["messages"]) == 1
-            message = invocation["messages"][0]
-            assert message["reason"] == "dataset_failed"
+            assert invocation["state"] in ("scheduled", "completed"), invocation
+            assert invocation["messages"] == [], invocation
+            picked = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["picked"]["id"], assert_ok=False
+            )
+            assert picked["state"] == "error", picked
+            filtered = self.dataset_populator.get_history_collection_details(
+                history_id,
+                content_id=invocation["output_collections"]["filtered"]["id"],
+                assert_ok=False,
+            )
+            assert len(filtered["elements"]) == 1, filtered
+            assert filtered["elements"][0]["object"]["state"] == "ok", filtered
 
     @skip_without_tool("job_properties")
     @skip_without_tool("cat1")
