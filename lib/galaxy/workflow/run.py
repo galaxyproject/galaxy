@@ -598,7 +598,7 @@ class WorkflowProgress:
                     raise modules.DelayedWorkflowEvaluation(
                         dependencies=[modules.SchedulingDependency(modules.DependencyType.HDA, replacement.id)]
                     )
-                if not replacement.is_ok:
+                if not is_data and not replacement.is_ok:
                     raise modules.FailWorkflowEvaluation(
                         why=InvocationFailureDatasetFailed(
                             reason=FailureReason.dataset_failed,
@@ -618,7 +618,7 @@ class WorkflowProgress:
                     if not_yet_available(dataset_instance):
                         pending = True
                         pending_dataset_instance = dataset_instance
-                    elif not dataset_instance.is_ok:
+                    elif not is_data and not dataset_instance.is_ok:
                         raise modules.FailWorkflowEvaluation(
                             why=InvocationFailureDatasetFailed(
                                 reason=FailureReason.dataset_failed,
