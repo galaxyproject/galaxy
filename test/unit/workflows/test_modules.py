@@ -417,6 +417,23 @@ def test_replace_expression_json_dataset_leaves_other_replacements_unchanged():
     assert modules.replace_expression_json_dataset("a string", _workflow_step()) == "a string"
 
 
+@pytest.mark.parametrize(
+    ("state", "is_failed"),
+    [
+        (model.Dataset.states.OK, False),
+        (model.Dataset.states.DEFERRED, False),
+        (model.Dataset.states.EMPTY, False),
+        (model.Dataset.states.ERROR, True),
+        (model.Dataset.states.FAILED_METADATA, True),
+        (model.Dataset.states.DISCARDED, True),
+    ],
+)
+def test_pick_value_failed_state_classification(state, is_failed):
+    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda.dataset.state = state
+    assert modules.PickValueModule._is_failed(hda) is is_failed
+
+
 class MapOverTestCase(NamedTuple):
     data_input: str
     step_input_def: str | list[str]
