@@ -41,7 +41,7 @@ echo 'Hello World' > out1
         <test expect_failure="true">
             <param name="value" value="wrongvalue"/>
             <param name="value_neg" value="hg19"/>
-            <param name="value_deprecated" value="hg19"/>
+            <param name="value_neg_deprecated" value="hg19"/>
             <param name="select_value" value="absent_value"/>
             <param name="select_value_multiple" value="absent_value,hg19_value"/>
         </test>

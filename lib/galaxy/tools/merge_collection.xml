@@ -249,7 +249,11 @@
       </output_collection>
     </test>
     <test>
-      <expand macro="advanced_section" duplicate_handling="keep_last" suffix_pattern="__#" />
+      <section name="advanced">
+        <conditional name="conflict">
+          <param name="duplicate_options" value="keep_last" />
+        </conditional>
+      </section>
       <repeat name="inputs">
         <param name="input">
           <expand macro="test_collecton_simple_then_alternative" />
