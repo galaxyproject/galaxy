@@ -2,11 +2,13 @@
 Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
 
+import functools
 import logging
 import os
 import shutil
 import ssl
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -16,10 +18,12 @@ try:
     from irods.exception import (
         CollectionDoesNotExist,
         DataObjectDoesNotExist,
+        NetworkException,
     )
     from irods.session import iRODSSession
 except ImportError:
     irods = None
+
 
 from galaxy.util import (
     ExecutionTimer,
@@ -38,6 +42,40 @@ IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature
 CHUNK_SIZE = 2**20
 log = logging.getLogger(__name__)
 logging.getLogger("irods.connection").setLevel(logging.INFO)  # irods logging generates gigabytes of logs
+
+
+_IRODS_RETRY_ATTEMPTS = 3
+_IRODS_RETRY_BACKOFF = 0.5
+
+# python-irodsclient is optional; fall back to ssl errors when NetworkException is unavailable.
+_RETRYABLE_CONNECTION_ERRORS: "tuple[type[BaseException], ...]"
+if irods is None:
+    _RETRYABLE_CONNECTION_ERRORS = (ssl.SSLError,)
+else:
+    _RETRYABLE_CONNECTION_ERRORS = (NetworkException, ssl.SSLError)
+
+
+def _retry_on_connection_error(func):
+    """Retry an iRODS operation on a transient connection error."""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        for attempt in range(1, _IRODS_RETRY_ATTEMPTS + 1):
+            try:
+                return func(*args, **kwargs)
+            except _RETRYABLE_CONNECTION_ERRORS as exc:
+                if attempt == _IRODS_RETRY_ATTEMPTS:
+                    raise
+                log.warning(
+                    "Transient iRODS error in %s (attempt %d/%d), retrying on a fresh connection: %s",
+                    func.__name__,
+                    attempt,
+                    _IRODS_RETRY_ATTEMPTS,
+                    exc,
+                )
+                time.sleep(_IRODS_RETRY_BACKOFF * attempt)
+
+    return wrapper
 
 
 def _config_xml_error(tag):
@@ -382,6 +420,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         }
 
     # rel_path is file or folder?
+    @_retry_on_connection_error
     def _get_remote_size(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
@@ -402,6 +441,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             log.debug("irods_pt _get_remote_size: %s", ipt_timer)
 
     # rel_path is file or folder?
+    @_retry_on_connection_error
     def _exists_remotely(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
@@ -421,6 +461,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _exists_remotely: %s", ipt_timer)
 
+    @_retry_on_connection_error
     def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
         ipt_timer = ExecutionTimer()
         log.debug("Pulling data object '%s' into cache to %s", rel_path, cache_path)
@@ -447,6 +488,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
 
+    @_retry_on_connection_error
     def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
         """
         Push the file pointed to by ``rel_path`` to the iRODS. Extract folder name
@@ -526,6 +568,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _push_to_storage: %s", ipt_timer)
 
+    @_retry_on_connection_error
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
@@ -590,6 +633,10 @@ class IRODSObjectStore(CachingConcreteObjectStore):
                 except (DataObjectDoesNotExist, CollectionDoesNotExist):
                     log.info("Collection or data object (%s) does not exist", data_object_path)
                     return True
+        except _RETRYABLE_CONNECTION_ERRORS:
+            # ssl.SSLError is an OSError subclass; re-raise before the generic
+            # OSError handler below so @_retry_on_connection_error can retry it.
+            raise
         except OSError:
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         finally:
