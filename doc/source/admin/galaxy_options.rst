@@ -2144,6 +2144,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``matomo_disable_cookies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Run Matomo in "cookieless" mode. When set to true (the default),
+    Galaxy instructs the Matomo tracker to disable all tracking
+    cookies by calling _paq.push(['disableCookies']) before tracking
+    the page view. Set to false to allow Matomo to use cookies. See
+    https://matomo.org/faq/general/faq_157/ for details.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~
 ``display_servers``
 ~~~~~~~~~~~~~~~~~~~
