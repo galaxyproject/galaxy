@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { faClock } from "@fortawesome/free-regular-svg-icons";
-import { faHdd, faWrench } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute } from "vue-router/composables";
 
 import type { JobBaseModel } from "@/api/jobs";
 import { fetchJobs } from "@/api/jobs";
@@ -14,9 +11,7 @@ import { useJobStore } from "@/stores/jobStore";
 import { useUserStore } from "@/stores/userStore";
 
 import FilterMenu from "@/components/Common/FilterMenu.vue";
-import GCard from "@/components/Common/GCard.vue";
-import Heading from "@/components/Common/Heading.vue";
-import JobState from "@/components/JobStates/JobState.vue";
+import JobCard from "@/components/JobInformation/JobCard.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
@@ -117,22 +112,12 @@ function loadHistories(jobs: JobBaseModel[]) {
     );
 }
 
-function historyName(historyId: string) {
-    const historyStore = useHistoryStore();
-    return historyStore.getHistoryNameById(historyId);
-}
-
 const route = useRoute();
-const router = useRouter();
 
 const currentItemId = computed(() => {
     const match = route.path.match(/\/jobs\/([a-zA-Z0-9]+)\/view/);
     return match ? match[1] : undefined;
 });
-
-function cardClicked(job: JobBaseModel) {
-    router.push(`/jobs/${job.id}/view`);
-}
 </script>
 
 <template>
@@ -160,32 +145,7 @@ function cardClicked(job: JobBaseModel) {
             name-plural="jobs"
             :load-disabled="!currentUser || currentUser.isAnonymous">
             <template v-slot:item="{ item: job }">
-                <GCard
-                    :id="`job-${job.id}`"
-                    clickable
-                    button
-                    :current="job.id === currentItemId"
-                    :active="job.id === currentItemId"
-                    :title="job.tool_id"
-                    :title-icon="{ icon: faWrench }"
-                    :title-n-lines="2"
-                    title-size="text"
-                    :update-time="job.update_time"
-                    :update-time-icon="faClock"
-                    @click="() => cardClicked(job)">
-                    <template v-slot:description>
-                        <Heading v-if="job.history_id" class="m-0" size="text">
-                            <FontAwesomeIcon :icon="faHdd" fixed-width />
-
-                            <small class="text-muted truncate-n-lines two-lines">
-                                {{ historyName(job.history_id) }}
-                            </small>
-                        </Heading>
-                    </template>
-                    <template v-slot:badges>
-                        <JobState :job="job" />
-                    </template>
-                </GCard>
+                <JobCard :job="job" :current="job.id === currentItemId" />
             </template>
         </ScrollList>
     </ActivityPanel>
