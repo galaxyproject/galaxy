@@ -18,13 +18,8 @@ they are never reported here as demonstrably missing.
 """
 
 import os
+from collections.abc import Iterable
 from typing import (
-    Dict,
-    FrozenSet,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -230,7 +225,7 @@ class ConflictingTableSchema(Linter[RepositoryDataTables]):
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
-        by_name: Dict[str, List] = {}
+        by_name: dict[str, list] = {}
         for decl in model.raw_table_decls:
             by_name.setdefault(decl.name, []).append(decl)
         conflicted = False
@@ -287,7 +282,7 @@ REPOSITORY_DATA_TABLE_LINTERS = (
 # these via from_data_table without defining them locally, so they are treated as
 # externally supplied by default; callers extend this set through the
 # external_table_names argument (e.g. from a Tool Shed supplier index).
-DEFAULT_EXTERNAL_TABLE_NAMES: FrozenSet[str] = frozenset({"all_fasta", "fasta_indexes", "__dbkeys__"})
+DEFAULT_EXTERNAL_TABLE_NAMES: frozenset[str] = frozenset({"all_fasta", "fasta_indexes", "__dbkeys__"})
 
 
 def lint_repository_data_tables(model: RepositoryDataTables, lint_ctx: "LintContext") -> None:
@@ -303,10 +298,10 @@ def lint_repository_data_tables(model: RepositoryDataTables, lint_ctx: "LintCont
 def lint_repository_data_tables_bundle(
     lint_ctx: "LintContext",
     repo_root: str,
-    data_manager_conf: Optional[str] = None,
-    tool_data_table_confs: Optional[List[str]] = None,
-    consumer_tool_sources: Optional[Iterable[Tuple[str, "ToolSource"]]] = None,
-    external_table_names: FrozenSet[str] = frozenset(),
+    data_manager_conf: str | None = None,
+    tool_data_table_confs: list[str] | None = None,
+    consumer_tool_sources: Iterable[tuple[str, "ToolSource"]] | None = None,
+    external_table_names: frozenset[str] = frozenset(),
 ) -> None:
     """Assemble a repository data-table model from already-discovered paths and lint it.
 
@@ -322,7 +317,7 @@ def lint_repository_data_tables_bundle(
     are then dispatched by :func:`lint_repository_data_tables`, so they must not nest
     inside that same call (which would print them twice).
     """
-    model: Optional[RepositoryDataTables] = None
+    model: RepositoryDataTables | None = None
 
     def assemble(_unused_target, lint_ctx: "LintContext") -> None:
         nonlocal model
@@ -355,12 +350,12 @@ TOOL_DATA_TABLE_CONF_NAMES = (
 )
 
 
-def _find_data_manager_conf(repo_root: str) -> Optional[str]:
+def _find_data_manager_conf(repo_root: str) -> str | None:
     candidate = os.path.join(repo_root, DATA_MANAGER_CONF)
     return candidate if os.path.exists(candidate) else None
 
 
-def _find_tool_data_table_conf(repo_root: str) -> Optional[str]:
+def _find_tool_data_table_conf(repo_root: str) -> str | None:
     for name in TOOL_DATA_TABLE_CONF_NAMES:
         candidate = os.path.join(repo_root, name)
         if os.path.exists(candidate):
@@ -368,13 +363,13 @@ def _find_tool_data_table_conf(repo_root: str) -> Optional[str]:
     return None
 
 
-def _discover_consumer_tool_sources(repo_root: str) -> List[Tuple[str, "ToolSource"]]:
+def _discover_consumer_tool_sources(repo_root: str) -> list[tuple[str, "ToolSource"]]:
     """Walk ``repo_root`` for loadable tool wrappers that might consume a data table.
 
     Uses the same directory loader Planemo's ``yield_tool_sources`` is built on;
     tool files that fail to load or are not ordinary tool wrappers are skipped.
     """
-    sources: List[Tuple[str, ToolSource]] = []
+    sources: list[tuple[str, ToolSource]] = []
     for tool_path, tool_source in load_tool_sources_from_path(repo_root, recursive=True, register_load_errors=True):
         if is_tool_load_error(tool_source):
             continue
@@ -387,7 +382,7 @@ def _discover_consumer_tool_sources(repo_root: str) -> List[Tuple[str, "ToolSour
 def find_and_lint_repository_data_tables(
     lint_ctx: "LintContext",
     repo_root: str,
-    external_table_names: FrozenSet[str] = frozenset(),
+    external_table_names: frozenset[str] = frozenset(),
 ) -> None:
     """Discover a repository's data-table bundle from ``repo_root`` and lint it.
 

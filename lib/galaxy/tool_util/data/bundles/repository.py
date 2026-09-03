@@ -19,19 +19,13 @@ It composes existing galaxy-tool-util abstractions rather than duplicating them:
 """
 
 import os
+from collections.abc import Iterable
 from dataclasses import (
     dataclass,
     field,
 )
 from typing import (
     cast,
-    Dict,
-    FrozenSet,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
 )
 
 from galaxy.tool_util.data import (
@@ -56,7 +50,7 @@ class SourceLoc:
     """Where a modeled element came from, for narrow skips and PR annotations."""
 
     path: str
-    line: Optional[int] = None
+    line: int | None = None
 
 
 @dataclass
@@ -81,8 +75,8 @@ class LocAsset:
     # Row-shape errors captured by ``parse_file_fields`` at load time (too-few-fields /
     # wrong-separator lines). Only populated when ``found`` (parsing only runs on a
     # loader-resolved file), so "no errors" is not "clean" for an unfound reference.
-    errors: Tuple[str, ...] = ()
-    source: Optional[SourceLoc] = None
+    errors: tuple[str, ...] = ()
+    source: SourceLoc | None = None
 
 
 @dataclass
@@ -117,10 +111,10 @@ class RawTableDecl:
     name: str
     # Declared column names in order, keeping duplicates (the parsed ``columns``
     # map collapses them) -- used to detect a table declaring one name twice.
-    column_names: Tuple[str, ...]
+    column_names: tuple[str, ...]
     # The name->index map the loader would parse; this is what it compares when
     # merging same-named tables, so schema-conflict detection keys on this.
-    columns: Dict[str, int]
+    columns: dict[str, int]
     separator: str
     comment_char: str
     source: SourceLoc
@@ -135,13 +129,13 @@ class TableDecl:
     """
 
     name: str
-    columns: Dict[str, int]
+    columns: dict[str, int]
     largest_index: int
     separator: str
     comment_char: str
     allow_duplicate_entries: bool
-    loc_paths: Tuple[str, ...]
-    source: Optional[SourceLoc] = None
+    loc_paths: tuple[str, ...]
+    source: SourceLoc | None = None
 
 
 @dataclass
@@ -150,7 +144,7 @@ class ConsumerRef:
 
     table_name: str
     kind: str
-    tool_id: Optional[str]
+    tool_id: str | None
     source: SourceLoc
 
 
@@ -160,7 +154,7 @@ class ManagerDecl:
 
     id: str
     tool_file: str
-    tool_output_names: FrozenSet[str]
+    tool_output_names: frozenset[str]
     # Reused manager-side model: output_ref values, table names, column mappings.
     processor: DataTableBundleProcessorDescription
     source: SourceLoc
@@ -175,36 +169,36 @@ class RepositoryDataTables:
     """Cross-file lint view of one repository's data-table bundle."""
 
     repo_root: str
-    managers: List[ManagerDecl] = field(default_factory=list)
-    configured_tables: List[TableDecl] = field(default_factory=list)
+    managers: list[ManagerDecl] = field(default_factory=list)
+    configured_tables: list[TableDecl] = field(default_factory=list)
     # Every ``<table>`` element as declared (pre-merge); may hold several entries
     # for one name. Populated even when the loader is skipped over a conflict.
-    raw_table_decls: List[RawTableDecl] = field(default_factory=list)
-    loc_assets: List[LocAsset] = field(default_factory=list)
+    raw_table_decls: list[RawTableDecl] = field(default_factory=list)
+    loc_assets: list[LocAsset] = field(default_factory=list)
     # Every ``.loc`` / ``.loc.sample`` file found in the repo tree (independent of
     # whether a configured table resolves to it), for the empty-file check.
-    loc_files: List[LocFile] = field(default_factory=list)
-    consumers: List[ConsumerRef] = field(default_factory=list)
+    loc_files: list[LocFile] = field(default_factory=list)
+    consumers: list[ConsumerRef] = field(default_factory=list)
     # Tables validly supplied by Galaxy core or another installed repository; a
     # consumer of one of these is not a demonstrably-missing definition (req #2).
-    external_table_names: FrozenSet[str] = frozenset()
+    external_table_names: frozenset[str] = frozenset()
 
     @property
-    def configured_table_names(self) -> FrozenSet[str]:
+    def configured_table_names(self) -> frozenset[str]:
         # Union of loader-enriched and raw declarations: names stay available for
         # cross-component checks even when a schema conflict made the loader skip.
         names = {t.name for t in self.configured_tables}
         names |= {d.name for d in self.raw_table_decls}
         return frozenset(names)
 
-    def table(self, name: str) -> Optional[TableDecl]:
+    def table(self, name: str) -> TableDecl | None:
         for table in self.configured_tables:
             if table.name == name:
                 return table
         return None
 
 
-def _xml_output_names(root: Optional[Element]) -> FrozenSet[str]:
+def _xml_output_names(root: Element | None) -> frozenset[str]:
     """Names of ``<data>`` / ``<collection>`` outputs declared by a (macro-expanded) wrapper."""
     if root is None:
         return frozenset()
@@ -220,7 +214,7 @@ def _xml_output_names(root: Optional[Element]) -> FrozenSet[str]:
     return frozenset(names)
 
 
-def _tool_source_root(tool_source: ToolSource) -> Optional[Element]:
+def _tool_source_root(tool_source: ToolSource) -> Element | None:
     """Root element of a (macro-expanded) XML wrapper, or None for a non-XML source.
 
     Reads the ``xml_tree`` attribute the tool linters standardize on rather than the
@@ -230,7 +224,7 @@ def _tool_source_root(tool_source: ToolSource) -> Optional[Element]:
     return xml_tree.getroot() if xml_tree is not None else None
 
 
-def _consumer_refs(tool_source: ToolSource, path: str) -> List[ConsumerRef]:
+def _consumer_refs(tool_source: ToolSource, path: str) -> list[ConsumerRef]:
     """Scan a (macro-expanded) wrapper for ``from_data_table`` table references."""
     root = _tool_source_root(tool_source)
     if root is None:
@@ -251,7 +245,7 @@ def _consumer_refs(tool_source: ToolSource, path: str) -> List[ConsumerRef]:
     return refs
 
 
-def _build_managers(data_manager_conf: str) -> List[ManagerDecl]:
+def _build_managers(data_manager_conf: str) -> list[ManagerDecl]:
     conf_dir = os.path.dirname(os.path.abspath(data_manager_conf))
     root = parse_xml(data_manager_conf).getroot()
     managers = []
@@ -264,7 +258,7 @@ def _build_managers(data_manager_conf: str) -> List[ManagerDecl]:
             tool_elem = dm_elem.find("tool")
             tool_file = tool_elem.get("file") if tool_elem is not None else None
         tool_file = tool_file or ""
-        output_names: FrozenSet[str] = frozenset()
+        output_names: frozenset[str] = frozenset()
         wrapper_resolved = False
         if tool_file:
             tool_path = os.path.join(conf_dir, tool_file)
@@ -285,7 +279,7 @@ def _build_managers(data_manager_conf: str) -> List[ManagerDecl]:
     return managers
 
 
-def _raw_column_spec(table_elem: Element) -> Tuple[Tuple[str, ...], Dict[str, int]]:
+def _raw_column_spec(table_elem: Element) -> tuple[tuple[str, ...], dict[str, int]]:
     """Declared column names (with duplicates) and the parsed name->index map.
 
     The name->index map is produced by the canonical
@@ -307,7 +301,7 @@ def _raw_column_spec(table_elem: Element) -> Tuple[Tuple[str, ...], Dict[str, in
     return column_names, columns
 
 
-def _raw_table_decls(tool_data_table_confs: List[str]) -> List[RawTableDecl]:
+def _raw_table_decls(tool_data_table_confs: list[str]) -> list[RawTableDecl]:
     """Parse every ``<table>`` element as declared, before the loader merges same names."""
     decls = []
     for conf in tool_data_table_confs:
@@ -327,7 +321,7 @@ def _raw_table_decls(tool_data_table_confs: List[str]) -> List[RawTableDecl]:
     return decls
 
 
-def _has_column_conflict(raw_decls: List[RawTableDecl]) -> bool:
+def _has_column_conflict(raw_decls: list[RawTableDecl]) -> bool:
     """Whether any table name is declared with differing columns (what the loader's merge rejects).
 
     Keys on the parsed name->index map, not the raw name list, because that map is
@@ -337,7 +331,7 @@ def _has_column_conflict(raw_decls: List[RawTableDecl]) -> bool:
     by index). This is the pre-load counterpart of that check: same columns-equality
     rule, applied to the raw declarations before the loader is invoked.
     """
-    by_name: Dict[str, List[Dict[str, int]]] = {}
+    by_name: dict[str, list[dict[str, int]]] = {}
     for decl in raw_decls:
         specs = by_name.setdefault(decl.name, [])
         if decl.columns not in specs:
@@ -380,7 +374,7 @@ def _classify_loc_file(path: str) -> LocFile:
     return LocFile(path=path, has_data=has_data, has_comment=has_comment)
 
 
-def _discover_loc_files(repo_root: str) -> List[LocFile]:
+def _discover_loc_files(repo_root: str) -> list[LocFile]:
     """Every ``.loc`` / ``.loc.sample`` file under ``repo_root`` (data rows / comments recorded)."""
     loc_files = []
     for dirpath, _, filenames in os.walk(repo_root):
@@ -391,8 +385,8 @@ def _discover_loc_files(repo_root: str) -> List[LocFile]:
 
 
 def _build_tables(
-    repo_root: str, tool_data_table_confs: List[str], raw_decls: List[RawTableDecl]
-) -> Tuple[List[TableDecl], List[LocAsset]]:
+    repo_root: str, tool_data_table_confs: list[str], raw_decls: list[RawTableDecl]
+) -> tuple[list[TableDecl], list[LocAsset]]:
     # A same-named table declared with conflicting columns makes the loader's merge
     # raise; skip enrichment in that case and let the linter report the conflict from
     # the raw declarations (table names still come from those). Loc diagnostics for
@@ -404,7 +398,7 @@ def _build_tables(
     # cast around list invariance: ToolDataTableManager takes list[str | PathLike]; our
     # str paths are compatible element-wise, but List[str] is not List[str | PathLike].
     tdt_manager = ToolDataTableManager(
-        repo_root, config_filename=cast("List[Union[str, os.PathLike[str]]]", tool_data_table_confs)
+        repo_root, config_filename=cast("list[str | os.PathLike[str]]", tool_data_table_confs)
     )
     conf_source = SourceLoc(path=tool_data_table_confs[0]) if len(tool_data_table_confs) == 1 else None
     tables = []
@@ -443,10 +437,10 @@ def _build_tables(
 
 def build_repository_data_tables(
     repo_root: str,
-    data_manager_conf: Optional[str] = None,
-    tool_data_table_confs: Optional[List[str]] = None,
-    consumer_tool_sources: Optional[Iterable[Tuple[str, ToolSource]]] = None,
-    external_table_names: FrozenSet[str] = frozenset(),
+    data_manager_conf: str | None = None,
+    tool_data_table_confs: list[str] | None = None,
+    consumer_tool_sources: Iterable[tuple[str, ToolSource]] | None = None,
+    external_table_names: frozenset[str] = frozenset(),
 ) -> RepositoryDataTables:
     """Assemble a :class:`RepositoryDataTables` from already-discovered repository assets.
 
