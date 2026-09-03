@@ -3448,6 +3448,191 @@ exit_code:
             assert len(filtered["elements"]) == 1, filtered
             assert filtered["elements"][0]["object"]["state"] == "ok", filtered
 
+    @skip_without_tool("exit_code_from_file")
+    def test_pick_value_first_ok_or_skip_selects_ok_after_failed(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  exit_code:
+    type: data
+steps:
+  failed:
+    tool_id: exit_code_from_file
+    in:
+      input: exit_code
+  pick:
+    type: pick_value
+    state:
+      mode: first_ok_or_skip
+    in:
+      input_0: failed/out_file1
+      input_1: exit_code
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+exit_code:
+  content: "1"
+  type: File
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation["messages"] == [], invocation
+            picked = invocation["outputs"]["picked"]
+            input_dataset = next(iter(invocation["inputs"].values()))
+            assert picked["id"] == input_dataset["id"]
+            picked_details = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=picked["id"], assert_ok=False
+            )
+            assert picked_details["state"] == "ok", picked_details
+
+    @skip_without_tool("exit_code_from_file")
+    def test_pick_value_first_ok_or_skip_all_failed(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  exit_code:
+    type: data
+steps:
+  failed_a:
+    tool_id: exit_code_from_file
+    in:
+      input: exit_code
+  failed_b:
+    tool_id: exit_code_from_file
+    in:
+      input: exit_code
+  pick:
+    type: pick_value
+    state:
+      mode: first_ok_or_skip
+    in:
+      input_0: failed_a/out_file1
+      input_1: failed_b/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+exit_code:
+  content: "1"
+  type: File
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation["messages"] == [], invocation
+            picked = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["picked"]["id"], assert_ok=False
+            )
+            assert picked["extension"] == "expression.json", picked
+            assert picked["misc_blurb"] == "skipped", picked
+
+    @skip_without_tool("expression_parse_int")
+    @skip_without_tool("exit_code_from_file")
+    @skip_without_tool("expression_forty_two")
+    def test_pick_value_first_ok_or_skip_runtime_null_and_failed(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  exit_code:
+    type: data
+steps:
+  runtime_null:
+    tool_id: expression_parse_int
+    state:
+      input1: not a number
+  failed:
+    tool_id: exit_code_from_file
+    in:
+      input: exit_code
+  fallback:
+    tool_id: expression_forty_two
+    state: {}
+  pick:
+    type: pick_value
+    state:
+      mode: first_ok_or_skip
+    in:
+      input_0: runtime_null/out1
+      input_1: failed/out_file1
+      input_2: fallback/out1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+exit_code:
+  content: "1"
+  type: File
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            picked_content = self.dataset_populator.get_history_dataset_content(
+                history_id,
+                content_id=invocation["outputs"]["picked"]["id"],
+                assert_ok=False,
+            )
+            assert picked_content == "42"
+
+    @skip_without_tool("exit_code_from_file")
+    def test_pick_value_first_ok_or_skip_mapped(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  exit_codes:
+    type: collection
+steps:
+  results:
+    tool_id: exit_code_from_file
+    in:
+      input: exit_codes
+  pick:
+    type: pick_value
+    state:
+      mode: first_ok_or_skip
+    in:
+      input_0: results/out_file1
+      input_1: exit_codes
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+exit_codes:
+  collection_type: list
+  elements:
+    - identifier: failed
+      content: "1"
+    - identifier: ok
+      content: "0"
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            picked = self.dataset_populator.get_history_collection_details(
+                history_id,
+                content_id=invocation["output_collections"]["picked"]["id"],
+                assert_ok=False,
+            )
+            assert [element["element_identifier"] for element in picked["elements"]] == ["failed", "ok"]
+            assert all(element["object"]["state"] == "ok" for element in picked["elements"]), picked
+
     @skip_without_tool("job_properties")
     @skip_without_tool("cat1")
     def test_pick_value_input_paused(self):
@@ -3558,10 +3743,11 @@ input_data:
             )
             assert output_details["state"] == "ok"
 
-    def test_pick_value_first_or_skip_all_null(self):
+    @pytest.mark.parametrize("mode", ["first_or_skip", "first_ok_or_skip"])
+    def test_pick_value_first_or_skip_all_null(self, mode):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
-                """class: GalaxyWorkflow
+                f"""class: GalaxyWorkflow
 inputs:
   input_data:
     type: data
@@ -3579,7 +3765,7 @@ steps:
   pick:
     type: pick_value
     state:
-      mode: first_or_skip
+      mode: {mode}
     in:
       input_0: branch_a/out_file1
       input_1: branch_b/out_file1

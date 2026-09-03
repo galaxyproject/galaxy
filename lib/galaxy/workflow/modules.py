@@ -2070,13 +2070,13 @@ class PickValueModule(WorkflowModule):
 
     Accepts N inputs from conditional steps and produces a single output
     based on the configured selection mode. Supports first_non_null,
-    first_or_skip, the_only_non_null, and all_non_null modes.
+    first_or_skip, first_ok_or_skip, the_only_non_null, and all_non_null modes.
     """
 
     type = "pick_value"
     name = "Pick Value"
 
-    MODES = ("first_non_null", "first_or_skip", "the_only_non_null", "all_non_null")
+    MODES = ("first_non_null", "first_or_skip", "first_ok_or_skip", "the_only_non_null", "all_non_null")
 
     def __init__(self, trans: "ProvidesHistoryContext", content_id=None, **kwds):
         super().__init__(trans, content_id=content_id, **kwds)
@@ -2190,38 +2190,44 @@ class PickValueModule(WorkflowModule):
                 return read_expression_json(value, step=step) is None
         return False
 
+    @staticmethod
+    def _is_failed(value) -> bool:
+        """Check if a replacement value is settled but invalid as a tool input."""
+        return isinstance(value, model.DatasetInstance) and value.state not in model.Dataset.valid_input_states
+
     def _pick_from_replacements(self, trans: "ProvidesHistoryContext", invocation_step, mode, replacements):
         """Apply pick logic to a list of replacement values. Returns the picked output."""
         step = invocation_step.workflow_step
         non_null = [r for r in replacements if not self._is_null_or_skipped(r, step)]
+        selectable = [r for r in non_null if mode != "first_ok_or_skip" or not self._is_failed(r)]
 
         if mode == "first_non_null":
-            if not non_null:
+            if not selectable:
                 raise FailWorkflowEvaluation(
                     why=InvocationFailureExpressionEvaluationFailed(
                         reason=FailureReason.expression_evaluation_failed,
                         workflow_step_id=step.id,
                     )
                 )
-            return non_null[0]
+            return selectable[0]
 
-        elif mode == "first_or_skip":
-            if not non_null:
+        elif mode in ("first_or_skip", "first_ok_or_skip"):
+            if not selectable:
                 return self._create_skipped_output(trans, invocation_step)
-            return non_null[0]
+            return selectable[0]
 
         elif mode == "the_only_non_null":
-            if len(non_null) != 1:
+            if len(selectable) != 1:
                 raise FailWorkflowEvaluation(
                     why=InvocationFailureExpressionEvaluationFailed(
                         reason=FailureReason.expression_evaluation_failed,
                         workflow_step_id=step.id,
                     )
                 )
-            return non_null[0]
+            return selectable[0]
 
         elif mode == "all_non_null":
-            return self._create_collection_from_list(trans, invocation_step, non_null)
+            return self._create_collection_from_list(trans, invocation_step, selectable)
 
         else:
             raise ValueError(f"Unknown pick_value mode: {mode}")
@@ -2307,7 +2313,7 @@ class PickValueModule(WorkflowModule):
         return self._create_mapped_output_collection(trans, history, mode, per_element_outputs)
 
     def _create_skipped_output(self, trans: "ProvidesHistoryContext", invocation_step):
-        """Create a skipped HDA for first_or_skip when all inputs are null."""
+        """Create a skipped HDA when no input is selectable in a skip-capable mode."""
         invocation = invocation_step.workflow_invocation
         history = invocation.history
         hda = model.HistoryDatasetAssociation(
