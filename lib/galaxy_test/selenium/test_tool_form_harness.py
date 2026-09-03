@@ -9,6 +9,7 @@ import os
 import pytest
 
 from galaxy.util.unittest_utils import skip_unless_environ
+from galaxy_test.base.api import UsesCeleryTasks
 from .framework import (
     managed_history,
     RunsToolTests,
@@ -120,7 +121,7 @@ TOOL_TESTS = _tool_tests()
 
 
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
-class TestToolFormHarness(SeleniumTestCase, RunsToolTests):
+class TestToolFormHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
     ensure_registered = True
 
     @selenium_test
@@ -134,3 +135,8 @@ class TestToolFormHarness(SeleniumTestCase, RunsToolTests):
             galaxy_interactor=interactor,
             dataset_populator=self.dataset_populator,
         )
+        called = self.execute_script(
+            "return performance.getEntriesByType('resource')"
+            ".map(e => e.name).filter(n => n.includes('/api/tool_requests'));"
+        )
+        assert called, f"{tool_id}[{test_index}] fell back to the legacy submission path"
