@@ -6759,6 +6759,7 @@ test_data:
         mapped_passthrough = self.dataset_populator.get_history_collection_details(
             history_id, content_id=mapped_passthrough_id
         )
+        assert mapped_passthrough_id == summary.inputs["outer_mapping_source"]["id"]
         assert mapped_passthrough["collection_type"] == "list"
         assert [element["element_identifier"] for element in mapped_passthrough["elements"]] == ["X", "Y"]
 
@@ -6773,13 +6774,19 @@ test_data:
         passthrough_hda_ids = {
             leaf["object"]["id"] for outer in direct_passthrough["elements"] for leaf in outer["object"]["elements"]
         }
-        assert len(passthrough_hda_ids) == 3
+        direct_collection_source = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=summary.inputs["inner_mapping_source"]["id"]
+        )
+        source_hda_ids = {element["object"]["id"] for element in direct_collection_source["elements"]}
+        assert passthrough_hda_ids == source_hda_ids
 
         direct_dataset_id = parent_invocation["output_collections"]["direct_dataset_passthrough"]["id"]
         direct_dataset = self.dataset_populator.get_history_collection_details(history_id, content_id=direct_dataset_id)
         assert direct_dataset["collection_type"] == "list"
         assert [element["element_identifier"] for element in direct_dataset["elements"]] == ["X", "Y"]
-        assert len({element["object"]["id"] for element in direct_dataset["elements"]}) == 1
+        assert {element["object"]["id"] for element in direct_dataset["elements"]} == {
+            summary.inputs["direct_dataset"]["id"]
+        }
 
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over_inner_collection(self, history_id):
