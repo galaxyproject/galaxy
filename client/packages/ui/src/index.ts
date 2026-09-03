@@ -24,6 +24,7 @@ export { default as GOverlay } from "./components/GOverlay.vue";
 export { default as GTab } from "./components/GTab.vue";
 export { default as GTabs } from "./components/GTabs.vue";
 export { default as GTip } from "./components/GTip.vue";
+export { default as GToast } from "./components/GToast.vue";
 export { default as GTooltip } from "./components/GTooltip.vue";
 export { type CustomIconDefinition, type IconLike } from "./components/iconTypes";
 export { useAccessibleHover } from "./composables/accessibleHover";
@@ -31,6 +32,7 @@ export { type ClickableProps, useClickableElement } from "./composables/clickabl
 export { type HasTitleProps, useCurrentTitle } from "./composables/currentTitle";
 export { useMarkdown } from "./composables/markdown";
 export { useResolveElement } from "./composables/resolveElement";
+export { type ToastOptions, type ToastProps, type ToastVariant, useToast } from "./composables/toast";
 export { useUid } from "./composables/uid";
 export {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,

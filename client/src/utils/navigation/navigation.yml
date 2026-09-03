@@ -1408,7 +1408,7 @@ libraries:
       input_folder_description: '.input_folder_description'
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
-      toast_msg: '.b-toast'
+      toast_msg: '[data-description="toast message"]'
       alert_not_exists_user_import_dir:
         type: xpath
         selector: //div[contains(@class, "alert-danger") and contains(normalize-space(text()), "Your user import directory does not exist")]

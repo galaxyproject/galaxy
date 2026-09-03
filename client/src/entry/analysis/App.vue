@@ -37,7 +37,7 @@
         </div>
         <template v-if="!embedded">
             <div id="dd-helper" />
-            <Toast ref="toastRef" />
+            <GToast />
             <ConfirmDialog ref="confirmDialogRef" />
             <BroadcastsOverlay />
             <DragGhost />
@@ -55,10 +55,8 @@ import { useRoute } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
 import short from "@/components/plugins/short";
-import Toast from "@/components/Toast";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { useRouteQueryBool } from "@/composables/route";
-import { setToastComponentRef } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -68,6 +66,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useWindowManagerStore } from "@/stores/windowManagerStore";
 
 import Alert from "@/components/Alert.vue";
+import GToast from "@/components/BaseComponents/GToast.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import DragGhost from "@/components/DragGhost.vue";
 import Masthead from "@/components/Masthead/Masthead.vue";
@@ -81,7 +80,7 @@ export default {
         DragGhost,
         Masthead,
         WindowManagerWindow,
-        Toast,
+        GToast,
         ConfirmDialog,
         BroadcastsOverlay,
         TourRunner,
@@ -95,9 +94,6 @@ export default {
 
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
-
-        const toastRef = ref(null);
-        setToastComponentRef(toastRef);
 
         const confirmDialogRef = ref(null);
         setConfirmDialogComponentRef(confirmDialogRef);
@@ -161,7 +157,6 @@ export default {
 
         return {
             confirmation,
-            toastRef,
             confirmDialogRef,
             currentTheme,
             embedded,
