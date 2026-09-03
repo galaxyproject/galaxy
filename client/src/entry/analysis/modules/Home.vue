@@ -86,7 +86,11 @@ export default {
         // re-fire it.
         if (this.query.notification === "tool-submitted") {
             this.$nextTick(() => {
-                Toast.info("Check your history panel for progress.", "Data import queued");
+                Toast.addToast("Check your history panel for progress.", {
+                    title: "Data import queued",
+                    variant: "info",
+                    duration: 0,
+                });
             });
             const newQuery = { ...this.$route.query };
             delete newQuery.notification;
