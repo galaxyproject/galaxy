@@ -12,6 +12,7 @@ export type JobDetails = components["schemas"]["ShowFullJobResponse"] | componen
 export type JobInputSummary = components["schemas"]["JobInputSummary"];
 export type JobDisplayParametersSummary = components["schemas"]["JobDisplayParametersSummary"];
 export type JobMetric = components["schemas"]["JobMetric"];
+export type JobRequest = components["schemas"]["JobRequest"];
 
 export type JobMessage =
     | components["schemas"]["ExitCodeJobMessage"]
@@ -23,9 +24,6 @@ export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting", "paus
 export const ERROR_STATES = ["error", "deleted", "deleting", "failed"];
 export const TERMINAL_STATES = ["ok", "skipped", "stop", "stopping"].concat(ERROR_STATES);
 
-interface JobDef {
-    tool_id: string;
-}
 export interface JobResponse {
     produces_entry_points: boolean;
     jobs: Array<JobBaseModel | ShowFullJobResponse>;
@@ -38,9 +36,10 @@ export interface JobResponse {
         name: string;
     }[]; // TODO: This is temporary, adjust when API response is typed
     // implicit_collections // TODO: Add when API response is typed
+    errors?: any;
 }
 export interface ResponseVal {
-    jobDef: JobDef;
+    jobDef: JobRequest;
     jobResponse: JobResponse;
     toolName: string;
 }

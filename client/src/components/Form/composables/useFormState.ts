@@ -12,7 +12,8 @@ export interface FormInputNode {
     error?: string | null;
     warning?: string | null;
     attributes?: Record<string, unknown>;
-    options?: unknown[];
+    options?: Record<string, unknown>;
+    options_meta?: Record<string, unknown>;
     label?: string;
     help?: string | null;
     help_format?: string;
