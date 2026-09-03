@@ -25,6 +25,7 @@ from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    DEFAULT_TIMEOUT,
     RunJobsSummary,
     WorkflowPopulator,
 )
@@ -66,15 +67,18 @@ class TestWorkflow(ApiTestCase):
         with self.dataset_populator.test_history() as history_id:
             exc = None
             try:
+                configured_timeout = test_job.get("timeout")
+                timeout = DEFAULT_TIMEOUT if configured_timeout is None else configured_timeout
                 run_summary = self.workflow_populator.run_workflow(
                     yaml_content,
                     test_data=test_job["job"],
                     history_id=history_id,
                     job_dir=str(workflow_path.parent),
                     test_data_format="cwl_style",
+                    timeout=timeout,
                 )
                 if TEST_WORKFLOW_AFTER_RERUN:
-                    run_summary = self.workflow_populator.rerun(run_summary)
+                    run_summary = self.workflow_populator.rerun(run_summary, timeout=timeout)
                 self._verify(run_summary, test_job["outputs"])
             except Exception as e:
                 exc = e

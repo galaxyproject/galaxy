@@ -1011,6 +1011,14 @@ class TestJob(StrictModel):
             description="If true, the workflow is expected to produce an error.",
         ),
     ] = False
+    timeout: Annotated[
+        int | float | None,
+        Field(
+            gt=0,
+            title="Timeout",
+            description="Seconds to wait for the workflow invocation to complete.",
+        ),
+    ] = None
 
 
 class Tests(RootModel[list[TestJob]]):
@@ -1036,6 +1044,7 @@ class JobTestDict(TypedDict):
     doc: NotRequired[str]
     job: NotRequired[JobDict]
     expect_failure: NotRequired[bool]
+    timeout: NotRequired[int | float | None]
     outputs: OutputsDict
 
 

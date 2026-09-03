@@ -2,6 +2,7 @@
     Two elements are mapped over the subworkflow and three are connected to its
     collection input. The child remains one invocation, while its independent
     mapped step executes for every outer coordinate and produces a list:list.
+  timeout: 300
   job:
     outer_mapping_source:
       class: Collection
