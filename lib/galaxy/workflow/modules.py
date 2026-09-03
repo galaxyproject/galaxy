@@ -959,7 +959,7 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
-        outputs = {}
+        resolved_outputs = []
         for workflow_output in subworkflow.workflow_outputs:
             workflow_output_label = (
                 workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
@@ -975,6 +975,14 @@ class SubWorkflowModule(WorkflowModule):
                         dependent_workflow_step_id=step.id,
                     )
                 )
+            resolved_outputs.append((workflow_output, workflow_output_label, replacement))
+
+        # Resolving a later output can delay this step until a subsequent
+        # scheduling iteration. Do not materialize pass-through collections
+        # until every output is available or each retry would leave behind a
+        # new, unreferenced history collection.
+        outputs = {}
+        for workflow_output, workflow_output_label, replacement in resolved_outputs:
             replacement = shape_passthrough_output(
                 trans,
                 invocation_step,

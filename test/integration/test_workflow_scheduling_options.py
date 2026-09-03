@@ -135,6 +135,82 @@ class TestMaximumWorkflowJobsPerSchedulingIteration(integration_util.Integration
             assert direct_dataset["collection_type"] == "list"
             assert len({element["object"]["id"] for element in direct_dataset["elements"]}) == 1
 
+            # Pass-through outputs become available before the child's tool
+            # outputs. Delayed scheduling retries must not re-materialize and
+            # leak a fresh history collection on every retry.
+            history_contents = self.dataset_populator.get_history_contents(history_id)
+            history_collection_names = [
+                item["name"] for item in history_contents if item["history_content_type"] == "dataset_collection"
+            ]
+            assert history_collection_names.count("sub: direct_collection_passthrough") == 1
+            assert history_collection_names.count("sub: direct_dataset_passthrough") == 1
+
+    def test_conditional_subworkflow_passthrough_is_materialized_once(self):
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  boolean_input_files: collection
+  direct_dataset: data
+steps:
+  create_list_of_boolean:
+    tool_id: param_value_from_file
+    in:
+      input1: boolean_input_files
+    state:
+      param_type: boolean
+  subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        boolean_input_file: data
+        should_run: boolean
+        direct_dataset: data
+      steps:
+        consume_expression_parameter:
+          tool_id: cat1
+          in:
+            input1: boolean_input_file
+      outputs:
+        inner_output:
+          outputSource: consume_expression_parameter/out_file1
+        direct_dataset_passthrough:
+          outputSource: direct_dataset/output
+    in:
+      boolean_input_file: boolean_input_files
+      should_run: create_list_of_boolean/boolean_param
+      direct_dataset: direct_dataset
+    when: $(inputs.should_run)
+outputs:
+  inner_output:
+    outputSource: subworkflow/inner_output
+  direct_dataset_passthrough:
+    outputSource: subworkflow/direct_dataset_passthrough
+""",
+                test_data="""
+boolean_input_files:
+  collection_type: list
+  elements:
+    - identifier: true
+      content: true
+    - identifier: false
+      content: false
+direct_dataset:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+
+            history_contents = self.dataset_populator.get_history_contents(history_id)
+            skipped_passthroughs = [
+                item
+                for item in history_contents
+                if item["history_content_type"] == "dataset" and item["name"] == "Subworkflow pass-through - skipped"
+            ]
+            assert len(skipped_passthroughs) == 1
+
     def test_scheduling_rounds(self):
         with self.dataset_populator.test_history() as history_id:
             invocation_response = self.workflow_populator.run_workflow(
