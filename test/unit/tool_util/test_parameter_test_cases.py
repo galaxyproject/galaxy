@@ -55,11 +55,7 @@ TOOLS_THAT_USE_SELECT_BY_VALUE = [
     "multi_select.xml",
 ]
 
-# Figure out the problem and resolve.
-TOOLS_THAT_ARE_OUTSTANDING_ISSUES = [
-    "gx_conditional_boolean_optional.xml",
-    "gx_conditional_boolean_discriminate_on_string_value.xml",
-]
+TOOLS_THAT_ARE_OUTSTANDING_ISSUES: list[str] = []
 
 TEST_TOOL_THAT_DO_NOT_VALIDATE = (
     TOOLS_THAT_USE_UNQUALIFIED_PARAMETER_ACCESS
