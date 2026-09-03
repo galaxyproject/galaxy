@@ -88,6 +88,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """
 
     runner_name = "KubernetesRunner"
+    always_handle_metadata_externally = True
 
     LABEL_START = re.compile("^[A-Za-z0-9]")
     LABEL_END = re.compile("[A-Za-z0-9]$")

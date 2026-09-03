@@ -16,6 +16,9 @@ execution:
     pulsar_embed:
       runner: pulsar_embed
       remote_metadata: true
+    pulsar_embed_handler_metadata:
+      runner: pulsar_embed
+      remote_metadata: false
     user_defined:
       runner: pulsar_embed
       remote_metadata: true
@@ -24,6 +27,8 @@ execution:
       docker_net: "none"
 
 tools:
+- id: metadata_columns
+  environment: pulsar_embed_handler_metadata
 - class: local
   environment: local
 - class: user_defined

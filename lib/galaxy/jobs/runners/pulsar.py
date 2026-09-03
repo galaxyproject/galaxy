@@ -249,12 +249,12 @@ PARAMETER_SPECIFICATION_IGNORED = object()
 
 @dataclass
 class PulsarFinishJobResult:
-    tool_stdout: Optional[str]
-    tool_stderr: Optional[str]
-    exit_code: Optional[int]
-    job_stdout: Optional[str]
-    job_stderr: Optional[str]
-    remote_metadata_directory: Optional[str]
+    tool_stdout: str | None
+    tool_stderr: str | None
+    exit_code: int | None
+    job_stdout: str | None
+    job_stderr: str | None
+    remote_metadata_directory: str | None
     job_metrics_directory: str
 
 
