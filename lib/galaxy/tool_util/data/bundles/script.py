@@ -10,10 +10,6 @@ table schemas), runnable standalone without a Planemo install.
 import argparse
 import sys
 from json import dumps
-from typing import (
-    List,
-    Optional,
-)
 
 from galaxy.tool_util.data.bundles.lint import find_and_lint_repository_data_tables
 from galaxy.tool_util.lint import LintContext
@@ -72,7 +68,7 @@ def lint(repository: str, skip: str, report_level: str, fail_level: str, json: b
     return 1 if lint_ctx.failed(fail_level) else 0
 
 
-def main(argv: Optional[List[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     if argv is None:
         argv = sys.argv[1:]
     args = arg_parser().parse_args(argv)
