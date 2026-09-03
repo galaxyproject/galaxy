@@ -54,5 +54,5 @@ class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
         # If the redirect is broken we land on a static page with no masthead.
         self.wait_for_masthead()
         # Confirm the SPA queued a toast from the notification query param.
-        self.wait_for_selector_visible(".g-toast")
+        self.wait_for_selector_visible("[data-description='toast message']")
         self.screenshot("tool_runner_redirect_toast")

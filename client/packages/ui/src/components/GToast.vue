@@ -48,6 +48,7 @@ function onClick(toast: ToastProps) {
             :key="toast.id"
             class="g-toast"
             :class="[`g-toast-${toast.variant}`, { 'g-toast-clickable': toast.href || toast.to }]"
+            data-description="toast message"
             role="alert"
             @click="onClick(toast)">
             <div class="g-toast-header">
@@ -56,7 +57,12 @@ function onClick(toast: ToastProps) {
                     <strong v-if="toast.title">{{ toast.title }}</strong>
                 </div>
 
-                <GButton icon-only size="small" transparent @click.stop="removeToast(toast.id)">
+                <GButton
+                    data-description="close toast"
+                    icon-only
+                    size="small"
+                    transparent
+                    @click.stop="removeToast(toast.id)">
                     <FontAwesomeIcon :icon="faTimes" />
                 </GButton>
             </div>

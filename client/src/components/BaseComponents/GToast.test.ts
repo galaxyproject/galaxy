@@ -7,6 +7,11 @@ import VueRouter from "vue-router";
 
 import GToast from "./GToast.vue";
 
+const SELECTORS = {
+    G_TOAST: "[data-description='toast message']",
+    CLOSE_BUTTON: "[data-description='close toast']",
+} as const;
+
 const localVue = getLocalVue();
 localVue.use(VueRouter);
 const { toasts, addToast, clearToasts } = useToast();
@@ -23,7 +28,7 @@ describe("GToast.vue", () => {
         addToast("Something happened", { title: "Heads up", variant: "warning", duration: 0 });
         await nextTick();
 
-        const toast = wrapper.get(".g-toast");
+        const toast = wrapper.get(SELECTORS.G_TOAST);
         expect(toast.classes()).toContain("g-toast-warning");
         expect(toast.text()).toContain("Heads up");
         expect(toast.text()).toContain("Something happened");
@@ -34,12 +39,13 @@ describe("GToast.vue", () => {
 
         addToast("Dismiss me", { duration: 0 });
         await nextTick();
-        expect(wrapper.findAll(".g-toast")).toHaveLength(1);
+        expect(wrapper.findAll(SELECTORS.G_TOAST)).toHaveLength(1);
 
-        await wrapper.get(".g-toast-header button").trigger("click");
+        expect(wrapper.find(SELECTORS.CLOSE_BUTTON).exists()).toBe(true);
+        await wrapper.get(SELECTORS.CLOSE_BUTTON).trigger("click");
         expect(toasts.value).toHaveLength(0);
         await nextTick();
-        expect(wrapper.get(".g-toast").classes()).toContain("g-toast-leave-active");
+        expect(wrapper.get(SELECTORS.G_TOAST).classes()).toContain("g-toast-leave-active");
     });
 
     it("auto-dismisses a toast after its duration elapses", async () => {
@@ -48,12 +54,12 @@ describe("GToast.vue", () => {
 
         addToast("Temporary", { duration: 1000 });
         await nextTick();
-        expect(wrapper.findAll(".g-toast")).toHaveLength(1);
+        expect(wrapper.findAll(SELECTORS.G_TOAST)).toHaveLength(1);
 
         vi.advanceTimersByTime(1000);
         expect(toasts.value).toHaveLength(0);
         await nextTick();
-        expect(wrapper.get(".g-toast").classes()).toContain("g-toast-leave-active");
+        expect(wrapper.get(SELECTORS.G_TOAST).classes()).toContain("g-toast-leave-active");
     });
 
     it.each([
@@ -68,7 +74,7 @@ describe("GToast.vue", () => {
         raise("A message");
         await nextTick();
 
-        const toast = wrapper.get(".g-toast");
+        const toast = wrapper.get(SELECTORS.G_TOAST);
         expect(toast.classes()).toContain(variantClass);
         expect(toast.text()).toContain(defaultTitle);
         expect(toast.text()).toContain("A message");
@@ -81,7 +87,7 @@ describe("GToast.vue", () => {
         addToast("Click here to see it.", { to: "/histories/view", duration: 0 });
         await nextTick();
 
-        const toast = wrapper.get(".g-toast");
+        const toast = wrapper.get(SELECTORS.G_TOAST);
         expect(toast.classes()).toContain("g-toast-clickable");
 
         await toast.trigger("click");
