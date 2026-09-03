@@ -27,12 +27,13 @@ class HDATestCase(BaseTestCase):
         self.history_manager = self.app[HistoryManager]
         self.dataset_manager = self.app[DatasetManager]
 
-    def _create_vanilla_hda(self, user_data=None):
+    def _create_vanilla_hda(self, user_data=None, extension=None):
         user_data = user_data or user2_data
         owner = self.user_manager.create(**user_data)
         history1 = self.history_manager.create(name="history1", user=owner)
         dataset1 = self.dataset_manager.create()
-        return self.hda_manager.create(history=history1, dataset=dataset1)
+        kwargs = {"extension": extension} if extension else {}
+        return self.hda_manager.create(history=history1, dataset=dataset1, **kwargs)
 
 
 # =============================================================================
@@ -623,6 +624,55 @@ class TestHDADeserializer(HDATestCase):
         self.log("should be deserializable from empty string")
         self.hda_deserializer.deserialize(hda, {"info": ""})
         assert hda.info == ""
+
+    def test_deserialize_metadata(self):
+        hda = self._create_vanilla_hda()
+
+        self.log("should be able to deserialize writable metadata (dbkey)")
+        assert hda.dbkey == "?"
+        self.hda_deserializer.deserialize(hda, {"metadata": {"dbkey": "hg38"}})
+        assert hda.dbkey == "hg38"
+
+        self.log("should silently skip readonly metadata keys")
+        self.hda_deserializer.deserialize(hda, {"metadata": {"data_lines": 42}})
+        assert hda.metadata.data_lines != 42
+
+        self.log("should silently skip unknown metadata keys")
+        self.hda_deserializer.deserialize(hda, {"metadata": {"nonexistent_key": "value"}})
+
+        self.log("should raise when deserializing metadata from non-dict")
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"metadata": "not a dict"})
+
+    def test_deserialize_metadata_guard(self):
+        hda = self._create_vanilla_hda()
+
+        self.log("should raise when dataset is in use as input/output of a running job")
+        with mock.patch.object(type(hda), "ok_to_edit_metadata", return_value=False):
+            with self.assertRaises(exceptions.RequestParameterInvalidException):
+                self.hda_deserializer.deserialize(hda, {"metadata": {"dbkey": "hg38"}})
+
+    def test_deserialize_metadata_failed_state_reset(self):
+        hda = self._create_vanilla_hda(extension="bed")
+
+        self.log("should reset FAILED_METADATA state when required metadata is now present")
+        # Clear a required field so missing_meta() genuinely returns truthy
+        hda._state = model.Dataset.states.FAILED_METADATA
+        hda.metadata.chromCol = None
+        assert hda.missing_meta()
+        # Now set the required field via the deserializer — missing_meta() should be falsy
+        self.hda_deserializer.deserialize(hda, {"metadata": {"chromCol": 1}})
+        assert not hda.missing_meta()
+        assert hda.state != model.Dataset.states.FAILED_METADATA
+
+        self.log("should NOT reset FAILED_METADATA state when required metadata is still missing")
+        hda._state = model.Dataset.states.FAILED_METADATA
+        hda.metadata.chromCol = None
+        assert hda.missing_meta()
+        # Update only dbkey (optional) — chromCol is still missing
+        self.hda_deserializer.deserialize(hda, {"metadata": {"dbkey": "hg38"}})
+        assert hda.missing_meta()
+        assert hda.state == model.Dataset.states.FAILED_METADATA
 
 
 # =============================================================================
