@@ -41,7 +41,7 @@ const IMMUTABLE_HISTORY_MSG =
     "This history is immutable and you cannot run tools in it. Please switch to a different history." as const;
 
 const props = defineProps<{
-    id: string;
+    id?: string;
     uuid?: string;
     version?: string;
     jobId?: string;
