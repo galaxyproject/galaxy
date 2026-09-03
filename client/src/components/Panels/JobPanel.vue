@@ -174,10 +174,10 @@ function cardClicked(job: JobBaseModel) {
                     :update-time-icon="faClock"
                     @click="() => cardClicked(job)">
                     <template v-slot:description>
-                        <Heading class="m-0" size="text">
+                        <Heading v-if="job.history_id" class="m-0" size="text">
                             <FontAwesomeIcon :icon="faHdd" fixed-width />
 
-                            <small v-if="job.history_id" class="text-muted truncate-n-lines two-lines">
+                            <small class="text-muted truncate-n-lines two-lines">
                                 {{ historyName(job.history_id) }}
                             </small>
                         </Heading>
