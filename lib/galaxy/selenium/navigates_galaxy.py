@@ -1096,7 +1096,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 setting.click()
 
         self.upload_start()
-
+        self.upload_wait_for_submission()
         self.components.upload.close_button.wait_for_and_click()
 
     def perform_upload_of_composite_dataset_pasted_data(self, ext, paste_content):
@@ -1198,6 +1198,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def upload_start(self, tab_id="regular"):
         self.wait_for_and_click_selector(f"div#{tab_id} button#btn-start")
+
+    def upload_wait_for_submission(self, tab_id="regular"):
+        """Wait until every started upload row has been sent to the server.
+
+        The client submits rows one request at a time and only sends the next row once
+        the previous request has returned. Rows are ``upload-init`` until the Start click
+        handler runs and ``upload-queued`` until their request completes, so leaving the
+        page while either is present drops the unsent rows.
+        """
+        self.wait_for_selector_absent(
+            f"div#{tab_id} .upload-row.upload-init, div#{tab_id} .upload-row.upload-queued",
+            wait_type=WAIT_TYPES.JOB_COMPLETION,
+        )
 
     @retry_during_transitions
     def upload_build(self, tab="collection"):
