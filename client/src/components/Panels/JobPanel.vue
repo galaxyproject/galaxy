@@ -142,7 +142,7 @@ function cardClicked(job: JobBaseModel) {
                 v-model:filter-text="filterText"
                 v-model:show-advanced="showAdvanced"
                 name="Jobs"
-                placeholder="search jobs"
+                placeholder="search jobs by tool ID"
                 :filter-class="JobsFilters"
                 :loading="loading" />
         </template>
