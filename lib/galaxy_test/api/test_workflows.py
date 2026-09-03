@@ -3457,6 +3457,10 @@ outputs:
                 history_id, hid=5, wait=True, assert_ok=False
             )
             assert paused_dataset["state"] == "paused", paused_dataset
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            pick_step = next(step for step in invocation["steps"] if step["workflow_step_label"] == "pick")
+            assert pick_step["state"] == "new", pick_step
+            assert pick_step["outputs"] == {}, pick_step
             self.dataset_populator.run_tool(
                 tool_id="job_properties",
                 inputs={
