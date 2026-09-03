@@ -19,6 +19,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
     DEFAULT_SORT,
+    ParseException,
 )
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.parameters import (
@@ -158,7 +159,16 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
     def parse_requirements(self):
-        mixed_requirements = self.root_dict.get("requirements", [])
+        mixed_requirements = self.root_dict.get("requirements") or []
+        if self.parse_class() == "GalaxyUserTool":
+            if not isinstance(mixed_requirements, list) or not all(
+                isinstance(requirement, dict) for requirement in mixed_requirements
+            ):
+                raise ParseException("User-defined tool requirements must be a list of mappings.")
+            if any(requirement.get("type") == "container" for requirement in mixed_requirements):
+                raise ParseException(
+                    "Container requirements are not supported for user-defined tools; set the top-level container field."
+                )
         container = self.root_dict.get("container")
         containers = self.root_dict.get("containers")
         if container:

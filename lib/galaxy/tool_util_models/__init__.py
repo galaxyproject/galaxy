@@ -292,6 +292,12 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     container: Annotated[
         str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
     ]
+    requirements: Annotated[
+        list[JavascriptRequirement | ResourceRequirement] | None,
+        Field(
+            description="JavaScript helpers and compute resource requests needed to execute this tool. Set the container image with the top-level container field."
+        ),
+    ] = []  # type: ignore[assignment]  # Deliberately narrow the UDT schema inherited from the general YAML model.
     # Required here (it's optional on the base for stored/legacy rows). Galaxy's
     # linter rejects a versionless tool, so forcing it into the structured-output
     # ``required`` set stops the model dropping it -- notably on a retry, where the
@@ -340,6 +346,20 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
             raise PydanticCustomError(
                 "dynamic_tool.blank_container",
                 "container must not be empty",
+            )
+        return value
+
+    @field_validator("requirements", mode="before")
+    @classmethod
+    def _reject_container_requirements(cls, value):
+        if isinstance(value, list) and any(
+            isinstance(requirement, ContainerRequirement)
+            or (isinstance(requirement, dict) and requirement.get("type") == "container")
+            for requirement in value
+        ):
+            raise PydanticCustomError(
+                "dynamic_tool.container_requirement",
+                "container requirements are not supported for user-defined tools; set the top-level container field",
             )
         return value
 
