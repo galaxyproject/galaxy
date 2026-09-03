@@ -22,6 +22,8 @@ SKIPTEST = os.path.join(os.path.dirname(__file__), "known_broken_tools.txt")
 # test_legacy_unqualified_repeat_inputs_are_not_expanded.
 LEGACY_ONLY_TOOLS = {
     "multi_repeats",
+    "simple_constructs",
+    "implicit_default_conds",
     "async_min_repeat_unqualified",
     "async_repeat_unqualified_no_min",
 }
