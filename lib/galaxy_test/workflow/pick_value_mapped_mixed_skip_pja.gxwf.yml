@@ -1,0 +1,31 @@
+class: GalaxyWorkflow
+inputs:
+  boolean_input_files:
+    type: collection
+    collection_type: list
+outputs:
+  picked:
+    outputSource: pick/output
+steps:
+  param_out:
+    tool_id: param_value_from_file
+    in:
+      input1: boolean_input_files
+    state:
+      param_type: boolean
+  branch:
+    tool_id: cat1
+    in:
+      input1: boolean_input_files
+      should_run: param_out/boolean_param
+    when: $(inputs.should_run)
+  pick:
+    type: pick_value
+    in:
+      input_0:
+        source: branch/out_file1
+    state:
+      mode: first_or_skip
+    out:
+      output:
+        change_datatype: txt
