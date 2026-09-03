@@ -540,17 +540,16 @@ class GalaxyInteractorApi:
         response.raise_for_status()
 
     def test_data_path(self, tool_id, filename, tool_version=None) -> str | None:
-        """Path the server can read this test file from, or None if it has none.
-
-        A 404 here is an ordinary outcome - the server simply cannot resolve
-        that file - so it is reported as None rather than raised.
-        """
+        """Path the server can read this test file from, or None if it has none."""
         version_fragment = f"&tool_version={tool_version}" if tool_version else ""
         response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}{version_fragment}", admin=True)
         result = response.json()
         if response.status_code == 200:
             return result
         if response.status_code == 404:
+            # Callers already expect None here - see test_data_download, which
+            # checks `local_path is None` - and fall back to downloading the
+            # file or looking in the local test-data directories.
             return None
         raise Exception(result["err_msg"])
 

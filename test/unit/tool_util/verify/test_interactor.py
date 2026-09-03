@@ -52,14 +52,18 @@ class _FakeResponse:
         return self._payload
 
 
-def _interactor_with_response(response):
-    interactor = GalaxyInteractorApi.__new__(GalaxyInteractorApi)
-    interactor._get = lambda *args, **kwds: response  # type: ignore[method-assign]
-    return interactor
+class _ResponseInteractor(GalaxyInteractorApi):
+    """Interactor whose HTTP layer always yields one canned response."""
+
+    def __init__(self, response):
+        self._response = response
+
+    def _get(self, *args, **kwds):
+        return self._response
 
 
 def test_test_data_path_returns_path_on_200():
-    interactor = _interactor_with_response(_FakeResponse(200, "/srv/test-data/1.bed"))
+    interactor = _ResponseInteractor(_FakeResponse(200, "/srv/test-data/1.bed"))
     assert interactor.test_data_path("some_tool", "1.bed") == "/srv/test-data/1.bed"
 
 
@@ -69,34 +73,36 @@ def test_test_data_path_returns_none_on_404():
     It used to return the error body, so callers got a dict where a path was
     expected and os.path.exists() raised TypeError.
     """
-    interactor = _interactor_with_response(_FakeResponse(404, {"err_msg": "not found", "err_code": 0}))
+    interactor = _ResponseInteractor(_FakeResponse(404, {"err_msg": "not found", "err_code": 0}))
     assert interactor.test_data_path("some_tool", "1.bed") is None
 
 
 def test_test_data_path_raises_on_other_errors():
-    interactor = _interactor_with_response(_FakeResponse(500, {"err_msg": "boom"}))
+    interactor = _ResponseInteractor(_FakeResponse(500, {"err_msg": "boom"}))
     with pytest.raises(Exception) as exc:
         interactor.test_data_path("some_tool", "1.bed")
     assert "boom" in str(exc.value)
 
 
-def _interactor_for_path_lookup(server_path, downloaded="/tmp/downloaded/1.bed"):
-    """Interactor whose server-side lookup yields server_path, counting calls."""
-    interactor = GalaxyInteractorApi.__new__(GalaxyInteractorApi)
-    calls: list[str] = []
+class _PathLookupInteractor(GalaxyInteractorApi):
+    """Interactor with a stubbed server-side path lookup, recording its calls."""
 
-    def _test_data_path(tool_id, filename, tool_version=None):
-        calls.append(filename)
-        return server_path
+    def __init__(self, server_path, downloaded="/tmp/downloaded/1.bed"):
+        self._server_path = server_path
+        self._downloaded = downloaded
+        self.calls: list[str] = []
 
-    interactor.test_data_path = _test_data_path  # type: ignore[method-assign]
-    interactor.test_data_download = lambda *args, **kwds: downloaded  # type: ignore[method-assign]
-    return interactor, calls
+    def test_data_path(self, tool_id, filename, tool_version=None):
+        self.calls.append(filename)
+        return self._server_path
+
+    def test_data_download(self, *args, **kwds):
+        return self._downloaded
 
 
 def test_get_path_or_location_falls_back_when_server_has_no_path():
     """force_path_paste plus a 404 must download, not build a file://None URI."""
-    interactor, _ = _interactor_for_path_lookup(server_path=None)
+    interactor = _PathLookupInteractor(server_path=None)
     result = interactor._get_path_or_location("1.bed", {}, "some_tool", force_path_paste=True)
     assert result.path == "/tmp/downloaded/1.bed"
     assert result.location is None
@@ -104,14 +110,14 @@ def test_get_path_or_location_falls_back_when_server_has_no_path():
 
 def test_get_path_or_location_asks_the_server_once():
     """The path lookup used to be repeated for the same input."""
-    interactor, calls = _interactor_for_path_lookup(server_path=None)
+    interactor = _PathLookupInteractor(server_path=None)
     interactor._get_path_or_location("1.bed", {}, "some_tool", force_path_paste=True)
-    assert calls == ["1.bed"]
+    assert interactor.calls == ["1.bed"]
 
 
 def test_get_path_or_location_uses_server_path_when_available():
-    interactor, calls = _interactor_for_path_lookup(server_path="/srv/test-data/1.bed")
+    interactor = _PathLookupInteractor(server_path="/srv/test-data/1.bed")
     result = interactor._get_path_or_location("1.bed", {}, "some_tool", force_path_paste=True)
     assert result.location == "file:///srv/test-data/1.bed"
     assert result.path is None
-    assert calls == ["1.bed"]
+    assert interactor.calls == ["1.bed"]
