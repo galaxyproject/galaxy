@@ -2192,7 +2192,7 @@ class PickValueModule(WorkflowModule):
 
     @staticmethod
     def _is_failed(value) -> bool:
-        """Check if a replacement value is settled but invalid as a tool input."""
+        """Check whether a replacement value has an invalid tool-input state."""
         return isinstance(value, model.DatasetInstance) and value.state not in model.Dataset.valid_input_states
 
     def _pick_from_replacements(self, trans: "ProvidesHistoryContext", invocation_step, mode, replacements):

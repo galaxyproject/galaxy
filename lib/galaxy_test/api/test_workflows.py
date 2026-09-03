@@ -3625,6 +3625,11 @@ exit_codes:
                 wait=True,
             )
             invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            input_collection = self.dataset_populator.get_history_collection_details(
+                history_id,
+                content_id=next(iter(invocation["inputs"].values()))["id"],
+                assert_ok=False,
+            )
             picked = self.dataset_populator.get_history_collection_details(
                 history_id,
                 content_id=invocation["output_collections"]["picked"]["id"],
@@ -3632,6 +3637,11 @@ exit_codes:
             )
             assert [element["element_identifier"] for element in picked["elements"]] == ["failed", "ok"]
             assert all(element["object"]["state"] == "ok" for element in picked["elements"]), picked
+            input_failed = next(
+                element for element in input_collection["elements"] if element["element_identifier"] == "failed"
+            )
+            picked_failed = next(element for element in picked["elements"] if element["element_identifier"] == "failed")
+            assert picked_failed["object"]["id"] == input_failed["object"]["id"]
 
     @skip_without_tool("job_properties")
     @skip_without_tool("cat1")
@@ -3744,7 +3754,7 @@ input_data:
             assert output_details["state"] == "ok"
 
     @pytest.mark.parametrize("mode", ["first_or_skip", "first_ok_or_skip"])
-    def test_pick_value_first_or_skip_all_null(self, mode):
+    def test_pick_value_skip_modes_all_null(self, mode):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
                 f"""class: GalaxyWorkflow

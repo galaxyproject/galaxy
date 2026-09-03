@@ -430,7 +430,7 @@ def test_replace_expression_json_dataset_leaves_other_replacements_unchanged():
 )
 def test_pick_value_failed_state_classification(state, is_failed):
     hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
-    hda.dataset.state = state
+    hda.state = state
     assert modules.PickValueModule._is_failed(hda) is is_failed
 
 
