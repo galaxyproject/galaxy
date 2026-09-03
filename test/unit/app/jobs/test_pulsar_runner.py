@@ -6,6 +6,10 @@ from typing import (
     cast,
 )
 
+from galaxy.jobs.runners import (
+    AsynchronousJobState,
+    pulsar as pulsar_module,
+)
 from galaxy.jobs.runners.pulsar import PulsarJobRunner
 
 
@@ -161,3 +165,62 @@ def test_stop_job_supplies_recorded_external_id_to_kill_client():
     _destination_params, kill_kwargs = runner.client_manager.calls[-1]
     assert kill_kwargs["external_id"] == external_id
     assert runner.client_manager.clients[-1].killed
+
+
+def test_finish_job_stages_outputs_before_external_metadata(monkeypatch, tmp_path):
+    events: list[Any] = []
+    client = SimpleNamespace(
+        destination_params={"remote_metadata": False},
+        full_status=lambda: {
+            "stdout": "tool stdout",
+            "stderr": "tool stderr",
+            "job_stdout": "job stdout",
+            "job_stderr": "job stderr",
+            "returncode": 0,
+        },
+    )
+    job_wrapper = SimpleNamespace(
+        working_directory=str(tmp_path),
+        job_id=42,
+        cleanup_job="always",
+        get_state=lambda: "running",
+    )
+    job_state = object.__new__(AsynchronousJobState)
+    job_state.job_wrapper = job_wrapper
+    job_state.job_id = "remote-42"
+    runner = cast(Any, object.__new__(PulsarJobRunner))
+    runner.get_client_from_state = lambda _: client
+    runner._PulsarJobRunner__client_outputs = lambda *args: "client outputs"
+    runner._handle_metadata_externally = lambda *args, **kwargs: events.append("metadata")
+    runner._finish_pulsar_job = lambda wrapper, result: events.append(("finish", result))
+    monkeypatch.setattr(
+        pulsar_module.PulsarOutputs,
+        "from_status_response",
+        lambda _: "pulsar outputs",
+    )
+
+    def stage_outputs(**kwargs):
+        events.append(("stage", kwargs))
+        return False
+
+    monkeypatch.setattr(pulsar_module, "pulsar_finish_job", stage_outputs)
+
+    runner.finish_job(job_state)
+
+    assert [event[0] if isinstance(event, tuple) else event for event in events] == ["stage", "metadata", "finish"]
+    _, stage_kwargs = events[0]
+    assert stage_kwargs == {
+        "client": client,
+        "job_completed_normally": True,
+        "cleanup_job": "always",
+        "client_outputs": "client outputs",
+        "pulsar_outputs": "pulsar outputs",
+    }
+    _, result = events[2]
+    assert result.tool_stdout == "tool stdout"
+    assert result.tool_stderr == "tool stderr"
+    assert result.exit_code == 0
+    assert result.job_stdout == "job stdout"
+    assert result.job_stderr == "job stderr"
+    assert result.job_metrics_directory == str(tmp_path / "metadata")
+    assert (tmp_path / "galaxy_42.ec").read_text() == "0"

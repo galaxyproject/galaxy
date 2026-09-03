@@ -1337,6 +1337,10 @@ def test_finish_handles_external_metadata(fake_instance, fake_htcondor, runner_f
     method, job_state_record = runner.work_queue.get_nowait()
     assert method == runner.finish_job
     assert job_state_record.job_id == cjs.job_id
+    assert metadata_calls == []
+
+    method(job_state_record)
+
     assert metadata_calls == [(job_wrapper, True)]
     assert runner.watched == []
 
