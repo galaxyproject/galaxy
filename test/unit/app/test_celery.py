@@ -1,3 +1,8 @@
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+import galaxy.app
+import galaxy.celery as galaxy_celery
 from galaxy.celery import (
     celery_app,
     DEFAULT_TASK_QUEUE,
@@ -63,3 +68,15 @@ def test_galaxycelery_trim_module_name():
     assert gc.trim_module_name("galaxy.notcelery.tasks") == "galaxy.notcelery.tasks"
     assert gc.trim_module_name("galaxy.celery.tasks") == "galaxy"
     assert gc.trim_module_name("galaxy.celery.tasks.nextlevel") == "galaxy.nextlevel"
+
+
+def test_celery_manager_initializes_tool_source_store(monkeypatch):
+    registry = SimpleNamespace(load_datatype_converters_without_toolbox=Mock())
+    app = SimpleNamespace(datatypes_registry=registry)
+    constructor = Mock(return_value=app)
+    monkeypatch.setattr(galaxy.app, "GalaxyManagerApplication", constructor)
+    monkeypatch.setattr(galaxy_celery, "get_app_properties", lambda: {"root_dir": "/tmp/galaxy"})
+    monkeypatch.setattr(galaxy_celery, "_built_app", None)
+
+    assert galaxy_celery.build_app() is app
+    assert constructor.call_args.kwargs["initialize_tool_source_store"] is True

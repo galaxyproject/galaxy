@@ -9,10 +9,12 @@ from tempfile import (
     mkdtemp,
     NamedTemporaryFile,
 )
+from types import SimpleNamespace
 from typing import (
     Any,
     NamedTuple,
 )
+from unittest.mock import Mock
 
 import pytest
 from rocrate.rocrate import ROCrate
@@ -37,6 +39,10 @@ from galaxy.model.unittest_utils.store_fixtures import (
     TEST_SOURCE_URI,
 )
 from galaxy.objectstore.unittest_utils import Config as TestConfig
+from galaxy.tools.source_store import (
+    ToolIndex,
+    ToolIndexEntry,
+)
 from galaxy.util.compression_utils import CompressedFile
 from ..test_galaxy_mapping import (
     _invocation_for_workflow,
@@ -48,6 +54,465 @@ TEST_PATH_1 = TESTCASE_DIRECTORY / "1.txt"
 TEST_PATH_2 = TESTCASE_DIRECTORY / "2.bed"
 TEST_PATH_2_CONVERTED = TESTCASE_DIRECTORY / "2.txt"
 DEFAULT_OBJECT_STORE_BY = "id"
+
+
+def test_ro_crate_tool_definition_metadata():
+    writer = store.WriteCrates()
+    definition = SimpleNamespace(
+        version="1.2",
+        name="Example analysis",
+        description="Tool description",
+        license="MIT",
+        edam_operations=["operation_0004"],
+        edam_topics=["topic_0091"],
+        citations=[
+            SimpleNamespace(has_doi=lambda: True, doi=lambda: "doi:10.1234/example"),
+            SimpleNamespace(has_doi=lambda: False, raw_bibtex="@article{example,title={Example}}"),
+        ],
+        xrefs=[{"type": "bio.tools", "value": "example"}],
+        creator=[{"class": "Person", "name": "Author", "email": "private@example.com"}],
+        requirements=[SimpleNamespace(name="python", version="3.12")],
+        containers=[SimpleNamespace(identifier="example:1.2", type="docker")],
+        tool_shed="toolshed.example.org",
+        repository_name="example",
+        repository_owner="owner",
+        changeset_revision="abc123",
+    )
+    cached_tool = SimpleNamespace(version="1.2")
+    writer.app = SimpleNamespace(
+        toolbox=SimpleNamespace(get_tool=Mock(return_value=cached_tool), materialize_tool=Mock(return_value=definition))
+    )
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": writer._tool_entity_id("example", "1.2"), "@type": "SoftwareApplication"})
+    writer._enrich_tool_entity(crate, entity, "example", "1.2")
+    writer.app.toolbox.get_tool.assert_called_once_with("example", tool_version="1.2", exact=True)
+    writer.app.toolbox.materialize_tool.assert_called_once_with(cached_tool, reason="serialization")
+    assert entity["name"] == "Example analysis"
+    assert entity["softwareVersion"] == "1.2"
+    assert entity.get("version") is None
+    assert entity["license"] == "MIT"
+    assert entity["featureList"][0].id == "http://edamontology.org/operation_0004"
+    assert entity["about"][0].id == "http://edamontology.org/topic_0091"
+    assert entity["citation"][0].id == "https://doi.org/10.1234/example"
+    assert entity["citation"][1]["encodingFormat"] == "application/x-bibtex"
+    assert entity["creator"][0].get("email") is None
+    assert entity["softwareRequirements"][0]["softwareVersion"] == "3.12"
+    values = {item["name"]: item["value"] for item in entity["additionalProperty"]}
+    assert values["ToolShed changeset_revision"] == "abc123"
+    assert json.loads(values["Declared container 1"])["type"] == "docker"
+
+
+def test_ro_crate_missing_exact_tool_version():
+    writer = store.WriteCrates()
+    writer.app = SimpleNamespace(toolbox=SimpleNamespace(get_tool=Mock(return_value=SimpleNamespace(version="2"))))
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#tool", "@type": "SoftwareApplication", "name": "recorded"})
+    writer._enrich_tool_entity(crate, entity, "example", "1")
+    assert entity["name"] == "recorded"
+    assert entity["softwareVersion"] == "1"
+    assert entity.get("citation") is None
+    assert writer._tool_entity_id("a/b", "1") != writer._tool_entity_id("a-b", "1")
+
+
+def test_ro_crate_tool_metadata_without_toolbox():
+    class ToolboxlessApp:
+        @property
+        def toolbox(self):
+            raise AssertionError("The toolbox property must not be accessed")
+
+        @property
+        def toolbox_or_none(self):
+            return None
+
+    writer = store.WriteCrates()
+    writer.app = ToolboxlessApp()
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#tool", "@type": "SoftwareApplication", "name": "Recorded tool"})
+
+    writer._enrich_tool_entity(crate, entity, "example", "1.0")
+
+    assert entity["identifier"] == "example"
+    assert entity["softwareVersion"] == "1.0"
+    availability = next(item for item in entity["additionalProperty"] if item["name"] == "Tool metadata availability")
+    assert availability["value"] == "Exact recorded tool version unavailable"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        '["/private/data"]',
+        '"C:\\\\private\\\\data"',
+        "https://example.org/data?token=secret",
+        "https://user:password@example.org/data",
+        "file:///private/data",
+    ],
+)
+def test_ro_crate_private_locations_are_rejected(value):
+    try:
+        value = json.loads(value)
+    except ValueError:
+        pass
+    assert not store.WriteCrates._safe_metadata_value(value)
+
+
+def test_ro_crate_parameter_type_mapping():
+    from galaxy.model.store.ro_crate_utils import (
+        ro_crate_parameter_type,
+        RO_CRATE_PARAMETER_TYPES,
+    )
+    from galaxy.tools.parameters.basic import parameter_types
+
+    assert ro_crate_parameter_type("data_column") == "Integer"
+    assert ro_crate_parameter_type("hidden_data") == "File"
+    assert ro_crate_parameter_type("baseurl") == "URL"
+    assert ro_crate_parameter_type("rules") == "PropertyValue"
+    assert ro_crate_parameter_type("future_parameter") == "Thing"
+    assert set(parameter_types).issubset(RO_CRATE_PARAMETER_TYPES)
+
+
+def test_model_store_metadata_file_registry_is_complete():
+    from galaxy.model.store import model_store_constants
+
+    defined = {
+        value
+        for name, value in vars(model_store_constants).items()
+        if name.startswith("ATTRS_FILENAME_") and isinstance(value, str)
+    }
+    assert defined.issubset(model_store_constants.MODEL_STORE_METADATA_FILENAMES)
+
+
+def test_ro_crate_tool_source_index_enrichment():
+    class ToolboxlessApp:
+        toolbox_or_none = None
+        tool_source_store = SimpleNamespace(
+            load_index=lambda: ToolIndex(
+                entries_by_version={
+                    "example": {
+                        "1.0": ToolIndexEntry(
+                            id="example",
+                            version="1.0",
+                            name="Example Tool",
+                            license="MIT",
+                            edam_operations=["operation_0004"],
+                            citations=[{"type": "doi", "content": "10.1234/example"}],
+                        )
+                    }
+                }
+            )
+        )
+
+    writer = store.WriteCrates()
+    writer.app = ToolboxlessApp()
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#tool", "@type": "SoftwareApplication"})
+    writer._enrich_tool_entity(crate, entity, "example", "1.0")
+    assert entity["name"] == "Example Tool"
+    assert entity["license"] == "MIT"
+    assert entity["featureList"][0].id == "http://edamontology.org/operation_0004"
+    assert entity["citation"][0].id == "https://doi.org/10.1234/example"
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf"), {"n": float("nan")}])
+def test_ro_crate_nonfinite_metadata_is_rejected(value):
+    assert not store.WriteCrates._safe_metadata_value(value)
+
+
+def test_ro_crate_property_identity_and_deduplication():
+    writer = store.WriteCrates()
+    crate = ROCrate()
+    entity = crate.root_dataset
+    writer._add_metadata_property(crate, entity, "Requirement", "one")
+    writer._add_metadata_property(crate, entity, "Requirement", "two")
+    writer._add_metadata_property(crate, entity, "Requirement", "one")
+    assert [p["value"] for p in entity["additionalProperty"]] == ["one", "two"]
+    assert len({p.id for p in entity["additionalProperty"]}) == 2
+
+
+def test_ro_crate_step_defaults_do_not_mutate_shared_tool():
+    from galaxy.model.store.ro_crate_utils import WorkflowRunCrateProfileBuilder
+
+    crate = ROCrate()
+    tool = crate.add_jsonld({"@id": "#tool", "@type": "SoftwareApplication"})
+    workflow = crate.add_jsonld({"@id": "#workflow", "@type": "ComputationalWorkflow"})
+    builder = object.__new__(WorkflowRunCrateProfileBuilder)
+    builder.model_store = store.WriteCrates()
+    builder.workflow_definitions = {1: workflow}
+    builder.step_cache = {}
+    steps = []
+    for index, default in ((1, 10), (2, 20)):
+        steps.append(
+            SimpleNamespace(
+                id=index,
+                workflow_id=1,
+                type="tool",
+                label="step",
+                inputs=[
+                    SimpleNamespace(name="threshold", default_value_set=True, default_value=default, connections=[]),
+                ],
+            )
+        )
+        builder.step_cache[index] = crate.add_jsonld(
+            {"@id": f"#step-{index}", "@type": "HowToStep", "workExample": {"@id": tool.id}}
+        )
+    builder.model_store.included_invocations = [
+        SimpleNamespace(
+            workflow_id=1,
+            workflow=SimpleNamespace(id=1, steps=steps),
+            output_datasets=[],
+            output_dataset_collections=[],
+            output_values=[],
+        )
+    ]
+    builder._add_connections(crate)
+    assert tool["input"][0].get("defaultValue") is None
+    assert [builder.step_cache[index]["additionalProperty"][0]["value"] for index in (1, 2)] == [10, 20]
+
+
+def test_ro_crate_recorded_hash_is_not_export_hash():
+    writer = store.WriteCrates()
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#dataset", "@type": "Dataset"})
+    writer._attach_dataset_checksum(crate, entity, {"_galaxy_sha256": "a" * 64})
+    writer._attach_dataset_metadata(
+        crate,
+        entity,
+        SimpleNamespace(
+            metadata=SimpleNamespace(),
+            dataset=SimpleNamespace(
+                sources=[],
+                hashes=[SimpleNamespace(hash_function="SHA-256", hash_value="b" * 64, extra_files_path=None)],
+            ),
+        ),
+    )
+    checksums = entity["additionalProperty"]
+    assert checksums[0]["value"] == "a" * 64
+    assert checksums[1]["value"] == "b" * 64
+    assert "not verified against exported bytes" in checksums[1]["name"]
+
+
+def test_ro_crate_dynamic_tool_and_static_constraints():
+    writer = store.WriteCrates()
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#tool", "@type": "SoftwareApplication"})
+    writer._add_dynamic_tool_metadata(
+        crate,
+        entity,
+        SimpleNamespace(
+            uuid="11111111-1111-1111-1111-111111111111",
+            tool_id="dynamic",
+            tool_format="GalaxyTool",
+            tool_version="1",
+            create_time=None,
+            update_time=None,
+            value={"description": "Recorded tool", "command": "private command"},
+        ),
+    )
+    assert entity["isBasedOn"][0]["identifier"].startswith("urn:uuid:")
+    assert "private command" not in json.dumps([e.as_jsonld() for e in crate.get_entities()])
+    writer._add_tool_ports(
+        crate,
+        entity,
+        SimpleNamespace(
+            inputs={
+                "threshold": SimpleNamespace(
+                    type="integer",
+                    optional=False,
+                    value=0,
+                    min=0,
+                    max=10,
+                    is_dynamic=False,
+                )
+            }
+        ),
+    )
+    assert entity["input"][0]["defaultValue"] == 0
+    assert entity["input"][0]["valueRequired"] is True
+
+
+def test_ro_crate_conditional_branch_values():
+    writer = store.WriteCrates()
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#tool", "@type": "SoftwareApplication"})
+    selector = SimpleNamespace(name="mode", type="select")
+    cases = [
+        SimpleNamespace(value="keep", inputs={"limit": SimpleNamespace(type="integer")}),
+        SimpleNamespace(value="drop", inputs={"limit": SimpleNamespace(type="integer")}),
+    ]
+    writer._add_tool_ports(
+        crate,
+        entity,
+        SimpleNamespace(inputs={"choice": SimpleNamespace(type="conditional", test_param=selector, cases=cases)}),
+    )
+    branches = [
+        json.loads(prop["value"])
+        for prop in entity["input"][0]["additionalProperty"]
+        if prop["name"] == "Galaxy conditional branch"
+    ]
+    assert [branch["value"] for branch in branches] == ["keep", "drop"]
+
+
+def test_ro_crate_tool_port_private_default_is_withheld():
+    writer = store.WriteCrates()
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#tool", "@type": "SoftwareApplication"})
+    writer._add_tool_ports(
+        crate,
+        entity,
+        SimpleNamespace(inputs={"api_token": SimpleNamespace(type="text", value="marker", is_dynamic=False)}),
+    )
+    assert entity["input"][0].get("defaultValue") is None
+
+
+def test_ro_crate_job_input_adapters(tmp_path):
+    app = _mock_app()
+    _, _, dataset, output, job = _setup_simple_cat_job(app)
+    job.input_datasets[0].adapter = {
+        "src": "CollectionAdapter",
+        "adapter_type": "PromoteDatasetToCollection",
+        "collection_type": "list",
+        "adapting": {"src": "hda", "id": dataset.id},
+    }
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.add_dataset(output)
+    crate = ROCrate(tmp_path)
+    adapter = crate.get(f"#job-{job.id}-input-adapter-0")
+    value = json.loads(adapter["value"])
+    assert value["adapter_type"] == "PromoteDatasetToCollection"
+    assert value["adapting"]["id"] == app.security.encode_id(dataset.id)
+    assert adapter in crate.get(f"#galaxy-job-{job.id}")["object"]
+    assert adapter["about"]["identifier"] == f"urn:uuid:{dataset.dataset.uuid}"
+
+
+def test_ro_crate_job_parameter_values_are_withheld(tmp_path):
+    app = _mock_app()
+    _, _, _, output, job = _setup_simple_cat_job(app)
+    job.parameters.append(model.JobParameter(name="threshold", value="10"))
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.add_dataset(output)
+    crate = ROCrate(tmp_path)
+    parameter = crate.get(f"#job-{job.id}-parameter-{len(job.parameters) - 1}")
+    assert parameter.get("value") is None
+    assert "credentials" in parameter["description"]
+
+
+def test_ro_crate_unsafe_job_input_adapter_is_withheld(tmp_path):
+    app = _mock_app()
+    _, _, dataset, output, job = _setup_simple_cat_job(app)
+    job.input_datasets[0].adapter = {"accessKey": "DO_NOT_EXPORT"}
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.add_dataset(output)
+    metadata = (tmp_path / "ro-crate-metadata.json").read_text()
+    assert "DO_NOT_EXPORT" not in metadata
+    crate = ROCrate(tmp_path)
+    assert "withheld" in crate.get(f"#job-{job.id}-input-adapter-0")["description"]
+
+
+def test_ro_crate_job_metrics_use_compact_workflow_run_terms(tmp_path):
+    app = _mock_app()
+    _, _, _, output, job = _setup_simple_cat_job(app)
+    job.add_metric("core", "runtime_seconds", 1.5)
+    container = model.JobContainerAssociation(job=job, container_name="example/tool:1", container_type="docker")
+    app.add_and_commit(container)
+
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.add_dataset(output)
+
+    metadata = json.loads((tmp_path / "ro-crate-metadata.json").read_text())
+    context = metadata["@context"]
+    assert "https://w3id.org/ro/terms/workflow-run/context" in (context if isinstance(context, list) else [context])
+    action = next(entity for entity in metadata["@graph"] if entity["@id"] == f"#galaxy-job-{job.id}")
+    assert "resourceUsage" in action
+    assert "containerImage" in action
+    assert not any(key.startswith(("http://", "https://")) for entity in metadata["@graph"] for key in entity)
+    validate_with_roc_validator(crate_directory=tmp_path, profile="ro-crate-1.1")
+
+
+def test_ro_crate_copy_provenance_is_serialized_before_attrs(tmp_path):
+    app = _mock_app()
+    _, history, input_dataset, output, _ = _setup_simple_cat_job(app)
+    copied = model.HistoryDatasetAssociation(history=history, dataset=output.dataset, name="Copied output")
+    copied.copied_from_history_dataset_association = output
+    app.add_and_commit(copied)
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.add_dataset(copied)
+    provenance = json.loads((tmp_path / "datasets_attrs.txt.provenance").read_text())
+    assert len(provenance) == 2
+    crate = ROCrate(tmp_path)
+    assert any(entity.get("identifier") == f"urn:uuid:{input_dataset.dataset.uuid}" for entity in crate.get_entities())
+
+
+def test_ro_crate_historical_job_input(tmp_path):
+    app = _mock_app()
+    _, _, dataset, _, job = _setup_simple_cat_job(app)
+    previous_version = dataset.version
+    original_name = dataset.name
+    dataset.name = "Renamed after execution"
+    app.commit()
+    job.input_datasets[0].dataset_version = previous_version
+    app.commit()
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.add_dataset(dataset)
+        exporter.included_jobs[job.id] = job
+    crate = ROCrate(tmp_path)
+    action = crate.get(f"#galaxy-job-{job.id}")
+    historical = next(value for value in action["object"] if value.id.startswith("#dataset-revision-"))
+    assert historical["name"] == original_name
+    assert historical["version"] == previous_version
+    assert "not been reconstructed" in historical["conditionsOfAccess"]
+
+
+def test_ro_crate_tool_lookup_failure_is_optional():
+    writer = store.WriteCrates()
+    lookup = Mock(side_effect=RuntimeError("unavailable"))
+    writer.app = SimpleNamespace(toolbox=SimpleNamespace(get_tool=lookup))
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#tool", "@type": "SoftwareApplication"})
+    writer._enrich_tool_entity(crate, entity, "example", "1")
+    writer._enrich_tool_entity(crate, entity, "example", "1")
+    lookup.assert_called_once()
+    assert entity["softwareVersion"] == "1"
+    assert entity.get("citation") is None
+
+
+def test_ro_crate_embedded_integrity_uses_exported_bytes(tmp_path):
+    app = _mock_app()
+    _, _, dataset, _, _ = _setup_simple_cat_job(app)
+    dataset.dataset.file_size = 999999
+    dataset.dataset.hashes.append(model.DatasetHash(hash_function="SHA-256", hash_value="f" * 64))
+    properties = store.WriteCrates._dataset_ro_crate_properties(dataset, dataset.get_file_name())
+    assert properties["contentSize"] == str(os.path.getsize(dataset.get_file_name()))
+    assert properties["_galaxy_sha256"] != "f" * 64
+    assert not store.WriteCrates._valid_checksum("SHA-256", "not-a-hash")
+
+
+def test_ro_crate_output_focus_survives_provenance_discovery(tmp_path):
+    app = _mock_app()
+    _, _, input_, output, job = _setup_simple_cat_job(app)
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.add_dataset(output)
+    crate = ROCrate(tmp_path)
+    assert crate.mainEntity["identifier"] == f"urn:uuid:{output.dataset.uuid}"
+    assert crate.root_dataset["name"] == output.name
+    attributes = json.loads((tmp_path / "datasets_attrs.txt.provenance").read_text())
+    assert attributes, "Discovered provenance must also be serialized for Galaxy re-import"
+    assert any(entity.get("identifier") == f"urn:uuid:{input_.dataset.uuid}" for entity in crate.get_entities())
+
+
+def test_ro_crate_structured_values_preserve_order_and_missingness():
+    from galaxy.model.store.ro_crate_utils import WorkflowRunCrateProfileBuilder
+
+    builder = object.__new__(WorkflowRunCrateProfileBuilder)
+    builder.model_store = store.WriteCrates()
+    crate = ROCrate()
+    value = builder._parameter_value(crate, "#value", "results", [False, 0, None])
+    assert value.type == "Collection"
+    assert [item["position"] for item in value["itemListElement"]] == [1, 2, 3]
+    assert value["hasPart"][0]["value"] is False
+    assert value["hasPart"][1]["value"] == 0
+    assert "recorded" in value["hasPart"][2]["description"]
+    secret = builder._parameter_value(crate, "#secret", "api_token", "secret")
+    assert secret.get("value") is None
+    assert "withheld" in secret["description"]
 
 
 def test_get_export_dataset_filename_truncates_long_name():
@@ -474,7 +939,10 @@ def test_import_export_invocation():
 
 
 def validate_crate_metadata(as_dict):
-    assert as_dict["@context"] == "https://w3id.org/ro/crate/1.1/context"
+    context = as_dict["@context"]
+    if isinstance(context, str):
+        context = [context]
+    assert "https://w3id.org/ro/crate/1.1/context" in context
 
 
 def validate_has_pl_galaxy(ro_crate: ROCrate):
@@ -482,7 +950,7 @@ def validate_has_pl_galaxy(ro_crate: ROCrate):
     assert programming_language
     assert programming_language.id == "https://w3id.org/workflowhub/workflow-ro-crate#galaxy"
     assert programming_language.name == "Galaxy"
-    assert programming_language.url == "https://galaxyproject.org/"
+    assert getattr(programming_language.url, "id", programming_language.url) == "https://galaxyproject.org/"
 
 
 def validate_organize_action(ro_crate: ROCrate):
@@ -491,12 +959,8 @@ def validate_organize_action(ro_crate: ROCrate):
 
 
 def validate_has_mit_license(ro_crate: ROCrate):
-    found_license = False
-    for e in ro_crate.get_entities():
-        if e.id == "./":
-            assert e["license"] == "MIT"
-            found_license = True
-    assert found_license
+    assert ro_crate.mainEntity["license"] == "MIT"
+    assert ro_crate.root_dataset["license"].id == "#license-not-specified"
 
 
 def validate_creators(ro_crate: ROCrate):
@@ -511,7 +975,6 @@ def validate_creators(ro_crate: ROCrate):
         if creator["@type"] == "Person":
             assert "name" in creator
             assert "orcid" in creator or "identifier" in creator
-            assert "email" in creator
         elif creator["@type"] == "Organization":
             assert "name" in creator
             assert "url" in creator
@@ -542,7 +1005,8 @@ def validate_tools(ro_crate: ROCrate):
     for tool in tools:
         assert tool["@type"] == "SoftwareApplication"
         assert "name" in tool
-        assert "version" in tool
+        assert "softwareVersion" in tool
+        assert "version" not in tool
         assert "description" in tool or tool["description"] is None
         assert tool.id not in tool_ids, "Duplicate tool found"
         tool_ids.add(tool.id)
@@ -575,6 +1039,50 @@ def validate_history_crate_directory(crate_directory):
     # then do Galaxy-specific validation
     crate = open_ro_crate(crate_directory)
     validate_has_readme(crate)
+    assert crate.name == "Test History"
+    assert crate.root_dataset["identifier"].startswith("galaxy-history:")
+    assert crate.root_dataset["dateCreated"]
+    assert crate.root_dataset["dateModified"]
+    assert crate.root_dataset["license"].id == "#license-not-specified"
+    export_scope = next(
+        item for item in crate.root_dataset["additionalProperty"] if item["name"] == "Galaxy export scope"
+    )
+    assert "generatedAt" not in json.loads(export_scope["value"])
+
+    datasets = [entity for entity in crate.data_entities if entity.id.startswith("datasets/")]
+    assert len(datasets) == 2
+    for dataset in datasets:
+        assert dataset["identifier"].startswith("urn:uuid:")
+        assert dataset["encodingFormat"] == "text/plain"
+        assert int(dataset["contentSize"]) > 0
+        assert dataset["dateCreated"]
+        assert dataset["dateModified"]
+        checksum = dataset["additionalProperty"]
+        checksum = checksum[0] if isinstance(checksum, list) else checksum
+        assert checksum["name"] == "SHA-256"
+        assert len(checksum["value"]) == 64
+
+    associations = [
+        entity for entity in crate.contextual_entities if entity.id.startswith("#galaxy-HistoryDatasetAssociation-")
+    ]
+    assert len(associations) == 2
+    payload_identifiers = {dataset["identifier"] for dataset in datasets}
+    for association in associations:
+        assert association.type == "CreativeWork"
+        assert association["identifier"] == association.id[1:]
+        assert association["identifier"] not in payload_identifiers
+        assert association["about"] in datasets
+
+    job_actions = [entity for entity in crate.contextual_entities if entity.id.startswith("#galaxy-job-")]
+    assert len(job_actions) == 1
+    assert len(job_actions[0]["object"]) == 1
+    assert len(job_actions[0]["result"]) == 1
+    assert job_actions[0]["instrument"]["softwareVersion"]
+
+    history_metadata = crate.get("history_attrs.txt")
+    assert history_metadata
+    assert history_metadata.type == "File"
+    assert history_metadata["encodingFormat"] == "application/json"
 
 
 def validate_main_entity(ro_crate: ROCrate):
@@ -592,10 +1100,16 @@ def validate_main_entity(ro_crate: ROCrate):
 def validate_create_action(ro_crate: ROCrate):
     workflow = ro_crate.mainEntity
     actions = [_ for _ in ro_crate.contextual_entities if "CreateAction" in _.type]
-    assert len(actions) == 1
-    wf_action = actions[0]
+    assert actions
+    wf_action = next(action for action in actions if action.get("instrument") is workflow)
     assert wf_action["instrument"]
     assert wf_action["instrument"] is workflow
+    assert wf_action.id.startswith(("urn:uuid:", "#workflow-run-"))
+    assert wf_action["startTime"]
+    assert wf_action["startTime"].endswith("+00:00")
+    # These fixtures do not record an invocation completion time.
+    assert wf_action.get("endTime") is None
+    assert wf_action.get("actionStatus") is None
     wf_objects = wf_action["object"]
     wf_results = wf_action["result"]
     assert len(wf_objects) == 1
@@ -605,7 +1119,8 @@ def validate_create_action(ro_crate: ROCrate):
             assert "File" in entity.type
             wf_output_file = entity
             assert wf_output_file["encodingFormat"] == "text/plain"
-            assert wf_output_file["exampleOfWork"] is workflow["output"][0]
+            examples = wf_output_file["exampleOfWork"]
+            assert workflow["output"][0] in (examples if isinstance(examples, list) else [examples])
 
 
 def validate_other_entities(ro_crate: ROCrate):
@@ -622,17 +1137,23 @@ def validate_other_entities(ro_crate: ROCrate):
     assert len(sel) == 1
     engine_action = sel[0]
     assert "SoftwareApplication" in engine_action["instrument"].type
+    assert engine_action["instrument"].get("softwareVersion") is None
+    assert engine_action["instrument"]["additionalProperty"]
+    assert "CreateAction" in engine_action["result"].type
 
 
 def validate_invocation_crate_directory(crate_directory):
     # first validate against the Workflow Run Crate profile
     validate_with_roc_validator(crate_directory=crate_directory, profile="workflow-run-crate-0.5")
+    crate = open_ro_crate(crate_directory)
+    declared_profiles = {profile.id for profile in crate.root_dataset["conformsTo"]}
+    if "https://w3id.org/ro/wfrun/provenance/0.5" in declared_profiles:
+        validate_with_roc_validator(crate_directory=crate_directory, profile="provenance-run-crate-0.5")
+        controls = [entity for entity in crate.contextual_entities if "ControlAction" in entity.type]
+        assert controls
+        assert all("CreateAction" in control["object"].type for control in controls)
 
     # then do Galaxy-specific validation
-    crate = open_ro_crate(crate_directory)
-    for e in crate.contextual_entities:
-        print(e.type)
-
     validate_main_entity(crate)
     validate_create_action(crate)
     validate_other_entities(crate)
@@ -642,7 +1163,26 @@ def validate_invocation_crate_directory(crate_directory):
     validate_creators(crate)
     validate_steps(crate)
     validate_tools(crate)
-    # validate_has_readme(crate)
+    validate_has_readme(crate)
+    assert crate.root_dataset["publisher"].type == "Organization"
+    assert crate.root_dataset["author"].type == "Organization"
+    assert crate.root_dataset["sdPublisher"]["publisher"].type == "Organization"
+    assert crate.root_dataset["sdPublisher"]["softwareVersion"]
+    assert crate.mainEntity["identifier"].startswith("urn:uuid:")
+    assert crate.mainEntity["encodingFormat"] == "application/yaml"
+    assert any("bioschemas.org/profiles/ComputationalWorkflow" in item.id for item in crate.mainEntity["conformsTo"])
+    assert crate.mainEntity["additionalProperty"]
+    workflow_action = next(
+        entity
+        for entity in crate.contextual_entities
+        if "CreateAction" in entity.type and entity.get("instrument") is crate.mainEntity
+    )
+    assert workflow_action["agent"].type == "Person"
+    assert "email" not in workflow_action["agent"]
+    for entity in crate.contextual_entities:
+        if entity.id.startswith("#job-"):
+            assert entity.get("value") is None
+            assert "withheld" in entity["description"]
 
 
 def validate_invocation_collection_crate_directory(crate_directory):
@@ -654,20 +1194,17 @@ def validate_invocation_collection_crate_directory(crate_directory):
     workflow = ro_crate.mainEntity
     root = ro_crate.root_dataset
     actions = [_ for _ in ro_crate.contextual_entities if "CreateAction" in _.type]
-    assert len(actions) == 1
-    wf_action = actions[0]
+    assert actions
+    wf_action = next(action for action in actions if action.get("instrument") is workflow)
     assert wf_action in root["mentions"]
     assert len(workflow["input"]) == 2
     assert len(workflow["output"]) == 1
-    assert len(root["mentions"]) == 4
+    assert len(root["mentions"]) >= 4
     collections = [_ for _ in ro_crate.contextual_entities if "Collection" in _.type]
     assert len(collections) == 3
     collection = collections[0]
     assert collection.type == "Collection"
-    assert (
-        collection["additionalType"]
-        == "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
-    )
+    assert collection["additionalType"] == "https://galaxyproject.org/collection/list"
     assert len(collection["hasPart"]) == 2
     for dataset in collection["hasPart"]:
         assert dataset in root["hasPart"]
@@ -710,12 +1247,353 @@ def test_export_history_to_ro_crate(tmp_path):
     validate_history_crate_directory(tmp_path)
 
 
+def test_failed_job_status_in_history_ro_crate(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, job = _setup_simple_cat_job(app, state="error")
+    job.info = "Tool execution failed"
+    app.commit()
+
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
+        export_store.export_history(history)
+
+    crate = open_ro_crate(tmp_path)
+    action = next(entity for entity in crate.contextual_entities if entity.id.startswith("#galaxy-job-"))
+    assert action["actionStatus"] == "http://schema.org/FailedActionStatus"
+    assert action["error"] == "Tool execution failed"
+
+
+def test_export_single_dataset_to_ro_crate(tmp_path):
+    app = _mock_app()
+    u, history, dataset, output, job = _setup_simple_cat_job(app)
+
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
+        export_store.add_dataset(dataset)
+
+    validate_with_roc_validator(crate_directory=tmp_path, profile="ro-crate-1.1")
+    crate = open_ro_crate(tmp_path)
+    assert crate.root_dataset["mainEntity"]["identifier"].startswith("urn:uuid:")
+    checksum = crate.root_dataset["mainEntity"]["additionalProperty"]
+    checksum = checksum[0] if isinstance(checksum, list) else checksum
+    assert checksum["name"] == "SHA-256"
+
+
+def test_ro_crate_scientific_metadata_and_primary_hash(tmp_path):
+    app = _mock_app()
+    _, history, dataset, _, _ = _setup_simple_cat_job(app)
+    dataset.dbkey = "hg38"
+    dataset.dataset.hashes.append(
+        model.DatasetHash(hash_function="SHA-256", hash_value="component-hash", extra_files_path="component.txt")
+    )
+    dataset.dataset.hashes.append(model.DatasetHash(hash_function="MD5", hash_value="a" * 32))
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.add_dataset(dataset)
+    crate = ROCrate(tmp_path)
+    properties = {item["name"]: item["value"] for item in crate.mainEntity["additionalProperty"]}
+    assert properties["SHA-256"] != "component-hash"
+    assert len(properties["SHA-256"]) == 64
+    assert properties["Recorded source checksum (MD5; not verified against exported bytes)"] == "a" * 32
+    assert properties["Galaxy dbkey"] == "hg38"
+
+
+def test_ro_crate_scientific_metadata_is_discovered_dynamically():
+    writer = store.WriteCrates()
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#dataset", "@type": "Dataset"})
+    writer._add_scientific_metadata(
+        crate,
+        entity,
+        {"future_datatype_field": {"score": 7}, "index_file": "/private/index"},
+    )
+    properties = {item["name"]: item["value"] for item in entity["additionalProperty"]}
+    assert json.loads(properties["Galaxy future_datatype_field"]) == {"score": 7}
+    assert "Galaxy index_file" not in properties
+
+
+def test_ro_crate_scientific_metadata_skips_array_values_and_private_fields():
+    import numpy
+
+    writer = store.WriteCrates()
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#dataset", "@type": "Dataset"})
+    writer._add_scientific_metadata(
+        crate,
+        entity,
+        {
+            "array_value": numpy.array([1, 2]),
+            "future_datatype_field": {"score": 7},
+            "apiKey": "marker",
+            "nested": {"secret": "marker"},
+        },
+    )
+    properties = {item["name"]: item["value"] for item in entity["additionalProperty"]}
+    assert properties == {"Galaxy future_datatype_field": '{"score": 7}'}
+
+
+def test_ro_crate_property_rejects_private_field_names_and_arrays():
+    import numpy
+
+    writer = store.WriteCrates()
+    crate = ROCrate()
+    writer._add_metadata_property(crate, crate.root_dataset, "API token", "marker")
+    writer._add_metadata_property(crate, crate.root_dataset, "Nested", {"password": "marker"})
+    writer._add_metadata_property(crate, crate.root_dataset, "Array", numpy.array([1, 2]))
+    assert not crate.root_dataset.get("additionalProperty")
+
+
+def test_ro_crate_invocation_metadata_only_dataset(tmp_path):
+    from galaxy.model.store.ro_crate_utils import WorkflowRunCrateProfileBuilder
+
+    app = _mock_app()
+    _, _, dataset, _, _ = _setup_simple_cat_job(app)
+    writer = store.WriteCrates()
+    writer.dataset_id_to_path = {}
+    writer.export_directory = tmp_path
+    builder = object.__new__(WorkflowRunCrateProfileBuilder)
+    builder.model_store = writer
+    builder.file_entities = {}
+    crate = ROCrate()
+    entity = builder._add_file(dataset, {}, crate)
+    assert entity.type == "Dataset"
+    assert entity.id == f"#dataset-{dataset.dataset.uuid}"
+    assert entity["identifier"] == f"urn:uuid:{dataset.dataset.uuid}"
+    assert entity in crate.root_dataset["hasPart"]
+    assert builder._add_file(dataset, {}, crate) is entity
+
+
+def test_ro_crate_instance_operator():
+    writer = store.WriteCrates()
+    writer.app = SimpleNamespace(
+        config=SimpleNamespace(
+            organization_name="Example University",
+            organization_url="https://example.org",
+            ga4gh_service_id="org.example.galaxy",
+            brand="Research Galaxy",
+        )
+    )
+    crate = ROCrate()
+    writer._add_instance_metadata(crate)
+    assert crate.root_dataset["publisher"]["name"] == "Example University"
+    assert crate.root_dataset["publisher"]["url"] == "https://example.org"
+
+
+def test_ro_crate_repeated_dataset_ports(tmp_path):
+    from galaxy.model.store.ro_crate_utils import WorkflowRunCrateProfileBuilder
+
+    app = _mock_app()
+    _, _, dataset, _, _ = _setup_simple_cat_job(app)
+    inputs = [
+        SimpleNamespace(dataset=dataset, workflow_step_id=index, workflow_step=SimpleNamespace(label=f"input {index}"))
+        for index in (1, 2)
+    ]
+    invocation = SimpleNamespace(id=1, input_datasets=inputs, output_datasets=[])
+    writer = store.WriteCrates()
+    writer.dataset_id_to_path = {}
+    writer.export_directory = tmp_path
+    writer.included_invocations = [invocation]
+    builder = object.__new__(WorkflowRunCrateProfileBuilder)
+    builder.model_store = writer
+    builder.invocation = invocation
+    builder.file_entities = {}
+    crate = ROCrate()
+    crate.mainEntity = crate.add_jsonld({"@id": "#workflow", "@type": "ComputationalWorkflow"})
+    builder.create_action = crate.add_jsonld({"@id": "#run", "@type": "CreateAction"})
+    builder._add_files(crate)
+    assert len(crate.mainEntity["input"]) == 2
+    entity = builder.file_entities[dataset.dataset.id]
+    assert len(entity["exampleOfWork"]) == 2
+    assert {parameter["name"] for parameter in entity["exampleOfWork"]} == {"input 1", "input 2"}
+
+
+def test_ro_crate_source_hashes_and_transforms():
+    writer = store.WriteCrates()
+    source = SimpleNamespace(
+        source_uri="https://example.org/data",
+        hashes=[SimpleNamespace(hash_function="SHA-256", hash_value="a" * 64)],
+        transform=[{"action": "to_posix_lines"}],
+        requested_transform=None,
+    )
+    private_source = SimpleNamespace(source_uri="https://example.org/private?token=secret")
+    dataset = SimpleNamespace(
+        metadata=SimpleNamespace(), dataset=SimpleNamespace(hashes=[], sources=[source, private_source])
+    )
+    crate = ROCrate()
+    entity = crate.add_jsonld({"@id": "#dataset", "@type": "Dataset"})
+    writer._attach_dataset_metadata(crate, entity, dataset)
+    assert len(entity["isBasedOn"]) == 1
+    assert entity["isBasedOn"][0]["additionalProperty"][0]["value"] == "a" * 64
+    assert json.loads(entity["isBasedOn"][0]["additionalProperty"][1]["value"]) == [{"action": "to_posix_lines"}]
+
+
+def test_ro_crate_scalar_outputs_preserve_types():
+    from galaxy.model.store.ro_crate_utils import WorkflowRunCrateProfileBuilder
+
+    builder = object.__new__(WorkflowRunCrateProfileBuilder)
+    builder.model_store = store.WriteCrates()
+    builder.invocation = SimpleNamespace(
+        id=1,
+        steps=[],
+        output_values=[
+            SimpleNamespace(value=False, workflow_output=SimpleNamespace(id=1, label="passed", output_name="result")),
+            SimpleNamespace(
+                value="secret", workflow_output=SimpleNamespace(id=2, label="api_token", output_name="token")
+            ),
+        ],
+    )
+    crate = ROCrate()
+    crate.mainEntity = crate.add_jsonld({"@id": "#workflow", "@type": "ComputationalWorkflow"})
+    builder.create_action = crate.add_jsonld({"@id": "#run", "@type": "CreateAction"})
+    builder._add_parameters(crate)
+    assert len(crate.mainEntity["output"]) == 2
+    assert crate.mainEntity["output"][0]["additionalType"] == "Boolean"
+    assert builder.create_action["result"][0]["value"] is False
+    assert builder.create_action["result"][1].get("value") is None
+    assert "withheld" in builder.create_action["result"][1]["description"]
+
+
+def test_export_dataset_collection_to_ro_crate(tmp_path):
+    app = _mock_app()
+    u, history, c1, c2, c3, hc1, hc2, hc3, job = _setup_simple_collection_job(app)
+
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
+        export_store.export_collection(hc1)
+
+    validate_with_roc_validator(crate_directory=tmp_path, profile="ro-crate-1.1")
+    crate = open_ro_crate(tmp_path)
+    collection = crate.root_dataset["mainEntity"]
+    assert collection.type == "Collection"
+    assert [item["name"] for item in collection["itemListElement"]] == ["forward", "reverse"]
+    assert [item["position"] for item in collection["itemListElement"]] == [1, 2]
+
+
+def test_ro_crate_history_respects_include_deleted_collections(tmp_path):
+    app = _mock_app()
+    _, history, collection, _, _, association, _, _, _ = _setup_simple_collection_job(app)
+    association.deleted = True
+    app.commit()
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.export_history(history, include_deleted=True)
+    crate = ROCrate(tmp_path)
+    entity = crate.get(f"#dataset-collection-{collection.id}")
+    assert entity is not None
+    assert entity["identifier"] == association.type_id
+
+
 def test_export_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
     with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
     validate_invocation_crate_directory(tmp_path)
+
+
+def test_ro_crate_workflow_connections(tmp_path):
+    app = _mock_app()
+    invocation = _setup_invocation(app)
+    source, target = invocation.workflow.steps
+    input_ = model.WorkflowStepInput(target)
+    input_.name = "input1"
+    input_.merge_type = "merge_flattened"
+    connection = model.WorkflowStepConnection()
+    connection.output_step = source
+    connection.output_name = "output"
+    connection.input_step_input = input_
+    app.add_and_commit(connection)
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.export_workflow_invocation(invocation)
+    crate = ROCrate(tmp_path)
+    edge = crate.get(f"#parameter-connection-{connection.id}")
+    assert edge["sourceParameter"] in crate.mainEntity["input"]
+    receiver = crate.get(f"#workflow-step-{target.id}")
+    assert edge in receiver["connection"]
+    assert edge["targetParameter"] in receiver["workExample"]["input"]
+    assert crate.mainEntity["connection"][0]["targetParameter"] in crate.mainEntity["output"]
+    validate_with_roc_validator(crate_directory=tmp_path, profile="provenance-run-crate-0.5")
+
+
+def test_ro_crate_workflow_privacy_execution_version_and_diagnostics(tmp_path):
+    app = _mock_app()
+    invocation = _setup_invocation(app)
+    job = invocation.steps[1].job
+    job.galaxy_version = "23.2"
+    container = model.JobContainerAssociation(job=job, container_name="example/tool:1", container_type="docker")
+    app.add_and_commit(container)
+    invocation.workflow.readme = "credentials at https://example.org/data?token=DO_NOT_EXPORT"
+    invocation.workflow.logo_url = "https://example.org/logo?token=DO_NOT_EXPORT"
+    invocation.workflow.creator_metadata = [
+        {
+            "class": "Person",
+            "name": "Researcher",
+            "identifier": "https://example.org/person?token=DO_NOT_EXPORT",
+            "url": "https://example.org/person?token=DO_NOT_EXPORT",
+        }
+    ]
+    message = model.WorkflowInvocationMessage(
+        workflow_invocation=invocation,
+        reason="dataset_failed",
+        workflow_step_id=invocation.steps[1].workflow_step_id,
+        job_id=job.id,
+        hda_id=job.output_datasets[0].dataset.id,
+        details="A dataset failed validation",
+    )
+    app.add_and_commit(message)
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.export_workflow_invocation(invocation)
+    crate = ROCrate(tmp_path)
+    metadata_text = (tmp_path / "ro-crate-metadata.json").read_text()
+    assert "DO_NOT_EXPORT" not in metadata_text
+    engine = crate.get(f"urn:galaxy:workflow-engine:{invocation.uuid or invocation.id}")
+    assert engine["softwareVersion"] == "23.2"
+    job_action = crate.get(f"#galaxy-job-{job.id}")
+    image = job_action["containerImage"]
+    assert image.type == "https://w3id.org/ro/terms/workflow-run#ContainerImage"
+    assert job_action["instrument"]["softwareVersion"] == job.tool_version
+    assert job_action.get("softwareVersion") is None
+    action_metadata = {
+        value["name"]: value["value"] for value in job_action["additionalProperty"] if value.get("value")
+    }
+    assert action_metadata["Recorded Galaxy execution version"] == "23.2"
+    # This is the publication date of the crate metadata, not of the workflow.
+    root_metadata = next(entity for entity in json.loads(metadata_text)["@graph"] if entity["@id"] == "./")
+    assert root_metadata["datePublished"]
+    assert not any(
+        entity.get("name") == "Galaxy crate generation time" for entity in json.loads(metadata_text)["@graph"]
+    )
+    diagnostic = crate.get(f"#invocation-message-{message.id}")
+    assert crate.get(f"#galaxy-job-{job.id}") in diagnostic["about"]
+    assert crate.get(f"#workflow-step-{invocation.steps[1].workflow_step_id}") in diagnostic["about"]
+
+
+def test_ro_crate_nested_workflow_without_file_digest(tmp_path, monkeypatch):
+    import hashlib
+
+    monkeypatch.delattr(hashlib, "file_digest", raising=False)
+    app = _mock_app()
+    parent = _setup_invocation(app)
+    parent.user.email = "parent@example.com"
+    app.commit()
+    child = _setup_invocation(app)
+    step = model.WorkflowStep()
+    step.type = "subworkflow"
+    step.order_index = 2
+    step.subworkflow = child.workflow
+    parent.workflow.steps.append(step)
+    execution = model.WorkflowInvocationStep()
+    execution.workflow_step = step
+    parent.steps.append(execution)
+    association = model.WorkflowInvocationToSubworkflowInvocationAssociation(
+        parent_workflow_invocation=parent, workflow_step=step, subworkflow_invocation=child
+    )
+    app.add_and_commit(step, execution, association)
+    with store.ROCrateModelExportStore(tmp_path, app=app) as exporter:
+        exporter.export_workflow_invocation(parent)
+    crate = ROCrate(tmp_path)
+    nested = next(
+        entity for entity in crate.get_entities() if entity.get("identifier") == f"urn:uuid:{child.workflow.uuid}"
+    )
+    assert "ComputationalWorkflow" in nested.type
+    assert "File" in nested.type
+    assert any(prop["name"] == "SHA-256" for prop in nested["additionalProperty"])
+    validate_with_roc_validator(crate_directory=tmp_path, profile="workflow-run-crate-0.5")
 
 
 def test_export_simple_invocation_to_ro_crate(tmp_path):
@@ -726,10 +1604,6 @@ def test_export_simple_invocation_to_ro_crate(tmp_path):
     validate_invocation_crate_directory(tmp_path)
 
 
-@pytest.mark.xfail(
-    sys.version_info >= (3, 10),
-    reason="Awaiting resolution of validator issue https://github.com/crs4/rocrate-validator/issues/62",
-)
 def test_export_collection_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_collection_invocation(app)
@@ -1141,6 +2015,8 @@ def _setup_simple_cat_job(app, state="ok"):
     j.add_output_dataset("out_file1", d2)
 
     app.add_and_commit(d1, d2, h, j)
+    j.input_datasets[0].dataset_version = d1.version
+    app.commit()
 
     app.object_store.update_from_file(d1, file_name=TEST_PATH_1, create=True)
     app.object_store.update_from_file(d2, file_name=TEST_PATH_2, create=True)
@@ -1153,6 +2029,8 @@ def _setup_invocation(app):
 
     # Set up a user, history, datasets, and job
     u, h, d1, d2, j = _setup_simple_cat_job(app)
+    j.tool_id = "example_tool"
+    j.tool_version = "1.0"
     j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
 
     # Create a workflow
@@ -1189,12 +2067,12 @@ def _setup_invocation(app):
     # Associate invocation step for data_input
     invocation_step_1 = model.WorkflowInvocationStep()
     invocation_step_1.workflow_step = workflow_step_1
-    invocation_step_1.job = j
     sa_session.add(invocation_step_1)
 
     # Associate invocation step for tool
     invocation_step_2 = model.WorkflowInvocationStep()
     invocation_step_2.workflow_step = workflow_step_2
+    invocation_step_2.job = j
     sa_session.add(invocation_step_2)
 
     # Add steps to the invocation
@@ -1269,14 +2147,19 @@ def _setup_collection_invocation(app):
     workflow_step_1.type = "data_collection_input"
     workflow_step_1.tool_inputs = {}
     sa_session.add(workflow_step_1)
-    workflow_1 = _workflow_from_steps(u, [workflow_step_1])
+    workflow_step_2 = model.WorkflowStep()
+    workflow_step_2.order_index = 1
+    workflow_step_2.type = "data_collection_input"
+    workflow_step_2.tool_inputs = {}
+    sa_session.add(workflow_step_2)
+    workflow_1 = _workflow_from_steps(u, [workflow_step_1, workflow_step_2])
     workflow_1.license = "MIT"
     workflow_1.name = "Test Workflow"
     sa_session.add(workflow_1)
     workflow_invocation = _invocation_for_workflow(u, workflow_1)
     workflow_invocation.user = u
     workflow_invocation.add_input(hc1, step=workflow_step_1)
-    workflow_invocation.add_input(hc2, step=workflow_step_1)
+    workflow_invocation.add_input(hc2, step=workflow_step_2)
     wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
     workflow_invocation.add_output(wf_output, workflow_step_1, hc3)
 

@@ -719,9 +719,12 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         configure_logging=True,
         use_converters=True,
         use_display_applications=True,
+        initialize_tool_source_store=False,
         **kwargs,
     ):
         super().__init__(**kwargs)
+        if initialize_tool_source_store:
+            self._init_tool_source_store()
         self._register_singleton(MinimalManagerApp, self)  # type: ignore[type-abstract]
         self.execution_timer_factory = self._register_singleton(
             ExecutionTimerFactory, ExecutionTimerFactory(self.config)

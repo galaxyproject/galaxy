@@ -474,8 +474,11 @@ def build_index_entry_from_source(
         version = parse_tool_version_with_defaults(tool_id, tool_source)
         profile = parse_profile_version(tool_source)
         action_module = tool_source.parse_action_module()
-        requirements, containers, _, _, _ = tool_source.parse_requirements()
+        requirements, containers, resource_requirements, _, _ = tool_source.parse_requirements()
         tests = tool_source.parse_tests_to_dict().get("tests", [])
+        license = tool_source.parse_license()
+        creators = tool_source.parse_creator() or []
+        citations = [citation.model_dump() for citation in tool_source.parse_citations()]
 
         # Capture bounded help text for the toolbox-owned search corpus. Parse failures drop help
         # for this entry rather than failing the populate — a malformed help
@@ -494,6 +497,9 @@ def build_index_entry_from_source(
             version=version,
             name=tool_source.parse_name() or "",
             description=tool_source.parse_description() or "",
+            license=license,
+            creators=creators,
+            citations=citations,
             help_text=help_text,
             is_datatype_converter=discovered.tool_conf == CONVERTER_TOOL_CONF,
             icon=icon,
@@ -515,6 +521,7 @@ def build_index_entry_from_source(
             profile=profile,
             test_count=len(tests),
             requirements=requirements.to_dict(),
+            resource_requirements=[requirement.to_dict() for requirement in resource_requirements],
             container_requirements=[container.to_dict() for container in containers],
             produces_real_jobs=tool_produces_real_jobs(tool_type, action_module),
             tags=[],
