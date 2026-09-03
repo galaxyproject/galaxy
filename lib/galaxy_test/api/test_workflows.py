@@ -3476,14 +3476,25 @@ outputs:
 """)
         with self.dataset_populator.test_history() as history_id:
             invocation_id = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id).json()["id"]
+
+            def step_output_id(step_label):
+                invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+                invocation_step = next(
+                    (step for step in invocation["steps"] if step["workflow_step_label"] == step_label), None
+                )
+                if invocation_step and (output := invocation_step["outputs"].get("out_file1")):
+                    return output["id"]
+                return None
+
+            failed_dataset_id = wait_on(lambda: step_output_id("job_props"), "job_props output to be created")
+            failed_state = self.dataset_populator.wait_for_dataset(history_id, failed_dataset_id, assert_ok=False)
+            assert failed_state == "error", failed_state
             failed_dataset = self.dataset_populator.get_history_dataset_details(
-                history_id, hid=1, wait=True, assert_ok=False
+                history_id, content_id=failed_dataset_id, wait=False
             )
-            assert failed_dataset["state"] == "error", failed_dataset
-            paused_dataset = self.dataset_populator.get_history_dataset_details(
-                history_id, hid=5, wait=True, assert_ok=False
-            )
-            assert paused_dataset["state"] == "paused", paused_dataset
+            paused_dataset_id = wait_on(lambda: step_output_id("branch"), "branch output to be created")
+            paused_state = self.dataset_populator.wait_for_dataset(history_id, paused_dataset_id, assert_ok=False)
+            assert paused_state == "paused", paused_state
             invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
             pick_step = next(step for step in invocation["steps"] if step["workflow_step_label"] == "pick")
             assert pick_step["state"] == "new", pick_step
