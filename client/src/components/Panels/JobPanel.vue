@@ -140,7 +140,7 @@ function cardClicked(job: JobBaseModel) {
         <template v-slot:header>
             <FilterMenu
                 name="Jobs"
-                placeholder="search jobs"
+                placeholder="search jobs by tool ID"
                 :filter-class="JobsFilters"
                 :filter-text.sync="filterText"
                 :loading="loading"
