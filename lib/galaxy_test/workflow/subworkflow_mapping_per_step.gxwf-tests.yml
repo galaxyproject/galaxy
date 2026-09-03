@@ -26,6 +26,29 @@
         - identifier: R
           class: File
           contents: "R_content"
+    second_inner_mapping_source:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: U
+          class: File
+          contents: "U_content"
+        - identifier: V
+          class: File
+          contents: "V_content"
+        - identifier: W
+          class: File
+          contents: "W_content"
+    pair_mapping_source:
+      class: Collection
+      collection_type: paired
+      elements:
+        - identifier: forward
+          class: File
+          contents: "comparison_forward"
+        - identifier: reverse
+          class: File
+          contents: "comparison_reverse"
   outputs:
     inherited_mapping_output:
       class: Collection
@@ -77,3 +100,48 @@
               asserts:
               - that: has_text
                 text: "R_content"
+- doc: |
+    An empty callable-boundary axis schedules no child jobs and still retains
+    the declared nested output types.
+  job:
+    outer_mapping_source:
+      class: Collection
+      collection_type: list
+      elements: []
+    inner_mapping_source:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: P
+          class: File
+          contents: "P_content"
+    second_inner_mapping_source:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: U
+          class: File
+          contents: "U_content"
+    pair_mapping_source:
+      class: Collection
+      collection_type: paired
+      elements:
+        - identifier: forward
+          class: File
+          contents: "comparison_forward"
+        - identifier: reverse
+          class: File
+          contents: "comparison_reverse"
+  outputs:
+    inherited_mapping_output:
+      class: Collection
+      collection_type: list
+      element_count: 0
+    local_mapping_output:
+      class: Collection
+      collection_type: list:list
+      element_count: 0
+    collection_output_scalar_consumer:
+      class: Collection
+      collection_type: list:paired
+      element_count: 0

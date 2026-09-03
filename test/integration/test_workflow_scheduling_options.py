@@ -2,6 +2,9 @@
 
 import time
 from json import dumps
+from pathlib import Path
+
+import yaml
 
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -76,6 +79,45 @@ class TestMaximumWorkflowJobsPerSchedulingIteration(integration_util.Integration
             self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id, inputs)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             assert "a\nc\nb\nd\ne\ng\nf\nh\n" == self.dataset_populator.get_history_dataset_content(history_id, hid=0)
+
+    def test_subworkflow_mapping_axes_survive_scheduling_rounds(self):
+        workflow_path = (
+            Path(__file__).parents[2] / "lib" / "galaxy_test" / "workflow" / "subworkflow_mapping_per_step.gxwf.yml"
+        )
+        tests_path = workflow_path.with_name("subworkflow_mapping_per_step.gxwf-tests.yml")
+        with tests_path.open() as tests_file:
+            test_job = yaml.safe_load(tests_file)[0]["job"]
+
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                str(workflow_path),
+                test_data=test_job,
+                history_id=history_id,
+                source_type="path",
+                wait=True,
+            )
+            parent_invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            child_invocation_ids = {
+                step["subworkflow_invocation_id"]
+                for step in parent_invocation["steps"]
+                if step.get("subworkflow_invocation_id")
+            }
+            assert len(child_invocation_ids) == 1
+
+            child_invocation = self.workflow_populator.get_invocation(child_invocation_ids.pop(), step_details=True)
+            child_steps = {step["workflow_step_label"]: step for step in child_invocation["steps"]}
+            assert len(child_steps["cat_mixed_mapping_sources"]["jobs"]) == 6
+            assert len(child_steps["cat_chained_mapping_output"]["jobs"]) == 6
+            assert len(child_steps["cat_after_pick_value"]["jobs"]) == 6
+            assert len(child_steps["cat_zip_chained_outputs"]["jobs"]) == 6
+            assert len(child_steps["consume_mapped_output_as_collection"]["jobs"]) == 2
+            assert len(child_steps["consume_pair_elements"]["jobs"]) == 4
+
+            output_id = parent_invocation["output_collections"]["chained_pick_value_output"]["id"]
+            output = self.dataset_populator.get_history_collection_details(history_id, content_id=output_id)
+            assert output["collection_type"] == "list:list"
+            assert len(output["elements"]) == 2
+            assert all(len(element["object"]["elements"]) == 3 for element in output["elements"])
 
     def test_scheduling_rounds(self):
         with self.dataset_populator.test_history() as history_id:

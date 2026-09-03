@@ -6609,6 +6609,8 @@ test_data:
         assert elements[0]["element_identifier"] == "test_level_1"
 
     @skip_without_tool("cat")
+    @skip_without_tool("collection_creates_pair_from_type")
+    @skip_without_tool("identifier_multiple")
     def test_subworkflow_mapping_callable_boundary_job_cardinality(self, history_id):
         workflow_path = os.path.join(
             os.path.dirname(__file__),
@@ -6640,14 +6642,56 @@ test_data:
         child_steps = {step["workflow_step_label"]: step for step in child_invocation["steps"]}
         assert len(child_steps["cat_outer_mapping_source"]["jobs"]) == 2
         assert len(child_steps["cat_inner_mapping_source"]["jobs"]) == 6
+        assert len(child_steps["cat_mixed_mapping_sources"]["jobs"]) == 6
+        assert len(child_steps["cat_chained_mapping_output"]["jobs"]) == 6
+        assert len(child_steps["cat_after_pick_value"]["jobs"]) == 6
+        assert len(child_steps["cat_second_inner_mapping_source"]["jobs"]) == 6
+        assert len(child_steps["cat_zip_chained_outputs"]["jobs"]) == 6
+        assert len(child_steps["consume_mapped_output_as_collection"]["jobs"]) == 2
+        assert len(child_steps["make_pair_per_outer"]["jobs"]) == 2
+        assert len(child_steps["consume_pair_elements"]["jobs"]) == 4
 
-        output_id = parent_invocation["output_collections"]["local_mapping_output"]["id"]
-        output = self.dataset_populator.get_history_collection_details(history_id, content_id=output_id)
-        assert output["collection_type"] == "list:list"
-        assert len(output["elements"]) == 2
-        assert all(len(element["object"]["elements"]) == 3 for element in output["elements"])
-        leaf_hda_ids = {leaf["object"]["id"] for outer in output["elements"] for leaf in outer["object"]["elements"]}
-        assert len(leaf_hda_ids) == 6
+        for output_name in (
+            "local_mapping_output",
+            "mixed_mapping_output",
+            "chained_mapping_output",
+            "pick_value_mapping_output",
+            "chained_pick_value_output",
+            "zipped_chained_output",
+        ):
+            output_id = parent_invocation["output_collections"][output_name]["id"]
+            output = self.dataset_populator.get_history_collection_details(history_id, content_id=output_id)
+            assert output["collection_type"] == "list:list"
+            assert len(output["elements"]) == 2
+            assert all(len(element["object"]["elements"]) == 3 for element in output["elements"])
+            leaf_hda_ids = {
+                leaf["object"]["id"] for outer in output["elements"] for leaf in outer["object"]["elements"]
+            }
+            assert len(leaf_hda_ids) == 6
+            if output_name == "zipped_chained_output":
+                assert [element["element_identifier"] for element in output["elements"]] == ["X", "Y"]
+                assert all(
+                    [leaf["element_identifier"] for leaf in outer["object"]["elements"]] == ["P", "Q", "R"]
+                    for outer in output["elements"]
+                )
+
+        collection_consumer_id = parent_invocation["output_collections"]["collection_consumer_output"]["id"]
+        collection_consumer = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=collection_consumer_id
+        )
+        assert collection_consumer["collection_type"] == "list"
+        assert [element["element_identifier"] for element in collection_consumer["elements"]] == ["X", "Y"]
+
+        scalar_consumer_id = parent_invocation["output_collections"]["collection_output_scalar_consumer"]["id"]
+        scalar_consumer = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=scalar_consumer_id
+        )
+        assert scalar_consumer["collection_type"] == "list:paired"
+        assert [element["element_identifier"] for element in scalar_consumer["elements"]] == ["X", "Y"]
+        assert all(
+            [leaf["element_identifier"] for leaf in outer["object"]["elements"]] == ["forward", "reverse"]
+            for outer in scalar_consumer["elements"]
+        )
 
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over_inner_collection(self, history_id):

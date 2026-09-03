@@ -10,6 +10,8 @@ import pytest
 
 from galaxy import model
 from galaxy.managers.workflows import WorkflowContentsManager
+from galaxy.model.dataset_collections import matching
+from galaxy.model.dataset_collections.structure import Tree
 from galaxy.schema.invocation import FailureReason
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.parameters.meta import to_decoded_json
@@ -23,6 +25,7 @@ from galaxy.util import (
     now,
 )
 from galaxy.workflow import (
+    map_over,
     modules,
 )
 from .workflow_support import (
@@ -805,3 +808,314 @@ def test_to_decoded_json_lowers_bare_runtime_value():
     result = to_decoded_json({"foo": RuntimeValue()})
     assert result == {"foo": {"__class__": "RuntimeValue"}}
     json.dumps(result)
+
+
+def test_pick_value_mapped_false_coordinate_is_skipped():
+    pick_value_module = object.__new__(modules.PickValueModule)
+    picked = object()
+    skipped = object()
+    pick_value_module._pick_from_replacements = mock.Mock(return_value=picked)
+    pick_value_module._create_skipped_output = mock.Mock(return_value=skipped)
+    pick_value_module._create_mapped_output_collection = mock.Mock(return_value="mapped-output")
+    first = bunch.Bunch(element_identifier="X", hda=object(), child_collection=None)
+    second = bunch.Bunch(element_identifier="Y", hda=object(), child_collection=None)
+    collection_info = bunch.Bunch(
+        slice_collections=lambda: iter([({"input_0": first}, True), ({"input_0": second}, False)]),
+        structure=object(),
+    )
+    invocation_step = bunch.Bunch(workflow_invocation=bunch.Bunch(history=object()))
+
+    output = pick_value_module._execute_mapped(
+        None,
+        invocation_step,
+        "first_non_null",
+        [{"name": "input_0"}],
+        collection_info,
+    )
+
+    assert output == "mapped-output"
+    pick_value_module._pick_from_replacements.assert_called_once_with(
+        None,
+        invocation_step,
+        "first_non_null",
+        [first.hda],
+    )
+    pick_value_module._create_skipped_output.assert_called_once_with(None, invocation_step)
+    assert pick_value_module._create_mapped_output_collection.call_args.args[3] == [("X", picked), ("Y", skipped)]
+
+
+def test_residual_linked_axis_validates_later_direct_candidate():
+    residual_structure = mock_structure("list")
+    direct_structure = mock_structure("list")
+    collection_info = matching.MatchingCollections.from_axes(
+        [matching.MatchingCollectionAxis(direct_structure, "linked")]
+    )
+    collection_info.linked_structure = direct_structure
+    inherited_bindings = {
+        "a_residual": (
+            bunch.Bunch(),
+            (),
+            (matching.MatchingCollectionAxis(residual_structure, "residual"),),
+            (),
+        )
+    }
+
+    def compatible_shape(left, right):
+        return left.structure is right.structure
+
+    with mock.patch.object(
+        matching.MatchingCollections,
+        "_axes_have_compatible_or_refined_shape",
+        side_effect=compatible_shape,
+    ):
+        with pytest.raises(modules.exceptions.MessageException, match=matching.CANNOT_MATCH_ERROR_MESSAGE):
+            map_over.MapOverPlanner._add_residual_linked_axis(
+                collection_info,
+                inherited_bindings,
+                "linked",
+                ["z_direct"],
+            )
+
+
+def test_missing_suffix_with_direct_linked_peer_remains_in_linked_group():
+    outer_structure = mock_structure("list")
+    full_structure = mock_structure("list:paired")
+    suffix_structure = mock_structure("paired")
+    outer_axis = matching.MatchingCollectionAxis(outer_structure, "outer")
+    inherited = matching.MatchingCollections.from_axes([outer_axis])
+    progress = bunch.Bunch(subworkflow_collection_info=inherited)
+    collections = matching.CollectionsToMatch()
+    collections.add("mapped_output", object())
+    collections.add("direct_peer", object())
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module._source_mapping_axes = mock.Mock(
+        side_effect=lambda _progress, _step, input_name: (outer_axis,) if input_name == "mapped_output" else ()
+    )
+    workflow_module._mapping_structure = mock.Mock(return_value=full_structure)
+    workflow_module._structure_suffix = mock.Mock(return_value=suffix_structure)
+
+    bindings, refinements = workflow_module._extract_inherited_axis_bindings(progress, object(), collections)
+
+    assert not refinements
+    assert bindings["mapped_output"][2][0].structure is suffix_structure
+    assert [name for name, _to_match in collections.items()] == ["direct_peer"]
+
+
+def test_ragged_missing_suffix_promotes_direct_linked_peer_into_refined_axis():
+    outer_structure = mock_structure("list")
+    local_structure = mock_structure("list")
+    ragged_structure = mock_structure("list:list:paired")
+    outer_axis = matching.MatchingCollectionAxis(outer_structure, "outer")
+    local_axis = matching.MatchingCollectionAxis(local_structure, "local")
+    inherited = matching.MatchingCollections.from_axes([outer_axis])
+    progress = bunch.Bunch(subworkflow_collection_info=inherited)
+    collections = matching.CollectionsToMatch()
+    collections.add("ragged", object())
+    collections.add("direct_peer", object())
+    ragged_to_match = collections.collections["ragged"]
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module._source_mapping_axes = mock.Mock(
+        side_effect=lambda _progress, _step, input_name: (outer_axis, local_axis) if input_name == "ragged" else ()
+    )
+    workflow_module._mapping_structure = mock.Mock(
+        side_effect=lambda to_match: ragged_structure if to_match is ragged_to_match else local_structure
+    )
+    workflow_module._structure_suffix = mock.Mock(side_effect=modules.exceptions.MessageException("ragged"))
+
+    bindings, refinements = workflow_module._extract_inherited_axis_bindings(progress, object(), collections)
+
+    assert not collections.has_collections()
+    assert refinements["outer"].structure is ragged_structure
+    assert bindings["ragged"][2] == ()
+    assert bindings["direct_peer"][1] == (outer_axis,)
+    assert bindings["direct_peer"][2] == ()
+    assert bindings["direct_peer"][3] == ((1, 2),)
+
+
+def test_equal_shape_suffix_with_different_identifiers_is_not_reusable():
+    first = mock_identifier_tree([("P", mock_identifier_tree([("one", matching.leaf), ("two", matching.leaf)]))])
+    second = mock_identifier_tree([("P", mock_identifier_tree([("alpha", matching.leaf), ("beta", matching.leaf)]))])
+
+    assert first.compatible_shape(second)
+    assert not map_over.MapOverPlanner._structures_have_same_identifiers(first, second)
+
+
+def test_direct_linked_peer_deeper_than_embedded_component_is_rejected():
+    outer_structure = mock_structure("list")
+    residual_structure = mock_structure("list")
+    direct_structure = mock_structure("list:paired")
+    refined_structure = mock_structure("list:list:paired")
+    outer_axis = matching.MatchingCollectionAxis(outer_structure, "outer")
+    residual_axis = matching.MatchingCollectionAxis(residual_structure, "local")
+    refinements = {
+        "outer": matching.MatchingCollectionAxis(
+            refined_structure,
+            "outer",
+            (("outer", 0, 1), ("local", 1, 2)),
+        )
+    }
+    collections = matching.CollectionsToMatch()
+    collections.add("direct_peer", object())
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module._mapping_structure = mock.Mock(return_value=direct_structure)
+
+    with pytest.raises(modules.exceptions.MessageException, match=matching.CANNOT_MATCH_ERROR_MESSAGE):
+        workflow_module._promote_direct_linked_bindings(
+            collections,
+            {},
+            refinements,
+            [(outer_axis, (residual_axis,))],
+        )
+
+
+def test_missing_suffix_refines_existing_residual_axis_without_peer():
+    outer_structure = mock_structure("list")
+    local_structure = mock_structure("list")
+    full_structure = mock_structure("list:list:paired")
+    residual_structure = mock_structure("list:paired")
+    outer_axis = matching.MatchingCollectionAxis(outer_structure, "outer")
+    local_axis = matching.MatchingCollectionAxis(local_structure, "local")
+    inherited = matching.MatchingCollections.from_axes([outer_axis])
+    progress = bunch.Bunch(subworkflow_collection_info=inherited)
+    collections = matching.CollectionsToMatch()
+    collections.add("mapped_output", object())
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module._source_mapping_axes = mock.Mock(return_value=(outer_axis, local_axis))
+    workflow_module._mapping_structure = mock.Mock(return_value=full_structure)
+    workflow_module._structure_suffix = mock.Mock(return_value=residual_structure)
+
+    bindings, refinements = workflow_module._extract_inherited_axis_bindings(progress, object(), collections)
+
+    assert not refinements
+    assert bindings["mapped_output"][2][0].structure is residual_structure
+    assert bindings["mapped_output"][3] == ((0, 1),)
+
+
+def test_two_inherited_prefix_outputs_do_not_masquerade_as_direct_peers():
+    outer_structure = mock_structure("list")
+    full_structure = mock_structure("list:paired")
+    outer_axis = matching.MatchingCollectionAxis(outer_structure, "outer")
+    inherited = matching.MatchingCollections.from_axes([outer_axis])
+    progress = bunch.Bunch(subworkflow_collection_info=inherited)
+    collections = matching.CollectionsToMatch()
+    collections.add("left", object())
+    collections.add("right", object())
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module._source_mapping_axes = mock.Mock(return_value=(outer_axis,))
+    workflow_module._mapping_structure = mock.Mock(return_value=full_structure)
+
+    bindings, refinements = workflow_module._extract_inherited_axis_bindings(progress, object(), collections)
+
+    assert refinements["outer"].structure is full_structure
+    assert bindings["left"][2] == ()
+    assert bindings["right"][2] == ()
+
+
+def test_ragged_refinement_preserves_and_promotes_embedded_residual_axis():
+    outer_structure = mock_structure("list")
+    local_structure = mock_structure("list")
+    peer_structure = mock_structure("list:list")
+    ragged_structure = mock_structure("list:list:paired")
+    outer_axis = matching.MatchingCollectionAxis(outer_structure, "outer")
+    local_axis = matching.MatchingCollectionAxis(local_structure, "local")
+    inherited = matching.MatchingCollections.from_axes([outer_axis])
+    progress = bunch.Bunch(subworkflow_collection_info=inherited)
+    collections = matching.CollectionsToMatch()
+    collections.add("ragged", object())
+    collections.add("peer", object())
+    ragged_to_match = collections.collections["ragged"]
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module._source_mapping_axes = mock.Mock(return_value=(outer_axis, local_axis))
+    workflow_module._mapping_structure = mock.Mock(
+        side_effect=lambda to_match: ragged_structure if to_match is ragged_to_match else peer_structure
+    )
+    workflow_module._structure_suffix = mock.Mock(side_effect=modules.exceptions.MessageException("ragged"))
+
+    bindings, refinements = workflow_module._extract_inherited_axis_bindings(progress, object(), collections)
+
+    refined_axis = refinements["outer"]
+    assert refined_axis.structure is ragged_structure
+    assert refined_axis.component_path_slice("local") == (1, 2)
+    assert bindings["ragged"][2] == ()
+    assert bindings["peer"][1] == (outer_axis, outer_axis)
+    assert bindings["peer"][2] == ()
+    assert bindings["peer"][3] == ((0, 1), (1, 2))
+
+
+def test_residual_linked_axis_can_refine_direct_binding_as_prefix():
+    shallow = mock_structure("list")
+    deep = mock_structure("list:paired")
+    collection_info = matching.MatchingCollections.from_axes(
+        [matching.MatchingCollectionAxis(shallow, "linked")],
+        bindings={
+            "peer": matching.MatchingCollectionBinding(
+                collection=object(),
+                axis_indices=(0,),
+            )
+        },
+    )
+    collection_info.linked_structure = shallow
+    inherited_bindings = {
+        "nested": (
+            bunch.Bunch(),
+            (),
+            (matching.MatchingCollectionAxis(deep, "source-local"),),
+            (),
+        )
+    }
+
+    combined = map_over.MapOverPlanner._add_residual_linked_axis(
+        collection_info,
+        inherited_bindings,
+        "linked",
+        ["peer"],
+    )
+
+    assert combined.mapping_axes[0].structure is deep
+    assert combined.bindings["peer"].axis_path_slices == ((0, 1),)
+
+
+def test_two_inherited_bindings_share_deepest_residual_axis():
+    shallow = mock_structure("list")
+    deep = mock_structure("list:paired")
+    inherited_bindings = {
+        "chained": (
+            bunch.Bunch(),
+            (),
+            (matching.MatchingCollectionAxis(deep, "chained-local"),),
+            (),
+        ),
+        "peer": (
+            bunch.Bunch(),
+            (),
+            (matching.MatchingCollectionAxis(shallow, "peer-local"),),
+            (),
+        ),
+    }
+
+    combined = map_over.MapOverPlanner._add_residual_linked_axis(
+        None,
+        inherited_bindings,
+        "linked",
+        [],
+    )
+
+    assert combined.mapping_axes[0].structure is deep
+    assert combined.linked_structure is deep
+
+
+def mock_structure(collection_type, children_known=False):
+    description = bunch.Bunch(collection_type=collection_type)
+    description.compatible = lambda other: other.collection_type == collection_type
+    structure = bunch.Bunch(
+        collection_type_description=description,
+        children_known=children_known,
+    )
+    structure.clone = lambda: structure
+    return structure
+
+
+def mock_identifier_tree(children):
+    description = bunch.Bunch(collection_type="list")
+    description.compatible = lambda other: other.collection_type == "list"
+    return Tree(children, description)

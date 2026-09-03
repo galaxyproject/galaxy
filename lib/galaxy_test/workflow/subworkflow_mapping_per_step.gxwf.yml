@@ -11,11 +11,31 @@ inputs:
   inner_mapping_source:
     type: collection
     collection_type: list
+  second_inner_mapping_source:
+    type: collection
+    collection_type: list
+  pair_mapping_source:
+    type: collection
+    collection_type: paired
 outputs:
   inherited_mapping_output:
     outputSource: sub/inherited_mapping_output
   local_mapping_output:
     outputSource: sub/local_mapping_output
+  mixed_mapping_output:
+    outputSource: sub/mixed_mapping_output
+  chained_mapping_output:
+    outputSource: sub/chained_mapping_output
+  pick_value_mapping_output:
+    outputSource: sub/pick_value_mapping_output
+  chained_pick_value_output:
+    outputSource: sub/chained_pick_value_output
+  zipped_chained_output:
+    outputSource: sub/zipped_chained_output
+  collection_consumer_output:
+    outputSource: sub/collection_consumer_output
+  collection_output_scalar_consumer:
+    outputSource: sub/collection_output_scalar_consumer
 steps:
   sub:
     run:
@@ -25,11 +45,31 @@ steps:
         inner_collection:
           type: collection
           collection_type: list
+        second_inner_collection:
+          type: collection
+          collection_type: list
+        comparison_pair:
+          type: collection
+          collection_type: paired
       outputs:
         inherited_mapping_output:
           outputSource: cat_outer_mapping_source/out_file1
         local_mapping_output:
           outputSource: cat_inner_mapping_source/out_file1
+        mixed_mapping_output:
+          outputSource: cat_mixed_mapping_sources/out_file1
+        chained_mapping_output:
+          outputSource: cat_chained_mapping_output/out_file1
+        pick_value_mapping_output:
+          outputSource: pick_mixed_mapping/output
+        chained_pick_value_output:
+          outputSource: cat_after_pick_value/out_file1
+        zipped_chained_output:
+          outputSource: cat_zip_chained_outputs/out_file1
+        collection_consumer_output:
+          outputSource: consume_mapped_output_as_collection/output1
+        collection_output_scalar_consumer:
+          outputSource: consume_pair_elements/out_file1
       steps:
         cat_outer_mapping_source:
           tool_id: cat
@@ -41,6 +81,61 @@ steps:
           in:
             input1:
               source: inner_collection
+        cat_mixed_mapping_sources:
+          tool_id: cat
+          in:
+            input1:
+              source: mapped_dataset
+            queries_0|input2:
+              source: inner_collection
+        cat_chained_mapping_output:
+          tool_id: cat
+          in:
+            input1:
+              source: cat_mixed_mapping_sources/out_file1
+        pick_mixed_mapping:
+          type: pick_value
+          in:
+            input_0:
+              source: cat_mixed_mapping_sources/out_file1
+          state:
+            mode: first_non_null
+        cat_after_pick_value:
+          tool_id: cat
+          in:
+            input1:
+              source: pick_mixed_mapping/output
+        cat_second_inner_mapping_source:
+          tool_id: cat
+          in:
+            input1:
+              source: second_inner_collection
+        cat_zip_chained_outputs:
+          tool_id: cat
+          in:
+            input1:
+              source: cat_inner_mapping_source/out_file1
+            queries_0|input2:
+              source: cat_second_inner_mapping_source/out_file1
+        consume_mapped_output_as_collection:
+          tool_id: identifier_all_collection_types
+          in:
+            input1:
+              source: cat_inner_mapping_source/out_file1
+        make_pair_per_outer:
+          tool_id: collection_creates_pair_from_type
+          in:
+            input1:
+              source: mapped_dataset
+        consume_pair_elements:
+          tool_id: cat
+          in:
+            input1:
+              source: make_pair_per_outer/paired_output
+            queries_0|input2:
+              source: comparison_pair
     in:
       mapped_dataset: outer_mapping_source
       inner_collection: inner_mapping_source
+      second_inner_collection: second_inner_mapping_source
+      comparison_pair: pair_mapping_source
