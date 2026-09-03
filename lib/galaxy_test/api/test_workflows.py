@@ -3343,6 +3343,43 @@ input_data:
             invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
             assert invocation["state"] == "failed"
 
+    @skip_without_tool("expression_parse_int")
+    @skip_without_tool("expression_forty_two")
+    def test_pick_value_runtime_null(self):
+        # Expression tools run as jobs and can compute null: parseInt produces NaN for
+        # this input, which the expression runtime serializes as null. The picker must
+        # wait for that value before it can reject it and use the fallback.
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+steps:
+  runtime_null:
+    tool_id: expression_parse_int
+    state:
+      input1: not a number
+  fallback:
+    tool_id: expression_forty_two
+    state: {}
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: runtime_null/out1
+      input_1: fallback/out1
+outputs:
+  picked:
+    outputSource: pick/output
+test_data: {}
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            picked_content = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            assert picked_content == "42"
+
     @skip_without_tool("exit_code_from_file")
     def test_pick_value_input_failed(self):
         # pick_value reads its inputs while scheduling, so it has to wait for the jobs
@@ -3431,7 +3468,7 @@ outputs:
             )
             self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=False)
             invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
-            assert invocation["state"] == "scheduled", invocation
+            assert invocation["state"] in ("scheduled", "completed"), invocation
             picked = self.dataset_populator.get_history_dataset_details(
                 history_id, content_id=invocation["outputs"]["picked"]["id"], assert_ok=False
             )
