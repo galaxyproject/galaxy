@@ -464,7 +464,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if recommendation.primary_tools:
             parts.append("**Recommended Tools:**")
             for i, tool in enumerate(recommendation.primary_tools[:3], 1):
-                tool_name = tool.get("name", tool.get("tool_name", "Unknown"))
+                tool_name = self._resolve_tool_name(tool)
                 tool_id = tool.get("id", tool.get("tool_id", "unknown"))
 
                 is_installed = self._verify_tool_exists(tool_id)
@@ -486,13 +486,13 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if recommendation.alternative_tools:
             parts.append("\n**Alternative Options:**")
             for tool in recommendation.alternative_tools[:2]:
-                tool_name = tool.get("name", tool.get("tool_name", "Unknown"))
+                tool_name = self._resolve_tool_name(tool)
                 parts.append(f"- **{tool_name}**: {tool.get('description', 'No description')}")
 
         if recommendation.recommended_workflows:
             parts.append("\n**Recommended IWC Workflows:**")
             for i, wf in enumerate(recommendation.recommended_workflows[:3], 1):
-                wf_name = wf.get("name", "Unknown workflow")
+                wf_name = wf.get("name") or wf.get("trsID") or wf.get("trs_id") or "IWC workflow"
                 trs_id = wf.get("trsID") or wf.get("trs_id") or ""
                 parts.append(f"\n{i}. **{wf_name}**")
                 if trs_id:
@@ -526,7 +526,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if recommendation.primary_tools:
             top_tool = recommendation.primary_tools[0]
             log.debug(f"Creating suggestion for top_tool: {top_tool}")
-            tool_name = top_tool.get("name", top_tool.get("tool_name", "Unknown tool"))
+            tool_name = self._resolve_tool_name(top_tool)
             tool_id = top_tool.get("id", top_tool.get("tool_id", ""))
             log.debug(f"Extracted tool_name={tool_name}, tool_id={tool_id}")
 
@@ -559,6 +559,24 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 )
 
         return suggestions
+
+    def _resolve_tool_name(self, tool: dict) -> str:
+        """Human-readable name for a recommended tool.
+
+        The model's structured recommendation frequently carries only the
+        tool_id (no explicit name). Resolve the name from the toolbox by id,
+        and fall back to the id itself -- never render the literal "Unknown"
+        for a tool that is actually installed.
+        """
+        tool_id = tool.get("id") or tool.get("tool_id") or ""
+        if not (tool.get("name") or tool.get("tool_name")) and tool_id and self.deps.toolbox:
+            try:
+                resolved = self.deps.toolbox.get_tool(tool_id)
+                if resolved is not None:
+                    return resolved.name
+            except (AttributeError, KeyError, TypeError) as e:
+                log.debug(f"Error resolving name for tool {tool_id}: {e}")
+        return tool.get("name") or tool.get("tool_name") or tool_id or "Unknown"
 
     def _verify_tool_exists(self, tool_id: str) -> bool:
         if not self.deps.toolbox:
