@@ -266,6 +266,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         # Compliance related config
         self.redact_email_in_job_name = False
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_user_address_during_deletion = False
 
         # Follow two required by GenomeBuilds
         self.len_file_path = os.path.join("tool-data", "shared", "ucsc", "chrom")
