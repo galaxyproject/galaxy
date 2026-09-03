@@ -119,6 +119,22 @@ class TestMaximumWorkflowJobsPerSchedulingIteration(integration_util.Integration
             assert len(output["elements"]) == 2
             assert all(len(element["object"]["elements"]) == 3 for element in output["elements"])
 
+            passthrough_id = parent_invocation["output_collections"]["direct_collection_passthrough"]["id"]
+            passthrough = self.dataset_populator.get_history_collection_details(history_id, content_id=passthrough_id)
+            assert passthrough["collection_type"] == "list:list"
+            assert [element["element_identifier"] for element in passthrough["elements"]] == ["X", "Y"]
+            assert all(
+                [leaf["element_identifier"] for leaf in outer["object"]["elements"]] == ["P", "Q", "R"]
+                for outer in passthrough["elements"]
+            )
+
+            direct_dataset_id = parent_invocation["output_collections"]["direct_dataset_passthrough"]["id"]
+            direct_dataset = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=direct_dataset_id
+            )
+            assert direct_dataset["collection_type"] == "list"
+            assert len({element["object"]["id"] for element in direct_dataset["elements"]}) == 1
+
     def test_scheduling_rounds(self):
         with self.dataset_populator.test_history() as history_id:
             invocation_response = self.workflow_populator.run_workflow(

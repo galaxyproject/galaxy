@@ -17,6 +17,8 @@ inputs:
   pair_mapping_source:
     type: collection
     collection_type: paired
+  direct_dataset:
+    type: data
 outputs:
   inherited_mapping_output:
     outputSource: sub/inherited_mapping_output
@@ -36,6 +38,12 @@ outputs:
     outputSource: sub/collection_consumer_output
   collection_output_scalar_consumer:
     outputSource: sub/collection_output_scalar_consumer
+  mapped_input_passthrough:
+    outputSource: sub/mapped_input_passthrough
+  direct_collection_passthrough:
+    outputSource: sub/direct_collection_passthrough
+  direct_dataset_passthrough:
+    outputSource: sub/direct_dataset_passthrough
 steps:
   sub:
     run:
@@ -51,6 +59,8 @@ steps:
         comparison_pair:
           type: collection
           collection_type: paired
+        direct_dataset:
+          type: data
       outputs:
         inherited_mapping_output:
           outputSource: cat_outer_mapping_source/out_file1
@@ -70,6 +80,12 @@ steps:
           outputSource: consume_mapped_output_as_collection/output1
         collection_output_scalar_consumer:
           outputSource: consume_pair_elements/out_file1
+        mapped_input_passthrough:
+          outputSource: mapped_dataset/output
+        direct_collection_passthrough:
+          outputSource: inner_collection/output
+        direct_dataset_passthrough:
+          outputSource: direct_dataset/output
       steps:
         cat_outer_mapping_source:
           tool_id: cat
@@ -139,3 +155,4 @@ steps:
       inner_collection: inner_mapping_source
       second_inner_collection: second_inner_mapping_source
       comparison_pair: pair_mapping_source
+      direct_dataset: direct_dataset

@@ -4117,6 +4117,10 @@ test_data:
 class: GalaxyWorkflow
 inputs:
   boolean_input_files: collection
+  direct_dataset: data
+  direct_collection:
+    type: collection
+    collection_type: list
 steps:
   create_list_of_boolean:
     tool_id: param_value_from_file
@@ -4130,6 +4134,10 @@ steps:
       inputs:
         boolean_input_file: data
         should_run: boolean
+        direct_dataset: data
+        direct_collection:
+          type: collection
+          collection_type: list
       steps:
         consume_expression_parameter:
           tool_id: cat1
@@ -4141,13 +4149,27 @@ steps:
       outputs:
         inner_output:
           outputSource: consume_expression_parameter/out_file1
+        fully_bound_passthrough:
+          outputSource: boolean_input_file/output
+        direct_dataset_passthrough:
+          outputSource: direct_dataset/output
+        direct_collection_passthrough:
+          outputSource: direct_collection/output
     in:
       boolean_input_file: boolean_input_files
       should_run: create_list_of_boolean/boolean_param
+      direct_dataset: direct_dataset
+      direct_collection: direct_collection
     when: $(inputs.should_run)
 outputs:
   outer_output:
     outputSource: subworkflow/inner_output
+  fully_bound_passthrough:
+    outputSource: subworkflow/fully_bound_passthrough
+  direct_dataset_passthrough:
+    outputSource: subworkflow/direct_dataset_passthrough
+  direct_collection_passthrough:
+    outputSource: subworkflow/direct_collection_passthrough
 test_data:
   boolean_input_files:
     collection_type: list
@@ -4156,6 +4178,16 @@ test_data:
         content: true
       - identifier: false
         content: false
+  direct_dataset:
+    value: 1.bed
+    type: File
+  direct_collection:
+    collection_type: list
+    elements:
+      - identifier: first
+        content: first
+      - identifier: second
+        content: second
 """,
                 history_id=history_id,
             )
@@ -4168,6 +4200,36 @@ test_data:
             assert outer_hdca["job_state_summary"]["all_jobs"] == 2
             assert outer_hdca["job_state_summary"]["ok"] == 1
             assert outer_hdca["job_state_summary"]["skipped"] == 1
+
+            for output_name in ("fully_bound_passthrough", "direct_dataset_passthrough"):
+                output_id = invocation_details["output_collections"][output_name]["id"]
+                output = self.dataset_populator.get_history_collection_details(history_id, content_id=output_id)
+                assert output["collection_type"] == "list"
+                assert [element["element_identifier"] for element in output["elements"]] == ["True", "False"]
+                false_hda_id = output["elements"][1]["object"]["id"]
+                false_hda = self.dataset_populator.get_history_dataset_details(
+                    history_id=history_id, content_id=false_hda_id
+                )
+                assert false_hda["file_ext"] == "expression.json"
+                assert false_hda["misc_blurb"] == "skipped"
+
+            direct_collection_id = invocation_details["output_collections"]["direct_collection_passthrough"]["id"]
+            direct_collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=direct_collection_id
+            )
+            assert direct_collection["collection_type"] == "list:list"
+            assert [element["element_identifier"] for element in direct_collection["elements"]] == ["True", "False"]
+            false_collection = direct_collection["elements"][1]["object"]
+            assert [element["element_identifier"] for element in false_collection["elements"]] == [
+                "first",
+                "second",
+            ]
+            for element in false_collection["elements"]:
+                false_hda = self.dataset_populator.get_history_dataset_details(
+                    history_id=history_id, content_id=element["object"]["id"]
+                )
+                assert false_hda["file_ext"] == "expression.json"
+                assert false_hda["misc_blurb"] == "skipped"
 
     def test_run_workflow_conditional_subworkflow_step_map_over_expression_tool_with_extra_nesting(self):
         with self.dataset_populator.test_history() as history_id:
@@ -6692,6 +6754,32 @@ test_data:
             [leaf["element_identifier"] for leaf in outer["object"]["elements"]] == ["forward", "reverse"]
             for outer in scalar_consumer["elements"]
         )
+
+        mapped_passthrough_id = parent_invocation["output_collections"]["mapped_input_passthrough"]["id"]
+        mapped_passthrough = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=mapped_passthrough_id
+        )
+        assert mapped_passthrough["collection_type"] == "list"
+        assert [element["element_identifier"] for element in mapped_passthrough["elements"]] == ["X", "Y"]
+
+        direct_passthrough_id = parent_invocation["output_collections"]["direct_collection_passthrough"]["id"]
+        direct_passthrough = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=direct_passthrough_id
+        )
+        assert direct_passthrough["collection_type"] == "list:list"
+        assert [element["element_identifier"] for element in direct_passthrough["elements"]] == ["X", "Y"]
+        child_collection_ids = [element["object"]["id"] for element in direct_passthrough["elements"]]
+        assert len(set(child_collection_ids)) == 2
+        passthrough_hda_ids = {
+            leaf["object"]["id"] for outer in direct_passthrough["elements"] for leaf in outer["object"]["elements"]
+        }
+        assert len(passthrough_hda_ids) == 3
+
+        direct_dataset_id = parent_invocation["output_collections"]["direct_dataset_passthrough"]["id"]
+        direct_dataset = self.dataset_populator.get_history_collection_details(history_id, content_id=direct_dataset_id)
+        assert direct_dataset["collection_type"] == "list"
+        assert [element["element_identifier"] for element in direct_dataset["elements"]] == ["X", "Y"]
+        assert len({element["object"]["id"] for element in direct_dataset["elements"]}) == 1
 
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over_inner_collection(self, history_id):

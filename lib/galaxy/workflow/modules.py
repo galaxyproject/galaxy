@@ -160,6 +160,7 @@ from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.workflow.map_over import (
     collect_output_mapping_axes,
     MapOverPlanner,
+    shape_passthrough_output,
 )
 from galaxy.workflow.workflow_parameter_input_definitions import (
     get_default_parameter,
@@ -974,6 +975,14 @@ class SubWorkflowModule(WorkflowModule):
                         dependent_workflow_step_id=step.id,
                     )
                 )
+            replacement = shape_passthrough_output(
+                trans,
+                invocation_step,
+                workflow_output,
+                workflow_output_label,
+                replacement,
+                collection_info,
+            )
             outputs[workflow_output_label] = replacement
         output_mapping_axes = collect_output_mapping_axes(subworkflow, subworkflow_progress, collection_info)
         progress.set_step_outputs(invocation_step, outputs, output_mapping_axes=output_mapping_axes)
@@ -994,6 +1003,20 @@ class SubWorkflowModule(WorkflowModule):
             subworkflow_collection_info=collection_info,
         )
         subworkflow_invoker.progress.remaining_steps()
+        for workflow_output in subworkflow_invoker.workflow.workflow_outputs:
+            output_label = (
+                workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
+            )
+            if output_label in outputs:
+                continue
+            try:
+                replacement = subworkflow_invoker.progress.get_replacement_workflow_output(workflow_output)
+            except KeyError:
+                continue
+            if isinstance(replacement, NoReplacement) or (
+                isinstance(replacement, dict) and replacement.get("__class__") == "NoReplacement"
+            ):
+                outputs[output_label] = NO_REPLACEMENT
         output_mapping_axes = collect_output_mapping_axes(
             subworkflow_invoker.workflow,
             subworkflow_invoker.progress,

@@ -968,6 +968,147 @@ def test_direct_linked_peer_deeper_than_embedded_component_is_rejected():
         )
 
 
+def test_mapped_parameter_passthrough_is_explicitly_unsupported():
+    with pytest.raises(modules.exceptions.MessageException, match="parameter pass-through"):
+        map_over.passthrough_value_collection_type("not collection-backed")
+
+
+def test_absent_optional_passthrough_is_not_materialized():
+    output_step = bunch.Bunch(is_input_type=True)
+    workflow_output = bunch.Bunch(workflow_step=output_step)
+
+    replacement = map_over.shape_passthrough_output(
+        None,
+        None,
+        workflow_output,
+        "optional_output",
+        modules.NO_REPLACEMENT,
+        bunch.Bunch(),
+    )
+
+    assert replacement is modules.NO_REPLACEMENT
+
+
+@pytest.mark.parametrize(
+    ("axis_indices", "path_slices", "expected"),
+    [
+        ((0,), None, True),
+        ((0,), ((0, 1),), False),
+        ((0,), ((1, 2),), False),
+        ((0, 0), ((0, 1), (1, 2)), True),
+        ((0, 0), ((1, 2), (0, 1)), False),
+    ],
+)
+def test_passthrough_binding_requires_complete_ordered_axis_paths(axis_indices, path_slices, expected):
+    axis = matching.MatchingCollectionAxis(mock_structure("list:list"), "refined")
+    binding = matching.MatchingCollectionBinding(
+        collection=object(),
+        axis_indices=axis_indices,
+        axis_path_slices=path_slices,
+    )
+
+    assert map_over.binding_covers_mapping_axes(binding, [axis]) is expected
+
+
+def test_partial_refined_axis_passthrough_is_broadcast_over_missing_suffix():
+    list_description = bunch.Bunch(collection_type="list")
+    refined_description = bunch.Bunch(collection_type="list:list")
+    inner_x = Tree([("P", matching.leaf), ("Q", matching.leaf)], list_description)
+    inner_y = Tree([("P", matching.leaf), ("Q", matching.leaf)], list_description)
+    structure = Tree([("X", inner_x), ("Y", inner_y)], refined_description)
+    axis = matching.MatchingCollectionAxis(structure, "refined")
+    binding = matching.MatchingCollectionBinding(
+        collection=object(),
+        axis_indices=(0,),
+        axis_path_slices=((0, 1),),
+    )
+    x_hda = model.HistoryDatasetAssociation()
+    y_hda = model.HistoryDatasetAssociation()
+    slices = [
+        ({"source": bunch.Bunch(hda=x_hda, child_collection=None)}, None),
+        ({"source": bunch.Bunch(hda=x_hda, child_collection=None)}, None),
+        ({"source": bunch.Bunch(hda=y_hda, child_collection=None)}, None),
+        ({"source": bunch.Bunch(hda=y_hda, child_collection=None)}, None),
+    ]
+    collection_info = bunch.Bunch(
+        mapping_axes=[axis],
+        conditions=[],
+        bindings={"source": binding},
+        structure=structure,
+        slice_collections=lambda: iter(slices),
+    )
+    collection_manager = mock.Mock()
+    child_collections = [object(), object()]
+    collection_manager.create_dataset_collection.side_effect = child_collections
+    shaped = object()
+    collection_manager.create.return_value = shaped
+    trans = bunch.Bunch(app=bunch.Bunch(dataset_collection_manager=collection_manager))
+    output_step = bunch.Bunch(id=1, is_input_type=True)
+    workflow_output = bunch.Bunch(workflow_step=output_step)
+    parent_step = bunch.Bunch(
+        label="sub",
+        input_connections=[bunch.Bunch(input_subworkflow_step_id=1, input_name="source")],
+    )
+    invocation_step = bunch.Bunch(
+        workflow_step=parent_step,
+        workflow_invocation=bunch.Bunch(history=object()),
+    )
+
+    result = map_over.shape_passthrough_output(
+        trans,
+        invocation_step,
+        workflow_output,
+        "output",
+        x_hda,
+        collection_info,
+    )
+
+    assert result is shaped
+    first_elements = collection_manager.create_dataset_collection.call_args_list[0].kwargs["elements"]
+    second_elements = collection_manager.create_dataset_collection.call_args_list[1].kwargs["elements"]
+    assert first_elements == {"P": x_hda, "Q": x_hda}
+    assert second_elements == {"P": y_hda, "Q": y_hda}
+    assert collection_manager.create.call_args.kwargs["elements"] == {
+        "X": child_collections[0],
+        "Y": child_collections[1],
+    }
+
+
+def test_absent_optional_passthrough_is_reconstructed_during_recovery():
+    workflow_output = bunch.Bunch(
+        label="optional_output",
+        output_name="output",
+        workflow_step=bunch.Bunch(order_index=0),
+    )
+    subworkflow_progress = mock.Mock()
+    subworkflow_progress.get_replacement_workflow_output.return_value = {"__class__": "NoReplacement"}
+    subworkflow_invoker = bunch.Bunch(
+        workflow=bunch.Bunch(workflow_outputs=[workflow_output]),
+        progress=subworkflow_progress,
+    )
+    progress = mock.Mock()
+    progress.subworkflow_invoker.return_value = subworkflow_invoker
+    invocation_step = bunch.Bunch(
+        output_datasets=[],
+        output_dataset_collections=[],
+        workflow_step=object(),
+    )
+    subworkflow_module = object.__new__(modules.SubWorkflowModule)
+    subworkflow_module.trans = object()
+    subworkflow_module.get_all_inputs = mock.Mock(return_value=[])
+    subworkflow_module.plan_map_over = mock.Mock(return_value=None)
+    subworkflow_module._collect_output_mapping_axes = mock.Mock(return_value={})
+
+    subworkflow_module.recover_mapping(invocation_step, progress)
+
+    progress.set_step_outputs.assert_called_once_with(
+        invocation_step,
+        {"optional_output": modules.NO_REPLACEMENT},
+        already_persisted=True,
+        output_mapping_axes={},
+    )
+
+
 def test_missing_suffix_refines_existing_residual_axis_without_peer():
     outer_structure = mock_structure("list")
     local_structure = mock_structure("list")

@@ -49,6 +49,9 @@
         - identifier: reverse
           class: File
           contents: "comparison_reverse"
+    direct_dataset:
+      class: File
+      contents: "direct_content"
   outputs:
     inherited_mapping_output:
       class: Collection
@@ -100,6 +103,69 @@
               asserts:
               - that: has_text
                 text: "R_content"
+    mapped_input_passthrough:
+      class: Collection
+      collection_type: list
+      element_count: 2
+      elements:
+        X:
+          asserts:
+          - that: has_text
+            text: "from_X"
+        Y:
+          asserts:
+          - that: has_text
+            text: "from_Y"
+    direct_collection_passthrough:
+      class: Collection
+      collection_type: list:list
+      element_count: 2
+      elements:
+        X:
+          class: Collection
+          count: 3
+          elements:
+            P:
+              asserts:
+              - that: has_text
+                text: "P_content"
+            Q:
+              asserts:
+              - that: has_text
+                text: "Q_content"
+            R:
+              asserts:
+              - that: has_text
+                text: "R_content"
+        Y:
+          class: Collection
+          count: 3
+          elements:
+            P:
+              asserts:
+              - that: has_text
+                text: "P_content"
+            Q:
+              asserts:
+              - that: has_text
+                text: "Q_content"
+            R:
+              asserts:
+              - that: has_text
+                text: "R_content"
+    direct_dataset_passthrough:
+      class: Collection
+      collection_type: list
+      element_count: 2
+      elements:
+        X:
+          asserts:
+          - that: has_text
+            text: "direct_content"
+        Y:
+          asserts:
+          - that: has_text
+            text: "direct_content"
 - doc: |
     An empty callable-boundary axis schedules no child jobs and still retains
     the declared nested output types.
@@ -132,6 +198,9 @@
         - identifier: reverse
           class: File
           contents: "comparison_reverse"
+    direct_dataset:
+      class: File
+      contents: "direct_content"
   outputs:
     inherited_mapping_output:
       class: Collection
@@ -144,4 +213,16 @@
     collection_output_scalar_consumer:
       class: Collection
       collection_type: list:paired
+      element_count: 0
+    mapped_input_passthrough:
+      class: Collection
+      collection_type: list
+      element_count: 0
+    direct_collection_passthrough:
+      class: Collection
+      collection_type: list:list
+      element_count: 0
+    direct_dataset_passthrough:
+      class: Collection
+      collection_type: list
       element_count: 0
