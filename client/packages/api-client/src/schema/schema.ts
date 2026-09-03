@@ -25413,6 +25413,13 @@ export interface components {
              */
             deleted?: boolean | null;
             /**
+             * Metadata
+             * @description A dictionary of metadata key/value pairs to update for this dataset. Readonly and unknown metadata keys are silently ignored.
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Name
              * @description The new name of the item.
              */
