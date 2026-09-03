@@ -189,7 +189,7 @@ class TestWorkflowProgress(TestCase):
                 (104, {"out_file1": model.HistoryDatasetAssociation()}),
             ]
         )
-        recovery_order = []
+        recovery_order: list[int] = []
         self.progress["recovery_order"] = recovery_order
         self.invocation.workflow.steps.reverse()
 

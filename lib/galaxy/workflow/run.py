@@ -419,7 +419,7 @@ class WorkflowProgress:
         self.subworkflow_structure = subworkflow_collection_info.structure if subworkflow_collection_info else None
         self.when_values = when_values
         self.inherited_input_axes = inherited_input_axes or {}
-        self.output_mapping_axes = {}
+        self.output_mapping_axes: dict[tuple[int, str], tuple[Any, ...]] = {}
 
     @property
     def maximum_jobs_to_schedule_or_none(self) -> int | None:
