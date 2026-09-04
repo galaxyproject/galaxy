@@ -388,6 +388,7 @@ class ToolOutputCollection(ToolOutputBase):
             name=self.name,
             label=self.label,
             hidden=self.hidden,
+            format=self.default_format,
             collection_type=self.structure.collection_type,
             collection_type_source=self.structure.collection_type_source,
             collection_type_from_rules=self.structure.collection_type_from_rules,

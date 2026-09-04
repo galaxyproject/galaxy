@@ -7,8 +7,13 @@ Covers:
   that backs ``/api/unprivileged_tools/runtime_model``.
 """
 
+from typing import Any
+
 import pytest
-from pydantic import ValidationError
+from pydantic import (
+    TypeAdapter,
+    ValidationError,
+)
 
 from galaxy.tool_util.parameters.convert import assert_yaml_v1_parameters
 from galaxy.tool_util_models import (
@@ -431,52 +436,155 @@ def test_collection_discovery_rejects_underspecified_descriptors():
             first(bad)
 
 
-def test_simple_outputs_require_name_but_not_hidden_in_authoring_schema():
-    """Regression: text/integer/float/boolean outputs must require `name` (a value
-    output with no name can never be referenced) but must NOT require `hidden`.
-    They previously reused the strict internal output types whose unbound type vars
-    forced `hidden` to be required too, so the published schema demanded a `hidden`
-    flag on every simple output."""
-    defs = UserToolSourceAuthoringView.model_json_schema()["$defs"]
-    for name in (
-        "IncomingToolOutputText",
-        "IncomingToolOutputInteger",
-        "IncomingToolOutputFloat",
-        "IncomingToolOutputBoolean",
-    ):
-        required = set(defs[name]["required"])
-        assert "name" in required, f"{name} should require 'name'"
-        assert "hidden" not in required, f"{name} should not require 'hidden'"
+def test_user_tool_output_schema_only_publishes_file_outputs():
+    output_schema = UserToolSource.model_json_schema()["properties"]["outputs"]["items"]
+    assert set(output_schema["discriminator"]["mapping"]) == {"collection", "data"}
 
-    # A named text output without `hidden` validates. (``inputs`` is required on the
-    # authoring view -- empty is fine here; this command references no inputs.)
-    tool = UserToolSourceAuthoringView.model_validate(
+
+@pytest.mark.parametrize("output_type", ["data", "collection"])
+def test_user_tool_outputs_reject_unknown_fields(output_type):
+    output = {
+        "type": output_type,
+        "name": "results",
+        "unexpected": True,
+    }
+    if output_type == "data":
+        output["from_work_dir"] = "results"
+    else:
+        output["collection_type"] = "list"
+        output["discover_datasets"] = [{"pattern": ".+"}]
+
+    with pytest.raises(ValidationError, match="extra_forbidden"):
+        UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "name": "Unknown output field tool",
+                "version": "0.1.0",
+                "container": "busybox",
+                "shell_command": "true",
+                "inputs": [],
+                "outputs": [output],
+            }
+        )
+
+
+@pytest.mark.parametrize("output_type", ["data", "collection"])
+def test_user_tools_reject_tool_provided_metadata_discovery(output_type):
+    output = {
+        "type": output_type,
+        "name": "results",
+        "discover_datasets": [{"discover_via": "tool_provided_metadata"}],
+    }
+    if output_type == "collection":
+        output["collection_type"] = "list"
+
+    with pytest.raises(ValidationError):
+        UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "name": "Unsafe metadata discovery tool",
+                "version": "0.1.0",
+                "container": "busybox",
+                "shell_command": "true",
+                "inputs": [],
+                "outputs": [output],
+            }
+        )
+
+
+@pytest.mark.parametrize("output_type", ["text", "integer", "float", "boolean"])
+def test_user_tools_reject_scalar_outputs(output_type):
+    """Scalar outputs belong to expression/internal tools, not user-defined tools."""
+    with pytest.raises(ValidationError):
+        UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "name": "Scalar output tool",
+                "version": "0.1.0",
+                "container": "busybox",
+                "shell_command": "true",
+                "inputs": [],
+                "outputs": [{"type": output_type, "name": "value"}],
+            }
+        )
+
+
+def test_internal_output_schema_retains_scalar_and_rules_outputs():
+    from galaxy.tool_util_models.tool_outputs import ToolOutput
+
+    adapter: TypeAdapter[Any] = TypeAdapter(ToolOutput)
+    mapping = adapter.json_schema()["discriminator"]["mapping"]
+    assert set(mapping) == {"boolean", "collection", "data", "float", "integer", "text"}
+    collection = adapter.validate_python(
+        {
+            "type": "collection",
+            "name": "results",
+            "hidden": False,
+            "collection_type_from_rules": "rules",
+        }
+    )
+    assert collection.collection_type_from_rules == "rules"
+
+
+@pytest.mark.parametrize("output_type", ["data", "collection"])
+def test_general_incoming_outputs_retain_tool_provided_metadata_discovery(output_type):
+    from galaxy.tool_util_models.tool_outputs import IncomingToolOutput
+
+    output = {
+        "type": output_type,
+        "name": "results",
+        "discover_datasets": [{"discover_via": "tool_provided_metadata"}],
+    }
+    parsed: Any = TypeAdapter(IncomingToolOutput).validate_python(output)
+    assert parsed.discover_datasets
+    assert parsed.discover_datasets[0].discover_via == "tool_provided_metadata"
+
+
+def test_user_tool_output_source_accepts_top_level_data_parameter():
+    from galaxy.tool_util_models.tool_outputs import IncomingUserToolOutputDataset
+
+    tool = UserToolSource.model_validate(
         {
             "class": "GalaxyUserTool",
-            "name": "pvalue tool",
+            "name": "Preserve formats and metadata",
             "version": "0.1.0",
             "container": "busybox",
-            "shell_command": "echo 0.03 > p.txt",
-            "inputs": [],
+            "shell_command": "true",
+            "inputs": [{"name": "reads", "type": "data", "format": ["txt"]}],
             "outputs": [
-                {"type": "data", "name": "plot", "from_work_dir": "p.txt"},
-                {"type": "text", "name": "pvalue"},
+                {
+                    "name": "filtered_reads",
+                    "type": "data",
+                    "format_source": "reads",
+                    "metadata_source": "reads",
+                    "from_work_dir": "filtered_reads",
+                }
             ],
         }
     )
-    assert tool.outputs[1].hidden is None
+    output = tool.outputs[0]
+    assert isinstance(output, IncomingUserToolOutputDataset)
+    assert output.format_source == "reads"
+    assert output.metadata_source == "reads"
 
-    # A simple output WITHOUT a name is rejected. (``inputs`` supplied so the only
-    # validation error is the missing output name, not a missing ``inputs`` field.)
+
+def test_user_tool_collection_rejects_rules_only_collection_type_source():
     with pytest.raises(ValidationError):
-        UserToolSourceAuthoringView.model_validate(
+        UserToolSource.model_validate(
             {
                 "class": "GalaxyUserTool",
-                "name": "pvalue tool",
+                "name": "Rules output tool",
+                "version": "0.1.0",
                 "container": "busybox",
-                "shell_command": "echo 0.03 > p.txt",
-                "inputs": [],
-                "outputs": [{"type": "text"}],
+                "shell_command": "mkdir output",
+                "outputs": [
+                    {
+                        "type": "collection",
+                        "name": "output",
+                        "collection_type_from_rules": "rules",
+                        "discover_datasets": [{"pattern": "(?P<name>.+)"}],
+                    }
+                ],
             }
         )
 
