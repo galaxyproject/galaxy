@@ -70,7 +70,7 @@ const errorTitle = ref<string | null>(null);
 const errorContent = ref<any>(null);
 const errorMessage = ref("");
 const messageShow = ref(false);
-const messageVariant = ref("");
+const messageVariant = ref<"success" | "danger" | undefined>(undefined);
 const messageText = ref("");
 const useCachedJobs = ref(false);
 const useEmail = ref(false);
@@ -502,24 +502,24 @@ requestTool();
 
 <template>
     <div v-if="currentUser && currentHistoryId && isConfigLoaded">
-        <b-alert :show="messageShow" :variant="messageVariant">
+        <GAlert v-if="messageShow" :variant="messageVariant">
             {{ messageText }}
-        </b-alert>
-        <b-alert v-if="!showLoading && !canMutateHistory" show variant="warning">
+        </GAlert>
+        <GAlert v-if="!showLoading && !canMutateHistory" variant="warning">
             {{ localize(IMMUTABLE_HISTORY_MSG) }}
-        </b-alert>
-        <LoadingSpan v-if="showLoading" message="Loading Tool" />
+        </GAlert>
+        <GAlert v-if="showLoading"><LoadingSpan message="Loading Tool" /></GAlert>
         <div v-if="showEntryPoints">
             <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
         </div>
         <GModal :show.sync="showError" size="medium" :title="localize(errorTitle)" fixed-height>
-            <b-alert v-if="errorMessage" show variant="danger">
+            <GAlert v-if="errorMessage" variant="danger">
                 {{ errorMessage }}
-            </b-alert>
-            <b-alert v-if="submissionRequestFailed" show variant="warning">
+            </GAlert>
+            <GAlert v-if="submissionRequestFailed" variant="warning">
                 The server could not complete this request. Please verify your parameter settings, retry submission and
                 contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
-            </b-alert>
+            </GAlert>
             <small class="text-muted">
                 <pre>{{ errorContentPretty }}</pre>
             </small>
@@ -546,7 +546,7 @@ requestTool();
             <div class="mt-2 mb-4">
                 <Heading v-localize h2 separator bold size="sm"> Tool Parameters </Heading>
 
-                <GAlert v-if="showNoToolParametersAlert" show variant="info" data-description="no tool parameters">
+                <GAlert v-if="showNoToolParametersAlert" variant="info" data-description="no tool parameters">
                     This tool requires no input parameters and can be run as is.
                 </GAlert>
 
