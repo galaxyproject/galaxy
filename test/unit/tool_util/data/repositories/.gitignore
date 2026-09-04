@@ -1,0 +1,4 @@
+# These are test fixtures, not runtime Galaxy config. Re-include the config
+# filenames the top-level .gitignore drops so fixture repositories are complete.
+!data_manager_conf.xml
+!shed_data_manager_conf.xml

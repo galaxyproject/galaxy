@@ -1,0 +1,11 @@
+<tables>
+    <!-- Same table name declared twice with different columns. The loader's merge
+         would raise on this; the linter reports it from the raw declarations and
+         bundle assembly must not crash. -->
+    <table name="conflict_tbl" comment_char="#">
+        <columns>value, name</columns>
+    </table>
+    <table name="conflict_tbl" comment_char="#">
+        <columns>value, name, path</columns>
+    </table>
+</tables>
