@@ -254,6 +254,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     default_build_pulsar_app = False
     use_mq = False
     poll = True
+    recovers_finishing_jobs = True
     client_manager_kwargs: dict[str, Any] = {}
 
     def __init__(self, app, nworkers, **kwds):
@@ -811,7 +812,30 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             self.fail_job(job_state, message=GENERIC_REMOTE_ERROR, exception=True)
             log.exception("failure finishing job %d", job_wrapper.job_id)
             return
-        if not PulsarJobRunner.__remote_metadata(client):
+        self._complete_staged_job(
+            job_wrapper,
+            tool_stdout,
+            tool_stderr,
+            exit_code,
+            job_stdout=job_stdout,
+            job_stderr=job_stderr,
+            remote_metadata_directory=remote_metadata_directory,
+            handle_metadata_externally=not PulsarJobRunner.__remote_metadata(client),
+        )
+
+    def _complete_staged_job(
+        self,
+        job_wrapper,
+        tool_stdout,
+        tool_stderr,
+        exit_code,
+        job_stdout=None,
+        job_stderr=None,
+        remote_metadata_directory=None,
+        handle_metadata_externally=True,
+    ):
+        """Set metadata and finish the job, once outputs are already staged back."""
+        if handle_metadata_externally:
             # we need an actual exit code file in the job working directory to detect job errors in the metadata script
             with open(
                 os.path.join(job_wrapper.working_directory, f"galaxy_{job_wrapper.job_id}.ec"), "w"
@@ -833,6 +857,33 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=job_metrics_directory)
+
+    def _finish_staged_job(self, job_state):
+        """Redo the tail of ``finish_job`` for a job interrupted during external metadata."""
+        job_wrapper = job_state.job_wrapper
+        working_directory = job_wrapper.working_directory
+        exit_code_path = os.path.join(working_directory, f"galaxy_{job_wrapper.job_id}.ec")
+        try:
+            with open(exit_code_path) as exit_code_file:
+                exit_code = int(exit_code_file.read().strip())
+        except Exception:
+            # Written just before the metadata step, so its absence means the job was
+            # interrupted earlier than FINISHING implies - finishing on a guessed exit
+            # code would be worse than failing loudly.
+            log.exception("(%s) Cannot recover FINISHING job, no exit code at %s", job_wrapper.job_id, exit_code_path)
+            job_wrapper.fail("Unable to recover job interrupted while setting metadata", exception=True)
+            return
+        tool_stdout = self.__read_staged_stream(working_directory, "tool_stdout")
+        tool_stderr = self.__read_staged_stream(working_directory, "tool_stderr")
+        self._complete_staged_job(job_wrapper, tool_stdout, tool_stderr, exit_code)
+
+    @staticmethod
+    def __read_staged_stream(working_directory, name):
+        try:
+            with open(os.path.join(working_directory, "outputs", name)) as stream:
+                return unicodify(stream.read(), strip_null=True)
+        except Exception:
+            return ""
 
     def check_pid(self, pid):
         try:
@@ -898,11 +949,14 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             client.kill()
 
     def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
-        """Recover jobs stuck in the queued/running state when Galaxy started."""
+        """Recover jobs stuck in the queued/running/finishing state when Galaxy started."""
         job_state = self._job_state(job, job_wrapper)
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
-        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
+        if state == model.Job.states.FINISHING:
+            log.debug(f"(Pulsar/{job.id}) is in FINISHING state, re-running external metadata for recovery")
+            self.work_queue.put((self._finish_staged_job, job_state))
+        elif state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
             log.debug(f"(Pulsar/{job.id}) is still in {state} state, adding to the Pulsar queue")
             job_state.old_state = state if state != model.Job.states.STOPPED else model.Job.states.RUNNING
             job_state.running = state != model.Job.states.QUEUED
@@ -1160,6 +1214,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 galaxy_job_id = remote_job_id
             assert isinstance(self.app.job_manager.job_handler.job_queue, JobHandlerQueue)
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(galaxy_job_id)
+            if full_status["status"] in ("complete", "cancelled") and job.handler != self.app.config.server_name:
+                # Claim the job: startup recovery only picks up jobs whose handler is this
+                # server, and the terminal message arrived here rather than at the old owner.
+                # Commit now - the finish work runs on another thread with its own session.
+                job.handler = self.app.config.server_name
+                self.sa_session.commit()
             job_state = self._job_state(job, job_wrapper)
             self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
         except Exception:
