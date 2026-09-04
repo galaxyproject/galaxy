@@ -17,17 +17,6 @@ from galaxy_test.driver.integration_util import ConfiguresDatabaseVault
 
 SKIPTEST = os.path.join(os.path.dirname(__file__), "known_broken_tools.txt")
 
-# Test cases that name a repeat's parameters without an instance index. These cannot be
-# expressed as a typed request, so the interactor falls back to the legacy tool API. See
-# test_legacy_unqualified_repeat_inputs_are_not_expanded.
-LEGACY_ONLY_TOOLS = {
-    "multi_repeats",
-    "simple_constructs",
-    "implicit_default_conds",
-    "async_min_repeat_unqualified",
-    "async_repeat_unqualified_no_min",
-}
-
 
 class ToolTest(NamedTuple):
     tool_id: str
@@ -58,16 +47,9 @@ def get_cases() -> list[ToolTest]:
 
 def cases():
     skiplist = get_skiplist()
-    use_legacy_api = os.environ.get("GALAXY_TEST_USE_LEGACY_TOOL_API", DEFAULT_USE_LEGACY_API)
     for tool_test in get_cases():
         marks = []
         marks.append(pytest.mark.skipif(tool_test.tool_id in skiplist, reason="tool in skiplist"))
-        marks.append(
-            pytest.mark.skipif(
-                use_legacy_api == "never" and tool_test.tool_id in LEGACY_ONLY_TOOLS,
-                reason="test case is only expressible against the legacy tool API",
-            )
-        )
         if "data_manager_" in tool_test.tool_id:
             marks.append(pytest.mark.data_manager(tool_test))
         else:
