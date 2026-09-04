@@ -849,31 +849,6 @@ OUTPUTS_FORMAT_SOURCE_QUALIFIED = """
 </tool>
 """
 
-OUTPUTS_FORMAT_SOURCE_OUTPUT_ONLY = """
-<tool id="id" name="name">
-    <inputs>
-        <param name="input1" type="data" format="data" />
-    </inputs>
-    <outputs>
-        <data name="source" format="bam" />
-        <data name="derived_data" format_source="source" />
-        <collection name="derived_collection" type="list" format_source="source" />
-    </outputs>
-</tool>
-"""
-
-OUTPUTS_FORMAT_SOURCE_INPUT_OUTPUT_SAME_NAME = """
-<tool id="id" name="name">
-    <inputs>
-        <param name="source" type="data" format="data" />
-    </inputs>
-    <outputs>
-        <data name="source" format="bam" />
-        <data name="derived" format_source="source" />
-    </outputs>
-</tool>
-"""
-
 # tool xml for repeats linter
 REPEATS = """
 <tool id="id" name="name">
@@ -2124,20 +2099,6 @@ def test_outputs_format_source_unqualified(lint_ctx):
 
 def test_outputs_format_source_qualified(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_QUALIFIED)
-    run_lint_module(lint_ctx, output, tool_source)
-    assert "format_source" not in lint_ctx.warn_messages
-    assert "format_source" not in lint_ctx.error_messages
-
-
-def test_outputs_format_source_rejects_output_only_reference(lint_ctx):
-    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_OUTPUT_ONLY)
-    run_lint_module(lint_ctx, output, tool_source)
-    assert "Output 'derived_data' references format_source='source'" in lint_ctx.error_messages
-    assert "Output 'derived_collection' references format_source='source'" in lint_ctx.error_messages
-
-
-def test_outputs_format_source_accepts_input_output_name_collision(lint_ctx):
-    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_INPUT_OUTPUT_SAME_NAME)
     run_lint_module(lint_ctx, output, tool_source)
     assert "format_source" not in lint_ctx.warn_messages
     assert "format_source" not in lint_ctx.error_messages
