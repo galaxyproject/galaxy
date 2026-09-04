@@ -879,37 +879,27 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         self.deserializable_keyset.update(self.deserializers.keys())
 
     def deserialize_metadata(self, item, key, val, **context):
-        """Deserialize a dictionary of metadata key/value pairs for a dataset association.
-
-        Mirrors the legacy controller's ``set_edit`` (operation="attributes")
-        behavior: guards against editing while the dataset is in use, sets
-        all writable metadata fields, calls ``after_setting_metadata`` for
-        datatype-specific post-processing, and resets FAILED_METADATA state
-        when all required metadata is now present.
-        """
+        """Deserialize a dictionary of metadata key/value pairs for a dataset association."""
         self.validate.matches_type(key, val, dict)
         if not item.ok_to_edit_metadata():
             raise exceptions.RequestParameterInvalidException(
                 "Dataset metadata could not be updated because it is used as input or output of a running job."
             )
         returned = {}
+        applied = False
         for metadata_key, metadata_val in val.items():
-            returned[metadata_key] = self.deserialize_metadatum(item, metadata_key, metadata_val, **context)
-        item.datatype.after_setting_metadata(item)
-        if item.state == Dataset.states.FAILED_METADATA and not item.missing_meta():
-            item.set_metadata_success_state()
+            spec = item.datatype.metadata_spec.get(metadata_key)
+            if spec is None or spec.get("readonly"):
+                continue
+            unwrapped_val = spec.unwrap(metadata_val)
+            setattr(item.metadata, metadata_key, unwrapped_val)
+            applied = True
+            returned[metadata_key] = unwrapped_val
+        if applied:
+            item.datatype.after_setting_metadata(item)
+            if item.state == Dataset.states.FAILED_METADATA and not item.missing_meta():
+                item.set_metadata_success_state()
         return returned
-
-    def deserialize_metadatum(self, item, key, val, **context):
-        """Set a single metadata field, silently skipping unknown or readonly keys."""
-        if key not in item.datatype.metadata_spec:
-            return
-        metadata_specification = item.datatype.metadata_spec[key]
-        if metadata_specification.get("readonly"):
-            return
-        unwrapped_val = metadata_specification.unwrap(val)
-        setattr(item.metadata, key, unwrapped_val)
-        return unwrapped_val
 
     def deserialize_datatype(self, item, key, val, **context):
         if not item.datatype.is_datatype_change_allowed():

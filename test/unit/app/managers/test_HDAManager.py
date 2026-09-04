@@ -674,6 +674,47 @@ class TestHDADeserializer(HDATestCase):
         assert hda.missing_meta()
         assert hda.state == model.Dataset.states.FAILED_METADATA
 
+    def test_deserialize_metadata_no_op_preserves_associated_files(self):
+        """No-op metadata updates must not invoke after_setting_metadata
+        (which clears implicit conversions). A real writable key must."""
+        hda = self._create_vanilla_hda()
+
+        # Attach an implicit conversion with metadata_safe=False — exactly what
+        # clear_associated_files(metadata_safe=True) would delete.
+        converted_hda = self.hda_manager.create(
+            history=hda.history, dataset=self.dataset_manager.create(), hid=hda.hid + 1
+        )
+        assoc = model.ImplicitlyConvertedDatasetAssociation(
+            parent=hda, file_type="txt", dataset=converted_hda, metadata_safe=False
+        )
+        self.trans.sa_session.add(assoc)
+        self.trans.sa_session.flush()
+        assert not assoc.deleted
+
+        # Spy on after_setting_metadata to detect whether it was called
+        with mock.patch.object(type(hda.datatype), "after_setting_metadata", return_value=None) as mock_after:
+            self.log("empty metadata dict should not invoke after_setting_metadata")
+            self.hda_deserializer.deserialize(hda, {"metadata": {}})
+            assert not mock_after.called, "after_setting_metadata was called for empty metadata dict"
+            assert not assoc.deleted, "Implicit conversion was deleted by a no-op metadata update"
+
+            mock_after.reset_mock()
+            self.log("unknown-only keys should not invoke after_setting_metadata")
+            self.hda_deserializer.deserialize(hda, {"metadata": {"nonexistent_key": "value"}})
+            assert not mock_after.called, "after_setting_metadata was called for unknown-only keys"
+            assert not assoc.deleted, "Implicit conversion was deleted by unknown-only keys"
+
+            mock_after.reset_mock()
+            self.log("readonly-only keys should not invoke after_setting_metadata")
+            self.hda_deserializer.deserialize(hda, {"metadata": {"data_lines": 42}})
+            assert not mock_after.called, "after_setting_metadata was called for readonly-only keys"
+            assert not assoc.deleted, "Implicit conversion was deleted by readonly-only keys"
+
+            mock_after.reset_mock()
+            self.log("a real writable key SHOULD invoke after_setting_metadata")
+            self.hda_deserializer.deserialize(hda, {"metadata": {"dbkey": "hg38"}})
+            assert mock_after.called, "after_setting_metadata was not called for a real writable key"
+
 
 # =============================================================================
 class TestHDAFilterParser(HDATestCase):
