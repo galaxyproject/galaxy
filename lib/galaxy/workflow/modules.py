@@ -2175,19 +2175,25 @@ class PickValueModule(WorkflowModule):
         return state
 
     @staticmethod
-    def _is_null_or_skipped(value) -> bool:
+    def _is_null_or_skipped(value, step: WorkflowStep) -> bool:
         """Check if a replacement value represents a skipped/null output."""
         if value is NO_REPLACEMENT:
             return True
         if isinstance(value, model.HistoryDatasetAssociation):
-            if value.extension == "expression.json" and value.blurb == "skipped":
-                return True
+            if value.extension == "expression.json":
+                if value.blurb == "skipped":
+                    return True
+                if not value.is_ok:
+                    # A failed expression output has no readable value, but failure is
+                    # not null. Preserve it so downstream failure filters can handle it.
+                    return False
+                return read_expression_json(value, step=step) is None
         return False
 
     def _pick_from_replacements(self, trans: "ProvidesHistoryContext", invocation_step, mode, replacements):
         """Apply pick logic to a list of replacement values. Returns the picked output."""
         step = invocation_step.workflow_step
-        non_null = [r for r in replacements if not self._is_null_or_skipped(r)]
+        non_null = [r for r in replacements if not self._is_null_or_skipped(r, step)]
 
         if mode == "first_non_null":
             if not non_null:
@@ -2231,6 +2237,8 @@ class PickValueModule(WorkflowModule):
         mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
         all_inputs = self.get_all_inputs()
 
+        self._ensure_inputs_ready(trans, progress, step, all_inputs)
+
         collection_info = self.compute_collection_info(progress, step, all_inputs)
 
         if collection_info:
@@ -2247,6 +2255,17 @@ class PickValueModule(WorkflowModule):
         progress.set_step_outputs(invocation_step, {"output": output})
         self._apply_post_job_actions(trans, step, output, progress.effective_replacement_dict())
         return None
+
+    def _ensure_inputs_ready(self, trans: "WorkRequestContext", progress: "WorkflowProgress", step, all_inputs) -> None:
+        """Delay this step until the inputs it picks from have been produced.
+
+        A tool step can be scheduled against a dataset that is still running - the job queue
+        orders the work. This module cannot. It reads the inputs to decide which one to pick,
+        and the picked output aliases that dataset rather than copying it, so a post job
+        action on this step mutates an upstream job's output. Both need that job finished.
+        """
+        for input_dict in all_inputs:
+            progress.replacement_for_input(trans, step, input_dict, require_ready=True)
 
     def _execute_mapped(self, trans: "ProvidesHistoryContext", invocation_step, mode, all_inputs, collection_info):
         """Execute pick_value mapped over collection inputs."""
@@ -2376,7 +2395,7 @@ class PickValueModule(WorkflowModule):
         Uses execute_on_mapped_over which operates on step_outputs dict
         rather than requiring a Job object. Skipped outputs are left untouched.
         """
-        if self._is_null_or_skipped(output):
+        if self._is_null_or_skipped(output, step):
             return
         step_outputs = {"output": output}
         step_inputs: dict[str, Any] = {}
