@@ -37,6 +37,13 @@ function login() {
 }
 
 async function submit() {
+    // The confirm button carries no native `disabled` attribute, so it stays keyboard
+    // activatable and eligible as the form's default button. Guard the terms here too,
+    // since an implicit form submission never reaches the button's click handler.
+    if (!termsRead.value) {
+        return;
+    }
+
     if (!provider.value || !token.value) {
         messageVariant.value = "danger";
         messageText.value = "Missing provider and/or token.";
