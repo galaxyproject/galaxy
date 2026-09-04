@@ -1,13 +1,16 @@
 from datetime import datetime
 from typing import (
     NoReturn,
+    Protocol,
 )
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     AdminRequiredException,
     AuthenticationRequired,
     ObjectNotFound,
     RequestParameterInvalidException,
+    ServerNotConfiguredForRequest,
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
@@ -17,20 +20,30 @@ from galaxy.managers.sse import (
     SSEConnectionManager,
     SSEEvent,
 )
+from galaxy.managers.users import UserManager
 from galaxy.model import User
 from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
+    AnyNotificationContent,
+    AnyNotificationCreateContent,
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
     BroadcastNotificationResponse,
+    InternalNotificationCreateData,
     NotificationBroadcastUpdateRequest,
+    NotificationCategory,
     NotificationCreatedResponse,
     NotificationCreateRequest,
     NotificationCreateRequestBody,
+    NotificationRecipients,
     NotificationResponse,
     NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
     NotificationUpdateRequest,
+    NotificationVariant,
+    PersonalNotificationCategory,
+    ToolInstallationRequestCreateContent,
+    ToolInstallationRequestNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationListResponse,
     UserNotificationPreferences,
@@ -41,10 +54,130 @@ from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 
+class NotificationRequestHandler(Protocol):
+    """Per-category handler for user-submitted request notifications.
+
+    Each user-allowed request category registers a handler in
+    ``_REQUEST_HANDLERS`` that owns the category-specific behavior: whether the
+    feature is enabled, how the content is rewritten server-side, who the
+    request is delivered to, and whether a confirmation copy is produced for the
+    submitter. Adding a new request type is a new enum member + a handler
+    implementing this protocol + a typed content model; the allow-list is
+    derived from the registry and the service method
+    (``_build_user_sender_requests``) needs no category-specific edits.
+    """
+
+    category: PersonalNotificationCategory
+
+    def is_enabled(self, config: GalaxyAppConfiguration) -> bool:
+        """Whether this request category is enabled on the instance."""
+        ...
+
+    def stamp_content(self, content: AnyNotificationCreateContent, sender: User) -> AnyNotificationContent:
+        """Rewrite the client-supplied content server-side (e.g. stamp the requester email).
+
+        Must raise ``RequestParameterInvalidException`` when the content type does
+        not match this handler's category, so mismatched category/content
+        submissions are rejected instead of persisted.
+        """
+        ...
+
+    def resolve_recipients(
+        self, sender: User, config: GalaxyAppConfiguration, user_manager: UserManager
+    ) -> NotificationRecipients:
+        """Resolve who the request is delivered to (typically the instance admins)."""
+        ...
+
+    def build_confirmation(
+        self, sender: User, admin_request: NotificationCreateRequest
+    ) -> NotificationCreateRequest | None:
+        """Optionally derive the submitter's confirmation copy, or None for no copy."""
+        ...
+
+
+class ToolInstallationRequestHandler:
+    """Handler for ``tool_installation_request`` user submissions.
+
+    Delivers the request to all instance admins and, when the submitter is not an
+    admin, produces a confirmation copy for the submitter.
+    """
+
+    category = PersonalNotificationCategory.tool_installation_request
+
+    def is_enabled(self, config: GalaxyAppConfiguration) -> bool:
+        return config.enable_tool_installation_request_form
+
+    def stamp_content(self, content: AnyNotificationCreateContent, sender: User) -> AnyNotificationContent:
+        if not isinstance(content, ToolInstallationRequestCreateContent):
+            raise RequestParameterInvalidException(
+                "The notification content does not match the tool_installation_request category."
+            )
+        # Promote the request (create) content to the persisted content model and
+        # stamp the requester's real email server-side (never trust the client).
+        # is_confirmation is forced False on the admin-facing copy; the service
+        # decides which copy is the confirmation in build_confirmation below.
+        # model_construct reuses the already-validated field values instead of
+        # re-running every sanitizer and bound check on them.
+        return ToolInstallationRequestNotificationContent.model_construct(
+            **dict(content),
+            requester_email=sender.email,
+            is_confirmation=False,
+        )
+
+    def resolve_recipients(
+        self, sender: User, config: GalaxyAppConfiguration, user_manager: UserManager
+    ) -> NotificationRecipients:
+        admin_users = user_manager.admins()
+        if not admin_users:
+            raise ServerNotConfiguredForRequest("No admin users are configured on this Galaxy instance.")
+        return NotificationRecipients(user_ids=[u.id for u in admin_users])
+
+    def build_confirmation(
+        self, sender: User, admin_request: NotificationCreateRequest
+    ) -> NotificationCreateRequest | None:
+        admin_user_ids = set(admin_request.recipients.user_ids)
+        if sender.id in admin_user_ids:
+            # An admin submitter already receives the admin-facing request -- no separate copy.
+            return None
+        notification_data = admin_request.notification
+        content = notification_data.content
+        # stamp_content rejects any other content type for this category, so the
+        # admin request always carries the promoted model; assert only narrows the type.
+        assert isinstance(content, ToolInstallationRequestNotificationContent)
+        confirmation_content = content.model_copy(update={"is_confirmation": True})
+        confirmation_notification = notification_data.model_copy(update={"content": confirmation_content})
+        return admin_request.model_copy(
+            update={
+                "notification": confirmation_notification,
+                "recipients": NotificationRecipients(user_ids=[sender.id]),
+            }
+        )
+
+
+# Registry of per-category request handlers. To add a new user-submittable
+# request type, register a handler instance here; the user allow-list is
+# derived from the registry keys, so they cannot drift apart.
+# _build_user_sender_requests dispatches through this registry, so it needs no
+# category-specific branching for new types.
+_REQUEST_HANDLERS: dict[NotificationCategory, NotificationRequestHandler] = {
+    handler.category: handler for handler in (ToolInstallationRequestHandler(),)
+}
+
+_USER_ALLOWED_CATEGORIES: frozenset[NotificationCategory] = frozenset(_REQUEST_HANDLERS)
+
+
 class NotificationService(ServiceBase):
-    def __init__(self, notification_manager: NotificationManager, sse_manager: SSEConnectionManager):
+    def __init__(
+        self,
+        notification_manager: NotificationManager,
+        sse_manager: SSEConnectionManager,
+        user_manager: UserManager,
+        config: GalaxyAppConfiguration,
+    ):
         self.notification_manager = notification_manager
         self.sse_manager = sse_manager
+        self.user_manager = user_manager
+        self.config = config
 
     @property
     def notifications_enabled(self) -> bool:
@@ -65,19 +198,113 @@ class NotificationService(ServiceBase):
     ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Sends a notification to a list of recipients (users, groups or roles).
 
-        Before sending the notification, it checks if the requesting user has the necessary permissions to do so.
+        Admin users may send to arbitrary recipients for categories outside the user-allowed set.
+        For user-allowed categories (e.g. tool installation requests), admin submissions are treated
+        like regular user submissions so that recipients and content are populated server-side.
+
+        Authenticated non-admin users may only use categories in the server-side allow-list,
+        subject to per-category feature-flag checks; their recipients are overridden server-side.
         """
         self.notification_manager.ensure_notifications_enabled()
-        self._ensure_user_can_send_notifications(sender_context)
         galaxy_url = (
             str(sender_context.url_builder("/", qualified=True)).rstrip("/") if sender_context.url_builder else None
         )
-        request = NotificationCreateRequest.model_construct(
-            notification=payload.notification,
-            recipients=payload.recipients,
+        requests = self._build_user_sender_requests(sender_context, payload, galaxy_url)
+        # Send each built request. The first (primary) is the admin-facing
+        # notification, so the API response describes the request the admin will
+        # act on -- return that one, not the last iteration's (confirmation) result.
+        response: NotificationCreatedResponse | AsyncTaskResultSummary | None = None
+        for index, request in enumerate(requests):
+            sent = self.send_internal_notification(request, force_sync=False)
+            if index == 0:
+                response = sent
+        assert response is not None
+        return response
+
+    def _build_user_sender_requests(
+        self,
+        sender_context: ProvidesUserContext,
+        payload: NotificationCreateRequestBody,
+        galaxy_url: str | None,
+    ) -> list[NotificationCreateRequest]:
+        """Validate and rewrite a user notification submission.
+
+        For admin users sending non-user-allowed categories, passes through the payload as-is.
+        For user-allowed request categories (non-admins, or admins sending such a category),
+        validates the category and dispatches to the per-category ``NotificationRequestHandler``
+        which rewrites recipients/content server-side and may produce a confirmation copy.
+
+        Each handler owns its category's behavior (feature gate, content stamping, recipient
+        resolution, confirmation copy). See ``_REQUEST_HANDLERS``.
+        """
+        category = payload.notification.category
+        # Envelope/content category agreement is enforced by the
+        # NotificationCreateData model validator when the body is parsed.
+
+        # Admin sending arbitrary category notification: pass through unchanged.
+        # The data is promoted to the internal model so the request matches its
+        # declared (full content union) type on the Celery round-trip.
+        if sender_context.user_is_admin and category not in _USER_ALLOWED_CATEGORIES:
+            return [
+                NotificationCreateRequest.model_construct(
+                    notification=InternalNotificationCreateData.model_construct(**dict(payload.notification)),
+                    recipients=payload.recipients,
+                    galaxy_url=galaxy_url,
+                )
+            ]
+
+        # All other cases: validate and dispatch to the request handler
+        user_manager = self.user_manager
+        config = self.config
+
+        if sender_context.anonymous or sender_context.user is None:
+            raise AuthenticationRequired("You must be logged in to submit a notification.")
+
+        if category not in _USER_ALLOWED_CATEGORIES:
+            raise AdminRequiredException("Only administrators can send notifications of this category.")
+
+        handler = _REQUEST_HANDLERS[category]
+        if not handler.is_enabled(config):
+            # Note: pydantic validates the category union/Literal fields to plain
+            # strings, so interpolating `category` yields the bare value.
+            raise AdminRequiredException(f"{category} notifications are disabled on this Galaxy instance.")
+
+        sender = sender_context.user
+        assert sender is not None  # checked above
+
+        content = handler.stamp_content(payload.notification.content, sender)
+
+        # Like the stamped content fields, the envelope of a user-submitted
+        # request is server-controlled: source and variant are fixed (a client
+        # must not escalate to e.g. `urgent`, which bypasses channel opt-outs),
+        # and the timing fields are not client-settable -- publication is
+        # immediate and expiration falls back to the default retention period
+        # applied by the notification model.
+        notification_data = InternalNotificationCreateData.model_construct(
+            source=f"{category}_form",
+            category=payload.notification.category,
+            variant=NotificationVariant.info,
+            content=content,
+            publication_time=None,
+            expiration_time=None,
+        )
+
+        # Admin-facing request: delivered to the handler-resolved recipients (the
+        # submitter receives it too if they are among them, e.g. an admin).
+        admin_request = NotificationCreateRequest.model_construct(
+            notification=notification_data,
+            recipients=handler.resolve_recipients(sender, config, user_manager),
             galaxy_url=galaxy_url,
         )
-        return self.notification_manager.send_notification_internal(request)
+        requests = [admin_request]
+
+        # Optional submitter confirmation copy. The handler returns None when no
+        # copy is appropriate (e.g. the submitter already receives the request).
+        confirmation = handler.build_confirmation(sender, admin_request)
+        if confirmation is not None:
+            requests.append(confirmation)
+
+        return requests
 
     def broadcast(
         self, sender_context: ProvidesUserContext, payload: BroadcastNotificationCreateRequest
@@ -221,12 +448,6 @@ class NotificationService(ServiceBase):
         self.notification_manager.ensure_notifications_enabled()
         user = self.get_authenticated_user(user_context)
         return self.notification_manager.update_user_notification_preferences(user, request)
-
-    def _ensure_user_can_send_notifications(self, sender_context: ProvidesUserContext) -> None:
-        """Raises an exception if the user cannot send notifications."""
-        # TODO implement and check permissions for non-admin users?
-        if not sender_context.user_is_admin:
-            raise AdminRequiredException("Only administrators can create and send notifications.")
 
     def _ensure_user_can_broadcast_notifications(self, sender_context: ProvidesUserContext) -> None:
         """Raises an exception if the user cannot broadcast notifications."""

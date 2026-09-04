@@ -1,0 +1,12 @@
+Use this template to customize the text email a user will receive
+when they submit a tool installation request.
+
+Template begins here>>>>>>
+Hello {{ name }},
+
+Your request to install the following tool(s) on {{ hostname }} has been submitted to the administrators:
+
+{% include "mail/notifications/_tool_installation_request_fields.txt" %}
+---
+
+You received this email because you submitted a tool installation request on this Galaxy instance.

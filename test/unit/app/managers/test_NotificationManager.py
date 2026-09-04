@@ -12,6 +12,7 @@ from unittest.mock import (
 )
 
 import pytest
+from pydantic import ValidationError
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.notification import (
@@ -25,17 +26,22 @@ from galaxy.model import (
     Role,
     User,
 )
+from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
     BroadcastNotificationContent,
     BroadcastNotificationCreateRequest,
+    InternalNotificationCreateData,
     NotificationBroadcastUpdateRequest,
     NotificationCategorySettings,
     NotificationChannelSettings,
     NotificationCreateData,
+    NotificationCreatedResponse,
     NotificationCreateRequest,
     NotificationRecipients,
     NotificationVariant,
     PersonalNotificationCategory,
+    RequestedTool,
+    ToolInstallationRequestCreateContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
@@ -44,6 +50,7 @@ from galaxy.schema.storage_operations import (
     StorageOperationExecutionResult,
     StorageOperationRunState,
 )
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import now
 from .base import BaseTestCase
 
@@ -81,7 +88,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         data = self._default_test_notification_data()
         if notification:
             data.update(notification)
-        notification_data = NotificationCreateData(**data)
+        notification_data = InternalNotificationCreateData(**data)
 
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(
@@ -358,6 +365,28 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
         assert actual_preferences == default_preferences
 
+    def test_preferences_get_falls_back_to_default_for_missing_category(self):
+        """Users who saved preferences before a category was introduced have no
+        key for it in their stored blob. ``get`` must fall back to default
+        settings rather than raising ``KeyError`` (which would silently drop
+        the notification at association-creation time).
+        """
+        # Build preferences from a stale blob that predates tool_installation_request.
+        stale_blob = {
+            PersonalNotificationCategory.message: {
+                "enabled": True,
+                "channels": {"push": True, "email": True, "webhook": False},
+            }
+        }
+        preferences = UserNotificationPreferences.model_validate({"preferences": stale_blob})
+
+        settings = preferences.get(PersonalNotificationCategory.tool_installation_request)
+
+        # Default settings, not a raise.
+        assert settings == NotificationCategorySettings()
+        assert settings.enabled is True
+        assert settings.channels.push is True
+
     def test_update_user_notification_preferences(self):
         user = self._create_test_user()
         preferences = self.notification_manager.get_user_notification_preferences(user)
@@ -507,6 +536,34 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
             mock_send_mail.assert_called_once()
             assert len(emails_sent) == 1
 
+    def test_force_sync_creates_notification_without_dispatching_email_channel_when_async_is_enabled(self):
+        user = self._create_test_user()
+        Security.security = IdEncodingHelper(id_secret="testing")
+
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
+            notification=InternalNotificationCreateData(**self._default_test_notification_data()),
+            galaxy_url="https://test.galaxy.url",
+        )
+
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            response = self.notification_manager.send_notification_internal(request, force_sync=True)
+
+        assert isinstance(response, NotificationCreatedResponse)
+        assert response.total_notifications_sent == 1
+        mock_send_mail.assert_not_called()
+        assert "email" in self.notification_manager.get_supported_channels()
+        pending_notifications = self.notification_manager.get_pending_notifications()
+        assert len(pending_notifications) == 1
+        assert pending_notifications[0].category == response.notification.category
+
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            dispatched_count = self.notification_manager.dispatch_pending_notifications_via_channels()
+
+        assert dispatched_count == 1
+        mock_send_mail.assert_called_once()
+        assert self.notification_manager.get_pending_notifications() == []
+
 
 class TestNotificationRecipientResolver(NotificationsBaseTestCase):
     def test_default_resolution_strategy(self):
@@ -596,3 +653,87 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
             self.trans.app.security_agent.associate_group_role(group, role)
         sa_session.flush()
         return role
+
+
+class TestToolInstallationRequestContentValidation:
+    """Sanitization/bounds on the user-submitted tool-request content models."""
+
+    def test_control_characters_are_collapsed_in_single_line_fields(self):
+        tool = RequestedTool(name="FastQC\nEvil", requested_version="1.0\r2")
+        assert tool.name == "FastQC Evil"
+        assert tool.requested_version == "1.0 2"
+
+    def test_whitespace_only_identifier_is_rejected(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(name="   ")
+
+    def test_multiline_fields_keep_newlines_but_drop_other_control_characters(self):
+        content = ToolInstallationRequestCreateContent(
+            tools=[RequestedTool(name="bwa")],
+            additional_remarks="line1\r\nline2\x00x",
+        )
+        assert content.additional_remarks == "line1\nline2 x"
+
+    def test_non_http_tool_url_is_rejected(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(tool_url="javascript:alert(1)")
+
+    def test_tools_list_is_bounded(self):
+        with pytest.raises(ValidationError):
+            ToolInstallationRequestCreateContent(tools=[RequestedTool(name=f"tool-{i}") for i in range(51)])
+
+    def test_unicode_line_separators_are_sanitized(self):
+        # NEL in single-line fields collapses to a space; in multiline fields
+        # Unicode line/paragraph separators normalize to newlines.
+        tool = RequestedTool(name="FastQC\x85Evil", description="l1\u2028l2\u2029l3")
+        assert tool.name == "FastQC Evil"
+        assert tool.description == "l1\nl2\nl3"
+
+    def test_zero_width_identifier_is_rejected(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(name="\u200b")
+
+    def test_crlf_text_fitting_after_normalization_is_accepted(self):
+        # Raw length exceeds the bound, sanitized length does not.
+        remarks = ("y\r\n" * 2000).rstrip()
+        assert len(remarks) > 5000
+        content = ToolInstallationRequestCreateContent(tools=[RequestedTool(name="bwa")], additional_remarks=remarks)
+        assert content.additional_remarks == "\n".join(["y"] * 2000)
+
+    def test_uppercase_url_scheme_is_accepted(self):
+        assert RequestedTool(tool_url="HTTPS://example.com/tool").tool_url == "HTTPS://example.com/tool"
+
+    def test_mismatched_envelope_and_content_category_is_rejected(self):
+        with pytest.raises(ValidationError, match="does not match"):
+            NotificationCreateData.model_validate(
+                {
+                    "source": "s",
+                    "category": "tool_installation_request",
+                    "variant": "info",
+                    "content": {"category": "message", "subject": "x", "message": "y"},
+                }
+            )
+
+    def test_bidi_and_tag_characters_are_stripped(self):
+        # RTL override (U+202E) must not survive into rendered labels, and a
+        # name made only of Unicode tag characters is not a usable identifier.
+        tool = RequestedTool(name="a\u202eevil\u202cb")
+        assert tool.name == "aevilb"
+        with pytest.raises(ValidationError):
+            RequestedTool(name="\U000e0041\U000e0042")
+
+    def test_subject_tool_label_is_truncated_for_header_safety(self):
+        from galaxy.managers.notification import ToolInstallationRequestEmailNotificationTemplateBuilder
+
+        tool = RequestedTool(tool_url="https://example.org/" + "x" * 1500)
+        label = ToolInstallationRequestEmailNotificationTemplateBuilder._tool_label(tool)
+        assert len(label) <= ToolInstallationRequestEmailNotificationTemplateBuilder._SUBJECT_LABEL_MAX_LENGTH + 3
+        assert label.endswith("...")
+        # Short labels are untouched.
+        assert ToolInstallationRequestEmailNotificationTemplateBuilder._tool_label(RequestedTool(name="bwa")) == "bwa"
+
+    def test_field_lengths_are_bounded(self):
+        with pytest.raises(ValidationError):
+            RequestedTool(name="x" * 256)
+        with pytest.raises(ValidationError):
+            ToolInstallationRequestCreateContent(tools=[RequestedTool(name="bwa")], additional_remarks="x" * 5001)

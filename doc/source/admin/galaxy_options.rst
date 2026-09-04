@@ -6267,6 +6267,24 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_installation_request_form``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable the Tool Installation Request Form in the toolbox, allowing
+    users to request new tools to be installed on this Galaxy
+    instance.
+    When enabled, a "Request Tool Installation" button will appear in
+    the tool panel. Submitted requests are sent as notifications to
+    all admin users via Galaxy's notification system, which must also
+    be enabled.
+    This requires ``enable_notification_system`` to be set to
+    ``true``.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``file_source_temp_dir``
 ~~~~~~~~~~~~~~~~~~~~~~~~

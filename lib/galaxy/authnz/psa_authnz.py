@@ -856,8 +856,8 @@ def _send_oidc_profile_update_notification(trans: "ProvidesAppContext", user, up
         return
     try:
         from galaxy.schema.notifications import (
+            InternalNotificationCreateData,
             MessageNotificationContent,
-            NotificationCreateData,
             NotificationCreateRequest,
             NotificationRecipients,
             NotificationVariant,
@@ -873,7 +873,7 @@ def _send_oidc_profile_update_notification(trans: "ProvidesAppContext", user, up
         message = f"Your profile was updated from your identity provider: {', '.join(field_list)}."
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
-            notification=NotificationCreateData(
+            notification=InternalNotificationCreateData(
                 source="oidc",
                 category=PersonalNotificationCategory.message,
                 variant=NotificationVariant.info,

@@ -1,0 +1,117 @@
+<script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
+import { computed, ref } from "vue";
+
+import { submitToolInstallationRequest } from "@/api/notifications";
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { parseRequestedToolParts } from "@/utils/tool-version";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+
+const props = defineProps<{
+    missingToolIds: string[];
+    workflowId: string;
+}>();
+
+const { config, isConfigLoaded } = useConfig();
+const userStore = useUserStore();
+
+const showConfirm = ref(false);
+const submitting = ref(false);
+const submitted = ref(false);
+const errorMessage = ref("");
+
+const showButton = computed(
+    () =>
+        isConfigLoaded.value &&
+        config.value?.enable_tool_installation_request_form &&
+        !userStore.isAnonymous &&
+        props.missingToolIds.length > 0,
+);
+
+const toolCount = computed(() => props.missingToolIds.length);
+
+/** Mirrors the server-side bound on requested-tool entries per request. */
+const MAX_REQUESTED_TOOLS = 50;
+
+async function requestInstallation() {
+    submitting.value = true;
+    errorMessage.value = "";
+
+    // The requested tools carry the ids/versions in structured form, so the
+    // remarks only add the workflow context (and a note when the request had
+    // to be truncated to the server-side limit).
+    const toolVerb = toolCount.value === 1 ? "tool is" : "tools are";
+    let description =
+        `The requested ${toolVerb} required by this workflow but not installed on this instance. ` +
+        `These tools are available in the Tool Shed and need to be installed.`;
+    if (toolCount.value > MAX_REQUESTED_TOOLS) {
+        description += ` Only the first ${MAX_REQUESTED_TOOLS} of ${toolCount.value} missing tools are listed in this request.`;
+    }
+
+    try {
+        await submitToolInstallationRequest({
+            tools: props.missingToolIds.slice(0, MAX_REQUESTED_TOOLS).map(parseRequestedToolParts),
+            workflow_id: props.workflowId,
+            additional_remarks: description,
+        });
+
+        submitted.value = true;
+        showConfirm.value = false;
+    } catch (e) {
+        errorMessage.value = errorMessageAsString(e, "Failed to submit installation request. Please try again.");
+    } finally {
+        submitting.value = false;
+    }
+}
+</script>
+
+<template>
+    <div v-if="showButton" class="workflow-missing-tools-request mt-3">
+        <BAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = ''">
+            {{ errorMessage }}
+        </BAlert>
+
+        <BAlert v-if="submitted" variant="success" show>
+            Installation request sent. Check your notifications for updates.
+        </BAlert>
+
+        <GButton
+            v-else
+            data-testid="request-install-btn"
+            :disabled="submitting"
+            variant="primary"
+            size="small"
+            @click="showConfirm = true">
+            Request Installation ({{ toolCount }} missing {{ toolCount === 1 ? "tool" : "tools" }})
+        </GButton>
+
+        <GModal
+            :show="showConfirm"
+            title="Request Tool Installation"
+            size="small"
+            confirm
+            ok-text="Send Request"
+            :ok-disabled="submitting"
+            :close-on-ok="false"
+            @ok="requestInstallation"
+            @cancel="showConfirm = false"
+            @update:show="showConfirm = $event">
+            <p>
+                Request the admins to install
+                <strong>{{ toolCount }} missing {{ toolCount === 1 ? "tool" : "tools" }}</strong>
+                required by this workflow?
+            </p>
+            <p class="text-muted small mb-0">
+                The admins will receive a notification and can install the tools from the Tool Shed.
+            </p>
+            <p v-if="toolCount > MAX_REQUESTED_TOOLS" data-testid="truncation-note" class="text-muted small mb-0">
+                Only the first {{ MAX_REQUESTED_TOOLS }} of the {{ toolCount }} missing tools will be included in the
+                request.
+            </p>
+        </GModal>
+    </div>
+</template>
