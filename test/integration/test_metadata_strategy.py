@@ -1,3 +1,5 @@
+import logging
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
@@ -25,3 +27,12 @@ class TestDiskUsageCeleryExtended(TestDiskUsageUpdateDefault):
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["metadata_strategy"] = "celery_extended"
+
+    def test_external_metadata_dispatch_is_logged(self, history_id, caplog):
+        with caplog.at_level(logging.DEBUG, logger="galaxy.jobs.runners"):
+            response = self.dataset_populator.run_tool("from_work_dir_glob", {}, history_id, assert_ok=True)
+            encoded_job_id = response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id=encoded_job_id)
+
+        job_id = self._decode_id(encoded_job_id)
+        assert f"Dispatching external metadata execution to celery for job: {job_id}" in caplog.messages

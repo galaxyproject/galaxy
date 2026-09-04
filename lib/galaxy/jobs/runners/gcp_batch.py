@@ -99,6 +99,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
     """
 
     runner_name = "GoogleCloudBatchJobRunner"
+    always_handle_metadata_externally = True
 
     def __init__(self, app, nworkers, **kwargs):
         """Initialize the Google Cloud Batch job runner."""
@@ -791,16 +792,6 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             log.error("Error checking status of Batch job %s: %s", batch_job_name, e)
             # Return job_state to continue monitoring - might be temporary error
             return job_state
-
-    def finish_job(self, job_state: AsynchronousJobState) -> None:
-        # The Batch task's job script is built with include_metadata=False
-        # (queue_job above), so the remote task never runs the metadata
-        # command and never writes the metadata/metadata_results_* files
-        # the default (directory) metadata strategy expects at finish.
-        # Run the external set_meta script handler-side instead, as the
-        # Kubernetes and Pulsar runners do.
-        self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
-        super().finish_job(job_state)
 
     def stop_job(self, job_wrapper):
         """Stop a job running on Google Cloud Batch."""

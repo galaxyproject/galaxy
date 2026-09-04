@@ -696,11 +696,6 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                         cjs.close_event_log()
                         self.work_queue.put((self.fail_job, cjs))
                         continue
-                    external_metadata = not asbool(
-                        cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True)
-                    )
-                    if external_metadata:
-                        self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
                     log.debug(f"({galaxy_id_tag}/{job_id}) job has completed")
                     cjs.close_event_log()
                     self.work_queue.put((self.finish_job, cjs))
