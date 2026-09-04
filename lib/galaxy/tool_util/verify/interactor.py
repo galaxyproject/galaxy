@@ -539,12 +539,18 @@ class GalaxyInteractorApi:
         response = self._put(f"histories/{history_id}", json.dumps({"published": True}))
         response.raise_for_status()
 
-    def test_data_path(self, tool_id, filename, tool_version=None):
+    def test_data_path(self, tool_id, filename, tool_version=None) -> str | None:
+        """Path the server can read this test file from, or None if it has none."""
         version_fragment = f"&tool_version={tool_version}" if tool_version else ""
         response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}{version_fragment}", admin=True)
         result = response.json()
-        if response.status_code in [200, 404]:
+        if response.status_code == 200:
             return result
+        if response.status_code == 404:
+            # Callers already expect None here - see test_data_download, which
+            # checks `local_path is None` - and fall back to downloading the
+            # file or looking in the local test-data directories.
+            return None
         raise Exception(result["err_msg"])
 
     def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None, path_only=False):
@@ -685,23 +691,21 @@ class GalaxyInteractorApi:
         location = self._ensure_valid_location_in(test_data)
         if fname and force_path_paste:
             file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-            file_name_exists = os.path.exists(file_name)
+            file_name_exists = file_name is not None and os.path.exists(file_name)
         if not file_name_exists and location is not None:
             return PathOrLocation(name=location, location=location, path=None)
-        else:
-            if force_path_paste:
-                if file_name is None:
-                    file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                return PathOrLocation(name=fname, location=f"file://{file_name}", path=None)
-            else:
-                path = self.test_data_download(
-                    tool_id, fname, is_output=False, tool_version=tool_version, mode=mode, path_only=True
-                )
-                assert isinstance(path, str)
-                # Downloaded directories contain root directory
-                if path and mode == "directory":
-                    path = os.path.join(path, fname)
-                return PathOrLocation(name=fname, location=None, path=path)
+        if file_name is not None:
+            return PathOrLocation(name=fname, location=f"file://{file_name}", path=None)
+        # Either path paste was not requested, or the server has no path for
+        # this file - fetch it instead of pointing the server at nothing.
+        path = self.test_data_download(
+            tool_id, fname, is_output=False, tool_version=tool_version, mode=mode, path_only=True
+        )
+        assert isinstance(path, str)
+        # Downloaded directories contain root directory
+        if path and mode == "directory":
+            path = os.path.join(path, fname)
+        return PathOrLocation(name=fname, location=None, path=path)
 
     def _ensure_valid_location_in(self, test_data: dict) -> str | None:
         location: str | None = test_data.get("location")
