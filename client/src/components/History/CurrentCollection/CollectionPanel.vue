@@ -8,13 +8,16 @@ import {
     type CollectionEntry,
     type DCESummary,
     type HDCASummary,
+    type HistoryItemSummary,
     type HistorySummary,
     isCollectionElement,
     isHDCA,
     type SubCollection,
 } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { updateContentFields } from "@/components/History/model/queries";
+import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { setItemDragstart } from "@/utils/setDrag";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -23,6 +26,7 @@ import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
 import CollectionOperations from "./CollectionOperations.vue";
 import Alert from "@/components/Alert.vue";
+import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import ContentItem from "@/components/History/Content/ContentItem.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
 
@@ -38,6 +42,12 @@ const props = withDefaults(defineProps<Props>(), {
     showControls: true,
     filterable: false,
 });
+
+function onCreatedCollection() {
+    resetSelection();
+    setShowSelection(false);
+    showCollectionCreator.value = false;
+}
 
 const collectionElementsStore = useCollectionElementsStore();
 
@@ -79,6 +89,92 @@ const rootCollection = computed(() => {
 });
 const isRoot = computed(() => dsc.value == rootCollection.value);
 const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
+
+/** Selection inside a collection uses the same composable as the history
+ * panel, so selecting behaves identically in both places: a select toggle,
+ * click to select without opening the item, and shift for a range. */
+const showCollectionCreator = ref(false);
+
+/** Selection is keyed on the dataset an element points at, not on the element.
+ * ContentItem hands its own `item` to the click handler, and that item is the
+ * dataset, so keying on anything else makes every click resolve to the same
+ * key and selection stops behaving like the history panel's. */
+function datasetKey(item: HistoryItemSummary) {
+    return String(item?.id);
+}
+
+/** Enriched dataset for an element, so selecting stores the same object the
+ * list holds (with a name) rather than the bare one on the element.
+ *
+ * Cached per element: the template asks for this several times per row on
+ * every render, and rebuilding the object each time churns through a large
+ * collection for nothing.
+ */
+const datasetCache = new WeakMap<object, HistoryItemSummary>();
+
+function datasetFor(element: DCESummary) {
+    const cached = datasetCache.get(element);
+    if (cached) {
+        return cached;
+    }
+    const dataset = {
+        ...element.object,
+        name: element.element_identifier,
+        // The element's dataset carries no history_content_type. Without it the
+        // collection creator treats the item as a collection and looks its id
+        // up as an HDCA, which fails with "History dataset collection
+        // association not found".
+        history_content_type: "dataset",
+    } as HistoryItemSummary;
+    datasetCache.set(element, dataset);
+    return dataset;
+}
+
+/** The datasets behind this collection's elements, in listing order. */
+const selectableDatasets = computed(() =>
+    collectionElements.value
+        .filter((element): element is DCESummary => "element_type" in element && element.element_type === "hda")
+        // The element carries the dataset, which has no name of its own: inside
+        // a collection the displayed name is the element identifier. Carry it
+        // across, or anything downstream (the collection creator) shows
+        // "undefined" where a name should be.
+        .map(datasetFor),
+);
+
+const {
+    selectedItems,
+    showSelection,
+    selectionSize,
+    setShowSelection,
+    isRangeSelectAnchor,
+    isSelected,
+    setSelected,
+    initKeySelection,
+    resetSelection,
+    itemRefs,
+    onClick: onSelectClick,
+    onKeyDown: onSelectKeyDown,
+} = useSelectedItems<HistoryItemSummary, typeof ContentItem>({
+    scopeKey: computed(() => String(dsc.value?.id ?? "")),
+    getItemKey: datasetKey,
+    allItems: selectableDatasets as never,
+    selectable: computed(() => canEdit.value),
+    expectedKeyDownClass: "content-item",
+    // Matches the history panel so keyboard navigation behaves the same.
+    disallowedKeyDownClasses: ["sub-item"],
+    // A collection listing has no filtering and no query selection, so these
+    // are inert; they exist because the composable is shared with the history
+    // panel, where filtering drives select-all-in-query.
+    filterText: ref(""),
+    totalItemsInQuery: computed(() => selectableDatasets.value.length),
+    filterClass: HistoryFilters,
+    // Deleting an element from a collection is not offered here.
+    onDelete: () => {},
+});
+
+/** The datasets behind the selected elements, for the collection creator. */
+const selectedDatasets = computed(() => Array.from(selectedItems.value.values()));
+
 async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
     if (!isHDCA(collection)) {
         return;
@@ -142,7 +238,14 @@ watch(
                     :selected-collections="selectedCollections"
                     v-on="$listeners" />
                 <CollectionDetails :dsc="dsc" :writeable="canEdit" @update:dsc="updateDsc(dsc, $event)" />
-                <CollectionOperations v-if="canEdit && showControls" :dsc="dsc" />
+                <CollectionOperations
+                    v-if="showControls"
+                    :dsc="dsc"
+                    :selectable="canEdit"
+                    :show-selection="showSelection"
+                    :selection-size="selectionSize"
+                    @update:show-selection="setShowSelection"
+                    @build-collection="showCollectionCreator = true" />
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>
@@ -169,16 +272,37 @@ watch(
                             <ContentItem
                                 v-else
                                 :id="item.element_index + 1"
+                                :ref="itemRefs[datasetKey(datasetFor(item))]"
                                 :item="item.object"
                                 :name="item.element_identifier"
                                 :expand-dataset="isExpanded(item)"
                                 :is-dataset="item.element_type == 'hda'"
+                                :taggable="item.element_type == 'hda'"
+                                :writable="canEdit"
+                                :get-item-key="datasetKey"
+                                :selectable="showSelection && item.element_type == 'hda'"
+                                :selected="isSelected(datasetFor(item))"
+                                :is-range-select-anchor="isRangeSelectAnchor(datasetFor(item))"
+                                :select-click-handler="onSelectClick"
                                 :filterable="filterable"
+                                @update:selected="setSelected(datasetFor(item), $event)"
+                                @init-key-selection="initKeySelection"
+                                @on-key-down="onSelectKeyDown(datasetFor(item), $event)"
                                 @drag-start="setItemDragstart(item, $event)"
                                 @update:expand-dataset="setExpanded(item, $event)"
                                 @view-collection="onViewDatasetCollectionElement(item)" />
                         </template>
                     </ListingLayout>
+
+                    <CollectionCreatorIndex
+                        v-if="showCollectionCreator"
+                        :history-id="history.id"
+                        collection-type="list"
+                        :extended-collection-type="{}"
+                        :selected-items="selectedDatasets"
+                        :show.sync="showCollectionCreator"
+                        hide-on-create
+                        @created-collection="onCreatedCollection" />
                 </div>
             </section>
         </section>
