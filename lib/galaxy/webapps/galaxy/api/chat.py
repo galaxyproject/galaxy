@@ -488,6 +488,7 @@ class ChatAPI:
                 history.append(
                     ChatHistoryItemResponse(
                         id=exchange.id,
+                        name=exchange.name,
                         query=data.get("query", ""),
                         response=data.get("response", ""),
                         agent_type=self.chat_manager.responder_agent_type(data),

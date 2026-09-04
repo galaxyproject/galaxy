@@ -3424,15 +3424,17 @@ class ChatExchange(Base, RepresentById):
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
     job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     page_id: Mapped[int | None] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="chat_exchanges")
     messages: Mapped[list["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange")
     page: Mapped[Optional["Page"]] = relationship()
 
-    def __init__(self, user, job_id=None, page_id=None, message=None, **kwargs):
+    def __init__(self, user, job_id=None, page_id=None, name=None, message=None, **kwargs):
         self.user = user
         self.job_id = job_id
         self.page_id = page_id
+        self.name = name
         self.messages = []
         if message:
             self.add_message(message)
