@@ -305,9 +305,12 @@ function mergeFetchedOptions(name: string, src: string, data: ToolFormConfig) {
         return;
     }
 
-    // The paginated/searched params that reach here are always data params, so the entries are `DataOption`
-    const existing = (target.options?.[src] as DataOption[] | undefined) ?? [];
-    const incoming = (newInput.options?.[src] as DataOption[] | undefined) ?? [];
+    // The paginated/searched params that reach here are always data params, so `options` is
+    // keyed by `src` (not the flat array shape select-like params use) and entries are `DataOption`.
+    const targetOptionsBySrc = target.options as Record<string, DataOption[]> | undefined;
+    const newOptionsBySrc = newInput.options as Record<string, DataOption[]> | undefined;
+    const existing = targetOptionsBySrc?.[src] ?? [];
+    const incoming = newOptionsBySrc?.[src] ?? [];
     const seen = new Set(existing.map((o) => `${o.id}_${o.src}`));
     const merged = existing.concat(incoming.filter((o) => !seen.has(`${o.id}_${o.src}`)));
     target.options = { ...target.options, [src]: merged };
