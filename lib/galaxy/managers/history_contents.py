@@ -10,6 +10,7 @@ from typing import (
 )
 
 from sqlalchemy import (
+    and_,
     asc,
     cast,
     desc,
@@ -20,9 +21,11 @@ from sqlalchemy import (
     null,
     nullsfirst,
     nullslast,
+    or_,
     select,
     Select,
     sql,
+    text,
     true,
     UnaryExpression,
 )
@@ -55,6 +58,7 @@ from galaxy.schema.tasks import (
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import listify
+from galaxy.util.search import split_name_search_terms
 from .base import (
     parse_bool,
     raise_filter_err,
@@ -62,6 +66,46 @@ from .base import (
 )
 
 log = logging.getLogger(__name__)
+
+# Separators a user may or may not type when searching for a name. Stripping
+# them from both sides is what lets "umitools" find a dataset called
+# "UMI-tools"; splitting the query on them covers the opposite direction.
+NAME_SEPARATORS_TO_SQUASH = (" ", "-", "_", ".")
+
+
+# Minimum trigram word-similarity for a name to count as a typo-tolerant match.
+# 0.3 is pg_trgm's own default threshold; misspellings of a real word land
+# comfortably above it while unrelated names do not.
+NAME_SIMILARITY_THRESHOLD = 0.3
+_trigram_support: dict[str, bool] = {}
+
+
+def _supports_trigram(session) -> bool:
+    """Whether this database can do trigram similarity matching.
+
+    Requires PostgreSQL with pg_trgm installed. Checked once per engine and
+    cached, since it cannot change while Galaxy is running. Everywhere else
+    (notably SQLite) the caller falls back to exact matching.
+    """
+    bind = session.get_bind()
+    key = str(bind.url)
+    if key not in _trigram_support:
+        supported = False
+        if bind.dialect.name == "postgresql":
+            try:
+                supported = bool(session.execute(text("SELECT 1 FROM pg_extension WHERE extname='pg_trgm'")).scalar())
+            except Exception:
+                log.warning("Could not determine pg_trgm availability; falling back to exact name matching")
+        _trigram_support[key] = supported
+    return _trigram_support[key]
+
+
+def _squash_separators(column):
+    """Lowercase a name column with the common word separators removed."""
+    expression = func.lower(column)
+    for separator in NAME_SEPARATORS_TO_SQUASH:
+        expression = func.replace(expression, separator, "")
+    return expression
 
 
 # into its own class to have it's own filters, etc.
@@ -711,6 +755,42 @@ class HistoryContentsFilters(
                     return sql.column("object_store_id").in_(object_store_ids)
 
                 raise_filter_err(attr, op, val, "bad op in filter")
+
+        if attr == "name" and op == "contains":
+            # Separators should not have to line up between what the user types
+            # and what the dataset is called, in either direction:
+            #   "umi-tools" and "umi tools" have to find "UMI-tools", and
+            #   "umitools" has to find it too.
+            # The first is handled by matching each word of the query on its
+            # own, the second by comparing both sides with the separators
+            # stripped out. A truncated word such as "um-tool" still matches,
+            # because every term is itself a substring match.
+            terms = split_name_search_terms(val)
+            if terms:
+                squashed = "".join(terms)
+
+                use_trigram = _supports_trigram(self.app.model.session)
+
+                def name_filter(component_class):
+                    column = func.lower(component_class.name)
+                    all_words_present = and_(*(column.contains(term, autoescape=True) for term in terms))
+                    clauses = [
+                        all_words_present,
+                        _squash_separators(component_class.name).contains(squashed, autoescape=True),
+                    ]
+                    if use_trigram:
+                        # Tolerate misspellings: "umitoos" should still find
+                        # "UMI-tools". word_similarity compares the query
+                        # against the best matching run of words in the name,
+                        # rather than the name as a whole, so a short query
+                        # against a long name is not penalised.
+                        clauses.append(func.word_similarity(val.lower(), column) >= NAME_SIMILARITY_THRESHOLD)
+                    return or_(*clauses)
+
+                # Built as an ``orm_function`` rather than an ``orm`` filter
+                # because ``_apply_orm_filter`` only rewrites a lone
+                # BinaryExpression and would silently drop anything else.
+                return self.parsed_filter(filter_type="orm_function", filter=name_filter)
 
         if attr == "extension" and op in ("eq", "in"):
             # Apply different filter expressions to the HDA and HDCA branches

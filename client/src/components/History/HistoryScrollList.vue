@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArchive, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { BAlert, BBadge } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -10,6 +10,7 @@ import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
+import { nameMatchScore } from "@/utils/filtering";
 
 import { HistoriesFilters } from "./HistoriesFilters";
 
@@ -57,29 +58,51 @@ const emit = defineEmits<{
 const busy = ref(false);
 
 const historyStore = useHistoryStore();
-const { currentHistoryId, histories, totalHistoryCount, pinnedHistories } = storeToRefs(historyStore);
+const { currentHistoryId, histories, totalHistoryCount, pinnedHistories, allHistoriesLoaded } =
+    storeToRefs(historyStore);
 const { currentUser } = storeToRefs(useUserStore());
 
 const effectiveCurrentId = computed(() =>
     props.currentItemId === undefined ? currentHistoryId.value : props.currentItemId,
 );
 
+/** How many matches to put in the DOM at a time.
+ *
+ * The list is not virtualized: every item handed to ScrollList becomes a card.
+ * Rendering thousands at once is what made the panel stall, to the point that
+ * the search box could not be typed in and no result could be clicked, so the
+ * matches are held in memory but revealed a window at a time.
+ */
+const RENDER_PAGE_SIZE = 50;
+const renderLimit = ref(RENDER_PAGE_SIZE);
+
 const hasNoResults = computed(() => props.filter && filtered.value.length == 0);
-const validFilter = computed(() => props.filter && props.filter.length > 2);
-const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
+/** The matches actually rendered, as opposed to all of the ones that matched. */
+const visible = computed(() => filtered.value.slice(0, renderLimit.value));
+const serverExhausted = computed(
+    () => allHistoriesLoaded.value || totalHistoryCount.value <= historiesProxy.value.length,
+);
 
 onMounted(async () => {
-    // if mounted with a filter, load histories for filter
-    if (props.filter !== "" && validFilter.value) {
-        await loadMore(true);
+    // if mounted with a filter, the whole list is needed to search it
+    if (props.filter !== "") {
+        await historyStore.loadAllHistories();
     }
 });
 
 watch(
     () => props.filter,
     async (newVal: string, oldVal: string) => {
-        if (newVal !== "" && validFilter.value && newVal !== oldVal) {
-            await loadMore(true);
+        if (newVal === oldVal) {
+            return;
+        }
+        // A new search starts at the top of its own results.
+        renderLimit.value = RENDER_PAGE_SIZE;
+        // Searching happens against the locally held list, so the list only has
+        // to be fetched once rather than queried again on every change of the
+        // text. Matching a few thousand names in the browser is immediate.
+        if (newVal !== "") {
+            await historyStore.loadAllHistories();
         }
     },
 );
@@ -105,7 +128,7 @@ watch(
 
 const filtered = computed<HistorySummary[]>(() => {
     let filteredHistories: HistorySummary[] = [];
-    if (!validFilter.value) {
+    if (!props.filter) {
         filteredHistories = historiesProxy.value;
     } else {
         const filters = HistoriesFilters.getFiltersForText(props.filter);
@@ -119,7 +142,19 @@ const filtered = computed<HistorySummary[]>(() => {
     if (props.hideDeleted) {
         filteredHistories = filteredHistories.filter((h) => !h.deleted && !h.purged);
     }
-    return filteredHistories.sort((a, b) => {
+    // When searching, rank by how well the name matches before anything else,
+    // so a literal hit comes above a merely similar one: searching
+    // "mrd2020-022" puts "mrd2020-022_new_round3" above "mrd2020-023".
+    const searchTerm = props.filter ? HistoriesFilters.getFilterValue(props.filter, "name") : undefined;
+    // Copy before sorting: with no filter this array is historiesProxy itself,
+    // and sorting in place would mutate reactive state from inside a computed.
+    return [...filteredHistories].sort((a, b) => {
+        if (searchTerm) {
+            const scoreDifference = nameMatchScore(b.name, searchTerm) - nameMatchScore(a.name, searchTerm);
+            if (scoreDifference !== 0) {
+                return scoreDifference;
+            }
+        }
         if (!isMultiviewPanel.value && a.id == currentHistoryId.value) {
             return -1;
         } else if (!isMultiviewPanel.value && b.id == currentHistoryId.value) {
@@ -187,11 +222,28 @@ function openInMulti(history: HistorySummary) {
 /** Loads (paginates) for more histories
  * @param noScroll If true, we are not scrolling and will load _all_ items for current filter
  */
-async function loadMore(noScroll = false) {
-    if (!busy.value && (noScroll || (!noScroll && !props.filter && !allLoaded.value))) {
-        busy.value = true;
-        const queryString = props.filter && HistoriesFilters.getQueryString(props.filter);
-        await historyStore.loadHistories(true, queryString);
+/** Reveals more of the list as it is scrolled.
+ *
+ * Searching no longer goes through here: the whole list is pulled in once and
+ * matched locally, so there is no per-search request to supersede or cancel.
+ */
+async function loadMore() {
+    if (busy.value) {
+        return;
+    }
+    // Widen the rendered window first. The matches are already in memory, so
+    // this costs nothing but the cards it adds.
+    if (renderLimit.value < filtered.value.length) {
+        renderLimit.value += RENDER_PAGE_SIZE;
+        return;
+    }
+    if (props.filter || serverExhausted.value) {
+        return;
+    }
+    busy.value = true;
+    try {
+        await historyStore.loadHistories(true);
+    } finally {
         busy.value = false;
     }
 }
@@ -289,18 +341,14 @@ function getHistoryTitleBadges(history: HistorySummary) {
     <ScrollList
         :item-key="(history) => history.id"
         :in-panel="!props.inModal"
-        :prop-items="filtered"
-        :prop-total-count="totalHistoryCount"
+        :prop-items="visible"
+        :prop-total-count="props.filter ? filtered.length : totalHistoryCount"
         :prop-busy="busy"
         name="history"
         name-plural="histories"
-        :load-disabled="Boolean(props.filter)"
         @load-more="loadMore">
         <template v-slot:search>
-            <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
-                Search term is too short
-            </BBadge>
-            <BAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
+            <BAlert v-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
         </template>
 
         <template v-slot:item="{ item: history }">
