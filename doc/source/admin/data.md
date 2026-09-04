@@ -34,8 +34,50 @@ pointed to by the configuration option `object_store_templates_config_file` in `
 Alternatively, the configuration can be placed directly into `galaxy.yml` using the
 `object_store_templates` configuration option.
 
+
+
+
+
+
+
+
+
 :::{admonition} Warning
+
+### Using “store_by: uuid”
+
+Galaxy supports storing dataset in object stores using UUID via “store_by: uuid” configuration option. This improves scalability and avoids potential naming conflicts, especially when working with distributed/cloud based network storage.
+
+### When to use:
+Using “store_by: uuid” is recommended for:
+	- New Galaxy deployments
+	- Distributed object storage configurations
+	- Cloud-based storage systems (S3 or Azure Blob storage)
+
+### Behaviour:
+When “store_by: uuid” is enabled:
+	- Newly created datasets are stored using UUID-based paths.
+	- Existing datasets remains same and continue to use the previous storage layout.
+	- No automatic migration of existing datasets is available
+	Thus resulting in a mixed layout of older datasets follow original structure and newer datasets follows UUID-based path.
+
+#### Configuration:
+
+This option can be set in the object store configuration (for example, in `object_store_conf.yml`):
+
+```yaml
+store_by: uuid
+```
+
 :class: warning
+
+
+
+
+
+
+
+
 
 Object store selection within Galaxy is available only when the primary object store is a
 distributed object store. All the other object stores provide stronger guarantees about how
