@@ -416,6 +416,8 @@ function onKeyDown(event: KeyboardEvent) {
                                                     v-g-tooltip.hover
                                                     class="inline-icon-button g-card-rename"
                                                     transparent
+                                                    icon-only
+                                                    color="blue"
                                                     :title="localize(props.renameTitle)"
                                                     @click="emit('rename')">
                                                     <FontAwesomeIcon :icon="faPen" fixed-width />
@@ -467,6 +469,8 @@ function onKeyDown(event: KeyboardEvent) {
                                         v-g-tooltip.hover
                                         class="inline-icon-button"
                                         transparent
+                                        icon-only
+                                        color="blue"
                                         :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
                                         @click="toggleBookmark">
                                         <FontAwesomeIcon :icon="props.bookmarked ? faStar : farStar" fixed-width />
@@ -477,6 +481,8 @@ function onKeyDown(event: KeyboardEvent) {
                                         v-g-tooltip.hover
                                         class="inline-icon-button"
                                         transparent
+                                        icon-only
+                                        color="blue"
                                         :title="localize('Bookmarking...')"
                                         disabled>
                                         <FontAwesomeIcon :icon="faSpinner" spin fixed-width />
@@ -566,7 +572,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-g-tooltip.hover
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
-                                                v-bind="variantToColor(indicator.variant || 'outline-secondary')"
+                                                v-bind="variantToColor(indicator.variant || 'link')"
                                                 :size="sizeToGSize(indicator.size || 'sm')"
                                                 :to="indicator.to"
                                                 :href="indicator.href"
