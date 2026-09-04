@@ -20,7 +20,6 @@ from typing import (
 )
 from urllib.parse import urlencode
 
-import requests
 import yaml
 from boltons.iterutils import remap
 from pydantic import (
@@ -54,7 +53,10 @@ from galaxy.exceptions import (
     RequestParameterMissingException,
 )
 from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    requests,
+)
 
 log = logging.getLogger(__name__)
 

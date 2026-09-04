@@ -7,15 +7,7 @@ import json
 import logging
 import os
 from typing import TYPE_CHECKING
-from urllib.error import HTTPError
-from urllib.parse import (
-    urlencode,
-    urlparse,
-)
-from urllib.request import (
-    Request,
-    urlopen,
-)
+from urllib.parse import urlparse
 
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.util import repository_util
@@ -25,7 +17,7 @@ from galaxy.util import (
     asbool,
     build_url,
     DEFAULT_SOCKET_TIMEOUT,
-    smart_str,
+    requests,
     unicodify,
     url_get,
 )
@@ -485,16 +477,8 @@ class RepositoryDependencyInstallManager:
                     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed_url)
                     pathspec = ["repository", "get_required_repo_info_dict"]
                     url = build_url(tool_shed_url, pathspec=pathspec)
-                    # Fix for handling 307 redirect not being handled nicely by urlopen() when the Request() has data provided
-                    try:
-                        url = _urlopen(url).geturl()
-                    except HTTPError as e:
-                        if e.code == 502:
-                            pass
-                        else:
-                            raise
-                    payload = urlencode(dict(encoded_str=encoded_required_repository_str))
-                    response = _urlopen(url, payload).read()
+                    with _request(url, data={"encoded_str": encoded_required_repository_str}) as request_response:
+                        response = request_response.content
                     if response:
                         try:
                             required_repo_info_dict = json.loads(unicodify(response))
@@ -585,9 +569,14 @@ class RepositoryDependencyInstallManager:
         session.commit()
 
 
-def _urlopen(url, data=None):
+def _request(url, data=None):
     scheme = urlparse(url).scheme
-    assert scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {scheme}"
-    if data is not None:
-        data = smart_str(data)
-    return urlopen(Request(url, data), timeout=DEFAULT_SOCKET_TIMEOUT)
+    assert scheme in ("http", "https"), f"Invalid URL scheme: {scheme}"
+    method = requests.post if data is not None else requests.get
+    response = method(url, data=data, timeout=DEFAULT_SOCKET_TIMEOUT)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        response.close()
+        raise
+    return response

@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from galaxy.tool_util_models import (
     TestCollectionCollectionElementAssertions,
+    TestCollectionDatasetElementAssertions,
     TestCollectionOutputAssertions,
     TestDataOutputAssertions,
     Tests,
@@ -169,5 +170,40 @@ def test_test_data_output_assertions_properties_have_descriptions():
         "delta",
         "delta_frac",
         "location",
+        "visible",
     ):
         assert props[name].get("description"), f"missing description on TestDataOutputAssertions.{name}"
+
+
+@pytest.mark.parametrize("value", [True, False])
+def test_visible_validates_on_data_output(value):
+    tests = Tests.model_validate(_one_test({"out": {"visible": value}}))
+    out = tests.root[0].outputs["out"]
+    assert isinstance(out, TestDataOutputAssertions)
+    assert out.visible is value
+
+
+def test_visible_validates_on_collection_dataset_element():
+    """visible lives on BaseTestOutputModel, so collection elements accept it too."""
+    tests = Tests.model_validate(_one_test({"out": {"class": "Collection", "elements": {"a": {"visible": False}}}}))
+    out = tests.root[0].outputs["out"]
+    assert isinstance(out, TestCollectionOutputAssertions)
+    assert out.elements is not None
+    element = out.elements["a"]
+    assert isinstance(element, TestCollectionDatasetElementAssertions)
+    assert element.visible is False
+
+
+def test_visible_defaults_to_none_when_unset():
+    """Unset has to stay distinguishable from `visible: false` - the runner keys on it."""
+    tests = Tests.model_validate(_one_test({"out": {"asserts": []}}))
+    out = tests.root[0].outputs["out"]
+    assert isinstance(out, TestDataOutputAssertions)
+    assert out.visible is None
+
+
+def test_visible_rejects_non_boolean():
+    with pytest.raises(ValidationError) as exc:
+        Tests.model_validate(_one_test({"out": {"visible": "sure"}}))
+    errs = exc.value.errors()
+    assert any(err["loc"][-1] == "visible" for err in errs)

@@ -53,6 +53,21 @@ class TestJobsApi(ApiTestCase, TestsTools):
         assert job["external_id"]
 
     @requires_new_history
+    def test_show_system_details_admin_only(self, history_id):
+        # handler and job_runner_name were only set for the admin_job_list
+        # view, so an admin reading a single job always got null for both.
+        self.__history_with_new_dataset(history_id)
+        job_id = self.__jobs_index(admin=True)[0]["id"]
+
+        job = self._get(f"jobs/{job_id}", admin=False).json()
+        assert job["handler"] is None
+        assert job["job_runner_name"] is None
+
+        job = self._get(f"jobs/{job_id}", admin=True).json()
+        assert job["handler"] is not None
+        assert job["job_runner_name"] is not None
+
+    @requires_new_history
     def test_admin_job_list(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs_response = self._get("jobs?view=admin_job_list", admin=False)

@@ -55,6 +55,7 @@ FileSourceTemplateType = Literal[
     "omero",
     "ssh",
     "openbis",
+    "ckan",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -536,12 +537,28 @@ class OpenBisFileSourceTemplateConfiguration(StrictModel):
     template_end: str | None = None
 
 
+class CKANFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["ckan"]
+    url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = True
+    template_start: str | None = None
+    template_end: str | None = None
+
+
 class OpenBisFileSourceConfiguration(StrictModel):
     type: Literal["openbis"]
     base_url: str
     token: str
     verify_certificates: bool = True
     writable: bool = False
+
+
+class CKANFileSourceConfiguration(StrictModel):
+    type: Literal["ckan"]
+    url: str
+    token: str | None = None
+    writable: bool = True
 
 
 FileSourceTemplateConfiguration = Annotated[
@@ -569,6 +586,7 @@ FileSourceTemplateConfiguration = Annotated[
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
     | OpenBisFileSourceTemplateConfiguration,
+    | CKANFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -597,6 +615,7 @@ FileSourceConfiguration = Annotated[
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
     | OpenBisFileSourceConfiguration,
+    | CKANFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -685,6 +704,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
     "openbis": OpenBisFileSourceConfiguration,
+    "ckan": CKANFileSourceConfiguration,
 }
 
 

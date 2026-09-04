@@ -1429,6 +1429,12 @@ class UpdateHistoryContentsPayload(Model):
         title="Tags",
         description="A list of tags to add to this item.",
     )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        title="Metadata",
+        description="A dictionary of metadata key/value pairs to update for this dataset. "
+        "Readonly and unknown metadata keys are silently ignored.",
+    )
     model_config = ConfigDict(
         extra="allow",
         json_schema_extra={

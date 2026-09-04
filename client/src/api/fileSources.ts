@@ -107,6 +107,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a file repository plugin that connects with an iRODS server.",
     },
+    ckan: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with a CKAN instance.",
+    },
 };
 
 export const FileSourcesValidFilters = {

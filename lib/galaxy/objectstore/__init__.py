@@ -2112,6 +2112,8 @@ class DeviceSourceMap:
             device_map = self.backends.get(object_store_id)
             if device_map:
                 return device_map.get_device_id(object_store_id)
+        elif is_user_object_store(object_store_id):
+            return object_store_id
 
         return self.default_device_id
 

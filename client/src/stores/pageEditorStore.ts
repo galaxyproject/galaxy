@@ -172,24 +172,26 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         isSaving.value = true;
         error.value = null;
         try {
+            const savedContent = currentContent.value;
+            const savedTitle = currentTitle.value;
             const payload: UpdateHistoryPagePayload = {
-                content: currentContent.value,
+                content: savedContent,
                 content_format: "markdown",
-                title: currentTitle.value || undefined,
+                title: savedTitle || undefined,
                 edit_source: editSource,
             };
             const data = await updateHistoryPage(currentPage.value.id, payload);
             currentPage.value = data;
-            // Use current values (what the user typed) as the baseline, not data values
+            // Use the submitted values as the baseline, not response values
             // which may be transformed by rewrite_content_for_export for rendering.
-            originalContent.value = currentContent.value;
-            originalTitle.value = currentTitle.value;
+            originalContent.value = savedContent;
+            originalTitle.value = savedTitle;
             // Sync the pages list so handleSelect reads the updated title
             const idx = pages.value.findIndex((n) => n.id === data.id);
             if (idx !== -1) {
                 pages.value[idx] = {
                     ...pages.value[idx]!,
-                    title: currentTitle.value,
+                    title: savedTitle,
                     update_time: data.update_time,
                 };
             }

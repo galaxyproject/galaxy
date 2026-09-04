@@ -4,8 +4,10 @@ import { computed, ref, watch } from "vue";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useInvocationStore } from "@/stores/invocationStore";
+import { errorMessageAsString } from "@/utils/simple-error.js";
 
 import WorkflowRun from "./WorkflowRun.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     invocationId: string;
@@ -17,6 +19,7 @@ const invocationStore = useInvocationStore();
 const ready = ref(false);
 
 const requestData = computed(() => invocationStore.getInvocationRequestById(props.invocationId));
+const requestError = computed(() => invocationStore.getInvocationRequestByIdError(props.invocationId));
 
 watch(
     requestData,
@@ -37,8 +40,11 @@ watch(
 </script>
 
 <template>
+    <GAlert v-if="requestError" variant="danger">
+        Unable to load workflow rerun data: {{ errorMessageAsString(requestError) }}
+    </GAlert>
     <WorkflowRun
-        v-if="ready && requestData"
+        v-else-if="ready && requestData"
         :workflow-id="requestData.workflow_id"
         :instance="requestData.instance"
         :request-state="requestData.inputs"

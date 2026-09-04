@@ -21,6 +21,11 @@ defaults:
 permissions: {}
 jobs:
   check:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Check database indexes
     runs-on: ubuntu-latest
     strategy:
@@ -46,7 +51,7 @@ jobs:
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.0
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install tox

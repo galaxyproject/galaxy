@@ -873,30 +873,33 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
                 "name": self.deserialize_basestring,
                 "info": self.deserialize_basestring,
                 "datatype": self.deserialize_datatype,
+                "metadata": self.deserialize_metadata,
             }
         )
         self.deserializable_keyset.update(self.deserializers.keys())
 
-    # TODO: untested
-    def deserialize_metadata(self, dataset_assoc, metadata_key, metadata_dict, **context):
-        """ """
-        self.validate.matches_type(metadata_key, metadata_dict, dict)
+    def deserialize_metadata(self, item, key, val, **context):
+        """Deserialize a dictionary of metadata key/value pairs for a dataset association."""
+        self.validate.matches_type(key, val, dict)
+        if not item.ok_to_edit_metadata():
+            raise exceptions.RequestParameterInvalidException(
+                "Dataset metadata could not be updated because it is used as input or output of a running job."
+            )
         returned = {}
-        for key, val in metadata_dict.items():
-            returned[key] = self.deserialize_metadatum(dataset_assoc, key, val, **context)
+        applied = False
+        for metadata_key, metadata_val in val.items():
+            spec = item.datatype.metadata_spec.get(metadata_key)
+            if spec is None or spec.get("readonly"):
+                continue
+            unwrapped_val = spec.unwrap(metadata_val)
+            setattr(item.metadata, metadata_key, unwrapped_val)
+            applied = True
+            returned[metadata_key] = unwrapped_val
+        if applied:
+            item.datatype.after_setting_metadata(item)
+            if item.state == Dataset.states.FAILED_METADATA and not item.missing_meta():
+                item.set_metadata_success_state()
         return returned
-
-    def deserialize_metadatum(self, dataset_assoc, key, val, **context):
-        """ """
-        if key not in dataset_assoc.datatype.metadata_spec:
-            return
-        metadata_specification = dataset_assoc.datatype.metadata_spec[key]
-        if metadata_specification.get("readonly"):
-            return
-        unwrapped_val = metadata_specification.unwrap(val)
-        setattr(dataset_assoc.metadata, key, unwrapped_val)
-        # ...?
-        return unwrapped_val
 
     def deserialize_datatype(self, item, key, val, **context):
         if not item.datatype.is_datatype_change_allowed():

@@ -649,12 +649,9 @@ export default {
                     (response) => {
                         element.deleted = response.deleted;
                         this.refreshTable();
-                        Toast.success("Dataset undeleted. Click here to see it.", "", {
-                            onclick: function () {
-                                window.location = `${getAppRoot()}libraries/folders/${parent_folder}/dataset/${
-                                    element.id
-                                }`;
-                            },
+                        Toast.addToast("Dataset undeleted. Click here to see it.", {
+                            variant: "success",
+                            to: `/libraries/folders/${parent_folder}/dataset/${element.id}`,
                         });
                     },
                     onError,

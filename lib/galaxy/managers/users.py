@@ -284,6 +284,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Delete UserAddresses
         for address in user.addresses:
             self.session().delete(address)
+        # Delete UserAuthnzTokens, unlinking any external identities
+        for authnz in user.social_auth:
+            self.session().delete(authnz)
         compliance_log = logging.getLogger("COMPLIANCE")
         compliance_log.info(f"delete-user-event: {user.username}")
         # Maybe there is some case in the future where an admin needs

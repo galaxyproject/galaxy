@@ -1,4 +1,5 @@
 import json
+from functools import partial
 from typing import Literal
 from uuid import uuid4
 
@@ -6,6 +7,7 @@ import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
+from galaxy.tools.parameters.pagination import DEFAULT_OPTIONS_PAGE_SIZE
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED,
@@ -122,20 +124,18 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
     @selenium_test
     def test_workflow_run_pagination_legacy_form(self):
-        """Pagination + backend search on a workflow run form's tool-step
-        dropdown. Uses the legacy/expanded form (the default), where the
-        tool step is rendered via ``WorkflowRunDefaultStep`` — this is the
-        component we wired ``onLoadMore`` / ``onSearchChange`` into. Seeds 60
-        HDAs so the default 50-per-page cap is in effect, then types a query
-        and asserts the dropdown narrows to the backend-matched options."""
+        """Backend search updates a legacy workflow tool-step dropdown."""
         history_id = self.current_history_id()
-        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
-        # Sentinel-named HDA so we can prove options are *actually rendering*
-        # (a vacuous pass — empty dropdown — would clear the ``<= 50`` upper bound).
         legacy_sentinel = "unique-pagination-sentinel"
+        # Create the sentinel first so the 60 newer datasets push it beyond
+        # the initial page. Finding it requires the backend search response to
+        # reach FormDisplay's cloned input tree.
         self.dataset_populator.fetch_hdas(
             history_id,
             [{"src": "pasted", "paste_content": "y", "name": legacy_sentinel}],
+        )
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
         )
         self.home()
         # A single cat1 step with no workflow-level inputs — the step's
@@ -147,18 +147,17 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         # Open the dropdown so its options render in the DOM, then type into
         # the multiselect's search input. The debounced ``search-change``
         # bubbles through ``FormDisplay → WorkflowRunDefaultStep`` and refetches
-        # via ``getTool`` with ``options_pagination[input1][hda].search="1"``.
+        # via ``getTool`` with the sentinel as the server-side search query.
         select_field.find_element(By.CSS_SELECTOR, ".multiselect__select").click()
         self.sleep_for(self.wait_types.UX_RENDER)
         baseline_options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
-        assert len(baseline_options) <= 50, f"Expected default page to cap at 50 options, got {len(baseline_options)}"
-        # Positive lower-bound: the sentinel HDA is newest (hid=61) so it must
-        # appear in the first page of (newest-first) options. Without this the
-        # ``<= 50`` upper bound passes vacuously on an empty dropdown.
+        assert (
+            len(baseline_options) == DEFAULT_OPTIONS_PAGE_SIZE
+        ), f"Expected the default page to contain {DEFAULT_OPTIONS_PAGE_SIZE} options, got {len(baseline_options)}"
         baseline_labels = [opt.text for opt in baseline_options]
-        assert any(legacy_sentinel in label for label in baseline_labels), baseline_labels
+        assert all(legacy_sentinel not in label for label in baseline_labels), baseline_labels
         search_input = select_field.find_element(By.CSS_SELECTOR, "input.multiselect__input")
-        search_input.send_keys("1")
+        search_input.send_keys(legacy_sentinel)
         # Wait past the FormSelect search debounce (300 ms) plus the network
         # round-trip — UX_TRANSITION is a generous ~1s.
         self.sleep_for(self.wait_types.UX_TRANSITION)
@@ -166,24 +165,57 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         @retry_assertion_during_transitions
         def assert_search_narrowed():
             options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
-            assert len(options) > 0, "Expected at least one match for query '1' (e.g. hid=1)"
-            # All visible labels should contain '1' somewhere — either in the
-            # numeric hid prefix (hid=1, 10, 11, ...) or in the name.
             labels = [opt.text for opt in options]
-            assert all("1" in label for label in labels), labels
+            assert any(legacy_sentinel in label for label in labels), labels
 
         assert_search_narrowed()
 
     @selenium_test
-    def test_workflow_run_pagination_simplified_form(self):
-        """The simplified workflow run form (``WorkflowRunFormSimple``) only
-        renders workflow-level inputs. With 60 datasets in history and the
-        backend's default 50-per-page cap, the dropdown for a workflow
-        ``input1: data`` step must show no more than 50 options — proves
-        pagination is in effect even though the simplified form's step
-        component doesn't yet wire interactive load-more."""
+    def test_workflow_run_input_step_load_more_appends(self):
+        """Scrolling a workflow input-step dropdown appends its second page.
+
+        Regression test for the workflow-run equivalent of issue #23135:
+        the request and pagination metadata updated, but FormDisplay's cloned
+        input tree kept rendering the first 50 options.
+        """
         history_id = self.current_history_id()
-        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
+        self.home()
+        self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.workflow_run_ensure_expanded()
+        select_field = self.components.workflow_run.input_data_div(label="input1").wait_for_visible()
+        select_field.find_element(By.CSS_SELECTOR, ".multiselect__select").click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        assert len(select_field.find_elements(By.CSS_SELECTOR, "[role='option']")) == DEFAULT_OPTIONS_PAGE_SIZE
+
+        # The default ~1s budget has to cover an IntersectionObserver firing,
+        # an HTTP round-trip and a re-render; widen it so loaded CI is not a
+        # false red.
+        @partial(retry_assertion_during_transitions, attempts=30, sleep=0.2)
+        def assert_more_options_loaded():
+            # The sentinel renders only while the server reports has_more, so it
+            # unmounts once the last page lands. Scroll it if it is still there,
+            # and report its absence in the message rather than requiring it.
+            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
+            if sentinels:
+                self.scroll_into_view(sentinels[0])
+            options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+            assert len(options) > DEFAULT_OPTIONS_PAGE_SIZE, (
+                f"Expected the dropdown to append a second page, got {len(options)} options "
+                f"(load-more sentinel present: {bool(sentinels)})"
+            )
+
+        assert_more_options_loaded()
+
+    @selenium_test
+    def test_workflow_run_pagination_simplified_form(self):
+        """Scrolling a simplified workflow-run dropdown appends its second page."""
+        history_id = self.current_history_id()
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
         # Sentinel for positive lower-bound (see legacy-form test).
         simplified_sentinel = "unique-simplified-sentinel"
         self.dataset_populator.fetch_hdas(
@@ -213,13 +245,32 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.sleep_for(self.wait_types.UX_RENDER)
         options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
         assert (
-            len(options) <= 50
-        ), f"Simplified form dropdown must respect the 50-per-page cap; got {len(options)} options"
+            len(options) == DEFAULT_OPTIONS_PAGE_SIZE
+        ), f"Expected the first page to contain {DEFAULT_OPTIONS_PAGE_SIZE} options, got {len(options)}"
         # Positive lower-bound: the sentinel HDA is newest (hid=61) so it must
         # appear in the first page of options. Without this the ``<= 50`` upper
         # bound passes vacuously on an empty dropdown.
         labels = [opt.text for opt in options]
         assert any(simplified_sentinel in label for label in labels), labels
+
+        # The default ~1s budget has to cover an IntersectionObserver firing,
+        # an HTTP round-trip and a re-render; widen it so loaded CI is not a
+        # false red.
+        @partial(retry_assertion_during_transitions, attempts=30, sleep=0.2)
+        def assert_more_options_loaded():
+            # The sentinel renders only while the server reports has_more, so it
+            # unmounts once the last page lands. Scroll it if it is still there,
+            # and report its absence in the message rather than requiring it.
+            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
+            if sentinels:
+                self.scroll_into_view(sentinels[0])
+            loaded_options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+            assert len(loaded_options) > DEFAULT_OPTIONS_PAGE_SIZE, (
+                f"Expected the simplified dropdown to append a second page, got {len(loaded_options)} options "
+                f"(load-more sentinel present: {bool(sentinels)})"
+            )
+
+        assert_more_options_loaded()
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
@@ -794,8 +845,13 @@ steps: {}
         history_id = self.current_history_id()
         dataset = self.dataset_populator.new_dataset(history_id, wait=True)
         self.dataset_populator.tag_dataset(history_id, dataset["id"], tags=["genomescope_model"])
-        # Add another possible input that should not be selected
-        self.dataset_populator.new_dataset(history_id, wait=True)
+        # Push the tagged dataset beyond the first 50 datatype matches. The
+        # tag predicate must be applied before pagination; filtering the first
+        # generic page in FormData would otherwise leave this required input
+        # empty even though a matching dataset exists in the history.
+        self.dataset_populator.fetch_hdas(
+            history_id, [{"src": "pasted", "paste_content": "x"}] * (DEFAULT_OPTIONS_PAGE_SIZE + 10)
+        )
         workflow_id, workflow_name = self._create_workflow_with_unique_name(WORKFLOW_WITH_DATA_TAG_FILTER, "ga")
         self.workflow_run_with_name(workflow_name)
         self.workflow_run_submit()

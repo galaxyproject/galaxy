@@ -32,6 +32,8 @@ export default {
     "Saved Histories": "Historiques sauvegardés",
     "Saved Datasets": "Jeux de données sauvegardés",
     "Saved Pages": "Pages sauvegardées",
+    Saved: "Enregistré",
+    Unsaved: "Non enregistré",
     //Tooltip
     "Account and saved data": "Compte et données sauvegardées",
     "Account registration or login": "Enregistrement ou authentification",

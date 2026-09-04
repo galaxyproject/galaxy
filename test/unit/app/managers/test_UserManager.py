@@ -326,6 +326,23 @@ class TestUserManager(BaseTestCase):
         # Email lookups should be case-insensitive
         assert self.user_manager.get_user_by_identity(uppercase_email_user["email"].capitalize()) == uppercase_user
 
+    def test_purge_deletes_oidc_tokens(self):
+        self.log("purging a user should unlink their external identities")
+        self.trans.app.config.allow_user_deletion = True
+        user2 = self.user_manager.create(**user2_data)
+        self.trans.sa_session.add(model.UserAuthnzToken(provider="google", uid="uid2", user=user2))
+        self.trans.sa_session.commit()
+        assert self._oidc_tokens_for(user2)
+
+        self.user_manager.delete(user2)
+        self.user_manager.purge(user2)
+
+        assert self._oidc_tokens_for(user2) == []
+
+    def _oidc_tokens_for(self, user):
+        stmt = select(model.UserAuthnzToken).where(model.UserAuthnzToken.user_id == user.id)
+        return list(self.trans.sa_session.scalars(stmt))
+
 
 # =============================================================================
 class TestUserSerializer(BaseTestCase):

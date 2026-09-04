@@ -13,9 +13,8 @@ access to the repository.
 import base64
 import logging
 
-import requests
-
 from galaxy.exceptions import MessageException
+from galaxy.util import requests
 
 try:
     from fsspec.implementations.github import GithubFileSystem

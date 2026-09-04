@@ -1605,6 +1605,17 @@ mapping:
           Please enter the site ID for the Matomo server so this can be used for tracking
           with Matomo (https://matomo.org/).
 
+      matomo_disable_cookies:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Run Matomo in "cookieless" mode. When set to true (the default), Galaxy
+          instructs the Matomo tracker to disable all tracking cookies by calling
+          _paq.push(['disableCookies']) before tracking the page view. Set to false
+          to allow Matomo to use cookies. See
+          https://matomo.org/faq/general/faq_157/ for details.
+
       display_servers:
         type: str
         default: hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
@@ -1912,6 +1923,29 @@ mapping:
         per_host: true
         desc: |
           The custom brand image source.
+
+      subdomain_switcher:
+        type: seq
+        default: []
+        required: false
+        sequence:
+          - type: map
+            mapping:
+              label:
+                type: str
+                required: true
+                pattern: '.+'
+              url:
+                type: str
+                required: true
+                pattern: '^https?://[^/?#\s]+(?:[/?#][^\s]*)?$'
+        desc: |
+          Sites to display in the masthead's "Switch sites" menu. Each entry requires
+          a non-empty label and an absolute HTTP or HTTPS URL. Entries are displayed
+          in the configured order, excluding the site matching the current URL origin.
+
+          Example value: ``[{label: Base site, url: https://usegalaxy.example.org},
+          {label: Single Cell Omics, url: https://singlecell.usegalaxy.example.org}]``
 
       helpsite_url:
         type: str
@@ -4133,7 +4167,6 @@ mapping:
 
       amqp_internal_connection:
         type: str
-        default: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
         required: false
         desc: |
           Galaxy uses AMQP internally for communicating between processes.  For
@@ -4142,10 +4175,9 @@ mapping:
           lock jobs, etc.
           For connection examples, see https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
 
-          Without specifying anything here, galaxy will first attempt to use your
-          specified database_connection above.  If that's not specified either, Galaxy
-          will automatically create and use a separate sqlite database located in your
-          <galaxy>/database folder (indicated in the commented out line below).
+          When this option is not specified, Galaxy uses the configured database_connection
+          with the SQLAlchemy transport. If database_connection is not explicitly configured,
+          Galaxy creates a separate SQLite database at <data_dir>/control.sqlite.
 
       enable_celery_tasks:
         type: bool

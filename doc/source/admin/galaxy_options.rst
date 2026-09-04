@@ -2144,6 +2144,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``matomo_disable_cookies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Run Matomo in "cookieless" mode. When set to true (the default),
+    Galaxy instructs the Matomo tracker to disable all tracking
+    cookies by calling _paq.push(['disableCookies']) before tracking
+    the page view. Set to false to allow Matomo to use cookies. See
+    https://matomo.org/faq/general/faq_157/ for details.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~
 ``display_servers``
 ~~~~~~~~~~~~~~~~~~~
@@ -2556,6 +2570,22 @@
     The custom brand image source.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``subdomain_switcher``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sites to display in the masthead's "Switch sites" menu. Each entry
+    requires a non-empty label and an absolute HTTP or HTTPS URL.
+    Entries are displayed in the configured order, excluding the site
+    matching the current URL origin.
+    Example value: ``[{label: Base site, url:
+    https://usegalaxy.example.org}, {label: Single Cell Omics, url:
+    https://singlecell.usegalaxy.example.org}]``
+:Default: ``[]``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~
@@ -5587,12 +5617,11 @@
     others to also reload, lock jobs, etc. For connection examples,
     see
     https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
-    Without specifying anything here, galaxy will first attempt to use
-    your specified database_connection above.  If that's not specified
-    either, Galaxy will automatically create and use a separate sqlite
-    database located in your <galaxy>/database folder (indicated in
-    the commented out line below).
-:Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
+    When this option is not specified, Galaxy uses the configured
+    database_connection with the SQLAlchemy transport. If
+    database_connection is not explicitly configured, Galaxy creates
+    a separate SQLite database at <data_dir>/control.sqlite.
+:Default: ``None``
 :Type: str
 
 
