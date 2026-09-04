@@ -158,6 +158,9 @@ function getStepText(steps: number) {
             v-g-tooltip.hover
             size="small"
             class="workflow-published-icon inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
             :title="publishedTitle"
             @click="emit('updateFilter', 'published', true)">
             <FontAwesomeIcon :icon="faGlobe" fixed-width />
@@ -175,6 +178,9 @@ function getStepText(steps: number) {
             v-g-tooltip.hover
             size="small"
             class="workflow-trs-icon inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
             :title="sourceTitle">
             <FontAwesomeIcon :icon="faShieldAlt" fixed-width @click="onCopyLink" />
         </GButton>
@@ -184,6 +190,9 @@ function getStepText(steps: number) {
             v-g-tooltip.hover
             size="small"
             class="workflow-external-link inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
             :title="sourceTitle">
             <FontAwesomeIcon :icon="faFileImport" fixed-width @click="onCopyLink" />
         </GButton>
