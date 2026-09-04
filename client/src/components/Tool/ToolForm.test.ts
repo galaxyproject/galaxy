@@ -10,17 +10,34 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { AnyHistory } from "@/api/index.js";
 import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
+import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolForm from "./ToolForm.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 
+const TEST_TOOL_NAME = "tool_name" as const;
+const TEST_TOOL_ID = "tool_id" as const;
+const TEST_TOOL_VERSION = "version" as const;
+const TEST_JOB_ID_1 = "job1" as const;
+const TEST_JOB_ID_2 = "job2" as const;
+const TEST_HISTORY_ID = "fakeHistory" as const;
+const TEST_USER_ID = "fakeUser" as const;
+
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 const pinia = createPinia();
+
+vi.mock("@/composables/toast", () => {
+    const toastInstance = { success: vi.fn(), error: vi.fn() };
+    return {
+        Toast: toastInstance,
+        useToast: () => toastInstance,
+    };
+});
 
 vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
     const { ref } = await import("vue");
@@ -37,31 +54,31 @@ describe("ToolForm", () => {
     function mountToolForm() {
         wrapper = mount(ToolForm as object, {
             propsData: {
-                id: "tool_id",
-                version: "version",
+                id: TEST_TOOL_ID,
+                version: TEST_TOOL_VERSION,
             },
             localVue,
             router,
             stubs: {
-                UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
+                UserHistories: MockCurrentHistory({ id: TEST_HISTORY_ID }),
                 FormDisplay: true,
             },
             pinia,
         });
         userStore = useUserStore();
-        userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser" });
+        userStore.currentUser = getFakeRegisteredUser({ id: TEST_USER_ID });
 
         historyStore = useHistoryStore();
-        historyStore.setHistories([{ id: "fakeHistory" } as AnyHistory]);
-        historyStore.setCurrentHistoryId("fakeHistory");
+        historyStore.setHistories([{ id: TEST_HISTORY_ID } as AnyHistory]);
+        historyStore.setCurrentHistoryId(TEST_HISTORY_ID);
         historyStore.startWatchingHistory = () => {};
     }
 
     function buildResponse(overrides = {}) {
         return {
-            id: "tool_id",
-            name: "tool_name",
-            version: "version",
+            id: TEST_TOOL_ID,
+            name: TEST_TOOL_NAME,
+            version: TEST_TOOL_VERSION,
             inputs: [],
             help: "help_text",
             help_format: "restructuredtext",
@@ -72,9 +89,9 @@ describe("ToolForm", () => {
 
     function useBuildResponse(overrides = {}) {
         server.use(
-            http.untyped.get("/api/tools/tool_id/build", ({ request }) => {
+            http.untyped.get(`/api/tools/${TEST_TOOL_ID}/build`, ({ request }) => {
                 const url = new URL(request.url);
-                if (url.searchParams.get("tool_version") === "version") {
+                if (url.searchParams.get("tool_version") === TEST_TOOL_VERSION) {
                     return HttpResponse.json(buildResponse(overrides));
                 }
                 return HttpResponse.json({});
@@ -94,9 +111,9 @@ describe("ToolForm", () => {
                     }),
                 );
             }),
-            http.untyped.get("/api/tools/tool_id/build", ({ request }) => {
+            http.untyped.get(`/api/tools/${TEST_TOOL_ID}/build`, ({ request }) => {
                 const url = new URL(request.url);
-                if (url.searchParams.get("tool_version") === "version") {
+                if (url.searchParams.get("tool_version") === TEST_TOOL_VERSION) {
                     return HttpResponse.json(buildResponse());
                 }
                 return HttpResponse.json({});
@@ -104,7 +121,7 @@ describe("ToolForm", () => {
             http.untyped.get("/api/webhooks", () => {
                 return HttpResponse.json([]);
             }),
-            http.untyped.get("/api/tools/tool_id/citations", () => {
+            http.untyped.get(`/api/tools/${TEST_TOOL_ID}/citations`, () => {
                 return HttpResponse.json([]);
             }),
         );
@@ -120,7 +137,7 @@ describe("ToolForm", () => {
     it("shows props", async () => {
         await flushPromises();
         const button = wrapper.find("[data-description='run tool button']");
-        expect(button.attributes("data-title")).toBe("Run tool: tool_name (version)");
+        expect(button.attributes("data-title")).toBe(`Run tool: ${TEST_TOOL_NAME} (${TEST_TOOL_VERSION})`);
         const dropdown = wrapper.findAll(".dropdown-item");
         expect(dropdown.length).toBe(2);
         const noToolParametersAlert = wrapper.find("[data-description='no tool parameters']");
@@ -139,7 +156,7 @@ describe("ToolForm", () => {
         await button.trigger("click");
         await flushPromises();
 
-        expect(userStore.recentTools).toEqual(["tool_id"]);
+        expect(userStore.recentTools).toEqual([TEST_TOOL_ID]);
     });
 
     it("preserves client-side validation errors on input change (does not wipe formConfig.errors when only validationInternal is set)", async () => {
@@ -188,5 +205,41 @@ describe("ToolForm", () => {
         await flushPromises();
 
         expect(wrapper.text()).toContain(errorMessage);
+    });
+
+    it("routes directly to the job view when exactly one job was submitted", async () => {
+        server.use(
+            http.untyped.post("/api/tools", () => {
+                return HttpResponse.json({ jobs: [{ id: TEST_JOB_ID_1 }] });
+            }),
+        );
+        await flushPromises();
+        wrapper.findComponent(FormDisplay).vm.$emit("onChange", {}, false);
+
+        const button = wrapper.find("[data-description='run tool button']");
+        await button.trigger("click");
+        await flushPromises();
+
+        expect(Toast.success).toHaveBeenCalledWith(
+            `Started tool ${TEST_TOOL_NAME} and successfully added this job to the queue.`,
+            expect.anything(),
+        );
+        expect(router.currentRoute.path).toBe(`/jobs/${TEST_JOB_ID_1}/view`);
+    });
+
+    it("routes to the submission success page when more than one job was submitted", async () => {
+        server.use(
+            http.untyped.post("/api/tools", () => {
+                return HttpResponse.json({ jobs: [{ id: TEST_JOB_ID_1 }, { id: TEST_JOB_ID_2 }] });
+            }),
+        );
+        await flushPromises();
+        wrapper.findComponent(FormDisplay).vm.$emit("onChange", {}, false);
+
+        const button = wrapper.find("[data-description='run tool button']");
+        await button.trigger("click");
+        await flushPromises();
+
+        expect(router.currentRoute.path).toBe("/jobs/submission/success");
     });
 });
