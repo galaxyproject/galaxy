@@ -22,7 +22,12 @@ import localize from "@/utils/localization";
 import { parseBool } from "@/utils/parseBool";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { getToolFormData, updateToolFormData } from "./services";
+import {
+    getToolFormData,
+    type OptionsPagination,
+    updateToolFormData,
+    type UpdateToolFormDataOptions,
+} from "./services";
 import { submitToolJob } from "./submit";
 
 import GModal from "../BaseComponents/GModal.vue";
@@ -217,13 +222,13 @@ async function onUpdate() {
     disabled.value = true;
     console.debug("ToolForm - Updating input parameters.", formData.value);
     try {
-        const data = await updateToolFormData(
-            formConfig.value.id,
-            toolUuid.value,
-            currentVersion.value,
-            currentHistoryId.value,
-            formData.value,
-        );
+        const data = await updateToolFormData({
+            tool_id: formConfig.value.id,
+            tool_uuid: toolUuid.value,
+            tool_version: currentVersion.value,
+            history_id: currentHistoryId.value || undefined,
+            inputs: formData.value,
+        });
 
         formConfig.value = data;
     } catch (error) {
@@ -242,18 +247,22 @@ async function onUpdate() {
  * into the matching parameter's option list.
  */
 async function onLoadMore(payload: { name: string; src: string; offset: number; limit: number; search?: string }) {
-    const spec = { offset: payload.offset, limit: payload.limit, search: payload.search || undefined };
+    const spec: UpdateToolFormDataOptions = {
+        offset: payload.offset,
+        limit: payload.limit,
+        search: payload.search || undefined,
+    };
 
-    const optionsPagination = { [payload.name]: { [payload.src]: spec } };
+    const optionsPagination: OptionsPagination = { [payload.name]: { [payload.src]: spec } };
     try {
-        const data = await updateToolFormData(
-            formConfig.value.id,
-            toolUuid.value,
-            currentVersion.value,
-            currentHistoryId.value,
-            formData.value,
-            optionsPagination,
-        );
+        const data = await updateToolFormData({
+            tool_id: formConfig.value.id,
+            tool_uuid: toolUuid.value,
+            tool_version: currentVersion.value,
+            history_id: currentHistoryId.value || undefined,
+            inputs: formData.value,
+            options_pagination: optionsPagination,
+        });
         mergeFetchedOptions(payload.name, payload.src, data);
     } catch (error) {
         console.warn(`ToolForm - loading more options for ${payload.name} failed`, error);
@@ -275,14 +284,14 @@ async function onSearchChange(payload: { name: string; src: string; query: strin
 
     const optionsPagination = { [payload.name]: { [payload.src]: spec } };
     try {
-        const data = await updateToolFormData(
-            formConfig.value.id,
-            toolUuid.value,
-            currentVersion.value,
-            currentHistoryId.value,
-            formData.value,
-            optionsPagination,
-        );
+        const data = await updateToolFormData({
+            tool_id: formConfig.value.id,
+            tool_uuid: toolUuid.value,
+            tool_version: currentVersion.value,
+            history_id: currentHistoryId.value || undefined,
+            inputs: formData.value,
+            options_pagination: optionsPagination,
+        });
         mergeFetchedOptions(payload.name, payload.src, data);
     } catch (error) {
         console.warn(`ToolForm - searching options for ${payload.name} failed`, error);
@@ -345,16 +354,16 @@ async function requestTool(newVersion?: string) {
     loading.value = true;
 
     try {
-        const data = await getToolFormData(
-            props.id || toolUuid.value,
-            currentVersion.value,
-            props.jobId,
-            currentHistoryId.value,
-            toolUuid.value,
-        );
+        const data = await getToolFormData({
+            tool_id: props.id || toolUuid.value,
+            tool_version: currentVersion.value,
+            job_id: props.jobId,
+            history_id: currentHistoryId.value || undefined,
+            tool_uuid: toolUuid.value,
+        });
         currentVersion.value = data.version;
         formConfig.value = data;
-        remapAllowed.value = props.jobId && data.job_remap;
+        remapAllowed.value = (props.jobId && data.job_remap) || false;
         showForm.value = true;
         messageShow.value = false;
 
