@@ -427,13 +427,19 @@ def test_legacy_unqualified_repeat_inputs_are_not_expanded():
         case_state_for(tool_source, test_cases[2])
 
 
-def test_unrepresentable_test_case_falls_back_to_legacy_request():
-    # A test whose inputs can't be represented in a modern request (unqualified repeats) yields no
-    # request, so the interactor falls back to the legacy tool API rather than erroring.
+def test_legacy_unqualified_repeat_inputs_are_qualified_on_load():
+    # Loading a legacy test resolves its unqualified repeat params against the tool's input
+    # tree, the way the sync path does, so the nth bare occurrence lands in the nth instance
+    # and sibling repeats stay separate. The request is then representable.
     tests = list(parse_tool_test_descriptions(tool_source_for("multi_repeats")))
     description = tests[2].to_dict()
     assert description["error"] is False
-    assert description["request"] is None
+    request = description["request"]
+    assert request is not None
+    assert len(request["queries"]) == 2
+    assert len(request["more_queries"]) == 2
+    assert request["queries"][0]["input2"]["path"] == "simple_line.txt"
+    assert request["more_queries"][1]["more_queries_input"]["path"] == "simple_line.txt"
 
 
 def test_legacy_unqualified_repeat_inside_conditional_is_resolved():
