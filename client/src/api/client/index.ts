@@ -1,5 +1,6 @@
 import createClient from "openapi-fetch";
 
+import { errorResponseMiddleware } from "@/api/client/errorResponseMiddleware";
 import { pendingRequestsMiddleware } from "@/api/client/pendingRequestsMiddleware";
 import { createRateLimiterMiddleware } from "@/api/client/rateLimiter";
 import type { GalaxyApiPaths } from "@/api/schema";
@@ -12,6 +13,11 @@ function getBaseUrl() {
 
 function apiClientFactory() {
     const client = createClient<GalaxyApiPaths>({ baseUrl: getBaseUrl() });
+
+    // Response middleware runs in reverse registration order, so registering this
+    // first means it normalizes whatever the chain finally settles on -- including
+    // a response the rate limiter produced by retrying outside the chain.
+    client.use(errorResponseMiddleware);
 
     // Registered first so aborted requests bypass the rate-limiter queue.
     client.use(pendingRequestsMiddleware);
