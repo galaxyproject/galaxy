@@ -203,9 +203,16 @@ const buttonElementRef = useResolveElement(buttonRef);
             border-color: var(--color-grey-600);
         }
 
+        // This block out-ranks the `&:hover, &:focus-visible` rule above, so the
+        // feedback has to be restated here or a pressed solid button looks inert.
         &.g-pressed:not(.g-outline):not(.g-transparent) {
             background-color: var(--color-grey-400);
             border-color: var(--color-grey-600);
+
+            &:hover,
+            &:focus-visible {
+                background-color: var(--color-grey-500);
+            }
         }
 
         &.g-outline.g-pressed {
@@ -236,9 +243,16 @@ const buttonElementRef = useResolveElement(buttonRef);
                 border-color: var(--color-#{$color}-900);
             }
 
+            // See the grey block above: restate the hover / focus-visible feedback
+            // that this higher-specificity selector would otherwise swallow.
             &.g-pressed:not(.g-outline):not(.g-transparent) {
                 background-color: var(--color-#{$color}-700);
                 border-color: var(--color-#{$color}-900);
+
+                &:hover,
+                &:focus-visible {
+                    background-color: var(--color-#{$color}-900);
+                }
             }
         }
 
