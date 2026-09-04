@@ -471,6 +471,10 @@ async function onExecute() {
             // the user was free to navigate away from the tool form while the job was being submitted,
             // so only redirect to the success or job page if they are still on the tool form.
             if (nJobs === 1) {
+                Toast.success(
+                    `Started tool ${toolName.value} and successfully added this job to the queue.`,
+                    "Job submitted successfully.",
+                );
                 router.push(`/jobs/${jobResponse.jobs[0]!.id}/view`);
             } else {
                 router.push(`/jobs/submission/success`);
