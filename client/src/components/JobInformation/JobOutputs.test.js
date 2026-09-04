@@ -2,6 +2,7 @@ import { shallowMount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
 import JobOutputs from "./JobOutputs.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 vi.mock("components/providers/DatasetCollectionProvider");
 
@@ -71,8 +72,11 @@ describe("JobInformation/JobOutputs.vue", () => {
             title: "Job Outputs",
             paginate: true,
         };
+        // The paginate button is rendered for real, so the click has to travel through
+        // the template's ``@click`` binding and GButton's own click guard.
         wrapper = shallowMount(JobOutputs, {
             propsData,
+            stubs: { GButton },
         });
         // ---- Before all remaining outputs are paginated: ----
         // heading should exist and include count (due to pagination)
@@ -87,9 +91,7 @@ describe("JobInformation/JobOutputs.vue", () => {
         expect(rows.length).toBe(12);
         // ---- Click button, remaining 5 outputs should be displayed ----
         expect(wrapper.find("#paginate-btn").exists()).toEqual(true);
-        // The shallow-mounted GButton stub doesn't bind @click natively,
-        // so emit the GButton's click event directly via the component instance.
-        await wrapper.find("#paginate-btn").vm.$emit("click");
+        await wrapper.find("#paginate-btn").trigger("click");
         jobOutputsTable = wrapper.find("#job-outputs");
         rows = jobOutputsTable.findAll("tr");
         // should now contain a header and 15 rows (all 15 items and no button)

@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,7 +11,6 @@ import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import HistoryCounter from "./HistoryCounter.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
 
 const sseState = vi.hoisted(() => ({
     onEvent: null as ((event: MessageEvent) => void) | null,
@@ -71,15 +70,21 @@ function setEnableSse(enabled: boolean): void {
     useUserStore().currentUser = { id: "user-1", email: "u@example.com" } as RegisteredUser;
 }
 
-function mountCounter(props: Partial<{ lastChecked: Date; isWatching: boolean }> = {}) {
-    return shallowMount(HistoryCounter as unknown as object, {
+function mountCounter(props: Partial<{ lastChecked: Date; isWatching: boolean }> = {}, deep = false) {
+    const options = {
         propsData: {
             history: baseHistory,
             lastChecked: props.lastChecked ?? new Date(),
             isWatching: props.isWatching ?? true,
         },
         localVue,
-    });
+    };
+    // ``shallowMount`` renders GButton as a stub, which is what the appearance
+    // assertions read their props off. A real ``mount`` is needed whenever a click has
+    // to travel through the template binding into GButton's own click handler.
+    return deep
+        ? mount(HistoryCounter as unknown as object, options)
+        : shallowMount(HistoryCounter as unknown as object, options);
 }
 
 function refreshButton(wrapper: ReturnType<typeof shallowMount>) {
@@ -199,12 +204,10 @@ describe("HistoryCounter — refresh button", () => {
         setSseConnected(sseState, true);
         setSseHasEverConnected(sseState, true);
 
-        const wrapper = mountCounter();
+        const wrapper = mountCounter({}, true);
         await flushPromises();
-        // The shallow-mounted ``<g-button-stub>`` doesn't bind ``@click`` the
-        // way the real GButton does, so emit the GButton's ``click`` event
-        // directly via the component instance.
-        await refreshButton(wrapper).findComponent(GButton).vm.$emit("click");
+
+        await refreshButton(wrapper).trigger("click");
 
         expect(wrapper.emitted("reloadContents")).toBeTruthy();
         expect(wrapper.emitted("reloadContents")?.length).toBe(1);
