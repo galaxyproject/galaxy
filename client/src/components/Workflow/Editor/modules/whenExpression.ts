@@ -1,10 +1,10 @@
 /**
  * Static analysis of workflow step `when` expressions.
  *
- * Galaxy addresses connected tool inputs by flat, pipe-prefixed connection names
- * (`cond|input1`), while a `when` expression walks nested tool state
- * (`inputs.cond.input1`). These helpers bridge the two representations so the editor can
- * reason about which inputs an expression reads.
+ * Persisted connections use legacy pipe-delimited names (`cond|input1`), while
+ * tool state and expressions use nested paths (`inputs.cond.input1`). These helpers
+ * bridge those representations so the editor can reason about which inputs an
+ * expression reads.
  *
  * Nothing here executes user JavaScript. Expressions that are not structurally
  * recognized are reported as unknown, and callers are expected to resolve unknown
