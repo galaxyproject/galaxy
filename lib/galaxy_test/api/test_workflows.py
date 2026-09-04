@@ -2287,6 +2287,14 @@ steps:
         self._assert_status_code_is(create_response, 400)
         assert_error_message_contains(create_response, 'inputs["cond|input1"]')
 
+    def test_import_rejects_flat_nested_tool_when_reference_read_through_a_property(self):
+        workflow = workflow_with_conditional_tool_when('$(inputs["cond|input1"].ext !== null)')
+
+        create_response = self.__test_upload(workflow=workflow, assert_ok=False)
+
+        self._assert_status_code_is(create_response, 400)
+        assert_error_message_contains(create_response, 'inputs["cond|input1"]')
+
     def test_import_allows_dynamic_tool_when_reference(self):
         workflow = workflow_with_conditional_tool_when("$(inputs[someKey])")
 

@@ -2226,8 +2226,10 @@ class WorkflowContentsManager(UsesAnnotations):
             when_expression = step_dict["when"]
             if step.type == "tool" and isinstance(when_expression, str):
                 for path in analyze_input_references(when_expression).static_paths:
-                    if len(path) == 1 and isinstance(path[0], str) and "|" in path[0]:
-                        flat_reference = path[0]
+                    # For well-formed tool inputs, a pipe in the root segment denotes
+                    # Galaxy's flattened connection spelling, not nested tool state.
+                    flat_reference = path[0]
+                    if isinstance(flat_reference, str) and "|" in flat_reference:
                         step_description = f" [{external_id}]"
                         if step.label:
                             step_description += f" ({step.label!r})"
