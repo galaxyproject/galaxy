@@ -3,6 +3,9 @@ import { computed } from "vue";
 
 import { getZoomInLevel, getZoomOutLevel, isMaxZoom, isMinZoom } from "@/utils/zoomLevels";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+
 const props = defineProps({
     zoomLevel: { type: Number, default: 1 },
 });
@@ -28,35 +31,34 @@ function onZoomReset() {
 </script>
 
 <template>
-    <span class="zoom-control float-right btn-group-horizontal">
-        <b-button
+    <GButtonGroup class="zoom-control float-right">
+        <GButton
             :disabled="isMinZoom(props.zoomLevel)"
-            role="button"
             class="fa fa-minus"
             title="Zoom Out"
-            size="sm"
+            size="small"
+            icon-only
             aria-label="Zoom Out"
             @click="onZoomOut" />
-        <b-button
-            v-b-tooltip.hover
-            role="button"
+        <GButton
+            tooltip
             class="zoom-reset"
-            variant="light"
+            transparent
             title="Reset Zoom Level"
-            size="sm"
+            size="small"
             aria-label="Reset Zoom Level"
             @click="onZoomReset">
             {{ zoomPercentage }}%
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             :disabled="isMaxZoom(props.zoomLevel)"
-            role="button"
             class="fa fa-plus"
             title="Zoom In"
-            size="sm"
+            size="small"
+            icon-only
             aria-label="Zoom In"
             @click="onZoomIn" />
-    </span>
+    </GButtonGroup>
 </template>
 
 <style scoped>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faArrowRight, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BFormInput } from "bootstrap-vue";
+import { BAlert, BFormCheckbox, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
@@ -9,6 +9,7 @@ import Multiselect from "vue-multiselect";
 import { GalaxyApi } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -213,10 +214,10 @@ defineExpose({
                     </div>
                 </div>
                 <div class="d-flex mt-2">
-                    <BButton class="mr-2" size="sm" variant="outline-primary" @click="toggleAll(true)">
+                    <GButton class="mr-2" size="small" color="blue" outline @click="toggleAll(true)">
                         Select All
-                    </BButton>
-                    <BButton size="sm" variant="outline-primary" @click="toggleAll(false)"> Unselect All </BButton>
+                    </GButton>
+                    <GButton size="small" color="blue" outline @click="toggleAll(false)"> Unselect All </GButton>
                 </div>
             </div>
 
@@ -262,15 +263,15 @@ defineExpose({
                         targetSingleHistory = null;
                     " />
                 <div class="text-right mt-2">
-                    <BButton
-                        size="sm"
-                        variant="primary"
+                    <GButton
+                        size="small"
+                        color="blue"
                         :disabled="loading"
                         data-description="copy button"
                         @click="onCopy">
                         <FontAwesomeIcon :icon="faCopy" class="mr-1" />
                         <span v-localize>Copy Selected Items</span>
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
         </div>

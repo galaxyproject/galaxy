@@ -32,7 +32,7 @@ function mountTarget() {
         stubs: {
             FontAwesomeIcon: true,
             FormSelection: true,
-            BButton: true,
+            GButton: true,
             BAlert: true,
         },
         directives: {

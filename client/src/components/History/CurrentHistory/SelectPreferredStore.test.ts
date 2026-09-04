@@ -26,7 +26,7 @@ setupSelectableMock();
 
 const localVue = getLocalVue(true);
 
-const CONFIRM_BUTTON_SELECTOR = ".g-button.g-blue" as const;
+const CONFIRM_BUTTON_SELECTOR = ".g-modal-confirm-buttons .g-button.g-blue" as const;
 
 const TEST_HISTORY_ID = "myTestHistoryId";
 

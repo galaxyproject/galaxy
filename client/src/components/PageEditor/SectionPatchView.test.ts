@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
 import SectionPatchView from "./SectionPatchView.vue";
@@ -9,8 +9,10 @@ const localVue = getLocalVue();
 const OLD = "# Intro\nOld intro text\n# Methods\nOld methods text\n# Results\nOld results text";
 const NEW = "# Intro\nNew intro text\n# Methods\nOld methods text\n# Results\nNew results text";
 
+// GButton emits `click` from its own root handler, so the apply/reject buttons
+// have to be really mounted for a click to reach this component.
 function mountComponent(propsData = { original: OLD, proposed: NEW }) {
-    return shallowMount(SectionPatchView as object, { localVue, propsData });
+    return mount(SectionPatchView as object, { localVue, propsData });
 }
 
 describe("SectionPatchView", () => {
@@ -29,7 +31,7 @@ describe("SectionPatchView", () => {
         const wrapper = mountComponent();
         const btn = wrapper.find('[data-description="apply selected patches"]');
         expect(btn.exists()).toBe(true);
-        expect(btn.attributes("disabled")).toBeDefined();
+        expect(btn.attributes("aria-disabled")).toBe("true");
     });
 
     it("emits reject on button click", async () => {

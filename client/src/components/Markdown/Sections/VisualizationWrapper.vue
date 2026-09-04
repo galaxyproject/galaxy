@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { faExpand, faWindowMaximize } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 
 interface Props {
@@ -45,23 +46,25 @@ const fixedHeight = computed(() =>
                 @change="emit('change', $event)"
                 @load="emit('load')" />
         </div>
-        <BButton
+        <GButton
             class="visualization-popout-expand"
-            variant="link"
-            size="sm"
+            transparent
+            icon-only
+            size="small"
             title="Maximize"
             @click="expand = !expand">
             <FontAwesomeIcon :icon="faExpand" />
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             v-if="expand"
             class="visualization-popout-close"
-            variant="link"
-            size="sm"
+            transparent
+            icon-only
+            size="small"
             title="Minimize"
             @click="expand = !expand">
             <FontAwesomeIcon :icon="faWindowMaximize" />
-        </BButton>
+        </GButton>
     </div>
 </template>
 

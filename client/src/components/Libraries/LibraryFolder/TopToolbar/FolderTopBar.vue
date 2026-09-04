@@ -2,15 +2,7 @@
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import {
-    BAlert,
-    BButton,
-    BDropdown,
-    BDropdownDivider,
-    BDropdownGroup,
-    BDropdownItem,
-    BFormCheckbox,
-} from "bootstrap-vue";
+import { BAlert, BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -27,6 +19,7 @@ import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
@@ -313,19 +306,15 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <BButton
-                class="mr-1 btn btn-secondary"
-                :to="{ path: `/libraries` }"
-                data-toggle="tooltip"
-                title="Go to libraries list">
+            <GButton class="mr-1 btn btn-secondary" to="/libraries" data-toggle="tooltip" title="Go to libraries list">
                 <FontAwesomeIcon :icon="faHome" />
-            </BButton>
+            </GButton>
 
             <div>
                 <div class="form-inline">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
 
-                    <BButton
+                    <GButton
                         v-if="props.canAddLibraryItem"
                         title="Create new folder"
                         class="add-library-items-folder mr-1"
@@ -333,7 +322,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         @click="newFolder">
                         <FontAwesomeIcon :icon="faPlus" />
                         Folder
-                    </BButton>
+                    </GButton>
 
                     <BDropdown
                         v-if="props.canAddLibraryItem"
@@ -386,13 +375,13 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         v-if="datasetManipulation"
                         title="Download items as archive"
                         class="dropdown dataset-manipulation mr-1">
-                        <BButton id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
+                        <GButton id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
                             <FontAwesomeIcon :icon="faDownload" />
                             Download
-                        </BButton>
+                        </GButton>
                     </div>
 
-                    <BButton
+                    <GButton
                         v-if="canDelete"
                         data-toggle="tooltip"
                         title="Mark items deleted"
@@ -401,7 +390,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         @click="deleteSelected">
                         <FontAwesomeIcon :icon="faTrash" />
                         Delete
-                    </BButton>
+                    </GButton>
 
                     <FolderDetails :id="props.folderId" class="mr-1" :metadata="props.metadata" />
 
