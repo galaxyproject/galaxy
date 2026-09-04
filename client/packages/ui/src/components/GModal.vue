@@ -8,11 +8,13 @@ import { watchImmediate } from "@vueuse/core";
 import { faXmark } from "font-awesome-6";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
+import { registerToastHost, unregisterToastHost } from "../composables/toastHost";
 import { useUid } from "../composables/uid";
 import { type ComponentColor, type ComponentSize, type ComponentSizeClassList, prefix } from "./componentVariants";
 
 import GButton from "./GButton.vue";
 import GHeading from "./GHeading.vue";
+import GToast from "./GToast.vue";
 
 const HEADING_SIZE_BY_MODAL_SIZE = { small: "sm", medium: "md", large: "lg" } as const;
 
@@ -97,6 +99,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+    unregisterToastHost(toastHost.value);
+
     if (dialog.value) {
         dialog.value.removeEventListener("close", onClose);
     }
@@ -143,6 +147,7 @@ function onClickDialog(event: MouseEvent) {
 }
 
 function onOpen() {
+    registerToastHost(toastHost.value);
     emit("update:show", true);
     emit("open");
 
@@ -150,6 +155,7 @@ function onOpen() {
 }
 
 function onClose() {
+    unregisterToastHost(toastHost.value);
     emit("update:show", false);
     emit("close");
 
@@ -164,6 +170,7 @@ const headingSize = computed(() => HEADING_SIZE_BY_MODAL_SIZE[props.size ?? "med
 
 const uid = useUid("g-modal");
 const currentId = computed(() => props.id ?? uid.value);
+const toastHost = computed(() => `${uid.value}-toast-host`);
 
 defineExpose({ showModal, hideModal });
 </script>
@@ -177,6 +184,7 @@ defineExpose({ showModal, hideModal });
         class="g-dialog"
         :class="[sizeClass, { 'g-overflow-visible': props.overflowVisible }]"
         @click="onClickDialog">
+        <GToast :host="toastHost" />
         <section>
             <header>
                 <GHeading

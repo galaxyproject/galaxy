@@ -1,4 +1,4 @@
-import { useToast } from "@galaxyproject/galaxy-ui";
+import { registerToastHost, unregisterToastHost, useToast } from "@galaxyproject/galaxy-ui";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -22,6 +22,21 @@ afterEach(() => {
 });
 
 describe("GToast.vue", () => {
+    it("when modal is active, modal triggers toast to render inside main browser window", async () => {
+        const host = "modal-toast-host";
+        const rootWrapper = mount(GToast as object, { localVue });
+
+        registerToastHost(host);
+        const modalWrapper = mount(GToast as object, { propsData: { host }, localVue });
+        addToast("Shown above the modal", { duration: 0 });
+        await nextTick();
+
+        expect(rootWrapper.find(SELECTORS.G_TOAST).exists()).toBe(false);
+        expect(modalWrapper.get(SELECTORS.G_TOAST).text()).toContain("Shown above the modal");
+
+        unregisterToastHost(host);
+    });
+
     it("renders queued toasts with title, message and variant class", async () => {
         const wrapper = mount(GToast as object, { localVue });
 
