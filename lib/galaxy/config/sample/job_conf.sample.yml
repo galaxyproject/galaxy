@@ -743,12 +743,13 @@ execution:
     # Under some runners, most notably Slurm and SGE, Galaxy will set environment
     # variables related to the amount of memory allocated to the job by the scheduler, if
     # possible. These are `$GALAXY_MEMORY_MB`, `$GALAXY_MEMORY_GB`,
-    # `$GALAXY_MEMORY_MB_PER_SLOT`, and `$GALAXY_MEMORY_GB_PER_SLOT`. You can override
-    # these on a per-environment basis as shown below.
+    # `$GALAXY_MEMORY_MB_PER_SLOT`, and `$GALAXY_MEMORY_GB_PER_SLOT`. Derived GB
+    # variables are rounded down and are left unset when the corresponding allocation
+    # is less than 1 GB. You can override these on a per-environment basis as shown below.
     #
     # Additionally, you can specify two variables that will indicate a tool should use
     # less memory than allocated. Typically some overhead is required or else the Linux
-    # OOM Killer will simply kill the job's processes if they exceed they amount of memory
+    # OOM Killer will simply kill the job's processes if they exceed the amount of memory
     # allocated by the scheduler.
     job_vars_example:
       runner: drmaa
@@ -756,7 +757,8 @@ execution:
         # Sets `$GALAXY_MEMORY_MB` to 2GB less than what has been allocated
         - name: GALAXY_MEMORY_MB_OVERHEAD
           value: "2048"
-        # Floor value for `$GALAXY_MEMORY_MB` if (allocated - overhead < floor)
+        # Floor value for `$GALAXY_MEMORY_MB` if (allocated - overhead < floor).
+        # This defaults to 256 when an overhead is configured.
         - name: GALAXY_MEMORY_MB_FLOOR
           value: "1024"
 
