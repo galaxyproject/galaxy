@@ -15,6 +15,7 @@ import CodeRow from "./CodeRow.vue";
 import RerunJobButton from "./RerunJobButton.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import HelpText from "@/components/Help/HelpText.vue";
+import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const props = withDefaults(
@@ -27,7 +28,7 @@ const props = withDefaults(
         /** If provided, this component will skip fetching the invocation ID for the job. */
         invocationId?: string;
     }>(),
-    { includeTitle: true },
+    { includeTitle: true, invocationId: undefined },
 );
 
 const job = ref<ShowFullJobResponse | null>(null);
@@ -197,6 +198,12 @@ watch(
                     <td>Updated</td>
                     <td v-if="job.update_time" id="updated">
                         <UtcDate :date="job.update_time" mode="pretty" />
+                    </td>
+                </tr>
+                <tr v-if="!props.invocationId && job && job.history_id">
+                    <td>History</td>
+                    <td v-if="job.history_id" id="history">
+                        <SwitchToHistoryLink :history-id="job.history_id" />
                     </td>
                 </tr>
                 <CodeRow

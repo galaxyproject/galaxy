@@ -4,7 +4,7 @@
  */
 
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
@@ -13,6 +13,17 @@ import { rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export const useJobStore = defineStore("jobStore", () => {
     const latestResponse = ref<ResponseVal | null>(null);
+
+    function updateJob(id: string, updatedData: Partial<ShowFullJobResponse>) {
+        if (storedJobs.value[id]) {
+            set(storedJobs.value, id, {
+                ...storedJobs.value[id],
+                ...updatedData,
+            });
+        } else {
+            set(storedJobs.value, id, updatedData);
+        }
+    }
 
     async function fetchJobById(params: FetchParams): Promise<ShowFullJobResponse> {
         const { data, error, response } = await GalaxyApi().GET("/api/jobs/{job_id}", {
@@ -34,7 +45,14 @@ export const useJobStore = defineStore("jobStore", () => {
         getItemById: getJob,
         getItemLoadError: getJobLoadError,
         isLoadingItem: isLoadingJob,
+        storedItems: storedJobs,
     } = useKeyedCache<ShowFullJobResponse>(fetchJobById);
+
+    const sortedStoredJobs = computed(() => {
+        return Object.values(storedJobs.value)
+            .filter((job) => job !== undefined)
+            .sort((a, b) => new Date(b.update_time).getTime() - new Date(a.update_time).getTime());
+    });
 
     function pollJobUntilTerminal(params: FetchParams) {
         function poll() {
@@ -63,5 +81,7 @@ export const useJobStore = defineStore("jobStore", () => {
         isLoadingJob,
         latestResponse,
         pollJobUntilTerminal,
+        sortedStoredJobs,
+        updateJob,
     };
 });
