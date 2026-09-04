@@ -43,7 +43,11 @@ const emit = defineEmits<{
 
 function onClick(event: PointerEvent) {
     if (props.disabled) {
+        // Mirror a native disabled control, which dispatches no click event at all:
+        // without stopping propagation the click still bubbles to clickable ancestors
+        // and any `.stop`/`.prevent` modifier the caller put on this component is dead.
         event.preventDefault();
+        event.stopPropagation();
     } else {
         emit("click", event);
     }

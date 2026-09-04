@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import GButton from "./GButton.vue";
@@ -65,6 +65,45 @@ describe("GButton.vue", () => {
         await wrapper.get("button").trigger("click");
 
         expect(wrapper.emitted("click")).toHaveLength(1);
+    });
+});
+
+describe("GButton.vue click propagation", () => {
+    // A native disabled button dispatches no click at all, so nothing reaches clickable
+    // ancestors. GButton renders `aria-disabled` instead of the native attribute, so the
+    // guard in `onClick` has to stop the event itself.
+    function mountInClickableParent(props: object) {
+        const onParentClick = vi.fn();
+
+        const wrapper = mount(
+            {
+                components: { GButton },
+                props: ["buttonProps"],
+                template: `<div @click="onParentClick"><GButton v-bind="buttonProps">Click me</GButton></div>`,
+                methods: { onParentClick },
+            } as object,
+            { propsData: { buttonProps: props }, localVue }
+        );
+
+        return { wrapper, onParentClick, button: wrapper.getComponent(GButton as object) };
+    }
+
+    it("does not bubble a click to clickable ancestors when disabled", async () => {
+        const { onParentClick, button } = mountInClickableParent({ disabled: true, disabledTitle: "Nope" });
+
+        await button.get("button").trigger("click");
+
+        expect(button.emitted("click")).toBeUndefined();
+        expect(onParentClick).not.toHaveBeenCalled();
+    });
+
+    it("bubbles a click to clickable ancestors when enabled", async () => {
+        const { onParentClick, button } = mountInClickableParent({});
+
+        await button.get("button").trigger("click");
+
+        expect(button.emitted("click")).toHaveLength(1);
+        expect(onParentClick).toHaveBeenCalledTimes(1);
     });
 });
 
