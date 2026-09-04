@@ -1,5 +1,5 @@
 <template>
-    <b-popover target="tool-storage" triggers="hover" placement="bottomleft" boundary="window">
+    <GPopover target="tool-storage" triggers="hover" placement="bottomleft" boundary="window">
         <template v-slot:title>{{ title }}</template>
         <div class="popover-wide">
             <p v-if="toolPreferredObjectStoreId">
@@ -19,13 +19,16 @@
                 Change {{ preferredOrEmptyString }} Galaxy storage by clicking on the storage button in the tool header.
             </div>
         </div>
-    </b-popover>
+    </GPopover>
 </template>
 
 <script>
 import showTargetPopoverMixin from "@/components/ObjectStore/showTargetPopoverMixin";
 
+import GPopover from "@/components/BaseComponents/GPopover.vue";
+
 export default {
+    components: { GPopover },
     mixins: [showTargetPopoverMixin],
     props: {
         toolPreferredObjectStoreId: {

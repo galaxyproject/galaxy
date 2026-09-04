@@ -1,7 +1,7 @@
 import "@tests/vitest/mockHelpPopovers";
 
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -68,11 +68,6 @@ describe("ToolForm", () => {
                 return HttpResponse.json([]);
             }),
         );
-
-        // the PersonViewer component uses a BPopover that doesn't work in the test environment. It would be
-        // better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
-        // stub out the Popover piece.
-        suppressBootstrapVueWarnings();
 
         wrapper = mount(ToolForm, {
             propsData: {

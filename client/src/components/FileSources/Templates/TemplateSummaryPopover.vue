@@ -5,7 +5,7 @@ import TemplateSummary from "./TemplateSummary.vue";
 import TemplateSummaryPopover from "@/components/ConfigTemplates/TemplateSummaryPopover.vue";
 
 interface Props {
-    target: String;
+    target: string;
     template: FileSourceTemplateSummary;
 }
 

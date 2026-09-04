@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import ToolLink from "./ToolLink.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 interface ToolLinkPopoverProps {
-    target: string | Function;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    target: string | (() => any);
     toolId?: string;
     toolVersion?: string;
 }
@@ -17,8 +19,8 @@ const boundary = "window";
 </script>
 
 <template>
-    <b-popover v-if="toolId" :boundary="boundary" :target="target" triggers="hover">
+    <GPopover v-if="toolId" :boundary="boundary" :target="target" triggers="hover">
         Tool:
         <ToolLink :tool-id="toolId" :tool-version="toolVersion || 'latest'" />
-    </b-popover>
+    </GPopover>
 </template>
