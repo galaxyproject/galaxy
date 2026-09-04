@@ -73,6 +73,7 @@ dependencies = [
     # https://github.com/noxdafox/pebble/pull/168
     "pebble!=5.2.1,!=5.2.2",
     "pillow",
+    "pkg-resources-backport",  # needed by fs https://github.com/PyFilesystem/pyfilesystem2/issues/577
     "psutil",
     "pulsar-galaxy-lib>=0.15.15",
     "pycryptodome",
@@ -259,7 +260,6 @@ keep-runtime-typing = true
 constraint-dependencies = [
     "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
     "mirakuru!=3.0.0",  # https://github.com/dbfixtures/mirakuru/pull/949
-    "setuptools<82",  # https://github.com/PyFilesystem/pyfilesystem2/issues/597
     "scipy>=1.14.1; python_version>='3.10'",  # Python 3.13 support
 ]
 default-groups = []
