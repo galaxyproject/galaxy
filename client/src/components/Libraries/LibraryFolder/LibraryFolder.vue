@@ -186,28 +186,28 @@
                     </button>
                 </div>
                 <div v-else>
-                    <BButton
+                    <GButton
                         v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'"
                         data-toggle="tooltip"
                         data-placement="top"
-                        size="sm"
+                        size="small"
                         class="lib-btn permission_folder_btn edit_folder_btn"
                         :title="'Edit ' + row.item.name"
                         @click.stop="toggleEditMode(row.item)">
                         <FontAwesomeIcon :icon="faPencilAlt" />
                         Edit
-                    </BButton>
+                    </GButton>
 
-                    <BButton
+                    <GButton
                         v-if="currentUser?.is_admin"
-                        size="sm"
+                        size="small"
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
-                        :to="{ path: `${navigateToPermission(row.item)}` }"
+                        :to="`${navigateToPermission(row.item)}`"
                         @click.stop>
                         <FontAwesomeIcon :icon="faUsers" />
                         Manage
-                    </BButton>
+                    </GButton>
 
                     <button
                         v-if="row.item.deleted"
@@ -273,7 +273,7 @@ import {
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCol, BContainer, BFormInput, BLink, BPagination, BRow } from "bootstrap-vue";
+import { BCol, BContainer, BFormInput, BLink, BPagination, BRow } from "bootstrap-vue";
 import purify from "dompurify";
 import linkifyHtml from "linkify-html";
 import { mapState } from "pinia";
@@ -289,6 +289,7 @@ import { Services } from "./services";
 import { fields } from "./table-fields";
 
 import FolderTopBar from "./TopToolbar/FolderTopBar.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -306,7 +307,6 @@ function initialFolderState() {
 }
 export default {
     components: {
-        BButton,
         BCol,
         BContainer,
         BFormInput,
@@ -315,6 +315,7 @@ export default {
         BRow,
         FolderTopBar,
         FontAwesomeIcon,
+        GButton,
         GTable,
         LoadingSpan,
         UtcDate,

@@ -191,7 +191,7 @@ describe("PageRevisionList", () => {
             });
 
             const restoreBtn = wrapper.find(SELECTORS.RESTORE_BUTTON);
-            expect(restoreBtn.attributes("disabled")).toBeTruthy();
+            expect(restoreBtn.attributes("aria-disabled")).toBe("true");
         });
 
         it("restore buttons are enabled when isReverting is false", () => {

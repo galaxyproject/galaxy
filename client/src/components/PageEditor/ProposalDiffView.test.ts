@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
 import ProposalDiffView from "./ProposalDiffView.vue";
@@ -9,8 +9,10 @@ const localVue = getLocalVue();
 const OLD = "# Title\nOld line 1\nOld line 2";
 const NEW = "# Title\nNew line 1\nNew line 2\nExtra line";
 
+// GButton emits `click` from its own root handler, so the accept/reject buttons
+// have to be really mounted for a click to reach this component.
 function mountComponent(propsData = { original: OLD, proposed: NEW }) {
-    return shallowMount(ProposalDiffView as object, { localVue, propsData });
+    return mount(ProposalDiffView as object, { localVue, propsData });
 }
 
 describe("ProposalDiffView", () => {

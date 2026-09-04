@@ -3,15 +3,15 @@
         <div v-if="hasCitations" class="mt-2 mb-4">
             <Heading h2 separator bold size="sm">
                 <span v-localize>References</span>
-                <b-button
+                <GButton
                     v-g-tooltip.hover
                     title="Copy all references as BibTeX"
-                    style="cursor: pointer"
-                    variant="link"
-                    size="sm"
+                    transparent
+                    size="small"
+                    icon-only
                     @click="copyBibtex">
                     <FontAwesomeIcon :icon="faCopy" />
-                </b-button>
+                </GButton>
             </Heading>
             <CitationItem
                 v-for="(citation, index) in citations"
@@ -70,6 +70,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getCitations } from "@/components/Citation/services";
 import { copy } from "@/utils/clipboard";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import CitationItem from "@/components/Citation/CitationItem.vue";
 import Heading from "@/components/Common/Heading.vue";
 import License from "@/components/License/License.vue";
@@ -82,6 +83,7 @@ export default {
         License,
         Creators,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         id: {

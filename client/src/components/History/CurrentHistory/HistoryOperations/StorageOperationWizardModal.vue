@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
@@ -17,6 +17,7 @@ import { useStorageOperationsStore } from "@/stores/storageOperationsStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { toTrackedStorageRun } from "@/utils/storageOperations";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import StorageOperationPreviewReport from "@/components/History/CurrentHistory/HistoryOperations/StorageOperationPreviewReport.vue";
@@ -249,7 +250,7 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
             container-component="div"
             @submit="executeStorageOperation">
             <template v-slot:cancel-button>
-                <BButton variant="secondary" @click="onCancel">Cancel</BButton>
+                <GButton @click="onCancel">Cancel</GButton>
             </template>
 
             <div v-if="wizard.isCurrent('configure')">

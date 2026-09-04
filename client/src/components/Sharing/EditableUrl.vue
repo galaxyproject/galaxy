@@ -2,12 +2,12 @@
 import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import { faCheck, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed, nextTick, ref } from "vue";
 
 import { copy } from "@/utils/clipboard";
 
 import SlugInput from "./SlugInput.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
     prefix: string;
@@ -68,32 +68,44 @@ function onCopyOut() {
                 @keyup.enter="onSubmit" />
         </span>
 
-        <BButton
+        <GButton
             v-if="!editing"
             v-g-tooltip.hover
             class="inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
             title="Edit URL"
-            size="md"
             @click="onEdit">
             <FontAwesomeIcon :icon="faEdit" fixed-width />
-        </BButton>
-        <BButton v-else v-g-tooltip.hover class="inline-icon-button" title="Done" size="md" @click="onSubmit">
+        </GButton>
+        <GButton
+            v-else
+            v-g-tooltip.hover
+            class="inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
+            title="Done"
+            @click="onSubmit">
             <FontAwesomeIcon :icon="faCheck" fixed-width />
-        </BButton>
+        </GButton>
 
-        <BButton
+        <GButton
             v-if="!editing"
             id="tooltip-clipboard"
             v-g-tooltip.hover
             :disabled="editing"
-            size="md"
             class="inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
             :title="clipboardTitle"
             @click="onCopy"
             @mouseout="onCopyOut"
             @blur="onCopyOut">
             <FontAwesomeIcon :icon="faCopy" fixed-width />
-        </BButton>
+        </GButton>
     </div>
 </template>
 

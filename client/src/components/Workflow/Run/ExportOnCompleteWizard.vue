@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { ModelStoreFormat } from "@/api";
@@ -10,6 +9,7 @@ import {
     type InvocationExportPlugin,
 } from "@/components/Workflow/Invocation/Export/Plugins";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import ExportFormatSelector from "@/components/Common/ExportFormatSelector.vue";
 import ExportIncludeOptions from "@/components/Common/ExportIncludeOptions.vue";
 import ExportRemoteSourceSelector from "@/components/Common/ExportRemoteSourceSelector.vue";
@@ -147,7 +147,7 @@ function onFormatChange(format: string) {
                 </div>
             </div>
             <template v-slot:cancel-button>
-                <BButton variant="secondary" @click="onCancel">Cancel</BButton>
+                <GButton @click="onCancel">Cancel</GButton>
             </template>
         </GenericWizard>
     </div>

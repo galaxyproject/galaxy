@@ -12,8 +12,8 @@
         width: 1.5rem;
     }
 
-    &:deep(.btn-outline-primary) {
-        &:not(.active) {
+    &:deep(.g-button.g-outline.g-blue) {
+        &:not(.g-pressed) {
             background-color: $workflow-editor-bg;
         }
 
