@@ -138,6 +138,9 @@ function dismiss() {
         <GButton
             v-if="multiple"
             class="arrow left inline-icon-button area-l"
+            transparent
+            icon-only
+            color="blue"
             title="Previous"
             @click="currentPage -= 1">
             <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
@@ -174,11 +177,23 @@ function dismiss() {
             </div>
         </section>
 
-        <GButton v-if="multiple" class="arrow right inline-icon-button area-r" title="Next" @click="currentPage += 1">
+        <GButton
+            v-if="multiple"
+            class="arrow right inline-icon-button area-r"
+            transparent
+            icon-only
+            color="blue"
+            title="Next"
+            @click="currentPage += 1">
             <FontAwesomeIcon fixed-width :icon="faChevronRight" />
         </GButton>
 
-        <GButton class="dismiss-button inline-icon-button area-x" title="Dismiss" @click="dismiss">
+        <GButton
+            class="dismiss-button inline-icon-button area-x"
+            transparent
+            icon-only
+            title="Dismiss"
+            @click="dismiss">
             <FontAwesomeIcon fixed-width :icon="faTimes" />
         </GButton>
     </div>
@@ -254,7 +269,10 @@ $margin: 1rem;
         }
     }
 
-    .dismiss-button {
+    // The `.g-button.g-transparent:not(.g-pressed)` part is not decoration: it is what
+    // lets these rules out-rank GButton's own scoped transparent rules, which are more
+    // specific than a plain `.dismiss-button` selector.
+    .dismiss-button.g-button.g-transparent:not(.g-pressed) {
         font-size: 1.5rem;
         color: $border-color;
 
