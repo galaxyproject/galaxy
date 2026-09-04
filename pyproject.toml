@@ -154,6 +154,7 @@ test = [
     "seletools",
     "statsd",
     "testfixtures",
+    "thriftpy2",
     "total-perspective-vortex>=3.1.1,<4",  # https://github.com/galaxyproject/total-perspective-vortex/pull/173
     "tuspy",
     "watchdog",

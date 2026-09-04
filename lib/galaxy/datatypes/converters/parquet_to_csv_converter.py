@@ -8,10 +8,11 @@ import os
 import sys
 
 try:
-    import pyarrow.csv
-    import pyarrow.parquet
+    import pyarrow.csv as csv
+    import pyarrow.parquet as parquet
 except ImportError:
-    pyarrow = None
+    csv = None
+    parquet = None
 
 
 def __main__():
@@ -22,9 +23,10 @@ def __main__():
         sys.stderr.write(f"Input file {infile!r} not found\n")
         sys.exit(1)
 
-    if pyarrow is None:
+    if csv is None or parquet is None:
         raise Exception("Cannot run conversion, pyarrow is not installed.")
-    pyarrow.csv.write_csv(pyarrow.parquet.read_table(infile), outfile)
+
+    csv.write_csv(parquet.read_table(infile), outfile)
 
 
 if __name__ == "__main__":
