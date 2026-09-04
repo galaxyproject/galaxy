@@ -36,6 +36,7 @@ omero-py #type: omero
 iiif-fsspec # type: iiif
 fs-irods # type: irods, depends on python-irodsclient
 mavedb-fsspec>=0.1.0 # type: mavedb
+pybis==7.0.0rc1 # type: openbis, pinned pre-release required for openBIS 7 backend compatibility
 
 # Vault backend
 hvac

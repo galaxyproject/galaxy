@@ -54,6 +54,7 @@ FileSourceTemplateType = Literal[
     "mavedb",
     "omero",
     "ssh",
+    "openbis",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -525,6 +526,24 @@ class OmeroFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class OpenBisFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["openbis"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion
+    verify_certificates: bool | TemplateExpansion = True
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class OpenBisFileSourceConfiguration(StrictModel):
+    type: Literal["openbis"]
+    base_url: str
+    token: str
+    verify_certificates: bool = True
+    writable: bool = False
+
+
 FileSourceTemplateConfiguration = Annotated[
     PosixFileSourceTemplateConfiguration
     | S3FSFileSourceTemplateConfiguration
@@ -548,7 +567,8 @@ FileSourceTemplateConfiguration = Annotated[
     | IIIFFileSourceTemplateConfiguration
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
-    | SshFileSourceTemplateConfiguration,
+    | SshFileSourceTemplateConfiguration
+    | OpenBisFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -575,7 +595,8 @@ FileSourceConfiguration = Annotated[
     | IIIFFileSourceConfiguration
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
-    | SshFileSourceConfiguration,
+    | SshFileSourceConfiguration
+    | OpenBisFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -663,6 +684,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
+    "openbis": OpenBisFileSourceConfiguration,
 }
 
 
