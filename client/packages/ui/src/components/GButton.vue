@@ -349,11 +349,28 @@ const buttonElementRef = useResolveElement(buttonRef);
 </style>
 
 <style lang="scss">
-// Fix for GButton inside Bootstrap input-group-append
-// Prevents horizontal scrolling issues caused by flex layout conflicts
-// This must be unscoped to target Bootstrap's input-group-append
-.input-group-append .g-button {
+// Fixes for GButton inside a Bootstrap input group. These must be unscoped to target
+// Bootstrap's `.input-group-append` / `.input-group-prepend` wrappers, whose own rules
+// only ever matched `.btn`.
+.input-group-append .g-button,
+.input-group-prepend .g-button {
+    // Prevents horizontal scrolling issues caused by flex layout conflicts
     flex-shrink: 0;
     overflow: hidden;
+
+    // Lifts the focus ring above the adjacent input, like Bootstrap's `.input-group > .btn`
+    position: relative;
+    z-index: 2;
+}
+
+// Square off the edge that meets the input, so there is no seam against the control
+.input-group-append .g-button {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.input-group-prepend .g-button {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
 }
 </style>
