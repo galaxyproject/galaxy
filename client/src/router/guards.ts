@@ -56,7 +56,12 @@ export async function requireAuthForUploadMethod(to: Route, _from: Route, next: 
     const methodId = to.params.methodId as UploadMethod;
     const method = getUploadMethod(methodId);
 
-    if (method?.requiresLogin && (await redirectIfAnonymous(to, next))) {
+    if (!method) {
+        next("/upload");
+        return;
+    }
+
+    if (method.requiresLogin && (await redirectIfAnonymous(to, next))) {
         return;
     }
     next();

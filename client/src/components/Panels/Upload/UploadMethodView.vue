@@ -122,7 +122,8 @@ function handleReadyStateChange(ready: boolean) {
             </div>
         </div>
         <div v-else class="flex-grow-1 text-center text-muted py-5">
-            <p>Loading...</p>
+            <p>Unknown import method.</p>
+            <GButton color="blue" @click="handleCancel">Back to import methods</GButton>
         </div>
 
         <!-- Fixed Footer -->
