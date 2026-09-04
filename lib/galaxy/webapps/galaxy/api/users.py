@@ -2,7 +2,6 @@
 API operations on User objects.
 """
 
-import copy
 import json
 import logging
 import re
@@ -64,6 +63,9 @@ from galaxy.schema.schema import (
     UserBeaconSetting,
     UserCreationPayload,
     UserDeletionPayload,
+    UserExtraPreferencesInputs,
+    UserExtraPreferencesPayload,
+    UserExtraPreferencesUpdated,
     UserUpdatePayload,
 )
 from galaxy.security.validate_user_input import (
@@ -71,7 +73,6 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname,
 )
-from galaxy.security.vault import UserVaultWrapper
 from galaxy.tool_util.toolbox.filters import FilterFactory
 from galaxy.util import (
     docstring_trim,
@@ -96,6 +97,21 @@ from galaxy.webapps.galaxy.services.users import UsersService
 from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
+
+_information_inputs_deprecation_warned = False
+
+
+def _warn_information_inputs_deprecated() -> None:
+    """Log once per process, so a busy instance does not fill its log with this."""
+    global _information_inputs_deprecation_warned
+    if not _information_inputs_deprecation_warned:
+        _information_inputs_deprecation_warned = True
+        log.warning(
+            "/api/users/{id}/information/inputs is deprecated and will be removed in a future release. "
+            "Use /api/users/{user_id} for email, username and display name, and "
+            "/api/users/{user_id}/extra_preferences/inputs for administrator-defined extra preferences."
+        )
+
 
 router = Router(tags=["users"])
 
@@ -432,6 +448,35 @@ class FastAPIUsers:
         favorites = self.favorites_manager.add(trans, user, object_type, payload.object_id)
         return FavoriteObjectsSummary.model_validate(favorites)
 
+    @router.get(
+        "/api/users/{user_id}/extra_preferences/inputs",
+        name="get_extra_preferences",
+        summary="Return the administrator-defined extra user preferences as form inputs",
+    )
+    def get_extra_preferences(
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> UserExtraPreferencesInputs:
+        user = self.service.get_user(trans, user_id)
+        return UserExtraPreferencesInputs(inputs=self.service.build_extra_preferences_inputs(trans, user))
+
+    @router.put(
+        "/api/users/{user_id}/extra_preferences/inputs",
+        name="set_extra_preferences",
+        summary="Save values for the administrator-defined extra user preferences",
+    )
+    def set_extra_preferences(
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: UserExtraPreferencesPayload = Body(default_factory=UserExtraPreferencesPayload),
+    ) -> UserExtraPreferencesUpdated:
+        user = self.service.get_user(trans, user_id)
+        self.service.save_extra_preferences(trans, user, payload.root)
+        trans.sa_session.commit()
+        return UserExtraPreferencesUpdated(message="Extra preferences have been saved.")
+
     @router.put(
         "/api/users/{user_id}/theme/{theme}",
         name="set_theme",
@@ -750,66 +795,21 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         deleted = util.string_as_bool(deleted)
         return self.service.get_user_full(trans, user_id, deleted)
 
-    def _get_extra_user_preferences(self, trans: ProvidesAppContext):
-        """
-        Reads the file user_preferences_extra_conf.yml to display
-        admin defined user informations
-        """
-        return trans.app.config.user_preferences_extra["preferences"]
-
-    def _build_extra_user_pref_inputs(self, trans: ProvidesAppContext, preferences, user):
-        """
-        Build extra user preferences inputs list.
-        Add values to the fields if present
-        """
-        if not preferences:
-            return []
-        extra_pref_inputs = []
-        # Build sections for different categories of inputs
-        user_vault = UserVaultWrapper(trans.app.vault, user)
-        for item, value in preferences.items():
-            if value is not None:
-                input_fields = copy.deepcopy(value["inputs"])
-                for input in input_fields:
-                    help = input.get("help", "")
-                    required = "Required" if util.string_as_bool(input.get("required")) else ""
-                    if help:
-                        input["help"] = f"{help} {required}"
-                    else:
-                        input["help"] = required
-                    if input.get("store") == "vault":
-                        field = f"{item}/{input['name']}"
-                        input["value"] = user_vault.read_secret(f"preferences/{field}")
-                    else:
-                        field = f"{item}|{input['name']}"
-                        for data_item in user.extra_preferences:
-                            if field in data_item:
-                                input["value"] = user.extra_preferences[data_item]
-                    # regardless of the store, do not send secret type values to client
-                    if input.get("type") == "secret":
-                        input["value"] = "__SECRET_PLACEHOLDER__"
-                        # let the client treat it as a password field
-                        input["type"] = "password"
-                extra_pref_inputs.append(
-                    {
-                        "type": "section",
-                        "title": value["description"],
-                        "name": item,
-                        "expanded": True,
-                        "inputs": input_fields,
-                    }
-                )
-        return extra_pref_inputs
-
     @expose_api
     def get_information(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/users/{id}/information/inputs
         Return user details such as username, email, addresses etc.
 
+        .. deprecated::
+            Use ``GET /api/users/{user_id}`` for email, username and display name,
+            and ``GET /api/users/{user_id}/extra_preferences/inputs`` for the
+            administrator-defined extra preferences.
+
         :param id: the encoded id of the user
         :type  id: str
         """
+        _warn_information_inputs_deprecated()
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
@@ -878,7 +878,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     info_field["cases"].append({"value": info_form["id"], "inputs": info_form["inputs"]})
                 inputs.append(info_field)
 
-            if trans.app.config.enable_account_interface:
+            if trans.app.config.enable_account_interface and trans.app.config.enable_user_addresses:
                 address_inputs = [{"type": "hidden", "name": "id", "hidden": True}]
                 for field in AddressField.fields():
                     address_inputs.append({"type": "text", "name": field[0], "label": field[1], "help": field[2]})
@@ -901,8 +901,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 user_info["addresses"] = [address.to_dict(trans) for address in user.addresses]
 
             # Build input sections for extra user preferences
-            extra_user_pref = self._build_extra_user_pref_inputs(trans, self._get_extra_user_preferences(trans), user)
-            for item in extra_user_pref:
+            for item in self.service.build_extra_preferences_inputs(trans, user):
                 inputs.append(item)
         else:
             if user.active_repositories:
@@ -936,12 +935,18 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         PUT /api/users/{id}/information/inputs
         Save a user's email, username, addresses etc.
 
+        .. deprecated::
+            Use ``PUT /api/users/{user_id}`` for email, username and display name,
+            and ``PUT /api/users/{user_id}/extra_preferences/inputs`` for the
+            administrator-defined extra preferences.
+
         :param id: the encoded id of the user
         :type  id: str
 
         :param payload: data with new settings
         :type  payload: dict
         """
+        _warn_information_inputs_deprecated()
         payload = payload or {}
         user = self._get_user(trans, id)
         # Update email
@@ -971,72 +976,43 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.values = form_values
 
         # Update values for extra user preference items
-        extra_user_pref_data = {}
-        extra_pref_keys = self._get_extra_user_preferences(trans)
-        user_vault = UserVaultWrapper(trans.app.vault, user)
-        current_extra_user_pref_data = json.loads(user.preferences.get("extra_user_preferences", "{}"))
-        if extra_pref_keys is not None:
-            for key in extra_pref_keys:
-                key_prefix = f"{key}|"
-                for item in payload:
-                    if item.startswith(key_prefix):
-                        keys = item.split("|")
-                        section = extra_pref_keys[keys[0]]
-                        matching_input = [input for input in section["inputs"] if input["name"] == keys[1]]
-                        if matching_input:
-                            input = matching_input[0]
-                            if input.get("required") and payload[item] == "":
-                                raise exceptions.ObjectAttributeMissingException("Please fill the required field")
-                            input_type = input.get("type")
-                            is_secret_value_unchanged = (
-                                input_type == "secret" and payload[item] == "__SECRET_PLACEHOLDER__"
-                            )
-                            is_stored_in_vault = input.get("store") == "vault"
-                            if is_secret_value_unchanged:
-                                if not is_stored_in_vault:
-                                    # If the value is unchanged, keep the current value
-                                    extra_user_pref_data[item] = current_extra_user_pref_data.get(item, "")
-                            else:
-                                if is_stored_in_vault:
-                                    user_vault.write_secret(f"preferences/{keys[0]}/{keys[1]}", str(payload[item]))
-                                else:
-                                    extra_user_pref_data[item] = payload[item]
-                        else:
-                            extra_user_pref_data[item] = payload[item]
-            user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
+        self.service.save_extra_preferences(trans, user, payload)
 
-        # Update user addresses
-        address_dicts: dict[int, dict[str, Any]] = {}
-        address_count = 0
-        for item in payload:
-            match = re.match(r"^address_(?P<index>\d+)\|(?P<attribute>\S+)", item)
-            if match:
-                groups = match.groupdict()
-                index = int(groups["index"])
-                attribute = groups["attribute"]
-                address_dicts[index] = address_dicts.get(index) or {}
-                address_dicts[index][attribute] = payload[item]
-                address_count = max(address_count, index + 1)
-        user.addresses = []
-        for index in range(0, address_count):
-            d = address_dicts[index]
-            if d.get("id"):
-                try:
-                    user_address = trans.sa_session.get(UserAddress, trans.security.decode_id(d["id"]))
-                except Exception as e:
-                    raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
-            else:
-                user_address = UserAddress()
-                trans.log_event("User address added")
-            for field in AddressField.fields():
-                if str(field[2]).lower() == "required" and not d.get(field[0]):
-                    raise exceptions.ObjectAttributeMissingException(
-                        f"Address {index + 1}: {field[1]} ({field[0]}) required."
-                    )
-                setattr(user_address, field[0], str(d.get(field[0], "")))
-            user_address.user = user
-            user.addresses.append(user_address)
-            trans.sa_session.add(user_address)
+        # Update user addresses. The whole block is gated, not just the parsing:
+        # it rebuilds user.addresses from the payload, so running it while the
+        # feature is off would silently discard whatever is stored.
+        if trans.app.config.enable_user_addresses:
+            address_dicts: dict[int, dict[str, Any]] = {}
+            address_count = 0
+            for item in payload:
+                match = re.match(r"^address_(?P<index>\d+)\|(?P<attribute>\S+)", item)
+                if match:
+                    groups = match.groupdict()
+                    index = int(groups["index"])
+                    attribute = groups["attribute"]
+                    address_dicts[index] = address_dicts.get(index) or {}
+                    address_dicts[index][attribute] = payload[item]
+                    address_count = max(address_count, index + 1)
+            user.addresses = []
+            for index in range(0, address_count):
+                d = address_dicts[index]
+                if d.get("id"):
+                    try:
+                        user_address = trans.sa_session.get(UserAddress, trans.security.decode_id(d["id"]))
+                    except Exception as e:
+                        raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
+                else:
+                    user_address = UserAddress()
+                    trans.log_event("User address added")
+                for field in AddressField.fields():
+                    if str(field[2]).lower() == "required" and not d.get(field[0]):
+                        raise exceptions.ObjectAttributeMissingException(
+                            f"Address {index + 1}: {field[1]} ({field[0]}) required."
+                        )
+                    setattr(user_address, field[0], str(d.get(field[0], "")))
+                user_address.user = user
+                user.addresses.append(user_address)
+                trans.sa_session.add(user_address)
         trans.sa_session.add(user)
         trans.sa_session.commit()
         trans.log_event("User information added")

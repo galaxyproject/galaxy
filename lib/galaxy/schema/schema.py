@@ -303,6 +303,14 @@ UserId = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encode
 UserEmailField = Field(title="Email", description="Email of the user")
 UserDescriptionField = Field(title="Description", description="Description of the user")
 UserNameField = Field(default=..., title="user_name", description="The name of the user.")
+UserDisplayNameField = Field(
+    default=None,
+    title="Display name",
+    description=(
+        "Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier."
+    ),
+    max_length=255,
+)
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
 )
@@ -397,6 +405,7 @@ class AnonUserModel(DiskUsageUserModel):
 
 
 class DetailedUserModel(BaseUserModel, AnonUserModel):
+    display_name: str | None = UserDisplayNameField
     is_admin: bool = Field(default=..., title="Is admin", description="User is admin")
     purged: bool = Field(default=..., title="Purged", description="User is purged")
     preferences: dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
@@ -410,7 +419,49 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 class UserUpdatePayload(Model):
     active: Annotated[bool | None, Field(title="Active", description="User is active")] = None
     username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
+    display_name: Annotated[str | None, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
+    # Declared last so that a payload combining it with `active` ends on the
+    # deactivation, not on a stale activation. The admin gate on `active` is the
+    # real protection; this is belt and braces.
+    email: Annotated[
+        str | None,
+        Field(
+            title="Email",
+            description=(
+                "New email address. When `user_activation_on` is set, changing the email deactivates the account "
+                "and sends an activation link to the new address."
+            ),
+        ),
+    ] = None
+
+
+class UserExtraPreferencesInputs(Model):
+    """Form-builder inputs for the admin-defined extra user preferences.
+
+    The sections come from ``user_preferences_extra_conf.yml``, so their shape is
+    whatever an administrator wrote. Modelling it any further would be fiction.
+    """
+
+    inputs: list[dict[str, Any]] = Field(
+        default_factory=list,
+        title="Inputs",
+        description="One form-builder section per configured group of extra preferences.",
+    )
+
+
+class UserExtraPreferencesPayload(RootModel):
+    """Flat map of ``<section>|<input>`` to value, as produced by the generic form."""
+
+    root: dict[str, Any] = {}
+
+
+class UserExtraPreferencesUpdated(Model):
+    message: str = Field(
+        default=...,
+        title="Message",
+        description="Human readable confirmation that the preferences were saved.",
+    )
 
 
 class UserCreationPayload(Model):

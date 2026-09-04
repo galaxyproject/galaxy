@@ -20,6 +20,8 @@ TEST_USER_EMAIL_DELETE_CANCEL_JOBS = "user_for_delete_cancel_jobs_test@bx.psu.ed
 TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
 TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
+TEST_USER_EMAIL_UPDATE = "user_for_email_update_test@bx.psu.edu"
+TEST_USER_EMAIL_UPDATED = "user_for_email_update_test_changed@bx.psu.edu"
 
 
 class TestUsersApi(ApiTestCase):
@@ -112,6 +114,35 @@ class TestUsersApi(ApiTestCase):
             update_response = self._put(update_url, data=payload, json=True)
             assert_object_id_error(update_response)
 
+    @requires_new_user
+    def test_update_display_name(self):
+        # This suite runs with public profile pages disabled, which is the point:
+        # a display name has to be settable on every instance, not only on the
+        # ones that expose profile pages.
+        user = self._setup_user(TEST_USER_EMAIL)
+        with self._different_user(email=TEST_USER_EMAIL):
+            update_response = self.__update(user, data={"display_name": "Carl von Linné"})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] == "Carl von Linné"
+
+            # surrounding whitespace is stripped rather than rejected
+            update_response = self.__update(user, data={"display_name": "  Carl von Linné  "})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] == "Carl von Linné"
+
+            # an empty display name clears the field
+            update_response = self.__update(user, data={"display_name": ""})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["display_name"] is None
+
+            # text-direction characters would let the name render as other text
+            update_response = self.__update(user, data={"display_name": "Carl\u202evon Linné"})
+            self._assert_status_code_is(update_response, 400)
+
+            # over the column length
+            update_response = self.__update(user, data={"display_name": "N" * 256})
+            self._assert_status_code_is(update_response, 400)
+
     @requires_admin
     @requires_new_user
     def test_admin_update(self):
@@ -122,6 +153,48 @@ class TestUsersApi(ApiTestCase):
         self._assert_status_code_is(update_response, 200)
         update_json = update_response.json()
         assert update_json["username"] == payload["username"]
+
+    @requires_new_user
+    def test_update_email(self):
+        user = self._setup_user(TEST_USER_EMAIL_UPDATE)
+        with self._different_user(email=TEST_USER_EMAIL_UPDATE):
+            update_response = self.__update(user, data={"email": TEST_USER_EMAIL_UPDATED})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["email"] == TEST_USER_EMAIL_UPDATED
+
+    @requires_new_user
+    def test_update_email_invalid(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        other_user = self._setup_user("email_update_conflict@bx.psu.edu")
+        with self._different_user(email=TEST_USER_EMAIL):
+            # malformed
+            update_response = self.__update(user, data={"email": "not-an-email"})
+            self._assert_status_code_is(update_response, 400)
+
+            # already taken by another account
+            update_response = self.__update(user, data={"email": other_user["email"]})
+            self._assert_status_code_is(update_response, 400)
+
+    @requires_new_user
+    def test_extra_preferences_inputs(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        with self._different_user(email=TEST_USER_EMAIL):
+            response = self._get(f"users/{user['id']}/extra_preferences/inputs")
+            self._assert_status_code_is(response, 200)
+            # The default test instance configures no extra preferences.
+            assert response.json()["inputs"] == []
+
+            response = self._put(f"users/{user['id']}/extra_preferences/inputs", data={}, json=True)
+            self._assert_status_code_is(response, 200)
+            assert "message" in response.json()
+
+    @requires_new_user
+    def test_extra_preferences_inputs_other_user_forbidden(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        self._setup_user("extra_prefs_other@bx.psu.edu")
+        with self._different_user(email="extra_prefs_other@bx.psu.edu"):
+            response = self._get(f"users/{user['id']}/extra_preferences/inputs")
+            self._assert_status_code_is(response, 403)
 
     @requires_admin
     @requires_new_user

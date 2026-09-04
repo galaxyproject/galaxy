@@ -5,6 +5,7 @@ from galaxy.security import validate_user_input
 from galaxy.security.validate_user_input import (
     extract_domain,
     is_email_banned,
+    validate_display_name_str,
     validate_email_domain_name,
     validate_email_str,
     validate_publicname_str,
@@ -40,6 +41,36 @@ def test_validate_username():
     assert validate_publicname_str("test-user") == ""
     assert validate_publicname_str("test@user") != ""
     assert validate_publicname_str("test user") != ""
+
+
+def test_validate_display_name_str():
+    # Free-form across scripts: anything a person might actually be called.
+    assert validate_display_name_str("Ada Lovelace") == ""
+    assert validate_display_name_str("Zoë Müller") == ""
+    assert validate_display_name_str("محمد") == ""
+    assert validate_display_name_str("张伟") == ""
+    assert validate_display_name_str("Ada 🧬") == ""
+    # Unlike a username, a display name may collide with anything.
+    assert validate_display_name_str("admin") == ""
+    # Empty means "unset", which is a legitimate value rather than an error.
+    assert validate_display_name_str("") == ""
+    assert validate_display_name_str(None) == ""
+
+
+def test_validate_display_name_str_length():
+    assert validate_display_name_str("N" * 255) == ""
+    assert validate_display_name_str("N" * 256) != ""
+
+
+def test_validate_display_name_str_rejects_invisible_characters():
+    assert validate_display_name_str("Ada\nLovelace") != ""  # C0 control
+    assert validate_display_name_str("Ada\x7fLovelace") != ""  # DEL
+    assert validate_display_name_str("Ada\u009fLovelace") != ""  # C1 control
+    assert validate_display_name_str("Ada\u200bLovelace") != ""  # zero-width space
+    assert validate_display_name_str("Ada\u200dLovelace") != ""  # zero-width joiner
+    assert validate_display_name_str("Ada\u202eLovelace") != ""  # right-to-left override
+    assert validate_display_name_str("Ada\u2066Lovelace") != ""  # left-to-right isolate
+    assert validate_display_name_str("Ada\ufeffLovelace") != ""  # zero-width no-break space
 
 
 def test_validate_email_str():

@@ -6211,6 +6211,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/extra_preferences/inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return the administrator-defined extra user preferences as form inputs */
+        get: operations["get_extra_preferences_api_users__user_id__extra_preferences_inputs_get"];
+        /** Save values for the administrator-defined extra user preferences */
+        put: operations["set_extra_preferences_api_users__user_id__extra_preferences_inputs_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/favorites/order": {
         parameters: {
             query?: never;
@@ -11946,6 +11964,11 @@ export interface components {
              * @description User is deleted
              */
             deleted: boolean;
+            /**
+             * Display name
+             * @description Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier.
+             */
+            display_name?: string | null;
             /**
              * Email
              * @description Email of the user
@@ -25976,6 +25999,38 @@ export interface components {
              */
             id: string;
         };
+        /**
+         * UserExtraPreferencesInputs
+         * @description Form-builder inputs for the admin-defined extra user preferences.
+         *
+         *     The sections come from ``user_preferences_extra_conf.yml``, so their shape is
+         *     whatever an administrator wrote. Modelling it any further would be fiction.
+         */
+        UserExtraPreferencesInputs: {
+            /**
+             * Inputs
+             * @description One form-builder section per configured group of extra preferences.
+             */
+            inputs?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * UserExtraPreferencesPayload
+         * @description Flat map of ``<section>|<input>`` to value, as produced by the generic form.
+         * @default {}
+         */
+        UserExtraPreferencesPayload: {
+            [key: string]: unknown;
+        };
+        /** UserExtraPreferencesUpdated */
+        UserExtraPreferencesUpdated: {
+            /**
+             * Message
+             * @description Human readable confirmation that the preferences were saved.
+             */
+            message: string;
+        };
         /** UserFileSourceModel */
         UserFileSourceModel: {
             /** Active */
@@ -26572,6 +26627,16 @@ export interface components {
              * @description User is active
              */
             active?: boolean | null;
+            /**
+             * Display name
+             * @description Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier.
+             */
+            display_name?: string | null;
+            /**
+             * Email
+             * @description New email address. When `user_activation_on` is set, changing the email deactivates the account and sends an activation link to the new address.
+             */
+            email?: string | null;
             /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
@@ -51323,6 +51388,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeletedCustomBuild"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_extra_preferences_api_users__user_id__extra_preferences_inputs_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserExtraPreferencesInputs"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    set_extra_preferences_api_users__user_id__extra_preferences_inputs_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UserExtraPreferencesPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserExtraPreferencesUpdated"];
                 };
             };
             /** @description Request Error */
