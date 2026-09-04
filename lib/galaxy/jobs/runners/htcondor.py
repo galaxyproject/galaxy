@@ -1,34 +1,55 @@
 """Job control via the HTCondor DRM using the htcondor2 Python API.
 
+The HTCondor mechanics — the htcondor2 import, schedd clients, event-log
+parsing and hold/failure classification — live in
+:mod:`galaxy.jobs.runners.util.condor.htcondor`, which is shared with Pulsar.
+This module maps that vocabulary onto Galaxy's job model.
+
 See the Galaxy cluster documentation (doc/source/admin/cluster.md) for
 configuration, architecture details, and testing instructions.
 """
 
-import json
 import logging
 import os
-import select
 import shlex
 import subprocess
-import sys
-import threading
-from collections import deque
-from typing import (
-    Any,
-    NamedTuple,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING
 
 from galaxy import model
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
 )
-from galaxy.jobs.runners.htcondor_helper import _locate_schedd
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.condor import (
     build_submit_description,
+    htcondor_helper,
     submission_params,
+)
+from galaxy.jobs.runners.util.condor.htcondor import (
+    classify_failure_event,
+    classify_hold,
+    DEFAULT_MAX_HELD_COUNT,
+    FAILURE_EXECUTABLE_ERROR,
+    FAILURE_MESSAGES,
+    HELD_GRACE_SECONDS,
+    held_message,
+    HELD_TOO_LONG_MESSAGE,
+    HOLD_MESSAGES,
+    HOLD_REASON_MEMORY_LIMIT,
+    HOLD_REASON_WALLTIME,
+    HTCondorClientCache,
+    HTCondorEventLogTracker,
+    import_htcondor,
+    MISSING_LOG_GRACE_SECONDS,
+    MISSING_LOG_MESSAGE,
+    normalize_condor_config,
+    parse_memory_mb,
+    parse_walltime_seconds,
+    periodic_hold_expression,
+    SIGKILL,
+    SIGKILL_MESSAGE,
+    STATUS_ERROR_GRACE_SECONDS,
 )
 from galaxy.util import asbool
 
@@ -46,330 +67,24 @@ HTCONDOR_DESTINATION_KEYS = (
     "htcondor_config",
     "request_walltime",
     "max_held_count",
+    "held_grace_seconds",
     "embed_metadata_in_job",
 )
-HTCONDOR_HELPER_MODULE = "galaxy.jobs.runners.htcondor_helper"
-HTCONDOR_HELPER_TIMEOUT = 30
-# Number of consecutive status-check errors before a job is failed.  A small
-# count absorbs transient filesystem hiccups (e.g. NFS timeouts reading the
-# event log) without masking genuine persistent failures.
-MAX_STATUS_ERROR_COUNT = 3
-# Number of consecutive monitor cycles in which the event log is absent before
-# a job is failed.  Covers the case where the log was never written (e.g.
-# filesystem full at submit time) or was lost after Galaxy restarted.
-MAX_MISSING_LOG_COUNT = 5
-
-# HTCondor HoldReasonCode values that indicate the job was held because it
-# exceeded its memory allocation.  Code 26 is the cgroup-based OOM code used in
-# older HTCondor releases; code 34 ("memory limit exceeded") was introduced in
-# newer releases (~9.x).  Both are defined in condor_holdcodes.h in the HTCondor
-# source tree.  If your cluster reports a different code for OOM holds, add it
-# here and open a PR.
-_HOLD_CODE_MEMORY = frozenset((26, 34))
-# Code 16 ("PeriodicHoldTrue") means a periodic_hold ClassAd expression evaluated
-# to True.  This code has been stable since at least HTCondor 7.x.  Galaxy injects
-# "periodic_hold = (JobDurationSeconds >= N)" when request_walltime is set.
-_HOLD_CODE_PERIODIC = 16
-# SIGKILL from the OS OOM killer appears as a JOB_TERMINATED event with
-# TerminatedNormally=False and TermSignal=9.
-_SIGKILL = 9
-
-_MEMORY_LIMIT_HOLD_MSG = (
-    "This job was held by HTCondor because it exceeded its requested memory. "
-    "Consider increasing request_memory or routing to a destination with more memory."
-)
-_WALLTIME_HOLD_MSG = (
-    "This job was held by HTCondor because it exceeded its maximum run time. "
-    "Consider increasing the walltime or routing to a destination with a longer time limit."
-)
-_SIGKILL_MSG = (
-    "This job was killed because it used more memory than it was allocated. Consider increasing request_memory."
-)
+HTCONDOR_REMOVE_REASON = "Galaxy job stop request"
+# Module attribute rather than a re-export of the shared default so that tests
+# can redirect the helper subprocess at a stub module.
+HTCONDOR_HELPER_MODULE = htcondor_helper.__name__
+# Galaxy's job model needs a runner_state per hold reason so that the
+# resubmission handler can act on it. Pulsar has no equivalent today; when it
+# grows one (galaxyproject/pulsar#492) this mapping belongs in the shared
+# module alongside HOLD_MESSAGES.
+_HOLD_RUNNER_STATES = {
+    HOLD_REASON_MEMORY_LIMIT: runner_states.MEMORY_LIMIT_REACHED,
+    HOLD_REASON_WALLTIME: runner_states.WALLTIME_REACHED,
+}
 
 
-class _EventLogSummary(NamedTuple):
-    job_running: bool
-    job_complete: bool
-    failure_event: int | None
-    job_held: bool
-    term_signal: int | None  # signal that killed the process (e.g. 9), None if normal exit
-    hold_reason_code: int  # HoldReasonCode from JOB_HELD ClassAd, 0 if absent
-    log_missing: bool = False  # True when the event log file does not exist
-    job_released: bool = False  # True when a JOB_RELEASED event was seen this cycle
-
-
-def _parse_memory_mb(value: str) -> int | None:
-    """Parse an HTCondor request_memory value to whole MB.
-
-    HTCondor's default unit is MB.  Recognises the K/M/G/T suffixes (case-
-    insensitive) and their two-letter forms (KB/MB/GB/TB).  Returns None for
-    values that cannot be parsed (e.g. ClassAd expressions).
-    """
-    value = value.strip()
-    _UNITS: dict[str, float] = {"K": 1 / 1024, "M": 1, "G": 1024, "T": 1024 * 1024}
-    upper = value.upper()
-    for suffix, factor in _UNITS.items():
-        for variant in (suffix + "B", suffix):
-            if upper.endswith(variant):
-                numeric = value[: -len(variant)]
-                try:
-                    return max(1, int(float(numeric) * factor))
-                except ValueError:
-                    return None
-    try:
-        return int(float(value))
-    except ValueError:
-        return None
-
-
-def _parse_walltime_seconds(value: str) -> int | None:
-    """Parse a walltime string to a whole number of seconds.
-
-    Accepted formats (matching SLURM's --time convention):
-      seconds          "3600"
-      MM:SS            "90:00"
-      HH:MM:SS         "1:00:00"
-      D-HH:MM:SS       "1-0:00:00"
-
-    Returns None if the value cannot be parsed.
-    """
-    value = value.strip()
-    days = 0
-    if "-" in value:
-        day_part, value = value.split("-", 1)
-        try:
-            days = int(day_part)
-        except ValueError:
-            return None
-    parts = value.split(":")
-    try:
-        if len(parts) == 1:
-            return days * 86400 + int(parts[0])
-        if len(parts) == 2:
-            return days * 86400 + int(parts[0]) * 60 + int(parts[1])
-        if len(parts) == 3:
-            return days * 86400 + int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-    except ValueError:
-        pass
-    return None
-
-
-def _normalize_condor_config(condor_config: str | None) -> str | None:
-    if not condor_config:
-        return None
-    return os.path.realpath(os.path.expanduser(condor_config))
-
-
-class _HTCondorClient:
-    def submit(self, submit_description: str, collector: str | None, schedd_name: str | None) -> str:
-        raise NotImplementedError()
-
-    def remove(self, job_spec: int | str, collector: str | None, schedd_name: str | None) -> None:
-        raise NotImplementedError()
-
-    def shutdown(self) -> None:
-        pass
-
-
-class _HTCondorInProcessClient(_HTCondorClient):
-    def __init__(self, htcondor):
-        self.htcondor = htcondor
-        self._schedd_cache: dict = {}
-        self._schedd_lock = threading.Lock()
-
-    def _schedd(self, collector: str | None, schedd_name: str | None):
-        return _locate_schedd(self.htcondor, self._schedd_cache, self._schedd_lock, collector, schedd_name)
-
-    def _evict_schedd(self, collector: str | None, schedd_name: str | None) -> None:
-        with self._schedd_lock:
-            self._schedd_cache.pop((collector, schedd_name), None)
-
-    def submit(self, submit_description: str, collector: str | None, schedd_name: str | None) -> str:
-        try:
-            submit_result = self._schedd(collector, schedd_name).submit(self.htcondor.Submit(submit_description))
-            return str(submit_result.cluster())
-        except Exception:
-            self._evict_schedd(collector, schedd_name)
-            raise
-
-    def remove(self, job_spec: int | str, collector: str | None, schedd_name: str | None) -> None:
-        try:
-            self._schedd(collector, schedd_name).act(
-                self.htcondor.JobAction.Remove, job_spec, reason="Galaxy job stop request"
-            )
-        except Exception:
-            self._evict_schedd(collector, schedd_name)
-            raise
-
-
-class _HTCondorSubprocessClient(_HTCondorClient):
-    def __init__(self, condor_config: str):
-        self.condor_config = condor_config
-        self._lock = threading.Lock()
-        self._process: subprocess.Popen[str] | None = None
-        # Rolling buffer of recent stderr lines for error messages.
-        # Written by the drain thread; read (without the lock) in error paths.
-        self._stderr_lines: deque = deque(maxlen=50)
-
-    def submit(self, submit_description: str, collector: str | None, schedd_name: str | None) -> str:
-        response = self._request(
-            dict(
-                command="submit",
-                collector=collector,
-                schedd_name=schedd_name,
-                submit_description=submit_description,
-            )
-        )
-        return str(response["cluster"])
-
-    def remove(self, job_spec: int | str, collector: str | None, schedd_name: str | None) -> None:
-        self._request(
-            dict(
-                command="remove",
-                collector=collector,
-                schedd_name=schedd_name,
-                job_spec=job_spec,
-            )
-        )
-
-    def shutdown(self) -> None:
-        with self._lock:
-            process = self._process
-            if process is None:
-                return
-            try:
-                stdin = process.stdin
-                if stdin is not None and not stdin.closed:
-                    stdin.write(json.dumps(dict(command="shutdown")) + "\n")
-                    stdin.flush()
-            except Exception:
-                pass
-            finally:
-                if process.stdin is not None and not process.stdin.closed:
-                    process.stdin.close()
-
-            try:
-                process.wait(timeout=HTCONDOR_HELPER_TIMEOUT)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=HTCONDOR_HELPER_TIMEOUT)
-            finally:
-                if process.stdout is not None:
-                    process.stdout.close()
-                if process.stderr is not None:
-                    process.stderr.close()
-                self._process = None
-
-    def _request(self, payload):
-        with self._lock:
-            process = self._ensure_process_locked()
-            stdin = process.stdin
-            stdout = process.stdout
-            if stdin is None or stdout is None:
-                raise RuntimeError("HTCondor helper process is missing stdio pipes")
-            try:
-                stdin.write(json.dumps(payload) + "\n")
-                stdin.flush()
-            except Exception as exc:
-                raise RuntimeError(self._helper_failure_message_locked("Failed to write to HTCondor helper")) from exc
-
-            ready, _, _ = select.select([stdout], [], [], HTCONDOR_HELPER_TIMEOUT)
-            if not ready:
-                self._terminate_process_locked(process)
-                raise RuntimeError(
-                    f"HTCondor helper did not respond within {HTCONDOR_HELPER_TIMEOUT}s — killed and will respawn"
-                )
-            line = stdout.readline()
-            if not line:
-                raise RuntimeError(self._helper_failure_message_locked("HTCondor helper exited unexpectedly"))
-            try:
-                response = json.loads(line)
-            except Exception as exc:
-                raise RuntimeError(f"Invalid response from HTCondor helper: {line.rstrip()}") from exc
-            if not response.get("ok"):
-                raise RuntimeError(response.get("error", "Unknown HTCondor helper error"))
-            return response
-
-    def _terminate_process_locked(self, process: "subprocess.Popen[str]") -> None:
-        """Kill a stale/hung helper process and clean up its pipes. Must be called with self._lock held."""
-        try:
-            process.kill()
-            process.wait(timeout=5)
-        except Exception:
-            pass
-        finally:
-            for pipe in (process.stdin, process.stdout, process.stderr):
-                if pipe is not None:
-                    try:
-                        pipe.close()
-                    except Exception:
-                        pass
-            if self._process is process:
-                self._process = None
-
-    def _ensure_process_locked(self):
-        process = self._process
-        if process is not None and process.poll() is None:
-            return process
-        if process is not None:
-            if process.stdin is not None and not process.stdin.closed:
-                process.stdin.close()
-            if process.stdout is not None:
-                process.stdout.close()
-            if process.stderr is not None:
-                process.stderr.close()
-
-        env = os.environ.copy()
-        env["CONDOR_CONFIG"] = self.condor_config
-        env.setdefault("PYTHONUNBUFFERED", "1")
-        # Build PYTHONPATH from sys.path, then append any entries from the existing
-        # PYTHONPATH that are not already present (e.g. paths added only via env var).
-        sys_paths = list(dict.fromkeys(path for path in sys.path if path))
-        for p in os.environ.get("PYTHONPATH", "").split(os.pathsep):
-            if p and p not in sys_paths:
-                sys_paths.append(p)
-        env["PYTHONPATH"] = os.pathsep.join(sys_paths)
-        self._process = subprocess.Popen(
-            [sys.executable, "-m", HTCONDOR_HELPER_MODULE],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            close_fds=True,
-            env=env,
-        )
-        self._start_stderr_drain(self._process)
-        return self._process
-
-    def _start_stderr_drain(self, process: "subprocess.Popen[str]") -> None:
-        """Drain the helper's stderr into _stderr_lines and the Galaxy log.
-
-        Runs as a daemon thread so HTCondor warnings (e.g. credential expiry)
-        surface in Galaxy's log rather than being silently discarded.
-        """
-
-        def _drain() -> None:
-            try:
-                for line in process.stderr:  # type: ignore[union-attr]
-                    stripped = line.rstrip()
-                    if stripped:
-                        self._stderr_lines.append(stripped)
-                        log.warning("HTCondor helper: %s", stripped)
-            except Exception:
-                pass
-
-        t = threading.Thread(target=_drain, daemon=True, name="htcondor-helper-stderr")
-        t.start()
-
-    def _helper_failure_message_locked(self, message: str) -> str:
-        # Stderr is consumed by the drain thread and buffered in _stderr_lines.
-        if recent := "\n".join(list(self._stderr_lines)[-10:]).strip():
-            return f"{message}: {recent}"
-        return message
-
-
-class HTCondorJobState(AsynchronousJobState):
+class HTCondorJobState(AsynchronousJobState, HTCondorEventLogTracker):
     def __init__(
         self,
         job_wrapper: "MinimalJobWrapper",
@@ -384,7 +99,8 @@ class HTCondorJobState(AsynchronousJobState):
         exit_code_file=None,
         job_name=None,
     ) -> None:
-        super().__init__(
+        AsynchronousJobState.__init__(
+            self,
             job_wrapper,
             job_destination,
             files_dir=files_dir,
@@ -395,25 +111,9 @@ class HTCondorJobState(AsynchronousJobState):
             exit_code_file=exit_code_file,
             job_name=job_name,
         )
+        HTCondorEventLogTracker.__init__(self, user_log)
         self.failed = False
-        self.user_log = user_log
-        self._event_log: Any = None
-        self.status_error_count = 0
-        self.held_count = 0
-        self.missing_log_count = 0
-
-    def event_log(self, htcondor):
-        if self._event_log is None:
-            self._event_log = htcondor.JobEventLog(self.user_log)
-        return self._event_log
-
-    def close_event_log(self) -> None:
-        if self._event_log is not None:
-            try:
-                self._event_log.close()
-            except Exception:
-                pass
-            self._event_log = None
+        self.held = False
 
 
 class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
@@ -434,16 +134,12 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
         kwargs["runner_param_specs"].update(runner_param_specs)
 
         super().__init__(app, nworkers, **kwargs)
-        try:
-            import htcondor2
-        except Exception as exc:
-            raise ImportError(
-                "The htcondor2 Python package is required to use this feature, please install it or correct the "
-                f"following error:\n{exc.__class__.__name__}: {str(exc)}"
-            ) from exc
-        self.htcondor = htcondor2
-        self._client_cache: dict = {}
-        self._client_lock = threading.Lock()
+        self.htcondor = import_htcondor()
+        self._clients = HTCondorClientCache(
+            self.htcondor,
+            helper_module=HTCONDOR_HELPER_MODULE,
+            remove_reason=HTCONDOR_REMOVE_REASON,
+        )
 
     def shutdown(self):
         try:
@@ -452,14 +148,7 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
             self._shutdown_clients()
 
     def _shutdown_clients(self) -> None:
-        with self._client_lock:
-            clients = list(self._client_cache.values())
-            self._client_cache.clear()
-        for client in clients:
-            try:
-                client.shutdown()
-            except Exception:
-                log.exception("Failed to shut down HTCondor client")
+        self._clients.shutdown()
 
     def _htcondor_params(self, job_destination: "JobDestination | None"):
         """Resolve collector/schedd/config parameters from the destination or runner defaults."""
@@ -467,19 +156,11 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
         collector = params.get("htcondor_collector", None) or self.runner_params.htcondor_collector
         schedd_name = params.get("htcondor_schedd", None) or self.runner_params.htcondor_schedd
         condor_config = params.get("htcondor_config", None) or self.runner_params.htcondor_config
-        return collector, schedd_name, _normalize_condor_config(condor_config)
+        return collector, schedd_name, normalize_condor_config(condor_config)
 
     def _client_for_destination(self, job_destination: "JobDestination | None"):
         _, _, condor_config = self._htcondor_params(job_destination)
-        with self._client_lock:
-            client = self._client_cache.get(condor_config)
-            if client is None:
-                if condor_config is None:
-                    client = _HTCondorInProcessClient(self.htcondor)
-                else:
-                    client = _HTCondorSubprocessClient(condor_config)
-                self._client_cache[condor_config] = client
-        return client
+        return self._clients.client_for_config(condor_config)
 
     def _submit_params(self, job_destination: "JobDestination"):
         """Map destination params to submit params, excluding htcondor_* keys."""
@@ -518,7 +199,7 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
 
         galaxy_memory_statement = ""
         if request_memory := query_params.get("request_memory", None):
-            memory_mb = _parse_memory_mb(str(request_memory))
+            memory_mb = parse_memory_mb(str(request_memory))
             if memory_mb is not None:
                 slots = int(query_params.get("request_cpus", 1) or 1)
                 per_slot = memory_mb // max(1, slots)
@@ -528,9 +209,9 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                 )
 
         if request_walltime := job_destination.params.get("request_walltime", None):
-            walltime_seconds = _parse_walltime_seconds(str(request_walltime))
+            walltime_seconds = parse_walltime_seconds(str(request_walltime))
             if walltime_seconds is not None and "periodic_hold" not in query_params:
-                query_params["periodic_hold"] = f"(JobDurationSeconds >= {walltime_seconds})"
+                query_params["periodic_hold"] = periodic_hold_expression(walltime_seconds)
 
         cjs = HTCondorJobState(
             job_wrapper=job_wrapper,
@@ -613,18 +294,17 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                 continue
             try:
                 summary = self._summarize_event_log(cjs)
-                cjs.status_error_count = 0
+                cjs.clear_status_errors()
             except Exception:
-                cjs.status_error_count += 1
-                if cjs.status_error_count < MAX_STATUS_ERROR_COUNT:
+                elapsed = cjs.note_status_error()
+                if elapsed < STATUS_ERROR_GRACE_SECONDS:
                     log.warning(
-                        f"({galaxy_id_tag}/{job_id}) Transient error checking job status "
-                        f"(attempt {cjs.status_error_count}/{MAX_STATUS_ERROR_COUNT}), "
-                        "will retry next cycle"
+                        f"({galaxy_id_tag}/{job_id}) Transient error checking job status, "
+                        f"will retry until it has persisted for {STATUS_ERROR_GRACE_SECONDS}s"
                     )
                     new_watched.append(cjs)
                     continue
-                log.exception(f"({galaxy_id_tag}/{job_id}) Unable to check job status")
+                log.exception(f"({galaxy_id_tag}/{job_id}) Unable to check job status for {elapsed:.0f}s")
                 log.warning(f"({galaxy_id_tag}/{job_id}) job will now be errored")
                 cjs.fail_message = "Cluster could not complete job"
                 cjs.runner_state = runner_states.UNKNOWN_ERROR
@@ -649,32 +329,32 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                 ):
                     log.debug(f"({galaxy_id_tag}/{job_id}) job {job_state} while log was missing, stopping watch")
                     continue
-                cjs.missing_log_count += 1
-                if cjs.missing_log_count >= MAX_MISSING_LOG_COUNT:
-                    log.warning(
-                        f"({galaxy_id_tag}/{job_id}) event log absent for "
-                        f"{cjs.missing_log_count} consecutive cycles, failing job"
-                    )
-                    cjs.fail_message = (
-                        "This job's HTCondor event log could not be found. "
-                        "Galaxy cannot determine the job outcome — the job may have "
-                        "been removed from the queue while Galaxy was unavailable."
-                    )
+                elapsed = cjs.note_missing_log()
+                if elapsed >= MISSING_LOG_GRACE_SECONDS:
+                    log.warning(f"({galaxy_id_tag}/{job_id}) event log absent for {elapsed:.0f}s, failing job")
+                    cjs.fail_message = MISSING_LOG_MESSAGE
                     cjs.runner_state = runner_states.UNKNOWN_ERROR
                     cjs.close_event_log()
                     self.work_queue.put((self.fail_job, cjs))
                     continue
                 log.debug(
                     f"({galaxy_id_tag}/{job_id}) event log not yet available "
-                    f"(cycle {cjs.missing_log_count}/{MAX_MISSING_LOG_COUNT})"
+                    f"(absent for {elapsed:.0f}s of {MISSING_LOG_GRACE_SECONDS}s)"
                 )
                 new_watched.append(cjs)
                 continue
-            cjs.missing_log_count = 0
+            cjs.clear_missing_log()
 
-            if summary.job_released and cjs.held_count > 0:
-                log.debug(f"({galaxy_id_tag}/{job_id}) job released, resetting held_count from {cjs.held_count} to 0")
-                cjs.held_count = 0
+            if summary.job_released:
+                if cjs.held_count > 0:
+                    log.debug(
+                        f"({galaxy_id_tag}/{job_id}) job released, resetting held_count from {cjs.held_count} to 0"
+                    )
+                    cjs.held_count = 0
+                # A release restarts the grace window - the pool is retrying the
+                # job, possibly against raised resources.
+                cjs.held = False
+                cjs.clear_held()
 
             if job_running:
                 cjs.job_wrapper.check_for_entry_points()
@@ -689,9 +369,9 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
             if job_complete or job_state == model.Job.states.STOPPED:
                 if job_state != model.Job.states.DELETED:
                     # A SIGKILL on a non-user-stopped job is most likely an OOM kill.
-                    if term_signal == _SIGKILL and job_state != model.Job.states.STOPPED:
+                    if term_signal == SIGKILL and job_state != model.Job.states.STOPPED:
                         log.info(f"({galaxy_id_tag}/{job_id}) job killed by signal 9, likely OOM")
-                        cjs.fail_message = _SIGKILL_MSG
+                        cjs.fail_message = SIGKILL_MESSAGE
                         cjs.runner_state = runner_states.MEMORY_LIMIT_REACHED
                         cjs.close_event_log()
                         self.work_queue.put((self.fail_job, cjs))
@@ -719,45 +399,58 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                     model.Job.states.DELETED,
                     model.Job.states.STOPPED,
                 ):
-                    # Classify the hold by HoldReasonCode before applying the
-                    # generic held_count escalation logic.
-                    if hold_reason_code in _HOLD_CODE_MEMORY:
+                    # A hold is not by itself terminal: the pool may release the
+                    # job on its own, and sites commonly configure
+                    # periodic_release to retry a held job - sometimes against a
+                    # raised request_memory. Failing on the hold reason alone
+                    # would pre-empt that policy, so escalate on how long the
+                    # hold lasts and on how often it recurs instead.
+                    cjs.held = True
+                    if summary.job_held_event:
+                        cjs.held_count += 1
+                        # max_held_count: destination parameter, counts distinct
+                        # JOB_HELD events (default 3, 0 = disabled). Bounds
+                        # hold/release thrashing, which the grace window below
+                        # cannot catch because each release restarts it.
+                        max_held_count = int(
+                            cjs.job_wrapper.job_destination.params.get("max_held_count", DEFAULT_MAX_HELD_COUNT)
+                        )
+                        if max_held_count > 0 and cjs.held_count >= max_held_count:
+                            log.warning(
+                                f"({galaxy_id_tag}/{job_id}) Job held {cjs.held_count} "
+                                "times without release, failing permanently"
+                            )
+                            cjs.fail_message = held_message(cjs.held_count)
+                            cjs.runner_state = runner_states.UNKNOWN_ERROR
+                            cjs.close_event_log()
+                            self.work_queue.put((self.fail_job, cjs))
+                            continue
+                    held_grace_seconds = float(
+                        cjs.job_wrapper.job_destination.params.get("held_grace_seconds", HELD_GRACE_SECONDS)
+                    )
+                    elapsed = cjs.note_held(hold_reason_code)
+                    if elapsed >= held_grace_seconds:
+                        hold_reason = classify_hold(cjs.held_reason_code)
                         log.info(
-                            f"({galaxy_id_tag}/{job_id}) job held for memory limit (HoldReasonCode={hold_reason_code})"
+                            f"({galaxy_id_tag}/{job_id}) job held {elapsed:.0f}s without release "
+                            f"(HoldReasonCode={cjs.held_reason_code}), failing"
                         )
-                        cjs.fail_message = _MEMORY_LIMIT_HOLD_MSG
-                        cjs.runner_state = runner_states.MEMORY_LIMIT_REACHED
+                        cjs.fail_message = HOLD_MESSAGES.get(hold_reason, HELD_TOO_LONG_MESSAGE)
+                        cjs.runner_state = _HOLD_RUNNER_STATES.get(hold_reason, runner_states.UNKNOWN_ERROR)
                         cjs.close_event_log()
                         self.work_queue.put((self.fail_job, cjs))
                         continue
-                    if hold_reason_code == _HOLD_CODE_PERIODIC:
-                        log.info(f"({galaxy_id_tag}/{job_id}) job held by periodic_hold expression (walltime)")
-                        cjs.fail_message = _WALLTIME_HOLD_MSG
-                        cjs.runner_state = runner_states.WALLTIME_REACHED
-                        cjs.close_event_log()
-                        self.work_queue.put((self.fail_job, cjs))
-                        continue
-                    cjs.held_count += 1
-                    # max_held_count: destination parameter, counts distinct JOB_HELD events (default 3, 0 = disabled)
-                    max_held_count = int(cjs.job_wrapper.job_destination.params.get("max_held_count", 3))
-                    if max_held_count > 0 and cjs.held_count >= max_held_count:
-                        log.warning(
-                            f"({galaxy_id_tag}/{job_id}) Job held {cjs.held_count} "
-                            "times without release, failing permanently"
-                        )
-                        cjs.fail_message = (
-                            f"This job was held by HTCondor {cjs.held_count} time"
-                            f"{'s' if cjs.held_count != 1 else ''} without being released."
-                        )
-                        cjs.runner_state = runner_states.UNKNOWN_ERROR
-                        cjs.close_event_log()
-                        self.work_queue.put((self.fail_job, cjs))
-                        continue
+                    log.debug(
+                        f"({galaxy_id_tag}/{job_id}) job held {elapsed:.0f}s of {held_grace_seconds:.0f}s "
+                        f"(HoldReasonCode={cjs.held_reason_code}), held count {cjs.held_count}"
+                    )
                     cjs.job_wrapper.change_state(model.Job.states.QUEUED)
                 cjs.running = False
                 new_watched.append(cjs)
                 continue
             cjs.running = job_running
+            cjs.held = False
+            cjs.clear_held()
             new_watched.append(cjs)
         self.watched = new_watched
 
@@ -805,91 +498,19 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
             cjs.running = False
             self.monitor_queue.put(cjs)
 
-    def _summarize_event_log(self, cjs: HTCondorJobState) -> _EventLogSummary:
-        job_running = cjs.running
-        job_complete = False
-        failure_event: int | None = None
-        job_held = False
-        term_signal: int | None = None
-        hold_reason_code: int = 0
-
+    def _summarize_event_log(self, cjs: HTCondorJobState):
         if cjs.job_id is None:
             raise RuntimeError("Missing HTCondor job_id while summarizing event log.")
-        cluster_id = int(cjs.job_id)
-
-        if not os.path.exists(cjs.user_log):
-            return _EventLogSummary(cjs.running, False, None, False, None, 0, log_missing=True)
-
-        event_log = cjs.event_log(self.htcondor)
-        job_released = False
-
-        for event in event_log.events(stop_after=0):
-            if event.cluster != cluster_id or event.proc != 0:
-                continue
-            event_type = event.type
-            if event_type == self.htcondor.JobEventType.EXECUTE:
-                job_running = True
-                job_held = False
-            elif event_type in (
-                self.htcondor.JobEventType.JOB_EVICTED,
-                self.htcondor.JobEventType.JOB_SUSPENDED,
-            ):
-                job_running = False
-            elif event_type == self.htcondor.JobEventType.JOB_UNSUSPENDED:
-                job_running = True
-            elif event_type == self.htcondor.JobEventType.JOB_TERMINATED:
-                job_complete = True
-                if not event.get("TerminatedNormally", True):
-                    term_signal = int(event.get("TermSignal", 0)) or None
-            elif event_type == self.htcondor.JobEventType.JOB_HELD:
-                job_running = False
-                job_held = True
-                hold_reason_code = int(event.get("HoldReasonCode", 0))
-            elif event_type == self.htcondor.JobEventType.JOB_RELEASED:
-                job_held = False
-                job_running = False
-                hold_reason_code = 0
-                job_released = True
-            elif event_type in (
-                self.htcondor.JobEventType.JOB_ABORTED,
-                self.htcondor.JobEventType.CLUSTER_REMOVE,
-                self.htcondor.JobEventType.SHADOW_EXCEPTION,
-                self.htcondor.JobEventType.EXECUTABLE_ERROR,
-            ):
-                failure_event = event_type
-
-        return _EventLogSummary(
-            job_running,
-            job_complete,
-            failure_event,
-            job_held,
-            term_signal,
-            hold_reason_code,
-            job_released=job_released,
-        )
+        return cjs.summarize(self.htcondor, int(cjs.job_id), cjs.running, cjs.held)
 
     def _apply_failure_event(self, cjs: HTCondorJobState, failure_event: int) -> None:
         """Set fail_message and runner_state on cjs based on the HTCondor failure event type."""
-        htc = self.htcondor.JobEventType
-        if failure_event == htc.SHADOW_EXCEPTION:
-            cjs.fail_message = (
-                "This job failed due to an HTCondor shadow exception, which typically "
-                "indicates a transient error in the execution environment."
-            )
-            cjs.runner_state = runner_states.UNKNOWN_ERROR
-        elif failure_event == htc.JOB_ABORTED:
-            cjs.fail_message = "This job was removed from the HTCondor queue."
-            cjs.runner_state = runner_states.UNKNOWN_ERROR
-        elif failure_event == htc.CLUSTER_REMOVE:
-            cjs.fail_message = "The HTCondor cluster was removed."
-            cjs.runner_state = runner_states.UNKNOWN_ERROR
-        elif failure_event == htc.EXECUTABLE_ERROR:
+        failure = classify_failure_event(self.htcondor, failure_event)
+        cjs.fail_message = FAILURE_MESSAGES[failure]
+        if failure != FAILURE_EXECUTABLE_ERROR:
             # Executable errors are configuration problems, not transient.  runner_state is
             # intentionally left unset (None) so the resubmission framework never fires for
             # this case — only UNKNOWN_ERROR triggers resubmission handlers.
-            cjs.fail_message = "This job could not start because the job script could not be found or executed."
-        else:
-            cjs.fail_message = "Cluster could not complete job"
             cjs.runner_state = runner_states.UNKNOWN_ERROR
 
     def _condor_remove(self, external_id, job_destination: "JobDestination | None" = None):
