@@ -279,17 +279,10 @@ class OutputsFormatSourceReference(Linter):
         if not tool_xml:
             return
         param_qualified_paths = _collect_param_qualified_paths(tool_xml)
-        output_names = {
-            o.attrib["name"]
-            for o in tool_xml.findall("./outputs/data[@name]") + tool_xml.findall("./outputs/collection[@name]")
-        }
         for output in tool_xml.findall("./outputs/data[@format_source]") + tool_xml.findall(
             "./outputs/collection[@format_source]"
         ):
             format_source = output.attrib["format_source"]
-            # format_source can reference other outputs, skip if it matches an output name
-            if format_source in output_names:
-                continue
             _check_unqualified_reference(
                 lint_ctx, cls.name(), output, format_source, "format_source", param_qualified_paths
             )
