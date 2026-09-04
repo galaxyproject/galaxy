@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
-import { faCaretDown, faEdit, faPen, faSpinner, faStar, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCaretDown,
+    faEdit,
+    faPen,
+    faSpinner,
+    faStar,
+    faTimes,
+    type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BButtonGroup, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
@@ -101,6 +109,18 @@ interface Props {
      * @default false
      */
     canRenameTitle?: boolean;
+
+    /** Whether the card title can be cleared, showing a clear (x) control
+     * beside the rename pencil. Use for optional titles that fall back to a
+     * default when unset.
+     * @default false
+     */
+    canClearTitle?: boolean;
+
+    /** Tooltip text for the clear-title button
+     * @default "Clear"
+     */
+    clearTitleTooltip?: string;
 
     /** Secondary actions in card footer
      * @default []
@@ -213,6 +233,8 @@ const props = withDefaults(defineProps<Props>(), {
     published: false,
     renameTitle: "Rename",
     canRenameTitle: false,
+    canClearTitle: false,
+    clearTitleTooltip: "Clear",
     secondaryActions: () => [],
     selectable: false,
     selected: false,
@@ -255,6 +277,11 @@ const emit = defineEmits<{
      * @event rename
      */
     (e: "rename"): void;
+
+    /** Emitted when the clear-title button is clicked
+     * @event clearTitle
+     */
+    (e: "clearTitle"): void;
 
     /** Emitted when selection checkbox is toggled
      * @event select
@@ -416,6 +443,16 @@ function onKeyDown(event: KeyboardEvent) {
                                                     :title="localize(props.renameTitle)"
                                                     @click="emit('rename')">
                                                     <FontAwesomeIcon :icon="faPen" fixed-width />
+                                                </BButton>
+                                                <BButton
+                                                    v-if="props.canClearTitle"
+                                                    :id="getElementId(props.id, 'clear-title')"
+                                                    v-g-tooltip.hover
+                                                    class="inline-icon-button g-card-clear-title"
+                                                    variant="link"
+                                                    :title="localize(props.clearTitleTooltip)"
+                                                    @click="emit('clearTitle')">
+                                                    <FontAwesomeIcon :icon="faTimes" fixed-width />
                                                 </BButton>
                                             </slot>
                                         </Heading>

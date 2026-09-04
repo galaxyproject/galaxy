@@ -16,6 +16,7 @@ from galaxy.managers.pages import (
     PageManager,
     PageSerializer,
 )
+from galaxy.managers.workflow_extraction_summary import summary_from_page
 from galaxy.model.item_attrs import (
     get_item_annotation_str,
 )
@@ -34,6 +35,7 @@ from galaxy.schema.schema import (
     UpdatePagePayload,
 )
 from galaxy.schema.tasks import GeneratePdfDownload
+from galaxy.schema.workflows import WorkflowExtractionSummary
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.api.common import PageIdPathParam
@@ -136,6 +138,23 @@ class PagesService(ServiceBase):
         """
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         return self._page_to_details(trans, page)
+
+    def get_workflow_extraction_summary(
+        self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField
+    ) -> WorkflowExtractionSummary:
+        """Summarize the page's history for workflow extraction, seeded from referenced outputs.
+
+        Only history-backed pages (notebooks) can be seeded; reports without a history are rejected.
+        """
+        page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
+        if page.history_id is None:
+            raise exceptions.RequestParameterInvalidException(
+                "Workflow extraction is only available for history-backed pages (notebooks)."
+            )
+        # Page accessibility (shared/published) must not leak the full history's job
+        # list — require access to the underlying history too, as the history endpoint does.
+        trans.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
+        return summary_from_page(trans, page)
 
     def show_pdf(self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField):
         """

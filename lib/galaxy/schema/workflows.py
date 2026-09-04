@@ -368,6 +368,24 @@ class OutputLabelHint(Model):
     )
 
 
+class StepLabelHint(Model):
+    kind: Literal["job", "implicit_collection_jobs"] = Field(
+        ...,
+        title="Kind",
+        description="Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).",
+    )
+    id: DecodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Decoded ID of the selected tool job or ImplicitCollectionJobs to label.",
+    )
+    label: str = Field(
+        ...,
+        title="Label",
+        description="Workflow step label to assign to the extracted tool step.",
+    )
+
+
 class InvalidWorkflowExtractionJobReason(str, Enum):
     """Reasons a workflow extraction job may be invalid and disabled for extraction."""
 
@@ -406,10 +424,26 @@ class WorkflowExtractionJob(Model):
         title="Checked",
         description="Whether this job should be preselected for extraction (True if any outputs are not deleted).",
     )
+    seeded: bool = Field(
+        False,
+        title="Seeded",
+        description=(
+            "Whether this job is part of the producing subgraph of the outputs a page/notebook references. "
+            "Always False for the plain history summary; set when the summary is computed for a page."
+        ),
+    )
     tool_version_warning: str | None = Field(
         None,
         title="Tool Version Warning",
         description="Warning when the current tool version differs from the version used by this job.",
+    )
+    seed_warning: str | None = Field(
+        None,
+        title="Seed Warning",
+        description=(
+            "Warning when this row was seeded directly by a notebook job directive but its tool is not a "
+            "workflow step (e.g. an upload referenced via job_metrics), so it was seeded as an input instead."
+        ),
     )
     outputs: list[WorkflowExtractionOutput] = Field(
         default_factory=list,
@@ -534,6 +568,25 @@ class WorkflowExtractionByIdsPayload(Model):
         title="Output Labels",
         description="Concrete tool outputs to expose as workflow outputs, with labels.",
     )
+    step_labels: list[StepLabelHint] = Field(
+        default_factory=list,
+        title="Step Labels",
+        description="Labels to assign to extracted tool steps. Steps not listed are left unlabeled.",
+    )
+    from_page_id: DecodedDatabaseIdField | None = Field(
+        None,
+        title="From Page ID",
+        description=(
+            "Decoded ID of a notebook page to carry into the extracted workflow as its report: the page's "
+            "markdown is rewritten so each dataset/collection/job directive references the workflow's "
+            "inputs/outputs/steps by label."
+        ),
+    )
+    report_title: str | None = Field(
+        None,
+        title="Report Title",
+        description="Title for the workflow report built from from_page_id; defaults to the workflow name.",
+    )
 
     @model_validator(mode="after")
     def _at_least_one_input(self):
@@ -547,4 +600,12 @@ class WorkflowExtractionResult(Model):
         ...,
         title="Workflow ID",
         description="The encoded ID of the newly created workflow.",
+    )
+    report_warnings: list[str] = Field(
+        default_factory=list,
+        title="Report Warnings",
+        description=(
+            "Warnings from building the workflow report when from_page_id was supplied (e.g. a page directive "
+            "that had to be dropped because it has no workflow-relative form)."
+        ),
     )

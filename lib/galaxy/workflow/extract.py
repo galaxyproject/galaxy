@@ -9,6 +9,7 @@ from typing import (
     Any,
     cast,
     Literal,
+    NamedTuple,
 )
 
 from sqlalchemy import select
@@ -32,6 +33,10 @@ from galaxy.model import (
     WorkflowStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.schema.workflows import (
+    OutputLabelHint,
+    StepLabelHint,
+)
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -54,6 +59,18 @@ ToolInputs = dict[str, Any]
 # Type alias for data input associations (hid, input_name) pairs linking
 # history items to their corresponding tool input parameters
 DataInputAssociations = list[tuple[int, str]]
+
+
+class _WorkItem(NamedTuple):
+    """A tool step to extract: its representative job, the ICJ output HDCAs
+    (empty for plain jobs), the optional caller-supplied step label, and the
+    ImplicitCollectionJobs id for a mapped step (None for a plain job)."""
+
+    job: Job
+    output_hdcas: list[HistoryDatasetCollectionAssociation]
+    step_label: str | None
+    icj_id: int | None
+
 
 log = logging.getLogger(__name__)
 
@@ -557,10 +574,17 @@ def extract_workflow_by_ids(
     hdca_ids: list[int] | None = None,
     dataset_names: list[str] | None = None,
     dataset_collection_names: list[str] | None = None,
-    output_labels: list[Any] | None = None,
-) -> StoredWorkflow:
-    """ID-based variant of :func:`extract_workflow`."""
-    steps = extract_steps_by_ids(
+    output_labels: list[OutputLabelHint] | None = None,
+    step_labels: list[StepLabelHint] | None = None,
+) -> "tuple[StoredWorkflow, ExtractionLabelIndex]":
+    """ID-based variant of :func:`extract_workflow`.
+
+    Returns the finalized workflow and the label index mapping the ids the
+    extraction consumed to the labels it assigned, so a caller can rewrite a
+    notebook page's markdown into the workflow's report. A caller that only wants
+    the workflow ignores the index (``stored, _ = extract_workflow_by_ids(...)``).
+    """
+    steps, index = extract_steps_by_ids(
         trans,
         job_manager=job_manager,
         job_ids=job_ids,
@@ -570,8 +594,9 @@ def extract_workflow_by_ids(
         dataset_names=dataset_names,
         dataset_collection_names=dataset_collection_names,
         output_labels=output_labels,
+        step_labels=step_labels,
     )
-    return _finalize_workflow(trans, user, workflow_name, steps)
+    return _finalize_workflow(trans, user, workflow_name, steps), index
 
 
 IdKey = tuple[Literal["dataset", "collection"], int]
@@ -592,6 +617,57 @@ def output_label_to_id_key(kind: OutputLabelKind, content_id: int) -> IdKey:
     if kind == "hda":
         return ("dataset", content_id)
     return ("collection", content_id)
+
+
+@dataclass(frozen=True)
+class ExtractionLabelIndex:
+    """Resolve an extracted-from id to the workflow-relative label extraction
+    assigned it, so a notebook page's internal-id markdown directives can be
+    rewritten to portable workflow report directives.
+
+    Holds the live ``WorkflowStep`` objects (not snapshotted label strings) so a
+    label assigned after construction - e.g. by the report auto-label reconcile -
+    is read back here. ``content_to_step`` is extraction's own connection-wiring
+    map (keyed by *original* HDA/HDCA id); ``job_to_step`` / ``icj_to_step`` map a
+    plain job id / ImplicitCollectionJobs id to the tool step it became.
+    """
+
+    content_to_step: dict[IdKey, tuple[WorkflowStep, str]]
+    job_to_step: dict[int, WorkflowStep]
+    icj_to_step: dict[int, WorkflowStep]
+
+    def content_label_arg(self, content_kind: OutputLabelKind, content: HistoryItem) -> str | None:
+        """Directive argument (``input="x"`` / ``output="y"``) for a referenced
+        HDA/HDCA, or None when it is not in the extracted subgraph / not labeled."""
+        if content_kind == "hda":
+            id_key: IdKey = ("dataset", _original_hda(cast(HistoryDatasetAssociation, content)).id)
+        else:
+            id_key = ("collection", _original_hdca(cast(HistoryDatasetCollectionAssociation, content)).id)
+        pair = self.content_to_step.get(id_key)
+        if pair is None:
+            return None
+        step, output_name = pair
+        if step.type in ("data_input", "data_collection_input"):
+            return f'input="{step.label}"' if step.label else None
+        workflow_output = step.workflow_output_for(output_name)
+        if workflow_output is None or not workflow_output.label:
+            return None
+        return f'output="{workflow_output.label}"'
+
+    def job_label_arg(self, job: Job) -> str | None:
+        """Directive argument (``step="z"``) for a referenced job/ICJ, folding an
+        element job to its ICJ step exactly as the seeding collector does."""
+        icj_assoc = job.implicit_collection_jobs_association
+        if icj_assoc is not None:
+            step = self.icj_to_step.get(icj_assoc.implicit_collection_jobs_id)
+        else:
+            step = self.job_to_step.get(job.id)
+        if step is None or not step.label:
+            return None
+        return f'step="{step.label}"'
+
+    def step_for_content(self, content_kind: OutputLabelKind, original_id: int) -> tuple[WorkflowStep, str] | None:
+        return self.content_to_step.get(output_label_to_id_key(content_kind, original_id))
 
 
 def normalize_output_label_key(trans: ProvidesHistoryContext, kind: OutputLabelKind, content_id: int) -> OutputLabelKey:
@@ -658,8 +734,9 @@ def extract_steps_by_ids(
     hdca_ids: list[int] | None = None,
     dataset_names: list[str] | None = None,
     dataset_collection_names: list[str] | None = None,
-    output_labels: list[Any] | None = None,
-) -> list[WorkflowStep]:
+    output_labels: list[OutputLabelHint] | None = None,
+    step_labels: list[StepLabelHint] | None = None,
+) -> tuple[list[WorkflowStep], ExtractionLabelIndex]:
     """ID-based variant of :func:`extract_steps`.
 
     Inputs are decoded DB ids; each is fetched and access-checked against the
@@ -680,23 +757,37 @@ def extract_steps_by_ids(
     hdca_ids = list(hdca_ids or [])
     output_labels = list(output_labels or [])
 
+    # Step labels are keyed by the id the caller selected the step with: a plain
+    # tool job id or an ImplicitCollectionJobs id. Resolved into per-work-item
+    # labels at build time because the ICJ id is unrecoverable once work_items
+    # is sorted by representative-job id below.
+    job_step_labels: dict[int, str] = {}
+    icj_step_labels: dict[int, str] = {}
+    for label_hint in step_labels or []:
+        if label_hint.kind == "job":
+            job_step_labels[label_hint.id] = label_hint.label
+        else:
+            icj_step_labels[label_hint.id] = label_hint.label
+
     user = getattr(trans, "user", None)
     sa_session = trans.sa_session
     hda_manager = trans.app.hda_manager
     dataset_collection_manager = trans.app.dataset_collection_manager
 
     steps: list[WorkflowStep] = []
-    step_labels: set[str] = set()
+    step_labels_seen: set[str] = set()
     id_to_output_pair: dict[IdKey, tuple[WorkflowStep, str]] = {}
+    job_to_step: dict[int, WorkflowStep] = {}
+    icj_to_step: dict[int, WorkflowStep] = {}
 
     for i, hda_id in enumerate(hda_ids):
         hda = hda_manager.get_accessible(hda_id, user)
         step = model.WorkflowStep()
         step.type = "data_input"
         name = dataset_names[i] if dataset_names else "Input Dataset"
-        if name not in step_labels:
+        if name not in step_labels_seen:
             step.label = name
-            step_labels.add(name)
+            step_labels_seen.add(name)
         step.tool_inputs = dict(name=name)
         steps.append(step)
         original = _original_hda(hda)
@@ -707,9 +798,9 @@ def extract_steps_by_ids(
         step = model.WorkflowStep()
         step.type = "data_collection_input"
         name = dataset_collection_names[i] if dataset_collection_names else "Input Dataset Collection"
-        if name not in step_labels:
+        if name not in step_labels_seen:
             step.label = name
-            step_labels.add(name)
+            step_labels_seen.add(name)
         step.tool_inputs = dict(name=name, collection_type=hdca.collection.collection_type)
         steps.append(step)
         original_hdca = _original_hdca(hdca)
@@ -721,30 +812,37 @@ def extract_steps_by_ids(
     # drive input/output wiring without inferring map/over from job state).
     # Service-layer validator ensures no job in job_ids has an ICJ
     # association, so this branch handles only true plain jobs.
-    work_items: list[tuple[Job, list[HistoryDatasetCollectionAssociation]]] = []
+    work_items: list[_WorkItem] = []
 
     for job_id in job_ids:
         assert job_manager is not None, "job_manager required when job_ids supplied"
         job = job_manager.get_accessible_job(trans, job_id)
-        work_items.append((job, []))
+        work_items.append(_WorkItem(job, [], job_step_labels.get(job_id), None))
 
     # FIXME: representative-job param read is the only remaining HID-style
     # inference here. Swap step_inputs_by_id for a Job.tool_state /
     # ToolRequest.request_state reader once that exists; see
     # docs/research/Problem - YAML Tool Post-Hoc State Divergence.md.
-    for icj_id in implicit_collection_jobs_ids:
+    for collection_jobs_id in implicit_collection_jobs_ids:
         # Service-layer validator already checked existence, populated_state,
         # output-HDCA presence, and per-HDCA accessibility.
-        icj = sa_session.get(ImplicitCollectionJobs, icj_id)
-        assert icj is not None, f"ImplicitCollectionJobs {icj_id} not found"
-        work_items.append((icj.representative_job, icj.output_dataset_collection_instances))
+        icj = sa_session.get(ImplicitCollectionJobs, collection_jobs_id)
+        assert icj is not None, f"ImplicitCollectionJobs {collection_jobs_id} not found"
+        work_items.append(
+            _WorkItem(
+                icj.representative_job,
+                icj.output_dataset_collection_instances,
+                icj_step_labels.get(collection_jobs_id),
+                collection_jobs_id,
+            )
+        )
 
     # Job.id is monotonically assigned at submission, so sorting by it
     # produces dependency order: a downstream job always has a larger id
     # than the jobs whose outputs it consumes.
-    work_items.sort(key=lambda item: item[0].id)
+    work_items.sort(key=lambda item: item.job.id)
 
-    for job, output_hdcas in work_items:
+    for job, output_hdcas, step_label, icj_id in work_items:
         tool_inputs, associations = step_inputs_by_id(trans, job)
         step = model.WorkflowStep()
         step.type = "tool"
@@ -753,6 +851,22 @@ def extract_steps_by_ids(
         step.tool_inputs = tool_inputs
         if job.dynamic_tool_id:
             step.dynamic_tool_id = job.dynamic_tool_id
+        if icj_id is not None:
+            icj_to_step[icj_id] = step
+        else:
+            job_to_step[job.id] = step
+        if step_label is not None:
+            # Input names already populated step_labels_seen; a tool-step label
+            # colliding here means the caller asked for a label that is already
+            # taken (e.g. a defaulted "Input Dataset" the service validator could
+            # not see). Unlike input names, which silently drop a colliding name,
+            # an explicitly requested step label raises rather than vanish.
+            if step_label in step_labels_seen:
+                raise exceptions.RequestParameterInvalidException(
+                    f"workflow step label collides with an existing label: {step_label!r}"
+                )
+            step.label = step_label
+            step_labels_seen.add(step_label)
 
         mapped_inputs: dict[str, HistoryDatasetCollectionAssociation] = {}
         if output_hdcas:
@@ -801,7 +915,8 @@ def extract_steps_by_ids(
         step, output_name = output_pair
         step.create_or_update_workflow_output(output_name=output_name, label=label, uuid=None)
 
-    return steps
+    index = ExtractionLabelIndex(content_to_step=id_to_output_pair, job_to_step=job_to_step, icj_to_step=icj_to_step)
+    return steps, index
 
 
 def step_inputs_by_id(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInputs, IdAssociations]:
@@ -890,6 +1005,7 @@ __all__ = (
     "extract_workflow",
     "extract_workflow_by_ids",
     "extract_steps_by_ids",
+    "ExtractionLabelIndex",
     "normalize_output_label_key",
     "output_label_to_id_key",
 )

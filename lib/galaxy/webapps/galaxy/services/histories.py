@@ -17,7 +17,6 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import selectinload
 
 from galaxy import (
     exceptions as glx_exceptions,
@@ -45,12 +44,10 @@ from galaxy.managers.histories import (
 )
 from galaxy.managers.history_graph import HistoryGraphManager
 from galaxy.managers.users import UserManager
-from galaxy.managers.workflow_extraction_naming import suggested_output_name
+from galaxy.managers.workflow_extraction_summary import build_extraction_summary
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
-    ImplicitCollectionJobs,
-    ImplicitCollectionJobsJobAssociation,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import payload_to_source_uri
@@ -95,9 +92,6 @@ from galaxy.schema.tasks import (
 )
 from galaxy.schema.types import LatestLiteral
 from galaxy.schema.workflows import (
-    InvalidWorkflowExtractionJobReason,
-    WorkflowExtractionJob,
-    WorkflowExtractionOutput,
     WorkflowExtractionSummary,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -113,10 +107,6 @@ from galaxy.webapps.galaxy.services.base import (
 )
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
-from galaxy.workflow.extract import (
-    _skip_output_assoc_name,
-    summarize,
-)
 
 log = logging.getLogger(__name__)
 
@@ -843,163 +833,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans: ProvidesHistoryContext,
     ) -> WorkflowExtractionSummary:
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
-        jobs, warnings = summarize(trans, history)
-        representative_job_ids = [job.id for job in jobs if isinstance(job, model.Job)]
-        icj_assoc_by_job_id = {}
-        if representative_job_ids:
-            stmt = (
-                select(ImplicitCollectionJobsJobAssociation)
-                .options(
-                    selectinload(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs).selectinload(
-                        ImplicitCollectionJobs.jobs
-                    )
-                )
-                .where(ImplicitCollectionJobsJobAssociation.job_id.in_(representative_job_ids))
-            )
-            icj_assoc_by_job_id = {
-                icj_assoc.job_id: icj_assoc for icj_assoc in trans.sa_session.scalars(stmt).unique().all()
-            }
-
-        def serialize_output(
-            content, output_name: str | None = None, expose_outputs: bool = False
-        ) -> WorkflowExtractionOutput:
-            suggested = None
-            if output_name is not None:
-                content_kind: Literal["hda", "hdca"] = (
-                    "hdca" if content.history_content_type == "dataset_collection" else "hda"
-                )
-                suggested = suggested_output_name(trans, content.id, content_kind)
-            return WorkflowExtractionOutput.model_validate(
-                {
-                    "id": content.id,
-                    "hid": content.hid,
-                    "name": content.name,
-                    "state": content.state,
-                    "deleted": content.deleted,
-                    "history_content_type": content.history_content_type,
-                    "output_name": output_name,
-                    "suggested_name": suggested.name if suggested else None,
-                    "suggested_name_source": suggested.source if suggested else None,
-                    "exposed": expose_outputs,
-                }
-            )
-
-        def input_step_type(outputs: list[WorkflowExtractionOutput]) -> Literal["input_dataset", "input_collection"]:
-            if outputs and outputs[0].history_content_type == "dataset_collection":
-                return "input_collection"
-            return "input_dataset"
-
-        def workflow_output_name(content, output_name: str | None) -> str | None:
-            if output_name and _skip_output_assoc_name(output_name):
-                return None
-            if content.history_content_type == "dataset_collection":
-                return getattr(content, "implicit_output_name", None) or output_name
-            return output_name
-
-        jobs_list = []
-        for job, datasets in jobs.items():
-            is_fake = getattr(job, "is_fake", False)
-            input_outputs = [serialize_output(data) for _, data in datasets]
-            tool_outputs = [
-                serialize_output(data, workflow_output_name(data, output_name)) for output_name, data in datasets
-            ]
-            checked = any(not data.deleted for _, data in datasets)
-
-            if is_fake:
-                # FakeJob / DatasetCollectionCreationJob: input with no creating tool.
-                jobs_list.append(
-                    WorkflowExtractionJob(
-                        id=None,
-                        step_type=input_step_type(input_outputs),
-                        tool_name=getattr(job, "name", None),
-                        tool_id=None,
-                        tool_version=None,
-                        checked=checked,
-                        tool_version_warning=None,
-                        outputs=input_outputs,
-                        invalid=None,
-                    )
-                )
-            else:
-                custom_tools_inaccessible = False
-                try:
-                    tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
-                except glx_exceptions.InsufficientPermissionsException:
-                    tool = None
-                    custom_tools_inaccessible = True
-                if tool is None:
-                    # Tool missing or inaccessible
-                    invalid_reason = (
-                        InvalidWorkflowExtractionJobReason.CUSTOM_TOOL_INACCESSIBLE
-                        if custom_tools_inaccessible
-                        else InvalidWorkflowExtractionJobReason.TOOL_MISSING_OR_INACCESSIBLE
-                    )
-                    jobs_list.append(
-                        WorkflowExtractionJob(
-                            id=job.id,
-                            step_type="tool",
-                            tool_name=None,
-                            tool_id=job.tool_id,
-                            tool_version=job.tool_version,
-                            checked=False,
-                            tool_version_warning=None,
-                            outputs=tool_outputs,
-                            invalid=invalid_reason,
-                        )
-                    )
-                elif not tool.is_workflow_compatible:
-                    # Not a workflow step (e.g. upload, data fetch) — treat as input.
-                    jobs_list.append(
-                        WorkflowExtractionJob(
-                            id=None,
-                            step_type=input_step_type(input_outputs),
-                            tool_name=tool.name,
-                            tool_id=None,
-                            tool_version=None,
-                            checked=checked,
-                            tool_version_warning=None,
-                            outputs=input_outputs,
-                            invalid=None,
-                        )
-                    )
-                else:
-                    tool_version_warning = (
-                        (
-                            f'Dataset was created with tool version "{job.tool_version}", '
-                            f'but workflow extraction will use version "{tool.version}".'
-                        )
-                        if tool.version != job.tool_version
-                        else None
-                    )
-                    icj_assoc = icj_assoc_by_job_id.get(job.id)
-                    implicit_collection_jobs = icj_assoc.implicit_collection_jobs if icj_assoc is not None else None
-                    jobs_list.append(
-                        WorkflowExtractionJob(
-                            id=job.id,
-                            step_type="tool",
-                            tool_name=tool.name,
-                            tool_id=job.tool_id,
-                            tool_version=job.tool_version,
-                            checked=checked,
-                            tool_version_warning=tool_version_warning,
-                            outputs=tool_outputs,
-                            invalid=None,
-                            implicit_collection_jobs_id=(
-                                icj_assoc.implicit_collection_jobs_id if icj_assoc is not None else None
-                            ),
-                            implicit_collection_jobs_size=(
-                                len(implicit_collection_jobs.jobs) if implicit_collection_jobs is not None else None
-                            ),
-                        )
-                    )
-
-        return WorkflowExtractionSummary.model_validate(
-            {
-                "history_id": history.id,
-                "warnings": list(warnings),
-                "jobs": jobs_list,
-            }
-        )
+        return build_extraction_summary(trans, history)
 
     def _ensure_export_record_can_be_associated_with_history_archival(
         self, history_id: int, export_record: model.StoreExportAssociation

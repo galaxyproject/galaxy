@@ -1,5 +1,6 @@
 """Helpers for suggesting workflow output labels during extraction."""
 
+import re
 from dataclasses import dataclass
 from typing import (
     Literal,
@@ -27,6 +28,17 @@ OutputContentKind = Literal["hda", "hdca"]
 class SuggestedName:
     name: str
     source: SuggestedNameSource
+
+
+def normalize_label(value: str | None) -> str:
+    """Collapse internal whitespace and clamp to the workflow-label length limit.
+
+    Returns ``""`` for empty/blank input; callers decide whether that is an error
+    (user-supplied labels) or a fall-back trigger (auto-generated labels).
+    """
+    if not value:
+        return ""
+    return re.sub(r"\s+", " ", value.strip())[:255]
 
 
 def suggested_output_name(

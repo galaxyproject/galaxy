@@ -85,7 +85,7 @@ function handleTitleChange(newTitle: string): Promise<void> {
             </GButton>
         </div>
 
-        <div class="d-flex align-items-center flex-gapx-1 flex-shrink-0">
+        <div class="d-flex align-items-center flex-gapx-1 flex-shrink-0 actions-section">
             <ChangesIndicator ref="changesIndicator" class="pr-2" :has-changes="isDirty" object-namespace="page" />
 
             <GButton color="blue" transparent size="small" data-description="page back button" @click="emit('back')">
@@ -165,14 +165,21 @@ function handleTitleChange(newTitle: string): Promise<void> {
 .page-display-toolbar {
     background: var(--color-grey-100);
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     padding: 0.5rem 1rem;
     gap: 0.5rem;
     justify-content: space-between;
 }
 .title-section {
-    min-width: 0;
+    flex: 1 1 auto;
+    /* Never let the actions collapse the title and its rename button to zero width;
+       the actions wrap to their own row instead. */
+    min-width: 12rem;
     overflow: hidden;
+}
+.actions-section {
+    margin-left: auto;
 }
 .page-title {
     overflow: hidden;

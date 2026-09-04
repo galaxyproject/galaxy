@@ -2170,6 +2170,22 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         # Wait for the rename promise to resolve (modal closes in the finally block)
         self.wait_for_selector_absent_or_hidden(f"#{item_type}-name-input")
 
+    def navigate_to_history_page_editor(self, history_id, page_id):
+        """Open an existing history-attached page (notebook) in the editor (history mode)."""
+        self.get(f"histories/{history_id}/pages/{page_id}")
+        self.components.pages.history.toolbar.wait_for_visible()
+
+    def notebook_click_extract_workflow(self):
+        """Click the notebook editor's Extract Workflow toolbar action, wait for the form."""
+        self.components.pages.history.extract_workflow_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.components.workflow_extract._.wait_for_visible()
+
+    def history_page_open_chat(self):
+        """Click chat button in page toolbar, wait for chat panel visible."""
+        self.components.pages.history.chat_button.wait_for_and_click()
+        self.components.pages.history.chat_panel.wait_for_visible()
+
     @retry_during_transitions
     def click_history_options(self):
         component = self.components.history_panel.options_button_icon
