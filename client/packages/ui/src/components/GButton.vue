@@ -133,6 +133,10 @@ const buttonElementRef = useResolveElement(buttonRef);
     display: inline-flex;
     gap: var(--spacing-1);
     align-items: center;
+    // Bootstrap's `.btn` centred its content with `text-align: center`; an inline-flex
+    // box needs `justify-content` for the same effect, otherwise a full-width or
+    // fixed-size button leaves its label or glyph at flex-start.
+    justify-content: center;
     margin: 0;
     border: 1px solid;
     border-radius: var(--spacing-1);
