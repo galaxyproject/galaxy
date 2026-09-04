@@ -65,6 +65,7 @@ export interface ToolFormConfig extends Tool {
     enctype: string;
     /** How the tool renders its interface, e.g. `tabular`. */
     display?: string;
+    has_parameters?: boolean;
 }
 
 export function getToolKey(toolId: string, toolVersion: string): string {

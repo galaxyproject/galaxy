@@ -387,6 +387,13 @@ function onUpdatePreferredObjectStoreId(preferredId: string | null) {
 }
 
 async function onExecute() {
+    if (formData.value === undefined) {
+        // Shouldn't happen as FormDisplay emits onChange during setup, before the Run button exists.
+        // Warn rather than fail silently in case that invariant ever breaks.
+        console.warn("ToolForm - onExecute called before formData was initialized; ignoring.");
+        return;
+    }
+
     // If a tour is active that was generated for this tool, end it.
     if (currentTour.value?.id.startsWith(`tool-generated-${formConfig.value.id}`)) {
         tourStore.setTour(undefined);

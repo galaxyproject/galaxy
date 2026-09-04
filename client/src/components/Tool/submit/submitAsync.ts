@@ -1,19 +1,11 @@
 import { GalaxyApi } from "@/api";
-import { fetchJobOutputs, type JobRequest, submitJobRequest } from "@/api/jobs";
-import type { ToolFormConfig, ToolRequestDetailedModel } from "@/api/tools";
+import { fetchJobOutputs, type JobResponse, submitJobRequest, type SubmitToolJobParams } from "@/api/jobs";
+import type { ToolRequestDetailedModel } from "@/api/tools";
 import { buildNestedState } from "@/components/Form/utilities";
 import { pollUntil } from "@/composables/pollUntil";
 import { rethrowSimple } from "@/utils/simple-error";
 
-export async function submitToolJob({
-    jobDef,
-    formConfig,
-    formData,
-}: {
-    jobDef: JobRequest;
-    formConfig: ToolFormConfig;
-    formData: FormData;
-}) {
+export async function submitToolJob({ jobDef, formConfig, formData }: SubmitToolJobParams): Promise<JobResponse> {
     const nestedInputs = buildNestedState(formConfig.inputs, formData);
     const request = { ...jobDef, inputs: nestedInputs as Record<string, unknown> };
     const { tool_request_id } = await submitJobRequest(request);
@@ -93,7 +85,7 @@ async function buildJobResponse(toolRequestDetail: ToolRequestDetailedModel) {
                             if (error) {
                                 rethrowSimple(error);
                             }
-                            return { hid: data.hid, name: data.name };
+                            return { hid: data.hid as number, name: data.name as string };
                         }),
                 );
             }
@@ -106,7 +98,8 @@ async function buildJobResponse(toolRequestDetail: ToolRequestDetailedModel) {
     ]);
 
     return {
-        jobs,
+        // TODO: Once/If legacy job submission is typed, we won't need this cast to generic JobResponse
+        jobs: jobs as JobResponse["jobs"],
         outputs,
         output_collections,
     };

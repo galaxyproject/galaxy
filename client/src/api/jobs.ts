@@ -1,4 +1,6 @@
 import type { components } from "@/api/schema";
+import type { ToolFormConfig } from "@/api/tools";
+import type { FormData } from "@/components/Form/composables/useFormState";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { GalaxyApi } from "./client";
@@ -25,7 +27,7 @@ export const ERROR_STATES = ["error", "deleted", "deleting", "failed"];
 export const TERMINAL_STATES = ["ok", "skipped", "stop", "stopping"].concat(ERROR_STATES);
 
 export interface JobResponse {
-    produces_entry_points: boolean;
+    produces_entry_points?: boolean;
     jobs: Array<JobBaseModel | ShowFullJobResponse>;
     outputs: {
         hid: number;
@@ -42,6 +44,12 @@ export interface ResponseVal {
     jobDef: JobRequest;
     jobResponse: JobResponse;
     toolName: string;
+}
+
+export interface SubmitToolJobParams {
+    jobDef: JobRequest;
+    formConfig: ToolFormConfig;
+    formData: FormData;
 }
 
 /**
