@@ -95,6 +95,14 @@ const buttonElementRef = useResolveElement(buttonRef);
 </script>
 
 <template>
+    <!--
+        `@click` binds a DOM listener when the root is a plain `button`/`a`, where Vue 2
+        ignores `nativeOn`. When the root is a RouterLink the roles swap: vue-router 3
+        never emits a `click` component event and does not merge `$listeners`, so only
+        `@click.native` reaches the rendered `<a>`. Exactly one of the two fires for any
+        given root, so the handler never runs twice. Both can collapse to a single
+        `@click` on Vue 3, where listeners fall through to a component's root element.
+    -->
     <component
         :is="baseComponent"
         ref="buttonRef"
@@ -107,7 +115,8 @@ const buttonElementRef = useResolveElement(buttonRef);
         :title="props.tooltip ? false : currentTitle"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
-        @click="onClick">
+        @click="onClick"
+        @click.native="onClick">
         <slot></slot>
 
         <!-- TODO: make tooltip a sibling in Vue 3 -->
