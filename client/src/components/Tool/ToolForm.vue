@@ -9,6 +9,7 @@ import type { ToolFormConfig } from "@/api/tools";
 import type { FormData, FormInputNode } from "@/components/Form/composables/useFormState";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import { findInputByDottedName } from "@/components/Form/utilities";
+import { useToast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -50,6 +51,7 @@ const props = defineProps<{
 const { config, isLoaded: isConfigLoaded } = storeToRefs(useConfigStore());
 const route = useRoute();
 const router = useRouter();
+const Toast = useToast();
 
 const { getCredentialsExecutionContextForTool } = useUserToolsServiceCredentialsStore();
 
@@ -225,7 +227,7 @@ async function onUpdate() {
 
         formConfig.value = data;
     } catch (error) {
-        // TODO: Add error handling here
+        Toast.error(errorMessageAsString(error), "Updating parameters failed");
     } finally {
         disabled.value = false;
     }
@@ -254,7 +256,7 @@ async function onLoadMore(payload: { name: string; src: string; offset: number; 
         );
         mergeFetchedOptions(payload.name, payload.src, data);
     } catch (error) {
-        // TODO: Add error handling here
+        console.warn(`ToolForm - loading more options for ${payload.name} failed`, error);
     }
 }
 
@@ -283,7 +285,7 @@ async function onSearchChange(payload: { name: string; src: string; query: strin
         );
         mergeFetchedOptions(payload.name, payload.src, data);
     } catch (error) {
-        // TODO: Add error handling here
+        console.warn(`ToolForm - searching options for ${payload.name} failed`, error);
     }
 }
 
