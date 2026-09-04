@@ -407,7 +407,8 @@ async function onExecute() {
     };
 
     console.debug("toolForm::onExecute()", jobDef);
-    // TODO: Is this really needed?
+
+    /** Route at which the user submitted the job */
     const prevRoute = route.fullPath;
 
     try {
@@ -448,6 +449,8 @@ async function onExecute() {
         }
 
         if (prevRoute === route.fullPath) {
+            // the user was free to navigate away from the tool form while the job was being submitted,
+            // so only redirect to the success page if they are still on the tool form.
             router.push(`/jobs/submission/success`);
         } else {
             if (parseBool(config.value.enable_tool_recommendations)) {
