@@ -62,3 +62,33 @@ export async function deleteJob(jobId: string, message?: string): Promise<boolea
 
     return data;
 }
+
+/**
+ * Fetch the outputs of a job.
+ * @param jobId The ID of the job whose outputs are to be fetched.
+ * @returns A promise that resolves to the dataset or dataset collection outputs of the job.
+ */
+export async function fetchJobOutputs(jobId: string) {
+    const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}/outputs", {
+        params: { path: { job_id: jobId } },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+/**
+ * Submit a job request (for Celery enabled tool requests).
+ * @param jobRequest Job request object containing the details of the job to be submitted.
+ * @returns A promise that resolves to the `task_result` and `tool_request_id` of the submitted job.
+ */
+export async function submitJobRequest(jobRequest: JobRequest) {
+    const { data, error } = await GalaxyApi().POST("/api/jobs", {
+        body: jobRequest,
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}

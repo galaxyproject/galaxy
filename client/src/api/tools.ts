@@ -18,6 +18,7 @@ export type NestedElementItems = NestedElement["elements"];
 export type NestedElementItem = NestedElementItems[number];
 export type FetchTargets = FetchDataPayload["targets"];
 export type AnyFetchTarget = FetchTargets[number];
+export type ToolRequestDetailedModel = components["schemas"]["ToolRequestDetailedModel"];
 
 export type ApiDataElement = FileDataElement | PastedDataElement | UrlDataElement;
 
