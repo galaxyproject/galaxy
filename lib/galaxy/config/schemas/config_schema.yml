@@ -4193,7 +4193,7 @@ mapping:
 
       enable_tool_requests:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
           Submit tool jobs through the asynchronous tool requests API (`/api/jobs`)
