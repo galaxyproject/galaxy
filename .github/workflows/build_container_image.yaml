@@ -1,11 +1,9 @@
 name: Build Container Image
+# DEPRECATED: superseded by the focussed workflows. Automatic triggers are
+# disabled so this legacy workflow no longer double-builds; kept as a manual
+# fallback during validation and removed once the new workflows are proven.
 on:
-  push:
-    branches:
-      - dev
-      - release_*
-    tags:
-      - v*
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

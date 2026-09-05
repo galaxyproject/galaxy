@@ -1,0 +1,181 @@
+name: Nightly Container Builds
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changed-release-branches:
+    name: Find release branches with recent changes
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'galaxyproject'
+    outputs:
+      release_branches: ${{ steps.detect.outputs.release_branches }}
+      has_release_branches: ${{ steps.detect.outputs.has_release_branches }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Find changed release branches
+        id: detect
+        run: |
+          echo "Looking for release_* branches with changes in the last 24 hours..."
+
+          since_date=$(date -d '24 hours ago' --iso-8601)
+          echo "Checking release_* branches with commits since: $since_date"
+
+          branches=""
+          for branch in $(git branch -r | grep 'origin/release_' | sed 's/origin\///' | sort); do
+            if git log --since="$since_date" --oneline "origin/$branch" --max-count=1 | head -1; then
+              branches="$branches $branch"
+              echo "✓ $branch has recent changes"
+            fi
+          done
+
+          if [[ -z "$branches" || "$branches" == " " ]]; then
+            echo "No release branches with recent changes found"
+            echo "release_branches=[]" >> $GITHUB_OUTPUT
+            echo "has_release_branches=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changed release branches: $branches"
+            json_branches=$(echo "$branches" | tr ' ' '\n' | grep -v '^$' | jq -R . | jq -s .)
+            echo "release_branches=$json_branches" >> $GITHUB_OUTPUT
+            echo "has_release_branches=true" >> $GITHUB_OUTPUT
+          fi
+
+  build-test-dev:
+    name: Build and test dev branch
+    if: github.repository_owner == 'galaxyproject'
+    uses: ./.github/workflows/container_build_test.yaml
+    with:
+      ref: refs/heads/dev
+      image_tag: dev
+
+  publish-dev:
+    name: Publish dev container
+    runs-on: ubuntu-latest
+    needs: build-test-dev
+    steps:
+      - name: Publish tested image
+        uses: ./.github/actions/publish-container
+        with:
+          image_tag: dev
+          quay_username: ${{ secrets.QUAY_USERNAME }}
+          quay_password: ${{ secrets.QUAY_PASSWORD }}
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+  build-test-release-branches:
+    name: Build and test ${{ matrix.branch }}
+    needs: detect-changed-release-branches
+    if: needs.detect-changed-release-branches.outputs.has_release_branches == 'true'
+    strategy:
+      matrix:
+        branch: ${{ fromJson(needs.detect-changed-release-branches.outputs.release_branches) }}
+      fail-fast: false
+    uses: ./.github/workflows/container_build_test.yaml
+    with:
+      ref: refs/heads/${{ matrix.branch }}
+      image_tag: ${{ matrix.branch }}-auto
+
+  publish-release-branches:
+    name: Publish ${{ matrix.branch }}
+    runs-on: ubuntu-latest
+    needs: [detect-changed-release-branches, build-test-release-branches]
+    if: needs.detect-changed-release-branches.outputs.has_release_branches == 'true'
+    strategy:
+      matrix:
+        branch: ${{ fromJson(needs.detect-changed-release-branches.outputs.release_branches) }}
+    steps:
+      - name: Publish tested image
+        uses: ./.github/actions/publish-container
+        with:
+          image_tag: ${{ matrix.branch }}-auto
+          quay_username: ${{ secrets.QUAY_USERNAME }}
+          quay_password: ${{ secrets.QUAY_PASSWORD }}
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+  notify-dev-failure:
+    name: Notify nightly dev build failure
+    runs-on: ubuntu-latest
+    needs: [build-test-dev, publish-dev]
+    if: always() && (needs.build-test-dev.result == 'failure' || needs.publish-dev.result == 'failure')
+    steps:
+      - name: Determine which job failed
+        id: failure-info
+        run: |
+          if [[ "${{ needs.build-test-dev.result }}" == "failure" ]]; then
+            echo "failed_job=Build or test" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.publish-dev.result }}" == "failure" ]]; then
+            echo "failed_job=Publishing" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v3.0.1
+        with:
+          webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":x: *Galaxy Nightly Dev Build Failed*",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":x: Galaxy Nightly Dev Build Failed",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "The Galaxy nightly development build has failed."
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\ndev"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\n${{ needs.build-test-dev.outputs.galaxy_version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Failed Job:*\n${{ steps.failure-info.outputs.failed_job }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Trigger:*\nNightly cron"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Workflow Run",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }

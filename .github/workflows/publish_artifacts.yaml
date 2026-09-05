@@ -145,3 +145,51 @@ jobs:
         # tag checkout with a dirty tree, which pnpm's default git checks would block).
         run: pnpm publish --provenance --access public --no-git-checks
         working-directory: 'client/packages/api-client'
+
+  # Container publishing
+  get-version:
+    name: Extract version from tag
+    runs-on: ubuntu-latest
+    needs: [check-permissions]
+    if: |
+      github.repository_owner == 'galaxyproject' &&
+      (github.event_name == 'release' ||
+       (github.event_name == 'workflow_dispatch' && !cancelled() && !failure()))
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+      tag: ${{ steps.extract.outputs.tag }}
+    steps:
+      - name: Extract version and tag
+        id: extract
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            tag="${{ inputs.release_tag }}"
+          else
+            tag="${{ github.event.release.tag_name }}"
+          fi
+          version=${tag#v}  # Remove 'v' prefix if present
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Tag: $tag, Version: $version"
+
+  build-test-container:
+    name: Build and test release container
+    needs: [get-version]
+    uses: ./.github/workflows/container_build_test.yaml
+    with:
+      ref: ${{ needs.get-version.outputs.tag }}
+      image_tag: ${{ needs.get-version.outputs.version }}
+
+  publish-container:
+    name: Publish release container
+    runs-on: ubuntu-latest
+    needs: [build-test-container]
+    steps:
+      - name: Publish tested image
+        uses: ./.github/actions/publish-container
+        with:
+          image_tag: ${{ needs.build-test-container.outputs.image_tag }}
+          quay_username: ${{ secrets.QUAY_USERNAME }}
+          quay_password: ${{ secrets.QUAY_PASSWORD }}
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub_password: ${{ secrets.DOCKERHUB_PASSWORD }}
