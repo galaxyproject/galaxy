@@ -5,6 +5,7 @@ import errno
 import json
 import logging
 import os
+import re
 import traceback
 import unittest
 from functools import (
@@ -19,6 +20,7 @@ from typing import (
 
 import requests
 import yaml
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from requests.models import Response
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
@@ -756,8 +758,19 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
 class RunsToolTests(NavigatesGalaxyMixin):
     """Mixin that drives tool execution through the browser form using tool test definitions."""
 
-    def run_tool_test(self, tool_id: str, test_index: int = 0, galaxy_interactor=None, dataset_populator=None):
-        """Top-level entry point: fetch test def, stage data, fill form, execute, verify."""
+    def run_tool_test(
+        self,
+        tool_id: str,
+        test_index: int = 0,
+        galaxy_interactor=None,
+        dataset_populator=None,
+        form_only: bool = False,
+    ):
+        """Top-level entry point: fetch test def, stage data, fill form, execute, verify.
+
+        With form_only set, stop once the form has submitted a job, leaving execution
+        and output verification to the API-level tool tests.
+        """
         assert galaxy_interactor is not None, "galaxy_interactor is required"
         assert dataset_populator is not None, "dataset_populator is required"
         test_defs = galaxy_interactor.get_tool_tests(tool_id)
@@ -765,11 +778,28 @@ class RunsToolTests(NavigatesGalaxyMixin):
         test_def = test_defs[test_index]
         history_id = self.current_history_id()
         self.home()
+        self._staged_dataset_ids: dict[str, list[str]] = {}
+        self._multi_hids: dict[str, list] = {}
         hid_map, required_filenames, collection_hid_map = self._stage_test_data(test_def, history_id, galaxy_interactor)
         pre_job_ids = {j["id"] for j in dataset_populator.history_jobs_for_tool(history_id, tool_id)}
-        self.tool_open(tool_id)
-        self._fill_tool_test_inputs(test_def, hid_map, required_filenames, collection_hid_map)
+        self.tool_open_by_url(tool_id)
+        self._fill_tool_test_inputs(
+            test_def, hid_map, required_filenames, collection_hid_map, self._select_labels(tool_id)
+        )
+        expect_failure = test_def.get("expect_failure", False)
+        pre_request_ids = self._tool_request_ids(history_id)
+        if form_only and expect_failure and not self._run_button_enabled():
+            # Galaxy disabled the run button and said why, so the form refused an input
+            # set this test declares invalid. There is nothing to submit.
+            return
         self.tool_form_execute()
+        if form_only:
+            # An expect_failure test that did submit is rejected by the backend instead;
+            # that outcome belongs to the API tool tests.
+            if not expect_failure:
+                self._wait_for_new_job(history_id, tool_id, pre_job_ids, dataset_populator)
+                self._verify_request_state(history_id, test_def, tool_id, pre_request_ids)
+            return
         self._verify_tool_test_outputs(test_def, history_id, tool_id, pre_job_ids, dataset_populator)
 
     # -- Data staging --
@@ -797,6 +827,24 @@ class RunsToolTests(NavigatesGalaxyMixin):
         job: dict = {}
         filename_by_key: dict[str, str] = {}
         collection_keys: set[str] = set()
+        multi_job_keys: dict[str, list[str]] = {}
+
+        def file_entry(filename: str) -> dict:
+            meta = file_meta.get(filename, {})
+            # A test can name a directory rather than a file; staging uploads it as one.
+            entry: dict = {"class": meta.get("class") or "File", "path": filename}
+            ftype = meta.get("ftype")
+            if ftype:
+                entry["filetype"] = ftype
+            # A composite datatype is uploaded as its parts; staging knows how.
+            composite_data = meta.get("composite_data")
+            if composite_data:
+                entry["composite_data"] = composite_data
+            # Validators read dataset metadata, so it has to survive staging.
+            for attribute in ("dbkey", "metadata"):
+                if meta.get(attribute):
+                    entry[attribute] = meta[attribute]
+            return entry
 
         for key, value in inputs.items():
             raw = value[0] if isinstance(value, list) and len(value) == 1 else value
@@ -804,12 +852,16 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 job[key] = self._convert_collection_def(raw, file_meta)
                 collection_keys.add(key)
             elif isinstance(raw, str) and raw in required_filenames:
-                file_entry: dict = {"class": "File", "path": raw}
-                ftype = file_meta.get(raw, {}).get("ftype")
-                if ftype:
-                    file_entry["filetype"] = ftype
-                job[key] = file_entry
+                job[key] = file_entry(raw)
                 filename_by_key[key] = raw
+            elif self._is_multi_file_value(raw, required_filenames):
+                # Stage each file on its own. Passing the list through would build a
+                # collection, and a multiple="true" data param takes separate datasets.
+                for index, filename in enumerate(raw):
+                    job_key = f"{key}|multi|{index}"
+                    job[job_key] = file_entry(filename)
+                    filename_by_key[job_key] = filename
+                    multi_job_keys.setdefault(key, []).append(job_key)
 
         if not job:
             return {}, required_filenames, {}
@@ -824,12 +876,15 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
         dataset_id_to_hid = {ds["id"]: ds["hid"] for ds in datasets}
         hid_map: dict[str, int] = {}
+        hid_by_job_key: dict[str, int] = {}
         for key, ref in staged_job.items():
             if key in collection_keys:
                 continue
             filename = filename_by_key.get(key)
             if filename and ref.get("id") in dataset_id_to_hid:
                 hid_map[filename] = dataset_id_to_hid[ref["id"]]
+                self._staged_dataset_ids.setdefault(filename, []).append(ref["id"])
+                hid_by_job_key[key] = dataset_id_to_hid[ref["id"]]
 
         collection_hid_map: dict[str, int] = {}
         if collection_keys:
@@ -839,6 +894,12 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 ref = staged_job.get(key, {})
                 if ref.get("id") in collection_id_to_hid:
                     collection_hid_map[key] = collection_id_to_hid[ref["id"]]
+
+        # The same file can be staged more than once; keep each copy for its position.
+        self._multi_hids = {
+            param: [(hid_by_job_key[k], filename_by_key[k]) for k in keys if k in hid_by_job_key]
+            for param, keys in multi_job_keys.items()
+        }
 
         for hid in hid_map.values():
             self.history_panel_wait_for_hid_ok(hid)
@@ -885,6 +946,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
         hid_map: dict,
         required_filenames: set,
         collection_hid_map: dict | None = None,
+        select_labels: dict | None = None,
     ):
         """Fill tool form inputs from test definition.
 
@@ -916,47 +978,157 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 collection_params.append((key, raw_value))
             elif isinstance(raw_value, str) and raw_value in required_filenames:
                 data_params.append((key, value))
+            elif self._is_multi_file_value(raw_value, required_filenames):
+                data_params.append((key, raw_value))
             else:
                 non_data_params.append((key, value))
+
+        self._expand_collapsed_sections()
+
+        # A repeat nested in a conditional only appears once the conditional has been
+        # set, so the params that reveal it go first, shallowest first.
+        outer_params = [kv for kv in non_data_params if not self._parse_repeat_key(kv[0])]
+        repeat_params = [kv for kv in non_data_params if self._parse_repeat_key(kv[0])]
+        # A conditional's selector re-renders its branch, so set it before its siblings.
+        selectors: set[str] = getattr(self, "_conditional_selectors", set())
+
+        def fill_order(pair):
+            # Flat keys carry a repeat index the parameter model does not.
+            plain = "|".join(re.sub(r"_\d+$", "", part) for part in pair[0].split("|"))
+            return (pair[0].count("|"), plain not in selectors)
+
+        outer_params.sort(key=fill_order)
+        repeat_params.sort(key=fill_order)
+
+        deferred = []
+        # Datasets first: a data column or a dynamic select reads its options from them.
+        # A dataset inside a repeat waits for its instance to be inserted below.
+        repeat_data_params = [kv for kv in data_params if self._parse_repeat_key(kv[0])]
+        for key, value in data_params:
+            if (key, value) in repeat_data_params:
+                continue
+            try:
+                self._set_data_param(key, value, hid_map)
+            except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
+                deferred.append((key, value))
+
+        for key, value in outer_params:
+            try:
+                self._set_tool_form_value(key, value, required_filenames, select_labels)
+                self.sleep_for(self.wait_types.UX_RENDER)
+            except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
+                deferred.append((key, value))
+
+        # Collections come after the conditional selectors, since a branch that is not
+        # showing has no control to bind to, and before the retry pass so a group tag
+        # reading from one can still be filled.
+        for key, coll_def in collection_params:
+            hid = collection_hid_map.get(key)
+            assert hid is not None, f"No staged collection for param {key}"
+            self.tool_set_value(key, f"{hid}: {coll_def.get('name', '')}", expected_type="data")
 
         for repeat_name, count in repeat_counts.items():
             self._add_repeat_instances(repeat_name, count)
 
-        self._expand_collapsed_sections()
-
-        non_data_params.sort(key=lambda kv: kv[0].count("|"))
-
-        deferred = []
-        for key, value in non_data_params:
+        for key, value in repeat_data_params:
             try:
-                self._set_tool_form_value(key, value, required_filenames)
-                self.sleep_for(self.wait_types.UX_RENDER)
-            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+                self._set_data_param(key, value, hid_map)
+            except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
                 deferred.append((key, value))
 
-        if deferred:
+        for key, value in repeat_params:
+            try:
+                self._set_tool_form_value(key, value, required_filenames, select_labels)
+                self.sleep_for(self.wait_types.UX_RENDER)
+            except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
+                deferred.append((key, value))
+
+        # Setting one parameter can reveal another, so keep retrying the ones that were
+        # not on the form yet until a pass sets nothing new.
+        while deferred:
             self.sleep_for(self.wait_types.UX_RENDER)
+            still_deferred = []
             for key, value in deferred:
                 expanded_id = key.replace("|", "-")
                 if self.components.tool_form.parameter_div(parameter=expanded_id).is_absent:
+                    still_deferred.append((key, value))
                     continue
-                self._set_tool_form_value(key, value, required_filenames)
+                try:
+                    if (key, value) in data_params:
+                        self._set_data_param(key, value, hid_map)
+                    else:
+                        self._set_tool_form_value(key, value, required_filenames, select_labels)
+                    self.sleep_for(self.wait_types.UX_RENDER)
+                except (NoSuchElementException, SeleniumTimeoutException, PlaywrightTimeoutError, AssertionError):
+                    still_deferred.append((key, value))
+            if len(still_deferred) == len(deferred):
+                break
+            deferred = still_deferred
 
-        for key, value in data_params:
-            if isinstance(value, list) and len(value) == 1:
-                value = value[0]
-            hid = hid_map.get(value)
-            assert hid is not None, f"No staged file for data param {key}={value}"
-            is_multiple = self._is_multi_data_param(key)
-            if is_multiple:
-                self._clear_multiselect_tags(key)
-            self.tool_set_value(key, f"{hid}: {value}", expected_type="data", multiple=is_multiple)
+    def _select_labels(self, tool_id: str) -> dict[str, dict[str, str]]:
+        """Per parameter, the option value -> displayed label the select renders.
 
-        for key, coll_def in collection_params:
-            hid = collection_hid_map.get(key)
-            assert hid is not None, f"No staged collection for param {key}"
-            coll_name = coll_def.get("name", "")
-            self.tool_set_value(key, f"{hid}: {coll_name}", expected_type="data")
+        Test cases declare option values while the form shows labels, so setting a
+        select by its declared value only works where the two happen to match.
+        """
+        labels: dict[str, dict[str, str]] = {}
+        self._conditional_selectors: set[str] = set()
+
+        def walk(inputs, path=()):
+            for input_dict in inputs or []:
+                name = input_dict.get("name")
+                if name is None:
+                    continue
+                here = path + (name,)
+                for nested in ("inputs", "cases"):
+                    for child in input_dict.get(nested) or []:
+                        walk(child.get("inputs") if nested == "cases" else [child], here)
+                test_param = input_dict.get("test_param")
+                if isinstance(test_param, dict) and test_param.get("name"):
+                    self._conditional_selectors.add("|".join(here + (test_param["name"],)))
+                    walk([test_param], here)
+                options = input_dict.get("options")
+                if isinstance(options, list):
+                    by_value = {
+                        str(option[1]): str(option[0])
+                        for option in options
+                        if isinstance(option, (list, tuple)) and len(option) >= 2
+                    }
+                    if by_value:
+                        labels["|".join(here)] = by_value
+
+        try:
+            build = self.api_get(f"tools/{tool_id}/build")
+        except Exception:
+            return labels
+        walk(build.get("inputs"))
+        return labels
+
+    @staticmethod
+    def _is_multi_file_value(value, required_filenames: set) -> bool:
+        """A list of staged filenames, as a multiple="true" data param declares them."""
+        return (
+            isinstance(value, list)
+            and len(value) > 1
+            and all(isinstance(item, str) and item in required_filenames for item in value)
+        )
+
+    def _set_data_param(self, key: str, value, hid_map: dict):
+        """Point a data parameter at the datasets its test case staged."""
+        staged = self._multi_hids.get(key)
+        if staged is None:
+            filenames = list(value) if isinstance(value, list) else [value]
+            staged = []
+            for filename in filenames:
+                hid = hid_map.get(filename)
+                assert hid is not None, f"No staged file for data param {key}={filename}"
+                staged.append((hid, filename))
+        is_multiple = self._is_multi_data_param(key)
+        assert is_multiple or len(staged) == 1, f"Data param {key} takes one file, got {staged}"
+        if is_multiple:
+            self._clear_multiselect_tags(key)
+        for hid, filename in staged:
+            self.tool_set_value(key, f"{hid}: {filename}", expected_type="data", multiple=is_multiple)
 
     def _is_multi_data_param(self, expanded_id: str) -> bool:
         return not self.components.tool_form.parameter_form_selection(parameter=expanded_id).is_absent
@@ -979,14 +1151,37 @@ class RunsToolTests(NavigatesGalaxyMixin):
         return None
 
     def _add_repeat_instances(self, repeat_name: str, count: int):
-        for _ in range(count):
-            self.components.tool_form.repeat_insert_named(name=repeat_name).wait_for_and_click()
+        # The insert button carries the repeat's own name, not the path the test uses.
+        button_name = repeat_name.split("|")[-1]
+        # A repeat with a minimum renders instances already, so only add what is missing.
+        for _ in range(max(0, count - self._repeat_instance_count(repeat_name))):
+            self.components.tool_form.repeat_insert_named(name=button_name).wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
 
+    def _repeat_instance_count(self, repeat_name: str) -> int:
+        """How many instances of this repeat the form is already showing."""
+        prefix = f"form-element-{repeat_name.replace('|', '-')}_"
+        return self.execute_script(
+            "return [...document.querySelectorAll('div.ui-form-element')]"
+            f".filter(e => e.id.startsWith({prefix!r}))"
+            f".map(e => e.id.slice({len(prefix)}).split('-')[0])"
+            ".filter((v, i, a) => a.indexOf(v) === i).length;"
+        )
+
     def _expand_collapsed_sections(self):
+        """Open the sections that are closed, leaving the open ones alone."""
         self.components.tool_form.execute.wait_for_visible()
-        for header in self.components.tool_form.section_header.all():
-            header.click()
+        # The header toggles, so clicking an open section would hide its parameters.
+        opened = self.execute_script(
+            "let n = 0;"
+            "for (const section of document.querySelectorAll('.ui-portlet-section')) {"
+            "  const content = section.querySelector('.portlet-content');"
+            "  const header = section.querySelector('.portlet-header');"
+            "  if (header && content && content.offsetParent === null) { header.click(); n += 1; }"
+            "}"
+            "return n;"
+        )
+        if opened:
             self.sleep_for(self.wait_types.UX_RENDER)
 
     # -- Type detection and value setting --
@@ -1012,18 +1207,21 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
         if not tf.parameter_color_input(parameter=expanded_id).is_absent:
             return "color"
+        if not tf.parameter_select_many(parameter=expanded_id).is_absent:
+            return "select_many"
         if not tf.parameter_select(parameter=expanded_id).is_absent:
             return "select"
 
         return "text"
 
-    def _set_tool_form_value(self, key: str, value, required_filenames: set):
+    def _set_tool_form_value(self, key: str, value, required_filenames: set, select_labels: dict | None = None):
         if isinstance(value, list) and len(value) == 1:
             value = value[0]
         if isinstance(value, str) and value in required_filenames:
             return
 
         param_type = self._detect_param_type(key)
+        by_value = (select_labels or {}).get(key, {})
 
         if param_type == "drilldown":
             values = value if isinstance(value, list) else [value]
@@ -1035,17 +1233,172 @@ class RunsToolTests(NavigatesGalaxyMixin):
             self._set_boolean_value(key, value)
         elif param_type == "color":
             self._set_color_value(key, value)
+        elif param_type == "select_many":
+            items = self._select_values(value, by_value)
+            self._set_select_many_value(key, items, by_value)
+            missing = [item for item in items if not self._select_many_holds(key, by_value.get(item, item))]
+            assert not missing, f"Select {key} has no option for {missing}"
         elif param_type == "select":
-            self.tool_set_value(key, str(value), expected_type="select")
+            items = self._select_values(value, by_value)
+            if len(items) > 1 or self._is_multi_data_param(key):
+                # Otherwise the declared values are added to whatever is selected already.
+                self._clear_multiselect_tags(key)
+            for item in items:
+                # The form matches on the label, so send that where one is known.
+                self._select_option(key, by_value.get(item, item))
+            # An option that is not there yet is set silently, so say so and be retried
+            # once the parameter it depends on has been filled.
+            missing = [item for item in items if not self._select_holds(key, by_value.get(item, item))]
+            assert not missing, f"Select {key} has no option for {missing}"
         else:
             self._set_text_value(key, str(value))
 
+    @staticmethod
+    def _select_values(value, by_value: dict) -> list:
+        """The individual option values a select param was declared with.
+
+        A multiple select takes them comma joined; a value carrying a comma of its
+        own is left alone, since it appears in the option list as declared.
+        """
+        if isinstance(value, list):
+            return [str(item) for item in value]
+        text = str(value)
+        if text in by_value or "," not in text:
+            return [text]
+        return [item for item in text.split(",") if item]
+
+    def _select_holds(self, expanded_id: str, text: str) -> bool:
+        """Whether the parameter now shows this option as chosen."""
+        return bool(
+            self.execute_script(
+                "const div = document.getElementById(arguments[0]);"
+                "if (!div) { return false; }"
+                "const wanted = arguments[1];"
+                "const chosen = div.querySelectorAll('.multiselect__tag, .multiselect__single');"
+                "for (const node of chosen) {"
+                "  if (node.textContent.trim() === wanted) { return true; }"
+                "}"
+                "return false;",
+                f"form-element-{expanded_id.replace('|', '-')}",
+                text,
+            )
+        )
+
+    @staticmethod
+    def _form_element_id(expanded_id: str) -> str:
+        return f"form-element-{expanded_id.replace('|', '-')}"
+
+    def _set_select_many_value(self, expanded_id: str, values: list, by_value: dict):
+        """Drive the two column widget a parameter with many options renders.
+
+        A select switches to it past five hundred options, so the multiselect the rest
+        of the suite drives is simply not in the page.
+        """
+        element_id = self._form_element_id(expanded_id)
+        # Declared values are the whole selection, not an addition to the default.
+        self.execute_script(
+            "const root = document.getElementById(arguments[0]).querySelector('.form-select-many');"
+            "const clear = root && root.querySelector('.selection-button.deselect');"
+            "if (clear) { clear.click(); }",
+            element_id,
+        )
+        self.sleep_for(self.wait_types.UX_RENDER)
+        for value in values:
+            label = by_value.get(value, value)
+            # The search box is debounced, so the list settles a moment after typing.
+            self.execute_script(
+                "const root = document.getElementById(arguments[0]).querySelector('.form-select-many');"
+                "const box = root && root.querySelector('.search-input input');"
+                "if (box) {"
+                "  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;"
+                "  setter.call(box, arguments[1]);"
+                "  box.dispatchEvent(new Event('input', { bubbles: true }));"
+                "}",
+                element_id,
+                str(label),
+            )
+            self.sleep_for(self.wait_types.UX_TRANSITION)
+            self.execute_script(
+                "const root = document.getElementById(arguments[0]).querySelector('.form-select-many');"
+                "const wanted = arguments[1];"
+                "for (const option of root.querySelectorAll('.options-list.unselected button')) {"
+                "  if (option.textContent.trim() === wanted) { option.click(); return true; }"
+                "}"
+                "return false;",
+                element_id,
+                str(label),
+            )
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+    def _select_many_holds(self, expanded_id: str, label) -> bool:
+        """Whether the parameter now lists this option as selected."""
+        return bool(
+            self.execute_script(
+                "const root = document.getElementById(arguments[0]).querySelector('.form-select-many');"
+                "if (!root) { return false; }"
+                "const wanted = arguments[1];"
+                "for (const option of root.querySelectorAll('.options-list.selected button')) {"
+                "  if (option.textContent.trim() === wanted) { return true; }"
+                "}"
+                "return false;",
+                self._form_element_id(expanded_id),
+                str(label),
+            )
+        )
+
+    def _select_option(self, expanded_id: str, text: str):
+        """Pick the option whose label is exactly this text.
+
+        Typing and pressing enter takes the first match, so a value that is a prefix of
+        another option (chr11 against chr11_random) selects the wrong one. Fall back to
+        that behaviour when the option is not among the ones on screen.
+        """
+        element_id = f"form-element-{expanded_id.replace('|', '-')}"
+        opened = self.execute_script(
+            "const div = document.getElementById(arguments[0]);"
+            "const root = div && div.querySelector('.multiselect');"
+            "if (!root) { return false; }"
+            "if (!root.classList.contains('multiselect--active')) {"
+            "  const toggle = root.querySelector('.multiselect__select') || root;"
+            "  toggle.click();"
+            "}"
+            "return true;",
+            element_id,
+        )
+        if opened:
+            self.sleep_for(self.wait_types.UX_RENDER)
+            if self.execute_script(
+                "const div = document.getElementById(arguments[0]);"
+                "const wanted = arguments[1];"
+                "for (const option of div.querySelectorAll('.multiselect__option')) {"
+                "  if (option.textContent.trim() === wanted) { option.click(); return true; }"
+                "}"
+                "return false;",
+                element_id,
+                text,
+            ):
+                self.sleep_for(self.wait_types.UX_RENDER)
+                return
+        self.tool_set_value(expanded_id, text, expected_type="select")
+
     def _set_boolean_value(self, expanded_id: str, value):
+        """Set a boolean, keeping an unset optional one distinct from a declared false.
+
+        An optional boolean starts null and renders the same as false, so reaching an
+        explicit false takes a toggle on and back off.
+        """
         checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
         is_checked = checkbox.is_selected()
+        if value is None:
+            if is_checked:
+                self.execute_script("arguments[0].click();", checkbox)
+            return
         want_checked = str(value).lower() in ("true", "1", "yes")
         if is_checked != want_checked:
             self.execute_script("arguments[0].click();", checkbox)
+        elif not want_checked:
+            for _ in range(2):
+                self.execute_script("arguments[0].click();", checkbox)
 
     def _set_checkbox_select_value(self, expanded_id: str, values: list):
         all_checkboxes = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).all()
@@ -1073,11 +1426,143 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
     def _set_color_value(self, expanded_id: str, value: str):
         color_input = self.components.tool_form.parameter_color_input(parameter=expanded_id).wait_for_present()
-        self.set_element_value(color_input, value)
+        # The browser only accepts #rrggbb here and silently keeps its old value otherwise.
+        self.set_element_value(color_input, value if value.startswith("#") else f"#{value}")
 
     def _set_text_value(self, expanded_id: str, value: str):
         input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
         self.set_element_value(input_element, value)
+
+    def _run_button_enabled(self) -> bool:
+        """Whether the form will accept a run; Galaxy marks a blocked button aria-disabled."""
+        button = self.components.tool_form.execute.wait_for_visible()
+        return button.get_attribute("aria-disabled") != "true"
+
+    def tool_test_def(self, tool_id: str, test_index: int, galaxy_interactor) -> dict:
+        """The parsed test case, so callers can read what it declares."""
+        return galaxy_interactor.get_tool_tests(tool_id)[test_index]
+
+    def _tool_request_ids(self, history_id: str) -> set:
+        try:
+            return {request["id"] for request in self.api_get(f"histories/{history_id}/tool_requests")}
+        except Exception:
+            return set()
+
+    def _verify_request_state(self, history_id: str, test_def: dict, tool_id: str, pre_request_ids: set):
+        """Compare what the form submitted against what the test case declares.
+
+        Galaxy stores the typed request the browser sent, so the form's own state is
+        readable here. Only declared parameters are checked; the form also sends
+        defaults the test says nothing about.
+        """
+        declared = test_def.get("request")
+        if not declared:
+            return
+        fresh = [r for r in self.api_get(f"histories/{history_id}/tool_requests") if r["id"] not in pre_request_ids]
+        assert fresh, f"{tool_id}: form submitted without recording a tool request"
+        submitted = fresh[-1].get("request") or {}
+        mismatches = self._declared_mismatches(
+            declared, submitted, dataset_ids=self._staged_dataset_ids, select_labels=self._select_labels(tool_id)
+        )
+        assert not mismatches, f"{tool_id}: form state differs from the test case at " + "; ".join(mismatches)
+
+    @classmethod
+    def _declared_mismatches(
+        cls,
+        declared,
+        submitted,
+        path: str = "",
+        dataset_ids: dict | None = None,
+        select_labels: dict | None = None,
+    ) -> list[str]:
+        """Paths where a declared parameter is missing from or differs in the request."""
+        mismatches = []
+        for name, expected in declared.items():
+            here = f"{path}|{name}" if path else name
+            if not isinstance(submitted, dict) or name not in submitted:
+                mismatches.append(f"{here} (absent)")
+                continue
+            mismatches.extend(cls._compare(expected, submitted[name], here, dataset_ids, select_labels))
+        return mismatches
+
+    @classmethod
+    def _compare(
+        cls, expected, actual, here: str, dataset_ids: dict | None = None, select_labels: dict | None = None
+    ) -> list[str]:
+        if cls._is_dataset_reference(expected):
+            if not cls._is_dataset_reference(actual):
+                return [f"{here} (expected a dataset, got {actual!r})"]
+            # Hold the form to a dataset this file was staged as, where that is known.
+            # The same file can be staged more than once, and any copy will do.
+            staged = (dataset_ids or {}).get(expected.get("path"))
+            if isinstance(staged, str):
+                staged = [staged]
+            if staged and actual.get("id") not in staged:
+                return [f"{here} (dataset {actual.get('id')!r}, not one staged for this file)"]
+            return []
+        if isinstance(expected, dict):
+            return cls._declared_mismatches(expected, actual, here, dataset_ids, select_labels)
+        if isinstance(expected, list) or isinstance(actual, list):
+            # A multi-value parameter may be declared comma joined and submitted as a list.
+            expected = cls._as_values(expected)
+            actual = cls._as_values(actual)
+            if len(actual) != len(expected):
+                return [f"{here} ({actual!r} not {expected!r})"]
+            nested = []
+            for index, item in enumerate(expected):
+                nested.extend(cls._compare(item, actual[index], f"{here}|{index}", dataset_ids, select_labels))
+            return nested
+        if cls._same_scalar(expected, actual):
+            return []
+        # Test cases name a select option by its value or by its label; both identify it.
+        by_value = (select_labels or {}).get(here, {})
+        if str(by_value.get(str(actual), "")) == str(expected):
+            return []
+        return [f"{here} ({actual!r} not {expected!r})"]
+
+    @staticmethod
+    def _as_values(value) -> list:
+        """A multi-value parameter as a list, however it was written down."""
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str) and "," in value:
+            return [item for item in value.split(",") if item]
+        return [value]
+
+    @staticmethod
+    def _same_scalar(expected, actual) -> bool:
+        """Whether a declared scalar and a submitted one mean the same thing.
+
+        A colour input reports the leading hash a test case may leave out, and a number
+        is declared as text but submitted typed.
+        """
+        left, right = str(expected), str(actual)
+        if left == right:
+            return True
+        if "#" in (left + right):
+            return left.lstrip("#").lower() == right.lstrip("#").lower()
+        try:
+            return float(left) == float(right)
+        except ValueError:
+            return False
+
+    @staticmethod
+    def _is_dataset_reference(value) -> bool:
+        if not isinstance(value, dict):
+            return False
+        return "src" in value or value.get("class") in ("File", "Collection")
+
+    def _wait_for_new_job(self, history_id: str, tool_id: str, pre_job_ids: set, dataset_populator) -> str:
+        """Wait for the job the form just submitted and return its id."""
+
+        def _find_new_job(driver=None):
+            jobs = dataset_populator.history_jobs_for_tool(history_id, tool_id)
+            new_jobs = [j for j in jobs if j["id"] not in pre_job_ids]
+            return new_jobs[0] if new_jobs else None
+
+        new_job = self._wait_on(_find_new_job, "tool job to appear in history")
+        assert new_job is not None
+        return new_job["id"]
 
     # -- Output verification --
 
@@ -1107,16 +1592,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
         if not has_work:
             return
 
-        def _find_new_job(driver=None):
-            jobs = dataset_populator.history_jobs_for_tool(history_id, tool_id)
-            new_jobs = [j for j in jobs if j["id"] not in pre_job_ids]
-            if new_jobs:
-                return new_jobs[0]
-            return None
-
-        new_job = self._wait_on(_find_new_job, "tool job to appear in history")
-        assert new_job is not None
-        job_id = new_job["id"]
+        job_id = self._wait_for_new_job(history_id, tool_id, pre_job_ids, dataset_populator)
 
         has_job_checks = (
             expect_exit_code is not None

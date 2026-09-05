@@ -5,13 +5,19 @@ verification.
 
 import json
 import os
+import xml.etree.ElementTree as ET
 
 import pytest
 
+from galaxy.tool_util.loader_directory import looks_like_a_tool
+from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.toolbox.base import walk_tool_directories
+from galaxy.util import string_as_bool
 from galaxy.util.unittest_utils import skip_unless_environ
 from galaxy_test.base.api import UsesCeleryTasks
 from .framework import (
     managed_history,
+    NavigatesGalaxyMixin,
     RunsToolTests,
     selenium_test,
     SeleniumTestCase,
@@ -119,9 +125,142 @@ def _tool_tests():
 
 TOOL_TESTS = _tool_tests()
 
+FRAMEWORK_TOOLS_DIR = os.path.join(
+    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, "test", "functional", "tools"
+)
+FRAMEWORK_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_tool_conf.xml")
+
+
+def _add_tool_tests(pairs: set, path: str) -> None:
+    """Record every (tool_id, test_index) pair a tool file declares."""
+    if not os.path.exists(path):
+        return
+    try:
+        tool_source = get_tool_source(path)
+        tool_id = tool_source.parse_id()
+        test_count = len(tool_source.parse_tests_to_dict()["tests"])
+    except Exception:
+        return
+    if tool_id:
+        pairs.update((tool_id, index) for index in range(test_count))
+
+
+def _framework_tool_tests():
+    """Every (tool_id, test_index) pair in the framework tool suite.
+
+    `GALAXY_TEST_TOOL_FORM_ONLY_TESTS` overrides it in the same JSON form as
+    `GALAXY_TEST_TOOL_FORM_TESTS`, so the form-only pass can be aimed at shed tools.
+    """
+    spec = os.environ.get("GALAXY_TEST_TOOL_FORM_ONLY_TESTS")
+    if spec:
+        if os.path.exists(spec):
+            with open(spec) as fh:
+                spec = fh.read()
+        return [(str(tool_id), int(test_index)) for tool_id, test_index in json.loads(spec)]
+    # A tool can be listed more than once in the panel; test ids have to stay unique.
+    pairs: set[tuple[str, int]] = set()
+    root = ET.parse(FRAMEWORK_TOOL_CONF).getroot()
+    for tool in root.iter("tool"):
+        _add_tool_tests(pairs, os.path.join(FRAMEWORK_TOOLS_DIR, tool.get("file") or ""))
+    # The panel also loads whole directories, which hold the typed parameter fixtures.
+    for tool_dir in root.iter("tool_dir"):
+        directory = os.path.join(FRAMEWORK_TOOLS_DIR, tool_dir.get("dir") or "")
+        if not os.path.isdir(directory):
+            continue
+        for _, files in walk_tool_directories(directory, string_as_bool(tool_dir.get("recursive", True))):
+            for path in files:
+                # The directory also holds macros and option-generating scripts.
+                if looks_like_a_tool(path, enable_beta_formats=True):
+                    _add_tool_tests(pairs, path)
+    return sorted(pairs)
+
+
+FORM_ONLY_TOOL_TESTS = _framework_tool_tests()
+
+# Tests the form-only pass cannot drive yet, with the reason for each. They still run;
+# an entry that starts passing is reported as XPASS, which is the signal to delete it.
+# Empty the dict to see the raw state of the suite.
+KNOWN_FORM_FAILURES: dict[str, str] = {
+    "async_conditional_no_default_nested_data_0": "the repeat renders one instance more than the test declares",
+    "collection_split_on_column_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
+    "composite_pbed_0": "test data uses a datatype the instance does not know",
+    "credentials_test_0": "the tool needs a credential this instance has none of",
+    "credentials_test_1": "the tool needs a credential this instance has none of",
+    "select_dynamic_0": "a select that renames its value column is filled from the wrong column",
+    "filter_data_table_0": "options come from an unreachable from_url, so the tool does not load",
+    "filter_data_table_1": "options come from an unreachable from_url, so the tool does not load",
+    "filter_multiple_splitter_0": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
+    "filter_multiple_splitter_1": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
+    "filter_param_value_ref_attribute_2": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
+    "filter_param_value_ref_attribute_4": "options filtered on another parameter are absent from the default form, so the declared value cannot be mapped to its label",
+    "implicit_conversion_optional_param_0": "test data uses a datatype the instance does not know",
+    "inheritance_simple_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
+    "output_format_input_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
+    "select_from_dataset_1": "options read from a dataset are matched by position, not by value",
+    "select_from_url_0": "no job appears after the form submits",
+    "validation_hdf5_0": "the staged datatype is not one the parameter accepts, so the form offers no dataset",
+    "gx_boolean_optional_checked_1": "a checked optional boolean cannot be returned to unset",
+    "gx_drill_down_code_0": "the option element id is built from the option name, which the test declares by value",
+    "gx_group_tag_0": "the group tag options do not reach the form, so the run button stays disabled",
+    "gx_group_tag_multiple_0": "the group tag options do not reach the form, so the run button stays disabled",
+    "gx_group_tag_multiple_1": "the group tag options do not reach the form, so the run button stays disabled",
+    "gx_group_tag_optional_0": "the group tag options do not reach the form, so the run button stays disabled",
+    "gx_group_tag_optional_1": "the group tag options do not reach the form, so the run button stays disabled",
+    "gx_hidden_0": "a hidden parameter renders no control, so the declared value cannot be set in the browser",
+    "gx_hidden_data_1": "a hidden parameter renders no control, so the declared value cannot be set in the browser",
+    "gx_hidden_optional_0": "a hidden parameter renders no control, so the declared value cannot be set in the browser",
+    "gx_repeat_select_dynamic_1": "a dynamic select inside a repeat never becomes clickable",
+    "expression_null_handling_boolean_2": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "gx_boolean_optional_1": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_2": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_4": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_5": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_9": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_10": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "pick_value_11": "the tool profile predates 26.2, so an unset optional boolean is false by design",
+    "select_from_dataset_0": "the dataset option never becomes clickable",
+    "test_CONVERTER_biom_0": "a converter data parameter is not set from the staged dataset",
+    "test_CONVERTER_biom_1": "a converter data parameter is not set from the staged dataset",
+    "collection_two_paired_1": "the second paired collection control never renders",
+    "output_action_change_format_1": "a conditional selector two levels deep does not take",
+}
+
+
+def _form_only_params():
+    marked = []
+    for tool_id, test_index in FORM_ONLY_TOOL_TESTS:
+        test_key = f"{tool_id}_{test_index}"
+        reason = KNOWN_FORM_FAILURES.get(test_key)
+        marks = [pytest.mark.xfail(reason=reason, strict=False)] if reason else []
+        marked.append(pytest.param(tool_id, test_index, marks=marks, id=test_key))
+    return marked
+
+
+# The selenium driver is configured once from SeleniumTestCase, so a per-class
+# handle_galaxy_config_kwds never reaches the server. Set the overrides the config
+# loader does read, and do it before the driver starts.
+os.environ.setdefault("GALAXY_CONFIG_OVERRIDE_ENABLE_TOOL_REQUESTS", "true")
+os.environ.setdefault("GALAXY_CONFIG_OVERRIDE_ENABLE_CELERY_TASKS", "true")
+
+
+class AssertsAsyncSubmission(NavigatesGalaxyMixin):
+    """Assert the browser submitted through the tool request API, not the legacy one."""
+
+    def _assert_async_submission(self, tool_id, test_index, test_def=None):
+        # Galaxy records the request before queueing the job, so this holds whatever the
+        # tool goes on to do. Browser resource timings do not: they only show the tool
+        # request polling a submission that succeeded.
+        if (test_def or {}).get("expect_failure"):
+            # An input set the test declares invalid is rejected before a request is
+            # recorded, so there is nothing here to tell the two paths apart.
+            return
+        history_id = self.current_history_id()
+        recorded = self.api_get(f"histories/{history_id}/tool_requests")
+        assert recorded, f"{tool_id}[{test_index}] fell back to the legacy submission path"
+
 
 @skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
-class TestToolFormHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
+class TestToolFormHarness(AssertsAsyncSubmission, SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
     ensure_registered = True
 
     @selenium_test
@@ -135,8 +274,25 @@ class TestToolFormHarness(SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
             galaxy_interactor=interactor,
             dataset_populator=self.dataset_populator,
         )
-        called = self.execute_script(
-            "return performance.getEntriesByType('resource')"
-            ".map(e => e.name).filter(n => n.includes('/api/tool_requests'));"
+        self._assert_async_submission(tool_id, test_index, self.tool_test_def(tool_id, test_index, interactor))
+
+
+@skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
+class TestToolFormOnlyHarness(AssertsAsyncSubmission, SeleniumTestCase, RunsToolTests, UsesCeleryTasks):
+    """Fill and submit every framework tool test without running the job."""
+
+    ensure_registered = True
+
+    @selenium_test
+    @managed_history
+    @pytest.mark.parametrize("tool_id,test_index", _form_only_params())
+    def test_tool_form(self, tool_id, test_index):
+        interactor = self.api_interactor_for_logged_in_user()
+        self.run_tool_test(
+            tool_id,
+            test_index=test_index,
+            galaxy_interactor=interactor,
+            dataset_populator=self.dataset_populator,
+            form_only=True,
         )
-        assert called, f"{tool_id}[{test_index}] fell back to the legacy submission path"
+        self._assert_async_submission(tool_id, test_index, self.tool_test_def(tool_id, test_index, interactor))
