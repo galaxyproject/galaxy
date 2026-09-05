@@ -6,6 +6,7 @@ from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
     GalaxyInteractorApi,
     get_metadata_to_test,
+    PathOrLocation,
 )
 
 
@@ -121,3 +122,48 @@ def test_get_path_or_location_uses_server_path_when_available():
     assert result.location == "file:///srv/test-data/1.bed"
     assert result.path is None
     assert interactor.calls == ["1.bed"]
+
+
+class _RecordingInteractor(GalaxyInteractorApi):
+    """Interactor recording the kwargs each _get_path_or_location call gets."""
+
+    def __init__(self):
+        self.calls: list[dict] = []
+
+    def _get_path_or_location(self, fname, test_data=None, tool_id=None, **kwds):
+        self.calls.append(kwds)
+        return PathOrLocation(name=fname, location=None, path=f"/tmp/{fname}")
+
+
+def _test_data(fname, **kwds):
+    data = {
+        "fname": fname,
+        "ftype": "bed",
+        "dbkey": "?",
+        "composite_data": None,
+    }
+    data.update(kwds)
+    return data
+
+
+@pytest.mark.parametrize("force_path_paste", [True, False])
+def test_remote_to_input_forwards_force_path_paste(force_path_paste):
+    """--force_path_paste must reach _get_path_or_location for ordinary inputs.
+
+    It was only forwarded on the composite_data branch, so the flag was
+    silently ignored for the far commoner single-file input.
+    """
+    interactor = _RecordingInteractor()
+    interactor.remote_to_input(_test_data("1.bed"), "some_tool", force_path_paste=force_path_paste)
+    assert len(interactor.calls) == 1
+    assert interactor.calls[0]["force_path_paste"] is force_path_paste
+
+
+@pytest.mark.parametrize("force_path_paste", [True, False])
+def test_remote_to_input_forwards_force_path_paste_for_composite_data(force_path_paste):
+    interactor = _RecordingInteractor()
+    interactor.remote_to_input(
+        _test_data("1.bed", composite_data=["a.txt", "b.txt"]), "some_tool", force_path_paste=force_path_paste
+    )
+    assert len(interactor.calls) == 2
+    assert all(call["force_path_paste"] is force_path_paste for call in interactor.calls)

@@ -668,6 +668,7 @@ class GalaxyInteractorApi:
                 test_data,
                 tool_id,
                 tool_version=tool_version,
+                force_path_paste=force_path_paste,
                 mode="file" if tool_input["class"].lower() == "file" else "directory",
             )
             if path_or_location.path:
