@@ -35,6 +35,12 @@ def parameter_bundle_for_file(filename: str) -> ToolParameterBundleModel:
     return input_models_for_tool_source(tool_source)
 
 
+def parameter_bundle_for_internal_tool(relpath: str) -> ToolParameterBundleModel:
+    path = os.path.join(galaxy_directory(), relpath)
+    tool_source = get_tool_source(path, macro_paths=[])
+    return input_models_for_tool_source(tool_source)
+
+
 def parameter_tool_source(basename: str) -> ToolSource:
     parameters_dir = os.path.join(galaxy_directory(), "test/functional/tools/parameters")
     if basename.endswith("_y"):
