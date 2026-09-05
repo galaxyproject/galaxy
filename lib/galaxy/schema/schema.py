@@ -1486,6 +1486,11 @@ class HistorySummary(Model, WithModelClass):
     tags: TagCollection
     update_time: datetime = UpdateTimeField
     preferred_object_store_id: str | None = PreferredObjectStoreIdField
+    project_folder_id: EncodedDatabaseIdField | None = Field(
+        None,
+        title="Project Folder ID",
+        description="The project folder this history is filed under, if any.",
+    )
     purge_task: Optional["AsyncTaskResultSummary"] = Field(
         None,
         title="Purge Task",

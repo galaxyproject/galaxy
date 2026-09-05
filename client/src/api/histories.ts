@@ -66,6 +66,8 @@ export interface GetHistoriesOptions {
     search: string;
     sortBy: HistorySortByLiteral;
     sortDesc: boolean;
+    /** Restrict to histories filed under this project folder. */
+    projectFolderId?: string | null;
 }
 
 /**
@@ -158,7 +160,14 @@ export async function getBeaconHistories(beaconHistoryName: string): Promise<Bea
  * @returns {Promise<{ data: MyHistory[]; total: number }>} A promise that resolves to the user's history entries
  */
 export async function getMyHistories(options?: GetHistoriesOptions): Promise<{ data: MyHistory[]; total: number }> {
-    const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
+    const {
+        limit = 24,
+        offset = 0,
+        search = "",
+        sortBy = "update_time",
+        sortDesc = false,
+        projectFolderId,
+    } = options || {};
 
     const { response, data, error } = await GalaxyApi().GET("/api/histories", {
         params: {
@@ -173,6 +182,8 @@ export async function getMyHistories(options?: GetHistoriesOptions): Promise<{ d
                 show_own: true,
                 show_published: false,
                 show_shared: false,
+                // Scope to one project folder when browsing by folder.
+                ...(projectFolderId ? { project_folder_id: projectFolderId } : {}),
                 show_archived: false,
             },
         },

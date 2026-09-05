@@ -3602,6 +3602,38 @@ class HistoryAudit(Base):
             session.execute(q)
 
 
+class ProjectFolder(Base, Serializable, UsesCreateAndUpdateTime):
+    """An optional grouping a user can file their own histories under.
+
+    Deliberately a plain flat list private to its owner: it is an organising
+    aid, not a sharing or permission mechanism, so it cannot widen who can
+    reach a history. Deleting one releases the histories rather than removing
+    them, which is why the foreign key is ``ON DELETE SET NULL``.
+    """
+
+    __tablename__ = "project_folder"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="unique_project_folder_name_per_user"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
+    name: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
+
+    user: Mapped["User"] = relationship("User")
+    histories: Mapped[list["History"]] = relationship(
+        "History", back_populates="project_folder", viewonly=True, order_by="desc(History.update_time)"
+    )
+
+    def _serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            name=self.name,
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
+
+
 class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateAndUpdateTime):
     __tablename__ = "history"
     __table_args__ = (Index("ix_history_slug", "slug", mysql_length=200),)
@@ -3624,6 +3656,11 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
     preferred_object_store_id: Mapped[str | None] = mapped_column(String(255))
     archived: Mapped[bool | None] = mapped_column(index=True, default=False, server_default=false())
     archive_export_id: Mapped[int | None] = mapped_column(ForeignKey("store_export_association.id"), default=None)
+    # Optional grouping of a user's own histories. Null means the history is not
+    # filed under a project, which is the state every existing history is in.
+    project_folder_id: Mapped[int | None] = mapped_column(
+        ForeignKey("project_folder.id", ondelete="SET NULL"), index=True, default=None
+    )
 
     datasets: Mapped[list["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(lambda: HistoryDatasetAssociation.history_id == History.id),
@@ -3693,6 +3730,7 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
     galaxy_sessions = relationship("GalaxySessionToHistoryAssociation", back_populates="history")
     workflow_invocations: Mapped[list["WorkflowInvocation"]] = relationship(back_populates="history")
     user: Mapped[Optional["User"]] = relationship(back_populates="histories")
+    project_folder: Mapped[Optional["ProjectFolder"]] = relationship("ProjectFolder", back_populates="histories")
     jobs: Mapped[list["Job"]] = relationship(
         primaryjoin=(lambda: Job.history_id == History.id),
         viewonly=True,
