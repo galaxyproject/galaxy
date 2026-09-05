@@ -4651,10 +4651,10 @@ class DescribeJob:
         self._job_id = job_id
         self._final_details: dict[str, Any] | None = None
 
-    def _wait_for(self):
+    def _wait_for(self) -> None:
         if self._final_details is None:
             self._dataset_populator.wait_for_job(self._job_id, assert_ok=False)
-            self._final_details = self._dataset_populator.get_job_details(self._job_id).json()
+            self._final_details = self._dataset_populator.get_job_details(self._job_id, full=True).json()
 
     @property
     def final_details(self) -> dict[str, Any]:
