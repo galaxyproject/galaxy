@@ -20,9 +20,15 @@ def image_type(filename: str) -> Optional[str]:
         try:
             with Image.open(filename) as im:
                 fmt = im.format
+                mode = im.mode
         except Exception:
             pass
     if fmt:
+        if fmt == "PPM":
+            if mode in ["I", "L"]:
+                return "PGM"
+            if mode == "1":
+                return "PBM"
         return fmt.upper()
     else:
         return None
