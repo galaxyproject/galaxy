@@ -21,7 +21,7 @@ const RESULTS_LIMIT = 8;
 const RECENT_LIMIT = 5;
 const ROOT_LIMIT = 5;
 
-/** How many rows the root fan-out asks each searched listing for */
+/** How many rows the root fan-out shows per searched listing */
 const ROOT_VARIANT_LIMIT = 3;
 
 /** Neither the unscoped fan-out nor a backend query runs on a single character */
@@ -289,14 +289,20 @@ function rootVariants(isAnonymous: boolean): HistoryListVariant[] {
  * query is not the listing, so `record: false` keeps them out of it: `hs:` and
  * `hp:` still find their listing unhydrated and hydrate it themselves. A failing
  * listing contributes nothing rather than costing the section its other rows.
+ *
+ * A whole page is fetched even though only {@link ROOT_VARIANT_LIMIT} rows are
+ * shown: the backend matches loosely and orders by update time, so the newest
+ * few rows it answers with are often ranked away here, and asking for exactly as
+ * many rows as the section renders would leave it empty. The extra rows cost
+ * nothing beyond the one request the listing already makes.
  */
 async function variantItems(variant: HistoryListVariant, query: string): Promise<PaletteItem[]> {
     const historyStore = useHistoryStore();
     const entries =
         (await fetchQuietly(() =>
-            historyStore.fetchHistoryList(variant, { search: query, limit: ROOT_VARIANT_LIMIT, record: false }),
+            historyStore.fetchHistoryList(variant, { search: query, limit: LIST_PAGE_SIZE, record: false }),
         )) ?? [];
-    return rankHistories(entries as unknown as HistoryEntryLike[], variant, query);
+    return rankHistories(entries as unknown as HistoryEntryLike[], variant, query).slice(0, ROOT_VARIANT_LIMIT);
 }
 
 /**

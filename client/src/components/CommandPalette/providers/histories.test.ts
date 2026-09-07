@@ -466,9 +466,9 @@ describe("historiesProvider", () => {
             "RNA-seq analysis",
             "RNA-seq metagenomics",
         ]);
-        // a handful of rows per listing is enough next to the own histories
-        expect(getSharedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 3 }));
-        expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 3 }));
+        // one page per listing, which the client then ranks and caps itself
+        expect(getSharedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 25 }));
+        expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 25 }));
     });
 
     it("keeps the fan-out's listing hits out of the cached listing", async () => {
@@ -486,6 +486,37 @@ describe("historiesProvider", () => {
         // …and `hp:` hydrates it with a full, unfiltered page of its own
         expect(getPublishedHistories).toHaveBeenLastCalledWith(expect.objectContaining({ search: "", limit: 25 }));
         expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Public metagenomics"]);
+    });
+
+    it("pages a listing in the fan-out, so a match below the newest rows survives", async () => {
+        await useHistoryStore().loadHistories(false);
+        // the backend orders by update time and matches loosely, so the rows it
+        // answers with first need not match the query at all
+        const loose = Array.from({ length: 20 }, (_, index) =>
+            history(`loose-${index}`, `Assembly ${index}`, "2026-08-21T10:00:00", {
+                username: "stranger",
+                owner: "stranger",
+            }),
+        );
+        const publicRna = history("h9", "RNA-seq metagenomics", "2026-08-19T10:00:00", {
+            username: "stranger",
+            owner: "stranger",
+        });
+        getSharedHistories.mockResolvedValue({ data: [], total: 0 });
+        // the backend honors the requested limit, so asking for a handful of
+        // rows only ever sees the newest few
+        getPublishedHistories.mockImplementation(async ({ limit }: { limit?: number } = {}) => {
+            const data = [...loose, publicRna];
+            return { data: data.slice(0, limit), total: data.length };
+        });
+
+        const items = await historiesProvider.search("rna", makeCtx());
+
+        expect(items.map((i) => i.title)).toContain("RNA-seq metagenomics");
+        // the whole page is asked for, so the ranking has the match to find
+        expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 25 }));
+        // the section itself stays capped at the handful of rows it renders
+        expect(items.filter((i) => i.id.startsWith("histories:published:")).length).toBeLessThanOrEqual(3);
     });
 
     it("keeps one row per history in the fan-out, preferring the user's own", async () => {
