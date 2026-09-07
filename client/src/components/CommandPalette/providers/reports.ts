@@ -46,9 +46,9 @@ function formatUpdateTime(updateTime: unknown): string {
 }
 
 /**
- * Whether the page editor may be offered for this row. The `p:` listing is
+ * Whether the page editor may be offered for this row. The `r:` listing is
  * requested with `showOwn` alone, so everything it returns is the user's own;
- * every other source (the `pp:` listing, and the palette's own recents, which
+ * every other source (the `rp:` listing, and the palette's own recents, which
  * remember pages from both scopes) may hold foreign pages and is decided by the
  * owner's username.
  */
@@ -134,7 +134,7 @@ async function storeFirstItems(
  * The published pages matching the query. Only the backend can answer for pages
  * the user does not own, and a failing search contributes nothing rather than
  * costing the fan-out the rows it already has. A handful of hits for one query
- * is not the listing, so `record: false` keeps them out of it: `pp:` still finds
+ * is not the listing, so `record: false` keeps them out of it: `rp:` still finds
  * its listing unfetched and fetches it itself.
  */
 async function publishedItems(query: string, limit: number): Promise<PaletteItem[]> {
@@ -188,9 +188,9 @@ function recentItems(query: string, limit: number): PaletteItem[] {
     return rankPaletteItems(items, query).slice(0, limit);
 }
 
-export const pagesProvider: CommandPaletteProvider = {
-    id: "pages",
-    title: "Pages",
+export const reportsProvider: CommandPaletteProvider = {
+    id: "reports",
+    title: "Reports",
     /** Root mode with no query: the pages opened through the palette before */
     emptyQueryItems(ctx: PaletteContext) {
         if (ctx.isAnonymous) {
@@ -207,12 +207,12 @@ export const pagesProvider: CommandPaletteProvider = {
         return rootItems(trimmed, ctx.isAnonymous);
     },
     /**
-     * `p:` own pages as Recent + list sections, `pp:` the published list alone.
+     * `r:` own pages as Recent + list sections, `rp:` the published list alone.
      * The palette remembers one list per entity type rather than per scope, so
      * the recents are offered by the base scope only — a page the user opened
-     * from `p:` has no business showing up under "public".
+     * from `r:` has no business showing up under "public".
      *
-     * Published pages are public, so `pp:` serves anonymous visitors too; only
+     * Published pages are public, so `rp:` serves anonymous visitors too; only
      * the own listing needs an account to hold anything.
      */
     async searchScoped(scope: ScopeDefinition, query: string, ctx: PaletteContext) {

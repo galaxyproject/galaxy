@@ -23,7 +23,7 @@ export interface ScopeDefinition {
 /**
  * Ordered scope registry — also the order of the rows in the help panel.
  *
- * The `wp:`, `hp:` and `pp:` scopes carry no `requiresLogin`: published entities
+ * The `wp:`, `hp:` and `rp:` scopes carry no `requiresLogin`: published entities
  * are public, and their listings are exactly what an anonymous visitor may
  * browse. Everything an account owns — the own and shared-with-me scopes
  * included — stays behind a login.
@@ -40,8 +40,8 @@ export const PALETTE_SCOPES: ScopeDefinition[] = [
     { key: "d", label: "Datasets", providerId: "datasets", requiresLogin: true },
     { key: "v", label: "Visualizations", providerId: "visualizations", requiresLogin: true },
     { key: "i", label: "Invocations", providerId: "invocations", requiresLogin: true },
-    { key: "p", label: "My pages", providerId: "pages", requiresLogin: true },
-    { key: "pp", label: "Public pages", providerId: "pages", variant: "published" },
+    { key: "r", label: "My reports", providerId: "reports", requiresLogin: true },
+    { key: "rp", label: "Public reports", providerId: "reports", variant: "published" },
     {
         key: "it",
         label: "Interactive tools",

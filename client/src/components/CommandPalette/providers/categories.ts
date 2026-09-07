@@ -32,7 +32,7 @@ export const PALETTE_CATEGORIES: PaletteCategory[] = [
     { id: "datasets", label: "Datasets", providerId: "datasets", scopeKey: "d" },
     { id: "visualizations", label: "Visualizations", providerId: "visualizations", scopeKey: "v" },
     { id: "invocations", label: "Invocations", providerId: "invocations", scopeKey: "i" },
-    { id: "pages", label: "Pages", providerId: "pages", scopeKey: "p" },
+    { id: "reports", label: "Reports", providerId: "reports", scopeKey: "r" },
     { id: "tools", label: "Tools", providerId: "tools", scopeKey: "t" },
     { id: "navigation", label: "Navigation", providerId: "navigation", scopeKey: "n" },
 ];

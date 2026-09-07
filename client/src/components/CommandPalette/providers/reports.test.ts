@@ -8,8 +8,8 @@ import { useUserStore } from "@/stores/userStore";
 
 import type { PaletteContext } from "../types";
 import { PaletteFetchError } from "./errors";
-import { pagesProvider } from "./pages";
 import { resetListRefreshTracking } from "./refresh";
+import { reportsProvider } from "./reports";
 import { findScope, type ScopeDefinition } from "./scopes";
 
 vi.mock("@/api/pages", () => ({
@@ -53,7 +53,7 @@ function scope(key: string): ScopeDefinition {
     return found;
 }
 
-describe("pagesProvider", () => {
+describe("reportsProvider", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.clearAllMocks();
@@ -67,7 +67,7 @@ describe("pagesProvider", () => {
         it("fetches own pages once and maps them to items", async () => {
             mockPages([mockPage("a")]);
 
-            const sections = (await pagesProvider.searchScoped?.(scope("p"), "", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
 
             expect(loadPages).toHaveBeenCalledWith(
                 expect.objectContaining({ showOwn: true, showShared: false, showPublished: false }),
@@ -81,10 +81,10 @@ describe("pagesProvider", () => {
             expect(item?.secondaryAction).toEqual({ label: "Edit content", to: "/pages/editor?id=a" });
         });
 
-        it("requests published pages for the pp scope and offers no edit action", async () => {
+        it("requests published pages for the rp scope and offers no edit action", async () => {
             mockPages([mockPage("p1")]);
 
-            const sections = (await pagesProvider.searchScoped?.(scope("pp"), "", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("rp"), "", makeCtx())) ?? [];
 
             expect(loadPages).toHaveBeenCalledWith(
                 expect.objectContaining({ showOwn: false, showShared: true, showPublished: true }),
@@ -97,14 +97,14 @@ describe("pagesProvider", () => {
         it("renders from the store cache without a request when it can answer", async () => {
             mockPages([mockPage("a", { title: "Notes" }), mockPage("b", { title: "Other" })]);
             // hydrate through the palette, the way opening the scope does
-            await pagesProvider.searchScoped?.(scope("p"), "", makeCtx());
+            await reportsProvider.searchScoped?.(scope("r"), "", makeCtx());
             vi.mocked(loadPages).mockClear();
 
-            const sections = (await pagesProvider.searchScoped?.(scope("p"), "Notes", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx())) ?? [];
 
             expect(loadPages).not.toHaveBeenCalled();
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
-            expect(sections[0]?.title).toBe("My pages");
+            expect(sections[0]?.title).toBe("My reports");
         });
 
         it("queries the backend when the cache holds too few matches", async () => {
@@ -114,7 +114,7 @@ describe("pagesProvider", () => {
             vi.mocked(loadPages).mockClear();
             mockPages([mockPage("z", { title: "Notes zulu" })]);
 
-            const sections = (await pagesProvider.searchScoped?.(scope("p"), "Notes", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx())) ?? [];
 
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "Notes" }));
             expect(sections[0]?.items.map((item) => item.id)).toEqual(expect.arrayContaining(["pages:a", "pages:z"]));
@@ -124,7 +124,7 @@ describe("pagesProvider", () => {
             useRecentPaletteItems().addRecentItem({ type: "page", id: "a", name: "Page a" });
             mockPages([mockPage("a"), mockPage("b")]);
 
-            const sections = (await pagesProvider.searchScoped?.(scope("p"), "", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
 
             expect(sections.map((section) => section.title)).toEqual(["Recent", "Latest"]);
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
@@ -133,11 +133,11 @@ describe("pagesProvider", () => {
 
         it("keeps the palette recents out of the published scope", async () => {
             // the MRU is one list per entity type, so a page opened through
-            // `p:` must not leak into the published scope
+            // `r:` must not leak into the published scope
             useRecentPaletteItems().addRecentItem({ type: "page", id: "a", name: "Page a" });
             mockPages([mockPage("b")]);
 
-            const sections = (await pagesProvider.searchScoped?.(scope("pp"), "", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("rp"), "", makeCtx())) ?? [];
 
             expect(sections.map((section) => section.id)).toEqual(["published"]);
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:b"]);
@@ -149,13 +149,14 @@ describe("pagesProvider", () => {
                 mockPage("new", { update_time: "2026-08-30T10:00:00" }),
             ]);
 
-            const sections = (await pagesProvider.searchScoped?.(scope("p"), "", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
 
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:new", "pages:old"]);
         });
 
         it("returns nothing for the own scope of an anonymous user", async () => {
-            const sections = (await pagesProvider.searchScoped?.(scope("p"), "", makeCtx({ isAnonymous: true }))) ?? [];
+            const sections =
+                (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx({ isAnonymous: true }))) ?? [];
 
             expect(sections).toEqual([]);
             expect(loadPages).not.toHaveBeenCalled();
@@ -165,7 +166,7 @@ describe("pagesProvider", () => {
             mockPages([mockPage("p1")]);
 
             const sections =
-                (await pagesProvider.searchScoped?.(scope("pp"), "", makeCtx({ isAnonymous: true }))) ?? [];
+                (await reportsProvider.searchScoped?.(scope("rp"), "", makeCtx({ isAnonymous: true }))) ?? [];
 
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ showOwn: false, showPublished: true }));
             expect(sections.map((section) => section.id)).toEqual(["published"]);
@@ -181,7 +182,7 @@ describe("pagesProvider", () => {
             vi.mocked(loadPages).mockClear();
             mockPages([mockPage("a", { title: "Notes" })]);
 
-            const sections = (await pagesProvider.searchScoped?.(scope("p"), "Notes", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx())) ?? [];
 
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "Notes" }));
             expect(sections.at(-1)?.items.map((item) => item.id)).toEqual(["pages:a"]);
@@ -189,12 +190,12 @@ describe("pagesProvider", () => {
 
         it("refreshes a complete cache in the background once it goes stale", async () => {
             mockPages([mockPage("a")]);
-            await pagesProvider.searchScoped?.(scope("p"), "", makeCtx());
+            await reportsProvider.searchScoped?.(scope("r"), "", makeCtx());
             expect(loadPages).toHaveBeenCalledTimes(1);
 
             // a later palette session, past the refresh interval
             resetListRefreshTracking();
-            const sections = (await pagesProvider.searchScoped?.(scope("p"), "", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
 
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
             expect(loadPages).toHaveBeenCalledTimes(2);
@@ -204,7 +205,7 @@ describe("pagesProvider", () => {
             vi.mocked(loadPages).mockRejectedValue(new Error("boom"));
 
             // nothing is cached, so "no results" would be a lie
-            await expect(pagesProvider.searchScoped?.(scope("p"), "", makeCtx())).rejects.toBeInstanceOf(
+            await expect(reportsProvider.searchScoped?.(scope("r"), "", makeCtx())).rejects.toBeInstanceOf(
                 PaletteFetchError,
             );
         });
@@ -214,7 +215,7 @@ describe("pagesProvider", () => {
             pageStore.savePages("my", [mockPage("a")]);
             vi.mocked(loadPages).mockRejectedValue(new Error("boom"));
 
-            const sections = (await pagesProvider.searchScoped?.(scope("p"), "", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("r"), "", makeCtx())) ?? [];
 
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:a"]);
         });
@@ -227,10 +228,10 @@ describe("pagesProvider", () => {
             vi.mocked(loadPages).mockClear();
             mockPages([]);
 
-            const items = await pagesProvider.search("notes", makeCtx());
+            const items = await reportsProvider.search("notes", makeCtx());
 
             expect(items.map((item) => item.id)).toEqual(["pages:a"]);
-            // the own list is only ever fetched by the `p:` scope
+            // the own list is only ever fetched by the `r:` scope
             expect(loadPages).not.toHaveBeenCalledWith(expect.objectContaining({ showOwn: true }));
         });
 
@@ -240,7 +241,7 @@ describe("pagesProvider", () => {
             vi.mocked(loadPages).mockClear();
             mockPages([mockPage("z", { title: "Notes of a stranger" })]);
 
-            const items = await pagesProvider.search("notes", makeCtx());
+            const items = await reportsProvider.search("notes", makeCtx());
 
             expect(items.map((item) => item.id).sort()).toEqual(["pages:a", "pages:z"]);
             // a handful of public rows is enough next to the user's own pages
@@ -252,7 +253,7 @@ describe("pagesProvider", () => {
         it("keeps the fan-out's published hits out of the cached listing", async () => {
             mockPages([mockPage("z", { title: "Notes of a stranger" })]);
 
-            await pagesProvider.search("notes", makeCtx({ isAnonymous: true }));
+            await reportsProvider.search("notes", makeCtx({ isAnonymous: true }));
 
             const pageStore = usePageStore();
             // the hits answered one query, so the listing itself is still unfetched
@@ -261,9 +262,9 @@ describe("pagesProvider", () => {
 
             vi.mocked(loadPages).mockClear();
             mockPages([mockPage("p1", { title: "Public notes" })]);
-            const sections = (await pagesProvider.searchScoped?.(scope("pp"), "", makeCtx())) ?? [];
+            const sections = (await reportsProvider.searchScoped?.(scope("rp"), "", makeCtx())) ?? [];
 
-            // …and `pp:` fetches a full, unfiltered listing of its own
+            // …and `rp:` fetches a full, unfiltered listing of its own
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "", showPublished: true }));
             expect(sections[0]?.items.map((item) => item.id)).toEqual(["pages:p1"]);
         });
@@ -275,7 +276,7 @@ describe("pagesProvider", () => {
             await usePageStore().fetchPages("my");
             vi.mocked(loadPages).mockClear();
 
-            const items = await pagesProvider.search("notes", makeCtx());
+            const items = await reportsProvider.search("notes", makeCtx());
 
             expect(items.map((item) => item.id)).toEqual(["pages:a"]);
             expect(items[0]?.secondaryAction).toEqual({ label: "Edit content", to: "/pages/editor?id=a" });
@@ -284,7 +285,7 @@ describe("pagesProvider", () => {
         it("searches the published pages alone for an anonymous root query", async () => {
             mockPages([mockPage("p1", { title: "Public notes" })]);
 
-            const items = await pagesProvider.search("notes", makeCtx({ isAnonymous: true }));
+            const items = await reportsProvider.search("notes", makeCtx({ isAnonymous: true }));
 
             expect(items.map((item) => item.id)).toEqual(["pages:p1"]);
             expect(loadPages).toHaveBeenCalledTimes(1);
@@ -296,7 +297,7 @@ describe("pagesProvider", () => {
             await usePageStore().fetchPages("my");
             vi.mocked(loadPages).mockRejectedValue(new Error("boom"));
 
-            const items = await pagesProvider.search("notes", makeCtx());
+            const items = await reportsProvider.search("notes", makeCtx());
 
             expect(items.map((item) => item.id)).toEqual(["pages:a"]);
         });
@@ -304,8 +305,8 @@ describe("pagesProvider", () => {
         it("skips single character queries", async () => {
             mockPages([mockPage("a")]);
 
-            expect(await pagesProvider.search("n", makeCtx())).toEqual([]);
-            expect(await pagesProvider.search("n", makeCtx({ isAnonymous: true }))).toEqual([]);
+            expect(await reportsProvider.search("n", makeCtx())).toEqual([]);
+            expect(await reportsProvider.search("n", makeCtx({ isAnonymous: true }))).toEqual([]);
             expect(loadPages).not.toHaveBeenCalled();
         });
     });
@@ -321,7 +322,7 @@ describe("pagesProvider", () => {
                 to: "/published/page?id=b",
             });
 
-            const items = pagesProvider.emptyQueryItems?.(makeCtx()) ?? [];
+            const items = reportsProvider.emptyQueryItems?.(makeCtx()) ?? [];
 
             expect(items.map((item) => item.id)).toEqual(["pages:b", "pages:a"]);
             expect(items[1]?.title).toBe("Page a");
@@ -337,7 +338,7 @@ describe("pagesProvider", () => {
             useRecentPaletteItems().addRecentItem({ type: "page", id: "theirs", name: "Page theirs" });
             useRecentPaletteItems().addRecentItem({ type: "page", id: "mine", name: "Page mine" });
 
-            const items = pagesProvider.emptyQueryItems?.(makeCtx()) ?? [];
+            const items = reportsProvider.emptyQueryItems?.(makeCtx()) ?? [];
 
             expect(items.map((item) => item.id)).toEqual(["pages:mine", "pages:theirs"]);
             expect(items[0]?.secondaryAction).toEqual({ label: "Edit content", to: "/pages/editor?id=mine" });
@@ -347,7 +348,7 @@ describe("pagesProvider", () => {
         it("is empty for anonymous users", () => {
             useRecentPaletteItems().addRecentItem({ type: "page", id: "a", name: "Page a" });
 
-            expect(pagesProvider.emptyQueryItems?.(makeCtx({ isAnonymous: true }))).toEqual([]);
+            expect(reportsProvider.emptyQueryItems?.(makeCtx({ isAnonymous: true }))).toEqual([]);
         });
     });
 });

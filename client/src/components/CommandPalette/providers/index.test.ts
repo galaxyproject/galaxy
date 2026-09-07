@@ -79,7 +79,7 @@ describe("parsePaletteQuery", () => {
     it("scopes two-letter tokens", () => {
         expect(scopeKey("hs: shared")).toBe("hs");
         expect(scopeKey("wp:")).toBe("wp");
-        expect(scopeKey("pp: news")).toBe("pp");
+        expect(scopeKey("rp: news")).toBe("rp");
         expect(scopeKey("it: jupyter")).toBe("it");
     });
 

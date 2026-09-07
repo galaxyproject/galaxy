@@ -37,12 +37,12 @@ describe("PALETTE_SCOPES", () => {
 
     it("leaves the public scopes, tools and navigation open to anonymous users", () => {
         const anonymous = PALETTE_SCOPES.filter((scope) => !scope.requiresLogin).map((scope) => scope.key);
-        expect(anonymous).toEqual(["wp", "t", "hp", "pp", "it", "n"]);
+        expect(anonymous).toEqual(["wp", "t", "hp", "rp", "it", "n"]);
     });
 
     it("keeps the own and shared-with-me scopes behind a login", () => {
         const gated = PALETTE_SCOPES.filter((scope) => scope.requiresLogin).map((scope) => scope.key);
-        expect(gated).toEqual(["w", "ws", "h", "hs", "ha", "d", "v", "i", "p"]);
+        expect(gated).toEqual(["w", "ws", "h", "hs", "ha", "d", "v", "i", "r"]);
     });
 });
 
@@ -97,7 +97,7 @@ describe("isScopeAvailable", () => {
         const ctx = makeCtx({ isAnonymous: true });
         expect(isScopeAvailable(findScope("wp")!, ctx)).toBe(true);
         expect(isScopeAvailable(findScope("hp")!, ctx)).toBe(true);
-        expect(isScopeAvailable(findScope("pp")!, ctx)).toBe(true);
+        expect(isScopeAvailable(findScope("rp")!, ctx)).toBe(true);
     });
 
     it("hides interactive tools unless they are enabled", () => {
@@ -131,7 +131,7 @@ describe("isScopeAvailable", () => {
             "wp",
             "t",
             "hp",
-            "pp",
+            "rp",
             "n",
         ]);
     });
@@ -180,7 +180,7 @@ describe("isScopeLoginGated", () => {
             "d",
             "v",
             "i",
-            "p",
+            "r",
         ]);
         expect(loginGatedScopes(makeCtx())).toEqual([]);
     });

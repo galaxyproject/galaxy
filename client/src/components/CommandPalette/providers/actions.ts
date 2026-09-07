@@ -116,7 +116,7 @@ async function createTitledPage(title: string, ctx: PaletteContext) {
             // already owns both, which is worth reporting
             page = await createPage({ title, slug: `${slug}-2`, content_format: "markdown" });
         }
-        // the `p:` scope renders from the store and stops asking the backend once
+        // the `r:` scope renders from the store and stops asking the backend once
         // it holds every page, so the new one has to be seeded or it stays hidden
         usePageStore().savePages("my", [page], true);
         ctx.navigate?.(`/pages/editor?id=${page.id}`);

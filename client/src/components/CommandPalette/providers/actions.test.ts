@@ -190,7 +190,7 @@ describe("actionsProvider", () => {
         } as never);
 
         const pageStore = usePageStore();
-        // a cache the `p:` scope would otherwise consider complete, so a missing
+        // a cache the `r:` scope would otherwise consider complete, so a missing
         // seed would leave the new page invisible until the next unfiltered fetch
         pageStore.savePages("my", [{ id: "page-0", title: "Older page" } as never]);
 
