@@ -162,6 +162,14 @@ describe("actionsProvider", () => {
         expect(importItem?.to).toBe("/workflows/import");
     });
 
+    it("finds the create-report action by searching page or report", async () => {
+        const byReport = await search("report", makeCtx());
+        expect(byReport.some((i) => i.id === "actions:create-page")).toBe(true);
+
+        const byPage = await search("page", makeCtx());
+        expect(byPage.some((i) => i.id === "actions:create-page")).toBe(true);
+    });
+
     it("creates a page from the typed title and opens its editor", async () => {
         const createItem = await action("actions:create-page");
         expect(createItem.to).toBe("/pages/create");

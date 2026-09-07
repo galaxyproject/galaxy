@@ -231,7 +231,7 @@ const ACTIONS: ActionDefinition[] = [
         id: "actions:create-page",
         anonymous: false,
         icon: faFileAlt,
-        keywords: "markdown document report notebook new",
+        keywords: "markdown document report page notebook new",
         subtitle: "Create a new report and open the editor",
         title: "Create new report",
         to: "/pages/create",
