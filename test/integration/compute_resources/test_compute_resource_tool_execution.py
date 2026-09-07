@@ -32,7 +32,6 @@ from pathlib import Path
 from typing import (
     Any,
     ClassVar,
-    Optional,
 )
 
 import httpx
@@ -92,9 +91,9 @@ class TestComputeResourceToolExecution(
     # safe to read in the test methods, which only run after that hook).
     # The non-Optional handles default to ``None`` so tearDownClass can
     # short-circuit if bring-up failed partway through.
-    _keycloak: ClassVar[Optional[KeycloakHandle]] = None
-    _relay: ClassVar[Optional[RelayHandle]] = None
-    _pulsar: ClassVar[Optional[PulsarHandle]] = None
+    _keycloak: ClassVar[KeycloakHandle | None] = None
+    _relay: ClassVar[RelayHandle | None] = None
+    _pulsar: ClassVar[PulsarHandle | None] = None
     _secondary_refresh_token: ClassVar[str]
     # Stashed from the device flow in _prepare_galaxy for use in setUp, where
     # the Pulsar daemon is brought up (it needs the Galaxy-minted manager_name,

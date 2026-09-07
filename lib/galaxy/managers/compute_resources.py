@@ -25,7 +25,6 @@ from datetime import (
 )
 from typing import (
     Any,
-    Optional,
 )
 
 import jwt
@@ -132,7 +131,7 @@ def relay_refresh_token_vault_path(resource_id: int) -> str:
     return f"compute_resource/{resource_id}/relay_refresh_token"
 
 
-def _make_capabilities_topic_name(prefix: Optional[str], manager_name: str) -> str:
+def _make_capabilities_topic_name(prefix: str | None, manager_name: str) -> str:
     """Mirror of pulsar/messaging/bind_relay.py:__make_capabilities_topic_name.
 
     Examples:
@@ -176,14 +175,14 @@ class RelayCapabilitiesCache:
         self._ttl = ttl_seconds
         self._clock = clock
         self._lock = threading.Lock()
-        self._entries: dict[tuple[str, str], tuple[Optional[dict[str, Any]], float]] = {}
+        self._entries: dict[tuple[str, str], tuple[dict[str, Any] | None, float]] = {}
 
     def get(
         self,
         relay_url: str,
         manager_name: str,
-        fetch: Callable[[], Optional[dict[str, Any]]],
-    ) -> Optional[dict[str, Any]]:
+        fetch: Callable[[], dict[str, Any] | None],
+    ) -> dict[str, Any] | None:
         key = (relay_url, manager_name)
         now = self._clock()
         with self._lock:
@@ -205,7 +204,7 @@ class RelayCapabilitiesCache:
             self._entries.pop((relay_url, manager_name), None)
 
 
-def extract_capability_payload(response: dict[str, Any], topic: str, relay_url: str) -> Optional[dict[str, Any]]:
+def extract_capability_payload(response: dict[str, Any], topic: str, relay_url: str) -> dict[str, Any] | None:
     """Pull the latest payload out of a ``PaginatedMessagesResponse`` body.
 
     Validates: at least one message, payload is a dict, ``schema_version``
@@ -284,8 +283,8 @@ class ComputeResourceManager:
         vault: Vault,
         config: GalaxyAppConfiguration,
         *,
-        relay_client_factory: Optional[RelayClientFactory] = None,
-        capabilities_cache: Optional[RelayCapabilitiesCache] = None,
+        relay_client_factory: RelayClientFactory | None = None,
+        capabilities_cache: RelayCapabilitiesCache | None = None,
     ) -> None:
         """Galaxy DI entry point.
 
@@ -536,7 +535,7 @@ class ComputeResourceManager:
         return self._relay_client_factory(relay_url)
 
     @staticmethod
-    def _decode_sub(access_token: str) -> Optional[str]:
+    def _decode_sub(access_token: str) -> str | None:
         """Pull ``sub`` out of a relay-issued access token.
 
         Signature verification is skipped because the relay has already
@@ -607,7 +606,7 @@ class ComputeResourceManager:
         bootstrap_token: str,
         refresh_token: str,
         relay_url: str,
-        relay_topic_prefix: Optional[str] = None,
+        relay_topic_prefix: str | None = None,
     ) -> ComputeResource:
         """Redeem a registration token and persist a compute resource for that user.
 
