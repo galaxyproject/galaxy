@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { loadPages, type PageSummary } from "@/api/pages";
+import { loadPages, type LoadPagesOptions, type PageSummary } from "@/api/pages";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { usePageStore } from "@/stores/pageStore";
 import { useUserStore } from "@/stores/userStore";
@@ -244,10 +244,34 @@ describe("reportsProvider", () => {
             const items = await reportsProvider.search("notes", makeCtx());
 
             expect(items.map((item) => item.id).sort()).toEqual(["pages:a", "pages:z"]);
-            // a handful of public rows is enough next to the user's own pages
+            // one page of public rows, which the client then ranks and caps itself
             expect(loadPages).toHaveBeenCalledWith(
-                expect.objectContaining({ showPublished: true, search: "notes", limit: 3 }),
+                expect.objectContaining({ showPublished: true, search: "notes", limit: 8 }),
             );
+        });
+
+        it("pages the published listing in the fan-out, so a match below the newest rows survives", async () => {
+            // the backend orders by update time and matches loosely, and it
+            // honors the requested limit, so the rows it answers with first
+            // need not match the query at all
+            const loose = Array.from({ length: 7 }, (_, index) =>
+                mockPage(`loose-${index}`, { title: `Draft ${index}` }),
+            );
+            const match = mockPage("z", { title: "Notes of a stranger" });
+            vi.mocked(loadPages).mockImplementation(async ({ limit }: LoadPagesOptions = {}) => {
+                const data = [...loose, match].slice(0, limit);
+                return { data, totalMatches: data.length };
+            });
+
+            const items = await reportsProvider.search("notes", makeCtx({ isAnonymous: true }));
+
+            expect(items.map((item) => item.id)).toContain("pages:z");
+            // a whole page is asked for, so the ranking has the match to find
+            expect(loadPages).toHaveBeenCalledWith(
+                expect.objectContaining({ showPublished: true, search: "notes", limit: 8 }),
+            );
+            // the section itself stays capped at the handful of rows it renders
+            expect(items.length).toBeLessThanOrEqual(3);
         });
 
         it("keeps the fan-out's published hits out of the cached listing", async () => {
