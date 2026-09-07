@@ -22,7 +22,7 @@ const BOOKMARKED_LIMIT = 5;
 const RECENT_LIMIT = 5;
 const ROOT_LIMIT = 5;
 
-/** How many rows the root fan-out asks each searched list for */
+/** How many rows the root fan-out shows per searched list */
 const ROOT_VARIANT_LIMIT = 3;
 
 /** Unscoped search only joins the fan-out once the query is specific enough */
@@ -181,13 +181,21 @@ function rootVariants(isAnonymous: boolean): WorkflowListVariant[] {
  * One backend search for the root fan-out. The store keys its lists by variant
  * and query, so the fetched rows are the matches for this query alone; a failing
  * variant contributes nothing rather than costing the whole section.
+ *
+ * A whole page is fetched even though only {@link ROOT_VARIANT_LIMIT} rows are
+ * shown: the backend matches loosely and orders by update time, so the newest
+ * few rows it answers with are often ranked away here, and asking for exactly as
+ * many rows as the section renders would leave it empty. The extra rows cost
+ * nothing beyond the one request the variant already makes.
  */
 async function variantItems(variant: WorkflowListVariant, query: string): Promise<PaletteItem[]> {
     const workflowStore = useWorkflowStore();
     const workflows =
-        (await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: ROOT_VARIANT_LIMIT }))) ??
-        [];
-    return workflows.map((workflow) => workflowItem(workflow, variant));
+        (await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: LIST_PAGE_SIZE }))) ?? [];
+    return rankPaletteItems(
+        workflows.map((workflow) => workflowItem(workflow, variant)),
+        query,
+    ).slice(0, ROOT_VARIANT_LIMIT);
 }
 
 /**
