@@ -1,5 +1,3 @@
-import hashlib
-
 from galaxy_test.driver import integration_util
 from ._base import BaseCloudObjectStoreIntegrationTestCase
 
@@ -20,7 +18,8 @@ class TestCloudObjectStoreIntegration(BaseCloudObjectStoreIntegrationTestCase):
             content = ("x" * 1023 + "\n") * (12 * 1024)
             hda = self.dataset_populator.new_dataset(history_id, content=content, wait=True)
             fetched = self.dataset_populator.get_history_dataset_content(history_id, dataset=hda)
-            assert hashlib.sha256(fetched.encode()).hexdigest() == hashlib.sha256(content.encode()).hexdigest()
+            assert len(fetched) == len(content)
+            assert fetched == content, "dataset content changed in the multipart roundtrip"
 
 
 instance = integration_util.integration_module_instance(TestCloudObjectStoreIntegration)
