@@ -1,5 +1,7 @@
 import os
 
+import pytest
+from pydantic import ValidationError
 from yaml import safe_load
 
 from galaxy.objectstore.templates.examples import get_example
@@ -361,6 +363,38 @@ LIBRARY_CLOUD = """
     bucket:
         name: os_container
 """
+
+
+CLOUD_TEMPLATE_WITH = """
+- id: cloud_store
+  name: Cloud Store
+  description: A cloud object store.
+  configuration:
+    type: cloud
+    provider: {provider}
+    auth:
+        {option}
+    bucket:
+        name: a_bucket
+"""
+
+
+@pytest.mark.parametrize(
+    "provider,option",
+    [
+        # Short-lived credentials would expire and leave a dead store behind.
+        ("aws", "session_token: a_session_token"),
+        ("azure", "access_token: an_access_token"),
+        # A path on the Galaxy server is not something a user can supply.
+        ("google", "credentials_file: /etc/galaxy/gcp.json"),
+    ],
+)
+def test_cloud_template_omits_options_unfit_for_user_defined_stores(provider, option):
+    # These stores are persisted in the database and must keep working
+    # indefinitely, so the template surface stays narrower than the store's own
+    # configuration in object_store_conf.yml.
+    with pytest.raises(ValidationError):
+        _parse_template_library(CLOUD_TEMPLATE_WITH.format(provider=provider, option=option))
 
 
 def test_parsing_cloud():

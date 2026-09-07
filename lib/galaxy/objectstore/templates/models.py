@@ -230,21 +230,27 @@ class Boto3ObjectStoreConfiguration(StrictModel):
 CloudProviderType = Literal["aws", "azure", "google", "openstack"]
 
 
+# User-defined stores are persisted in the database and have to keep working
+# indefinitely, so these models expose only what a user can meaningfully supply
+# and Galaxy can keep honoring: no short-lived credentials (which would expire
+# and leave a dead store), and no server-side file paths (which a user cannot
+# create and should not be able to point Galaxy at). The store itself still
+# supports those options through object_store_conf.yml, where an admin owns the
+# configuration and can change it at will.
+
+
 class CloudAuthTemplate(StrictModel):
     # aws
     access_key: str | TemplateExpansion | None = None
     secret_key: str | TemplateExpansion | None = None
-    session_token: str | TemplateExpansion | None = None
-    # azure (service principal, or access_token instead)
+    # azure (service principal)
     subscription_id: str | TemplateExpansion | None = None
     client_id: str | TemplateExpansion | None = None
     secret: str | TemplateExpansion | None = None
     tenant: str | TemplateExpansion | None = None
-    access_token: str | TemplateExpansion | None = None
     storage_account: str | TemplateExpansion | None = None
     resource_group: str | TemplateExpansion | None = None
-    # google (exactly one of the two credential sources)
-    credentials_file: str | TemplateExpansion | None = None
+    # google
     credentials_dict: dict[str, Any] | None = None
     # openstack (password auth, or an application credential instead)
     username: str | TemplateExpansion | None = None
@@ -263,17 +269,14 @@ class CloudAuth(StrictModel):
     # aws
     access_key: str | None = None
     secret_key: str | None = None
-    session_token: str | None = None
-    # azure (service principal, or access_token instead)
+    # azure (service principal)
     subscription_id: str | None = None
     client_id: str | None = None
     secret: str | None = None
     tenant: str | None = None
-    access_token: str | None = None
     storage_account: str | None = None
     resource_group: str | None = None
-    # google (exactly one of the two credential sources)
-    credentials_file: str | None = None
+    # google
     credentials_dict: dict[str, Any] | None = None
     # openstack (password auth, or an application credential instead)
     username: str | None = None
@@ -290,24 +293,18 @@ class CloudAuth(StrictModel):
 
 class CloudBucketTemplate(StrictModel):
     name: str | TemplateExpansion
-    use_reduced_redundancy: bool | TemplateExpansion | None = None
 
 
 class CloudBucket(StrictModel):
     name: str
-    use_reduced_redundancy: bool | None = None
 
 
 class CloudConnectionTemplate(StrictModel):
     endpoint_url: str | TemplateExpansion | None = None
-    validate_certs: bool | TemplateExpansion | None = None
-    signature_version: str | TemplateExpansion | None = None
 
 
 class CloudConnection(StrictModel):
     endpoint_url: str | None = None
-    validate_certs: bool | None = None
-    signature_version: str | None = None
 
 
 class CloudTransferTemplate(StrictModel):
