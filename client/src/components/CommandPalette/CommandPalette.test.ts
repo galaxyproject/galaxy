@@ -897,6 +897,25 @@ describe("CommandPalette", () => {
         expect(badge().text()).toContain("Tools");
     });
 
+    it("leaves an action's argument mode behind when a toggle closes the palette", async () => {
+        await type("> upload");
+        await press("Enter", { shiftKey: true });
+        expect(badge().text()).toContain("Upload data");
+
+        // a toggle is not escape, but an argument mode still must not outlive it
+        useCommandPalette().togglePalette();
+        await settle();
+        useCommandPalette().togglePalette();
+        await settle();
+
+        expect(badge().exists()).toBe(false);
+        expect(inputValue()).toBe("");
+
+        await type(">");
+        expect(badge().text()).toContain("Actions");
+        expect(inputValue()).toBe("");
+    });
+
     it("reopens on a clean root state after escape closed the palette", async () => {
         await type("t: align");
 

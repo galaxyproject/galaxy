@@ -73,7 +73,7 @@ const userStore = useUserStore();
 
 // the machine needs the context to reject scope tokens the user may not use;
 // `buildContext` is a hoisted declaration, so it is safe to hand over here
-const { badgeLabel, enterAction, enterScope, handleEscape, mode, popMode, query, setText, text } =
+const { badgeLabel, enterAction, enterScope, exitAction, handleEscape, mode, popMode, query, setText, text } =
     usePaletteMachine(buildContext);
 
 const dialogElement = ref<HTMLDialogElement | null>(null);
@@ -991,6 +991,10 @@ watchImmediate(isPaletteOpen, (open) => {
     } else {
         modifierHeld.value = false;
         shiftHeld.value = false;
+        // the one exception to preserving the input: an action's argument mode
+        // parses nothing, so a `>` typed into a reopened palette would be
+        // collected as the argument instead of opening the actions list
+        exitAction();
         closeDialog();
     }
 });

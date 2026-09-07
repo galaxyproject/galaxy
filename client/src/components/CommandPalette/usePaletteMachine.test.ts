@@ -191,6 +191,31 @@ describe("usePaletteMachine", () => {
         expect(machine.handleEscape()).toBe("close");
     });
 
+    it("leaves the action argument mode behind when the palette closes", () => {
+        const machine = usePaletteMachine();
+        machine.enterAction(NEW_HISTORY);
+        machine.setText("rna analysis");
+
+        machine.exitAction();
+        expect(machine.mode.value).toEqual({ type: "root" });
+        expect(machine.text.value).toBe("");
+    });
+
+    it("keeps a scope and the root text when the palette closes", () => {
+        const scoped = usePaletteMachine();
+        scoped.setText("w: rna");
+        scoped.exitAction();
+        // only an action swallows what is typed next, a scope still parses it
+        expect(scoped.mode.value).toEqual({ type: "scoped", scope: WORKFLOWS });
+        expect(scoped.text.value).toBe("rna");
+
+        const root = usePaletteMachine();
+        root.setText("rna");
+        root.exitAction();
+        expect(root.mode.value).toEqual({ type: "root" });
+        expect(root.text.value).toBe("rna");
+    });
+
     it("resets mode and text", () => {
         const machine = usePaletteMachine();
         machine.setText("w: rna");
