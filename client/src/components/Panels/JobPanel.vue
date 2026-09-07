@@ -15,7 +15,7 @@ import JobCard from "@/components/JobInformation/JobCard.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
-const HIDDEN_TOOL_IDS = ["__DATA_FETCH__"];
+const HIDDEN_TOOL_IDS = ["__DATA_FETCH__", "upload1"];
 
 interface Props {
     inPanel?: boolean;
