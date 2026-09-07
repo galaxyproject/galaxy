@@ -157,18 +157,23 @@ class _RecordingJobWrapper:
 
 
 class _StubJob:
-    def __init__(self, id: int, user: "_StubUser") -> None:
+    def __init__(self, id: int, user: "_StubUser", job_runner_external_id: str | None = None) -> None:
         self.id = id
         self.user = user
+        self.job_runner_external_id = job_runner_external_id
+
+    def get_job_runner_external_id(self) -> str | None:
+        return self.job_runner_external_id
 
 
 class _StubJobWrapperForState:
     """Minimal job-wrapper double for ``get_client_from_state``.
 
-    The base ``get_client_from_state`` reads only ``.job_id``; ``get_job()`` is
-    here so this also exercises the (pre-cleanup) BYOC override that called
-    ``job_wrapper.get_job().user`` — letting the new tests serve as a
-    regression net across the override's deletion."""
+    The base ``get_client_from_state`` reads ``.job_id`` and the recorded
+    external id via ``get_job()``; ``get_job()`` also exercises the
+    (pre-cleanup) BYOC override that called ``job_wrapper.get_job().user`` —
+    letting the new tests serve as a regression net across the override's
+    deletion."""
 
     def __init__(self, job_id: int, job: "_StubJob") -> None:
         self.job_id = job_id
