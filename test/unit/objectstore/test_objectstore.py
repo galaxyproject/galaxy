@@ -1399,7 +1399,7 @@ def test_config_parse_cloud():
 def test_config_parse_cloud_aws_custom_endpoint():
     for config_str in [CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG, CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG_YAML]:
         with TestConfig(config_str) as (_, object_store):
-            assert object_store.endpoint_url == CLOUD_AWS_CUSTOM_ENDPOINT
+            assert object_store.connection_dict["endpoint_url"] == CLOUD_AWS_CUSTOM_ENDPOINT
             assert object_store.to_dict()["connection"]["endpoint_url"] == CLOUD_AWS_CUSTOM_ENDPOINT
 
             with (
@@ -1407,7 +1407,7 @@ def test_config_parse_cloud_aws_custom_endpoint():
                 patch("galaxy.objectstore.cloud.ProviderList") as providers,
             ):
                 connection = object_store._get_connection(
-                    object_store.provider, object_store.credentials, object_store.endpoint_url
+                    object_store.provider, object_store.credentials, object_store.connection_dict
                 )
 
             assert connection is provider_factory.return_value.create_provider.return_value

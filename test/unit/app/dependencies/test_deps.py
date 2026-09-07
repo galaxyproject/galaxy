@@ -249,9 +249,9 @@ def test_optional_requirements_carry_cloudbridge_extras():
     with _config_context() as cc:
         object_store_config = cc.write_config("objectstore.yml", DISTRIBUTED_WITH_CLOUD_PROVIDERS_CONFIG_YAML)
         galaxy_config = cc.write_config("galaxy.yml", f"galaxy:\n  object_store_config_file: {object_store_config}\n")
-        requirements = optional(galaxy_config)
-        assert "cloudbridge[azure,openstack]" in requirements
-        assert "cloudbridge" not in requirements
+        requirements = [r for r in optional(galaxy_config) if r.startswith("cloudbridge")]
+        assert len(requirements) == 1
+        assert requirements[0].startswith("cloudbridge[azure,openstack]")
 
 
 def test_fs_default():
