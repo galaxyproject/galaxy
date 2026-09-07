@@ -19,7 +19,7 @@ export const PAGE_MRU_TYPE = "page";
 /** Per section cap, small enough to keep the scoped view scannable */
 const SECTION_LIMIT = 8;
 const RECENT_LIMIT = 5;
-/** How many rows the root fan-out asks the published listing for */
+/** How many rows the root fan-out shows from the published listing */
 const ROOT_VARIANT_LIMIT = 3;
 /** Below this length an unscoped query fans out too broadly to be useful */
 const MIN_ROOT_QUERY_LENGTH = 2;
@@ -136,15 +136,22 @@ async function storeFirstItems(
  * costing the fan-out the rows it already has. A handful of hits for one query
  * is not the listing, so `record: false` keeps them out of it: `rp:` still finds
  * its listing unfetched and fetches it itself.
+ *
+ * The same page `rp:` searches is fetched even though only `limit` rows are
+ * shown: the backend matches loosely and orders by update time, so the newest
+ * few rows it answers with are often ranked away here, and asking for exactly as
+ * many rows as the fan-out renders would leave it empty. The extra rows cost
+ * nothing beyond the one request the search already makes.
  */
 async function publishedItems(query: string, limit: number): Promise<PaletteItem[]> {
     const pageStore = usePageStore();
     try {
-        const pages = (await pageStore.fetchPages("published", { search: query, limit, record: false })) ?? [];
+        const pages =
+            (await pageStore.fetchPages("published", { search: query, limit: SECTION_LIMIT, record: false })) ?? [];
         return rankPaletteItems(
             pages.map((page) => pageToItem(page, "published")),
             query,
-        );
+        ).slice(0, limit);
     } catch (error) {
         console.debug("Command palette could not fetch published pages", error);
         return [];
