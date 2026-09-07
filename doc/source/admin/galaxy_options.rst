@@ -6226,7 +6226,7 @@
     List of command palette providers to disable.
     Valid provider ids are: ``actions``, ``navigation``, ``tools``,
     ``workflows``, ``histories``, ``datasets``, ``visualizations``,
-    ``invocations``, ``pages`` and ``interactiveTools``.
+    ``invocations``, ``reports`` and ``interactiveTools``.
     Disabling a provider removes its search scopes, its category tab
     and its results from the palette.
 :Default: ``None``
