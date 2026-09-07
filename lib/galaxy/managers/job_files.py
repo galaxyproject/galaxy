@@ -131,7 +131,7 @@ class JobFilesManager:
         dataset files (so a runner can re-read its own outputs).
         Symlinks are rejected outright as defense in depth.
         """
-        if os.path.islink(path):
+        if not path or os.path.islink(path):
             raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
         if self._in_working_directory(job, path):
             return
@@ -152,7 +152,7 @@ class JobFilesManager:
         ``container_runtime.json``, ``tool_script.sh``, and ``configs/**``.
         Symlinks are rejected outright.
         """
-        if os.path.islink(path):
+        if not path or os.path.islink(path):
             raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
         if self._is_job_dataset_path(job, path, include_inputs=False):
             return
@@ -233,7 +233,12 @@ class JobFilesManager:
             dataset = assoc.dataset
             if not dataset:
                 continue
-            if os.path.realpath(dataset.get_file_name()) == target:
+            file_name = dataset.get_file_name()
+            # A purged dataset has no file name; ``realpath("")`` is the process
+            # cwd, which must never be treated as one of the job's files.
+            if not file_name:
+                continue
+            if os.path.realpath(file_name) == target:
                 return True
             extra = dataset.extra_files_path
             if extra and util.in_directory(target, os.path.realpath(extra)):
