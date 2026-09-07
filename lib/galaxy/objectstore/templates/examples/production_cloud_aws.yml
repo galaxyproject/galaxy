@@ -1,27 +1,38 @@
 - id: cloud_aws_bucket
-  name: Amazon S3 Bucket (CloudBridge)
   version: 0
+  name: Amazon Web Services S3 Storage (multi-cloud plugin)
   description: |
-    Stores Galaxy datasets in an Amazon S3 bucket through the
-    provider-agnostic cloud object store. Files larger than the multipart
-    threshold transfer as parts in parallel, in both directions.
+    Amazon's Simple Storage Service (S3) is Amazon's primary cloud storage service.
+    More information on S3 can be found in [Amazon's documentation](https://aws.amazon.com/s3/).
+    This form connects to S3 with Galaxy's multi-cloud storage plugin, which speaks to
+    Amazon, Azure, Google Cloud and OpenStack alike.
   variables:
     bucket:
       label: Bucket
       type: string
-      help: The name of the existing S3 bucket to store datasets in.
+      help: |
+        The [AWS S3 Bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html) to
+        store your datasets in. You will need to create a bucket to use in your AWS web console before
+        using this form.
     region:
       label: Region
       type: string
-      help: The AWS region the bucket lives in (e.g. us-east-2).
       default: us-east-1
+      help: |
+        The AWS region your bucket was created in, for instance `us-east-1` or `ap-southeast-2`. The
+        region is shown beside the bucket in your AWS web console.
   secrets:
     access_key:
       label: Access Key ID
-      help: The AWS access key ID to access the bucket with.
+      help: |
+        A security credential for interacting with AWS services can be created from your
+        AWS web console. Creating an "Access Key" creates a pair of keys used to identify
+        and authenticate access to your AWS account - the first part of the pair is the
+        "Access Key ID" and should be entered here.
     secret_key:
       label: Secret Access Key
-      help: The AWS secret access key to access the bucket with.
+      help: |
+        See the documentation above for "Access Key ID" for information about access key pairs.
   configuration:
     type: cloud
     provider: aws
