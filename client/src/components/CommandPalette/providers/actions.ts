@@ -121,7 +121,7 @@ async function createTitledPage(title: string, ctx: PaletteContext) {
         usePageStore().savePages("my", [page], true);
         ctx.navigate?.(`/pages/editor?id=${page.id}`);
     } catch (error) {
-        Toast.error(errorMessageAsString(error), "Failed to create page");
+        Toast.error(errorMessageAsString(error), "Failed to create report");
     }
 }
 
@@ -135,7 +135,7 @@ function titledPageItems(argQuery: string): PaletteItem[] {
         {
             id: "actions:create-page:titled",
             icon: faFileAlt,
-            title: `Create page titled '${title}'`,
+            title: `Create report titled '${title}'`,
             handler: (ctx: PaletteContext) => {
                 void createTitledPage(title, ctx);
             },
@@ -232,14 +232,14 @@ const ACTIONS: ActionDefinition[] = [
         anonymous: false,
         icon: faFileAlt,
         keywords: "markdown document report notebook new",
-        subtitle: "Create a new page and open the editor",
-        title: "Create new page",
+        subtitle: "Create a new report and open the editor",
+        title: "Create new report",
         to: "/pages/create",
         argumentMode: {
-            emptyHint: "Type a title for the new page…",
+            emptyHint: "Type a title for the new report…",
             getItems: (argQuery: string) => titledPageItems(argQuery),
             label: "title it",
-            placeholder: "Title the new page…",
+            placeholder: "Title the new report…",
         },
     },
     {

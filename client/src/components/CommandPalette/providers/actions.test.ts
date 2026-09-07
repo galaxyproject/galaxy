@@ -170,7 +170,7 @@ describe("actionsProvider", () => {
         const navigate = vi.fn();
         const ctx = makeCtx({ navigate });
         const [item] = await argumentItems("actions:create-page", " My New Page ", ctx);
-        expect(item?.title).toBe("Create page titled 'My New Page'");
+        expect(item?.title).toBe("Create report titled 'My New Page'");
 
         item?.handler?.(ctx);
         await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-1"));
