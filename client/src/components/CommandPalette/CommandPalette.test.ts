@@ -20,7 +20,7 @@ import { datasetsProvider } from "./providers/datasets";
 import { PaletteFetchError } from "./providers/errors";
 import { historiesProvider } from "./providers/histories";
 import { navigationProvider } from "./providers/navigation";
-import { pagesProvider } from "./providers/pages";
+import { reportsProvider } from "./providers/reports";
 import { toolsProvider } from "./providers/tools";
 import { workflowsProvider } from "./providers/workflows";
 import type { CommandPaletteProvider, PaletteItem } from "./types";
@@ -676,19 +676,19 @@ describe("CommandPalette", () => {
         pageStore.idsByVariant.my = ["p1"];
 
         await type("lab notes");
-        expect(sectionIds()).toContain("palette section pages");
+        expect(sectionIds()).toContain("palette section reports");
 
-        await pickCategory("pages");
-        expect(category("pages").attributes("aria-selected")).toBe("true");
-        // only the pages provider runs, through its own scoped search
-        expect(sectionIds()).toEqual(["palette section pages:latest"]);
+        await pickCategory("reports");
+        expect(category("reports").attributes("aria-selected")).toBe("true");
+        // only the reports provider runs, through its own scoped search
+        expect(sectionIds()).toEqual(["palette section reports:latest"]);
         expect(wrapper.text()).toContain("Lab notes");
 
         await pickCategory("navigation");
-        expect(sectionIds()).not.toContain("palette section pages");
+        expect(sectionIds()).not.toContain("palette section reports");
 
         await pickCategory("all");
-        expect(sectionIds()).toContain("palette section pages");
+        expect(sectionIds()).toContain("palette section reports");
     });
 
     it("resets the category when the query is cleared", async () => {
@@ -924,7 +924,7 @@ describe("CommandPalette", () => {
     });
 
     it("keeps the selection on the same row across the final sort", async () => {
-        const pages = stallSearch(pagesProvider);
+        const pages = stallSearch(reportsProvider);
         try {
             await type("workflow");
             await press("ArrowDown");
@@ -936,7 +936,7 @@ describe("CommandPalette", () => {
             pages.land([{ id: "pages:p1", title: "workflow", to: "/pages/p1" }]);
             await settle();
 
-            expect(sectionIds()[0]).toBe("palette section pages");
+            expect(sectionIds()[0]).toBe("palette section reports");
             expect(selectedRow().text()).toBe(selected);
         } finally {
             pages.restore();
@@ -944,7 +944,7 @@ describe("CommandPalette", () => {
     });
 
     it("keeps a selection moved back to the first row across the final sort", async () => {
-        const pages = stallSearch(pagesProvider);
+        const pages = stallSearch(reportsProvider);
         try {
             await type("workflow");
             await press("ArrowDown");
@@ -957,7 +957,7 @@ describe("CommandPalette", () => {
             pages.land([{ id: "pages:p1", title: "workflow", to: "/pages/p1" }]);
             await settle();
 
-            expect(sectionIds()[0]).toBe("palette section pages");
+            expect(sectionIds()[0]).toBe("palette section reports");
             expect(selectedRow().text()).toBe(selected);
         } finally {
             pages.restore();
