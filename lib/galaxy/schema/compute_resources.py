@@ -3,7 +3,6 @@
 from datetime import datetime
 from typing import (
     Annotated,
-    Optional,
 )
 
 from pydantic import Field
@@ -38,7 +37,7 @@ class ComputeResourceSummary(Model):
         Field(description="Base URL of the pulsar-relay this resource is wired to."),
     ]
     relay_topic_prefix: Annotated[
-        Optional[str],
+        str | None,
         Field(
             None,
             description="Optional relay topic prefix, when the operator namespaces topics.",
@@ -51,7 +50,7 @@ class ComputeResourceSummary(Model):
     create_time: datetime
     update_time: datetime
     last_seen_time: Annotated[
-        Optional[datetime],
+        datetime | None,
         Field(None, description="Last time the relay observed this resource."),
     ]
 
@@ -105,6 +104,6 @@ class RegistrationCompletionPayload(Model):
     ]
     relay_url: Annotated[str, Field(description="Relay URL the user's Pulsar bound to.")]
     relay_topic_prefix: Annotated[
-        Optional[str],
+        str | None,
         Field(None, description="Optional relay topic prefix."),
     ]

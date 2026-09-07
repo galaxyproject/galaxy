@@ -10,7 +10,6 @@ import os
 from typing import (
     Any,
     cast,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -35,27 +34,28 @@ class _StubSecurity:
             raise ValueError(f"unexpected encoded id: {encoded!r}")
         return int(suffix)
 
-    def encode_id(self, obj_id: int, kind: Optional[str] = None) -> str:
+    def encode_id(self, obj_id: int, kind: str | None = None) -> str:
         return f"EXPECTED[{kind or ''}]:{obj_id}"
 
 
 class _StubObjectStore:
-    """Resolves a job's working directory strictly by ``extra_dir`` — the job
-    id the manager passes to ``get_filename``. Keying on it (rather than
-    returning one directory unconditionally) means a regression that drops
-    ``extra_dir`` — and would alias one job's working dir onto a shared
-    parent — surfaces as a lookup miss instead of silently passing."""
+    """Resolves a job's working directory strictly per job — ``JobWorkingDirectory``
+    asks for the job's own directory (``obj_dir=True``). Keying on the job id
+    (rather than returning one directory unconditionally) means a regression
+    that resolves a shared parent instead of the per-job directory surfaces as
+    a lookup miss instead of silently passing."""
 
     def __init__(self, working_dirs: dict[str, str]) -> None:
         self._working_dirs = working_dirs
 
-    def get_filename(self, job: Any, *, extra_dir: Optional[str] = None, **kwargs: Any) -> str:
-        if extra_dir not in self._working_dirs:
+    def get_filename(self, job: Any, *, obj_dir: bool = False, **kwargs: Any) -> str:
+        key = str(job.id)
+        if not obj_dir or key not in self._working_dirs:
             raise AssertionError(
-                f"object store queried with extra_dir={extra_dir!r}; "
+                f"object store queried with obj_dir={obj_dir!r} for job {key!r}; "
                 f"known job working dirs: {sorted(self._working_dirs)}"
             )
-        return self._working_dirs[extra_dir]
+        return self._working_dirs[key]
 
 
 class _StubSession:
