@@ -8,6 +8,7 @@ import { useRoute, useRouter } from "vue-router/composables";
 
 import type { JobBaseModel } from "@/api/jobs";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useToolStore } from "@/stores/toolStore";
 
 import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -16,12 +17,14 @@ import JobState from "@/components/JobStates/JobState.vue";
 const props = defineProps<{
     job: JobBaseModel;
     current?: boolean;
+    showToolName?: boolean;
 }>();
 
 const route = useRoute();
 const router = useRouter();
 
 const { getHistoryNameById } = storeToRefs(useHistoryStore());
+const toolStore = useToolStore();
 
 /** Whether the job can be rerun; actually decided based on if the tool `is_workflow_compatible`,
  * but that would require an extra fetch. Just going by known non-rerunnable tool ids for now.
@@ -45,6 +48,13 @@ const actions = computed(() => {
     return actions;
 });
 
+const cardTitle = computed(() => {
+    if (props.showToolName) {
+        return toolStore.getToolNameById(props.job.tool_id) || props.job.tool_id;
+    }
+    return props.job.tool_id;
+});
+
 function cardClicked(job: JobBaseModel) {
     router.push(`/jobs/${job.id}/view`);
 }
@@ -56,7 +66,7 @@ function cardClicked(job: JobBaseModel) {
         clickable
         button
         :current="props.current"
-        :title="props.job.tool_id"
+        :title="cardTitle"
         :title-icon="{ icon: faWrench }"
         :title-n-lines="2"
         title-size="text"
