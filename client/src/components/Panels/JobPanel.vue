@@ -10,6 +10,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useJobStore } from "@/stores/jobStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import JobCard from "@/components/JobInformation/JobCard.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -25,7 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
     inPanel: false,
 });
 
-const currentUser = computed(() => useUserStore().currentUser);
+const { currentUser, showToolNamesInJobPanel } = storeToRefs(useUserStore());
 
 const jobStore = useJobStore();
 const { sortedStoredJobs } = storeToRefs(jobStore);
@@ -122,6 +123,19 @@ const currentItemId = computed(() => {
 
 <template>
     <ActivityPanel title="Jobs">
+        <template v-slot:header-buttons>
+            <GCheckbox
+                v-model="showToolNamesInJobPanel"
+                v-g-tooltip.hover
+                data-test-id="job-panel-name-mode-toggle"
+                size="small"
+                switch
+                class="mx-2"
+                title="Show tool names in the jobs panel">
+                <span class="small unselectable">Tool Names</span>
+            </GCheckbox>
+        </template>
+
         <template v-slot:header>
             <FilterMenu
                 v-model:filter-text="filterText"
@@ -145,7 +159,7 @@ const currentItemId = computed(() => {
             name-plural="jobs"
             :load-disabled="!currentUser || currentUser.isAnonymous">
             <template v-slot:item="{ item: job }">
-                <JobCard :job="job" :current="job.id === currentItemId" />
+                <JobCard :job="job" :current="job.id === currentItemId" :show-tool-name="showToolNamesInJobPanel" />
             </template>
         </ScrollList>
     </ActivityPanel>

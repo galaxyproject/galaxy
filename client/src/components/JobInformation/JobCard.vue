@@ -9,6 +9,7 @@ import { useRoute, useRouter } from "vue-router";
 import type { JobBaseModel } from "@/api/jobs";
 import { useRerunnableTool } from "@/composables/rerunnableTool";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useToolStore } from "@/stores/toolStore";
 
 import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -17,12 +18,14 @@ import JobState from "@/components/JobStates/JobState.vue";
 const props = defineProps<{
     job: JobBaseModel;
     current?: boolean;
+    showToolName?: boolean;
 }>();
 
 const route = useRoute();
 const router = useRouter();
 
 const { getHistoryNameById } = storeToRefs(useHistoryStore());
+const toolStore = useToolStore();
 
 const { canRerun: jobIsRerunnable } = useRerunnableTool(computed(() => props.job?.tool_id));
 
@@ -41,6 +44,13 @@ const actions = computed(() => {
     return actions;
 });
 
+const cardTitle = computed(() => {
+    if (props.showToolName) {
+        return toolStore.getToolNameById(props.job.tool_id) || props.job.tool_id;
+    }
+    return props.job.tool_id;
+});
+
 function cardClicked(job: JobBaseModel) {
     router.push(`/jobs/${job.id}/view`);
 }
@@ -52,7 +62,7 @@ function cardClicked(job: JobBaseModel) {
         clickable
         button
         :current="props.current"
-        :title="props.job.tool_id"
+        :title="cardTitle"
         :title-icon="{ icon: faWrench }"
         :title-n-lines="2"
         title-size="text"
