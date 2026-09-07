@@ -344,11 +344,13 @@ const scopeHint = computed(() => {
 
 /**
  * Prompt for a free text argument that has nothing to offer until something is
- * typed, so the mode asks for a value instead of reporting no results.
+ * typed, so the mode asks for a value instead of reporting no results. The
+ * providers are handed the trimmed text, so whitespace alone is still nothing
+ * typed and has to keep asking rather than report an empty result.
  */
 const argumentHint = computed(() => {
     const activeMode = mode.value;
-    if (activeMode.type !== "action" || text.value !== "") {
+    if (activeMode.type !== "action" || query.value !== "") {
         return undefined;
     }
     const hint = activeMode.action.argumentMode?.emptyHint;

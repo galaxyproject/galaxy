@@ -355,6 +355,22 @@ describe("CommandPalette", () => {
         expect(prompt().exists()).toBe(true);
     });
 
+    it("keeps prompting for a free text argument that is only whitespace", async () => {
+        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
+
+        await type("> create new report");
+        await press("Enter", { shiftKey: true });
+        expect(badge().text()).toContain("Create new report");
+
+        // a title of spaces alone leaves the action nothing to run, so the prompt
+        // has to ask again instead of the palette claiming there are no results
+        await type("   ");
+        expect(wrapper.find("[data-description='palette argument hint']").text()).toContain(
+            "Type a title for the new report",
+        );
+        expect(wrapper.find("[data-description='palette empty']").exists()).toBe(false);
+    });
+
     it("leaves an action's argument badge on backspace at the start", async () => {
         await type("> upload");
         await press("Enter", { shiftKey: true });
