@@ -34,7 +34,7 @@ describe("availableCategories", () => {
             "Datasets",
             "Visualizations",
             "Invocations",
-            "Pages",
+            "Reports",
             "Tools",
             "Navigation",
         ]);
