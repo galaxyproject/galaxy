@@ -78,6 +78,18 @@ export function usePaletteMachine(getContext?: () => PaletteContext) {
         text.value = "";
     }
 
+    /**
+     * Leaves an action's argument mode, dropping the argument with it. Every
+     * other mode is left alone: only an action stops `setText` from parsing, so
+     * only an action may not outlive the palette it was entered in.
+     */
+    function exitAction() {
+        if (mode.value.type === "action") {
+            mode.value = { type: "root" };
+            text.value = "";
+        }
+    }
+
     /** Drops the badge, keeping whatever was typed after it */
     function popMode() {
         if (mode.value.type !== "root") {
@@ -134,6 +146,7 @@ export function usePaletteMachine(getContext?: () => PaletteContext) {
         enterAction,
         enterHelp,
         enterScope,
+        exitAction,
         handleEscape,
         mode,
         popMode,
