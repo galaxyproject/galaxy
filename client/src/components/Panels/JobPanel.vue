@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
     inPanel: false,
 });
 
-const currentUser = computed(() => useUserStore().currentUser);
+const { currentUser, showToolNamesInJobPanel } = storeToRefs(useUserStore());
 
 const jobStore = useJobStore();
 const { sortedStoredJobs } = storeToRefs(jobStore);
@@ -122,6 +122,19 @@ const currentItemId = computed(() => {
 
 <template>
     <ActivityPanel title="Jobs">
+        <template v-slot:header-buttons>
+            <BFormCheckbox
+                v-model="showToolNamesInJobPanel"
+                v-g-tooltip.hover
+                data-test-id="upload-advanced-mode-toggle"
+                size="sm"
+                switch
+                class="mx-2"
+                title="Show tool names in the jobs panel">
+                <span class="small unselectable">Tool Names</span>
+            </BFormCheckbox>
+        </template>
+
         <template v-slot:header>
             <FilterMenu
                 name="Jobs"
@@ -145,7 +158,7 @@ const currentItemId = computed(() => {
             name-plural="jobs"
             :load-disabled="!currentUser || currentUser.isAnonymous">
             <template v-slot:item="{ item: job }">
-                <JobCard :job="job" :current="job.id === currentItemId" />
+                <JobCard :job="job" :current="job.id === currentItemId" :show-tool-name="showToolNamesInJobPanel" />
             </template>
         </ScrollList>
     </ActivityPanel>
