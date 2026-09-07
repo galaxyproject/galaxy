@@ -57,6 +57,7 @@ const REMOTE_ONLY = workflow("wf6", "Zebrafish pipeline");
 
 interface LoadArgs {
     filterText?: string;
+    limit?: number;
     showPublished?: boolean;
     showShared?: boolean;
 }
@@ -306,8 +307,33 @@ describe("workflowsProvider", () => {
             "rna is:shared_with_me",
             "rna is:published",
         ]);
-        // a handful of rows per public list is enough next to the own workflows
-        expect(vi.mocked(loadWorkflows).mock.calls.every(([args]) => args.limit === 3)).toBe(true);
+        // one page per public list, which the client then ranks and caps itself
+        expect(vi.mocked(loadWorkflows).mock.calls.every(([args]) => args.limit === 25)).toBe(true);
+    });
+
+    it("pages a public list in the fan-out, so a match below the newest rows survives", async () => {
+        await scopedSections(OWN_SCOPE);
+        vi.mocked(loadWorkflows).mockClear();
+        // the backend sorts by update time and matches loosely, so the rows it
+        // answers with first need not match the query at all
+        const loose = Array.from({ length: 20 }, (_, index) =>
+            workflow(`loose-${index}`, `Assembly ${index}`, "stranger"),
+        );
+        const publicRna = workflow("wf8", "RNA-seq metagenomics", "stranger");
+        // the backend honors the requested limit, so asking for a handful of
+        // rows only ever sees the newest few
+        vi.mocked(loadWorkflows).mockImplementation(async ({ limit, showPublished }: LoadArgs) => {
+            const data = showPublished ? [...loose, publicRna] : [];
+            return { data: data.slice(0, limit), totalMatches: data.length };
+        });
+
+        const items = await workflowsProvider.search("rna", makeCtx());
+
+        expect(items.map((i) => i.title)).toContain("RNA-seq metagenomics");
+        // the whole page is asked for, so the ranking has the match to find
+        expect(vi.mocked(loadWorkflows).mock.calls.every(([args]) => (args.limit ?? 0) >= 25)).toBe(true);
+        // the section itself stays capped at the handful of rows it renders
+        expect(items.filter((i) => i.id.startsWith("workflows:published:")).length).toBeLessThanOrEqual(3);
     });
 
     it("keeps one row per workflow in the fan-out, preferring the user's own", async () => {
