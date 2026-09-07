@@ -25,7 +25,7 @@ export const PALETTE_CATEGORIES: PaletteCategory[] = [
     { id: "datasets", label: "Datasets", scope: findScope("d") },
     { id: "visualizations", label: "Visualizations", scope: findScope("v") },
     { id: "invocations", label: "Invocations", scope: findScope("i") },
-    { id: "pages", label: "Pages", scope: findScope("p") },
+    { id: "reports", label: "Reports", scope: findScope("r") },
     { id: "tools", label: "Tools", scope: findScope("t") },
     { id: "navigation", label: "Navigation", scope: findScope("n") },
 ];

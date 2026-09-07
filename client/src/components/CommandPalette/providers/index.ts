@@ -6,7 +6,7 @@ import { historiesProvider } from "./histories";
 import { interactiveToolsProvider } from "./interactiveTools";
 import { invocationsProvider } from "./invocations";
 import { navigationProvider } from "./navigation";
-import { pagesProvider } from "./pages";
+import { reportsProvider } from "./reports";
 import { isProviderEnabled } from "./scopes";
 import { toolsProvider } from "./tools";
 import { visualizationsProvider } from "./visualizations";
@@ -28,7 +28,7 @@ export const paletteProviders: CommandPaletteProvider[] = [
     datasetsProvider,
     visualizationsProvider,
     invocationsProvider,
-    pagesProvider,
+    reportsProvider,
     interactiveToolsProvider,
 ];
 
