@@ -257,6 +257,33 @@ class TestPathPolicy:
         with pytest.raises(exceptions.ItemAccessibilityException):
             mgr.assert_readable(job, str(link))
 
+    def test_read_empty_path_rejected(self, tmp_path):
+        input_file = tmp_path / "input.dat"
+        input_file.write_bytes(b"x")
+        job = _stub_job(id=5, input_datasets=[_StubAssoc(_StubDataset(file_path=str(input_file)))])
+        mgr = _make_manager(jobs={5: job})
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            mgr.assert_readable(job, "")
+
+    def test_read_purged_input_does_not_match_empty_path(self, tmp_path):
+        # A purged dataset reports an empty file name. realpath("") is the
+        # process cwd, so without a guard an empty (or cwd) request path would
+        # compare equal to it and pass the allowlist.
+        job = _stub_job(id=5, input_datasets=[_StubAssoc(_StubDataset(file_path=""))])
+        mgr = _make_manager(jobs={5: job})
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            mgr.assert_readable(job, "")
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            mgr.assert_readable(job, os.getcwd())
+
+    def test_write_purged_output_does_not_match_empty_path(self):
+        job = _stub_job(id=5, output_datasets=[_StubAssoc(_StubDataset(file_path=""))])
+        mgr = _make_manager(jobs={5: job})
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            mgr.assert_writable(job, "")
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            mgr.assert_writable(job, os.getcwd())
+
     def test_write_input_path_rejected(self, tmp_path):
         # Even when a path matches an input dataset, writes are not allowed —
         # the runner posts outputs, not inputs.
