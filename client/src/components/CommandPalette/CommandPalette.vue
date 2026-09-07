@@ -720,6 +720,12 @@ function onKeydown(event: KeyboardEvent) {
         }
         case "Enter":
             event.preventDefault();
+            if (searchIdentity(mode.value) !== renderedIdentity) {
+                // the search behind the new badge is still debounced, so the rows
+                // on screen are the previous mode's: running one of them would
+                // act on something the user has already typed past
+                break;
+            }
             if (categoryRowSelected.value) {
                 // the category is already applied, enter just returns to the list
                 selectedIndex.value = 0;

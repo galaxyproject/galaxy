@@ -916,6 +916,32 @@ describe("CommandPalette", () => {
         expect(inputValue()).toBe("");
     });
 
+    it("ignores enter while the rendered rows still belong to the previous mode", async () => {
+        const pageStore = usePageStore();
+        pageStore.summariesById = { p1: { id: "p1", title: "Lab notes", slug: "lab-notes" } as never };
+        pageStore.idsByVariant.my = ["p1"];
+        const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
+
+        await type("lab notes");
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Lab notes");
+
+        // the switch to the actions list is debounced, so enter lands while the
+        // page row is still on screen and must not run it
+        (input().element as HTMLInputElement).value = "> upload";
+        await input().trigger("input");
+        await input().trigger("keydown", { key: "Enter", shiftKey: true });
+
+        expect(push).not.toHaveBeenCalled();
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+
+        await settle();
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Upload data");
+
+        await press("Enter", { shiftKey: true });
+        expect(badge().text()).toContain("Upload data");
+        expect(inputValue()).toBe("");
+    });
+
     it("reopens on a clean root state after escape closed the palette", async () => {
         await type("t: align");
 
