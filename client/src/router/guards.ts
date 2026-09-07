@@ -57,7 +57,7 @@ export async function requireAuthForUploadMethod(to: Route, _from: Route, next: 
     const method = getUploadMethod(methodId);
 
     if (!method) {
-        next("/upload");
+        next({ path: "/upload", replace: true });
         return;
     }
 
