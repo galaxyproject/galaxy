@@ -221,7 +221,6 @@ KNOWN_FORM_FAILURES: dict[str, str] = {
     "select_from_dataset_0": "the dataset option never becomes clickable",
     "test_CONVERTER_biom_0": "a converter data parameter is not set from the staged dataset",
     "test_CONVERTER_biom_1": "a converter data parameter is not set from the staged dataset",
-    "collection_two_paired_1": "the second paired collection control never renders",
     "output_action_change_format_1": "a conditional selector two levels deep does not take",
 }
 
