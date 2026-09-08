@@ -248,42 +248,29 @@ export function compare<T>(attribute: string, variant: string, converter?: Conve
     };
 }
 
-/**
- * Class for filtering (menus). Handles user input as one string filterText
- * or multiple filters (e.g. 'name:foo type:bar'), with appropriate functions.
- * @param validFilters: Record of valid filters with their handlers,
- *                      and FilterMenu properties (if menuItem = true)
- * @param validAliases: Array of valid aliases for filters
- * @param quoteStrings: Whether to auto quote filter strings in the query
- * @param nameMatching: Whether to apply name filter for unspecified filterText
- *                      (e.g. filterText = 'foo' -> 'name:foo').
- *                      Typically, when this is false, we index every field in
- *                      the backend for unspecified filterText.
- * @returns Filtering object
- * */
 export default class Filtering<T> {
-    validFilters: Record<string, ValidFilter<T>>;
-    validAliases: Array<[string, string]>;
+    /** Filter keys/values to apply when `filterText` is empty, built from `validFilters[key].default` */
     defaultFilters: Record<string, T>;
-    quoteStrings: boolean;
-    nameMatching: boolean;
 
+    /**
+     * Class for filtering (menus). Handles user input as one string filterText
+     * or multiple filters (e.g. 'name:foo type:bar'), with appropriate functions.
+     * @param validFilters Record of valid filters with their handlers,
+     *                      and FilterMenu properties (if menuItem = true)
+     * @param validAliases Array of valid aliases for filters
+     * @param quoteStrings Whether to auto quote filter strings in the query
+     * @param autoFilterKey Filter key that unspecified text (e.g. 'foo' in 'foo type:bar') maps to,
+     *                      e.g. 'name'. Must already be declared in `validFilters`. Omit to leave
+     *                      unspecified text unmatched.
+     */
     constructor(
-        validFilters: Record<string, ValidFilter<T>>,
-        validAliases?: Array<[string, string]>,
-        quoteStrings = true,
-        nameMatching = true,
+        public validFilters: Record<string, ValidFilter<T>>,
+        public validAliases: Array<[string, string]> = defaultValidAliases,
+        public quoteStrings = true,
+        public autoFilterKey?: string,
     ) {
-        this.validFilters = validFilters;
-        this.validAliases = validAliases || defaultValidAliases;
-        this.quoteStrings = quoteStrings;
-        this.nameMatching = nameMatching;
-        // If (default) we are nameMatching, add `name` filter if not present
-        if (this.nameMatching && this.validFilters["name"] === undefined) {
-            this.validFilters["name"] = {
-                handler: contains("name"),
-                menuItem: false,
-            };
+        if (this.autoFilterKey !== undefined && this.validFilters[this.autoFilterKey] === undefined) {
+            throw new Error(`Filtering: autoFilterKey "${this.autoFilterKey}" must be declared in validFilters`);
         }
         this.defaultFilters = this.createDefaultFiltersIfPresent();
         this.addRangedFiltersIfNotPresent();
@@ -360,14 +347,62 @@ export default class Filtering<T> {
         );
     }
 
+    /**
+     * Returns `autoFilterKey`, unless it appears in `filterText` as an explicit
+     * `autoFilterKey:value` token (i.e. the user typed it themselves).
+     *
+     * @param filterText Raw filter text string
+     * @returns `autoFilterKey` if not explicitly typed, else `undefined`
+     * @example
+     * // autoFilterKey = "name"
+     * getUnspecifiedTextKey("foo") // returns "name"
+     * getUnspecifiedTextKey("name:foo") // returns undefined
+     */
+    private getUnspecifiedTextKey(filterText: string): string | undefined {
+        if (this.autoFilterKey === undefined) {
+            return undefined;
+        }
+        filterText = filterText.trim();
+        const pairSplitRE = this.quoteStrings
+            ? /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g
+            : /(\S+):(.*?)(?=\s+\S+:|$)/g;
+        const matches = filterText.match(pairSplitRE) || [];
+        for (const pair of matches) {
+            const elgRE = /(\S+)([:><])(.+)/g;
+            const elgMatch = elgRE.exec(pair);
+            if (!elgMatch) {
+                continue;
+            }
+            let field = elgMatch[1];
+            const elg = elgMatch[2];
+            for (const [alias, substitute] of this.validAliases) {
+                if (elg === alias) {
+                    field = `${field}${substitute}`;
+                    break;
+                }
+            }
+            const normalizedField = field?.split("-").join("_");
+            if (normalizedField === this.autoFilterKey) {
+                // an explicit `autoFilterKey:value` token exists -- the user typed it themselves
+                return undefined;
+            }
+        }
+        return this.autoFilterKey;
+    }
+
     /** Build a text filter from filters {filter: "value", ...} => "filter:value"
      * @param filters Object containing filters
      * @param backendFormatted If true, returns a string formatted for the backend
+     * @param sourceFilterText The filterText `filters` came from, if any. Used to tell whether
+     *                      `autoFilterKey`'s value was unspecified text (write back as plain text)
+     *                      or an explicit `key:value` token (write back as `key:value`).
      * @returns Parsed filter text string
      * */
-    getFilterText(filters: Record<string, T>, backendFormatted = false): string {
+    getFilterText(filters: Record<string, T>, backendFormatted = false, sourceFilterText?: string): string {
         filters = this.getValidFilters(filters, backendFormatted).validFilters;
         const hasDefaults = this.containsDefaults(filters);
+        const unspecifiedTextKey =
+            sourceFilterText !== undefined ? this.getUnspecifiedTextKey(sourceFilterText) : undefined;
 
         let newFilterText = "";
         Object.entries(filters).forEach(([key, value]) => {
@@ -377,7 +412,10 @@ export default class Filtering<T> {
                 if (newFilterText) {
                     newFilterText += " ";
                 }
-                if (this.validFilters[key]?.type === Boolean && this.validFilters[key]?.boolType === "is") {
+                if (key === unspecifiedTextKey) {
+                    // write unspecified text back as plain text, not `key:value`
+                    newFilterText += `${value}`;
+                } else if (this.validFilters[key]?.type === Boolean && this.validFilters[key]?.boolType === "is") {
                     if (value === true) {
                         newFilterText += `is:${key}`;
                     }
@@ -423,7 +461,18 @@ export default class Filtering<T> {
             : /(\S+):(.*?)(?=\s+\S+:|$)/g;
         const matches = filterText.match(pairSplitRE);
         let result: Record<string, T> = {};
-        let hasMatches = false;
+        /** Tokens with no `key:value` shape at all, i.e. unspecified text; folded into
+         * `autoFilterKey` below, alongside any other filters matched in the same filterText
+         */
+        const unstructuredPairs: string[] = [];
+        if (!this.quoteStrings) {
+            // this regex only matches from the first `key:` onward, so grab any leading text separately
+            const firstMatchStart = matches?.length ? filterText.indexOf(matches[0]!) : filterText.length;
+            const leadingText = filterText.slice(0, firstMatchStart).trim();
+            if (leadingText) {
+                unstructuredPairs.push(leadingText);
+            }
+        }
         if (matches) {
             matches.forEach((pair) => {
                 const elgRE = /(\S+)([:><])(.+)/g;
@@ -458,7 +507,6 @@ export default class Filtering<T> {
                         } else {
                             result[normalizedField] = newVal;
                         }
-                        hasMatches = true;
                     } else if (
                         value &&
                         field === "is" &&
@@ -467,14 +515,17 @@ export default class Filtering<T> {
                     ) {
                         // handle `is:filter` syntax
                         result[value] = true as T;
-                        hasMatches = true;
                     }
+                } else {
+                    unstructuredPairs.push(pair);
                 }
             });
         }
-        // assume name matching if no filter key has been matched
-        if (this.nameMatching && !hasMatches && filterText.length > 0) {
-            result["name"] = filterText as T;
+        // fold unspecified text into the auto-filter key
+        if (this.autoFilterKey !== undefined && unstructuredPairs.length > 0) {
+            const unmatchedText = unstructuredPairs.join(" ");
+            const existing = result[this.autoFilterKey];
+            result[this.autoFilterKey] = (existing !== undefined ? `${existing} ${unmatchedText}` : unmatchedText) as T;
         }
         // check if any default filter keys have been used in the filter text
         if (this.defaultFilters !== undefined) {
@@ -512,7 +563,7 @@ export default class Filtering<T> {
         } else {
             validFilters = Object.assign(existingFilters, validFilters);
         }
-        return this.getFilterText(validFilters);
+        return this.getFilterText(validFilters, false, existingText);
     }
 
     /** Takes a filters object and returns a new object with only valid filters

@@ -194,9 +194,7 @@ const validFilters = computed<Record<string, ValidFilter<string | string[]>>>(()
 // See: https://whoosh.readthedocs.io/en/latest/querylang.html#query
 // For now, I've changed the `quoteStrings` param to `false` to avoid issues with the quotes, and added
 // a "hint" to the `FilterMenu` help text.
-const ToolFilters = computed<Filtering<string | string[]>>(
-    () => new Filtering(validFilters.value, undefined, false, false),
-);
+const ToolFilters = computed<Filtering<string | string[]>>(() => new Filtering(validFilters.value, undefined, false));
 
 function normalizePropsToFilterSettings(routeProps: Props): FilterSettings {
     const filters: FilterSettings = {};
