@@ -132,6 +132,44 @@ describe("ToolInstallationRequestForm", () => {
         expect(wrapper.text()).toContain("https://");
     });
 
+    it("accepts an upper-case https scheme and submits the URL as typed", async () => {
+        const wrapper = await mountForm(true);
+        await fillRequiredFields(wrapper);
+        await wrapper.find("#tool-installation-request-url").setValue("HTTPS://Example.com/Tool");
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(mockSubmitToolInstallationRequest).toHaveBeenCalledOnce();
+        const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as { tools: { tool_url?: string }[] };
+        expect(payload.tools[0]?.tool_url).toBe("HTTPS://Example.com/Tool");
+    });
+
+    it("clears a previous attempt's error banner when a later attempt fails URL validation", async () => {
+        mockSubmitToolInstallationRequest.mockRejectedValueOnce(new Error("Network error"));
+        const wrapper = await mountForm(true);
+        await fillRequiredFields(wrapper);
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(wrapper.find(".alert-danger").exists()).toBe(true);
+
+        await wrapper.find("#tool-installation-request-url").setValue("http://example.com/tool");
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+
+        // Only the inline URL error explains this attempt; the stale banner is gone.
+        expect(wrapper.find(".alert-danger").exists()).toBe(false);
+        expect(wrapper.text()).toContain("Only https:// URLs are allowed.");
+        expect(mockSubmitToolInstallationRequest).toHaveBeenCalledOnce();
+    });
+
+    it("labels the cancel button 'Close' only once the request was submitted", async () => {
+        const wrapper = await mountForm(true);
+        expect(wrapper.findComponent(GModal).props("cancelText")).toBe("Cancel");
+        await fillRequiredFields(wrapper);
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(wrapper.findComponent(GModal).props("cancelText")).toBe("Close");
+    });
+
     it("shows success alert after successful submission", async () => {
         const wrapper = await mountForm(true);
         await fillRequiredFields(wrapper);
