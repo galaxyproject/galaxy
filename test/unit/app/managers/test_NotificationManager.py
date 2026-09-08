@@ -722,6 +722,16 @@ class TestToolInstallationRequestContentValidation:
         with pytest.raises(ValidationError):
             RequestedTool(name="\U000e0041\U000e0042")
 
+    def test_every_unicode_format_character_is_stripped(self):
+        # The filter is by general category (Cf), not an enumerated list, so
+        # bidi marks outside the classic ranges -- e.g. U+061C ARABIC LETTER
+        # MARK -- are stripped too, and a name made only of them is rejected.
+        tool = RequestedTool(name="bwa\u061c", description="l1\n\u061cl2")
+        assert tool.name == "bwa"
+        assert tool.description == "l1\nl2"
+        with pytest.raises(ValidationError):
+            RequestedTool(name="\u061c")
+
     def test_subject_tool_label_is_truncated_for_header_safety(self):
         from galaxy.managers.notification import ToolInstallationRequestEmailNotificationTemplateBuilder
 

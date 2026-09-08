@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from datetime import datetime
 from enum import Enum
 from typing import (
@@ -152,12 +153,19 @@ _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]+")
 _CONTROL_CHARS_EXCEPT_NEWLINE = re.compile(r"[\x00-\x09\x0b-\x1f\x7f-\x9f\u2028\u2029]+")
 # NEL and the Unicode line/paragraph separators, normalized to \n in multiline fields.
 _UNICODE_LINE_BREAKS = re.compile(r"[\x85\u2028\u2029]")
-# Invisible/format characters: zero-width chars that would render blank labels,
-# bidi embedding/override/isolate controls that can visually reverse rendered
-# text (RTL spoofing), invisible operators, and Unicode tag characters.
-_INVISIBLE_CHARS = re.compile(
-    r"[\u00ad\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff\U000e0000-\U000e007f]+"
-)
+
+
+def _strip_format_chars(value: str) -> str:
+    """Drop every Unicode format character (general category ``Cf``).
+
+    That class holds the zero-width characters that would render blank labels,
+    the bidi embedding/override/isolate controls and marks (U+202A-U+202E,
+    U+2066-U+2069, U+200E/U+200F, U+061C) that can visually reverse rendered
+    text (RTL spoofing), invisible operators, and Unicode tag characters.
+    Filtering on the category rather than an enumerated list closes the whole
+    class. Line breaks are ``Cc``, so multiline handling is unaffected.
+    """
+    return "".join(c for c in value if unicodedata.category(c) != "Cf")
 
 
 def _sanitize_single_line(value: str | None) -> str | None:
@@ -165,7 +173,7 @@ def _sanitize_single_line(value: str | None) -> str | None:
     if value is None:
         return None
     value = _CONTROL_CHARS.sub(" ", value)
-    value = _INVISIBLE_CHARS.sub("", value)
+    value = _strip_format_chars(value)
     return value.strip() or None
 
 
@@ -176,7 +184,7 @@ def _sanitize_multiline(value: str | None) -> str | None:
     value = value.replace("\r\n", "\n").replace("\r", "\n")
     value = _UNICODE_LINE_BREAKS.sub("\n", value)
     value = _CONTROL_CHARS_EXCEPT_NEWLINE.sub(" ", value)
-    value = _INVISIBLE_CHARS.sub("", value)
+    value = _strip_format_chars(value)
     return value.strip() or None
 
 
