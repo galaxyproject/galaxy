@@ -195,7 +195,7 @@ const gridConfig: GridConfig = {
     id: "roles-grid",
     actions: actions,
     fields: fields,
-    filtering: new Filtering(validFilters, undefined, false, false),
+    filtering: new Filtering(validFilters, undefined, false),
     getData: getData,
     plural: "Roles",
     sortBy: "name",

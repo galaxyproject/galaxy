@@ -362,7 +362,7 @@ const gridConfig: GridConfig = {
     id: "users-grid",
     actions: actions,
     fields: fields,
-    filtering: new Filtering(validFilters, undefined, false, false),
+    filtering: new Filtering(validFilters, undefined, false),
     getData: getData,
     plural: "Users",
     sortBy: "email",

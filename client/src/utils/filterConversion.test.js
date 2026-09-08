@@ -21,7 +21,6 @@ describe("test filtering helpers to convert filters to filter text", () => {
         },
         undefined,
         false,
-        false,
     );
     it("conversion from filters to new filter text", async () => {
         const normalized = HistoryFilters.defaultFilters;
