@@ -8,7 +8,7 @@ const LOCAL_STORAGE_KEY = "uploadPanel.activeUploads";
 const BATCHES_STORAGE_KEY = "uploadPanel.activeBatches";
 
 /** Collection batch lifecycle status */
-export type BatchStatus = "uploading" | "creating-collection" | "completed" | "error";
+export type BatchStatus = "uploading" | "creating-collection" | "completed" | "error" | "cancelled";
 
 /**
  * UI-facing batch model including aggregated progress and uploads.
@@ -114,27 +114,39 @@ export function useUploadState() {
     const items = getActiveItems();
     const batches = getActiveBatches();
 
+    function isCancellableStatus(status: UploadStatus): boolean {
+        return status === "queued" || status === "uploading" || status === "processing";
+    }
+
     const hasUploads = computed(() => items.value.length > 0);
 
     const completedCount = computed(() => items.value.filter((i) => i.status === "completed").length);
     const errorCount = computed(() => items.value.filter((i) => i.status === "error").length);
+    const cancelledCount = computed(() => items.value.filter((i) => i.status === "cancelled").length);
     const uploadingCount = computed(
         () => items.value.filter((i) => i.status === "uploading" || i.status === "processing").length,
     );
     const isUploading = computed(() => items.value.some((i) => i.status === "uploading" || i.status === "processing"));
 
+    const hasActiveUploads = computed(() => items.value.some((i) => isCancellableStatus(i.status)));
+
     const totalProgress = computed(() => {
-        if (items.value.length === 0) {
+        const nonCancelledItems = items.value.filter((i) => i.status !== "cancelled");
+        if (nonCancelledItems.length === 0) {
             return 0;
         }
-        const sum = items.value.reduce((acc, file) => acc + file.progress, 0);
-        return Math.round(sum / items.value.length);
+        const sum = nonCancelledItems.reduce((acc, file) => acc + file.progress, 0);
+        return Math.round(sum / nonCancelledItems.length);
     });
 
-    const totalSizeBytes = computed(() => items.value.reduce((sum, file) => sum + file.size, 0));
+    const totalSizeBytes = computed(() =>
+        items.value.filter((i) => i.status !== "cancelled").reduce((sum, file) => sum + file.size, 0),
+    );
 
     const uploadedSizeBytes = computed(() =>
-        items.value.reduce((sum, file) => sum + (file.size * file.progress) / 100, 0),
+        items.value
+            .filter((i) => i.status !== "cancelled")
+            .reduce((sum, file) => sum + (file.size * file.progress) / 100, 0),
     );
 
     const hasCompleted = computed(() => items.value.some((u) => u.status === "completed"));
@@ -309,7 +321,7 @@ export function useUploadState() {
      */
     function updateProgress(id: string, progress: number) {
         const item = items.value.find((u) => u.id === id);
-        if (item && item.status !== "completed") {
+        if (item && item.status !== "completed" && item.status !== "cancelled") {
             item.progress = Math.max(0, Math.min(100, Math.round(progress)));
             if (item.progress >= 100 && item.status !== "error") {
                 item.status = "completed";
@@ -319,12 +331,13 @@ export function useUploadState() {
 
     /**
      * Updates the status of an upload item.
+     * Will not overwrite a cancelled item — cancellation is terminal.
      * @param id - Upload item identifier
      * @param status - New status to set
      */
     function setStatus(id: string, status: UploadStatus) {
         const item = items.value.find((u) => u.id === id);
-        if (item) {
+        if (item && item.status !== "cancelled") {
             item.status = status;
         }
     }
@@ -336,20 +349,70 @@ export function useUploadState() {
      */
     function setError(id: string, error: string) {
         const item = items.value.find((u) => u.id === id);
-        if (item) {
+        if (item && item.status !== "cancelled") {
             item.status = "error";
             item.error = error;
         }
     }
 
     /**
-     * Removes all completed uploads from the list.
+     * Checks if an upload item is in a cancellable state.
+     */
+    function isCancellable(id: string): boolean {
+        const item = items.value.find((u) => u.id === id);
+        return item !== undefined && isCancellableStatus(item.status);
+    }
+
+    /**
+     * Cancels a single upload item, freezing its progress at the current value.
+     * @param id - Upload item identifier
+     */
+    function cancelUpload(id: string) {
+        const item = items.value.find((u) => u.id === id);
+        if (item && isCancellable(id)) {
+            item.status = "cancelled";
+        }
+    }
+
+    /**
+     * Cancels an entire batch and all its upload items.
+     * @param batchId - Batch identifier
+     */
+    function cancelBatch(batchId: string) {
+        const batch = batches.value.find((b) => b.id === batchId);
+        if (!batch) {
+            return;
+        }
+        batch.status = "cancelled";
+        for (const uploadId of batch.uploadIds) {
+            cancelUpload(uploadId);
+        }
+    }
+
+    /**
+     * Cancels all active (non-completed, non-error, non-cancelled) upload items and batches.
+     */
+    function cancelAll() {
+        for (const item of items.value) {
+            if (isCancellableStatus(item.status)) {
+                item.status = "cancelled";
+            }
+        }
+        for (const batch of batches.value) {
+            if (batch.status === "uploading" || batch.status === "creating-collection") {
+                batch.status = "cancelled";
+            }
+        }
+    }
+
+    /**
+     * Removes all completed and cancelled uploads from the list.
      */
     function clearCompleted() {
-        items.value = items.value.filter((u) => u.status !== "completed");
-        // Remove batches that have no remaining upload items or are completed
+        items.value = items.value.filter((u) => u.status !== "completed" && u.status !== "cancelled");
+        // Remove batches that have no remaining upload items or are completed/cancelled
         batches.value = batches.value.filter((b) => {
-            if (b.status === "completed") {
+            if (b.status === "completed" || b.status === "cancelled") {
                 return false;
             }
             // Remove batch if none of its upload items remain
@@ -372,8 +435,10 @@ export function useUploadState() {
         hasUploads,
         completedCount,
         errorCount,
+        cancelledCount,
         uploadingCount,
         isUploading,
+        hasActiveUploads,
         totalProgress,
         totalSizeBytes,
         uploadedSizeBytes,
@@ -391,6 +456,10 @@ export function useUploadState() {
         updateProgress,
         setStatus,
         setError,
+        isCancellable,
+        cancelUpload,
+        cancelBatch,
+        cancelAll,
         clearCompleted,
         clearAll,
     };
