@@ -345,3 +345,40 @@ describe("quoted filter values (exact, case-sensitive backend match)", () => {
         expect(HistoryFilters.checkFilter("name:'GREP'", "name", "grep")).toBe(true);
     });
 });
+
+/**
+ * A single quoted bare token (`'Grep1'` typed on its own, with no `key:`) is an exact-match
+ * request for the `autoFilterKey`: the quotes are stripped from the folded value, and the query
+ * routes through the `_eq` handler like a keyed quoted value would. An unquoted bare token, or
+ * more than one bare token, stays a plain case-insensitive substring search.
+ */
+describe("a lone quoted bare token routes autoFilterKey through exact match", () => {
+    const F = new Filtering(
+        {
+            search: { type: String, handler: contains("search"), menuItem: true },
+            search_eq: { handler: equals("search"), menuItem: false },
+        },
+        undefined,
+        true,
+        "search",
+    );
+
+    test("getFiltersForText strips the quotes when folding into autoFilterKey", () => {
+        expect(Object.fromEntries(F.getFiltersForText("'Grep1'"))).toEqual({ search: "Grep1" });
+        // an unquoted bare token is folded verbatim (the backend lowercases a `-contains` search)
+        expect(Object.fromEntries(F.getFiltersForText("Grep1"))).toEqual({ search: "Grep1" });
+    });
+
+    test("getQueryDict routes the lone quoted bare token to the _eq handler", () => {
+        expect(F.getQueryDict("'Grep1'")).toEqual({ "search-eq": "Grep1" });
+        expect(F.getQueryDict("Grep1")).toEqual({ "search-contains": "Grep1" });
+    });
+
+    test("more than one bare token is a plain search, not an exact match", () => {
+        expect(F.getQueryDict("foo 'Grep1'")["search-eq"]).toBeUndefined();
+    });
+
+    test("getFilterText writes the folded value back as plain (unlabeled) text", () => {
+        expect(F.getFilterText({ search: "Grep1" }, false, "'Grep1'")).toBe("Grep1");
+    });
+});
