@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, RouterLinkStub, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
@@ -25,6 +25,8 @@ async function mountComponent(component: object, propsData: object = {}): Promis
         localVue,
         propsData,
         pinia,
+        // No router is installed in this harness; the stub exposes the `to` prop so links can be asserted.
+        stubs: { RouterLink: RouterLinkStub },
     });
 
     await flushPromises();
@@ -230,7 +232,9 @@ describe("Notifications categories", () => {
             notification,
         });
 
-        expect(wrapper.html()).toContain(`/workflows/run?id=${notification.content.workflow_id}`);
+        const workflowLink = wrapper.findComponent(RouterLinkStub);
+        expect(workflowLink.exists()).toBe(true);
+        expect(workflowLink.props("to")).toBe(`/workflows/run?id=${notification.content.workflow_id}`);
         expect(wrapper.find(`#notification-card-${notification.id}`).exists()).toBe(true);
     });
 });
