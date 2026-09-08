@@ -81,6 +81,8 @@ export interface FetchHistoryListOptions {
     sortDesc?: boolean;
     /** Discard the cached ids of this variant instead of merging into them. */
     replace?: boolean;
+    /** Merge summaries by id without recording this request as the canonical variant listing. */
+    record?: boolean;
 }
 
 function emptyHistoryListIds(): Record<HistoryListVariant, string[]> {
@@ -120,7 +122,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     /** In-flight own-history loads, keyed by request (see `loadHistories`). */
     const loadHistoriesPromises = new Map<string, Promise<void>>();
     /** In-flight listing fetches, keyed by request (see `fetchHistoryList`). */
-    const listPromises = new Map<string, { variant: HistoryListVariant; promise: Promise<AnyHistoryEntry[]> }>();
+    const listPromises = new Map<string, Promise<AnyHistoryEntry[]>>();
 
     const histories = computed(() => {
         return Object.values(storedHistories.value)
@@ -521,11 +523,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return promise;
     }
 
-    /**
-     * Merges fetched entries into the shared summary map and updates the
-     * ordered id list of the given variant, keeping ids unique.
-     */
-    function setListedHistories(variant: HistoryListVariant, histories: AnyHistoryEntry[], replace = false) {
+    /** Merges fetched entries into the shared summary map without changing a variant listing. */
+    function mergeListedHistories(histories: AnyHistoryEntry[]) {
         histories.forEach((history) => {
             const storedHistory = listedHistories.value[history.id];
             // Incoming summaries may carry fewer fields than what is already
@@ -533,6 +532,11 @@ export const useHistoryStore = defineStore("historyStore", () => {
             // instead of overwriting.
             set(listedHistories.value, history.id, storedHistory ? { ...storedHistory, ...history } : history);
         });
+    }
+
+    /** Records fetched entries in the ordered id list of a variant, keeping ids unique. */
+    function setListedHistories(variant: HistoryListVariant, histories: AnyHistoryEntry[], replace = false) {
+        mergeListedHistories(histories);
         const incomingIds = histories.map((history) => history.id);
         const mergedIds = replace ? incomingIds : [...listedHistoryIds.value[variant], ...incomingIds];
         listedHistoryIds.value[variant] = Array.from(new Set(mergedIds));
@@ -558,19 +562,23 @@ export const useHistoryStore = defineStore("historyStore", () => {
             sortBy = "update_time",
             sortDesc = true,
             replace = false,
+            record = true,
         } = options;
-        const key = [variant, search, limit, offset, sortBy, sortDesc, replace].join("|");
+        const key = [variant, search, limit, offset, sortBy, sortDesc, replace, record].join("|");
 
         const pending = listPromises.get(key);
         if (pending) {
-            return pending.promise;
+            return pending;
         }
-        const promise = requestHistoryList(variant, { search, limit, offset, sortBy, sortDesc }, replace).finally(
-            () => {
-                listPromises.delete(key);
-            },
-        );
-        listPromises.set(key, { variant, promise });
+        const promise = requestHistoryList(
+            variant,
+            { search, limit, offset, sortBy, sortDesc },
+            replace,
+            record,
+        ).finally(() => {
+            listPromises.delete(key);
+        });
+        listPromises.set(key, promise);
         return promise;
     }
 
@@ -585,8 +593,11 @@ export const useHistoryStore = defineStore("historyStore", () => {
             sortDesc: boolean;
         },
         replace: boolean,
+        record: boolean,
     ): Promise<AnyHistoryEntry[]> {
-        listedHistoriesLoading.value[variant] = true;
+        if (record) {
+            listedHistoriesLoading.value[variant] = true;
+        }
         try {
             let result: { data: AnyHistoryEntry[]; total: number };
             if (variant === "shared") {
@@ -596,48 +607,40 @@ export const useHistoryStore = defineStore("historyStore", () => {
             } else {
                 result = await getArchivedHistories(requestOptions);
             }
-            setListedHistories(variant, result.data, replace);
-            listedHistoriesTotal.value[variant] = result.total;
-            listedHistoriesLoaded.value[variant] = true;
+            if (record) {
+                setListedHistories(variant, result.data, replace);
+                listedHistoriesTotal.value[variant] = result.total;
+                listedHistoriesLoaded.value[variant] = true;
+            } else {
+                mergeListedHistories(result.data);
+            }
             return result.data.map((history) => listedHistories.value[history.id] ?? history);
         } catch (error) {
-            rethrowSimple(error);
+            return rethrowSimple(error);
         } finally {
-            listedHistoriesLoading.value[variant] = false;
-        }
-    }
-
-    /** The request currently running for a listing, whatever its options. */
-    function pendingHistoryListFetch(variant: HistoryListVariant): Promise<AnyHistoryEntry[]> | undefined {
-        for (const pending of listPromises.values()) {
-            if (pending.variant === variant) {
-                return pending.promise;
+            if (record) {
+                listedHistoriesLoading.value[variant] = false;
             }
         }
-        return undefined;
     }
 
     /**
      * Fetches a history listing only if it has not been fetched before, so that
      * consumers can hydrate a listing without hitting the backend repeatedly.
      *
-     * A fetch that is already running is awaited rather than skipped: returning
-     * the (still empty) cache early would tell the caller the listing is loaded
-     * and leave it rendering "no results" until something else refetches.
+     * An identical canonical fetch already in progress is shared by
+     * `fetchHistoryList`; one-off searches use a different request key and do
+     * not suppress canonical hydration.
      */
     async function ensureHistoryListLoaded(
         variant: HistoryListVariant,
         options: FetchHistoryListOptions = {},
     ): Promise<AnyHistoryEntry[]> {
-        const pending = pendingHistoryListFetch(variant);
-        if (pending) {
-            await pending;
-            return getListedHistories.value(variant);
-        }
         if (listedHistoriesLoaded.value[variant]) {
             return getListedHistories.value(variant);
         }
-        return fetchHistoryList(variant, options);
+        await fetchHistoryList(variant, { ...options, record: true });
+        return getListedHistories.value(variant);
     }
 
     /** Drops the cached ids of a listing (the summaries themselves are kept). */

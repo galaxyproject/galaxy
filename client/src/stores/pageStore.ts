@@ -17,7 +17,10 @@ const VARIANT_QUERY: Record<PageListVariant, Pick<LoadPagesOptions, "showOwn" | 
     published: { showOwn: false, showShared: true, showPublished: true },
 };
 
-export type FetchPagesOptions = Omit<LoadPagesOptions, "showOwn" | "showShared" | "showPublished">;
+export type FetchPagesOptions = Omit<LoadPagesOptions, "showOwn" | "showShared" | "showPublished"> & {
+    /** Merge summaries by id without recording this request as the canonical variant listing. */
+    record?: boolean;
+};
 
 export const usePageStore = defineStore("pageStore", () => {
     const summariesById = ref<Record<string, PageSummary>>({});
@@ -74,13 +77,17 @@ export const usePageStore = defineStore("pageStore", () => {
         return [...existing, ...incoming.filter((pageId) => !existingIds.has(pageId))];
     }
 
-    /** Merges pages into the summary cache and into the given variant's id list. */
-    function savePages(variant: PageListVariant, pages: PageSummary[], atFront = false) {
-        const incomingIds: string[] = [];
+    /** Merges pages into the shared summary cache without changing a variant listing. */
+    function mergePageSummaries(pages: PageSummary[]) {
         for (const page of pages) {
             set(summariesById.value, page.id, page);
-            incomingIds.push(page.id);
         }
+    }
+
+    /** Merges pages into the summary cache and into the given variant's id list. */
+    function savePages(variant: PageListVariant, pages: PageSummary[], atFront = false) {
+        mergePageSummaries(pages);
+        const incomingIds = pages.map((page) => page.id);
         set(idsByVariant.value, variant, mergeIds(idsByVariant.value[variant], incomingIds, atFront));
     }
 
@@ -101,18 +108,20 @@ export const usePageStore = defineStore("pageStore", () => {
      * Concurrent identical requests share a single promise.
      */
     async function fetchPages(variant: PageListVariant, options: FetchPagesOptions = {}): Promise<PageSummary[]> {
-        const { search = "", sortBy = "update_time", sortDesc = true, limit = 20, offset = 0 } = options;
-        const key = [variant, search, sortBy, sortDesc, limit, offset].join("|");
+        const { search = "", sortBy = "update_time", sortDesc = true, limit = 20, offset = 0, record = true } = options;
+        const key = [variant, search, sortBy, sortDesc, limit, offset, record].join("|");
 
         const pending = fetchPromises.get(key);
         if (pending) {
             return pending;
         }
 
-        const isFullListing = !search && offset === 0;
+        const isFullListing = record && !search && offset === 0;
 
         const promise = (async () => {
-            set(loadingVariants.value, variant, true);
+            if (record) {
+                set(loadingVariants.value, variant, true);
+            }
             try {
                 const { data, totalMatches } = await loadPages({
                     ...VARIANT_QUERY[variant],
@@ -122,15 +131,21 @@ export const usePageStore = defineStore("pageStore", () => {
                     limit,
                     offset,
                 });
-                savePages(variant, data, isFullListing);
-                if (isFullListing) {
-                    set(totalMatchesByVariant.value, variant, totalMatches);
-                    set(fullyListedVariants.value, variant, true);
+                if (record) {
+                    savePages(variant, data, isFullListing);
+                    if (isFullListing) {
+                        set(totalMatchesByVariant.value, variant, totalMatches);
+                        set(fullyListedVariants.value, variant, true);
+                    }
+                    set(loadedVariants.value, variant, true);
+                } else {
+                    mergePageSummaries(data);
                 }
-                set(loadedVariants.value, variant, true);
                 return data;
             } finally {
-                set(loadingVariants.value, variant, false);
+                if (record) {
+                    set(loadingVariants.value, variant, false);
+                }
                 fetchPromises.delete(key);
             }
         })();

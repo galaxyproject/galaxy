@@ -16,6 +16,13 @@ export interface FetchWorkflowListOptions {
     offset?: number;
 }
 
+type NormalizedFetchWorkflowListOptions = Required<FetchWorkflowListOptions>;
+
+function normalizeListOptions(options: FetchWorkflowListOptions = {}): NormalizedFetchWorkflowListOptions {
+    const { sortBy = "update_time", sortDesc = true, limit = 20, offset = 0 } = options;
+    return { sortBy, sortDesc, limit, offset };
+}
+
 /**
  * Filter token and query params each variant adds on top of the user provided query.
  *
@@ -49,14 +56,15 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     /** Single cache of workflow summaries, keyed by workflow id. */
     const workflowSummariesById = ref<{ [index: string]: WorkflowSummary }>({});
 
-    /** Ordered workflow ids per list variant and query -- ids only, never copies of the summaries. */
+    /** Ordered workflow ids per normalized request -- ids only, never copies of the summaries. */
     const listIdsByKey = ref<{ [index: string]: string[] }>({});
 
     /** In progress list fetches, to avoid firing the same request twice. */
     const listPromises = new Map<string, Promise<WorkflowSummary[]>>();
 
-    function listKey(variant: WorkflowListVariant, query = "") {
-        return `${variant}:${query.trim()}`;
+    function listKey(variant: WorkflowListVariant, query = "", options: FetchWorkflowListOptions = {}) {
+        const { sortBy, sortDesc, limit, offset } = normalizeListOptions(options);
+        return JSON.stringify([variant, query.trim(), sortBy, sortDesc, limit, offset]);
     }
 
     const getWorkflowSummaryById = computed(() => (workflowId: string) => workflowSummariesById.value[workflowId]);
@@ -64,18 +72,21 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     const allWorkflowSummaries = computed(() => Object.values(workflowSummariesById.value));
 
     /** Summaries for a cached list, in the order the backend returned them. */
-    const getWorkflowList = computed(() => (variant: WorkflowListVariant, query = "") => {
-        const ids = listIdsByKey.value[listKey(variant, query)] ?? [];
-        return ids
-            .map((workflowId) => workflowSummariesById.value[workflowId])
-            .filter((workflow): workflow is WorkflowSummary => Boolean(workflow));
-    });
+    const getWorkflowList = computed(
+        () =>
+            (variant: WorkflowListVariant, query = "", options: FetchWorkflowListOptions = {}) => {
+                const ids = listIdsByKey.value[listKey(variant, query, options)] ?? [];
+                return ids
+                    .map((workflowId) => workflowSummariesById.value[workflowId])
+                    .filter((workflow): workflow is WorkflowSummary => Boolean(workflow));
+            },
+    );
 
     /** Whether a list has been fetched at least once (an empty result still counts as loaded). */
     const isWorkflowListLoaded = computed(
         () =>
-            (variant: WorkflowListVariant, query = "") =>
-                listKey(variant, query) in listIdsByKey.value,
+            (variant: WorkflowListVariant, query = "", options: FetchWorkflowListOptions = {}) =>
+                listKey(variant, query, options) in listIdsByKey.value,
     );
 
     /** Merges summaries into the cache, updating existing entries instead of duplicating them. */
@@ -90,9 +101,9 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
         key: string,
         variant: WorkflowListVariant,
         query: string,
-        options: FetchWorkflowListOptions,
+        options: NormalizedFetchWorkflowListOptions,
     ) {
-        const { sortBy = "update_time", sortDesc = true, limit = 20, offset = 0 } = options;
+        const { sortBy, sortDesc, limit, offset } = options;
         const { filterText, showPublished, showShared } = variantParams(variant, query);
 
         try {
@@ -114,7 +125,7 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
                 data.map((workflow) => workflow.id),
             );
 
-            return getWorkflowList.value(variant, query);
+            return getWorkflowList.value(variant, query, options);
         } finally {
             listPromises.delete(key);
         }
@@ -131,14 +142,15 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
         query = "",
         options: FetchWorkflowListOptions = {},
     ): Promise<WorkflowSummary[]> {
-        const key = listKey(variant, query);
+        const normalizedOptions = normalizeListOptions(options);
+        const key = listKey(variant, query, normalizedOptions);
 
         const existingPromise = listPromises.get(key);
         if (existingPromise) {
             return existingPromise;
         }
 
-        const promise = fetchAndMergeWorkflowList(key, variant, query, options);
+        const promise = fetchAndMergeWorkflowList(key, variant, query, normalizedOptions);
         listPromises.set(key, promise);
         return promise;
     }

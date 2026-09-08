@@ -128,6 +128,24 @@ describe("usePageStore", () => {
             expect(loadPages).toHaveBeenCalledTimes(2);
         });
 
+        it("keeps one-off search results out of the canonical listing", async () => {
+            vi.mocked(loadPages).mockResolvedValueOnce(mockResult([mockPage("search-hit")], 1));
+
+            await pageStore.fetchPages("my", { search: "needle", record: false });
+
+            expect(pageStore.getPageById("search-hit")).toBeDefined();
+            expect(pageStore.myPages).toEqual([]);
+            expect(pageStore.isLoaded("my")).toBe(false);
+
+            vi.mocked(loadPages).mockResolvedValueOnce(mockResult([mockPage("canonical-hit")], 5));
+            const canonical = await pageStore.fetchPagesOnce("my");
+
+            expect(loadPages).toHaveBeenCalledTimes(2);
+            expect(canonical.map((page) => page.id)).toEqual(["canonical-hit"]);
+            expect(pageStore.myPages.map((page) => page.id)).toEqual(["canonical-hit"]);
+            expect(pageStore.getPageById("search-hit")).toBeDefined();
+        });
+
         it("resets the loading flag and rethrows when the request fails", async () => {
             vi.mocked(loadPages).mockRejectedValue(new Error("boom"));
 

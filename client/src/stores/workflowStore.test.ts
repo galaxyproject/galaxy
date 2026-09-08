@@ -281,6 +281,40 @@ describe("useWorkflowStore", () => {
             expect(first).toEqual(second);
         });
 
+        it("keeps concurrent pages in separate request and cache slots", async () => {
+            type WorkflowListResult = { data: WorkflowSummary[]; totalMatches: number };
+            let resolvePage0: (result: WorkflowListResult) => void = () => undefined;
+            let resolvePage1: (result: WorkflowListResult) => void = () => undefined;
+            vi.mocked(loadWorkflows).mockImplementation(({ offset }) => {
+                return new Promise((resolve) => {
+                    if (offset === 0) {
+                        resolvePage0 = resolve;
+                    } else {
+                        resolvePage1 = resolve;
+                    }
+                });
+            });
+            const page0Options = { limit: 20, offset: 0 };
+            const page1Options = { limit: 20, offset: 20 };
+
+            const page0 = workflowStore.fetchWorkflowList("my", "", page0Options);
+            const page1 = workflowStore.fetchWorkflowList("my", "", page1Options);
+
+            expect(loadWorkflows).toHaveBeenCalledTimes(2);
+            resolvePage0({ data: [workflowSummary("w0", "Page zero")], totalMatches: 2 });
+            resolvePage1({ data: [workflowSummary("w1", "Page one")], totalMatches: 2 });
+            const [page0Result, page1Result] = await Promise.all([page0, page1]);
+
+            expect(page0Result.map((workflow) => workflow.id)).toEqual(["w0"]);
+            expect(page1Result.map((workflow) => workflow.id)).toEqual(["w1"]);
+            expect(workflowStore.getWorkflowList("my", "", page0Options).map((workflow) => workflow.id)).toEqual([
+                "w0",
+            ]);
+            expect(workflowStore.getWorkflowList("my", "", page1Options).map((workflow) => workflow.id)).toEqual([
+                "w1",
+            ]);
+        });
+
         it("refetches after a previous fetch settled", async () => {
             mockLoadWorkflowsOnce([]);
             await workflowStore.fetchWorkflowList("my");
