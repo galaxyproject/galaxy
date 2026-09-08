@@ -1,5 +1,4 @@
-# Python CircleCI 2.0 configuration file
-version: 2
+version: 2.1
 variables:
   restore_repo_cache: &restore_repo_cache
     restore_cache:
@@ -82,7 +81,6 @@ jobs:
       - *install_tox
       - run: tox -e validate_test_tools
 workflows:
-  version: 2
   get_code_and_test:
     jobs:
       - get_code

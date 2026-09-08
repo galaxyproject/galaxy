@@ -2,6 +2,7 @@ import createClient from "openapi-fetch";
 
 import { pendingRequestsMiddleware } from "@/api/client/pendingRequestsMiddleware";
 import { createRateLimiterMiddleware } from "@/api/client/rateLimiter";
+import { staleCacheRetryMiddleware } from "@/api/client/staleCacheRetryMiddleware";
 import type { GalaxyApiPaths } from "@/api/schema";
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -25,6 +26,8 @@ function apiClientFactory() {
             maxRetries: 3,
         }),
     );
+
+    client.use(staleCacheRetryMiddleware);
 
     return client;
 }
