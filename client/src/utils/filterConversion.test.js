@@ -219,3 +219,31 @@ describe("validatedFilterText keeps unspecified text alongside other filters", (
         expect(validatedFilterText(gf, "grep1")).toBe("grep1");
     });
 });
+
+describe("quoteStrings: false (Workflows) maintains behavior with unquoted multi-word values", () => {
+    const wf = getWorkflowFilters("my");
+
+    it("parses key:value tokens the same way", () => {
+        expect(Object.fromEntries(wf.getFiltersForText("name:RNAseq tag:foo"))).toEqual({
+            name: "RNAseq",
+            tag: ["foo"],
+        });
+    });
+
+    it("keeps a quoted value's quotes in the parsed value (no stripping in this mode)", () => {
+        expect(Object.fromEntries(wf.getFiltersForText("name:'RNAseq'"))).toEqual({ name: "'RNAseq'" });
+    });
+
+    it("leaves multi-word unquoted values intact", () => {
+        expect(Object.fromEntries(wf.getFiltersForText("name:my workflow name"))).toEqual({
+            name: "my workflow name",
+        });
+    });
+
+    it("validates filter text unchanged", () => {
+        expect(validatedFilterText(wf, "name:RNAseq is:published")).toBe("name:RNAseq is:published");
+        expect(validatedFilterText(wf, "tag:amrfinderplus_report metagenomics")).toBe(
+            "tag:amrfinderplus_report metagenomics",
+        );
+    });
+});
