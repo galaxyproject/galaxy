@@ -4,6 +4,7 @@ import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setMockConfig } from "@/composables/__mocks__/config";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 
 import { getRunData, WorkflowMissingToolsError } from "./services";
 import sampleRunData1 from "./testdata/run1.json";
@@ -167,6 +168,37 @@ describe("WorkflowRun.vue", () => {
 
             // `workflowId` is a Workflow instance id here; the request must carry the StoredWorkflow id.
             expect(wrapper.findComponent(WorkflowMissingToolsRequest).props("workflowId")).toBe("stored-workflow-id");
+        });
+
+        it("drops the missing tool ids when a reload fails for another reason", async () => {
+            getRunData.mockRejectedValueOnce(new WorkflowMissingToolsError(MISSING_TOOLS_MESSAGE, MISSING_TOOL_IDS));
+            const wrapper = mountWithRegisteredUser();
+            await settle(wrapper);
+            expect(wrapper.find("[data-testid='request-install-btn']").exists()).toBe(true);
+
+            getRunData.mockRejectedValueOnce(new Error("Workflow cannot be run because it contains cycles."));
+            // History polling re-runs loadRun through the historyStatusKey watcher.
+            useHistoryItemsStore().lastUpdateTime = new Date(Date.now() + 1000);
+            await settle(wrapper);
+
+            expect(wrapper.vm.workflowError).toBe("Workflow cannot be run because it contains cycles.");
+            expect(wrapper.vm.missingToolIds).toEqual([]);
+            expect(wrapper.findComponent(WorkflowMissingToolsRequest).props("missingToolIds")).toEqual([]);
+            expect(wrapper.find("[data-testid='request-install-btn']").exists()).toBe(false);
+        });
+
+        it("clears the error state when a reload succeeds", async () => {
+            getRunData.mockRejectedValueOnce(new WorkflowMissingToolsError(MISSING_TOOLS_MESSAGE, MISSING_TOOL_IDS));
+            const wrapper = mountWithRegisteredUser();
+            await settle(wrapper);
+            expect(wrapper.vm.workflowError).toBe(MISSING_TOOLS_MESSAGE);
+
+            useHistoryItemsStore().lastUpdateTime = new Date(Date.now() + 1000);
+            await settle(wrapper);
+
+            expect(wrapper.vm.workflowError).toBe("");
+            expect(wrapper.vm.missingToolIds).toEqual([]);
+            expect(wrapper.vm.workflowModel).not.toBeNull();
         });
     });
 });
