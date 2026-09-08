@@ -307,12 +307,40 @@ describe("useWorkflowStore", () => {
 
             expect(page0Result.map((workflow) => workflow.id)).toEqual(["w0"]);
             expect(page1Result.map((workflow) => workflow.id)).toEqual(["w1"]);
-            expect(workflowStore.getWorkflowList("my", "", page0Options).map((workflow) => workflow.id)).toEqual([
-                "w0",
-            ]);
-            expect(workflowStore.getWorkflowList("my", "", page1Options).map((workflow) => workflow.id)).toEqual([
-                "w1",
-            ]);
+            expect(workflowStore.getWorkflowList("my").map((workflow) => workflow.id)).toEqual(["w0", "w1"]);
+        });
+
+        it("keeps both pages when they are fetched one after the other", async () => {
+            mockLoadWorkflowsOnce([workflowSummary("w0", "Page zero")]);
+            await workflowStore.fetchWorkflowList("my", "", { limit: 1, offset: 0 });
+
+            mockLoadWorkflowsOnce([workflowSummary("w1", "Page one")]);
+            await workflowStore.fetchWorkflowList("my", "", { limit: 1, offset: 1 });
+
+            expect(workflowStore.getWorkflowList("my").map((workflow) => workflow.id)).toEqual(["w0", "w1"]);
+        });
+
+        it("refreshes the head of the listing without dropping later pages", async () => {
+            mockLoadWorkflowsOnce([workflowSummary("w0", "Page zero")]);
+            await workflowStore.fetchWorkflowList("my", "", { limit: 1, offset: 0 });
+            mockLoadWorkflowsOnce([workflowSummary("w1", "Page one")]);
+            await workflowStore.fetchWorkflowList("my", "", { limit: 1, offset: 1 });
+
+            mockLoadWorkflowsOnce([workflowSummary("w2", "Brand new")]);
+            await workflowStore.fetchWorkflowList("my", "", { limit: 1, offset: 0 });
+
+            expect(workflowStore.getWorkflowList("my").map((workflow) => workflow.id)).toEqual(["w2", "w0", "w1"]);
+        });
+
+        it("reads back a listing fetched with non-default options", async () => {
+            mockLoadWorkflowsOnce([workflowSummary("w1", "First")]);
+
+            await workflowStore.fetchWorkflowList("my", "", { limit: 25 });
+
+            // consumers hydrate with their own page size but read the listing
+            // without repeating it
+            expect(workflowStore.isWorkflowListLoaded("my")).toBe(true);
+            expect(workflowStore.getWorkflowList("my").map((workflow) => workflow.id)).toEqual(["w1"]);
         });
 
         it("refetches after a previous fetch settled", async () => {

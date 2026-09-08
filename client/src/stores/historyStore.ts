@@ -628,13 +628,16 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * Fetches a history listing only if it has not been fetched before, so that
      * consumers can hydrate a listing without hitting the backend repeatedly.
      *
-     * An identical canonical fetch already in progress is shared by
-     * `fetchHistoryList`; one-off searches use a different request key and do
-     * not suppress canonical hydration.
+     * An identical fetch already in progress is shared by `fetchHistoryList`;
+     * one-off searches use a different request key and do not suppress canonical
+     * hydration. Always records, so that the listing it returns is the one it
+     * hydrated.
+     *
+     * @returns the whole cached listing, not just the entries this call fetched
      */
     async function ensureHistoryListLoaded(
         variant: HistoryListVariant,
-        options: FetchHistoryListOptions = {},
+        options: Omit<FetchHistoryListOptions, "record"> = {},
     ): Promise<AnyHistoryEntry[]> {
         if (listedHistoriesLoaded.value[variant]) {
             return getListedHistories.value(variant);

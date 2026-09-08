@@ -56,14 +56,29 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     /** Single cache of workflow summaries, keyed by workflow id. */
     const workflowSummariesById = ref<{ [index: string]: WorkflowSummary }>({});
 
-    /** Ordered workflow ids per normalized request -- ids only, never copies of the summaries. */
+    /** Ordered workflow ids per list variant and query -- ids only, never copies of the summaries. */
     const listIdsByKey = ref<{ [index: string]: string[] }>({});
 
     /** In progress list fetches, to avoid firing the same request twice. */
     const listPromises = new Map<string, Promise<WorkflowSummary[]>>();
 
-    function listKey(variant: WorkflowListVariant, query = "", options: FetchWorkflowListOptions = {}) {
-        const { sortBy, sortDesc, limit, offset } = normalizeListOptions(options);
+    /**
+     * Which cached listing a request contributes to. Sorting and paging pick
+     * *how much* of a listing to fetch, not *which* listing it is, so they stay
+     * out of this key and readers never have to repeat the request options the
+     * listing happened to be hydrated with.
+     */
+    function listKey(variant: WorkflowListVariant, query = "") {
+        return `${variant}:${query.trim()}`;
+    }
+
+    /**
+     * Identity of a single request, used to share one in-flight promise. Two
+     * pages of the same listing are separate requests even though they land in
+     * the same cache slot.
+     */
+    function requestKey(variant: WorkflowListVariant, query: string, options: NormalizedFetchWorkflowListOptions) {
+        const { sortBy, sortDesc, limit, offset } = options;
         return JSON.stringify([variant, query.trim(), sortBy, sortDesc, limit, offset]);
     }
 
@@ -71,22 +86,24 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
 
     const allWorkflowSummaries = computed(() => Object.values(workflowSummariesById.value));
 
+    function summariesForIds(ids: string[]) {
+        return ids
+            .map((workflowId) => workflowSummariesById.value[workflowId])
+            .filter((workflow): workflow is WorkflowSummary => Boolean(workflow));
+    }
+
     /** Summaries for a cached list, in the order the backend returned them. */
     const getWorkflowList = computed(
         () =>
-            (variant: WorkflowListVariant, query = "", options: FetchWorkflowListOptions = {}) => {
-                const ids = listIdsByKey.value[listKey(variant, query, options)] ?? [];
-                return ids
-                    .map((workflowId) => workflowSummariesById.value[workflowId])
-                    .filter((workflow): workflow is WorkflowSummary => Boolean(workflow));
-            },
+            (variant: WorkflowListVariant, query = "") =>
+                summariesForIds(listIdsByKey.value[listKey(variant, query)] ?? []),
     );
 
     /** Whether a list has been fetched at least once (an empty result still counts as loaded). */
     const isWorkflowListLoaded = computed(
         () =>
-            (variant: WorkflowListVariant, query = "", options: FetchWorkflowListOptions = {}) =>
-                listKey(variant, query, options) in listIdsByKey.value,
+            (variant: WorkflowListVariant, query = "") =>
+                listKey(variant, query) in listIdsByKey.value,
     );
 
     /** Merges summaries into the cache, updating existing entries instead of duplicating them. */
@@ -97,8 +114,24 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
         });
     }
 
+    /**
+     * Records a fetched page in its listing, keeping every id once.
+     *
+     * The first page redefines the head of the listing, so a refresh reorders it
+     * and still drops nothing a later page contributed; later pages are
+     * appended, so two pages arriving in either order both survive.
+     */
+    function recordListPage(key: string, incomingIds: string[], isFirstPage: boolean) {
+        const cached = listIdsByKey.value[key] ?? [];
+        const incoming = new Set(incomingIds);
+        const merged = isFirstPage
+            ? [...incomingIds, ...cached.filter((workflowId) => !incoming.has(workflowId))]
+            : [...cached, ...incomingIds.filter((workflowId) => !cached.includes(workflowId))];
+        set(listIdsByKey.value, key, merged);
+    }
+
     async function fetchAndMergeWorkflowList(
-        key: string,
+        requestId: string,
         variant: WorkflowListVariant,
         query: string,
         options: NormalizedFetchWorkflowListOptions,
@@ -119,23 +152,26 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
             });
 
             mergeWorkflowSummaries(data);
-            set(
-                listIdsByKey.value,
-                key,
-                data.map((workflow) => workflow.id),
-            );
+            const incomingIds = data.map((workflow) => workflow.id);
+            recordListPage(listKey(variant, query), incomingIds, offset === 0);
 
-            return getWorkflowList.value(variant, query, options);
+            return summariesForIds(incomingIds);
         } finally {
-            listPromises.delete(key);
+            listPromises.delete(requestId);
         }
     }
 
     /**
      * Fetches a workflow list and merges it into the summary cache.
+     *
+     * Identical requests share one promise; requests differing only in sorting
+     * or paging are issued separately and all land in the listing of their
+     * variant and query.
+     *
      * @param variant which list to fetch
      * @param query optional free text search
      * @param options sorting and paging overrides
+     * @returns the summaries of the fetched page, not the whole cached listing
      */
     function fetchWorkflowList(
         variant: WorkflowListVariant,
@@ -143,15 +179,15 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
         options: FetchWorkflowListOptions = {},
     ): Promise<WorkflowSummary[]> {
         const normalizedOptions = normalizeListOptions(options);
-        const key = listKey(variant, query, normalizedOptions);
+        const requestId = requestKey(variant, query, normalizedOptions);
 
-        const existingPromise = listPromises.get(key);
+        const existingPromise = listPromises.get(requestId);
         if (existingPromise) {
             return existingPromise;
         }
 
-        const promise = fetchAndMergeWorkflowList(key, variant, query, normalizedOptions);
-        listPromises.set(key, promise);
+        const promise = fetchAndMergeWorkflowList(requestId, variant, query, normalizedOptions);
+        listPromises.set(requestId, promise);
         return promise;
     }
 

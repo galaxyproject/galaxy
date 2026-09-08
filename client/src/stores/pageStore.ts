@@ -155,12 +155,19 @@ export const usePageStore = defineStore("pageStore", () => {
         return promise;
     }
 
-    /** Fetches the variant once; later calls resolve from the cache. */
-    async function fetchPagesOnce(variant: PageListVariant, options: FetchPagesOptions = {}): Promise<PageSummary[]> {
+    /**
+     * Fetches the variant once; later calls resolve from the cache.
+     *
+     * Always records, so that the variant it reads back is the one it hydrated.
+     */
+    async function fetchPagesOnce(
+        variant: PageListVariant,
+        options: Omit<FetchPagesOptions, "record"> = {},
+    ): Promise<PageSummary[]> {
         if (loadedVariants.value[variant]) {
             return getPages.value(variant);
         }
-        await fetchPages(variant, options);
+        await fetchPages(variant, { ...options, record: true });
         return getPages.value(variant);
     }
 
