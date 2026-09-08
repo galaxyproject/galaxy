@@ -258,3 +258,90 @@ describe("filtering", () => {
         expect(queryDict["tag"]).toBe("name:test");
     });
 });
+
+/**
+ * Quoted filter values (`name:'GREP'`) are meant to produce an exact, case-sensitive
+ * backend match, while the unquoted form (`name:grep`) stays a case-insensitive substring
+ * match. This was fully broken: `getFiltersForText` lowercased + unquoted every value at
+ * parse time, so both forms produced byte-identical output everywhere.
+ *
+ * Contract:
+ * - unquoted: value is lowercased at parse; backend query uses the `-contains` handler.
+ * - quoted:   value keeps its original case; if the filter has a sibling `<key>_eq`
+ *             handler, the backend query routes through it (`<attr>-eq`, exact match).
+ *             Local (`testFilters`) matching is unaffected — it stays case-insensitive.
+ */
+describe("quoted filter values (exact, case-sensitive backend match)", () => {
+    // A filter set with a `name`/`name_eq` sibling pair and no default filters, so the
+    // parsed output isn't padded with `deleted`/`visible` defaults.
+    const F = new Filtering(
+        {
+            name: { type: String, handler: contains("name"), menuItem: true },
+            name_eq: { handler: equals("name"), menuItem: false },
+            state: { type: String, handler: equals("state"), menuItem: true },
+        },
+        undefined,
+        true,
+    );
+
+    test("getFiltersForText keeps original case for quoted values, folds unquoted", () => {
+        expect(Object.fromEntries(F.getFiltersForText("name:'GREP'"))).toEqual({ name: "GREP" });
+        expect(Object.fromEntries(F.getFiltersForText("name:GREP"))).toEqual({ name: "grep" });
+        expect(Object.fromEntries(F.getFiltersForText('name:"GREP"'))).toEqual({ name: "GREP" });
+    });
+
+    test("getFiltersForText strips the surrounding quotes from the stored value", () => {
+        const [[, value]] = F.getFiltersForText("name:'GREP'");
+        expect(value).toBe("GREP");
+        expect(value).not.toContain("'");
+    });
+
+    test("getQueryDict routes a quoted value through the sibling _eq handler", () => {
+        // quoted -> exact, case preserved
+        expect(F.getQueryDict("name:'GREP'")).toEqual({ "name-eq": "GREP" });
+        // unquoted -> case-insensitive substring, lowercased
+        expect(F.getQueryDict("name:GREP")).toEqual({ "name-contains": "grep" });
+    });
+
+    test("getQueryDict routes quoted genome_build through genome_build_eq (HistoryFilters)", () => {
+        expect(HistoryFilters.getQueryDict("genome_build:'Hg19'")).toMatchObject({ "genome_build-eq": "Hg19" });
+        expect(HistoryFilters.getQueryDict("genome_build:hg19")).toMatchObject({ "genome_build-contains": "hg19" });
+    });
+
+    test("getQueryString emits the routed, case-preserved query", () => {
+        expect(F.getQueryString("name:'GREP'")).toBe("q=name-eq&qv=GREP");
+        expect(F.getQueryString("name:grep")).toBe("q=name-contains&qv=grep");
+    });
+
+    test("a quoted value with no _eq sibling still strips quotes and preserves case", () => {
+        // `state` here has no `state_eq`; best-effort: quotes gone, case kept, normal `equals` handler
+        expect(F.getQueryDict("state:'OK'")).toEqual({ "state-eq": "OK" });
+    });
+
+    test("getFilterText round-trips a quoted value unchanged", () => {
+        expect(F.getFilterText({ name: "GREP" }, false, "name:'GREP'")).toBe("name:'GREP'");
+        // unquoted source -> unquoted output
+        expect(F.getFilterText({ name: "grep" }, false, "name:grep")).toBe("name:grep");
+    });
+
+    test("getFilterText keeps quoting values that contain a space", () => {
+        expect(F.getFilterText({ name: "name of item" })).toBe("name:'name of item'");
+    });
+
+    test("getFilterValue returns the case-preserved value for a quoted filter", () => {
+        expect(F.getFilterValue("name:'GREP'", "name")).toBe("GREP");
+        expect(F.getFilterValue("name:grep", "name")).toBe("grep");
+    });
+
+    test("local testFilters matching is unaffected by quoting (stays case-insensitive)", () => {
+        const quoted = HistoryFilters.getFiltersForText("name:'GREP'");
+        const unquoted = HistoryFilters.getFiltersForText("name:grep");
+        const item = { name: "my grep tool", deleted: false, visible: true };
+        expect(HistoryFilters.testFilters(quoted, { ...item })).toBe(true);
+        expect(HistoryFilters.testFilters(unquoted, { ...item })).toBe(true);
+    });
+
+    test("checkFilter stays case-insensitive for quoted values", () => {
+        expect(HistoryFilters.checkFilter("name:'GREP'", "name", "grep")).toBe(true);
+    });
+});
