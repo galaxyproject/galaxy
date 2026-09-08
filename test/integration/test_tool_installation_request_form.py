@@ -559,3 +559,41 @@ class TestToolInstallationRequestFormPerHostDisabledIntegration(IntegrationTestC
             response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
             self._assert_status_code_is(response, 403)
             assert response.json()["err_code"] == 403004
+
+
+class TestToolInstallationRequestFormRateLimitIntegration(ToolInstallationRequestFormIntegrationBase):
+    """Submissions are rate-limited per user at the configured rate (own class: the limiter counts every request)."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["send_notification_rate_limit"] = "3/minute"
+
+    def test_submissions_are_rate_limited_per_user(self):
+        user = self._setup_user("tool_installation_request_rate_limit@galaxy.test")
+        with self._different_user(user["email"]):
+            responses = [
+                self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
+                for _ in range(4)
+            ]
+        statuses = [response.status_code for response in responses]
+        assert statuses == [200, 200, 200, 429], statuses
+        assert "3 per 1 minute" in responses[-1].json()["error"]
+
+
+class TestToolInstallationRequestFormRateLimitDisabledIntegration(ToolInstallationRequestFormIntegrationBase):
+    """An empty ``send_notification_rate_limit`` disables the limit."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["send_notification_rate_limit"] = ""
+
+    def test_submissions_are_not_rate_limited(self):
+        user = self._setup_user("tool_installation_request_no_rate_limit@galaxy.test")
+        with self._different_user(user["email"]):
+            statuses = [
+                self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True).status_code
+                for _ in range(12)
+            ]
+        assert statuses == [200] * 12, statuses

@@ -4633,6 +4633,23 @@ mapping:
         desc: |
           The interval in seconds between attempts to dispatch notifications to users (every 10 minutes by default). Runs in a Celery task.
 
+      send_notification_rate_limit:
+        type: str
+        required: false
+        default: 10/minute
+        desc: |
+          Maximum rate at which a single user may send notifications through the
+          ``POST /api/notifications`` endpoint. Requests are counted per API key or session, so the
+          limit is per user rather than per client address, and it applies to every sender, including
+          administrators. It bounds how many notifications (and, for tool installation requests
+          submitted by users, admin-facing emails) one account can generate.
+
+          The value follows the notation of the ``limits`` library: ``<count>/<unit>`` or
+          ``<count> per <n> <unit>``, where the unit is one of ``second``, ``minute``, ``hour``,
+          ``day``, ``month`` or ``year``, e.g. ``10/minute`` or ``100 per hour``. The counter is
+          kept in memory by each web worker process, so with several workers the effective limit
+          is a multiple of this value. Leave empty to disable the limit.
+
       help_forum_api_url:
         type: str
         required: false

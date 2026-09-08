@@ -467,6 +467,7 @@ class GalaxyAppConfigurationAttributes:
     mcp_server_path: str
     expired_notifications_cleanup_interval: int
     dispatch_notifications_interval: int
+    send_notification_rate_limit: str
     help_forum_api_url: str
     enable_help_forum_tool_panel_integration: bool
     enable_tool_installation_request_form: bool
