@@ -159,6 +159,10 @@ async function loadRun() {
         workflowName.value = incomingModel.name;
         workflowModel.value = incomingModel;
         owner.value = incomingModel.runData.owner;
+        // loadRun re-runs on history changes: a successful reload clears any
+        // error state left by an earlier attempt.
+        workflowError.value = "";
+        missingToolIds.value = [];
         loading.value = false;
     } catch (e) {
         if (e instanceof WorkflowMissingToolsError) {
@@ -177,6 +181,8 @@ async function loadRun() {
                 }
             }
         } else {
+            // Only a missing-tools failure may offer the install request.
+            missingToolIds.value = [];
             const errMessage = errorMessageAsString(e);
             if (errMessage === "Workflow step has upgrade messages") {
                 hasUpgradeMessages.value = true;
