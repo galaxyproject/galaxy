@@ -50,7 +50,6 @@ from galaxy.schema.storage_operations import (
     StorageOperationExecutionResult,
     StorageOperationRunState,
 )
-from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import now
 from .base import BaseTestCase
 
@@ -538,8 +537,12 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
 
     def test_force_sync_creates_notification_without_dispatching_email_channel_when_async_is_enabled(self):
         user = self._create_test_user()
-        Security.security = IdEncodingHelper(id_secret="testing")
+        # The response model encodes ids via the process-global Security.security;
+        # patch it for this test only so the helper does not leak into later tests.
+        with patch.object(Security, "security", self.trans.security, create=True):
+            self._assert_force_sync_creates_notification_without_dispatching_email(user)
 
+    def _assert_force_sync_creates_notification_without_dispatching_email(self, user: User):
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
             notification=InternalNotificationCreateData(**self._default_test_notification_data()),
