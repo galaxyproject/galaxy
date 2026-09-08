@@ -1,5 +1,4 @@
-import type { components } from "@/api/schema";
-import type { JobsQueryParams } from "@/components/Jobs/JobsFilters";
+import type { components, GalaxyApiPaths } from "@/api/schema";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { GalaxyApi } from "./client";
@@ -13,6 +12,7 @@ export type JobDetails = components["schemas"]["ShowFullJobResponse"] | componen
 export type JobInputSummary = components["schemas"]["JobInputSummary"];
 export type JobDisplayParametersSummary = components["schemas"]["JobDisplayParametersSummary"];
 export type JobMetric = components["schemas"]["JobMetric"];
+export type JobsQueryParams = GalaxyApiPaths["/api/jobs"]["get"]["parameters"]["query"];
 
 export type JobMessage =
     | components["schemas"]["ExitCodeJobMessage"]
@@ -93,13 +93,17 @@ export async function deleteJob(jobId: string, message?: string): Promise<boolea
  * @param extraProps Additional query params, e.g. `user_id` or the filters built by `jobsFilterParams`
  * @returns A tuple of the list of jobs and the total number of matching jobs
  */
-export async function fetchJobs(offset = 0, limit = 20, extraProps?: JobsQueryParams) {
-    const params = {
+export async function fetchJobs(
+    offset = 0,
+    limit = 20,
+    extraProps?: Omit<JobsQueryParams, "limit" | "offset" | "order_by">,
+) {
+    const params: JobsQueryParams = {
         limit,
         offset,
         order_by: "update_time",
         ...extraProps,
-    } as Record<string, unknown>;
+    };
 
     const { data, error, response } = await GalaxyApi().GET("/api/jobs", { params: { query: params } });
 
