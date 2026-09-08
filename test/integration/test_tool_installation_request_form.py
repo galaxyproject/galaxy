@@ -1,13 +1,20 @@
 """Integration tests for the tool-installation-request-form feature (routed via POST /api/notifications)."""
 
+import copy
 import json
 import os
 import re
-from typing import ClassVar
+from typing import (
+    Any,
+    ClassVar,
+)
 
 from galaxy_test.base.api_util import ADMIN_TEST_USER
 from galaxy_test.base.env import DEFAULT_WEB_HOST
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    WorkflowPopulator,
+)
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY = {
@@ -38,6 +45,7 @@ class ToolInstallationRequestFormIntegrationBase(IntegrationTestCase):
     """Base class with configuration for tool installation request form tests."""
 
     dataset_populator: DatasetPopulator
+    workflow_populator: WorkflowPopulator
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -51,6 +59,7 @@ class ToolInstallationRequestFormIntegrationBase(IntegrationTestCase):
         # Ensure the admin user exists in the database so notifications can be sent to them.
         self._setup_user(ADMIN_TEST_USER)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
 
 class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormIntegrationBase):
@@ -340,6 +349,8 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
     def test_workflow_install_request_with_tool_names(self):
         """Submit a request that includes workflow context (multiple tool_names + workflow_id)."""
         user = self._setup_user("tool_installation_request_workflow@galaxy.test")
+        with self._different_user(user["email"]):
+            workflow_id = self.workflow_populator.simple_workflow("tool_installation_request_context")
         workflow_payload = {
             "recipients": {"user_ids": [], "group_ids": [], "role_ids": []},
             "notification": {
@@ -366,7 +377,7 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
                             "requested_version": None,
                         },
                     ],
-                    "workflow_id": "encoded-workflow-id-abc",
+                    "workflow_id": workflow_id,
                 },
             },
         }
@@ -380,14 +391,33 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
             n
             for n in notifications
             if n.get("category") == "tool_installation_request"
-            and n.get("content", {}).get("workflow_id") == "encoded-workflow-id-abc"
+            and n.get("content", {}).get("workflow_id") == workflow_id
         ]
         assert (
             len(workflow_tool_notifications) >= 1
         ), f"Expected at least one tool_installation_request notification with workflow_id, got: {notifications}"
         content = workflow_tool_notifications[0]["content"]
-        assert content["workflow_id"] == "encoded-workflow-id-abc"
+        assert content["workflow_id"] == workflow_id
         assert len(content["tools"]) == 2
+
+    def test_workflow_id_must_name_a_workflow_accessible_to_the_submitter(self):
+        """A malformed workflow_id, or one naming another user's private workflow, is rejected (400).
+
+        The id is linked and resolved to a workflow name in the admin-facing notification,
+        so it must not be usable to reference workflows the submitter cannot see.
+        """
+        owner = self._setup_user("tool_installation_request_workflow_owner@galaxy.test")
+        with self._different_user(owner["email"]):
+            private_workflow_id = self.workflow_populator.simple_workflow("tool_installation_request_private")
+        submitter = self._setup_user("tool_installation_request_workflow_other@galaxy.test")
+        for workflow_id in ("not-an-encoded-id", private_workflow_id):
+            # The module-level body is inferred as dict[str, object]; annotate so the nested assignment type-checks.
+            payload: dict[str, Any] = copy.deepcopy(TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY)
+            payload["notification"]["content"]["workflow_id"] = workflow_id
+            with self._different_user(submitter["email"]):
+                response = self._post("notifications", data=payload, json=True)
+                self._assert_status_code_is(response, 400)
+                assert "workflow_id" in response.json()["err_msg"]
 
 
 class TestToolInstallationRequestFormEmailDeliveryIntegration(ToolInstallationRequestFormIntegrationBase):
