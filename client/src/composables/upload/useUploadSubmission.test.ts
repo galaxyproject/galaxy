@@ -358,4 +358,50 @@ describe("useUploadSubmission", () => {
         });
         uploadDatasetsSpy.mockRestore();
     });
+
+    it("gives each standalone item its own AbortSignal instead of one shared for the whole submission", async () => {
+        const uploadDatasetsSpy = vi.spyOn(uploadUtils, "uploadDatasets").mockResolvedValue(undefined);
+
+        const firstItem = makeUrlItem({ name: "1.txt", url: "https://example.org/1.txt" });
+        const secondItem = makeUrlItem({ name: "2.txt", url: "https://example.org/2.txt" });
+        const prepared = buildPreparedUpload([firstItem, secondItem]);
+        const wrapper = mountHarness(prepared);
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(uploadDatasetsSpy).toHaveBeenCalled();
+        const config = uploadDatasetsSpy.mock.calls[0]?.[1];
+
+        expect(config?.signal).toBeUndefined();
+        expect(config?.signals).toHaveLength(2);
+        // Each standalone item gets a distinct controller, so cancelling one can't abort the other.
+        expect(config?.signals?.[0]).not.toBe(config?.signals?.[1]);
+
+        uploadDatasetsSpy.mockRestore();
+    });
+
+    it("shares a single AbortSignal across every item in a collection batch", async () => {
+        const uploadCollectionDatasetsSpy = vi
+            .spyOn(uploadUtils, "uploadCollectionDatasets")
+            .mockResolvedValue(undefined);
+
+        const firstItem = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
+        const secondItem = makeUrlItem({ name: "2.bed", url: "https://example.org/2.bed" });
+        const prepared = buildPreparedUpload([firstItem, secondItem], makeSubmissionCollectionConfig());
+        const wrapper = mountHarness(prepared);
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(uploadCollectionDatasetsSpy).toHaveBeenCalled();
+        const config = uploadCollectionDatasetsSpy.mock.calls[0]?.[2];
+
+        expect(config?.signal).toBeInstanceOf(AbortSignal);
+        expect(config?.signals).toBeUndefined();
+
+        uploadCollectionDatasetsSpy.mockRestore();
+    });
 });
