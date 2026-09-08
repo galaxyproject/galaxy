@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import (
     NoReturn,
@@ -55,6 +56,21 @@ from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 
+@dataclass(frozen=True)
+class RequestHandlerContext:
+    """What a request handler needs to know about a user submission.
+
+    ``sender`` is the authenticated submitter (``trans.user``, already checked to
+    be non-anonymous). ``trans`` is kept alongside it for host-aware config
+    lookups and permission-checked lookups of referenced objects.
+    """
+
+    trans: ProvidesUserContext
+    sender: User
+    config: GalaxyAppConfiguration
+    user_manager: UserManager
+
+
 class NotificationRequestHandler(Protocol):
     """Per-category handler for user-submitted request notifications.
 
@@ -70,11 +86,13 @@ class NotificationRequestHandler(Protocol):
 
     category: PersonalNotificationCategory
 
-    def is_enabled(self, config: GalaxyAppConfiguration) -> bool:
+    def is_enabled(self, ctx: RequestHandlerContext) -> bool:
         """Whether this request category is enabled on the instance."""
         ...
 
-    def stamp_content(self, content: AnyNotificationCreateContent, sender: User) -> AnyNotificationContent:
+    def stamp_content(
+        self, content: AnyNotificationCreateContent, ctx: RequestHandlerContext
+    ) -> AnyNotificationContent:
         """Rewrite the client-supplied content server-side (e.g. stamp the requester email).
 
         Must raise ``RequestParameterInvalidException`` when the content type does
@@ -83,14 +101,12 @@ class NotificationRequestHandler(Protocol):
         """
         ...
 
-    def resolve_recipients(
-        self, sender: User, config: GalaxyAppConfiguration, user_manager: UserManager
-    ) -> NotificationRecipients:
+    def resolve_recipients(self, ctx: RequestHandlerContext) -> NotificationRecipients:
         """Resolve who the request is delivered to (typically the instance admins)."""
         ...
 
     def build_confirmation(
-        self, sender: User, admin_request: NotificationCreateRequest
+        self, ctx: RequestHandlerContext, admin_request: NotificationCreateRequest
     ) -> NotificationCreateRequest | None:
         """Optionally derive the submitter's confirmation copy, or None for no copy."""
         ...
@@ -105,10 +121,12 @@ class ToolInstallationRequestHandler:
 
     category = PersonalNotificationCategory.tool_installation_request
 
-    def is_enabled(self, config: GalaxyAppConfiguration) -> bool:
-        return config.enable_tool_installation_request_form
+    def is_enabled(self, ctx: RequestHandlerContext) -> bool:
+        return ctx.config.enable_tool_installation_request_form
 
-    def stamp_content(self, content: AnyNotificationCreateContent, sender: User) -> AnyNotificationContent:
+    def stamp_content(
+        self, content: AnyNotificationCreateContent, ctx: RequestHandlerContext
+    ) -> AnyNotificationContent:
         if not isinstance(content, ToolInstallationRequestCreateContent):
             raise RequestParameterInvalidException(
                 "The notification content does not match the tool_installation_request category."
@@ -121,23 +139,21 @@ class ToolInstallationRequestHandler:
         # re-running every sanitizer and bound check on them.
         return ToolInstallationRequestNotificationContent.model_construct(
             **dict(content),
-            requester_email=sender.email,
+            requester_email=ctx.sender.email,
             is_confirmation=False,
         )
 
-    def resolve_recipients(
-        self, sender: User, config: GalaxyAppConfiguration, user_manager: UserManager
-    ) -> NotificationRecipients:
-        admin_users = user_manager.admins()
+    def resolve_recipients(self, ctx: RequestHandlerContext) -> NotificationRecipients:
+        admin_users = ctx.user_manager.admins()
         if not admin_users:
             raise ServerNotConfiguredForRequest("No admin users are configured on this Galaxy instance.")
         return NotificationRecipients(user_ids=[u.id for u in admin_users])
 
     def build_confirmation(
-        self, sender: User, admin_request: NotificationCreateRequest
+        self, ctx: RequestHandlerContext, admin_request: NotificationCreateRequest
     ) -> NotificationCreateRequest | None:
         admin_user_ids = set(admin_request.recipients.user_ids)
-        if sender.id in admin_user_ids:
+        if ctx.sender.id in admin_user_ids:
             # An admin submitter already receives the admin-facing request -- no separate copy.
             return None
         notification_data = admin_request.notification
@@ -150,7 +166,7 @@ class ToolInstallationRequestHandler:
         return admin_request.model_copy(
             update={
                 "notification": confirmation_notification,
-                "recipients": NotificationRecipients(user_ids=[sender.id]),
+                "recipients": NotificationRecipients(user_ids=[ctx.sender.id]),
             }
         )
 
@@ -255,27 +271,28 @@ class NotificationService(ServiceBase):
             ]
 
         # All other cases: validate and dispatch to the request handler
-        user_manager = self.user_manager
-        config = self.config
-
-        if sender_context.anonymous or sender_context.user is None:
+        sender = sender_context.user
+        if sender_context.anonymous or sender is None:
             raise AuthenticationRequired("You must be logged in to submit a notification.")
 
         if category not in _USER_ALLOWED_CATEGORIES:
             raise AdminRequiredException("Only administrators can send notifications of this category.")
 
         handler = _REQUEST_HANDLERS[category]
-        if not handler.is_enabled(config):
+        ctx = RequestHandlerContext(
+            trans=sender_context,
+            sender=sender,
+            config=self.config,
+            user_manager=self.user_manager,
+        )
+        if not handler.is_enabled(ctx):
             # A disabled feature is a configuration state, not a permission
             # problem, so it is reported as such rather than as "admin required".
             # Note: pydantic validates the category union/Literal fields to plain
             # strings, so interpolating `category` yields the bare value.
             raise ConfigDoesNotAllowException(f"{category} notifications are disabled on this Galaxy instance.")
 
-        sender = sender_context.user
-        assert sender is not None  # checked above
-
-        content = handler.stamp_content(payload.notification.content, sender)
+        content = handler.stamp_content(payload.notification.content, ctx)
 
         # Like the stamped content fields, the envelope of a user-submitted
         # request is server-controlled: source and variant are fixed (a client
@@ -296,14 +313,14 @@ class NotificationService(ServiceBase):
         # submitter receives it too if they are among them, e.g. an admin).
         admin_request = NotificationCreateRequest.model_construct(
             notification=notification_data,
-            recipients=handler.resolve_recipients(sender, config, user_manager),
+            recipients=handler.resolve_recipients(ctx),
             galaxy_url=galaxy_url,
         )
         requests = [admin_request]
 
         # Optional submitter confirmation copy. The handler returns None when no
         # copy is appropriate (e.g. the submitter already receives the request).
-        confirmation = handler.build_confirmation(sender, admin_request)
+        confirmation = handler.build_confirmation(ctx, admin_request)
         if confirmation is not None:
             requests.append(confirmation)
 
