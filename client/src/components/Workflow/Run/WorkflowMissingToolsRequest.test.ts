@@ -159,7 +159,7 @@ describe("WorkflowMissingToolsRequest", () => {
         expect(wrapper.text()).toContain("Check your notifications for updates");
     });
 
-    it("shows error alert when submission fails", async () => {
+    it("shows the error inside the still-open dialog when submission fails", async () => {
         mockSubmitToolInstallationRequest.mockRejectedValueOnce(new Error("Server error"));
         const wrapper = mountComponent();
         await flushPromises();
@@ -169,8 +169,30 @@ describe("WorkflowMissingToolsRequest", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
-        expect(wrapper.find(".alert-danger").exists()).toBe(true);
+        // The open <dialog> makes the rest of the page inert, so the alert must live inside it.
+        const modal = wrapper.findComponent(GModal);
+        expect(modal.props("show")).toBe(true);
+        expect(modal.find(".alert-danger").exists()).toBe(true);
+        expect(modal.find(".alert-danger").text()).toContain("Server error");
         expect(wrapper.text()).toContain("Request Installation");
+    });
+
+    it("clears the error when the dialog is cancelled after a failure", async () => {
+        mockSubmitToolInstallationRequest.mockRejectedValueOnce(new Error("Server error"));
+        const wrapper = mountComponent();
+        await flushPromises();
+
+        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
+        await flushPromises();
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(wrapper.find(".alert-danger").exists()).toBe(true);
+
+        wrapper.findComponent(GModal).vm.$emit("cancel");
+        await flushPromises();
+
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
+        expect(wrapper.find(".alert-danger").exists()).toBe(false);
     });
 
     it("omits workflow_id while the stored workflow id is unknown", async () => {
