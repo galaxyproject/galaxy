@@ -14,7 +14,8 @@ from pydantic import (
 class BaseComment(BaseModel):
     id: int = Field(..., description="Unique identifier for this comment. Determined by the comments order")
     color: Literal["none", "black", "blue", "turquoise", "green", "lime", "orange", "yellow", "red", "pink"] = Field(
-        ..., description="Color this comment is displayed as. The exact color hex is determined by the client"
+        default="none",
+        description="Color this comment is displayed as. The exact color hex is determined by the client",
     )
     position: tuple[float, float] = Field(..., description="[x, y] position of this comment in the Workflow")
     size: tuple[float, float] = Field(..., description="[width, height] size of this comment")
