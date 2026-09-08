@@ -20088,6 +20088,20 @@ export interface components {
          * @enum {string}
          */
         OutputCompareType: "diff" | "re_match" | "sim_size" | "re_match_multiline" | "contains" | "image_diff";
+        /** OutputDiscoveryJobMessage */
+        OutputDiscoveryJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "output_discovery";
+        };
         /** OutputLabelHint */
         OutputLabelHint: {
             /**
@@ -23005,6 +23019,7 @@ export interface components {
                       | components["schemas"]["RegexJobMessage"]
                       | components["schemas"]["MaxDiscoveredFilesJobMessage"]
                       | components["schemas"]["OutputCollectionSecurityJobMessage"]
+                      | components["schemas"]["OutputDiscoveryJobMessage"]
                   )[]
                 | null;
             /**

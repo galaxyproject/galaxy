@@ -29,6 +29,7 @@ from galaxy.model.store.discover import (
     discover_target_directory,
     DiscoveredFile,
     ensure_path_in_directory,
+    get_required_item,
     JsonCollectedDatasetMatch,
     MaxDiscoveredFilesExceededError,
     MetadataSourceProvider as AbstractMetadataSourceProvider,
@@ -159,13 +160,14 @@ def collect_dynamic_outputs(
             job_context.persist_library_folder(library_folder)
         elif destination_type == "hdca":
             # create or populate a dataset collection in the history
-            assert "collection_type" in unnamed_output_dict
+            collection_type = get_required_item(
+                unnamed_output_dict, "collection_type", "Must specify an HDCA collection_type"
+            )
             object_id = destination.get("object_id")
             if object_id:
                 hdca = job_context.get_hdca(object_id)
             else:
                 name = unnamed_output_dict.get("name", "unnamed collection")
-                collection_type = unnamed_output_dict["collection_type"]
                 collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
                 hdca = job_context.create_hdca(name, structure)

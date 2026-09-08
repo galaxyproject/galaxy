@@ -59,7 +59,17 @@ class OutputCollectionSecurityJobMessage(JobMessage):
     type: Literal["output_collection_security"]
 
 
-AnyJobMessage = ExitCodeJobMessage | RegexJobMessage | MaxDiscoveredFilesJobMessage | OutputCollectionSecurityJobMessage
+class OutputDiscoveryJobMessage(JobMessage):
+    type: Literal["output_discovery"]
+
+
+AnyJobMessage = (
+    ExitCodeJobMessage
+    | RegexJobMessage
+    | MaxDiscoveredFilesJobMessage
+    | OutputCollectionSecurityJobMessage
+    | OutputDiscoveryJobMessage
+)
 
 
 def check_output_regex(
