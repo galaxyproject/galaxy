@@ -6,6 +6,7 @@ from typing import (
     cast,
     TYPE_CHECKING,
 )
+from unittest.mock import MagicMock
 
 import psutil
 
@@ -106,7 +107,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
 
     def test_stopping_job_at_shutdown(self):
         self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
-        self.app.model.session = cast("scoped_session", bunch.Bunch(add=lambda x: None, flush=lambda: None))
+        self.app.model.session = cast("scoped_session", MagicMock())
         runner = local.LocalJobRunner(self.app, 1)
         runner.start()
         self.app.config.monitor_thread_join_timeout = 15
