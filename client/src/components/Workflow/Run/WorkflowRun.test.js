@@ -3,11 +3,18 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setMockConfig } from "@/composables/__mocks__/config";
+
+import { getRunData, WorkflowMissingToolsError } from "./services";
 import sampleRunData1 from "./testdata/run1.json";
 
+import WorkflowMissingToolsRequest from "./WorkflowMissingToolsRequest.vue";
 import WorkflowRun from "./WorkflowRun.vue";
 
-vi.mock("./services", () => ({
+// Keep the real module (WorkflowMissingToolsError is matched with instanceof
+// in the component) and only replace the API call.
+vi.mock("./services", async (importOriginal) => ({
+    ...(await importOriginal()),
     getRunData: vi.fn(async () => {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -15,6 +22,14 @@ vi.mock("./services", () => ({
             }, 0);
         });
     }),
+}));
+
+vi.mock("@/api/workflows", () => ({
+    getWorkflowInfo: vi.fn(async () => ({
+        id: "stored-workflow-id",
+        name: "Missing Tools Workflow",
+        owner: "someone",
+    })),
 }));
 
 vi.mock("app", () => ({}));
@@ -100,5 +115,58 @@ describe("WorkflowRun.vue", () => {
 
         expect(wrapper.vm.submissionError).toBe("Some exception here");
         expect(wrapper.find(".alert-danger").exists()).toBe(true);
+    });
+
+    describe("missing tools", () => {
+        const MISSING_TOOL_IDS = ["toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17"];
+        const MISSING_TOOLS_MESSAGE = "Following tools missing: toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17";
+
+        function mountWithRegisteredUser(props = {}) {
+            // @vue/test-utils v1: `propsData`, and the testing pinia becomes active on creation.
+            createTestingPinia({
+                createSpy: vi.fn,
+                initialState: {
+                    user: {
+                        currentUser: { id: "user1", email: "u@galaxy.test", isAnonymous: false },
+                    },
+                },
+            });
+            return mount(WorkflowRun, {
+                propsData: { workflowId: run1WorkflowId, ...props },
+            });
+        }
+
+        async function settle(wrapper) {
+            await vi.runAllTimersAsync();
+            await flushPromises();
+            await wrapper.vm.$nextTick();
+        }
+
+        beforeEach(() => {
+            setMockConfig({ enable_tool_installation_request_form: true });
+        });
+
+        it("offers the install request for the tools reported missing", async () => {
+            getRunData.mockRejectedValueOnce(new WorkflowMissingToolsError(MISSING_TOOLS_MESSAGE, MISSING_TOOL_IDS));
+            const wrapper = mountWithRegisteredUser();
+            await settle(wrapper);
+
+            expect(wrapper.vm.workflowError).toBe(MISSING_TOOLS_MESSAGE);
+            expect(wrapper.vm.missingToolIds).toEqual(MISSING_TOOL_IDS);
+            const request = wrapper.findComponent(WorkflowMissingToolsRequest);
+            expect(request.props("missingToolIds")).toEqual(MISSING_TOOL_IDS);
+            // Non-instance run pages are addressed by the stored workflow id already.
+            expect(request.props("workflowId")).toBe(run1WorkflowId);
+            expect(wrapper.find("[data-testid='request-install-btn']").exists()).toBe(true);
+        });
+
+        it("resolves the stored workflow id for instance-mode run pages", async () => {
+            getRunData.mockRejectedValueOnce(new WorkflowMissingToolsError(MISSING_TOOLS_MESSAGE, MISSING_TOOL_IDS));
+            const wrapper = mountWithRegisteredUser({ instance: true });
+            await settle(wrapper);
+
+            // `workflowId` is a Workflow instance id here; the request must carry the StoredWorkflow id.
+            expect(wrapper.findComponent(WorkflowMissingToolsRequest).props("workflowId")).toBe("stored-workflow-id");
+        });
     });
 });

@@ -10,6 +10,8 @@ from galaxy.exceptions import (
     AdminRequiredException,
     AuthenticationRequired,
     ConfigDoesNotAllowException,
+    ItemAccessibilityException,
+    MalformedId,
     ObjectNotFound,
     RequestParameterInvalidException,
     ServerNotConfiguredForRequest,
@@ -23,6 +25,7 @@ from galaxy.managers.sse import (
     SSEEvent,
 )
 from galaxy.managers.users import UserManager
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
 from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
@@ -69,6 +72,7 @@ class RequestHandlerContext:
     sender: User
     config: GalaxyAppConfiguration
     user_manager: UserManager
+    workflows_manager: WorkflowsManager
 
 
 class NotificationRequestHandler(Protocol):
@@ -145,10 +149,32 @@ class ToolInstallationRequestHandler:
         # model_construct reuses the already-validated field values instead of
         # re-running every sanitizer and bound check on them.
         return ToolInstallationRequestNotificationContent.model_construct(
-            **dict(content),
+            **{**dict(content), "workflow_id": self._accessible_workflow_id(content.workflow_id, ctx)},
             requester_email=ctx.sender.email,
             is_confirmation=False,
         )
+
+    @staticmethod
+    def _accessible_workflow_id(workflow_id: str | None, ctx: RequestHandlerContext) -> str | None:
+        """Canonical encoded id of the referenced stored workflow, verified accessible to the submitter.
+
+        The id is rendered as a run link and resolved to the workflow name in the
+        admin-facing notification, so it must name a ``StoredWorkflow`` (not a
+        ``Workflow`` instance id, which the run page also accepts) that the
+        submitter can access -- otherwise a submitter could make the admin email
+        display and link another user's private workflow. One error message for
+        every failure mode, so an inaccessible id is not distinguishable from a
+        missing one.
+        """
+        if workflow_id is None:
+            return None
+        try:
+            stored_workflow = ctx.workflows_manager.get_stored_accessible_workflow(
+                ctx.trans, workflow_id, by_stored_id=True
+            )
+        except (MalformedId, ObjectNotFound, ItemAccessibilityException):
+            raise RequestParameterInvalidException("workflow_id does not refer to a workflow accessible to you.")
+        return ctx.trans.security.encode_id(stored_workflow.id)
 
     def resolve_recipients(self, ctx: RequestHandlerContext) -> NotificationRecipients:
         admin_users = ctx.user_manager.admins()
@@ -197,11 +223,13 @@ class NotificationService(ServiceBase):
         sse_manager: SSEConnectionManager,
         user_manager: UserManager,
         config: GalaxyAppConfiguration,
+        workflows_manager: WorkflowsManager,
     ):
         self.notification_manager = notification_manager
         self.sse_manager = sse_manager
         self.user_manager = user_manager
         self.config = config
+        self.workflows_manager = workflows_manager
 
     @property
     def notifications_enabled(self) -> bool:
@@ -291,6 +319,7 @@ class NotificationService(ServiceBase):
             sender=sender,
             config=self.config,
             user_manager=self.user_manager,
+            workflows_manager=self.workflows_manager,
         )
         if not handler.is_enabled(ctx):
             # A disabled feature is a configuration state, not a permission

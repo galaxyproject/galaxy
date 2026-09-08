@@ -173,6 +173,19 @@ describe("WorkflowMissingToolsRequest", () => {
         expect(wrapper.text()).toContain("Request Installation");
     });
 
+    it("omits workflow_id while the stored workflow id is unknown", async () => {
+        const wrapper = mountComponent({ workflowId: undefined });
+        await flushPromises();
+        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
+        await flushPromises();
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+
+        const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
+        expect(payload.workflow_id).toBeUndefined();
+        expect(payload.tools).toEqual(EXPECTED_REQUESTED_TOOLS);
+    });
+
     it("uses singular 'tool' for a single missing tool ID", async () => {
         const wrapper = mountComponent({ missingToolIds: [MISSING_TOOL_IDS[0]] });
         await flushPromises();

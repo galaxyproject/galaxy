@@ -69,6 +69,10 @@ const missingToolIds = ref<string[]>([]);
 const workflowName = ref("");
 const workflowModel: any = ref(null);
 const owner = ref<string>();
+// The StoredWorkflow this run page is for. In instance mode `props.workflowId`
+// is a Workflow (instance) id, which must not be sent with a tool installation
+// request: the server validates and links `workflow_id` as a StoredWorkflow id.
+const storedWorkflowId = ref<string | undefined>(props.instance ? undefined : props.workflowId);
 
 const currentHistoryId = computed(() => historyStore.currentHistoryId);
 const editorLink = computed(() => {
@@ -95,6 +99,7 @@ if (props.instance) {
         if (workflow.value) {
             workflowName.value = workflow.value?.name;
             owner.value = workflow.value?.owner;
+            storedWorkflowId.value = workflow.value?.id;
         }
     });
 }
@@ -162,9 +167,12 @@ async function loadRun() {
             missingToolIds.value = e.missingToolIds;
             if (!workflowName.value) {
                 try {
-                    const storedWorkflow = await getWorkflowInfo(props.workflowId);
+                    const storedWorkflow = await getWorkflowInfo(props.workflowId, undefined, props.instance);
                     owner.value = storedWorkflow.owner;
                     workflowName.value = storedWorkflow.name;
+                    if (props.instance) {
+                        storedWorkflowId.value = storedWorkflow.id;
+                    }
                 } catch {
                     // best-effort: name not critical for the request button
                 }
@@ -243,7 +251,7 @@ defineExpose({
             <WorkflowMissingToolsRequest
                 v-if="config?.enable_tool_installation_request_form"
                 :missing-tool-ids="missingToolIds"
-                :workflow-id="props.workflowId" />
+                :workflow-id="storedWorkflowId" />
         </GAlert>
         <span v-else>
             <GAlert v-if="loading" variant="info" show>

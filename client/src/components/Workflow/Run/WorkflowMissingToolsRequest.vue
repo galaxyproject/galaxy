@@ -13,7 +13,8 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 
 const props = defineProps<{
     missingToolIds: string[];
-    workflowId: string;
+    /** Encoded StoredWorkflow id; omitted while unknown (e.g. instance-mode run pages still resolving it). */
+    workflowId?: string;
 }>();
 
 const { config, isConfigLoaded } = useConfig();
