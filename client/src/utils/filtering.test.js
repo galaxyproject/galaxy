@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import Filtering, { contains, equals } from "@/utils/filtering";
 
 const filterTexts = [
     "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
@@ -106,7 +107,7 @@ describe("filtering", () => {
         });
     });
     test("parse filter text as entries", () => {
-        filterTexts.forEach((filterText) => {
+        filterTexts.forEach((filterText, i) => {
             const filters = HistoryFilters.getFiltersForText(filterText);
             expect(filters[0][0]).toBe("name");
             expect(filters[0][1]).toBe("name of item");
@@ -127,7 +128,9 @@ describe("filtering", () => {
             expect(filters[8][0]).toBe("deleted");
             expect(filters[8][1]).toBe("false");
             expect(filters[9][0]).toBe("visible");
-            expect(filters[9][1]).toBe("true");
+            // filterTexts[0] quotes `visible:'TRUE'`, so its parsed value keeps the original
+            // case; filterTexts[1] uses the bare `visible:true`. toBool folds both downstream.
+            expect(filters[9][1]).toBe(i === 0 ? "TRUE" : "true");
             const filters_eq = HistoryFilters.getFiltersForText('genome_build_eq:"hg19"');
             expect(filters_eq[0][0]).toBe("genome_build_eq");
             expect(filters_eq[0][1]).toBe("hg19");
@@ -136,7 +139,10 @@ describe("filtering", () => {
     test("parse filter text as query dictionary", () => {
         filterTexts.forEach((filterText) => {
             const queryDict = HistoryFilters.getQueryDict(filterText);
-            expect(queryDict["name-contains"]).toBe("name of item");
+            // both fixtures quote the name (`name:'name of item'`), so it routes to the
+            // exact-match `name-eq` handler rather than `name-contains`
+            expect(queryDict["name-eq"]).toBe("name of item");
+            expect(queryDict["name-contains"]).toBeUndefined();
             expect(queryDict["hid-gt"]).toBe("10");
             expect(queryDict["hid-lt"]).toBe("100");
             expect(queryDict["create_time-gt"]).toBe(1609459200);
@@ -167,7 +173,7 @@ describe("filtering", () => {
                 filterTexts[0],
                 true,
             ),
-        ).toEqual("name:'name of item' hid>10 update_time<2022-01-01 extension:ext");
+        ).toEqual("name:'name of item' hid>10 update_time<'2022-01-01' extension:ext");
         expect(HistoryFilters.applyFiltersToText({ deleted: "any", visible: true }, "")).toEqual(
             "deleted:any visible:true",
         );
@@ -230,9 +236,12 @@ describe("filtering", () => {
             deleted: "false",
             visible: "true",
         };
-        // iterate through filterTexts and compare with parsedFilters
-        filterTexts.forEach((filterText) => {
-            expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(parsedFilters);
+        // iterate through filterTexts and compare with parsedFilters. filterTexts[0] quotes
+        // `visible:'TRUE'`, so its parsed value keeps the original case (see the quoted-value
+        // block below); everything else folds the same either way.
+        filterTexts.forEach((filterText, i) => {
+            const expected = i === 0 ? { ...parsedFilters, visible: "TRUE" } : parsedFilters;
+            expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(expected);
         });
     });
     test("named tag (hash) conversion", () => {

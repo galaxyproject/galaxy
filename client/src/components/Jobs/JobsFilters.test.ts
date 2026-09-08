@@ -41,4 +41,16 @@ describe("jobsFilterParams", () => {
     it("returns an empty object for empty filterText", () => {
         expect(jobsFilterParams("")).toEqual({});
     });
+
+    it("keeps a quoted tool: value quoted and case-preserved in search", () => {
+        expect(jobsFilterParams("tool:'Grep1'")).toEqual({ search: "tool:'Grep1'" });
+    });
+
+    it("lowercases and does not quote an unquoted tool: value", () => {
+        expect(jobsFilterParams("tool:Grep1")).toEqual({ search: "tool:grep1" });
+    });
+
+    it("keeps a quoted tool: value alongside unspecified text", () => {
+        expect(jobsFilterParams("grep1 tool:'Grep1'")).toEqual({ search: "tool:'Grep1' grep1" });
+    });
 });
