@@ -378,7 +378,9 @@ class GalaxyInteractorApi:
 
         primary_datasets = attributes.get("primary_datasets", {})
         job_id = self._dataset_provenance(history_id, hid)["job_id"]
-        outputs = self._get(f"jobs/{job_id}/outputs").json()
+        outputs_response = self._get(f"jobs/{job_id}/outputs")
+        outputs_response.raise_for_status()
+        outputs = outputs_response.json()
         found_datasets = 0
         for output in outputs:
             if output["name"] == name or output["name"].startswith(f"__new_primary_file_{name}|"):
@@ -1123,7 +1125,9 @@ class GalaxyInteractorApi:
         return history_contents_response.json()
 
     def _state_ready(self, job_id: str, error_msg: str):
-        state_str = self.__get_job(job_id).json()["state"]
+        job_response = self.__get_job(job_id)
+        job_response.raise_for_status()
+        state_str = job_response.json()["state"]
         if state_str == "ok":
             return True
         elif state_str == "error":
@@ -1238,7 +1242,7 @@ class GalaxyInteractorApi:
             response = None
             for _ in range(self.download_attempts):
                 response = self._get(url)
-                if response.status_code == 500:
+                if response.status_code in (409, 500):
                     print(f"Retrying failed download with status code {response.status_code}")
                     time.sleep(self.download_sleep)
                     continue
