@@ -38,6 +38,14 @@ const toolCount = computed(() => props.missingToolIds.length);
 /** Mirrors the server-side bound on requested-tool entries per request. */
 const MAX_REQUESTED_TOOLS = 50;
 
+function setShowConfirm(show: boolean) {
+    showConfirm.value = show;
+    if (!show) {
+        // A failed attempt's error belongs to the dialog it was shown in.
+        errorMessage.value = "";
+    }
+}
+
 async function requestInstallation() {
     submitting.value = true;
     errorMessage.value = "";
@@ -72,10 +80,6 @@ async function requestInstallation() {
 
 <template>
     <div v-if="showButton" class="workflow-missing-tools-request mt-3">
-        <BAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = ''">
-            {{ errorMessage }}
-        </BAlert>
-
         <BAlert v-if="submitted" variant="success" show>
             Installation request sent. Check your notifications for updates.
         </BAlert>
@@ -86,7 +90,7 @@ async function requestInstallation() {
             :disabled="submitting"
             variant="primary"
             size="small"
-            @click="showConfirm = true">
+            @click="setShowConfirm(true)">
             Request Installation ({{ toolCount }} missing {{ toolCount === 1 ? "tool" : "tools" }})
         </GButton>
 
@@ -99,8 +103,13 @@ async function requestInstallation() {
             :ok-disabled="submitting"
             :close-on-ok="false"
             @ok="requestInstallation"
-            @cancel="showConfirm = false"
-            @update:show="showConfirm = $event">
+            @cancel="setShowConfirm(false)"
+            @update:show="setShowConfirm($event)">
+            <!-- Inside the dialog: the open <dialog> makes the rest of the page inert,
+                 so an alert rendered outside it would be hidden behind the backdrop. -->
+            <BAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = ''">
+                {{ errorMessage }}
+            </BAlert>
             <p>
                 Request the admins to install
                 <strong>{{ toolCount }} missing {{ toolCount === 1 ? "tool" : "tools" }}</strong>
