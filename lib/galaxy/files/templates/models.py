@@ -585,7 +585,7 @@ FileSourceTemplateConfiguration = Annotated[
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
-    | OpenBisFileSourceTemplateConfiguration,
+    | OpenBisFileSourceTemplateConfiguration
     | CKANFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
@@ -614,7 +614,7 @@ FileSourceConfiguration = Annotated[
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
-    | OpenBisFileSourceConfiguration,
+    | OpenBisFileSourceConfiguration
     | CKANFileSourceConfiguration,
     Field(discriminator="type"),
 ]

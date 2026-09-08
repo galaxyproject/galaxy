@@ -2,17 +2,19 @@
 Galaxy FilesSource implementation for openBIS [1].
 
 openBIS is an ELN-LIMS (Electronic Lab Notebook + Laboratory Information Management System) developed by
-ETH Zurich. Data in openBIS is organized in a fixed hierarchy of typed, metadata-carrying entities rather than
-a plain file tree:
+ETH Zurich. This plugin exposes the Collection-based part of openBIS's entity model as a virtual hierarchy
+rather than a plain file tree (Experiment and Sample are API names for Collection and Object):
 
-    Space -> Project -> Experiment (Collection) -> Object (Sample) -> DataSet -> Files
+    Space -> Project -> Collection -> [Object] -> DataSet -> Files
+                                             -> AFS files
 
-A DataSet is a registered, immutable bundle of files; it can be attached either to an Object or directly to an
-Experiment. Separately, openBIS also has AFS ("Atomic File System"): a general-purpose, per-Object (or
-per-Experiment) mutable file area with its own list/read/write/delete API. It's what the ELN-LIMS UI's
-"Uploads"/"Files" widget on an Object or Experiment page actually stores files in - it is not a DataSet and
-is invisible to DataSet-oriented calls (``get_datasets``) or to the classic Attachment API (``get_attachments``).
-Both mechanisms are exposed here, since real users' files may live in either one.
+A physical DataSet is a registered bundle whose file contents are immutable; it can belong to an Object or
+directly to a Collection. Its metadata can still be updated. Separately, AFS ("Atomic File System") provides
+mutable files owned by Collections or Objects. The openBIS 7 ELN-LIMS Files tab uses AFS, a separate API from
+legacy DataSets and classic Attachments. This plugin browses and downloads legacy DataSet files and provides
+listing, downloads, uploads and folder creation for AFS. It does not expose AFS rename or delete operations.
+The root lists all Spaces visible to the configured PAT, including shared settings Spaces such as
+ELN_SETTINGS when accessible; it is not restricted to the user's home Space.
 
 This module maps that hierarchy onto virtual, POSIX-like paths so it can be browsed like any other Galaxy file
 source:
@@ -31,8 +33,9 @@ source:
 
 Since Object codes, DataSet permIds, and the literal segment ``files`` all share the same path position at the
 fourth level, resolving that segment requires a lookup (tried as ``files`` first, then as an Object, then as a
-DataSet) rather than being decidable from the path alone. This also means an Object or Experiment whose code
-happens to literally be ``files`` is unreachable - an accepted, documented limitation rather than a bug.
+DataSet) rather than being decidable from the path alone. An Object whose code is literally ``files`` is
+therefore unreachable through these paths; a Collection named ``files`` is valid at the third level.
+The shared resolver checks Object and DataSet ownership against the parents encoded in the path.
 
 This file source is integrated directly with the vendor client library: pyBIS [2], the official Python wrapper
 around openBIS's v3 JSON-RPC API and AFS. Authentication uses a Personal Access Token (PAT) rather than a stored
@@ -40,29 +43,29 @@ username/password.
 
 Known limitations of this first implementation:
 
-- Recursive listing is not supported.
+- Recursive listing, pagination and server-side search/sorting are not supported; entries are sorted locally.
+- Objects outside Collections, classic Attachments and linked/container DataSets have no dedicated traversal.
 - Per-file sizes are not available cheaply from pyBIS's ``DataSet.file_list`` (only relative paths are
   returned), so DataSet file entries report a size of 0. AFS file entries do report a real size, since AFS's
   ``list`` call returns it directly.
 - Existing DataSets are exposed read-only. openBIS 7 recommends AFS for new files and plans to remove the
-  legacy DataSet store in openBIS 8, so all Galaxy uploads and created folders must target an Object's or
-  Collection's ``files`` (AFS) folder.
-- AFS's ``list`` call returns an empty list both for an empty directory and for a path that doesn't exist at
-  all, so browsing into a mistyped AFS sub-path silently shows nothing rather than raising an error.
+  legacy DataSet store in openBIS 8 [3]. Uploads and folder creation both require selecting an existing
+  Collection's or Object's ``files`` (AFS) directory; they never create openBIS entities.
+- The pinned pyBIS AFS client can return an empty list for a missing directory as well as an empty one,
+  so browsing a mistyped AFS directory may show no entries instead of reporting a missing path.
 
 References:
 
 - [1] https://openbis.ch/
 - [2] https://pypi.org/project/PyBIS/
+- [3] https://openbis.readthedocs.io/en/7.x/user-documentation/general-users/data-upload.html
 """
 
 import os
 import shutil
 import tempfile
-from typing import (
-    cast,
-    TYPE_CHECKING,
-)
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from galaxy.exceptions import (
     MessageException,
@@ -110,6 +113,31 @@ class OpenBisFileSourceConfiguration(BaseFileSourceConfiguration):
     base_url: str
     token: str
     verify_certificates: bool = True
+
+
+@dataclass
+class AfsPath:
+    owner_id: str
+    base_parts: list[str]
+    relative_parts: list[str]
+
+
+@dataclass
+class DatasetPath:
+    dataset: "DataSet"
+    object_code: str | None
+    relative_parts: list[str]
+
+
+@dataclass
+class ObjectPath:
+    obj: "OpenBisObject"
+
+
+WRITE_LOCATION_MESSAGE = (
+    "Uploads and folder creation require a Collection's or Object's 'files' (AFS) folder. "
+    "DataSets are immutable and exposed read-only."
+)
 
 
 class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration, OpenBisFileSourceConfiguration]):
@@ -176,7 +204,7 @@ class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration,
         if depth == 3:
             space, project, experiment = segments
             experiment_id = f"/{space}/{project}/{experiment}"
-            exp = client.get_experiment(experiment_id)
+            client.get_experiment(experiment_id)  # Validate the Collection even when it has no children.
             entries: list[AnyRemoteEntry] = [
                 self._object_entry(space, project, experiment, obj.code)
                 for obj in client.get_samples(experiment=experiment_id)
@@ -190,46 +218,36 @@ class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration,
             entries.append(self._afs_entry(space, project, experiment, None))
             return entries
 
-        space, project, experiment, fourth, *rest = segments
-
-        if fourth == "files":
-            exp = client.get_experiment(f"/{space}/{project}/{experiment}")
-            return self._list_afs(client, config, space, project, experiment, None, exp.permId, rest)
-
-        experiment_id = f"/{space}/{project}/{experiment}"
-        obj = self._try_get_object(client, experiment_id, fourth)
-        if obj is not None:
-            if not rest:
-                entries = [
-                    self._dataset_entry(space, project, experiment, fourth, dataset.permId)
-                    for dataset in client.get_datasets(sample=obj)
-                ]
-                entries.append(self._afs_entry(space, project, experiment, fourth))
-                return entries
-            fifth, *file_or_afs_rest = rest
-            if fifth == "files":
-                return self._list_afs(client, config, space, project, experiment, fourth, obj.permId, file_or_afs_rest)
-            dataset = self._require_dataset(client, fifth, sample=obj)
-            return self._list_dataset_files(space, project, experiment, fourth, dataset, file_or_afs_rest)
-
-        dataset = self._require_dataset(client, fourth, experiment_id=experiment_id)
-        return self._list_dataset_files(space, project, experiment, None, dataset, rest)
+        space, project, experiment = segments[:3]
+        resolved = self._resolve_path(client, segments)
+        if isinstance(resolved, AfsPath):
+            return self._list_afs(
+                config,
+                resolved,
+            )
+        if isinstance(resolved, ObjectPath):
+            entries = [
+                self._dataset_entry(space, project, experiment, segments[3], dataset.permId)
+                for dataset in client.get_datasets(sample=resolved.obj)
+            ]
+            entries.append(self._afs_entry(space, project, experiment, segments[3]))
+            return entries
+        if isinstance(resolved, DatasetPath):
+            return self._list_dataset_files(
+                space, project, experiment, resolved.object_code, resolved.dataset, resolved.relative_parts
+            )
+        raise ObjectNotFound("No entity found at this openBIS location")
 
     def _list_afs(
         self,
-        client: "Openbis",
         config: OpenBisFileSourceConfiguration,
-        space: str,
-        project: str,
-        experiment: str,
-        obj_code: str | None,
-        owner_permId: str,
-        prefix_parts: list[str],
+        resolved: AfsPath,
     ) -> list[AnyRemoteEntry]:
         afs = self._get_afs_client(config)
+        prefix_parts = resolved.relative_parts
         source = "/" + "/".join(prefix_parts) if prefix_parts else "/"
-        afs_files = afs.list(owner_permId, source, recursively=False)
-        base_parts = [space, project, experiment] + ([obj_code] if obj_code else []) + ["files"]
+        afs_files = afs.list(resolved.owner_id, source, recursively=False)
+        base_parts = resolved.base_parts
         entries: list[AnyRemoteEntry] = []
         for f in afs_files:
             entry_parts = base_parts + prefix_parts + [f.name]
@@ -324,55 +342,15 @@ class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration,
             raise MessageException("Cannot create a folder without a target location.")
         target_path = self.to_relative_path(target)
         segments = _split_path(target_path)
-        name_segments = _split_path(entry_data.name)
-        if len(name_segments) != 1:
+        entry_name = entry_data.name
+        if not entry_name or "/" in entry_name or entry_name in {".", ".."}:
             raise MessageException("An openBIS AFS folder name must be a single path component.")
-        entry_name = name_segments[0]
         client = self._get_client(context.config)
-
-        afs_target = self._try_resolve_afs(client, segments)
-        if afs_target is not None:
-            owner_permId, path_parts = afs_target
-            base_parts = segments[: len(segments) - len(path_parts)]
-        elif len(segments) == 3:
-            experiment_id = "/" + "/".join(segments)
-            exp = client.get_experiment(experiment_id)
-            owner_permId = exp.permId
-            path_parts = []
-            base_parts = [*segments, "files"]
-        elif len(segments) == 4:
-            space, project, experiment, object_code = segments
-            experiment_id = f"/{space}/{project}/{experiment}"
-            obj = self._try_get_object(client, experiment_id, object_code)
-            if obj is None:
-                # A direct Collection DataSet occupies the same position as an Object.
-                if self._try_get_dataset(client, object_code) is not None:
-                    raise MessageException(
-                        f"'{object_code}' is an existing openBIS DataSet. DataSets can't contain "
-                        "folders -- create the new folder in the Collection's 'files' folder instead."
-                    )
-                raise ObjectNotFound(f"Object '{object_code}' not found in openBIS")
-            owner_permId = obj.permId
-            path_parts = []
-            base_parts = [*segments, "files"]
-        else:
-            # At depth five the target may be a DataSet beneath an Object.
-            if len(segments) == 5 and self._try_get_dataset(client, segments[-1]) is not None:
-                raise MessageException(
-                    f"'{segments[-1]}' is an existing openBIS DataSet. DataSets can't contain "
-                    "folders -- create the new folder in the Collection or Object's 'files' "
-                    "folder instead."
-                )
-            raise MessageException(
-                "New folders can only be created directly under an openBIS Collection, an "
-                "Object, or inside an existing 'files' (AFS) folder."
-            )
-
+        resolved = self._require_afs(self._resolve_path(client, segments))
+        new_folder_parts = [*resolved.relative_parts, entry_name]
         afs = self._get_afs_client(context.config)
-        new_folder_parts = [*path_parts, entry_name]
-        afs.create(owner_permId, "/" + "/".join(new_folder_parts), is_directory=True)
-
-        entry_path = "/" + "/".join(base_parts + new_folder_parts)
+        afs.create(resolved.owner_id, "/" + "/".join(new_folder_parts), is_directory=True)
+        entry_path = "/" + "/".join(resolved.base_parts + new_folder_parts)
         return Entry(name=entry_name, uri=self.uri_from_path(entry_path), external_link=None)
 
     def _try_get_object(self, client: "Openbis", experiment_id: str, code: str) -> "OpenBisObject | None":
@@ -405,59 +383,38 @@ class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration,
             raise ObjectNotFound(f"DataSet '{code}' was not found at this openBIS location")
         return dataset
 
-    def _try_get_dataset(self, client: "Openbis", code: str) -> "DataSet | None":
-        try:
-            return client.get_dataset(code)
-        except Exception:
-            return None
-
-    def _try_resolve_afs(self, client: "Openbis", segments: list[str]) -> tuple[str, list[str]] | None:
-        """Return the AFS owner and path when segments contain an AFS ``files`` root."""
+    def _resolve_path(self, client: "Openbis", segments: list[str]) -> AfsPath | DatasetPath | ObjectPath | None:
+        """Resolve ownership consistently for browsing, downloads and writes."""
         if len(segments) < 4:
             return None
-        space, project, experiment, fourth, *rest = segments
+        space, project, collection, fourth, *rest = segments
+        collection_id = f"/{space}/{project}/{collection}"
         if fourth == "files":
-            exp = client.get_experiment(f"/{space}/{project}/{experiment}")
-            return exp.permId, rest
-        if rest and rest[0] == "files":
-            obj = self._try_get_object(client, f"/{space}/{project}/{experiment}", fourth)
-            if obj is not None:
-                return obj.permId, rest[1:]
-        return None
-
-    def _resolve_file(
-        self, client: "Openbis", source_path: str
-    ) -> tuple[str, str, list[str]] | tuple[str, "DataSet", str]:
-        segments = _split_path(source_path)
-
-        afs_target = self._try_resolve_afs(client, segments)
-        if afs_target is not None:
-            owner_permId, path_parts = afs_target
-            if not path_parts:
-                raise MessageException(f"'{source_path}' does not refer to a file in openBIS.")
-            return "afs", owner_permId, path_parts
-
-        if len(segments) < 5:
-            raise MessageException(f"'{source_path}' does not refer to a file in openBIS.")
-        space, project, experiment, fourth, *rest = segments
-        experiment_id = f"/{space}/{project}/{experiment}"
-        obj = self._try_get_object(client, experiment_id, fourth)
+            collection_obj = client.get_experiment(collection_id)
+            return AfsPath(collection_obj.permId, segments[:4], rest)
+        obj = self._try_get_object(client, collection_id, fourth)
         if obj is not None:
             if not rest:
-                raise MessageException(f"'{source_path}' does not refer to a file in openBIS.")
-            dataset_code, *file_parts = rest
-        else:
-            dataset_code, file_parts = fourth, rest
-        dataset = self._require_dataset(
-            client,
-            dataset_code,
-            sample=obj if obj is not None else None,
-            experiment_id=None if obj is not None else experiment_id,
-        )
-        relative_file_path = "/".join(file_parts)
-        if relative_file_path not in dataset.file_list:
-            raise ObjectNotFound(f"'{relative_file_path}' not found in openBIS dataset {dataset.permId}")
-        return "dataset", dataset, relative_file_path
+                return ObjectPath(obj)
+            if rest[0] == "files":
+                return AfsPath(obj.permId, segments[:5], rest[1:])
+            return DatasetPath(self._require_dataset(client, rest[0], sample=obj), fourth, rest[1:])
+        return DatasetPath(self._require_dataset(client, fourth, experiment_id=collection_id), None, rest)
+
+    def _require_afs(self, resolved: AfsPath | DatasetPath | ObjectPath | None) -> AfsPath:
+        if not isinstance(resolved, AfsPath):
+            raise MessageException(WRITE_LOCATION_MESSAGE)
+        return resolved
+
+    def _resolve_file(self, client: "Openbis", source_path: str) -> AfsPath | DatasetPath:
+        resolved = self._resolve_path(client, _split_path(source_path))
+        if not isinstance(resolved, (AfsPath, DatasetPath)) or not resolved.relative_parts:
+            raise MessageException(f"'{source_path}' does not refer to a file in openBIS.")
+        if isinstance(resolved, DatasetPath):
+            relative_path = "/".join(resolved.relative_parts)
+            if relative_path not in resolved.dataset.file_list:
+                raise ObjectNotFound(f"'{relative_path}' not found in openBIS dataset {resolved.dataset.permId}")
+        return resolved
 
     def _realize_to(
         self,
@@ -466,11 +423,11 @@ class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration,
         context: FilesSourceRuntimeContext[OpenBisFileSourceConfiguration],
     ):
         client = self._get_client(context.config)
-        kind, owner_or_dataset, payload = self._resolve_file(client, source_path)
+        resolved = self._resolve_file(client, source_path)
 
-        if kind == "afs":
-            owner_permId = owner_or_dataset
-            path_parts = payload
+        if isinstance(resolved, AfsPath):
+            owner_permId = resolved.owner_id
+            path_parts = resolved.relative_parts
             afs = self._get_afs_client(context.config)
             source = "/" + "/".join(path_parts)
             with tempfile.TemporaryDirectory() as tmp_dir:
@@ -480,8 +437,8 @@ class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration,
                 shutil.move(downloaded_path, native_path)
             return
 
-        dataset = cast("DataSet", owner_or_dataset)
-        relative_file_path = cast(str, payload)
+        dataset = resolved.dataset
+        relative_file_path = "/".join(resolved.relative_parts)
         with tempfile.TemporaryDirectory() as tmp_dir:
             # Default folders make the download location match dataset.file_list.
             dataset.download(
@@ -528,28 +485,16 @@ class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration,
     ) -> str:
         segments = _split_path(target_path)
         if len(segments) < 5:
-            raise MessageException("Files can only be uploaded inside a Collection's or Object's 'files' (AFS) folder.")
+            raise MessageException(WRITE_LOCATION_MESSAGE)
         client = self._get_client(context.config)
-
-        afs_target = self._try_resolve_afs(client, segments)
-        if afs_target is not None:
-            owner_permId, path_parts = afs_target
-            if not path_parts:
-                raise MessageException("Specify a filename to upload within the 'files' folder.")
-            base_parts = segments[: len(segments) - len(path_parts)]
-            return self._write_afs(context.config, base_parts, owner_permId, path_parts, native_path)
-
-        # Existing DataSets remain browseable and downloadable, but all new writes use AFS.
-        candidate_segments = segments[:-1]
-        if len(candidate_segments) in (4, 5) and self._try_get_dataset(client, candidate_segments[-1]) is not None:
-            raise MessageException(
-                f"'{candidate_segments[-1]}' is an existing openBIS DataSet. DataSets are immutable "
-                "and are exposed read-only. Export to the Collection's or Object's 'files' (AFS) folder instead."
-            )
-
-        raise MessageException(
-            "Files can only be uploaded inside a Collection's or Object's 'files' (AFS) folder. "
-            "Existing openBIS DataSets are available for browsing and download only."
+        # Resolve the parent so a new filename is never mistaken for an entity code.
+        parent = self._require_afs(self._resolve_path(client, segments[:-1]))
+        return self._write_afs(
+            context.config,
+            parent.base_parts,
+            parent.owner_id,
+            [*parent.relative_parts, segments[-1]],
+            native_path,
         )
 
 
