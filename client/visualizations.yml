@@ -53,7 +53,7 @@ jsonviewer:
     version: 0.0.0
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
-    version: 0.0.30
+    version: 0.0.31
 kepler:
     package: "@galaxyproject/kepler"
     version: 0.0.3
