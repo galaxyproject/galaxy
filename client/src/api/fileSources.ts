@@ -99,6 +99,11 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a file repository plugin that connects with an OMERO server.",
     },
+    openbis: {
+        icon: faNetworkWired,
+        message:
+            "This is a file source that connects with an openBIS instance.",
+    },
     ssh: {
         icon: faNetworkWired,
         message: "This is a file repository plugin that connects with a remote server over SSH.",
