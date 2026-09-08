@@ -87,7 +87,7 @@ class NotificationRequestHandler(Protocol):
     category: PersonalNotificationCategory
 
     def is_enabled(self, ctx: RequestHandlerContext) -> bool:
-        """Whether this request category is enabled on the instance."""
+        """Whether this request category is enabled for the submitting request's host."""
         ...
 
     def stamp_content(
@@ -122,7 +122,14 @@ class ToolInstallationRequestHandler:
     category = PersonalNotificationCategory.tool_installation_request
 
     def is_enabled(self, ctx: RequestHandlerContext) -> bool:
-        return ctx.config.enable_tool_installation_request_form
+        # The option is per-host configurable. ``/api/configuration`` resolves it
+        # against the request host (so the client hides the form on a host where
+        # it is disabled); the server-side gate must do the same, or a per-host
+        # disable would only hide the button while the API stays open.
+        host = getattr(ctx.trans, "host", None)
+        if host:
+            return bool(ctx.config.config_value_for_host("enable_tool_installation_request_form", host))
+        return bool(ctx.config.enable_tool_installation_request_form)
 
     def stamp_content(
         self, content: AnyNotificationCreateContent, ctx: RequestHandlerContext
