@@ -1,16 +1,11 @@
-import { JOB_STATES } from "@/api/jobs";
+import { JOB_STATES, type JobsQueryParams } from "@/api/jobs";
 import Filtering, { compare, contains, equals, toDate, type ValidFilter } from "@/utils/filtering";
 
-export interface JobsQueryParams {
-    state?: string[];
-    date_range_min?: string;
-    date_range_max?: string;
-    search?: string;
-}
+type UserJobsQueryParams = Pick<NonNullable<JobsQueryParams>, "state" | "date_range_min" | "date_range_max" | "search">;
 
 /** Filters for the jobs list. */
 const validFilters: Record<string, ValidFilter<string | number>> = {
-    tool_id: { placeholder: "tool id", type: String, handler: contains("tool_id"), menuItem: true },
+    tool: { placeholder: "tool id", type: String, handler: contains("tool"), menuItem: true },
     state: {
         placeholder: "state",
         type: "Dropdown",
@@ -26,13 +21,16 @@ const validFilters: Record<string, ValidFilter<string | number>> = {
         isRangeInput: true,
         menuItem: true,
     },
+    /** Unspecified text (e.g. the user just typing "grep1" with no `key:value` filter), which is
+     * sent to the backend `search` param as is, alongside `date_range_min:`/`state:`/etc. */
+    unspecified_text: { handler: contains("unspecified_text"), menuItem: false },
 };
 
-export const JobsFilters = new Filtering(validFilters);
+export const JobsFilters = new Filtering(validFilters, undefined, true, "unspecified_text");
 
 /** Turn a `JobsFilters` filter text into query params for `/api/jobs`. */
-export function jobsFilterParams(filterText: string): JobsQueryParams {
-    const params: JobsQueryParams = {};
+export function jobsFilterParams(filterText: string): UserJobsQueryParams {
+    const params: UserJobsQueryParams = {};
 
     const state = JobsFilters.getFilterValue(filterText, "state") as string | undefined;
     if (state) {
@@ -49,17 +47,22 @@ export function jobsFilterParams(filterText: string): JobsQueryParams {
         params.date_range_max = updatedBefore;
     }
 
-    const searchTerms = [];
-    const toolId = JobsFilters.getFilterValue(filterText, "tool_id") as string | undefined;
-    if (toolId) {
-        searchTerms.push(`tool:${toolId}`);
+    // `getFilterText` (not `getFilterValue`) so `tool`'s value gets requoted correctly if it
+    // contains a space, e.g. `tool:'my tool'`.
+    const tool = JobsFilters.getFilterValue(filterText, "tool") as string | undefined;
+    const unspecifiedText = JobsFilters.getFilterValue(filterText, "unspecified_text") as string | undefined;
+
+    /** `tool` (the ID filter) and `unspecified_text` as the search filters that get forwarded to the `search` query param. */
+    const searchFilters: Record<string, string> = {};
+    if (tool !== undefined) {
+        searchFilters.tool = tool;
     }
-    const freeText = JobsFilters.getFilterValue(filterText, "name") as string | undefined;
-    if (freeText) {
-        searchTerms.push(freeText);
+    if (unspecifiedText !== undefined) {
+        searchFilters.unspecified_text = unspecifiedText;
     }
-    if (searchTerms.length) {
-        params.search = searchTerms.join(" ");
+    const search = JobsFilters.getFilterText(searchFilters, false, filterText);
+    if (search) {
+        params.search = search;
     }
 
     return params;
