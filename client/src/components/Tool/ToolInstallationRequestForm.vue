@@ -28,7 +28,8 @@ const submitting = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
 const urlError = ref("");
-const cancelButtonText = computed(() => (submitting.value ? "Cancel" : "Close"));
+// After a successful submission the form is gone and the only action left is closing.
+const cancelButtonText = computed(() => (successMessage.value ? "Close" : "Cancel"));
 
 const formValid = () => !!(toolName.value.trim() && description.value.trim());
 
@@ -54,7 +55,9 @@ function validateFieldLengths(): boolean {
 }
 
 function validateToolUrl(): boolean {
-    const url = toolUrl.value.trim();
+    // URL schemes are case-insensitive (the server accepts `HTTPS://` too);
+    // validate the lowercased value but keep the user's text for submission.
+    const url = toolUrl.value.trim().toLowerCase();
 
     if (url && (!url.startsWith("https://") || !isValidNetworkUrl(url))) {
         urlError.value = "Only https:// URLs are allowed.";
@@ -83,6 +86,10 @@ function close() {
 }
 
 async function submit() {
+    // Each attempt starts clean: an earlier attempt's banner must not linger
+    // next to a new validation error.
+    errorMessage.value = "";
+
     if (!formValid()) {
         errorMessage.value = "Please fill in all required fields.";
         return;
@@ -97,7 +104,6 @@ async function submit() {
     }
 
     submitting.value = true;
-    errorMessage.value = "";
     successMessage.value = "";
 
     try {
@@ -168,7 +174,7 @@ async function submit() {
                 v-model="toolUrl"
                 type="text"
                 title="Homepage / Repository URL"
-                help="e.g. https://github.com/..."
+                help="Must start with https://, e.g. https://github.com/..."
                 :error="urlError || undefined" />
 
             <FormElement
