@@ -498,8 +498,10 @@ class TestToolInstallationRequestFormDisabledIntegration(IntegrationTestCase):
         config["enable_celery_tasks"] = False
 
     def test_disabled_config_returns_error(self):
-        """When tool_installation_request_form is disabled, non-admin submissions should be denied."""
+        """When tool_installation_request_form is disabled, submissions are refused as a config restriction."""
         user = self._setup_user("tool_installation_request_disabled@galaxy.test")
         with self._different_user(user["email"]):
             response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
             self._assert_status_code_is(response, 403)
+            # CONFIG_DOES_NOT_ALLOW, not ADMIN_REQUIRED: no amount of privilege satisfies a disabled feature.
+            assert response.json()["err_code"] == 403004

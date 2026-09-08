@@ -8,6 +8,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     AdminRequiredException,
     AuthenticationRequired,
+    ConfigDoesNotAllowException,
     ObjectNotFound,
     RequestParameterInvalidException,
     ServerNotConfiguredForRequest,
@@ -265,9 +266,11 @@ class NotificationService(ServiceBase):
 
         handler = _REQUEST_HANDLERS[category]
         if not handler.is_enabled(config):
+            # A disabled feature is a configuration state, not a permission
+            # problem, so it is reported as such rather than as "admin required".
             # Note: pydantic validates the category union/Literal fields to plain
             # strings, so interpolating `category` yields the bare value.
-            raise AdminRequiredException(f"{category} notifications are disabled on this Galaxy instance.")
+            raise ConfigDoesNotAllowException(f"{category} notifications are disabled on this Galaxy instance.")
 
         sender = sender_context.user
         assert sender is not None  # checked above
