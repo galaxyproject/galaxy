@@ -6,6 +6,7 @@ import re
 from typing import ClassVar
 
 from galaxy_test.base.api_util import ADMIN_TEST_USER
+from galaxy_test.base.env import DEFAULT_WEB_HOST
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
@@ -504,4 +505,27 @@ class TestToolInstallationRequestFormDisabledIntegration(IntegrationTestCase):
             response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
             self._assert_status_code_is(response, 403)
             # CONFIG_DOES_NOT_ALLOW, not ADMIN_REQUIRED: no amount of privilege satisfies a disabled feature.
+            assert response.json()["err_code"] == 403004
+
+
+class TestToolInstallationRequestFormPerHostDisabledIntegration(IntegrationTestCase):
+    """The feature is enabled globally but disabled for the host the tests connect through."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["enable_notification_system"] = True
+        config["enable_tool_installation_request_form"] = True
+        # Keyed on the host the embedded test server is reached through (a substring match).
+        config["enable_tool_installation_request_form_by_host"] = {DEFAULT_WEB_HOST: False}
+        config["enable_celery_tasks"] = False
+
+    def test_per_host_disable_is_enforced_server_side(self):
+        """A per-host disable must gate the API the same way it hides the button."""
+        user = self._setup_user("tool_installation_request_per_host@galaxy.test")
+        with self._different_user(user["email"]):
+            # The client decides whether to show the form from this value, resolved per host.
+            assert self._get("configuration").json()["enable_tool_installation_request_form"] is False
+            response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
+            self._assert_status_code_is(response, 403)
             assert response.json()["err_code"] == 403004
