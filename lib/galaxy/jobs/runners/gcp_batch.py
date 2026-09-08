@@ -752,7 +752,6 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             if job_status == batch_v1.JobStatus.State.SUCCEEDED:
                 log.info("Batch job %s completed successfully", batch_job_name)
                 job_state.running = False
-                job_state.job_wrapper.change_state(model.Job.states.OK)
                 self.mark_as_finished(job_state)
                 log.debug("Finished check_watched_item for job %s (completed successfully)", job_state.job_id)
                 return None  # Remove from monitoring
