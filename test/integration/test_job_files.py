@@ -18,13 +18,9 @@ API has gone too far.
 import io
 import os
 import tempfile
-from typing import (
-    Any,
-    ClassVar,
-)
+from typing import Any
 
 import requests
-from sqlalchemy import select
 from tusclient import client
 
 from galaxy import model
@@ -44,16 +40,9 @@ TEST_TUS_CHUNK_SIZE = 1024
 
 
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
-    initialized = False
     dataset_populator: DatasetPopulator
-    # The shared input dataset is created once per class and stored on the
-    # *class* (not the instance): pytest runs each test method on a fresh
-    # instance, so an instance attribute would only exist for whichever test
-    # happened to initialize it. With the class scattered across test shards
-    # any other test referencing ``self.input_hda`` would otherwise hit an
-    # AttributeError.
-    input_hda: ClassVar[model.HistoryDatasetAssociation]
-    input_hda_dict: ClassVar[dict[str, Any]]
+    input_hda: model.HistoryDatasetAssociation
+    input_hda_dict: dict[str, Any]
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -61,22 +50,19 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         config["job_config_file"] = SIMPLE_JOB_CONFIG_FILE
         config["object_store_store_by"] = "uuid"
         config["server_name"] = "files"
-        cls.initialized = False
 
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        if not TestJobFilesIntegration.initialized:
-            history_id = self.dataset_populator.new_history()
-            sa_session = self.sa_session
-            stmt = select(model.HistoryDatasetAssociation)
-            assert len(sa_session.scalars(stmt).all()) == 0
-            TestJobFilesIntegration.input_hda_dict = self.dataset_populator.new_dataset(
-                history_id, content=TEST_INPUT_TEXT, wait=True
-            )
-            assert len(sa_session.scalars(stmt).all()) == 1
-            TestJobFilesIntegration.input_hda = sa_session.scalars(stmt).all()[0]
-            TestJobFilesIntegration.initialized = True
+        # Every test gets its own history and input dataset, so tests that
+        # mutate their input (purging it, for instance) cannot affect others.
+        history_id = self.dataset_populator.new_history()
+        self.input_hda_dict = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
+        input_hda = self.sa_session.get(
+            model.HistoryDatasetAssociation, self._app.security.decode_id(self.input_hda_dict["id"])
+        )
+        assert input_hda
+        self.input_hda = input_hda
 
     def test_read_by_state(self):
         job, _, _ = self.create_static_job_with_state("running")
@@ -306,20 +292,15 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         return self._app.model.session
 
     def create_static_job_with_state(self, state):
-        """Create a job with unknown handler so its state won't change."""
+        """Create a job with unknown handler so its state won't change.
+
+        The job takes this test's ``input_hda`` as input and lives in its history.
+        """
         sa_session = self.sa_session
-        # Order by id so we deterministically pick the original shared input
-        # dataset / history / user created in setUp. Without ORDER BY, PostgreSQL
-        # (CI) returns rows in arbitrary order; once earlier tests have added
-        # HDAs, ``[0]`` could be another job's output, the job's input would no
-        # longer be ``self.input_hda``, and positive-path reads would 403.
-        hda = sa_session.scalars(
-            select(model.HistoryDatasetAssociation).order_by(model.HistoryDatasetAssociation.id)
-        ).first()
-        assert hda
-        history = sa_session.scalars(select(model.History).order_by(model.History.id)).first()
+        hda = self.input_hda
+        history = hda.history
         assert history
-        user = sa_session.scalars(select(model.User).order_by(model.User.id)).first()
+        user = history.user
         assert user
         output_hda = model.HistoryDatasetAssociation(history=history, create_dataset=True, flush=False)
         output_hda.hid = 2
