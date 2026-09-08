@@ -101,8 +101,7 @@ export const templateTypes: FileSourceTypesDetail = {
     },
     openbis: {
         icon: faNetworkWired,
-        message:
-            "This is a file source that connects with an openBIS instance.",
+        message: "This is a file source that connects with an openBIS instance.",
     },
     ssh: {
         icon: faNetworkWired,
