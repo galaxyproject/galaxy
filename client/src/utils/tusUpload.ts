@@ -43,6 +43,8 @@ export interface TusUploadOptions {
     onProgress: (percentage: number) => void;
     /** Called when an error occurs */
     onError: (error: Error) => void;
+    /** Optional AbortSignal to cancel the upload */
+    signal?: AbortSignal;
 }
 
 /**
@@ -107,8 +109,14 @@ async function startTusUpload(upload: tus.Upload): Promise<void> {
  * @throws Error if upload fails with 403 (authorization) or other unrecoverable errors
  */
 export async function createTusUpload(options: TusUploadOptions): Promise<TusUploadResult> {
-    const { file, endpoint, historyId, chunkSize, onProgress, onError } = options;
+    const { file, endpoint, historyId, chunkSize, onProgress, onError, signal } = options;
     const startTime = performance.now();
+
+    if (signal?.aborted) {
+        const abortError = new DOMException("Upload aborted", "AbortError");
+        onError(abortError);
+        return Promise.reject(abortError);
+    }
 
     return new Promise((resolve, reject) => {
         console.debug(`Starting chunked upload for ${file.name} [chunkSize=${chunkSize}].`);
@@ -116,6 +124,36 @@ export async function createTusUpload(options: TusUploadOptions): Promise<TusUpl
         // Determine the upload input based on file type
         // For FileStream, extract the reader; otherwise use the file/blob directly
         const uploadInput = "isStream" in file && file.isStream ? file.stream.getReader() : (file as File | Blob);
+
+        let settled = false;
+
+        function cleanup() {
+            if (signal) {
+                signal.removeEventListener("abort", onAbort);
+            }
+        }
+
+        function settle(fn: () => void): void {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            cleanup();
+            fn();
+        }
+
+        const onAbort = () => {
+            settle(() => {
+                upload.abort();
+                const abortError = new DOMException("Upload aborted", "AbortError");
+                onError(abortError);
+                reject(abortError);
+            });
+        };
+
+        if (signal) {
+            signal.addEventListener("abort", onAbort);
+        }
 
         const upload = new tus.Upload(uploadInput, {
             endpoint,
@@ -125,15 +163,24 @@ export async function createTusUpload(options: TusUploadOptions): Promise<TusUpl
             uploadSize: file.size,
             storeFingerprintForResuming: false,
             onError: (err: Error) => {
+                if (signal?.aborted) {
+                    settle(() => {
+                        onError(err);
+                        reject(err);
+                    });
+                    return;
+                }
+
                 const status = (
                     err as Error & { originalResponse?: { getStatus: () => number } }
                 ).originalResponse?.getStatus();
                 if (status === 403) {
                     console.error(`Failed because of missing authorization: ${err}`);
-                    onError(err);
-                    reject(err);
+                    settle(() => {
+                        onError(err);
+                        reject(err);
+                    });
                 } else {
-                    // 🎵 Never gonna give you up 🎵
                     console.log(`Failed because: ${err}\n, will retry in 10 seconds`);
                     setTimeout(() => startTusUpload(upload), 10000);
                 }
@@ -144,24 +191,28 @@ export async function createTusUpload(options: TusUploadOptions): Promise<TusUpl
                 onProgress(Math.round(parseFloat(percentage)));
             },
             onSuccess: () => {
-                const uploadTimeSeconds = (performance.now() - startTime) / 1000;
-                console.log(`Upload of ${file.name} to ${upload.url} took ${uploadTimeSeconds} seconds`);
+                settle(() => {
+                    const uploadTimeSeconds = (performance.now() - startTime) / 1000;
+                    console.log(`Upload of ${file.name} to ${upload.url} took ${uploadTimeSeconds} seconds`);
 
-                const sessionId = upload.url?.split("/").pop();
-                if (!sessionId) {
-                    const error = new Error("No session ID received from upload");
-                    onError(error);
-                    reject(error);
-                    return;
-                }
+                    const sessionId = upload.url?.split("/").pop();
+                    if (!sessionId) {
+                        const error = new Error("No session ID received from upload");
+                        onError(error);
+                        reject(error);
+                        return;
+                    }
 
-                resolve({
-                    sessionId,
-                    fileName: file.name,
+                    resolve({
+                        sessionId,
+                        fileName: file.name,
+                    });
                 });
             },
         });
 
-        startTusUpload(upload).catch(reject);
+        startTusUpload(upload).catch((err) => {
+            settle(() => reject(err));
+        });
     });
 }
