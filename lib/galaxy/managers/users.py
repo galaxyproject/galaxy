@@ -16,6 +16,7 @@ from markupsafe import escape
 from sqlalchemy import (
     and_,
     exc,
+    false,
     select,
     true,
 )
@@ -410,9 +411,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def admins(self, filters=None, **kwargs):
         """
         Return a list of admin Users.
+
+        Deleted (and therefore purged) accounts are excluded even when their
+        email is still listed in ``admin_users``: they can no longer act as
+        admins and must not receive admin-targeted notifications.
         """
         admin_emails = self.app.config.admin_users_list
         filters = combine_lists(self.model_class.email.in_(admin_emails), filters)
+        filters = combine_lists(self.model_class.deleted == false(), filters)
         return super().list(filters=filters, **kwargs)
 
     def error_unless_admin(self, user, msg="Administrators only", **kwargs):
