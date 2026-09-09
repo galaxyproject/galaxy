@@ -255,7 +255,11 @@ watch(
                 v-if="!allLoaded"
                 class="mr-auto d-flex justify-content-center align-items-center"
                 :class="inPanel && 'mt-1'">
-                <i class="mr-1">Loaded {{ items.length }} out of {{ totalItemCount }} {{ props.namePlural }}</i>
+                <i class="mr-1">
+                    Loaded {{ items.length }}
+                    <span v-if="totalItemCount !== undefined">out of {{ totalItemCount }}</span>
+                    {{ props.namePlural }}
+                </i>
                 <GButton
                     v-if="!props.loadDisabled"
                     data-description="load more items button"
