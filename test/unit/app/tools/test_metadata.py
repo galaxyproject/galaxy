@@ -321,6 +321,49 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             output_dataset, "This tool is not permitted to create unnamed outputs."
         )
 
+    def test_extended_metadata_reports_invalid_unnamed_output(self):
+        self.app.config.metadata_strategy = "extended"
+        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
+        self._init_tool_for_path(source_file_name)
+        self.tool.uses_tool_provided_metadata = True
+        self.tool.allows_unnamed_outputs = True
+        output_dataset = self._create_output_dataset(extension="txt")
+        self.app.model.session.commit()
+        command = self.metadata_command({"out_file1": output_dataset})
+        self._write_galaxy_json(
+            json.dumps(
+                {
+                    "__unnamed_outputs": [
+                        {
+                            "destination": {"type": "hdca"},
+                            "elements": [],
+                            "name": "missing collection type",
+                        }
+                    ]
+                }
+            )
+        )
+        self._write_output_dataset_contents(output_dataset, "original")
+        self._write_job_files()
+
+        self.exec_metadata_command(command)
+
+        jobs_attrs_path = os.path.join(
+            self.job_working_directory,
+            "metadata",
+            "outputs_populated",
+            "jobs_attrs.txt",
+        )
+        with open(jobs_attrs_path) as jobs_attrs_file:
+            jobs_attrs = json.load(jobs_attrs_file)
+        assert len(jobs_attrs) == 1
+        assert jobs_attrs[0]["state"] == model.Job.states.ERROR
+        discovery_messages = [
+            message for message in jobs_attrs[0]["job_messages"] if message["type"] == "output_discovery"
+        ]
+        assert len(discovery_messages) == 1
+        assert discovery_messages[0]["desc"] == "Failed to collect job outputs: Must specify an HDCA collection_type"
+
     def test_extended_metadata_rejects_dynamic_tool_spoofing_data_fetch(self):
         self.app.config.metadata_strategy = "extended"
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")

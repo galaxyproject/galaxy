@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
+    output_discovery_job_message,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
@@ -23,6 +24,13 @@ class TestOutputChecker(TestCase):
 
     def test_default_no_stderr_success(self):
         self.__assertSuccessful()
+
+    def test_output_discovery_job_message(self):
+        assert output_discovery_job_message()["desc"] == "Failed to collect job outputs"
+        assert (
+            output_discovery_job_message("Missing collection type")["desc"]
+            == "Failed to collect job outputs: Missing collection type"
+        )
 
     def test_default_stderr_failure(self):
         self.stderr = "foo"
