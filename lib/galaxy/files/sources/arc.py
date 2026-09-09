@@ -1,3 +1,5 @@
+import os
+
 from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
@@ -20,6 +22,10 @@ except ImportError:
     GitLabARCFileSystem = None
 
 DEFAULT_PAGE_SIZE = 50
+# arcfs separates the GitLab project path from the path inside the repository with this marker,
+# e.g. ``group/project:-:assays/data.csv``. It is part of the paths Galaxy navigates with, but
+# should not leak into the names shown to users.
+ROOT_MARKER = ":-:"
 
 
 class ARCFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
@@ -103,6 +109,27 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
             )
         except Exception as e:
             raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
+
+    def _info_to_entry(self, info: dict, config: ARCFileSourceConfiguration) -> AnyRemoteEntry:
+        entry = super()._info_to_entry(info, config)
+        entry.name = self._display_name(entry.path)
+        return entry
+
+    @staticmethod
+    def _display_name(path: str) -> str:
+        """Return the name to show for an arcfs path, hiding the ``:-:`` marker.
+
+        Projects (paths ending with the marker) keep their full ``group/project`` path so that
+        equally named projects in different groups stay distinguishable; entries inside a project
+        show only their last path component.
+        """
+        project, marker, inside = path.partition(ROOT_MARKER)
+        if not marker:
+            return os.path.basename(path.rstrip("/")) or path
+        inside = inside.strip("/")
+        if not inside:
+            return project
+        return inside.rsplit("/", 1)[-1]
 
 
 __all__ = ("ARCFilesSource",)
