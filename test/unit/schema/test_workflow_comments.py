@@ -5,8 +5,8 @@ from galaxy.schema.workflow.comments import WorkflowCommentModel
 
 
 def test_comment_color_defaults_to_none():
-    comment = WorkflowCommentModel(
-        root={
+    comment = WorkflowCommentModel.model_validate(
+        {
             "id": 0,
             "type": "frame",
             "position": [0, 0],
@@ -21,8 +21,8 @@ def test_comment_color_defaults_to_none():
 
 def test_comment_color_rejects_unknown_value():
     with pytest.raises(ValidationError):
-        WorkflowCommentModel(
-            root={
+        WorkflowCommentModel.model_validate(
+            {
                 "id": 0,
                 "type": "frame",
                 "position": [0, 0],
