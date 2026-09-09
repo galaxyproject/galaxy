@@ -124,10 +124,13 @@ def _finalize_workflow(
     user: User,
     workflow_name: str | None,
     steps: list[WorkflowStep],
+    reports_config: dict[str, Any] | None = None,
 ) -> StoredWorkflow:
     workflow = model.Workflow()
     workflow.name = workflow_name
     workflow.steps = steps
+    if reports_config is not None:
+        workflow.reports_config = reports_config
     attach_ordered_steps(workflow)
     levorder = order_workflow_steps_with_levels(steps)
     base_pos = 10
@@ -577,13 +580,16 @@ def extract_workflow_by_ids(
     dataset_collection_names: list[str] | None = None,
     output_labels: list[OutputLabelHint] | None = None,
     step_labels: list[StepLabelHint] | None = None,
-) -> "tuple[StoredWorkflow, ExtractionLabelIndex]":
+    build_report: "ReportBuilder | None" = None,
+) -> tuple[StoredWorkflow, list[str]]:
     """ID-based variant of :func:`extract_workflow`.
 
-    Returns the finalized workflow and the label index mapping the ids the
-    extraction consumed to the labels it assigned, so a caller can rewrite a
-    notebook page's markdown into the workflow's report. A caller that only wants
-    the workflow ignores the index (``stored, _ = extract_workflow_by_ids(...)``).
+    ``build_report`` turns the label index - which maps the ids the extraction
+    consumed to the labels it assigned - into the workflow's ``reports_config``,
+    e.g. by rewriting a notebook page's markdown. It runs *before* the workflow is
+    persisted, so the labels it assigns and the report it produces are written by
+    the same transaction that creates the workflow: a failure there leaves no
+    half-built workflow behind. Returns the workflow and any report warnings.
     """
     steps, index = extract_steps_by_ids(
         trans,
@@ -597,7 +603,11 @@ def extract_workflow_by_ids(
         output_labels=output_labels,
         step_labels=step_labels,
     )
-    return _finalize_workflow(trans, user, workflow_name, steps), index
+    reports_config: dict[str, Any] | None = None
+    report_warnings: list[str] = []
+    if build_report is not None:
+        reports_config, report_warnings = build_report(index)
+    return _finalize_workflow(trans, user, workflow_name, steps, reports_config), report_warnings
 
 
 IdKey = tuple[Literal["dataset", "collection"], int]
@@ -618,6 +628,11 @@ def output_label_to_id_key(kind: OutputLabelKind, content_id: int) -> IdKey:
     if kind == "hda":
         return ("dataset", content_id)
     return ("collection", content_id)
+
+
+# Turns the label index into a workflow ``reports_config`` (plus warnings) while the
+# extracted steps are still uncommitted.
+ReportBuilder = Callable[["ExtractionLabelIndex"], tuple[dict[str, Any], list[str]]]
 
 
 def _label_arg(argument: str, label: str | None) -> str | None:
@@ -1019,6 +1034,7 @@ __all__ = (
     "extract_workflow_by_ids",
     "extract_steps_by_ids",
     "ExtractionLabelIndex",
+    "ReportBuilder",
     "normalize_output_label_key",
     "output_label_to_id_key",
 )
