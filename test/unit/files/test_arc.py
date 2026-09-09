@@ -188,6 +188,7 @@ def test_recursive_listing_falls_back_to_generic_fsspec_listing(fake_fs):
 def test_entries_keep_arcfs_paths_and_build_uris(fake_fs):
     source = _arc_source()
     root, _ = source.list("/", limit=10, offset=0, user_context=user_context_fixture())
+    assert [e.name for e in root] == ["group/repo1", "group/sub/repo2", "other/repo3"]
     repo = next(e for e in root if isinstance(e, RemoteDirectory))
     assert repo.path == "group/repo1:-:"
     assert repo.uri == "gxfiles://test1/group/repo1:-:"
@@ -195,10 +196,31 @@ def test_entries_keep_arcfs_paths_and_build_uris(fake_fs):
     inside, total = source.list(repo.path, limit=10, offset=0, user_context=user_context_fixture())
     assert total == 2
     readme = next(e for e in inside if isinstance(e, RemoteFile))
+    assert readme.name == "README.md"
     assert readme.path == "group/repo1:-:README.md"
     assert readme.uri == "gxfiles://test1/group/repo1:-:README.md"
     assays = next(e for e in inside if isinstance(e, RemoteDirectory))
+    assert assays.name == "assays"
     assert assays.path == "group/repo1:-:assays"
+
+    deeper, _ = source.list(assays.path, limit=10, offset=0, user_context=user_context_fixture())
+    assert [(e.name, e.path) for e in deeper] == [("measurements.csv", "group/repo1:-:assays/measurements.csv")]
+
+
+@pytest.mark.parametrize(
+    "path, expected",
+    [
+        ("group/repo:-:", "group/repo"),
+        ("group/sub/repo:-:", "group/sub/repo"),
+        ("group/repo:-:/", "group/repo"),
+        ("group/repo:-:README.md", "README.md"),
+        ("group/repo:-:assays/data.csv", "data.csv"),
+        ("group/repo:-:assays/", "assays"),
+        ("plain/path/file.txt", "file.txt"),
+    ],
+)
+def test_display_name_hides_marker(path, expected):
+    assert ARCFilesSource._display_name(path) == expected
 
 
 def test_realize_downloads_through_get_file(fake_fs):
@@ -250,6 +272,7 @@ def test_public_datahub_listing_and_download():
     assert repos, "expected at least one public ARC on the DataHUB"
     assert total >= len(repos)
     assert all(isinstance(r, RemoteDirectory) and r.path.endswith(ROOT_MARKER) for r in repos)
+    assert all(ROOT_MARKER not in r.name for r in repos)
 
     # Public ARCs may be empty; find one with a file and fetch it.
     for repo in repos:
