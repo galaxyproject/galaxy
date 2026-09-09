@@ -79,7 +79,9 @@ describe("JobStepJobs", () => {
                 perPage: 10,
             },
             localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            // `stubActions: false` so `jobStore.updateJob` (called by JobInformation.vue on every
+            // JobDetailsProvider tick) actually writes, since `job` is now derived from the store.
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
             stubs: {
                 ContentItem: true,
                 FontAwesomeIcon: true,

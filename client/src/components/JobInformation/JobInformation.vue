@@ -4,6 +4,7 @@ import { computed, ref, watch } from "vue";
 import { GalaxyApi } from "@/api";
 import { type JobConsoleOutput, NON_TERMINAL_STATES, type ShowFullJobResponse } from "@/api/jobs";
 import { JobConsoleOutputProvider, JobDetailsProvider } from "@/components/providers/JobProvider";
+import { useJobStore } from "@/stores/jobStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import type { JobMessage } from "../../api/jobs";
@@ -31,7 +32,8 @@ const props = withDefaults(
     { includeTitle: true, invocationId: undefined },
 );
 
-const job = ref<ShowFullJobResponse | null>(null);
+const jobStore = useJobStore();
+const job = computed<ShowFullJobResponse | null>(() => jobStore.getJob(props.jobId) ?? null);
 const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
 
 const stdout_length = ref(50000);
@@ -73,7 +75,7 @@ const metadataDetail = ref<Record<string, string>>({
 });
 
 function updateJob(newJob: ShowFullJobResponse) {
-    job.value = newJob;
+    jobStore.updateJob(newJob.id, newJob);
     if (jobStateIsTerminal(newJob?.state)) {
         if (newJob.tool_stdout) {
             stdout_text.value = newJob.tool_stdout;
