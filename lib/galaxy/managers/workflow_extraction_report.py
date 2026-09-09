@@ -1,9 +1,10 @@
 """Carry a notebook page's markdown into an extracted workflow's report.
 
-Extraction (:func:`galaxy.workflow.extract.extract_workflow_by_ids`)
-returns an :class:`~galaxy.workflow.extract.ExtractionLabelIndex` mapping the ids
-the page references to the labeled workflow steps/outputs it built. This module
-turns the page's internal-id markdown into a portable workflow report:
+Extraction (:func:`galaxy.workflow.extract.extract_workflow_by_ids`) hands its
+``build_report`` hook an :class:`~galaxy.workflow.extract.ExtractionLabelIndex`
+mapping the ids the page references to the labeled workflow steps/outputs it
+built. This module turns the page's internal-id markdown into a portable
+workflow report:
 
 1. :func:`reconcile_report_labels` auto-labels/exposes any referenced item the
    user left unlabeled, so every directive can resolve. This can expose outputs
@@ -14,15 +15,15 @@ turns the page's internal-id markdown into a portable workflow report:
 
 :func:`reconcile_and_build_report` runs both, and is the only entry point the
 service needs. It *mutates* the extracted workflow (step labels / workflow
-outputs) as a side effect of reconcile -- the caller persists those alongside
-the report.
+outputs) as a side effect of reconcile; it runs before the workflow is persisted,
+so those mutations and the report are committed with it.
 """
 
 import logging
 
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.markdown_parse import validate_galaxy_markdown
 from galaxy.managers.markdown_util import (
+    check_galaxy_markdown,
     ENCODED_ID_PATTERN,
     GalaxyInternalMarkdownDirectiveHandler,
     referenced_content_ids,
@@ -74,11 +75,12 @@ def _rewrite_page_markdown(
 
     Returns the rewritten (label-based) markdown and any warnings for directives
     that had to be dropped. Validates the result so a malformed rewrite fails at
-    extraction time rather than at report render.
+    extraction time rather than at report render, as a MalformedContents rather
+    than the bare ValueError the parser raises.
     """
     rewriter = _ReportLabelRewriter(index)
     markdown = rewriter._walk_directives(trans, internal_markdown)
-    validate_galaxy_markdown(markdown)
+    check_galaxy_markdown(markdown)
     return markdown, rewriter.warnings
 
 
