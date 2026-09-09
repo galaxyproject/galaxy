@@ -69,10 +69,13 @@ export function jobsFilterParams(filterText: string, useNameFilter = false): Use
         const toolName = queryDict[exact ? "name-eq" : "name-contains"] as string | undefined;
         if (toolName) {
             params.tool_id = useToolStore().getToolIdsByName(toolName, exact);
+
+            // If no tool is found, we need to error out and not perform a search at all because the user
+            // entered some tool name, but it didn't match any existing tools.
+            if (params.tool_id.length === 0) {
+                throw new Error(`No tools matched the provided name: ${toolName}`);
+            }
         }
-        // TODO: After this works, consider handling case where no tool is found: we need to error out
-        //      and not perform a search at all because the user entered some tool name, but it didn't match any existing tools.
-        //      For now, we just show all tools (matching remaining filters) if no exact match is found.
     }
 
     const state = JobsFilters.getFilterValue(filterText, "state") as string | undefined;
