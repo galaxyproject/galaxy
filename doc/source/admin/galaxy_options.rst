@@ -1,3 +1,17 @@
+~~~~~~~~~~~~~~~
+``server_name``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Change this default when running independent Gunicorn instances on
+    the same hostname, assigning each instance a distinct base server
+    name to avoid sharing control queues. See the deployment guidance
+    at:
+    https://docs.galaxyproject.org/en/master/admin/scaling.html#unique-server-names-for-independent-gunicorn-instances
+:Default: ``main``
+:Type: str
+
+
 ~~~~~~~~~~~~~~
 ``config_dir``
 ~~~~~~~~~~~~~~
