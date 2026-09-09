@@ -202,15 +202,27 @@ def unnamed_output_metadata(job_working_directory, target):
     return ToolProvidedMetadata(metadata_path)
 
 
-def test_an_hdca_target_without_a_collection_type_is_rejected_by_name():
-    """It used to raise a bare AssertionError, which said nothing about the cause."""
-    with tempfile.TemporaryDirectory() as job_working_directory:
-        metadata = unnamed_output_metadata(
-            job_working_directory,
+@pytest.mark.parametrize(
+    ("target", "expected_message"),
+    [
+        ({"elements": []}, "Must specify a destination for an unnamed output"),
+        ({"destination": {"type": "hdas"}}, "Must specify elements for an unnamed output"),
+        ({"destination": {}, "elements": []}, "Must specify a destination type for an unnamed output"),
+        (
+            {"destination": {"type": "invalid"}, "elements": []},
+            "Invalid unnamed output destination type [invalid]",
+        ),
+        (
             {"destination": {"type": "hdca"}, "name": "reads", "elements": []},
-        )
-        _app, _sa_session, job_context, _collection = job_context_for_directory(
-            job_working_directory, metadata
-        )
-        with pytest.raises(RequestParameterInvalidException, match="collection_type"):
+            "Must specify an HDCA collection_type",
+        ),
+    ],
+)
+def test_invalid_unnamed_output_metadata_is_rejected_by_name(target, expected_message):
+    """Malformed tool-provided metadata should produce an actionable error."""
+    with tempfile.TemporaryDirectory() as job_working_directory:
+        metadata = unnamed_output_metadata(job_working_directory, target)
+        _app, _sa_session, job_context, _collection = job_context_for_directory(job_working_directory, metadata)
+        with pytest.raises(RequestParameterInvalidException) as exc_info:
             collect_dynamic_outputs(job_context, {})
+        assert str(exc_info.value) == expected_message

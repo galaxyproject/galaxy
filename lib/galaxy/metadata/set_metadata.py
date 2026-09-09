@@ -69,7 +69,7 @@ from galaxy.tool_util.output_checker import (
     DETECTED_JOB_STATE,
     MaxDiscoveredFilesJobMessage,
     OutputCollectionSecurityJobMessage,
-    OutputDiscoveryJobMessage,
+    output_discovery_job_message,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
@@ -397,18 +397,18 @@ def set_metadata_portable(
                     error_level=StdioErrorLevel.FATAL,
                 )
             job_messages.append(message)
-        except (MessageException, AssertionError) as e:
-            log.exception("Job failed during output discovery")
+        except MessageException as e:
+            log.warning("Job failed during extended metadata output discovery: %s", e)
             discovery_failed = True
             final_job_state = Job.states.ERROR
-            job_messages.append(
-                OutputDiscoveryJobMessage(
-                    type="output_discovery",
-                    desc=f"Failed to collect job outputs: {unicodify(e)}",
-                    code_desc=None,
-                    error_level=StdioErrorLevel.FATAL,
-                )
-            )
+            job_messages.append(output_discovery_job_message(unicodify(e)))
+        except Exception:
+            log.exception("Unexpected failure during extended metadata output discovery")
+            discovery_failed = True
+            final_job_state = Job.states.ERROR
+            if job:
+                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
+            job_messages.append(output_discovery_job_message())
 
         if job:
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
