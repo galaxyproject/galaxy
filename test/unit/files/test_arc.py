@@ -6,6 +6,10 @@ access; the last tests talk to the public DataPLANT DataHUB and are skipped when
 site is unavailable.
 """
 
+import os
+from urllib.parse import quote
+from uuid import uuid4
+
 import pytest
 
 from galaxy.exceptions import (
@@ -18,11 +22,16 @@ from galaxy.files.models import (
 )
 from galaxy.files.sources import arc
 from galaxy.files.sources.arc import ARCFilesSource
-from galaxy.util.unittest_utils import skip_if_site_down
+from galaxy.util import requests
+from galaxy.util.unittest_utils import (
+    skip_if_site_down,
+    skip_unless_environ,
+)
 from ._util import (
     assert_realizes_as,
     configured_file_sources,
     user_context_fixture,
+    write_from,
 )
 
 PUBLIC_DATAHUB_URL = "https://git.nfdi4plants.org"
@@ -300,3 +309,50 @@ def _realize_bytes(file_sources, uri: str, user_context) -> bytes:
         file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
         with open(temp.name, "rb") as f:
             return f.read()
+
+
+@skip_unless_environ("GALAXY_TEST_ARC_TOKEN")
+def test_export_to_writable_repository_creates_lfs_merge_request():
+    """Live round trip against a GitLab instance the token can write to.
+
+    Requires ``GALAXY_TEST_ARC_BASE_URL``, ``GALAXY_TEST_ARC_TOKEN`` (``api`` scope) and
+    ``GALAXY_TEST_ARC_WRITE_REPO`` (``group/project``). arcfs uploads through a Git LFS pointer
+    committed on a new ``run_results`` branch and opens a merge request, so the upload is verified
+    through the GitLab API rather than by re-listing the default branch.
+    """
+    pytest.importorskip("arcfs")
+    base_url = os.environ["GALAXY_TEST_ARC_BASE_URL"].rstrip("/")
+    token = os.environ["GALAXY_TEST_ARC_TOKEN"]
+    repo = os.environ["GALAXY_TEST_ARC_WRITE_REPO"].strip("/")
+    file_sources = configured_file_sources(
+        [{"type": "arc", "id": "test1", "base_url": base_url, "token": token, "writable": True}]
+    )
+    user_context = user_context_fixture()
+
+    marker = uuid4().hex
+    content = f"galaxy arc export test {marker}\n"
+    inside_path = f"galaxy_exports/{marker}.txt"
+    write_from(file_sources, f"gxfiles://test1/{repo}{ROOT_MARKER}{inside_path}", content, user_context=user_context)
+
+    api = f"{base_url}/api/v4/projects/{quote(repo, safe='')}"
+    headers = {"PRIVATE-TOKEN": token}
+    merge_requests = requests.get(f"{api}/merge_requests?state=opened&per_page=100", headers=headers, timeout=30)
+    merge_requests.raise_for_status()
+    branches = [mr["source_branch"] for mr in merge_requests.json()]
+    assert branches, "expected arcfs to open a merge request for the upload"
+
+    for branch in branches:
+        raw = requests.get(
+            f"{api}/repository/files/{quote(inside_path, safe='')}/raw?ref={quote(branch, safe='')}&lfs=true",
+            headers=headers,
+            timeout=30,
+        )
+        if raw.status_code == 200 and raw.text == content:
+            pointer = requests.get(
+                f"{api}/repository/files/{quote(inside_path, safe='')}/raw?ref={quote(branch, safe='')}",
+                headers=headers,
+                timeout=30,
+            )
+            assert pointer.text.startswith("version https://git-lfs.github.com/spec/v1"), "expected an LFS pointer in git"
+            return
+    pytest.fail(f"uploaded file {inside_path} not found with the expected content on any merge request branch")
