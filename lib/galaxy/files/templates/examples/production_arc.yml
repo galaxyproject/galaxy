@@ -1,28 +1,33 @@
 - id: arc
   version: 0
-  name: ARC
+  name: ARC DataHUB
   description: |
-    Connect to a DataHub/GitLab instance using arcfs-fsspec.
+      [ARCs](https://nfdi4plants.org/) (Annotated Research Contexts) are research data packages hosted
+      as Git repositories on a DataPLANT DataHUB, a GitLab instance. This configuration lets you browse
+      the ARCs you have access to and import their files into Galaxy. Public ARCs can be browsed
+      without an access token.
   variables:
-    base_url:
-      label: ARC DataHub URL
-      type: string
-      help: |
-        The ARC DataHub instance URL. This should be the full URL including the protocol.
-    writable:
-      label: Writable?
-      type: boolean
-      optional: true
-      default: false
-      help: Allow Galaxy to write data to this ARC DataHub instance.
+      base_url:
+          label: DataHUB URL (e.g. https://git.nfdi4plants.org)
+          type: string
+          help: |
+              The URL of the DataHUB (GitLab) instance you are connecting to, including the protocol.
+      writable:
+          label: Allow Galaxy to export data to this DataHUB?
+          type: boolean
+          optional: true
+          default: false
+          help: |
+              Allow Galaxy to write data to your ARCs. This requires an access token with write access.
   secrets:
-    token:
-      label: ARC Access Token
-      optional: true
-      help: |
-        The access token to use to connect to the ARC DataHub instance.
+      token:
+          label: DataHUB Access Token
+          optional: true
+          help: |
+              A personal access token for the DataHUB (GitLab) instance with the "api" scope. It is
+              required to see private ARCs and to export data; public ARCs can be browsed without it.
   configuration:
-    type: arc
-    base_url: "{{ variables.base_url }}"
-    token: "{{ secrets.token }}"
-    writable: "{{ variables.writable }}"
+      type: arc
+      base_url: "{{ variables.base_url }}"
+      token: "{{ secrets.token }}"
+      writable: "{{ variables.writable }}"

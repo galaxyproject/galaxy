@@ -1,6 +1,4 @@
 from typing import (
-    Optional,
-    Union,
     Annotated,
     Any,
     Literal,
@@ -36,7 +34,6 @@ FileSourceTemplateType = Literal[
     "ftp",
     "posix",
     "s3fs",
-    "arc",
     "azure",
     "azureflat",
     "irods",
@@ -59,6 +56,7 @@ FileSourceTemplateType = Literal[
     "ssh",
     "ckan",
     "commoncrawl",
+    "arc",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -310,22 +308,6 @@ class OnedataFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
-class ArcFileSourceTemplateConfiguration(StrictModel):
-    type: Literal["arc"]
-    base_url: Union[str, TemplateExpansion]
-    token: Union[str, TemplateExpansion, None] = None
-    writable: Union[bool, TemplateExpansion] = False
-    template_start: Optional[str] = None
-    template_end: Optional[str] = None
-
-
-class ArcFileSourceConfiguration(StrictModel):
-    type: Literal["arc"]
-    base_url: str
-    token: Optional[str] = None
-    writable: bool = False
-
-
 class WebdavConfigMixin:
     @model_validator(mode="before")
     @classmethod
@@ -569,8 +551,24 @@ class CommonCrawlFileSourceTemplateConfiguration(StrictModel):
     template_end: str | None = None
 
 
+class ARCFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
 class CommonCrawlFileSourceConfiguration(StrictModel):
     type: Literal["commoncrawl"]
+    writable: bool = False
+
+
+class ARCFileSourceConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str
+    token: str | None = None
     writable: bool = False
 
 
@@ -582,7 +580,6 @@ FileSourceTemplateConfiguration = Annotated[
     | AzureFlatFileSourceTemplateConfiguration
     | IrodsFileSourceTemplateConfiguration
     | OnedataFileSourceTemplateConfiguration
-    | ArcFileSourceTemplateConfiguration
     | WebdavFileSourceTemplateConfiguration
     | DropboxFileSourceTemplateConfiguration
     | GoogleDriveFileSourceTemplateConfiguration
@@ -600,7 +597,8 @@ FileSourceTemplateConfiguration = Annotated[
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
     | CKANFileSourceTemplateConfiguration
-    | CommonCrawlFileSourceTemplateConfiguration,
+    | CommonCrawlFileSourceTemplateConfiguration
+    | ARCFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -612,7 +610,6 @@ FileSourceConfiguration = Annotated[
     | AzureFlatFileSourceConfiguration
     | IrodsFileSourceConfiguration
     | OnedataFileSourceConfiguration
-    | ArcFileSourceConfiguration
     | WebdavFileSourceConfiguration
     | DropboxFileSourceConfiguration
     | GoogleDriveFileSourceConfiguration
@@ -630,7 +627,8 @@ FileSourceConfiguration = Annotated[
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
     | CKANFileSourceConfiguration
-    | CommonCrawlFileSourceConfiguration,
+    | CommonCrawlFileSourceConfiguration
+    | ARCFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -702,7 +700,6 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "azureflat": AzureFlatFileSourceConfiguration,
     "irods": IrodsFileSourceConfiguration,
     "onedata": OnedataFileSourceConfiguration,
-    "arc": ArcFileSourceConfiguration,
     "webdav": WebdavFileSourceConfiguration,
     "dropbox": DropboxFileSourceConfiguration,
     "googledrive": GoogleDriveFileSourceConfiguration,
@@ -721,6 +718,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "ssh": SshFileSourceConfiguration,
     "ckan": CKANFileSourceConfiguration,
     "commoncrawl": CommonCrawlFileSourceConfiguration,
+    "arc": ARCFileSourceConfiguration,
 }
 
 
