@@ -3,9 +3,9 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
-import type { JobBaseModel } from "@/api/jobs";
+import type { JobBaseModel, JobFetchExtraParams } from "@/api/jobs";
 import { fetchJobs } from "@/api/jobs";
-import { jobsFilterParams, JobsFilters } from "@/components/Jobs/JobsFilters";
+import { jobsFilterParams, JobsFiltersById, JobsFiltersByName } from "@/components/Jobs/JobsFilters";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useJobStore } from "@/stores/jobStore";
 import { useUserStore } from "@/stores/userStore";
@@ -72,9 +72,9 @@ async function loadJobs(_offset: number, limit: number) {
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return { items: [], total: 0 };
     }
-    const extraProps: Record<string, unknown> = {
+    const extraProps: JobFetchExtraParams = {
         user_id: currentUser.value.id,
-        ...jobsFilterParams(filterText.value),
+        ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value),
     };
 
     loading.value = true;
@@ -126,11 +126,11 @@ const currentItemId = computed(() => {
             <BFormCheckbox
                 v-model="showToolNamesInJobPanel"
                 v-g-tooltip.hover
-                data-test-id="upload-advanced-mode-toggle"
+                data-test-id="job-panel-name-mode-toggle"
                 size="sm"
                 switch
                 class="mx-2"
-                title="Show tool names in the jobs panel">
+                title="Show/Search tool names instead of IDs">
                 <span class="small unselectable">Tool Names</span>
             </BFormCheckbox>
         </template>
@@ -138,8 +138,8 @@ const currentItemId = computed(() => {
         <template v-slot:header>
             <FilterMenu
                 name="Jobs"
-                placeholder="search jobs by tool ID"
-                :filter-class="JobsFilters"
+                :placeholder="`search jobs by tool ${showToolNamesInJobPanel ? 'name' : 'ID'}`"
+                :filter-class="showToolNamesInJobPanel ? JobsFiltersByName : JobsFiltersById"
                 :filter-text.sync="filterText"
                 :loading="loading"
                 :show-advanced.sync="showAdvanced" />

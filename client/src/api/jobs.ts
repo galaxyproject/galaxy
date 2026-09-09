@@ -24,6 +24,8 @@ export type JobMessage =
     | components["schemas"]["OutputCollectionSecurityJobMessage"]
     | components["schemas"]["OutputDiscoveryJobMessage"];
 
+export type JobFetchExtraParams = Omit<JobsQueryParams, "limit" | "offset" | "order_by">;
+
 export const NON_TERMINAL_STATES = [
     "new",
     "queued",
@@ -140,11 +142,7 @@ export async function submitJobRequest(jobRequest: JobRequest) {
  * @param extraProps Additional query params, e.g. `user_id` or the filters built by `jobsFilterParams`
  * @returns A tuple of the list of jobs and the total number of matching jobs
  */
-export async function fetchJobs(
-    offset = 0,
-    limit = 20,
-    extraProps?: Omit<JobsQueryParams, "limit" | "offset" | "order_by">,
-) {
+export async function fetchJobs(offset = 0, limit = 20, extraProps?: JobFetchExtraParams) {
     const params: JobsQueryParams = {
         limit,
         offset,
