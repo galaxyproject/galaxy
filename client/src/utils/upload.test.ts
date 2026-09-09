@@ -1066,6 +1066,109 @@ describe("upload submission", () => {
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_paste" }] });
         });
 
+        it("should keep pasted upload tracking aligned with per-file signals", async () => {
+            const cancelledFile = new AbortController();
+            cancelledFile.abort();
+            const activeFile = new AbortController();
+            const successCallback = vi.fn();
+
+            vi.mocked(createTusUpload).mockResolvedValue({
+                sessionId: "session_active_paste",
+                fileName: "active.txt",
+            });
+
+            server.use(
+                http.post("/api/tools/fetch", () => {
+                    return HttpResponse.json({ jobs: [{ id: "job_paste_partial" }] });
+                }),
+            );
+
+            await submitUpload({
+                data: {
+                    history_id: "hist123",
+                    targets: [
+                        {
+                            destination: { type: "hdas" },
+                            elements: [
+                                {
+                                    src: "pasted",
+                                    paste_content: "cancelled",
+                                    name: "cancelled.txt",
+                                    dbkey: "?",
+                                    ext: "txt",
+                                },
+                                {
+                                    src: "pasted",
+                                    paste_content: "active",
+                                    name: "active.txt",
+                                    dbkey: "?",
+                                    ext: "txt",
+                                },
+                            ],
+                            auto_decompress: true,
+                        },
+                    ],
+                    auto_decompress: true,
+                    files: [],
+                },
+                uploadIds: ["cancelled", "active"],
+                perFileProgress: vi.fn(),
+                signals: [cancelledFile.signal, activeFile.signal],
+                success: successCallback,
+            });
+
+            expect(createTusUpload).toHaveBeenCalledTimes(1);
+            expect(createTusUpload).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    file: expect.objectContaining({ name: "active.txt" }),
+                    signal: activeFile.signal,
+                }),
+            );
+            expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_paste_partial" }] });
+        });
+
+        it("should not report URL upload success after a later URL fails", async () => {
+            const successCallback = vi.fn();
+            const errorCallback = vi.fn();
+            let requestCount = 0;
+
+            server.use(
+                http.post("/api/tools/fetch", () => {
+                    requestCount += 1;
+                    if (requestCount === 2) {
+                        return HttpResponse.json({ err_msg: "second URL failed" }, { status: 500 });
+                    }
+                    return HttpResponse.json({ jobs: [{ id: "job_url_first" }] });
+                }),
+            );
+
+            await expect(
+                submitUpload({
+                    data: {
+                        history_id: "hist123",
+                        targets: [
+                            {
+                                destination: { type: "hdas" },
+                                elements: [
+                                    { src: "url", url: "https://example.com/1.txt", name: "1.txt" },
+                                    { src: "url", url: "https://example.com/2.txt", name: "2.txt" },
+                                ],
+                                auto_decompress: true,
+                            },
+                        ],
+                        auto_decompress: true,
+                        files: [],
+                    },
+                    signals: [new AbortController().signal, new AbortController().signal],
+                    success: successCallback,
+                    error: errorCallback,
+                }),
+            ).rejects.toThrow("second URL failed");
+
+            expect(errorCallback).toHaveBeenCalledWith("second URL failed");
+            expect(successCallback).not.toHaveBeenCalled();
+        });
+
         it("should use custom chunk size if provided", async () => {
             const mockFile = new File(["content"], "chunked.txt");
             const customChunkSize = 5242880; // 5MB
