@@ -1,4 +1,5 @@
 import logging
+from functools import partial
 from typing import (
     Any,
 )
@@ -26,6 +27,7 @@ from galaxy.managers.workflows import (
 )
 from galaxy.model import (
     ImplicitCollectionJobs,
+    Page,
     LandingRequestToWorkflowInvocationAssociation,
     StoredWorkflow,
     WorkflowInvocation,
@@ -52,6 +54,7 @@ from galaxy.workflow.extract import (
     collect_output_label_targets,
     extract_workflow,
     extract_workflow_by_ids,
+    ExtractionLabelIndex,
     normalize_output_label_key,
 )
 from galaxy.workflow.run import queue_invoke
@@ -65,6 +68,20 @@ def _to_extraction_result(
     stored_workflow: StoredWorkflow, report_warnings: list[str] | None = None
 ) -> WorkflowExtractionResult:
     return WorkflowExtractionResult.model_validate({"id": stored_workflow.id, "report_warnings": report_warnings or []})
+
+
+def _build_report_config(
+    trans: ProvidesHistoryContext, page: Page, title: str | None, index: ExtractionLabelIndex
+) -> tuple[dict[str, Any], list[str]]:
+    """Turn a notebook page into the extracted workflow's ``reports_config``.
+
+    Runs while the extracted steps are still uncommitted. Reconcile mutates them
+    (assigning labels, exposing outputs the user did not star) and the rewrite can
+    fail, so both land in the single transaction that creates the workflow rather
+    than leaving a report-less workflow behind on error.
+    """
+    markdown, warnings = reconcile_and_build_report(trans, page, index)
+    return {"markdown": markdown, "title": title}, warnings
 
 
 def _reject_unquotable(value: str, described_as: str) -> None:
@@ -306,8 +323,11 @@ class WorkflowsService(ServiceBase):
         if trans.user is None:
             raise exceptions.AuthenticationRequired("Workflow extraction requires an authenticated user.")
         self._validate_extract_by_ids_payload(trans, payload)
-        page = self._load_report_page(trans, payload.from_page_id) if payload.from_page_id is not None else None
-        stored_workflow, label_index = extract_workflow_by_ids(
+        build_report = None
+        if payload.from_page_id is not None:
+            page = self._load_report_page(trans, payload.from_page_id)
+            build_report = partial(_build_report_config, trans, page, payload.report_title or payload.workflow_name)
+        stored_workflow, report_warnings = extract_workflow_by_ids(
             trans,
             user=trans.user,
             workflow_name=payload.workflow_name,
@@ -320,17 +340,8 @@ class WorkflowsService(ServiceBase):
             dataset_collection_names=payload.dataset_collection_names,
             output_labels=payload.output_labels,
             step_labels=payload.step_labels,
+            build_report=build_report,
         )
-        report_warnings: list[str] = []
-        if page is not None:
-            # Reconcile mutates the just-extracted workflow's steps to auto-expose
-            # outputs / assign labels for anything the page references but the user
-            # left unstarred; the commit below persists those alongside the report.
-            markdown, report_warnings = reconcile_and_build_report(trans, page, label_index)
-            workflow = stored_workflow.latest_workflow
-            workflow.reports_config = {"markdown": markdown, "title": payload.report_title or payload.workflow_name}
-            trans.sa_session.add(workflow)
-            trans.sa_session.commit()
         return _to_extraction_result(stored_workflow, report_warnings)
 
     def _load_report_page(self, trans: ProvidesHistoryContext, page_id: int):

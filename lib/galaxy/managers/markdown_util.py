@@ -117,7 +117,7 @@ def process_invocation_ids(f, workflow_markdown: str) -> str:
 def ready_galaxy_markdown_for_import(trans: ProvidesAppContext, external_galaxy_markdown):
     """Convert from encoded IDs to decoded numeric IDs for storing in the DB."""
 
-    _validate(external_galaxy_markdown, internal=False)
+    check_galaxy_markdown(external_galaxy_markdown, internal=False)
 
     def _remap(container, line):
         object_id = None
@@ -1600,7 +1600,7 @@ def _remap_galaxy_markdown_calls(func, markdown):
     return _remap_galaxy_markdown_containers(_remap_container, markdown)
 
 
-def _validate(*args, **kwds):
+def check_galaxy_markdown(*args, **kwds):
     """Light wrapper around validate_galaxy_markdown to throw galaxy exceptions instead of ValueError."""
     try:
         return validate_galaxy_markdown(*args, **kwds)
@@ -1609,6 +1609,7 @@ def _validate(*args, **kwds):
 
 
 __all__ = (
+    "check_galaxy_markdown",
     "internal_galaxy_markdown_to_pdf",
     "populate_invocation_markdown",
     "ready_galaxy_markdown_for_export",
