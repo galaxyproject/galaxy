@@ -119,6 +119,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faGlobe,
         message: "This is a read-only file repository plugin that connects with the Common Crawl archive.",
     },
+    arc: {
+        icon: faNetworkWired,
+        message: "This is a file source that connects with an ARC DataHUB (GitLab) instance.",
+    },
 };
 
 export const FileSourcesValidFilters = {

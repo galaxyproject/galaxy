@@ -13290,7 +13290,8 @@ export interface components {
                 | "ssh"
                 | "openbis"
                 | "ckan"
-                | "commoncrawl";
+                | "commoncrawl"
+                | "arc";
             /** Variables */
             variables?:
                 | (
@@ -26254,7 +26255,8 @@ export interface components {
                 | "ssh"
                 | "openbis"
                 | "ckan"
-                | "commoncrawl";
+                | "commoncrawl"
+                | "arc";
             /** Uri Root */
             uri_root: string;
             /**
