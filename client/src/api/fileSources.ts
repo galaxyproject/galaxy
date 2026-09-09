@@ -111,6 +111,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a repository plugin that connects with a CKAN instance.",
     },
+    arc: {
+        icon: faNetworkWired,
+        message: "This is a file source that connects with an ARC DataHUB (GitLab) instance.",
+    },
 };
 
 export const FileSourcesValidFilters = {

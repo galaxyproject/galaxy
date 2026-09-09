@@ -321,9 +321,6 @@ class ConditionalDependencies(BaseConditionalDependencies):
     def check_fs_irods(self):
         return "irods" in self.file_sources
 
-    def check_arcfs_fsspec(self):
-        return "arc" in self.file_sources
-
     def check_watchdog(self):
         install_set = {"auto", "True", "true", "polling", True}
         return self.config["watch_tools"] in install_set or self.config["watch_tool_data_dir"] in install_set
@@ -392,6 +389,9 @@ class ConditionalDependencies(BaseConditionalDependencies):
 
     def check_mavedb_fsspec(self):
         return "mavedb" in self.file_sources
+
+    def check_arcfs_fsspec(self):
+        return "arc" in self.file_sources
 
 
 def strip_comment(line):
