@@ -86,18 +86,30 @@ export function buildUploadFingerprint(file: UploadableFile, historyId: string) 
  * Starts a TUS upload, checking for previous uploads to resume.
  *
  * @param upload - The TUS Upload instance
+ * @param signal - Optional signal that aborts the upload before the transport starts.
  */
-async function startTusUpload(upload: tus.Upload): Promise<void> {
-    // Check if there are any previous uploads to continue
-    const previousUploads = await upload.findPreviousUploads();
+async function startTusUpload(upload: tus.Upload, signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) {
+        await Promise.resolve(upload.abort());
+        return;
+    }
 
-    // Found previous uploads so we select the first one
+    const previousUploads = await upload.findPreviousUploads();
+    if (signal?.aborted) {
+        await Promise.resolve(upload.abort());
+        return;
+    }
+
     if (previousUploads.length && previousUploads[0]) {
         console.debug("previous Upload", previousUploads);
         upload.resumeFromPreviousUpload(previousUploads[0]);
     }
 
-    // Start the upload
+    if (signal?.aborted) {
+        await Promise.resolve(upload.abort());
+        return;
+    }
+
     upload.start();
 }
 
@@ -121,39 +133,9 @@ export async function createTusUpload(options: TusUploadOptions): Promise<TusUpl
     return new Promise((resolve, reject) => {
         console.debug(`Starting chunked upload for ${file.name} [chunkSize=${chunkSize}].`);
 
-        // Determine the upload input based on file type
-        // For FileStream, extract the reader; otherwise use the file/blob directly
         const uploadInput = "isStream" in file && file.isStream ? file.stream.getReader() : (file as File | Blob);
-
         let settled = false;
-
-        function cleanup() {
-            if (signal) {
-                signal.removeEventListener("abort", onAbort);
-            }
-        }
-
-        function settle(fn: () => void): void {
-            if (settled) {
-                return;
-            }
-            settled = true;
-            cleanup();
-            fn();
-        }
-
-        const onAbort = () => {
-            settle(() => {
-                upload.abort();
-                const abortError = new DOMException("Upload aborted", "AbortError");
-                onError(abortError);
-                reject(abortError);
-            });
-        };
-
-        if (signal) {
-            signal.addEventListener("abort", onAbort);
-        }
+        let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
         const upload = new tus.Upload(uploadInput, {
             endpoint,
@@ -182,7 +164,15 @@ export async function createTusUpload(options: TusUploadOptions): Promise<TusUpl
                     });
                 } else {
                     console.log(`Failed because: ${err}\n, will retry in 10 seconds`);
-                    setTimeout(() => startTusUpload(upload), 10000);
+                    clearRetryTimer();
+                    retryTimer = setTimeout(() => {
+                        if (signal?.aborted || settled) {
+                            return;
+                        }
+                        void startTusUpload(upload, signal).catch((startErr) => {
+                            settle(() => reject(startErr));
+                        });
+                    }, 10000);
                 }
             },
             onProgress: (bytesUploaded: number, bytesTotal: number) => {
@@ -211,7 +201,51 @@ export async function createTusUpload(options: TusUploadOptions): Promise<TusUpl
             },
         });
 
-        startTusUpload(upload).catch((err) => {
+        function clearRetryTimer() {
+            if (retryTimer) {
+                clearTimeout(retryTimer);
+                retryTimer = undefined;
+            }
+        }
+
+        function cleanup() {
+            clearRetryTimer();
+            if (signal) {
+                signal.removeEventListener("abort", onAbort);
+            }
+        }
+
+        function settle(fn: () => void): void {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            cleanup();
+            fn();
+        }
+
+        function abortUpload(): void {
+            try {
+                void Promise.resolve(upload.abort()).catch(() => undefined);
+            } catch {
+                // tus-js-client may throw synchronously when no request exists.
+            }
+        }
+
+        const onAbort = () => {
+            abortUpload();
+            settle(() => {
+                const abortError = new DOMException("Upload aborted", "AbortError");
+                onError(abortError);
+                reject(abortError);
+            });
+        };
+
+        if (signal) {
+            signal.addEventListener("abort", onAbort);
+        }
+
+        startTusUpload(upload, signal).catch((err) => {
             settle(() => reject(err));
         });
     });
