@@ -2,15 +2,20 @@
 import { faArrowDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import { BAlert, BListGroup } from "bootstrap-vue";
+import { BListGroup } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+import { useToast } from "@/composables/toast";
+import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
+
+const CLICK_TO_RETRY_MSG = "Click on the button at the bottom of the list to retry." as const;
 
 interface LoaderResult<T> {
     items: T[];
@@ -70,6 +75,8 @@ const emit = defineEmits<{
     (e: "update:prop-scroll-top", value: number): void;
 }>();
 
+const Toast = useToast();
+
 const scrollableDiv = ref<HTMLElement | null>(null);
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
@@ -124,8 +131,14 @@ const listEndText = computed<string>(() => {
 
 const allLoaded = computed(() => totalItemCount.value !== undefined && totalItemCount.value <= items.value.length);
 
-async function loadItems() {
-    if (!busy.value && !allLoaded.value && !props.loadDisabled) {
+async function loadItems(clearError = false) {
+    let msgCleared = false;
+    if (clearError) {
+        errorMessage.value = "";
+        msgCleared = true;
+    }
+
+    if (!busy.value && !allLoaded.value && !props.loadDisabled && !errorMessage.value) {
         try {
             if (props.loader === undefined && props.propItems === undefined) {
                 throw new Error("No loader function or propItems provided");
@@ -144,7 +157,12 @@ async function loadItems() {
             localTotalItemCount.value = total;
             errorMessage.value = "";
         } catch (e) {
-            errorMessage.value = `Failed to load items: ${e}`;
+            errorMessage.value = errorMessageAsString(e);
+            if (items.value.length > 0 || msgCleared) {
+                const errMsg = errorMessage.value;
+                const toastedMsg = `${errMsg}${errMsg.endsWith(".") ? "" : ". "}${CLICK_TO_RETRY_MSG}`;
+                Toast.error(toastedMsg, `Failed to load ${props.namePlural}`);
+            }
         } finally {
             localBusy.value = false;
         }
@@ -214,39 +232,42 @@ watch(
                     toolMenuContainer: inPanel,
                 }"
                 role="list">
-                <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-                <template v-else>
-                    <slot v-if="items.length === 0" name="loading">
-                        <BAlert v-if="busy" variant="info" show>
+                <template v-if="items.length === 0">
+                    <GAlert v-if="errorMessage" variant="danger">
+                        <p>{{ errorMessage }}</p>
+                        <strong>{{ CLICK_TO_RETRY_MSG }}</strong>
+                    </GAlert>
+                    <slot name="loading">
+                        <GAlert v-if="busy" variant="info">
                             <LoadingSpan :message="`Loading ${props.namePlural}`" />
-                        </BAlert>
+                        </GAlert>
                     </slot>
-                    <component
-                        :is="props.gridView ? 'div' : BListGroup"
-                        class="pt-1"
-                        :class="{ 'card-list d-flex flex-wrap': props.gridView }">
-                        <!-- Use component wrapper with v-for to provide proper keying while avoiding layout interference -->
-                        <component
-                            :is="'div'"
-                            v-for="(item, index) in items"
-                            :key="itemKey(item)"
-                            style="display: contents">
-                            <slot name="item" :item="item" :index="index" />
-                        </component>
-
-                        <template v-if="!busy">
-                            <slot v-if="allLoaded && items.length === 0" name="none-loaded-footer">
-                                <div class="list-end" data-description="no items found footer">
-                                    - No {{ props.namePlural }} found -
-                                </div>
-                            </slot>
-
-                            <slot v-else-if="allLoaded" name="all-loaded-footer">
-                                <div class="list-end">- {{ listEndText }} -</div>
-                            </slot>
-                        </template>
-                    </component>
                 </template>
+                <component
+                    :is="props.gridView ? 'div' : BListGroup"
+                    class="pt-1"
+                    :class="{ 'card-list d-flex flex-wrap': props.gridView }">
+                    <!-- Use component wrapper with v-for to provide proper keying while avoiding layout interference -->
+                    <component
+                        :is="'div'"
+                        v-for="(item, index) in items"
+                        :key="itemKey(item)"
+                        style="display: contents">
+                        <slot name="item" :item="item" :index="index" />
+                    </component>
+
+                    <template v-if="!busy">
+                        <slot v-if="allLoaded && items.length === 0" name="none-loaded-footer">
+                            <div class="list-end" data-description="no items found footer">
+                                - No {{ props.namePlural }} found -
+                            </div>
+                        </slot>
+
+                        <slot v-else-if="allLoaded" name="all-loaded-footer">
+                            <div class="list-end">- {{ listEndText }} -</div>
+                        </slot>
+                    </template>
+                </component>
             </div>
             <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
         </div>
@@ -264,7 +285,7 @@ watch(
                     :disabled="busy"
                     title="Load More"
                     transparent
-                    @click="loadItems()">
+                    @click="loadItems(true)">
                     <FontAwesomeIcon :icon="busy ? faSpinner : faArrowDown" :spin="busy" />
                 </GButton>
             </div>
