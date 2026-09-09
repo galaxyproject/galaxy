@@ -1690,6 +1690,22 @@ class TestAgentUnitMocked:
         assert suggestion.parameters["name"] == "RNA-seq"
         assert suggestion.priority == 1  # promoted when no tool comes back
 
+    def test_tool_rec_uses_trs_id_as_workflow_name_fallback(self):
+        agent = self._make_tool_rec_agent()
+        trs_id = "#workflow/github.com/iwc-workflows/rna-seq/main"
+        recommendation = SimplifiedToolRecommendationResult(
+            primary_tools=[],
+            recommended_workflows=[{"trsID": trs_id}],
+            confidence="high",
+            reasoning="Multi-step analysis maps to a workflow.",
+        )
+
+        suggestions = agent._create_suggestions(recommendation)
+
+        assert len(suggestions) == 1
+        assert suggestions[0].description == f"Import {trs_id} from IWC"
+        assert suggestions[0].parameters == {"trs_id": trs_id, "name": trs_id}
+
     def test_tool_rec_tool_budget_caps_then_returns_stop_message(self):
         # Past MAX_TOOL_CALLS the budget hands back a terminal "stop searching"
         # message instead of more data, so the model answers from what it already

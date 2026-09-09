@@ -546,7 +546,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if recommendation.recommended_workflows:
             top_wf = recommendation.recommended_workflows[0]
             trs_id = top_wf.get("trsID") or top_wf.get("trs_id")
-            wf_name = top_wf.get("name", "IWC workflow")
+            wf_name = top_wf.get("name") or top_wf.get("trsID") or top_wf.get("trs_id") or "IWC workflow"
             if trs_id:
                 suggestions.append(
                     ActionSuggestion(
