@@ -308,7 +308,8 @@ Scope the environment setting to the Gunicorn service so job handlers and workfl
 retain their own names. See [Per-process configuration](config.rst#per-process-configuration)
 for details on supplying configuration through environment variables.
 After updating a systemd unit, reload the unit configuration and restart the affected services.
-See [SSE deployment verification](sse_updates.md#verifying-the-deployment) for queue checks.
+Use the process manager and worker startup logs to verify that only one live Galaxy worker
+process uses each final `server_name` on a given hostname, regardless of the control-queue transport.
 
 ### Job and Workflow Handling
 

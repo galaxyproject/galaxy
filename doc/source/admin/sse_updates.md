@@ -299,21 +299,11 @@ stream is healthy end-to-end:
    per open browser tab (summed across the reporting processes).
 
 If the connection opens but no events arrive, check for proxy buffering (revisit the NGINX
-section), a producer that cannot reach AMQP (see `galaxy.sse.dispatch.skipped_no_qw`), and workers
+section), a producer unable to dispatch control tasks (see `galaxy.sse.dispatch.skipped_no_qw`), and workers
 sharing control queues because their server names collide.
 
-For RabbitMQ, inspect the virtual host used by Galaxy's `amqp_internal_connection`, which may
-differ from the one used by Celery:
-
-```console
-rabbitmqctl list_queues -p '<vhost>' name messages messages_ready consumers
-rabbitmqctl list_consumers -p '<vhost>'
-```
-
-Check that every live web worker has a distinct `control.<server_name>@<hostname>` queue.
-Galaxy currently creates two subscriptions per control worker, so two consumers on a queue
-are expected. More consumers warrant checking which processes own their connections; the
-count alone does not establish a naming collision. A queue with no consumers may belong to
-a stopped worker, so correlate it with live processes before diagnosing a failed consumer.
-An empty queue alone does not establish successful SSE delivery: a worker without the user's
-browser connection can consume and acknowledge the event.
+Use the process manager and worker startup logs to verify that only one live Galaxy worker
+process uses each `server_name` on a given hostname. For Gunicorn, check the final name including
+the worker ID, such as `web_0.1`. This requirement applies regardless of the control-queue
+transport. See [unique server names](scaling.md#unique-server-names-for-independent-gunicorn-instances)
+for configuration guidance.
