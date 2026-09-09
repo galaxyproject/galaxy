@@ -183,6 +183,30 @@ export const useToolStore = defineStore("toolStore", () => {
         };
     });
 
+    /**
+     * Get the IDs of tools whose name matches the given query string.
+     * @param queryName A name query to filter tools by.
+     * @param exact Whether to match the name exactly (user typed in quoted '' name). Defaults to `false`.
+     *
+     *              Function is **case-insensitive** for `exact = true` on purpose because we're not expecting
+     *              users to type tool names with exact casing, but rather to match only the tool they are looking for.
+     *              For e.g.: There are two tools, "Advanced Cut" and "Cut", and the user types `"'cut'"`, it should
+     *              only match "Cut". If `exact = false`, it would match both "Advanced Cut" and "Cut".
+     * @returns An array of tool IDs whose names match the given query.
+     */
+    const getToolIdsByName = computed(() => {
+        return (queryName: string, exact = false) => {
+            function matches(name: string) {
+                return exact ? name === lowerQuery : name.includes(lowerQuery);
+            }
+
+            const lowerQuery = queryName.trim().toLowerCase();
+            return Object.values(toolsById.value)
+                .filter((tool) => matches(tool.name.toLowerCase()))
+                .map((tool) => tool.id);
+        };
+    });
+
     const isPanelPopulated = computed(() => {
         return Object.keys(toolsById.value).length > 0 && Object.keys(currentToolSections.value).length > 0;
     });
@@ -416,6 +440,7 @@ export const useToolStore = defineStore("toolStore", () => {
         isPanelPopulated,
         loading,
         getToolForId,
+        getToolIdsByName,
         getToolNameById,
         getToolsById,
         getInteractiveTools,
