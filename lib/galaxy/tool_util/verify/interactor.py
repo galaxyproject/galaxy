@@ -672,7 +672,10 @@ class GalaxyInteractorApi:
                 mode="file" if tool_input["class"].lower() == "file" else "directory",
             )
             if path_or_location.path:
+                # The client fetched this file itself, so it lives only here -
+                # the server cannot be asked to open it by path.
                 tool_input["path"] = path_or_location.path
+                tool_input["client_local"] = True
             if path_or_location.location:
                 tool_input["location"] = path_or_location.location
             tool_input["name"] = os.path.basename(path_or_location.name)
