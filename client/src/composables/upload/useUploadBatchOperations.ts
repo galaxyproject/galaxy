@@ -1,6 +1,11 @@
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { buildCollectionElements } from "@/composables/upload/collectionElements";
+import {
+    abortAllUploadControllers,
+    abortBatchController,
+    abortUploadController,
+} from "@/composables/upload/uploadCancellation";
 import type { NewUploadItem, UploadItem } from "@/composables/upload/uploadItemTypes";
 import { validateUploadItem } from "@/composables/upload/uploadItemTypes";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -41,12 +46,16 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
      * @param batchId - Batch ID in upload state
      * @throws {Error} If the batch is not found, has missing data, or collection creation fails
      */
-    async function createCollection(batchId: string): Promise<void> {
+    async function createCollection(batchId: string, signal?: AbortSignal): Promise<void> {
         const batch = uploadState.getBatch(batchId);
         if (!batch) {
             const errorMsg = `Batch not found: ${batchId}`;
             console.error(errorMsg);
             throw new Error(errorMsg);
+        }
+
+        if (signal?.aborted) {
+            return;
         }
 
         if (batch.collectionId) {
@@ -84,20 +93,33 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
                 throw new Error("No valid collection elements to create");
             }
 
-            const response = await createHistoryDatasetCollectionInstanceFull({
-                name: batch.name,
-                collection_type: batch.type,
-                element_identifiers: elementIdentifiers,
-                history_id: batch.historyId,
-                hide_source_items: batch.hideSourceItems,
-                instance_type: "history",
-                copy_elements: true,
-                fields: "auto",
-            });
+            const response = await createHistoryDatasetCollectionInstanceFull(
+                {
+                    name: batch.name,
+                    collection_type: batch.type,
+                    element_identifiers: elementIdentifiers,
+                    history_id: batch.historyId,
+                    hide_source_items: batch.hideSourceItems,
+                    instance_type: "history",
+                    copy_elements: true,
+                    fields: "auto",
+                },
+                signal,
+            );
+
+            if (signal?.aborted) {
+                uploadState.updateBatchStatus(batchId, "cancelled");
+                return;
+            }
 
             uploadState.setBatchCollectionId(batchId, response.id);
             uploadState.updateBatchStatus(batchId, "completed");
         } catch (err) {
+            if (signal?.aborted) {
+                uploadState.updateBatchStatus(batchId, "cancelled");
+                return;
+            }
+
             const errorMsg = errorMessageAsString(err);
             uploadState.setBatchError(batchId, errorMsg);
 
@@ -120,7 +142,12 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
      *
      * Used for non-library batches where all items can be fed to the upload API directly.
      */
-    async function processDirectBatch(batchId: string, ids: string[], items: NewUploadItem[]): Promise<void> {
+    async function processDirectBatch(
+        batchId: string,
+        ids: string[],
+        items: NewUploadItem[],
+        signal?: AbortSignal,
+    ): Promise<void> {
         const batch = uploadState.getBatch(batchId);
         if (!batch) {
             console.error(`Batch not found: ${batchId}`);
@@ -165,6 +192,7 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
                         ids.forEach((id) => uploadState.setError(id, errorMsg));
                         uploadState.setBatchError(batchId, errorMsg);
                     },
+                    signal,
                 },
             );
         } catch (err) {
@@ -200,7 +228,12 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
 
     function recoverIncompleteBatches(): void {
         uploadState.activeBatches.value.forEach((batch) => {
-            if (batch.collectionId || batch.status === "error" || batch.directCreation) {
+            if (
+                batch.collectionId ||
+                batch.status === "error" ||
+                batch.status === "cancelled" ||
+                batch.directCreation
+            ) {
                 return;
             }
 
@@ -232,6 +265,21 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
         });
     }
 
+    function cancelUpload(uploadId: string): void {
+        uploadState.cancelUpload(uploadId);
+        abortUploadController(uploadId);
+    }
+
+    function cancelBatch(batchId: string): void {
+        uploadState.cancelBatch(batchId);
+        abortBatchController(batchId);
+    }
+
+    function cancelAll(): void {
+        uploadState.cancelAll();
+        abortAllUploadControllers();
+    }
+
     function clearCompleted(): void {
         uploadState.clearCompleted();
     }
@@ -246,6 +294,9 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
     }
 
     return {
+        cancelAll,
+        cancelBatch,
+        cancelUpload,
         clearAll,
         clearCompleted,
         createCollection,

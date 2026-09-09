@@ -71,11 +71,17 @@ export async function fetchDatasetsToJobId(payload: FetchDataPayload) {
  *
  * @param payload - The fetch data payload defining datasets to import
  * @param callbacks - Optional callbacks for success/error/progress events
+ * @param signal - Optional AbortSignal to cancel the request
  */
-export async function fetchDatasets(payload: FetchDataPayload, callbacks: FetchDatasetsCallbacks = {}): Promise<void> {
+export async function fetchDatasets(
+    payload: FetchDataPayload,
+    callbacks: FetchDatasetsCallbacks = {},
+    signal?: AbortSignal,
+): Promise<void> {
     try {
         const { data, error } = await GalaxyApi().POST("/api/tools/fetch", {
             body: payload,
+            signal,
         });
 
         if (error) {
@@ -84,6 +90,9 @@ export async function fetchDatasets(payload: FetchDataPayload, callbacks: FetchD
 
         callbacks.success?.(data as FetchDataResponse);
     } catch (error) {
+        if (signal?.aborted) {
+            return;
+        }
         const errorMessage = errorMessageAsString(error);
         callbacks.error?.(errorMessage);
     }
@@ -94,7 +103,7 @@ export async function fetchDatasets(payload: FetchDataPayload, callbacks: FetchD
 // Once the route is properly modeled, we can replace this minimal placeholder interface.
 export interface FetchDataResponse {
     jobs: { id: string }[];
-    outputs?: Record<string, unknown>;
+    outputs?: unknown;
 }
 
 /**
