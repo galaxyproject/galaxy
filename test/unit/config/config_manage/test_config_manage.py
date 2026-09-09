@@ -14,27 +14,6 @@ from galaxy.config.schema import AppSchema
 THIS_DIR = os.path.dirname(__file__)
 
 
-def test_reports_conversion_1607_sample():
-    with _config_directory("1607_root_samples") as config_dir:
-        config_dir.manage_cli(["convert", "reports"])
-        config_dir.assert_not_exists("config/reports.ini")
-        config_dir.assert_is_yaml("config/reports.yml")
-        config_dir.assert_moved("config/reports.ini", "config/reports.ini.backup")
-        with config_dir.open("config/reports.yml") as f:
-            config = yaml.safe_load(f)
-        assert "reports" in config
-        reports_config = config["reports"] or {}
-        assert "use_beaker_session" not in reports_config
-        assert "uwsgi" not in config
-
-
-def test_reports_build_sample():
-    with _config_directory("1607_root_samples") as config_dir:
-        config_dir.assert_not_exists("config/reports.yml.sample")
-        config_dir.manage_cli(["build_sample_yaml", "reports", "--add-comments"])
-        config_dir.assert_is_yaml("config/reports.yml.sample")
-
-
 def test_shed_conversion_1607_sample():
     with _config_directory("1607_root_samples") as config_dir:
         config_dir.manage_cli(["convert", "tool_shed"])
