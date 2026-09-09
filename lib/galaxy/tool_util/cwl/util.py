@@ -460,6 +460,9 @@ class ObjectUploadTarget(UploadTarget):
 class DirectoryUploadTarget(UploadTarget):
     def __init__(self, tar_path: str, file_type: str = "directory", name: str = "uploaded directory") -> None:
         self.tar_path = tar_path
+        # replacement_directory() creates this archive on the client, so a
+        # separate Galaxy server can never be expected to resolve its path.
+        self.client_local = True
         self.file_type = file_type
         self.name = name
 
