@@ -86,8 +86,10 @@ describe("jobsFilterParams", () => {
             expect(jobsFilterParams("'CUT'", true)).toEqual({ tool_id: ["cut1"] });
         });
 
-        it("returns an empty tool_id array when no tool name matches", () => {
-            expect(jobsFilterParams("nonexistent-tool", true)).toEqual({ tool_id: [] });
+        it("throws an error when no tool name matches", () => {
+            expect(() => jobsFilterParams("nonexistent-tool", true)).toThrow(
+                `No tools matched the provided name: nonexistent-tool`,
+            );
         });
 
         it("combines a name filter with state, out of search", () => {
