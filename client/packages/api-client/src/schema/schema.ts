@@ -23605,7 +23605,7 @@ export interface components {
             /**
              * Label
              * @description Workflow step label to assign to the extracted tool step.
-            */
+             */
             label: string;
         };
         /** StepReferenceByLabel */
