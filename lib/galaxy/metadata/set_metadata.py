@@ -68,8 +68,8 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
     MaxDiscoveredFilesJobMessage,
-    OutputCollectionSecurityJobMessage,
     output_discovery_job_message,
+    OutputCollectionSecurityJobMessage,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
