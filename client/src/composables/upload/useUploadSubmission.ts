@@ -90,65 +90,55 @@ export function useUploadSubmission() {
         const configuredChunkSize = Number(galaxyConfig.value.chunk_upload_size);
         const chunkSize = configuredChunkSize > 0 ? configuredChunkSize : DEFAULT_CHUNK_SIZE;
 
-        return new Promise<void>((resolve, reject) => {
-            const config: UploadDatasetsConfig = {
-                chunkSize,
-                preferredObjectStoreId: targetObjectStoreId,
-                success: (response) => {
-                    const uploadedDatasets = datasetsFromFetchResponse(response);
+        const config: UploadDatasetsConfig = {
+            chunkSize,
+            preferredObjectStoreId: targetObjectStoreId,
+            success: (response) => {
+                const uploadedDatasets = datasetsFromFetchResponse(response);
 
-                    // In per-file mode, only items whose signals are not aborted
-                    // at success time were actually uploaded and should be marked completed.
-                    const completedIds = signals ? apiIds.filter((_, i) => !signals[i]?.aborted) : apiIds;
-                    markTrackedCompleted(uploadState, completedIds);
-                    datasets.push(...uploadedDatasets);
+                const completedIds = signals ? apiIds.filter((_, i) => !signals[i]?.aborted) : apiIds;
+                markTrackedCompleted(uploadState, completedIds);
+                datasets.push(...uploadedDatasets);
 
-                    if (batchId) {
-                        if (directCollectionCreation) {
-                            const createdCollection = uploadedDatasets.find((dataset) => dataset.src === "hdca");
-                            if (createdCollection) {
-                                uploadState.setBatchCollectionId(batchId, createdCollection.id);
-                            }
-                            uploadState.updateBatchStatus(batchId, "completed");
-                        } else {
-                            uploadedDatasets
-                                .filter((dataset) => dataset.src === "hda")
-                                .forEach((dataset) => uploadState.addBatchDatasetId(batchId, dataset.id));
+                if (batchId) {
+                    if (directCollectionCreation) {
+                        const createdCollection = uploadedDatasets.find((dataset) => dataset.src === "hdca");
+                        if (createdCollection) {
+                            uploadState.setBatchCollectionId(batchId, createdCollection.id);
                         }
+                        uploadState.updateBatchStatus(batchId, "completed");
+                    } else {
+                        uploadedDatasets
+                            .filter((dataset) => dataset.src === "hda")
+                            .forEach((dataset) => uploadState.addBatchDatasetId(batchId, dataset.id));
                     }
+                }
+            },
+            error: (uploadError) => {
+                if (!signals && signal?.aborted) {
+                    return;
+                }
 
-                    resolve();
-                },
-                error: (uploadError) => {
-                    // In atomic mode, if the signal was aborted the cancellation
-                    // is the expected outcome — resolve silently. In per-file mode
-                    // the error callback is already suppressed for aborted files
-                    // inside uploadFilesViaTus, so a genuine error here should be
-                    // treated as a real failure.
-                    if (!signals && signal?.aborted) {
-                        resolve();
-                        return;
-                    }
+                const errorMessage = errorMessageAsString(uploadError);
 
-                    const errorMessage = errorMessageAsString(uploadError);
+                markTrackedError(uploadState, trackedUploads, errorMessage);
+                if (batchId) {
+                    uploadState.setBatchError(batchId, errorMessage);
+                }
+                throw uploadError instanceof Error ? uploadError : new Error(errorMessage);
+            },
+            progress: (percentage) => {
+                onProgress?.(percentage);
+            },
+            uploadIds: apiIds,
+            perFileProgress: (fileId, percentage) => {
+                uploadState.updateProgress(fileId, percentage);
+            },
+        };
 
-                    markTrackedError(uploadState, trackedUploads, errorMessage);
-                    if (batchId) {
-                        uploadState.setBatchError(batchId, errorMessage);
-                    }
-                    reject(uploadError);
-                },
-                progress: (percentage) => {
-                    onProgress?.(percentage);
-                },
-                uploadIds: apiIds,
-                perFileProgress: (fileId, percentage) => {
-                    uploadState.updateProgress(fileId, percentage);
-                },
-            };
-
+        try {
             if (prepared.collectionConfig && directCollectionCreation) {
-                uploadCollectionDatasets(
+                await uploadCollectionDatasets(
                     prepared.apiItems,
                     {
                         collectionName: prepared.collectionConfig.name,
@@ -157,7 +147,7 @@ export function useUploadSubmission() {
                     { ...config, signal },
                 );
             } else {
-                uploadDatasets(prepared.apiItems, {
+                await uploadDatasets(prepared.apiItems, {
                     ...config,
                     composite: prepared.uploadOptions?.composite,
                     compositeName: prepared.uploadOptions?.compositeName,
@@ -165,7 +155,12 @@ export function useUploadSubmission() {
                     signals,
                 });
             }
-        });
+        } catch (error) {
+            if (signal?.aborted) {
+                return;
+            }
+            throw error;
+        }
     }
 
     /**

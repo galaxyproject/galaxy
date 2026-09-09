@@ -93,20 +93,33 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
                 throw new Error("No valid collection elements to create");
             }
 
-            const response = await createHistoryDatasetCollectionInstanceFull({
-                name: batch.name,
-                collection_type: batch.type,
-                element_identifiers: elementIdentifiers,
-                history_id: batch.historyId,
-                hide_source_items: batch.hideSourceItems,
-                instance_type: "history",
-                copy_elements: true,
-                fields: "auto",
-            });
+            const response = await createHistoryDatasetCollectionInstanceFull(
+                {
+                    name: batch.name,
+                    collection_type: batch.type,
+                    element_identifiers: elementIdentifiers,
+                    history_id: batch.historyId,
+                    hide_source_items: batch.hideSourceItems,
+                    instance_type: "history",
+                    copy_elements: true,
+                    fields: "auto",
+                },
+                signal,
+            );
+
+            if (signal?.aborted) {
+                uploadState.updateBatchStatus(batchId, "cancelled");
+                return;
+            }
 
             uploadState.setBatchCollectionId(batchId, response.id);
             uploadState.updateBatchStatus(batchId, "completed");
         } catch (err) {
+            if (signal?.aborted) {
+                uploadState.updateBatchStatus(batchId, "cancelled");
+                return;
+            }
+
             const errorMsg = errorMessageAsString(err);
             uploadState.setBatchError(batchId, errorMsg);
 
