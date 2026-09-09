@@ -301,9 +301,9 @@ Systemd expands `%i` to the service instance number. Instances `galaxy-gunicorn@
 This also works with Gunicorn's `--preload` option. Distinct hostnames already separate
 control queues, but containers that share a hostname need distinct server names too.
 
-A value in `galaxy.yml` takes precedence over `GALAXY_CONFIG_SERVER_NAME`; use
-`GALAXY_CONFIG_OVERRIDE_SERVER_NAME` if you need to override that value. Scope the environment
-setting to the Gunicorn service so job handlers and workflow schedulers retain their own names.
+Scope the environment setting to the Gunicorn service so job handlers and workflow schedulers
+retain their own names. See [Per-process configuration](config.rst#per-process-configuration)
+for details on supplying configuration through environment variables.
 After updating a systemd unit, reload the unit configuration and restart the affected services.
 See [SSE deployment verification](sse_updates.md#verifying-the-deployment) for queue checks.
 

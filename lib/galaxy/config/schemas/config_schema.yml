@@ -29,20 +29,11 @@ mapping:
         type: str
         default: main
         desc: |
-          Base name of this Galaxy server process. Gunicorn appends a worker ID
-          (for example, ``web_0.1``). Control queues are named using the resulting
-          server name and hostname, so independent Gunicorn instances on the same
-          host must use distinct base names to avoid sharing control queues.
-          Shared queues can cause SSE events to reach a worker that does not hold
-          the intended browser connection.
+          Change this default when running independent Gunicorn instances on the
+          same hostname, assigning each instance a distinct base server name to
+          avoid sharing control queues. See the deployment guidance at:
 
-          When instances share galaxy.yml, leave this option unset in the file and
-          set ``GALAXY_CONFIG_SERVER_NAME`` separately for each instance. For a
-          systemd template service, use
-          ``Environment=GALAXY_CONFIG_SERVER_NAME=web_%i``. Use
-          ``GALAXY_CONFIG_OVERRIDE_SERVER_NAME`` to override a value set in the file.
-          Standalone job handlers and workflow schedulers can instead use
-          ``--server-name`` to assign their names.
+          https://docs.galaxyproject.org/en/master/admin/scaling.html#unique-server-names-for-independent-gunicorn-instances
 
       config_dir:
         type: str

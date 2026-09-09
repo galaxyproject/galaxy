@@ -110,17 +110,12 @@ Per-process configuration
 -------------------------
 
 Options in the ``galaxy`` section can also be supplied through environment variables with the
-``GALAXY_CONFIG_`` prefix and the option name in uppercase. For example,
-``GALAXY_CONFIG_SERVER_NAME=web_0`` sets the process's base server name when ``server_name`` is
-absent from the configuration file. File values take precedence over these environment variables.
-Use the ``GALAXY_CONFIG_OVERRIDE_`` prefix to override a file value, for example
-``GALAXY_CONFIG_OVERRIDE_SERVER_NAME=web_0``.
+``GALAXY_CONFIG_`` prefix and the option name in uppercase. These values apply when the option
+is absent from the configuration file. Use the ``GALAXY_CONFIG_OVERRIDE_`` prefix to override
+a value set in the file.
 
-This allows processes to share ``galaxy.yml`` while retaining distinct identities. Independent
-Gunicorn masters on the same hostname must use distinct base names; Galaxy appends the worker ID
-to each base name. Set these variables in the individual service's environment, rather than in an
-environment shared with job handlers and workflow schedulers. See
-:doc:`Scaling and Load Balancing <scaling>` for a systemd example and handler naming guidance.
+Set environment variables in the service's environment to customize individual processes while
+sharing a common ``galaxy.yml``.
 
 Configuration Options
 ----------------------------
