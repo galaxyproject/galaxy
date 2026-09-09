@@ -36,6 +36,7 @@ import {
     type ApiDataElement,
     type CompositeDataElement,
     type FetchDataPayload,
+    type FetchDataResponse,
     type FetchDatasetHash,
     fetchDatasets,
     type FetchDatasetsCallbacks,
@@ -1034,6 +1035,110 @@ async function uploadFilesViaTus(
     }
 }
 
+async function submitUrlElements(
+    data: UploadPayload,
+    target: HdasUploadTarget,
+    callbacks: FetchDatasetsCallbacks,
+    signal?: AbortSignal,
+    signals?: (AbortSignal | undefined)[],
+): Promise<void> {
+    if (!signals) {
+        await fetchDatasets(toApiPayload(data), callbacks, signal);
+        return;
+    }
+
+    const responses: FetchDataResponse[] = [];
+    const reportAndRethrowError = (uploadError: string | Error): never => {
+        callbacks.error?.(uploadError);
+        throw uploadError instanceof Error ? uploadError : new Error(String(uploadError));
+    };
+
+    for (const [index, element] of target.elements.entries()) {
+        const itemSignal = signals[index];
+        if (!("src" in element) || element.src !== "url" || itemSignal?.aborted) {
+            continue;
+        }
+
+        const apiPayload = toApiPayload({
+            ...data,
+            targets: [{ ...target, elements: [element] }],
+        });
+        await fetchDatasets(
+            apiPayload,
+            {
+                ...callbacks,
+                success: (response) => responses.push(response),
+                error: reportAndRethrowError,
+            },
+            itemSignal,
+        );
+    }
+
+    if (responses.length > 0) {
+        callbacks.success?.({
+            jobs: responses.flatMap((response) => response.jobs),
+            outputs: responses.flatMap((response) => (response.outputs ? [response.outputs] : [])),
+        });
+    }
+}
+
+type IndexedUploadElement = { element: ApiDataElement; index: number };
+type IndexedPastedElement = { element: PastedDataElement; index: number };
+
+function isActivePastedElement(
+    entry: IndexedUploadElement,
+    signals?: (AbortSignal | undefined)[],
+): entry is IndexedPastedElement {
+    return entry.element.src === "pasted" && !signals?.[entry.index]?.aborted;
+}
+
+function pastedElementToFile(element: PastedDataElement): NamedBlob {
+    const blob = new Blob([String(element.paste_content)]) as NamedBlob;
+    blob.name = String(element.name || DEFAULT_FILE_NAME);
+    return blob;
+}
+
+async function submitPastedElements(
+    data: UploadPayload,
+    target: HdasUploadTarget,
+    tusEndpoint: string,
+    chunkSize: number,
+    callbacks: FetchDatasetsCallbacks,
+    uploadIds?: string[],
+    perFileProgress?: (fileId: string, percentage: number) => void,
+    signal?: AbortSignal,
+    signals?: (AbortSignal | undefined)[],
+): Promise<void> {
+    const targetElements = target.elements as ApiDataElement[];
+    const elements = (signals ? targetElements : targetElements.slice(0, 1))
+        .map((element, index) => ({ element, index }))
+        .filter((entry) => isActivePastedElement(entry, signals));
+
+    if (elements.length === 0) {
+        return;
+    }
+
+    const files = elements.map(({ element }) => pastedElementToFile(element));
+    const uploadData = {
+        ...data,
+        files,
+        targets: [{ ...target, elements: elements.map(({ element }) => element) }],
+    };
+    const itemSignals = signals ? elements.map(({ index }) => signals[index]) : undefined;
+    const itemUploadIds = uploadIds ? elements.map(({ index }) => uploadIds[index]!) : undefined;
+
+    await uploadFilesViaTus(
+        uploadData,
+        tusEndpoint,
+        chunkSize,
+        callbacks,
+        itemUploadIds,
+        perFileProgress,
+        signal,
+        itemSignals,
+    );
+}
+
 /**
  * Submits files for upload to Galaxy.
  * Handles TUS chunked uploads for files and direct payload submission for URLs.
@@ -1064,54 +1169,41 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
     const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
     const callbacks: FetchDatasetsCallbacks = { success, error, warning, progress };
 
-    // Determine upload path based on data structure
-    const hasFiles = data.files && data.files.length > 0;
-
-    if (hasFiles || isComposite) {
-        // Upload files via TUS, then submit payload
+    if (data.files?.length || isComposite) {
         await uploadFilesViaTus(data, tusEndpoint, chunkSize, callbacks, uploadIds, perFileProgress, signal, signals);
-    } else if (data.targets && data.targets.length > 0) {
-        const firstTarget = data.targets[0];
+        return;
+    }
 
-        // Check if this is a collection (HDCA) target
-        if (firstTarget && "destination" in firstTarget && firstTarget.destination.type === "hdca") {
-            // HDCA collection target with no local files (all URLs/pasted) - submit directly
-            const apiPayload = toApiPayload(data);
-            await fetchDatasets(apiPayload, callbacks, signal);
-        } else if (
-            firstTarget &&
-            "elements" in firstTarget &&
-            firstTarget.elements &&
-            firstTarget.elements.length > 0
-        ) {
-            // Handle HDA URL or pasted content
-            const firstElement = firstTarget.elements[0];
+    const firstTarget = data.targets[0];
+    if (!firstTarget) {
+        return;
+    }
 
-            if (firstElement && "src" in firstElement) {
-                if (firstElement.src === "url") {
-                    // Direct URL submission - no TUS upload needed
-                    const apiPayload = toApiPayload(data);
-                    await fetchDatasets(apiPayload, callbacks, signal);
-                } else if (firstElement.src === "pasted" && "paste_content" in firstElement) {
-                    // Convert pasted content to Blob and upload via TUS
-                    const pasteContent = String(firstElement.paste_content);
-                    const blob = new Blob([pasteContent]) as NamedBlob;
-                    blob.name = String(firstElement.name || DEFAULT_FILE_NAME);
+    if (firstTarget.destination.type === "hdca") {
+        await fetchDatasets(toApiPayload(data), callbacks, signal);
+        return;
+    }
 
-                    const filesData: UploadPayload = { ...data, files: [blob] };
-                    await uploadFilesViaTus(
-                        filesData,
-                        tusEndpoint,
-                        chunkSize,
-                        callbacks,
-                        uploadIds,
-                        perFileProgress,
-                        signal,
-                        signals,
-                    );
-                }
-            }
-        }
+    if (!firstTarget.elements?.length) {
+        return;
+    }
+
+    const hdasTarget = firstTarget as HdasUploadTarget;
+    const firstElement = hdasTarget.elements[0];
+    if (firstElement && "src" in firstElement && firstElement.src === "url") {
+        await submitUrlElements(data, hdasTarget, callbacks, signal, signals);
+    } else if (firstElement && "src" in firstElement && firstElement.src === "pasted") {
+        await submitPastedElements(
+            data,
+            hdasTarget,
+            tusEndpoint,
+            chunkSize,
+            callbacks,
+            uploadIds,
+            perFileProgress,
+            signal,
+            signals,
+        );
     }
 }
 
@@ -1160,6 +1252,11 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
         signal,
         signals,
     } = config;
+    let errorReported = false;
+    const reportError = (uploadError: string | Error) => {
+        errorReported = true;
+        error?.(uploadError);
+    };
 
     try {
         // Build the API-ready payload from upload items
@@ -1180,7 +1277,7 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
             isComposite: composite,
             chunkSize,
             success,
-            error,
+            error: reportError,
             warning,
             progress,
             uploadIds,
@@ -1189,8 +1286,12 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
             signals,
         });
     } catch (err) {
-        const errorMessage = errorMessageAsString(err);
-        config.error?.(errorMessage);
+        if (!errorReported) {
+            reportError(errorMessageAsString(err));
+        }
+        if (err instanceof Error && errorReported) {
+            throw err;
+        }
     }
 }
 
@@ -1264,6 +1365,11 @@ export async function uploadCollectionDatasets(
         signal,
         signals,
     } = config;
+    let errorReported = false;
+    const reportError = (uploadError: string | Error) => {
+        errorReported = true;
+        error?.(uploadError);
+    };
 
     try {
         const payload = buildCollectionUploadPayload(items, collectionOptions);
@@ -1280,7 +1386,7 @@ export async function uploadCollectionDatasets(
             data,
             chunkSize,
             success,
-            error,
+            error: reportError,
             warning,
             progress,
             uploadIds,
@@ -1289,7 +1395,12 @@ export async function uploadCollectionDatasets(
             signals,
         });
     } catch (err) {
-        config.error?.(errorMessageAsString(err));
+        if (!errorReported) {
+            reportError(errorMessageAsString(err));
+        }
+        if (err instanceof Error && errorReported) {
+            throw err;
+        }
     }
 }
 
