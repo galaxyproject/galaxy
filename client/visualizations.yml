@@ -113,7 +113,7 @@ rerunio:
     version: 0.0.0
 rmsxflipbook:
     package: "@galaxyproject/rmsxflipbook"
-    version: 0.0.2
+    version: 0.0.4
 seqviz:
     package: "@galaxyproject/seqviz"
     version: 0.0.2
