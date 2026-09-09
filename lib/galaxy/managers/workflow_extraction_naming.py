@@ -8,6 +8,7 @@ from typing import (
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.jobs import get_output_name
+from galaxy.managers.markdown_parse import UNQUOTABLE_ARGUMENT_CHARS
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -30,15 +31,22 @@ class SuggestedName:
     source: SuggestedNameSource
 
 
+UNQUOTABLE_PATTERN = re.compile(f"[{re.escape(UNQUOTABLE_ARGUMENT_CHARS)}]")
+
+
 def normalize_label(value: str | None) -> str:
-    """Collapse internal whitespace and clamp to the workflow-label length limit.
+    """Collapse internal whitespace, drop characters a report directive cannot
+    quote, and clamp to the workflow-label length limit.
 
     Returns ``""`` for empty/blank input; callers decide whether that is an error
-    (user-supplied labels) or a fall-back trigger (auto-generated labels).
+    (user-supplied labels) or a fall-back trigger (auto-generated labels). Dropping
+    rather than rejecting suits the auto-generated case, where the label is derived
+    from a dataset name the user never typed here and so cannot correct.
     """
     if not value:
         return ""
-    return re.sub(r"\s+", " ", value.strip())[:255]
+    collapsed = re.sub(r"\s+", " ", value.strip())
+    return UNQUOTABLE_PATTERN.sub("", collapsed)[:255]
 
 
 def suggested_output_name(

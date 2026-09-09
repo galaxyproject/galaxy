@@ -32,6 +32,7 @@ from galaxy.model import (
     User,
     WorkflowStep,
 )
+from galaxy.managers.markdown_parse import is_quotable_argument_value
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.schema.workflows import (
     OutputLabelHint,
@@ -619,6 +620,18 @@ def output_label_to_id_key(kind: OutputLabelKind, content_id: int) -> IdKey:
     return ("collection", content_id)
 
 
+def _label_arg(argument: str, label: str | None) -> str | None:
+    """Directive argument for a workflow label, or None when it has no directive form.
+
+    A label the directive grammar cannot quote is reported as unresolved rather than
+    emitted, so the rewriter drops the directive with a warning instead of producing
+    markdown that fails validation.
+    """
+    if not label or not is_quotable_argument_value(label):
+        return None
+    return f'{argument}="{label}"'
+
+
 @dataclass(frozen=True)
 class ExtractionLabelIndex:
     """Resolve an extracted-from id to the workflow-relative label extraction
@@ -648,11 +661,11 @@ class ExtractionLabelIndex:
             return None
         step, output_name = pair
         if step.type in ("data_input", "data_collection_input"):
-            return f'input="{step.label}"' if step.label else None
+            return _label_arg("input", step.label)
         workflow_output = step.workflow_output_for(output_name)
-        if workflow_output is None or not workflow_output.label:
+        if workflow_output is None:
             return None
-        return f'output="{workflow_output.label}"'
+        return _label_arg("output", workflow_output.label)
 
     def job_label_arg(self, job: Job) -> str | None:
         """Directive argument (``step="z"``) for a referenced job/ICJ, folding an
@@ -662,9 +675,9 @@ class ExtractionLabelIndex:
             step = self.icj_to_step.get(icj_assoc.implicit_collection_jobs_id)
         else:
             step = self.job_to_step.get(job.id)
-        if step is None or not step.label:
+        if step is None:
             return None
-        return f'step="{step.label}"'
+        return _label_arg("step", step.label)
 
     def step_for_content(self, content_kind: OutputLabelKind, original_id: int) -> tuple[WorkflowStep, str] | None:
         return self.content_to_step.get(output_label_to_id_key(content_kind, original_id))

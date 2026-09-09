@@ -1762,6 +1762,51 @@ test_data:
             (400,),
         )
 
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_step_label_with_quote_rejected(self, history_id):
+        """Labels become double-quoted arguments in a workflow report directive and
+        the grammar has no escape syntax, so a quote has no representable form."""
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "quoted step label",
+                "hda_ids": [d1["id"], d2["id"]],
+                "job_ids": [cat1_job_id],
+                "step_labels": [{"kind": "job", "id": cat1_job_id, "label": 'say "hi"'}],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_input_name_with_quote_rejected(self, history_id):
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "quoted input name",
+                "hda_ids": [d1["id"], d2["id"]],
+                "job_ids": [cat1_job_id],
+                "dataset_names": ['my "input"', "other"],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_input_name_with_newline_rejected(self, history_id):
+        """A directive occupies a single line, so a line break is unrepresentable too."""
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "multiline input name",
+                "hda_ids": [d1["id"], d2["id"]],
+                "job_ids": [cat1_job_id],
+                "dataset_names": ["first\nsecond", "other"],
+            },
+            (400,),
+        )
+
 
 class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase):
     """Tests for GET /api/histories/{history_id}/extraction_summary."""
