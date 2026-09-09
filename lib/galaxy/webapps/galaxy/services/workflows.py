@@ -14,6 +14,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.markdown_parse import is_quotable_argument_value
 from galaxy.managers.workflow_extraction_naming import normalize_label
 from galaxy.managers.workflow_extraction_report import reconcile_and_build_report
 from galaxy.managers.workflows import (
@@ -66,7 +67,21 @@ def _to_extraction_result(
     return WorkflowExtractionResult.model_validate({"id": stored_workflow.id, "report_warnings": report_warnings or []})
 
 
+def _reject_unquotable(value: str, described_as: str) -> None:
+    """Reject a label that cannot be expressed as a workflow report directive argument.
+
+    Labels are emitted into report directives as double-quoted arguments and the
+    directive grammar has no escape syntax, so a quote or line break in one has no
+    representable form. Rejected up front, where the user can still correct it.
+    """
+    if not is_quotable_argument_value(value):
+        raise exceptions.RequestParameterInvalidException(
+            f"{described_as} must not contain double quotes or line breaks: {value!r}"
+        )
+
+
 def _sanitize_output_label(label: str) -> str:
+    _reject_unquotable(label, "output labels")
     sanitized = normalize_label(label)
     if not sanitized:
         raise exceptions.RequestParameterInvalidException("output_labels contains an empty label")
@@ -91,6 +106,7 @@ def _validate_extraction_labels(
     for name in (dataset_names or []) + (dataset_collection_names or []):
         if not name.strip():
             raise exceptions.RequestParameterInvalidException("workflow input names must not be empty")
+        _reject_unquotable(name, "workflow input names")
         if len(name) > 255:
             raise exceptions.RequestParameterInvalidException(f"workflow input name exceeds 255 characters: {name!r}")
         if name in seen:
@@ -99,6 +115,7 @@ def _validate_extraction_labels(
     for label in step_labels or []:
         if not label.strip():
             raise exceptions.RequestParameterInvalidException("workflow step labels must not be empty")
+        _reject_unquotable(label, "workflow step labels")
         if len(label) > 255:
             raise exceptions.RequestParameterInvalidException(f"workflow step label exceeds 255 characters: {label!r}")
         if label in seen:

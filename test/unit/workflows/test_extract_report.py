@@ -16,6 +16,7 @@ from typing import cast
 from galaxy import model
 from galaxy.managers import workflow_extraction_report as report
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.markdown_parse import validate_galaxy_markdown
 from galaxy.managers.workflow_extraction_report import _ReportLabelRewriter
 from galaxy.model import Job
 from galaxy.workflow.extract import ExtractionLabelIndex
@@ -146,6 +147,28 @@ def test_index_normalizes_copied_dataset_to_original():
     assert index.content_label_arg("hda", copy) == 'output="aligned"'
 
 
+def test_index_unquotable_label_is_unresolved():
+    """Directive arguments are double-quoted with no escape syntax, so a label
+    carrying a quote or a line break has no directive form and must not be emitted."""
+    step = _tool_step()
+    step.create_or_update_workflow_output(output_name="out_file", label='say "hi"', uuid=None)
+    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    assert index.content_label_arg("hda", _content_stub(12)) is None
+
+
+def test_index_unquotable_input_label_is_unresolved():
+    step = _input_step('my "input"')
+    index = ExtractionLabelIndex(content_to_step={("dataset", 11): (step, "output")}, job_to_step={}, icj_to_step={})
+    assert index.content_label_arg("hda", _content_stub(11)) is None
+
+
+def test_index_unquotable_step_label_is_unresolved():
+    step = _tool_step("bwa\nmem")
+    index = ExtractionLabelIndex(content_to_step={}, job_to_step={9: step}, icj_to_step={})
+    job = SimpleNamespace(id=9, implicit_collection_jobs_association=None)
+    assert index.job_label_arg(cast(Job, job)) is None
+
+
 def test_index_plain_job_resolves_to_step_label():
     step = _tool_step("bwa_mem")
     index = ExtractionLabelIndex(content_to_step={}, job_to_step={9: step}, icj_to_step={})
@@ -200,6 +223,20 @@ def test_reconcile_dedupes_against_existing_label(monkeypatch):
     _patch_resolution(monkeypatch, {("hda", 12): _content_stub(12)}, "aligned_reads")
     report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
     assert unstarred.workflow_output_for("out_file").label == "aligned_reads_2"
+
+
+def test_reconcile_label_from_quoted_name_is_directive_safe(monkeypatch):
+    """Auto-labels derive from suggested names, i.e. from user-controlled dataset
+    names. The generated label must always have a directive form -- the user never
+    typed it here, so there is nothing for them to correct."""
+    step = _tool_step()
+    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    _patch_resolution(monkeypatch, {("hda", 12): _content_stub(12)}, 'say "hi"\nagain')
+    report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
+
+    arg = index.content_label_arg("hda", _content_stub(12))
+    assert arg == 'output="say hi again"'
+    validate_galaxy_markdown(f"```galaxy\nhistory_dataset_display({arg})\n```\n")
 
 
 def test_reconcile_labels_referenced_step(monkeypatch):
