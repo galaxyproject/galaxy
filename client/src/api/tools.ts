@@ -103,7 +103,7 @@ export async function fetchDatasets(
 // Once the route is properly modeled, we can replace this minimal placeholder interface.
 export interface FetchDataResponse {
     jobs: { id: string }[];
-    outputs?: Record<string, unknown>;
+    outputs?: unknown;
 }
 
 /**
