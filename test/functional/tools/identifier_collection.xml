@@ -1,7 +1,8 @@
 <tool id="identifier_collection" name="identifier_collection" version="0.1">
   <command>
     #for $input in $input1:
-      echo '$input.element_identifier' >> 'output1';
+      echo 'indentifier $input.element_identifier' >> 'output1';
+      echo 'safe_indentifier $input.safe_element_identifier' >> 'output1';
     #end for
   </command>
   <inputs>
@@ -15,7 +16,7 @@
     <test>
       <param name="input1">
         <collection type="list:paired">
-          <element name="i1">
+          <element name="i1:">
             <collection type="paired">
               <element name="forward" value="simple_line.txt" />
               <element name="reverse" value="simple_line_alternative.txt" />
@@ -25,7 +26,8 @@
       </param>
       <output name="output1">
         <assert_contents>
-          <has_line line="i1" />
+          <has_line line="identifier i1:" />
+          <has_line line="safe_identifier i1_" />
         </assert_contents>
       </output>
     </test>

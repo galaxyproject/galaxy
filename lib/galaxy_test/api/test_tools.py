@@ -2965,7 +2965,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        assert output1_content.strip() == "Plain HDA"
+        assert output1_content.strip() == "identifier Plain HDA"
+        assert output1_content.strip() == "safe_identifier Plain_HDA"
 
     @skip_without_tool("identifier_multiple")
     def test_list_selectable_in_multidata_input(self, history_id):
