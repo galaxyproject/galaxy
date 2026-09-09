@@ -59,4 +59,15 @@ describe("toolStore", () => {
 
         expect(store.getToolsById("constructor")).toEqual({});
     });
+
+    it("finds tool ids by name, partially by default and exactly (case-insensitive) when `exact` is true", () => {
+        const store = useToolStore();
+        store.saveAllTools([
+            { id: "cut1", name: "Cut" },
+            { id: "adv_cut1", name: "Advanced Cut" },
+        ] as unknown as Tool[]);
+
+        expect(store.getToolIdsByName("cut").sort()).toEqual(["adv_cut1", "cut1"]);
+        expect(store.getToolIdsByName("CUT", true)).toEqual(["cut1"]);
+    });
 });
