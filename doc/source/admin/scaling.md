@@ -283,9 +283,12 @@ names such as `main.1` and `main.2`. Increasing the worker count within one mast
 those workers distinct names; starting another master with the same base name does not.
 
 Control queues use the name `control.<server_name>@<hostname>`. Workers in independent masters
-that share both the base name and hostname consume from the same queues. An SSE event can then
-be consumed by a worker that does not hold the intended browser connection, leaving the browser
-without an update even though the queue has active consumers and no backlog.
+that share both the base name and hostname compete for messages on the same queues. Broadcast
+control tasks intended to execute in every worker may therefore execute in only some workers,
+and tasks addressed to a specific worker may execute in another worker sharing its queue.
+Active consumers and an empty queue do not establish that all intended workers executed a task.
+For example, an SSE event may be consumed by a worker that does not hold the intended browser
+connection, leaving the browser without an update.
 
 If the masters share `galaxy.yml`, leave `galaxy.server_name` unset in that file and set
 `GALAXY_CONFIG_SERVER_NAME` in each master's environment, for example `web_0` and `web_1`.
