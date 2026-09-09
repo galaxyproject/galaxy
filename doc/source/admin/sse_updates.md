@@ -143,6 +143,13 @@ This only matters when running on SQLite or in setups where PostgreSQL
 
 ## What to monitor
 
+In deployments with multiple independent Gunicorn masters on the same hostname, configure a
+distinct `server_name` for each master as described in
+[Scaling and Load Balancing](scaling.md#unique-server-names-for-independent-gunicorn-instances).
+Each worker holds its own browser connections in memory and needs its own control queue.
+Workers sharing a queue compete for messages instead of each receiving a copy, so SSE updates
+can disappear even when the broker reports healthy consumers and empty queues.
+
 When statsd is configured (via `statsd_host` and friends), the SSE
 plumbing emits the following metrics. Capture these on the same dashboard
 you use for Gunicorn worker health:
@@ -291,6 +298,22 @@ stream is healthy end-to-end:
    `galaxy.sse.connections.active` should reflect roughly one connection
    per open browser tab (summed across the reporting processes).
 
-If the connection opens but no events arrive, the most common causes
-are: a proxy buffering responses (revisit the NGINX section), or a
-producer that can't reach AMQP (see `galaxy.sse.dispatch.skipped_no_qw`).
+If the connection opens but no events arrive, check for proxy buffering (revisit the NGINX
+section), a producer that cannot reach AMQP (see `galaxy.sse.dispatch.skipped_no_qw`), and workers
+sharing control queues because their server names collide.
+
+For RabbitMQ, inspect the virtual host used by Galaxy's `amqp_internal_connection`, which may
+differ from the one used by Celery:
+
+```console
+rabbitmqctl list_queues -p '<vhost>' name messages messages_ready consumers
+rabbitmqctl list_consumers -p '<vhost>'
+```
+
+Check that every live web worker has a distinct `control.<server_name>@<hostname>` queue.
+Galaxy currently creates two subscriptions per control worker, so two consumers on a queue
+are expected. More consumers warrant checking which processes own their connections; the
+count alone does not establish a naming collision. A queue with no consumers may belong to
+a stopped worker, so correlate it with live processes before diagnosing a failed consumer.
+An empty queue alone does not establish successful SSE delivery: a worker without the user's
+browser connection can consume and acknowledge the event.

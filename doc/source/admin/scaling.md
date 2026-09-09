@@ -275,6 +275,38 @@ To bind to ports < 1024 (e.g. if you want to bind to the standard HTTP/HTTPS por
 user and drop privileges to the Galaxy user. However you are strongly encouraged to setup a proxy server
 as described in the [production configuration](production.md) documentation.
 
+### Unique server names for independent Gunicorn instances
+
+When running multiple Gunicorn masters on the same host, give each master a distinct Galaxy
+`server_name`. Galaxy defaults to `main` and appends the worker ID within each master, producing
+names such as `main.1` and `main.2`. Increasing the worker count within one master already gives
+those workers distinct names; starting another master with the same base name does not.
+
+Control queues use the name `control.<server_name>@<hostname>`. Workers in independent masters
+that share both the base name and hostname consume from the same queues. An SSE event can then
+be consumed by a worker that does not hold the intended browser connection, leaving the browser
+without an update even though the queue has active consumers and no backlog.
+
+If the masters share `galaxy.yml`, leave `galaxy.server_name` unset in that file and set
+`GALAXY_CONFIG_SERVER_NAME` in each master's environment, for example `web_0` and `web_1`.
+For a systemd template unit such as `galaxy-gunicorn@.service`, add:
+
+```ini
+[Service]
+Environment=GALAXY_CONFIG_SERVER_NAME=web_%i
+```
+
+Systemd expands `%i` to the service instance number. Instances `galaxy-gunicorn@0` and
+`galaxy-gunicorn@1` will therefore have worker names such as `web_0.1` and `web_1.1`.
+This also works with Gunicorn's `--preload` option. Distinct hostnames already separate
+control queues, but containers that share a hostname need distinct server names too.
+
+A value in `galaxy.yml` takes precedence over `GALAXY_CONFIG_SERVER_NAME`; use
+`GALAXY_CONFIG_OVERRIDE_SERVER_NAME` if you need to override that value. Scope the environment
+setting to the Gunicorn service so job handlers and workflow schedulers retain their own names.
+After updating a systemd unit, reload the unit configuration and restart the affected services.
+See [SSE deployment verification](sse_updates.md#verifying-the-deployment) for queue checks.
+
 ### Job and Workflow Handling
 
 ```{warning}
@@ -349,6 +381,12 @@ $ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler0 --daemonize
 $ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler1 --daemonize
 $ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler2 --daemonize
 ```
+
+Each standalone handler or workflow scheduler also needs a distinct server name on its host.
+The `--server-name` arguments above supply those names; for statically defined handlers they
+must match the handler IDs in `job_conf.xml`. Avoid setting a common `server_name` in the shared
+`galaxy.yml` or exporting the Gunicorn server-name environment setting to these services, since
+configuration values can override their command-line names.
 
 #### Dynamically defined handlers
 
