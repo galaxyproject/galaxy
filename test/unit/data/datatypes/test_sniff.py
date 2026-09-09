@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 import pytest
@@ -8,6 +9,7 @@ from galaxy.datatypes.sniff import (
     convert_newlines_sep2tabs,
     convert_sep2tabs,
     get_test_fname,
+    handle_composite_file,
 )
 
 
@@ -109,3 +111,34 @@ def test_infer_from_filename():
     assert datatypes_registry.get_datatype_from_filename("mycool.fq").file_ext == "fastqsanger"
     assert datatypes_registry.get_datatype_from_filename("mycool.fq.gz").file_ext == "fastqsanger.gz"
     assert datatypes_registry.get_datatype_from_filename("mycool.fastq").file_ext == "fastqsanger"
+
+
+def test_handle_composite_file_stages_legitimate_name(tmp_path):
+    extra_files = tmp_path / "extra"
+    extra_files.mkdir()
+    src = tmp_path / "source.txt"
+    src.write_text("content\n")
+    handle_composite_file(None, src, extra_files, "composite", True, extra_files, "gxtest_", {})
+    assert (extra_files / "composite").read_text() == "content\n"
+    assert not src.exists()
+
+
+@pytest.mark.parametrize("path_kind", ["relative", "deep_relative", "absolute", "empty"])
+def test_handle_composite_file_rejects_escaping_name(tmp_path, path_kind):
+    depth = 40 if path_kind == "deep_relative" else 2
+    extra_files = tmp_path.joinpath(*(["nested"] * depth))
+    extra_files.mkdir(parents=True)
+    escaped_path = tmp_path / "escaped.txt"
+    if path_kind == "absolute":
+        name = str(escaped_path)
+    elif path_kind == "empty":
+        name = ""
+    else:
+        name = os.path.relpath(escaped_path, extra_files)
+    src = tmp_path / "source.txt"
+    src.write_text("content\n")
+    with pytest.raises(ValueError, match="Invalid composite file name"):
+        handle_composite_file(None, src, extra_files, name, True, extra_files, "gxtest_", {})
+    assert not escaped_path.exists()
+    assert list(extra_files.iterdir()) == []
+    assert src.read_text() == "content\n"
