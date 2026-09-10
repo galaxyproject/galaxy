@@ -179,6 +179,28 @@ class TestUsersApi(ApiTestCase):
             update_response = self.__update(user, data={"email": None})
             self._assert_status_code_is(update_response, 400)
 
+    @requires_admin
+    @requires_new_user
+    def test_update_active_requires_admin(self):
+        email = "active_flag_update@bx.psu.edu"
+        user = self._setup_user(email)
+        with self._different_user(email=email):
+            # activation is the email-verification gate, so users cannot flip it on themselves
+            update_response = self.__update(user, data={"active": True})
+            self._assert_status_code_is(update_response, 403)
+
+        update_url = self._api_url(f"users/{user['id']}")
+        for active in (False, True):
+            update_response = self._put(update_url, data={"active": active}, admin=True, json=True)
+            self._assert_status_code_is(update_response, 200)
+            # `active` is not on DetailedUserModel, so it is read back from the index.
+            listed = self._get("users", data={"f_email": email}, admin=True).json()
+            assert [u for u in listed if u["id"] == user["id"]][0]["active"] is active
+
+        # null is not a bool; reject it before it reaches the NOT NULL column
+        update_response = self._put(update_url, data={"active": None}, admin=True, json=True)
+        self._assert_status_code_is(update_response, 400)
+
     @requires_new_user
     def test_extra_preferences_inputs(self):
         user = self._setup_user(TEST_USER_EMAIL)

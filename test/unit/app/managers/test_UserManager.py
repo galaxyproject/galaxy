@@ -542,6 +542,21 @@ class TestUserDeserializer(BaseTestCase):
         self.deserializer.deserialize(user, {"display_name": ""}, trans=self.trans)
         assert user.display_name is None
 
+    def test_active_requires_admin(self):
+        user = self.user_manager.create(**user2_data)
+        user.active = False
+
+        self.log("a non-admin cannot re-activate an account")
+        self.mock_trans.user_is_admin = False
+        with self.assertRaises(exceptions.AdminRequiredException):
+            self.deserializer.deserialize(user, {"active": True}, trans=self.trans)
+        assert user.active is False
+
+        self.log("an admin can")
+        self.mock_trans.user_is_admin = True
+        self.deserializer.deserialize(user, {"active": True}, trans=self.trans)
+        assert user.active is True
+
 
 # =============================================================================
 class TestAdminUserFilterParser(BaseTestCase):
