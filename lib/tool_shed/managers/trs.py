@@ -70,16 +70,6 @@ def tool_classes() -> list[ToolClass]:
     return [ToolClass(id="galaxy_tool", name="Galaxy Tool", description="Galaxy XML Tools")]
 
 
-def trs_tool_id_to_guid(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> str:
-    guid = decode_identifier(trans.repositories_hostname, trs_tool_id)
-    guid = remove_protocol_and_user_from_clone_url(guid)
-    return guid
-
-
-def trs_tool_id_to_repository(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Repository:
-    return guid_to_repository(trans.app, trs_tool_id_to_guid(trans, trs_tool_id))
-
-
 def get_repository_metadata_by_tool_version(
     app: ToolShedApp, repository: Repository, tool_id: str
 ) -> dict[str, RepositoryMetadata]:
@@ -94,12 +84,6 @@ def get_repository_metadata_by_tool_version(
                 continue
             versions[tool_metadata["version"]] = metadata
     return versions
-
-
-def get_tools_for(repository_metadata: RepositoryMetadata) -> list[dict[str, Any]]:
-    tools: list[dict[str, Any]] | None = repository_metadata.metadata.get("tools")
-    assert tools
-    return tools
 
 
 def trs_tool_id_to_repository_metadata(

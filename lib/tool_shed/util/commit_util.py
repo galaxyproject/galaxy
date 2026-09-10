@@ -113,25 +113,6 @@ def check_file_content_for_html_and_images(file_path):
     return message
 
 
-def get_change_lines_in_file_for_tag(tag, change_dict):
-    """
-    The received change_dict is the jsonified version of the changes to a file in a
-    changeset being pushed to the Tool Shed from the command line. This method cleans
-    and returns appropriate lines for inspection.
-    """
-    cleaned_lines = []
-    data_list = change_dict.get("data", [])
-    for data_dict in data_list:
-        block = data_dict.get("block", "")
-        lines = block.split("\\n")
-        for line in lines:
-            index = line.find(tag)
-            if index > -1:
-                line = line[index:]
-                cleaned_lines.append(line)
-    return cleaned_lines
-
-
 def handle_bz2(repository: "Repository", uploaded_file_name):
     with (
         tempfile.NamedTemporaryFile(
