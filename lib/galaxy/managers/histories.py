@@ -26,7 +26,6 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import aliased
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -60,10 +59,10 @@ from galaxy.model import (
     Job,
 )
 from galaxy.model.index_filter_util import (
-    append_user_filter,
     raw_text_column_filter,
-    tag_filter,
+    tag_exists_filter,
     text_column_filter,
+    user_exists_filter,
 )
 from galaxy.objectstore import ObjectStoreAuth
 from galaxy.schema.fields import Security
@@ -167,25 +166,32 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
 
         if payload.search:
             search_query = payload.search
+            # Deliberately not passing this through `filter_terms`: it drops raw
+            # terms shorter than four characters, so a search for a short name
+            # would widen to every history instead of narrowing. The EXISTS
+            # filters below make each extra term cost linearly rather than
+            # multiplying rows, which is what the term cap was guarding against.
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
 
-            def p_tag_filter(term_text: str, quoted: bool):
-                nonlocal stmt
-                alias = aliased(model.HistoryTagAssociation)
-                stmt = stmt.outerjoin(self.model_class.tags.of_type(alias))
-                return tag_filter(alias, term_text, quoted)
+            def p_tag_exists(term_text: str, quoted: bool):
+                return tag_exists_filter(
+                    model.HistoryTagAssociation,
+                    model.HistoryTagAssociation.history_id,
+                    self.model_class.id,
+                    term_text,
+                    quoted,
+                )
 
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
                     key = term.filter
                     q = term.text
                     if key == "tag":
-                        pg = p_tag_filter(term.text, term.quoted)
-                        stmt = stmt.where(pg)
+                        stmt = stmt.where(p_tag_exists(term.text, term.quoted))
                     elif key == "name":
                         stmt = stmt.where(text_column_filter(self.model_class.name, term))
                     elif key == "user":
-                        stmt = append_user_filter(stmt, self.model_class, term)
+                        stmt = stmt.where(user_exists_filter(self.model_class.user_id, term.text))
                     elif key == "is":
                         if q == "deleted":
                             show_deleted = True
@@ -201,15 +207,12 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
                                 raise RequestParameterInvalidException(message)
                             stmt = stmt.where(self.user_share_model.user == user)
                 elif isinstance(term, RawTextTerm):
-                    tf = p_tag_filter(term.text, False)
-                    alias = aliased(model.User)
-                    stmt = stmt.outerjoin(self.model_class.user.of_type(alias))
                     stmt = stmt.where(
                         raw_text_column_filter(
                             [
                                 self.model_class.name,
-                                tf,
-                                alias.username,
+                                p_tag_exists(term.text, False),
+                                user_exists_filter(self.model_class.user_id, term.text),
                             ],
                             term,
                         )

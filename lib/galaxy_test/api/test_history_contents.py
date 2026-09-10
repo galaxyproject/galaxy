@@ -974,6 +974,47 @@ class TestHistoryContentsApi(ApiTestCase):
         ).json()
         assert len(contents_response) == 0
 
+    def test_index_filter_by_name_matches_words_in_any_separator(self, history_id):
+        self.dataset_populator.new_dataset(history_id, name="umi tools dedup")
+        self.dataset_populator.new_dataset(history_id, name="UMI-tools count")
+        self.dataset_populator.new_dataset(history_id, name="bowtie2 mapping")
+
+        # Whichever separator the user types, both umi-tools datasets are found.
+        for contains_text in ("umi-tools", "umi tools", "umi_tools", "UMI-Tools"):
+            contents_response = self._get(
+                f"histories/{history_id}/contents?v=dev&q=name-contains&qv={urllib.parse.quote(contains_text)}"
+            ).json()
+            assert len(contents_response) == 2, contains_text
+
+        # Each word only has to appear somewhere, so a truncated word still hits.
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={urllib.parse.quote('um-tool')}"
+        ).json()
+        assert len(contents_response) == 2
+
+        # Every word has to appear though, so the search still narrows.
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={urllib.parse.quote('umi dedup')}"
+        ).json()
+        assert len(contents_response) == 1
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={urllib.parse.quote('umi bowtie2')}"
+        ).json()
+        assert len(contents_response) == 0
+
+        # A trailing separator is a normal state while typing, and behaves as if
+        # it were not there rather than falling back to a literal match.
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={urllib.parse.quote('umi-')}"
+        ).json()
+        assert len(contents_response) == 2
+
+        # A query of nothing but separators keeps matching literally.
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={urllib.parse.quote('___')}"
+        ).json()
+        assert len(contents_response) == 0
+
     @skip_without_tool("cat_data_and_sleep")
     def test_index_filter_by_related_items(self, history_id):
         # initialise history with 2 datasets
