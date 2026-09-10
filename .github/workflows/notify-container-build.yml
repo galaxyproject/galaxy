@@ -1,0 +1,52 @@
+# Lives in galaxyproject/galaxy — the ONLY container-build file that stays in the
+# main repo. It builds nothing; it just tells galaxy-docker-k8s that source moved.
+#
+# Requires an org/repo secret CONTAINER_BUILD_DISPATCH_TOKEN: a fine-grained PAT or
+# GitHub App token with "Contents: read" on galaxyproject/galaxy-docker-k8s.
+# (The built-in GITHUB_TOKEN cannot dispatch to another repository.)
+name: Notify container build repo
+
+on:
+  push:
+    branches:
+      - dev
+      - release_*
+  release:
+    types: [released, prereleased]
+
+jobs:
+  dispatch:
+    name: Dispatch build to galaxy-docker-k8s
+    if: github.repository == 'galaxyproject/galaxy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compute payload
+        id: p
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "build_type=release"                              >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.event.release.tag_name }}"        >> "$GITHUB_OUTPUT"
+            echo "is_prerelease=${{ github.event.release.prerelease }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "build_type=dev"   >> "$GITHUB_OUTPUT"
+            echo "ref=dev"          >> "$GITHUB_OUTPUT"
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build_type=release_branch"           >> "$GITHUB_OUTPUT"
+            echo "ref=${GITHUB_REF#refs/heads/}"        >> "$GITHUB_OUTPUT"
+            echo "is_prerelease=false"                  >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger galaxy-docker-k8s
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CONTAINER_BUILD_DISPATCH_TOKEN }}
+          repository: galaxyproject/galaxy-docker-k8s
+          event-type: galaxy-source-changed
+          client-payload: |
+            {
+              "build_type": "${{ steps.p.outputs.build_type }}",
+              "ref": "${{ steps.p.outputs.ref }}",
+              "sha": "${{ github.sha }}",
+              "is_prerelease": "${{ steps.p.outputs.is_prerelease }}"
+            }
