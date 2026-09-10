@@ -1,5 +1,7 @@
 """Integration tests for dependency caching during Tool Shed installation."""
 
+from pathlib import Path
+
 from galaxy.tool_util.deps.resolvers import (
     Dependency,
     DependencyException,
@@ -80,8 +82,16 @@ class TestRepositoryDependencyCacheFailure(integration_util.IntegrationTestCase,
         repositories = response.json()
         assert len(repositories) == 1
         assert repositories[0]["status"] == "Installed"
-        assert not repositories[0]["deleted"]
         assert resolver.cache_build_attempts == 1
+        repository_path = (
+            Path(self._app.config.shed_tools_dir)
+            / "toolshed.g2.bx.psu.edu"
+            / "repos"
+            / "devteam"
+            / "fastqc"
+            / "e7b2202befea"
+        )
+        assert repository_path.is_dir()
         installed_repository = self.get_installed_repository_for("devteam", "fastqc", "e7b2202befea")
         assert installed_repository
         assert installed_repository["status"] == "Installed"
