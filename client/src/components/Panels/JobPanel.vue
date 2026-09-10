@@ -6,7 +6,6 @@ import { useRoute } from "vue-router/composables";
 import type { JobBaseModel, JobFetchExtraParams } from "@/api/jobs";
 import { fetchJobs } from "@/api/jobs";
 import { jobsFilterParams, JobsFiltersById, JobsFiltersByName } from "@/components/Jobs/JobsFilters";
-import { useHistoryStore } from "@/stores/historyStore";
 import { useJobStore } from "@/stores/jobStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -97,19 +96,7 @@ async function loadJobs(_offset: number, limit: number) {
     // Since the fetch gets all jobs, we set the job count as the number of jobs loaded so far if we got fewer than
     // the requested limit, otherwise we use the total matches count.
     totalJobCount.value = data.length < limit ? currentSortedJobs.value.length : totalMatches;
-    loadHistories(items);
     return { items: currentSortedJobs.value, total: totalJobCount.value };
-}
-
-// TODO: Re-evaluate if we need this? This is a lot of histories being fetched...
-/** Load the histories of the given jobs, if not already cached, so their names can be displayed */
-function loadHistories(jobs: JobBaseModel[]) {
-    const historyStore = useHistoryStore();
-    const historyIds = new Set<string>();
-    jobs.forEach((job) => job.history_id && historyIds.add(job.history_id));
-    historyIds.forEach(
-        (historyId) => historyStore.getHistoryById(historyId) || historyStore.loadHistoryById(historyId),
-    );
 }
 
 const route = useRoute();
