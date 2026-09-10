@@ -9,14 +9,6 @@ tool\_shed.webapp.util package
 Submodules
 ----------
 
-tool\_shed.webapp.util.ratings\_util module
--------------------------------------------
-
-.. automodule:: tool_shed.webapp.util.ratings_util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tool\_shed.webapp.util.shed\_statistics module
 ----------------------------------------------
 
