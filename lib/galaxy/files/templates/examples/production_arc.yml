@@ -6,6 +6,9 @@
       as Git repositories on a DataPLANT DataHUB, a GitLab instance. This configuration lets you browse
       the ARCs you have access to and import their files into Galaxy. Public ARCs can be browsed
       without an access token.
+
+      Requires the ``arcfs-fsspec`` package, which needs Python 3.11 or newer, to be installed on
+      the Galaxy server.
   variables:
       base_url:
           label: DataHUB URL (e.g. https://git.nfdi4plants.org)
@@ -18,7 +21,10 @@
           optional: true
           default: false
           help: |
-              Allow Galaxy to write data to your ARCs. This requires an access token with write access.
+              Allow Galaxy to write data to your ARCs. This requires an access token with write
+              access. Exported files are not committed to the ARC's default branch: each export is
+              committed to a separate branch and submitted as a merge request, so it appears in the
+              ARC once a maintainer has merged that request.
   secrets:
       token:
           label: DataHUB Access Token

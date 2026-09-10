@@ -113,7 +113,8 @@ export const templateTypes: FileSourceTypesDetail = {
     },
     arc: {
         icon: faNetworkWired,
-        message: "This is a file source that connects with an ARC DataHUB (GitLab) instance.",
+        message:
+            "This is a file source that connects with an ARC DataHUB (GitLab) instance. Exported files are submitted as a merge request.",
     },
 };
 
