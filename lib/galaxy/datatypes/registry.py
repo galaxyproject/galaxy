@@ -666,6 +666,30 @@ class Registry:
         """Returns a datatype object based on an extension"""
         return self.datatypes_by_extension.get(ext, None)
 
+    def sniff_directory(self, path: str) -> str:
+        """Return the extension of the directory datatype whose layout ``path`` matches.
+
+        Falls back to the generic ``directory`` type. Where several match, the
+        most derived wins, so ome_zarr is preferred over its zarr base class.
+        """
+        from galaxy.datatypes.data import Directory
+
+        matches = []
+        for datatype in self.datatypes_by_extension.values():
+            if not isinstance(datatype, Directory):
+                continue
+            try:
+                if datatype.sniff_directory(path):
+                    matches.append(datatype)
+            except Exception:
+                # As in sniff.guess_ext: one datatype's sniffer must not
+                # decide the outcome for every other.
+                self.log.exception("Directory sniffing failed for datatype %s", datatype.file_ext)
+        if not matches:
+            return Directory.file_ext
+        best = max(matches, key=lambda datatype: len(type(datatype).__mro__))
+        return best.file_ext
+
     def change_datatype(self, data, ext):
         if data.extension != ext:
             data.extension = ext

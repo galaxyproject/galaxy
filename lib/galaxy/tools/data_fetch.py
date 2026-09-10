@@ -13,6 +13,7 @@ from typing import (
 import bdbag.bdbag_api
 
 from galaxy.datatypes import sniff
+from galaxy.datatypes.data import Directory
 from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.upload_util import (
     handle_upload,
@@ -266,6 +267,143 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 raise Exception(f"Non-composite datatype [{datatype}] attempting to be created with composite data.")
             return _resolve_item_with_primary(item)
 
+    def _tree_contains_symlinks(path: str) -> bool:
+        """Whether ``path`` is a symlink, or anything beneath it is.
+
+        Only decides how to stage. Containment is settled afterwards, on the
+        staged tree, because a source we do not control can change under us.
+        The root is checked explicitly: ``os.walk`` follows a symlinked root
+        and would only ever report on its children.
+        """
+        if os.path.islink(path):
+            return True
+        for dirpath, dirnames, filenames in os.walk(path):
+            if any(os.path.islink(os.path.join(dirpath, entry)) for entry in dirnames + filenames):
+                return True
+        return False
+
+    def _stage_directory(path: str, staged: str, purge_source: bool, has_symlinks: bool) -> bool:
+        """Place a source directory at ``staged``, optionally purging the source.
+
+        Staging and cleanup are kept separate. ``shutil.move`` would do both,
+        but its copy-then-delete fallback can leave the source half-removed if
+        the delete fails, and recovering from that means choosing between two
+        incomplete trees. A rename either moves the whole tree or changes
+        nothing, so it is safe to attempt first and fall back to copying.
+
+        Nothing here follows a symlink: the copy preserves them as links, and
+        a rename reads no targets at all. Whether they may be followed is
+        decided later, against the staged tree.
+
+        Returns whether the source is already gone, which a rename makes true
+        as a side effect. Copying leaves the purge to the caller, so that it
+        happens only once the staged tree has been accepted.
+        """
+        os.makedirs(os.path.dirname(staged), exist_ok=True)
+        if purge_source and not has_symlinks:
+            try:
+                os.rename(path, staged)
+                return True
+            except OSError:
+                # Different filesystem, or a source we may not unlink.
+                pass
+        shutil.copytree(path, staged, symlinks=True)
+        return False
+
+    def _materialize_staged_symlinks(staged: str, name: str) -> None:
+        """Replace links in the staged tree with their contents.
+
+        Staging never dereferences, so this is the first time a target is
+        read - and by now it is read from a tree we own, not one the
+        requester can still change. Checking the source beforehand instead
+        would leave a window in which a file could be swapped for a link
+        pointing anywhere the Galaxy process can read.
+
+        A link that leaves the tree is refused rather than followed.
+        """
+        root = os.path.realpath(staged)
+        links = []
+        for dirpath, dirnames, filenames in os.walk(staged):
+            for entry in dirnames + filenames:
+                entry_path = os.path.join(dirpath, entry)
+                if not os.path.islink(entry_path):
+                    continue
+                target = os.path.realpath(entry_path)
+                if target != root and not in_directory(target, root):
+                    raise UploadProblemException(
+                        f"Directory [{name}] contains a symbolic link that points outside it "
+                        f"[{os.path.relpath(entry_path, staged)}]; such links are not followed."
+                    )
+                links.append(entry_path)
+
+        for link in links:
+            target = os.path.realpath(link)
+            os.remove(link)
+            if os.path.isdir(target):
+                shutil.copytree(target, link, symlinks=True)
+            else:
+                shutil.copy2(target, link)
+
+    def _resolve_directory_item(
+        item: dict[str, Any],
+        name: str,
+        path: str,
+        requested_ext: str | None,
+        link_data_only: bool,
+        purge_source: bool,
+    ):
+        """Turn a directory on disk into a single directory-typed dataset.
+
+        Directory datatypes keep their content in extra files with an empty
+        primary file, which is the shape CONVERTER_archive_to_directory
+        produces from an uploaded archive. Staging the tree under its own
+        basename keeps that layout identical, so store_root resolves the same
+        way whichever route the data arrived by.
+        """
+        if link_data_only:
+            raise UploadProblemException(
+                f"Directory [{name}] cannot be linked to without copying; linking directory datasets is not implemented."
+            )
+
+        registry = upload_config.registry
+        ext = requested_ext
+        sniff_ext = ext in (None, "auto", "data")
+        if not sniff_ext:
+            datatype = registry.get_datatype_by_extension(ext)
+            if not isinstance(datatype, Directory):
+                raise UploadProblemException(
+                    f"Directory [{name}] cannot be uploaded as datatype [{ext}], which is not a directory datatype."
+                )
+
+        has_symlinks = _tree_contains_symlinks(path)
+        primary_file = stream_to_file(
+            StringIO(""), prefix="upload_directory_primary_file", dir=upload_config.working_directory
+        )
+        extra_files_path = f"{primary_file}_extra"
+        staged = os.path.join(extra_files_path, os.path.basename(path))
+        purged = _stage_directory(path, staged, purge_source, has_symlinks)
+        if has_symlinks:
+            _materialize_staged_symlinks(staged, name)
+        if purge_source and not purged:
+            # Only now that the staged tree has been accepted.
+            shutil.rmtree(path, ignore_errors=True)
+
+        if sniff_ext:
+            ext = registry.sniff_directory(extra_files_path)
+        rval: dict[str, Any] = {
+            "name": name,
+            "dbkey": item.get("dbkey", "?"),
+            "ext": ext,
+            "link_data_only": False,
+            "sources": [],
+            "hashes": [],
+            "info": f"uploaded {ext} directory",
+            "state": "ok",
+            "filename": primary_file,
+            "extra_files": os.path.abspath(extra_files_path),
+        }
+        return _copy_and_validate_simple_attributes(item, rval)
+
     def _resolve_item_with_primary(item):
         error_message = None
         converted_path = None
@@ -290,6 +428,20 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 default_in_place = True
         else:
             name, path = _has_src_to_name(item) or "Deferred Dataset", None
+
+        if path is not None and os.path.isdir(path):
+            # normpath so a trailing slash does not empty out the basename the
+            # dataset is named and staged by.
+            path = os.path.normpath(path)
+            return _resolve_directory_item(
+                item,
+                name or os.path.basename(path),
+                path,
+                item.get("ext", "auto"),
+                link_data_only,
+                item.get("purge_source", True),
+            )
+
         sources = []
 
         url = item.get("url")

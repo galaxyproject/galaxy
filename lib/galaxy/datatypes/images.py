@@ -422,6 +422,18 @@ class OMEZarr(data.ZarrDirectory):
 
     file_ext = "ome_zarr"
 
+    def sniff_directory(self, path: str) -> bool:
+        """Never claims a directory, though OME-NGFF stores are recognisable.
+
+        Automatic detection identifies the storage format, not the profile
+        layered on it. The archive route does the same - the zarr.zip
+        converter is registered with target_datatype="zarr" - so inferring
+        ome_zarr only here would give one store two different types depending
+        on whether it arrived as a directory or an archive. Ask for the
+        extension explicitly to get it.
+        """
+        return False
+
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "OME-Zarr directory"
