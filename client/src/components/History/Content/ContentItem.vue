@@ -9,7 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
@@ -43,6 +43,10 @@ interface Props {
     isDataset?: boolean;
     isRangeSelectAnchor?: boolean;
     isHistoryItem?: boolean;
+    /** Allow editing tags even when this is not a top level history item.
+     * Collection elements wrap a real dataset, so their tags are editable even
+     * though the item itself is not a history item. */
+    taggable?: boolean;
     selected?: boolean;
     selectable?: boolean;
     filterable?: boolean;
@@ -60,6 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
     isDataset: true,
     isRangeSelectAnchor: false,
     isHistoryItem: false,
+    taggable: false,
     selected: false,
     selectable: false,
     filterable: false,
@@ -150,12 +155,23 @@ const dataState = computed(() => {
     }
 });
 
+/** Tags set here since the item was last supplied, so an edit shows at once.
+ * Cleared when the item changes, at which point the incoming value is
+ * authoritative again. */
+const locallyEditedTags = ref<string[] | null>(null);
+watch(
+    () => props.item?.id,
+    () => {
+        locallyEditedTags.value = null;
+    },
+);
+
 const tags = computed(() => {
-    return props.item.tags;
+    return locallyEditedTags.value ?? props.item.tags;
 });
 
 const tagsDisabled = computed(() => {
-    return !props.writable || !props.expandDataset || !props.isHistoryItem;
+    return !props.writable || !props.expandDataset || !(props.isHistoryItem || props.taggable);
 });
 
 const isCollection = computed(() => {
@@ -276,7 +292,17 @@ function onShowCollectionInfo() {
 
 function onTags(newTags: string[]) {
     emit("tag-change", props.item, newTags);
-    updateContentFields(props.item, { tags: newTags });
+    // Reflect the change straight away. A history item gets refreshed through
+    // the history store, but a collection element has nothing watching it, so
+    // without this the tag saves and then disappears from the display.
+    locallyEditedTags.value = newTags;
+    // A collection element carries the underlying dataset, which has a
+    // history_id but no history_content_type, so fill it in from what the item
+    // is. Without it the update would be addressed to "undefineds".
+    const target = props.item.history_content_type
+        ? props.item
+        : { ...props.item, history_content_type: isCollection.value ? "dataset_collection" : "dataset" };
+    updateContentFields(target, { tags: newTags });
 }
 
 function onTagClick(tag: string) {

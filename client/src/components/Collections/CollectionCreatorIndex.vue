@@ -71,7 +71,11 @@ const {
 } = useHistoryDatasets({
     historyId: () => props.historyId,
     filterText: () => props.filterText || "",
-    enabled: () => localShowToggle.value,
+    // Building from a selection already has its items, and creatorItems uses
+    // those rather than this list. Fetching the history's datasets anyway just
+    // to show a couple of picked ones means waiting on the whole history: tens
+    // of thousands of datasets for a two item list.
+    enabled: () => localShowToggle.value && !props.selectedItems?.length,
 });
 
 const pairedOrUnpairedSupportedCollectionType = computed<SupportedPairedOrPairedBuilderCollectionTypes | null>(() => {

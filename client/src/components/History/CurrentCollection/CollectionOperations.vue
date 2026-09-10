@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { faDownload, faInfoCircle, faTable } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare } from "@fortawesome/free-regular-svg-icons";
+import { faDownload, faInfoCircle, faLayerGroup, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { useRoute } from "vue-router/composables";
@@ -15,6 +16,17 @@ const route = useRoute();
 
 const props = defineProps<{
     dsc: HDCASummary; // typescript recognizes HDCADetailed IS_A HDCASummary
+    /** Whether the element selectors are shown, so the toggle can reflect it. */
+    showSelection?: boolean;
+    /** How many elements are selected, to label the build action. */
+    selectionSize?: number;
+    /** Selection is only offered where the collection can be worked with. */
+    selectable?: boolean;
+}>();
+
+const emit = defineEmits<{
+    (e: "update:show-selection", show: boolean): void;
+    (e: "build-collection"): void;
 }>();
 
 const downloadUrl = computed(() => `${getAppRoot()}api/dataset_collections/${props.dsc.id}/download`);
@@ -33,6 +45,28 @@ const sheetUrl = computed(() => `/collection/${props.dsc.id}/sheet`);
     <section>
         <nav class="content-operations d-flex justify-content-between bg-secondary">
             <GButtonGroup class="collection-operations-btn-group">
+                <GButton
+                    v-if="props.selectable"
+                    tooltip
+                    title="Select Items"
+                    class="show-collection-content-selectors-btn rounded-0"
+                    size="small"
+                    color="blue"
+                    transparent
+                    :pressed="props.showSelection"
+                    @click="emit('update:show-selection', !props.showSelection)">
+                    <FontAwesomeIcon :icon="faCheckSquare" fixed-width />
+                </GButton>
+                <GButton
+                    v-if="props.showSelection && props.selectionSize"
+                    title="Build a new list from the selected datasets"
+                    size="small"
+                    color="blue"
+                    transparent
+                    @click="emit('build-collection')">
+                    <FontAwesomeIcon fixed-width :icon="faLayerGroup" />
+                    <span>Build List ({{ props.selectionSize }})</span>
+                </GButton>
                 <GButton
                     title="Download Collection"
                     :disabled="disableDownload"

@@ -9,6 +9,7 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
 
 import ContentItem from "./ContentItem.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 vi.mock("@/components/History/model/queries");
 
@@ -133,5 +134,49 @@ describe("ContentItem", () => {
         expect(wrapper.emitted()["update:selected"][1][0]).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
         expect(selector.attributes("data-icon")).toBe("check-square");
+    });
+    it("disables tags for an item that is neither a history item nor taggable", async () => {
+        await wrapper.setProps({ isHistoryItem: false, taggable: false });
+
+        const tags = wrapper.findComponent(StatelessTags);
+        expect(tags.props("disabled")).toBe(true);
+    });
+
+    it("enables tags for a taggable item that is not a history item", async () => {
+        // A collection element wraps a real dataset, so its tags are editable
+        // even though the element itself is not a history item.
+        await wrapper.setProps({ isHistoryItem: false, taggable: true });
+
+        const tags = wrapper.findComponent(StatelessTags);
+        expect(tags.props("disabled")).toBe(false);
+    });
+
+    it("fills in the content type when saving tags for an item that lacks one", async () => {
+        // The dataset carried by a collection element has a history_id but no
+        // history_content_type; without it the update is addressed to
+        // "undefineds".
+        const elementDataset = { id: "elem_id", tags: [], deleted: false, visible: true };
+        await wrapper.setProps({ item: elementDataset, isHistoryItem: false, taggable: true });
+
+        wrapper.findComponent(StatelessTags).vm.$emit("input", ["added"]);
+        await localVue.nextTick();
+
+        expect(updateContentFields).toHaveBeenCalledWith(
+            expect.objectContaining({ id: "elem_id", history_content_type: "dataset" }),
+            { tags: ["added"] },
+        );
+    });
+
+    it("shows a tag added to an item that nothing else refreshes", async () => {
+        const elementDataset = { id: "elem_id", tags: [], deleted: false, visible: true };
+        await wrapper.setProps({ item: elementDataset, isHistoryItem: false, taggable: true });
+
+        wrapper.findComponent(StatelessTags).vm.$emit("input", ["added"]);
+        await localVue.nextTick();
+
+        // A history item is refreshed via the history store; a collection
+        // element is not, so the edit has to be reflected locally or it
+        // disappears as soon as it is made.
+        expect(wrapper.findComponent(StatelessTags).props("value")).toEqual(["added"]);
     });
 });
