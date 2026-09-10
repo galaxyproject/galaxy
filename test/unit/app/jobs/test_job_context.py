@@ -9,6 +9,7 @@ from typing import (
 import pytest
 
 from galaxy import model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
     dataset_collector,
@@ -192,3 +193,36 @@ def test_collection_security_failure_marks_collection_failed_and_reraises():
 
             assert collection.populated_state == collection.populated_states.FAILED
             assert collection.populated_state_message == "Problem building datasets for collection."
+
+
+def unnamed_output_metadata(job_working_directory, target):
+    metadata_path = os.path.join(job_working_directory, "galaxy.json")
+    with open(metadata_path, "w") as metadata_file:
+        json.dump({"__unnamed_outputs": [target]}, metadata_file)
+    return ToolProvidedMetadata(metadata_path)
+
+
+@pytest.mark.parametrize(
+    ("target", "expected_message"),
+    [
+        ({"elements": []}, "Must specify a destination for an unnamed output"),
+        ({"destination": {"type": "hdas"}}, "Must specify elements for an unnamed output"),
+        ({"destination": {}, "elements": []}, "Must specify a destination type for an unnamed output"),
+        (
+            {"destination": {"type": "invalid"}, "elements": []},
+            "Invalid unnamed output destination type [invalid]",
+        ),
+        (
+            {"destination": {"type": "hdca"}, "name": "reads", "elements": []},
+            "Must specify an HDCA collection_type",
+        ),
+    ],
+)
+def test_invalid_unnamed_output_metadata_is_rejected_by_name(target, expected_message):
+    """Malformed tool-provided metadata should produce an actionable error."""
+    with tempfile.TemporaryDirectory() as job_working_directory:
+        metadata = unnamed_output_metadata(job_working_directory, target)
+        _app, _sa_session, job_context, _collection = job_context_for_directory(job_working_directory, metadata)
+        with pytest.raises(RequestParameterInvalidException) as exc_info:
+            collect_dynamic_outputs(job_context, {})
+        assert str(exc_info.value) == expected_message

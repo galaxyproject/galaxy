@@ -102,6 +102,7 @@ from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
+    output_discovery_job_message,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
@@ -2251,11 +2252,27 @@ class MinimalJobWrapper(HasResourceParameters):
                     else "max_discovered_files"
                 )
                 job.job_messages = [
+                    *(job.job_messages or []),
                     {
                         "type": message_type,
                         "desc": str(e),
                         "error_level": StdioErrorLevel.FATAL,
-                    }
+                    },
+                ]
+            except MessageException as e:
+                log.warning("Job %s failed during output discovery: %s", job.id, e)
+                final_job_state = job.states.ERROR
+                job.job_messages = [
+                    *(job.job_messages or []),
+                    output_discovery_job_message(unicodify(e)),
+                ]
+            except Exception:
+                log.exception("Job %s failed unexpectedly during output discovery", job.id)
+                final_job_state = job.states.ERROR
+                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
+                job.job_messages = [
+                    *(job.job_messages or []),
+                    output_discovery_job_message(),
                 ]
 
             for dataset_assoc in output_dataset_associations:

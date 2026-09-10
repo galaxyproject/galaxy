@@ -1193,3 +1193,22 @@ class TestToolsUpload(ApiTestCase):
         )
         assert details["state"] == "deferred"
         assert details["file_ext"] == "bam"
+
+    def test_fetch_hdca_without_collection_type_fails_the_job(self):
+        # The fetch succeeds and only the collection creation fails, so the failure has
+        # to be reported by the job rather than by the request.
+        with self.dataset_populator.test_history() as history_id:
+            targets = [
+                {
+                    "destination": {"type": "hdca"},
+                    "name": "no collection type",
+                    "elements": [{"src": "pasted", "paste_content": "hello\n", "name": "f.txt"}],
+                }
+            ]
+            payload = {"history_id": history_id, "targets": targets}
+            response = self.dataset_populator.fetch(payload, assert_ok=False, wait=True)
+            job = response.json()["jobs"][0]
+            details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert details["state"] == "error", details["state"]
+            messages = " ".join(m.get("desc") or "" for m in details.get("job_messages") or [])
+            assert "collection_type" in messages, messages
