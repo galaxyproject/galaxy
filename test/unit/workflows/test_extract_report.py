@@ -16,18 +16,24 @@ from typing import cast
 import pytest
 
 from galaxy import model
+from galaxy.exceptions import MalformedContents
 from galaxy.managers import workflow_extraction_report as report
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
 from galaxy.managers.workflow_extraction_report import _ReportLabelRewriter
-from galaxy.exceptions import MalformedContents
-from galaxy.model import Job
+from galaxy.model import (
+    Job,
+    User,
+)
 from galaxy.workflow import extract
 from galaxy.workflow.extract import ExtractionLabelIndex
 
 # Tests build duck-typed SimpleNamespace stubs and pass None for the unused
 # trans; cast to keep the production signatures strict without real instances.
 _NO_TRANS = cast(ProvidesHistoryContext, None)
+_NO_USER = cast(User, None)
+_NO_JOB_MANAGER = cast(JobManager, None)
 
 
 class FakeIndex:
@@ -275,7 +281,9 @@ def _patch_extraction(monkeypatch, finalized):
 
 
 def _extract(**kwds):
-    return extract.extract_workflow_by_ids(_NO_TRANS, user=None, workflow_name="wf", job_manager=None, **kwds)
+    return extract.extract_workflow_by_ids(
+        _NO_TRANS, user=_NO_USER, workflow_name="wf", job_manager=_NO_JOB_MANAGER, **kwds
+    )
 
 
 def test_build_report_runs_before_the_workflow_is_persisted(monkeypatch):
