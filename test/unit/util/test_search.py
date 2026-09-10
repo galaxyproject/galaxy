@@ -4,6 +4,7 @@ from galaxy.util.search import (
     parse_filters,
     parse_filters_structured,
     RawTextTerm,
+    split_name_search_terms,
 )
 
 
@@ -149,3 +150,41 @@ def test_filter_terms_defaults():
     kept = [t.text for t in filtered.terms]
     # of, and, -, RDH, by dropped for length; everything else survives.
     assert kept == ["Copy", "Genomic", "Assembly", "analysis", "shared", "user", "nedflanders"]
+
+
+def test_split_name_search_terms_separators_are_interchangeable():
+    # However the user spells the separator, the terms come out the same, which
+    # is what lets 'umi-tools' find a dataset named 'umi tools'.
+    expected = ["umi", "tools"]
+    assert split_name_search_terms("umi-tools") == expected
+    assert split_name_search_terms("umi tools") == expected
+    assert split_name_search_terms("umi_tools") == expected
+    assert split_name_search_terms("umi.tools") == expected
+    assert split_name_search_terms("umi/tools") == expected
+    assert split_name_search_terms("(umi) [tools]") == expected
+
+
+def test_split_name_search_terms_lowercases():
+    assert split_name_search_terms("UMI-Tools") == ["umi", "tools"]
+
+
+def test_split_name_search_terms_single_term():
+    # A query without separators stays a single term, so the caller can keep
+    # using the plain substring filter.
+    assert split_name_search_terms("umitools") == ["umitools"]
+
+
+def test_split_name_search_terms_drops_empty_and_duplicate_terms():
+    assert split_name_search_terms("  umi --  tools  ") == ["umi", "tools"]
+    # A repeated word would only add a redundant clause.
+    assert split_name_search_terms("umi tools umi") == ["umi", "tools"]
+
+
+def test_split_name_search_terms_caps_term_count():
+    assert split_name_search_terms("a b c d e f g h i j") == ["a", "b", "c", "d", "e", "f", "g", "h"]
+    assert split_name_search_terms("a b c d", max_terms=2) == ["a", "b"]
+
+
+def test_split_name_search_terms_empty():
+    assert split_name_search_terms("") == []
+    assert split_name_search_terms("---") == []
