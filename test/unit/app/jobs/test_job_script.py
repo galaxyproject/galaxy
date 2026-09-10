@@ -70,6 +70,21 @@ def test_memory_floor_and_sub_gb_values(tmp_path):
     }
 
 
+def test_memory_floor_never_exceeds_allocation(tmp_path):
+    environment = _memory_environment(
+        tmp_path,
+        GALAXY_MEMORY_MB="128",
+        GALAXY_MEMORY_MB_OVERHEAD="64",
+    )
+
+    assert environment == {
+        "GALAXY_MEMORY_MB": "128",
+        "GALAXY_MEMORY_MB_PER_SLOT": "32",
+        "GALAXY_MEMORY_GB": "",
+        "GALAXY_MEMORY_GB_PER_SLOT": "",
+    }
+
+
 def test_memory_gb_variables_are_available_to_containers():
     assert "GALAXY_MEMORY_GB" in ToolInfo().env_pass_through
     assert "GALAXY_MEMORY_GB_PER_SLOT" in ToolInfo().env_pass_through
