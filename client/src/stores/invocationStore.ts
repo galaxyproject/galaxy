@@ -2,13 +2,14 @@ import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type {
-    InvocationJobsSummary,
-    InvocationStep,
-    StepJobSummary,
-    WorkflowInvocation,
-    WorkflowInvocationRequest,
-    WorkflowJobMetric,
+import {
+    type InvocationJobsSummary,
+    type InvocationStep,
+    isWorkflowInvocationElementView,
+    type StepJobSummary,
+    type WorkflowInvocation,
+    type WorkflowInvocationRequest,
+    type WorkflowJobMetric,
 } from "@/api/invocations";
 import { getData as getInvocationsData } from "@/components/Grid/configs/invocations";
 import { numTerminal } from "@/components/WorkflowInvocationState/util";
@@ -123,13 +124,22 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         }
     }
 
+    /**
+     * `fetchLatestInvocations` seeds this cache with list summaries: the invocations index serializes the
+     * collection view, which has no `steps`, `inputs` or `outputs`. So `getInvocationById` must upgrade a
+     * cached summary to the element view rather than treat it as already loaded.
+     */
+    const shouldFetchInvocationDetails = computed(() => {
+        return (invocation?: WorkflowInvocation) => !invocation || !isWorkflowInvocationElementView(invocation);
+    });
+
     const {
         fetchItemById: fetchInvocationById,
         getItemById: getInvocationById,
         getItemLoadError: getInvocationLoadError,
         isLoadingItem: isLoadingInvocation,
         storedItems: storedInvocations,
-    } = useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
+    } = useKeyedCache<WorkflowInvocation>(fetchInvocationDetails, shouldFetchInvocationDetails);
 
     const { getItemById: getInvocationJobsSummaryById, fetchItemById: fetchInvocationJobsSummaryForId } =
         useKeyedCache<InvocationJobsSummary>(fetchInvocationJobsSummary);

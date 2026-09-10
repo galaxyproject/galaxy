@@ -3,7 +3,12 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import type { StepJobSummary, WorkflowInvocation, WorkflowJobMetric } from "@/api/invocations";
+import type {
+    StepJobSummary,
+    WorkflowInvocation,
+    WorkflowInvocationElementView,
+    WorkflowJobMetric,
+} from "@/api/invocations";
 
 import { useInvocationStore } from "./invocationStore";
 
@@ -37,6 +42,20 @@ function invocationResponse(id: string, updateTime: string): WorkflowInvocation 
         workflow_id: `workflow-${id}`,
         model_class: "WorkflowInvocation",
     } as unknown as WorkflowInvocation;
+}
+
+/** The element view served by `GET /api/invocations/{invocation_id}`, unlike the index's collection view. */
+function invocationDetailsResponse(id: string, updateTime: string): WorkflowInvocationElementView {
+    return {
+        ...invocationResponse(id, updateTime),
+        steps: [{ id: `step-${id}` }],
+        inputs: {},
+        input_step_parameters: {},
+        outputs: {},
+        output_collections: {},
+        output_values: {},
+        messages: [],
+    } as unknown as WorkflowInvocationElementView;
 }
 
 describe("stores/invocationStore", () => {
@@ -208,6 +227,61 @@ describe("stores/invocationStore", () => {
 
             expect(invocationsCallCount).toBe(2);
             expect(store.latestInvocations.map((invocation) => invocation.id)).toEqual(["inv2", "inv1"]);
+        });
+
+        describe("getInvocationById", () => {
+            let requestedDetailIds: string[];
+
+            beforeEach(() => {
+                requestedDetailIds = [];
+
+                server.use(
+                    http.get("/api/invocations/{invocation_id}", ({ response, params }) => {
+                        requestedDetailIds.push(params.invocation_id);
+                        return response(200).json(invocationDetailsResponse(params.invocation_id, "2026-08-01"));
+                    }),
+                );
+            });
+
+            it("fetches the details of an invocation that is only cached as a list summary", async () => {
+                const store = useInvocationStore();
+
+                await store.fetchLatestInvocations();
+                expect(requestedDetailIds).toEqual([]);
+
+                expect(store.getInvocationById("inv1")).not.toHaveProperty("steps");
+                await flushPromises();
+
+                expect(requestedDetailIds).toEqual(["inv1"]);
+                expect(store.getInvocationById("inv1")).toHaveProperty("steps", [{ id: "step-inv1" }]);
+            });
+
+            it("does not refetch an invocation whose details are already cached", async () => {
+                const store = useInvocationStore();
+
+                await store.fetchLatestInvocations();
+                store.getInvocationById("inv1");
+                await flushPromises();
+
+                store.getInvocationById("inv1");
+                await flushPromises();
+
+                expect(requestedDetailIds).toEqual(["inv1"]);
+            });
+
+            it("keeps cached details when a list summary for the same invocation arrives later", async () => {
+                const store = useInvocationStore();
+
+                await store.fetchInvocationById({ id: "inv1" });
+                await store.fetchLatestInvocations();
+
+                const invocation = store.latestInvocations.find((item) => item.id === "inv1");
+                expect(invocation).toHaveProperty("steps", [{ id: "step-inv1" }]);
+                expect(store.getInvocationById("inv1")).toHaveProperty("steps", [{ id: "step-inv1" }]);
+                await flushPromises();
+
+                expect(requestedDetailIds).toEqual(["inv1"]);
+            });
         });
     });
 
