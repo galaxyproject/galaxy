@@ -477,9 +477,14 @@
     process composes its named store with the default
     (``tool_source_database_connection``) store at runtime, with reads
     tried in declared order and writes always landing on the default.
-    Each entry takes a SQLAlchemy ``url`` and an optional ``read_only:
-    true`` flag. For SQLite connection-level read-only, use a SQLite
-    URI with ``mode=ro&uri=true``.
+    Each entry takes either a normal SQLAlchemy ``url`` or an
+    ``external_store_directory`` containing versioned publisher
+    bundles. Galaxy never consults manifests for a normal URL. For an
+    external directory it reads the sidecars and automatically selects
+    the newest cohort compatible with its store/source/index formats
+    and index schema. External stores are always read-only.
+    For SQLite connection-level read-only, use a SQLite URI with
+    ``mode=ro&uri=true``.
     For details see
     https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
 :Default: ``None``
@@ -5619,8 +5624,8 @@
     https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
     When this option is not specified, Galaxy uses the configured
     database_connection with the SQLAlchemy transport. If
-    database_connection is not explicitly configured, Galaxy creates
-    a separate SQLite database at <data_dir>/control.sqlite.
+    database_connection is not explicitly configured, Galaxy creates a
+    separate SQLite database at <data_dir>/control.sqlite.
 :Default: ``None``
 :Type: str
 
