@@ -179,7 +179,11 @@ def base_image_for_targets(targets: Iterable[CondaTarget], conda_context: CondaC
     hits = get_conda_hits_for_targets(targets, conda_context)
     for hit in hits:
         try:
-            content_dict = get_files_from_conda_package(hit["url"], ["info/about.json", "info/recipe/meta.yaml"])
+            # Since conda 26.7.0, `conda search --json` output no longer includes a
+            # "url" key for packages served from sharded repodata, so reconstruct it
+            # from "channel" and "fn" if needed.
+            url = hit.get("url") or f"{hit['channel']}/{hit['fn']}"
+            content_dict = get_files_from_conda_package(url, ["info/about.json", "info/recipe/meta.yaml"])
             if "info/about.json" in content_dict and json.loads(unicodify(content_dict["info/about.json"])).get(
                 "extra", {}
             ).get("container", {}).get("extended-base", False):
