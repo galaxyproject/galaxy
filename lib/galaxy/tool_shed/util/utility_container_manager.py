@@ -58,34 +58,6 @@ class Folder:
         }
 
 
-class DataManager:
-    """Data Manager object"""
-
-    def __init__(self, id=None, name=None, version=None, data_tables=None):
-        self.id = id
-        self.name = name
-        self.version = version
-        self.data_tables = data_tables
-
-
-class InvalidTool:
-    """Invalid tool object"""
-
-    def __init__(
-        self,
-        id=None,
-        tool_config=None,
-        repository_id=None,
-        changeset_revision=None,
-        repository_installation_status=None,
-    ):
-        self.id = id
-        self.tool_config = tool_config
-        self.repository_id = repository_id
-        self.changeset_revision = changeset_revision
-        self.repository_installation_status = repository_installation_status
-
-
 class RepositoryDependency:
     """Repository dependency object"""
 
@@ -129,64 +101,6 @@ class RepositoryDependency:
             "repository_owner": self.repository_owner,
             "changeset_revision": self.changeset_revision,
         }
-
-
-class Tool:
-    """Tool object"""
-
-    def __init__(
-        self,
-        id=None,
-        tool_config=None,
-        tool_id=None,
-        name=None,
-        description=None,
-        version=None,
-        profile=None,
-        requirements=None,
-        repository_id=None,
-        changeset_revision=None,
-        repository_installation_status=None,
-    ):
-        self.id = id
-        self.tool_config = tool_config
-        self.tool_id = tool_id
-        self.name = name
-        self.description = description
-        self.version = version
-        self.profile = profile
-        self.requirements = requirements
-        self.repository_id = repository_id
-        self.changeset_revision = changeset_revision
-        self.repository_installation_status = repository_installation_status
-
-
-class ToolDependency:
-    """Tool dependency object"""
-
-    def __init__(
-        self,
-        id=None,
-        name=None,
-        version=None,
-        type=None,
-        readme=None,
-        installation_status=None,
-        repository_id=None,
-        tool_dependency_id=None,
-    ):
-        self.id = id
-        self.name = name
-        self.version = version
-        self.type = type
-        self.readme = readme
-        self.installation_status = installation_status
-        self.repository_id = repository_id
-        self.tool_dependency_id = tool_dependency_id
-
-    @property
-    def listify(self):
-        return [self.name, self.version, self.type]
 
 
 class UtilityContainerManager:
