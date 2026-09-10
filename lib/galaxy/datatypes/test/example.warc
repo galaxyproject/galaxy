@@ -1,0 +1,187 @@
+WARC/1.0
+WARC-Type: warcinfo
+WARC-Record-ID: <urn:uuid:fbd6cf0a-6160-4550-b343-12188dc05234>
+WARC-Date: 2014-01-03T03:03:22Z
+Content-Length: 196
+Content-Type: application/warc-fields
+WARC-Filename: live-20140103030321-wwwb-app5.us.archive.org.warc.gz
+
+software: LiveWeb Warc Writer 1.0
+host: wwwb-app5.us.archive.org
+isPartOf: liveweb
+format: WARC file version 1.0
+conformsTo: http://bibnum.bnf.fr/WARC/WARC_ISO_28500_version1_latestdraft.pdf
+
+
+WARC/1.0
+WARC-Type: response
+WARC-Record-ID: <urn:uuid:6d058047-ede2-4a13-be79-90c17c631dd4>
+WARC-Date: 2014-01-03T03:03:21Z
+Content-Length: 1610
+Content-Type: application/http; msgtype=response
+WARC-Payload-Digest: sha1:B2LTWWPUOYAH7UIPQ7ZUPQ4VMBSVC36A
+WARC-Target-URI: http://example.com?example=1
+WARC-Warcinfo-ID: <urn:uuid:fbd6cf0a-6160-4550-b343-12188dc05234>
+
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: max-age=604800
+Content-Type: text/html
+Date: Fri, 03 Jan 2014 03:03:21 GMT
+Etag: "359670651"
+Expires: Fri, 10 Jan 2014 03:03:21 GMT
+Last-Modified: Fri, 09 Aug 2013 23:54:35 GMT
+Server: ECS (sjc/4FCE)
+X-Cache: HIT
+x-ec-custom-error: 1
+Content-Length: 1270
+Connection: close
+
+<!doctype html>
+<html>
+<head>
+    <title>Example Domain</title>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type="text/css">
+    body {
+        background-color: #f0f0f2;
+        margin: 0;
+        padding: 0;
+        font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        
+    }
+    div {
+        width: 600px;
+        margin: 5em auto;
+        padding: 50px;
+        background-color: #fff;
+        border-radius: 1em;
+    }
+    a:link, a:visited {
+        color: #38488f;
+        text-decoration: none;
+    }
+    @media (max-width: 700px) {
+        body {
+            background-color: #fff;
+        }
+        div {
+            width: auto;
+            margin: 0 auto;
+            border-radius: 0;
+            padding: 1em;
+        }
+    }
+    </style>    
+</head>
+
+<body>
+<div>
+    <h1>Example Domain</h1>
+    <p>This domain is established to be used for illustrative examples in documents. You may use this
+    domain in examples without prior coordination or asking for permission.</p>
+    <p><a href="http://www.iana.org/domains/example">More information...</a></p>
+</div>
+</body>
+</html>
+
+
+WARC/1.0
+WARC-Type: request
+WARC-Record-ID: <urn:uuid:9a3ffea5-9556-4790-a6bf-c15231fd6b97>
+WARC-Date: 2014-01-03T03:03:21Z
+Content-Length: 323
+Content-Type: application/http; msgtype=request
+WARC-Concurrent-To: <urn:uuid:6d058047-ede2-4a13-be79-90c17c631dd4>
+WARC-Target-URI: http://example.com?example=1
+WARC-Warcinfo-ID: <urn:uuid:fbd6cf0a-6160-4550-b343-12188dc05234>
+
+GET /?example=1 HTTP/1.1
+Connection: close
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.8
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36 (via Wayback Save Page)
+Host: example.com
+
+
+WARC/1.0
+WARC-Type: revisit
+WARC-Record-ID: <urn:uuid:3619f5b0-d967-44be-8f24-762098d427c4>
+WARC-Date: 2014-01-03T03:03:41Z
+Content-Length: 340
+Content-Type: application/http; msgtype=response
+WARC-Payload-Digest: sha1:B2LTWWPUOYAH7UIPQ7ZUPQ4VMBSVC36A
+WARC-Target-URI: http://example.com?example=1
+WARC-Warcinfo-ID: <urn:uuid:fbd6cf0a-6160-4550-b343-12188dc05234>
+WARC-Profile: http://netpreserve.org/warc/0.18/revisit/identical-payload-digest
+WARC-Refers-To-Target-URI: http://example.com?example=1
+WARC-Refers-To-Date: 2014-01-03T03:03:21Z
+
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: max-age=604800
+Content-Type: text/html
+Date: Fri, 03 Jan 2014 03:03:41 GMT
+Etag: "359670651"
+Expires: Fri, 10 Jan 2014 03:03:41 GMT
+Last-Modified: Fri, 09 Aug 2013 23:54:35 GMT
+Server: ECS (sjc/4FCE)
+X-Cache: HIT
+x-ec-custom-error: 1
+Content-Length: 1270
+Connection: close
+
+
+
+WARC/1.0
+WARC-Type: request
+WARC-Record-ID: <urn:uuid:c59f3330-b241-4fca-8513-d687cd85bcfb>
+WARC-Date: 2014-01-03T03:03:41Z
+Content-Length: 323
+Content-Type: application/http; msgtype=request
+WARC-Concurrent-To: <urn:uuid:3619f5b0-d967-44be-8f24-762098d427c4>
+WARC-Target-URI: http://example.com?example=1
+WARC-Warcinfo-ID: <urn:uuid:fbd6cf0a-6160-4550-b343-12188dc05234>
+
+GET /?example=1 HTTP/1.1
+Connection: close
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.8
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36 (via Wayback Save Page)
+Host: example.com
+
+
+WARC/1.0
+WARC-Type: response
+WARC-Record-ID: <urn:uuid:1d673b2a-c593-402e-8973-3950d0bc6163>
+WARC-Date: 2014-01-28T05:15:39Z
+Content-Length: 471
+Content-Type: application/http; msgtype=response
+WARC-Payload-Digest: sha1:JZ622UA23G5ZU6Y3XAKH4LINONUEICEG
+WARC-Target-URI: http://www.iana.org/domains/example
+WARC-Warcinfo-ID: <urn:uuid:e9f7f74b-0280-47fd-99bc-f00f1a570a46>
+
+HTTP/1.1 302 Found
+Server: Apache
+Location: /domains/reserved
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 201
+Accept-Ranges: bytes
+Date: Tue, 28 Jan 2014 05:15:39 GMT
+X-Varnish: 774901408 774900872
+Age: 80
+Via: 1.1 varnish
+Connection: close
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>302 Found</title>
+</head><body>
+<h1>Found</h1>
+<p>The document has moved <a href="/domains/reserved">here</a>.</p>
+</body></html>
+
+
