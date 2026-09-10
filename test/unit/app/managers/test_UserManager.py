@@ -529,7 +529,7 @@ class TestUserDeserializer(BaseTestCase):
         user = self.user_manager.create(**user2_data)
 
         self.log("display names reject text-direction characters")
-        with self.assertRaises(base_manager.ModelDeserializingError):
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
             self.deserializer.deserialize(user, {"display_name": "Ada\u202eLovelace"}, trans=self.trans)
 
         self.log("display names should be updatable and trimmed")
