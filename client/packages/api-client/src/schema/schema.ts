@@ -26624,7 +26624,7 @@ export interface components {
         UserUpdatePayload: {
             /**
              * Active
-             * @description User is active
+             * @description Whether the account is active. Only an administrator can change this.
              */
             active?: boolean | null;
             /**
