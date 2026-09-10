@@ -867,10 +867,10 @@ class UserDeserializer(base.ModelDeserializer):
         return self.default_deserializer(item, key, preferred_object_store_id, **context)
 
     def deserialize_display_name(self, item, key, display_name, **context):
-        display_name = (display_name or "").strip() or None
-        if validation_error := validate_display_name_str(display_name):
-            raise base.ModelDeserializingError(validation_error)
-        return self.default_deserializer(item, key, display_name, **context)
+        # update_display_name strips, validates and assigns. commit=False because
+        # ModelDeserializer.deserialize commits once at the end.
+        self.manager.update_display_name(item, display_name, commit=False)
+        return item.display_name
 
     def deserialize_username(self, item, key, username, trans: ProvidesAppContext | None = None, **context):
         # TODO: validate_publicname requires trans and should(?) raise exceptions
