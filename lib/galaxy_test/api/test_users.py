@@ -175,6 +175,10 @@ class TestUsersApi(ApiTestCase):
             update_response = self.__update(user, data={"email": other_user["email"]})
             self._assert_status_code_is(update_response, 400)
 
+            # null passes the schema because the field is optional
+            update_response = self.__update(user, data={"email": None})
+            self._assert_status_code_is(update_response, 400)
+
     @requires_new_user
     def test_extra_preferences_inputs(self):
         user = self._setup_user(TEST_USER_EMAIL)
