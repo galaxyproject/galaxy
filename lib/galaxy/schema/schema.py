@@ -417,13 +417,16 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 
 
 class UserUpdatePayload(Model):
-    active: Annotated[bool | None, Field(title="Active", description="User is active")] = None
+    active: Annotated[
+        bool | None,
+        Field(title="Active", description="Whether the account is active. Only an administrator can change this."),
+    ] = None
     username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
     display_name: Annotated[str | None, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
     # Declared last so that a payload combining it with `active` ends on the
-    # deactivation, not on a stale activation. The admin gate on `active` is the
-    # real protection; this is belt and braces.
+    # deactivation, not on a stale activation. UserDeserializer only lets an
+    # administrator set `active`, so this ordering is belt and braces.
     email: Annotated[
         str | None,
         Field(

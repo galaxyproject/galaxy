@@ -838,13 +838,21 @@ class UserDeserializer(base.ModelDeserializer):
     def add_deserializers(self):
         super().add_deserializers()
         user_deserializers: dict[str, base.Deserializer] = {
-            "active": self.default_deserializer,
+            "active": self.deserialize_active,
             "username": self.deserialize_username,
             "display_name": self.deserialize_display_name,
             "preferred_object_store_id": self.deserialize_preferred_object_store_id,
             "email": self.deserialize_email,
         }
         self.deserializers.update(user_deserializers)
+
+    def deserialize_active(self, item, key, active, trans: ProvidesUserContext | None = None, **context):
+        # Activation is the email-verification gate under user_activation_on: a user
+        # who could flip it themselves would skip verifying a new address, or the
+        # address they registered with once the grace period ends.
+        if trans is None or not trans.user_is_admin:
+            raise exceptions.AdminRequiredException("Only an administrator can change whether a user is active.")
+        return self.deserialize_bool(item, key, active, **context)
 
     def deserialize_email(self, item, key, email, trans: ProvidesAppContext | None = None, **context):
         if trans is None:
