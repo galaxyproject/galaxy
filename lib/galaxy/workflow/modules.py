@@ -719,6 +719,10 @@ class WorkflowModule:
 
     def recover_mapping(self, invocation_step, progress):
         """Reconstruct mapping metadata after persisted outputs are available."""
+        if progress.recover_output_mapping(invocation_step):
+            return
+        if progress.subworkflow_collection_info is None:
+            return
         outputs = progress.outputs.get(invocation_step.workflow_step_id, {})
         collection_info = self.plan_map_over(progress, invocation_step.workflow_step, self.get_all_inputs())
         progress.set_step_outputs(
@@ -996,8 +1000,28 @@ class SubWorkflowModule(WorkflowModule):
         progress.set_step_outputs(invocation_step, outputs, output_mapping_axes=output_mapping_axes)
         return None
 
+    def recover_outputs(self, invocation_step, progress):
+        super().recover_outputs(invocation_step, progress)
+        outputs = progress.outputs[invocation_step.workflow_step_id]
+        subworkflow_invocation = progress._subworkflow_invocation(invocation_step.workflow_step)
+        for output_value in subworkflow_invocation.output_values:
+            workflow_output = output_value.workflow_output
+            output_label = (
+                workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
+            )
+            value = output_value.value
+            if isinstance(value, NoReplacement) or (
+                isinstance(value, dict) and value.get("__class__") == "NoReplacement"
+            ):
+                value = NO_REPLACEMENT
+            outputs[output_label] = value
+        progress.set_step_outputs(invocation_step, outputs, already_persisted=True)
+
     def recover_mapping(self, invocation_step, progress):
-        outputs = {}
+        if invocation_step.output_mapping is not None or progress.subworkflow_collection_info is None:
+            super().recover_mapping(invocation_step, progress)
+            return
+        outputs = dict(progress.outputs.get(invocation_step.workflow_step_id, {}))
         for output_dataset_assoc in invocation_step.output_datasets:
             outputs[output_dataset_assoc.output_name] = output_dataset_assoc.dataset
         for output_dataset_collection_assoc in invocation_step.output_dataset_collections:

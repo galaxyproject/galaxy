@@ -17,6 +17,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.dataset_collections import matching
 from galaxy.schema.invocation import (
     CancelReason,
     FAILURE_REASONS_EXPECTED,
@@ -420,6 +421,7 @@ class WorkflowProgress:
         self.when_values = when_values
         self.inherited_input_axes = inherited_input_axes or {}
         self.output_mapping_axes: dict[tuple[int, str], tuple[Any, ...]] = {}
+        self._hydrated_output_mapping_axes: dict[tuple[int, str], tuple[matching.MatchingCollectionAxis, ...]] = {}
 
     @property
     def maximum_jobs_to_schedule_or_none(self) -> int | None:
@@ -684,9 +686,14 @@ class WorkflowProgress:
         if output_mapping_axes is None and collection_info:
             axes = tuple(collection_info.mapping_axes)
             output_mapping_axes = dict.fromkeys(outputs, axes)
-        for output_name, axes in (output_mapping_axes or {}).items():
+        effective_output_mapping_axes = output_mapping_axes or {}
+        for output_name, axes in effective_output_mapping_axes.items():
             self.output_mapping_axes[(step.id, output_name)] = tuple(axes)
         if not already_persisted:
+            invocation_step.output_mapping = self._serialize_output_mapping(
+                outputs,
+                effective_output_mapping_axes,
+            )
             for output_name, output_object in outputs.items():
                 if hasattr(output_object, "history_content_type"):
                     invocation_step.add_output(output_name, output_object)
@@ -710,6 +717,78 @@ class WorkflowProgress:
                     workflow_output,
                     output=output,
                 )
+
+    @staticmethod
+    def _serialize_output_mapping(outputs, output_mapping_axes) -> dict[str, Any]:
+        output_entries = {}
+        for output_name in outputs:
+            axes = output_mapping_axes.get(output_name, ())
+            references = [
+                (
+                    axis
+                    if isinstance(axis, matching.MatchingCollectionAxisReference)
+                    else matching.MatchingCollectionAxisReference.from_axis(axis)
+                )
+                for axis in axes
+            ]
+            output_entries[output_name] = {"axes": [reference.to_dict() for reference in references]}
+        return {"version": 1, "outputs": output_entries}
+
+    @staticmethod
+    def _deserialize_output_mapping(value) -> dict[str, tuple[matching.MatchingCollectionAxisReference, ...]]:
+        if not isinstance(value, dict) or set(value) != {"version", "outputs"}:
+            raise MessageException("Persisted workflow output mapping has unexpected fields")
+        if value["version"] != 1:
+            raise MessageException(f"Unknown persisted workflow output mapping version [{value['version']!r}]")
+        output_entries = value["outputs"]
+        if not isinstance(output_entries, dict):
+            raise MessageException("Persisted workflow output mapping outputs must be an object")
+        output_mapping_axes = {}
+        try:
+            for output_name, output_entry in output_entries.items():
+                if not isinstance(output_name, str):
+                    raise ValueError("Output names must be strings")
+                if not isinstance(output_entry, dict) or set(output_entry) != {"axes"}:
+                    raise ValueError(f"Output mapping entry [{output_name}] has unexpected fields")
+                axes = output_entry["axes"]
+                if not isinstance(axes, list):
+                    raise ValueError(f"Output mapping axes [{output_name}] must be a list")
+                output_mapping_axes[output_name] = tuple(
+                    matching.MatchingCollectionAxisReference.from_dict(axis) for axis in axes
+                )
+        except ValueError as exc:
+            raise MessageException(f"Invalid persisted workflow output mapping: {exc}") from exc
+        return output_mapping_axes
+
+    def recover_output_mapping(self, invocation_step: WorkflowInvocationStep) -> bool:
+        output_mapping = invocation_step.output_mapping
+        if output_mapping is None:
+            return False
+        output_mapping_axes = self._deserialize_output_mapping(output_mapping)
+        outputs = self.outputs.get(invocation_step.workflow_step_id, {})
+        self.set_step_outputs(
+            invocation_step,
+            outputs,
+            already_persisted=True,
+            output_mapping_axes=output_mapping_axes,
+        )
+        return True
+
+    def mapping_axes_for_output(self, step_id, output_name, hydrator):
+        key = (step_id, output_name)
+        axes = self.output_mapping_axes.get(key)
+        if axes is None or not axes:
+            return axes
+        if all(isinstance(axis, matching.MatchingCollectionAxis) for axis in axes):
+            return axes
+        if not all(isinstance(axis, matching.MatchingCollectionAxisReference) for axis in axes):
+            raise MessageException("Recovered workflow output mapping mixes axis values and references")
+        hydrated_axes = self._hydrated_output_mapping_axes.get(key)
+        if hydrated_axes is None:
+            output = self.outputs[step_id][output_name]
+            hydrated_axes = tuple(hydrator(self, output, axes))
+            self._hydrated_output_mapping_axes[key] = hydrated_axes
+        return hydrated_axes
 
     def _record_workflow_output(self, step: "WorkflowStep", workflow_output: "WorkflowOutput", output: Any) -> None:
         if output is NO_REPLACEMENT:

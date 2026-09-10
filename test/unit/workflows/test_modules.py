@@ -1074,36 +1074,63 @@ def test_partial_refined_axis_passthrough_is_broadcast_over_missing_suffix():
     }
 
 
-def test_absent_optional_passthrough_is_reconstructed_during_recovery():
+def test_absent_optional_passthrough_is_recovered_from_child_output_values():
     workflow_output = bunch.Bunch(
         label="optional_output",
         output_name="output",
         workflow_step=bunch.Bunch(order_index=0),
     )
-    subworkflow_progress = mock.Mock()
-    subworkflow_progress.get_replacement_workflow_output.return_value = {"__class__": "NoReplacement"}
-    subworkflow_invoker = bunch.Bunch(
-        workflow=bunch.Bunch(workflow_outputs=[workflow_output]),
-        progress=subworkflow_progress,
+    output_value = bunch.Bunch(
+        workflow_output=workflow_output,
+        value={"__class__": "NoReplacement"},
     )
     progress = mock.Mock()
-    progress.subworkflow_invoker.return_value = subworkflow_invoker
+    progress.outputs = {5: {}}
+    progress._subworkflow_invocation.return_value = bunch.Bunch(output_values=[output_value])
     invocation_step = bunch.Bunch(
         output_datasets=[],
         output_dataset_collections=[],
-        workflow_step=object(),
+        workflow_step=bunch.Bunch(id=5),
+        workflow_step_id=5,
+        output_value=None,
+    )
+    subworkflow_module = object.__new__(modules.SubWorkflowModule)
+
+    subworkflow_module.recover_outputs(invocation_step, progress)
+
+    progress.set_step_outputs.assert_called_with(
+        invocation_step,
+        {"optional_output": modules.NO_REPLACEMENT},
+        already_persisted=True,
+    )
+    progress.subworkflow_invoker.assert_not_called()
+
+
+def test_legacy_subworkflow_recovery_preserves_scalar_output_values():
+    child_progress = mock.Mock()
+    child_invoker = bunch.Bunch(workflow=bunch.Bunch(workflow_outputs=[]), progress=child_progress)
+    progress = mock.Mock()
+    progress.outputs = {5: {"scalar_output": 42}}
+    progress.subworkflow_collection_info = object()
+    progress.subworkflow_invoker.return_value = child_invoker
+    invocation_step = bunch.Bunch(
+        output_mapping=None,
+        output_datasets=[],
+        output_dataset_collections=[],
+        workflow_step=bunch.Bunch(id=5),
+        workflow_step_id=5,
     )
     subworkflow_module = object.__new__(modules.SubWorkflowModule)
     subworkflow_module.trans = object()
     subworkflow_module.get_all_inputs = mock.Mock(return_value=[])
     subworkflow_module.plan_map_over = mock.Mock(return_value=None)
-    subworkflow_module._collect_output_mapping_axes = mock.Mock(return_value={})
 
     subworkflow_module.recover_mapping(invocation_step, progress)
 
+    child_progress.remaining_steps.assert_called_once_with()
     progress.set_step_outputs.assert_called_once_with(
         invocation_step,
-        {"optional_output": modules.NO_REPLACEMENT},
+        {"scalar_output": 42},
         already_persisted=True,
         output_mapping_axes={},
     )
@@ -1259,6 +1286,161 @@ def test_linked_axis_identity_uses_database_invocation_id_and_round_trips():
     assert axis_id == ("workflow-map", 83, ((107, "output"),))
     assert matching.mapping_axis_id_from_dict(encoded) == axis_id
     assert collections.collections["input"].axis_id == axis_id
+
+
+def test_hydrate_output_mapping_axes_excludes_output_collection_suffix():
+    output = _rectangular_list_list_paired_output()
+    references = (
+        matching.MatchingCollectionAxisReference("outer", "list", (("outer", 0, 1),)),
+        matching.MatchingCollectionAxisReference("inner", "list", (("inner", 0, 1),)),
+    )
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module.trans = _hydration_trans()
+
+    axes = workflow_module._hydrate_output_mapping_axes(
+        bunch.Bunch(subworkflow_collection_info=None), output, references
+    )
+
+    assert [axis.structure.collection_type_description.collection_type for axis in axes] == ["list", "list"]
+    assert list(axes[0].structure.walk_coordinates()) == [(0,), (1,)]
+    assert list(axes[1].structure.walk_coordinates()) == [(0,), (1,)]
+    combined = matching.MatchingCollections.from_axes(axes)
+    assert combined.structure.collection_type_description.collection_type == "list:list"
+
+
+def test_hydrate_output_mapping_axes_rejects_rectangular_split_for_ragged_structure():
+    first = _dataset_collection("list", [("P", _dataset()), ("Q", _dataset())])
+    second = _dataset_collection("list", [("R", _dataset())])
+    output = model.HistoryDatasetCollectionAssociation(
+        collection=_dataset_collection("list:list", [("X", first), ("Y", second)])
+    )
+    references = (
+        matching.MatchingCollectionAxisReference("outer", "list"),
+        matching.MatchingCollectionAxisReference("inner", "list"),
+    )
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module.trans = _hydration_trans()
+
+    with pytest.raises(modules.exceptions.MessageException, match=matching.CANNOT_MATCH_ERROR_MESSAGE):
+        workflow_module._hydrate_output_mapping_axes(bunch.Bunch(subworkflow_collection_info=None), output, references)
+
+
+def test_hydrate_output_mapping_axes_preserves_ragged_refined_axis():
+    first = _dataset_collection("list", [("P", _dataset()), ("Q", _dataset())])
+    second = _dataset_collection("list", [("R", _dataset())])
+    output = model.HistoryDatasetCollectionAssociation(
+        collection=_dataset_collection("list:list", [("X", first), ("Y", second)])
+    )
+    components = (("outer", 0, 1), ("inner", 1, 2))
+    reference = matching.MatchingCollectionAxisReference("refined", "list:list", components)
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module.trans = _hydration_trans()
+
+    (axis,) = workflow_module._hydrate_output_mapping_axes(
+        bunch.Bunch(subworkflow_collection_info=None), output, (reference,)
+    )
+
+    assert axis.components() == (*components, ("refined", 0, 2))
+    assert list(axis.structure.walk_coordinates()) == [(0, 0), (0, 1), (1, 0)]
+
+
+def test_hydrate_output_mapping_axes_preserves_empty_outer_axis():
+    output = model.HistoryDatasetCollectionAssociation(collection=_dataset_collection("list:list", []))
+    references = (
+        matching.MatchingCollectionAxisReference("outer", "list"),
+        matching.MatchingCollectionAxisReference("inner", "list"),
+    )
+    workflow_module = map_over.MapOverPlanner(None)
+    workflow_module.trans = _hydration_trans()
+
+    axes = workflow_module._hydrate_output_mapping_axes(
+        bunch.Bunch(subworkflow_collection_info=None), output, references
+    )
+
+    assert axes[0].structure.children_known
+    assert len(axes[0].structure) == 0
+    assert not axes[1].structure.children_known
+    assert list(matching.MatchingCollections.from_axes(axes).slice_collections()) == []
+
+
+def test_hydrate_output_mapping_axes_reuses_identical_inherited_axes():
+    inherited_axis = matching.MatchingCollectionAxis(mock_structure("list"), "outer", (("outer", 0, 1),))
+    progress = bunch.Bunch(subworkflow_collection_info=matching.MatchingCollections.from_axes([inherited_axis]))
+    reference = matching.MatchingCollectionAxisReference.from_axis(inherited_axis)
+    workflow_module = map_over.MapOverPlanner(None)
+
+    axes = workflow_module._hydrate_output_mapping_axes(progress, object(), (reference,))
+
+    assert axes == (inherited_axis,)
+
+
+def test_top_level_recovery_does_not_recompute_collection_mapping():
+    workflow_module = object.__new__(modules.WorkflowModule)
+    workflow_module.plan_map_over = mock.Mock()
+    progress = mock.Mock(subworkflow_collection_info=None)
+    progress.recover_output_mapping.return_value = False
+    invocation_step = bunch.Bunch(workflow_step_id=1)
+
+    workflow_module.recover_mapping(invocation_step, progress)
+
+    workflow_module.plan_map_over.assert_not_called()
+
+
+def test_subworkflow_metadata_recovery_does_not_recurse_into_child_progress():
+    subworkflow_module = object.__new__(modules.SubWorkflowModule)
+    progress = mock.Mock(subworkflow_collection_info=object())
+    progress.recover_output_mapping.return_value = True
+    invocation_step = bunch.Bunch(output_mapping={"version": 1, "outputs": {}})
+
+    subworkflow_module.recover_mapping(invocation_step, progress)
+
+    progress.recover_output_mapping.assert_called_once_with(invocation_step)
+    progress.subworkflow_invoker.assert_not_called()
+
+
+def test_subworkflow_output_mapping_preserves_explicit_empty_child_lineage():
+    workflow_output = bunch.Bunch(
+        label="plain",
+        output_name="output",
+        workflow_step_id=3,
+        workflow_step=bunch.Bunch(order_index=2),
+    )
+    child_progress = bunch.Bunch(output_mapping_axes={(3, "output"): ()})
+    inherited_axis = matching.MatchingCollectionAxis(mock_structure("list"), "inherited")
+    collection_info = bunch.Bunch(mapping_axes=[inherited_axis])
+
+    output_mapping = map_over.collect_output_mapping_axes(
+        bunch.Bunch(workflow_outputs=[workflow_output]), child_progress, collection_info
+    )
+
+    assert output_mapping == {"plain": ()}
+
+
+def _dataset():
+    return model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+
+
+def _hydration_trans():
+    collection_manager = bunch.Bunch(collection_type_descriptions=modules.COLLECTION_TYPE_DESCRIPTION_FACTORY)
+    return bunch.Bunch(app=bunch.Bunch(dataset_collection_manager=collection_manager))
+
+
+def _dataset_collection(collection_type, elements):
+    collection = model.DatasetCollection(collection_type=collection_type)
+    for identifier, element in elements:
+        model.DatasetCollectionElement(collection=collection, element_identifier=identifier, element=element)
+    return collection
+
+
+def _rectangular_list_list_paired_output():
+    def pair():
+        return _dataset_collection("paired", [("forward", _dataset()), ("reverse", _dataset())])
+
+    def inner():
+        return _dataset_collection("list:paired", [("P", pair()), ("Q", pair())])
+
+    outer = _dataset_collection("list:list:paired", [("X", inner()), ("Y", inner())])
+    return model.HistoryDatasetCollectionAssociation(collection=outer)
 
 
 def mock_structure(collection_type, children_known=False):

@@ -479,6 +479,32 @@ class MapOverPlanner:
                 raise exceptions.MessageException(matching.CANNOT_MATCH_ERROR_MESSAGE)
         return reference
 
+    def _structure_prefix(self, structure, rank):
+        collection_types = structure.collection_type_description.collection_type.split(":")
+        if rank <= 0 or rank > len(collection_types):
+            raise exceptions.MessageException(matching.CANNOT_MATCH_ERROR_MESSAGE)
+        if rank == len(collection_types):
+            return structure
+        prefix_collection_type = ":".join(collection_types[:rank])
+        type_description = self.trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
+            prefix_collection_type
+        )
+
+        def truncate_structure(candidate, remaining_rank, description):
+            if not candidate.children_known:
+                return UninitializedTree(description)
+            if remaining_rank == 1:
+                children = [(identifier, leaf) for identifier, _child in candidate.children]
+            else:
+                child_description = description.subcollection_type_description()
+                children = [
+                    (identifier, truncate_structure(child, remaining_rank - 1, child_description))
+                    for identifier, child in candidate.children
+                ]
+            return Tree(children, description)
+
+        return truncate_structure(structure, rank, type_description)
+
     @classmethod
     def _structures_have_same_identifiers(cls, left, right):
         if left.is_leaf or right.is_leaf:
@@ -521,38 +547,78 @@ class MapOverPlanner:
         return tuple(selected_axes)
 
     def _truncate_axis(self, axis, rank):
-        collection_type = axis.structure.collection_type_description.collection_type
-        prefix_collection_type = ":".join(collection_type.split(":")[:rank])
-        type_description = self.trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
-            prefix_collection_type
-        )
-
-        def truncate_structure(structure, remaining_rank, description):
-            if not structure.children_known:
-                return UninitializedTree(description)
-            if remaining_rank == 1:
-                children = [(identifier, leaf) for identifier, _child in structure.children]
-            else:
-                child_description = description.subcollection_type_description()
-                children = [
-                    (identifier, truncate_structure(child, remaining_rank - 1, child_description))
-                    for identifier, child in structure.children
-                ]
-            return Tree(children, description)
-
         return matching.MatchingCollectionAxis(
-            truncate_structure(axis.structure, rank, type_description),
+            self._structure_prefix(axis.structure, rank),
             ("axis-prefix", axis.axis_id, rank),
         )
 
-    @staticmethod
-    def _source_mapping_axes(progress, step, input_name):
+    def _hydrate_output_mapping_axes(self, progress, output, references):
+        inherited_collection_info = progress.subworkflow_collection_info
+        if inherited_collection_info:
+            inherited_axes_by_id = {axis.axis_id: axis for axis in inherited_collection_info.mapping_axes}
+            inherited_axes = []
+            for reference in references:
+                inherited_axis = inherited_axes_by_id.get(reference.axis_id)
+                if inherited_axis is None:
+                    break
+                inherited_collection_type = inherited_axis.structure.collection_type_description.collection_type
+                if (
+                    inherited_collection_type != reference.collection_type
+                    or inherited_axis.components() != reference.axis_components
+                ):
+                    break
+                inherited_axes.append(inherited_axis)
+            if len(inherited_axes) == len(references):
+                return tuple(inherited_axes)
+
+        try:
+            output_collection = get_collection(output)
+            output_collection_type = output_collection.collection_type
+        except AttributeError as exc:
+            raise exceptions.MessageException(
+                "Persisted mapped workflow output lineage requires a dataset collection output"
+            ) from exc
+
+        expected_collection_types = [
+            collection_type for reference in references for collection_type in reference.collection_type.split(":")
+        ]
+        output_collection_types = output_collection_type.split(":")
+        if output_collection_types[: len(expected_collection_types)] != expected_collection_types:
+            raise exceptions.MessageException(
+                "Persisted workflow output mapping does not match the output collection's leading structure"
+            )
+        prefix_collection_type = ":".join(expected_collection_types)
+        type_description = self.trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
+            prefix_collection_type
+        )
+        mapping_structure = Tree.for_dataset_collection(output_collection, type_description)
+
+        hydrated_axes = []
+        prefix_rank = 0
+        for reference in references:
+            remaining_structure = self._structure_suffix(mapping_structure, prefix_rank)
+            axis_structure = self._structure_prefix(remaining_structure, reference.rank)
+            hydrated_axes.append(
+                matching.MatchingCollectionAxis(
+                    axis_structure,
+                    reference.axis_id,
+                    reference.axis_components,
+                )
+            )
+            prefix_rank += reference.rank
+        return tuple(hydrated_axes)
+
+    def _source_mapping_axes(self, progress, step, input_name):
         axes: list[matching.MatchingCollectionAxis] = []
         for connection in step.input_connections_by_name.get(input_name, []):
             source_step_id = connection.output_step.id
             source_axes = progress.inherited_input_axes.get(source_step_id)
             if source_axes is None:
-                source_axes = progress.output_mapping_axes.get((source_step_id, connection.output_name))
+                source_axes = progress.mapping_axes_for_output(
+                    source_step_id,
+                    connection.output_name,
+                    self._hydrate_output_mapping_axes,
+                )
             for axis in source_axes or ():
                 if not any(axis.axis_id == existing.axis_id for existing in axes):
                     axes.append(axis)
@@ -908,10 +974,9 @@ def collect_output_mapping_axes(subworkflow, subworkflow_progress, collection_in
         workflow_output_label = (
             workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
         )
-        axes = subworkflow_progress.output_mapping_axes.get(
-            (workflow_output.workflow_step_id, workflow_output.output_name)
-        )
-        if axes:
+        output_key = (workflow_output.workflow_step_id, workflow_output.output_name)
+        axes = subworkflow_progress.output_mapping_axes.get(output_key)
+        if output_key in subworkflow_progress.output_mapping_axes:
             output_mapping_axes[workflow_output_label] = axes
         elif collection_info:
             output_mapping_axes[workflow_output_label] = tuple(collection_info.mapping_axes)

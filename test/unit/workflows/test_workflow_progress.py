@@ -1,6 +1,7 @@
 from typing import cast
 
 from galaxy import model
+from galaxy.model.dataset_collections import matching
 from galaxy.util.unittest import TestCase
 from galaxy.workflow.run import (
     ModuleInjector,
@@ -152,6 +153,48 @@ class TestWorkflowProgress(TestCase):
         conn.output_name = "out1"
         conn.output_step = self._step(2)
         assert progress.replacement_for_connection(conn) is hda
+
+    def test_output_mapping_is_persisted_and_recovered_as_references(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        progress = self._new_workflow_progress()
+        invocation_step = self._invocation_step(2)
+        reference = matching.MatchingCollectionAxisReference("axis", "list")
+        output = object()
+
+        progress.set_step_outputs(
+            invocation_step,
+            {"out1": output},
+            output_mapping_axes={"out1": (reference,)},
+        )
+
+        assert invocation_step.output_mapping == {
+            "version": 1,
+            "outputs": {"out1": {"axes": [reference.to_dict()]}},
+        }
+        recovered = self._new_workflow_progress()
+        recovered.outputs[self._step(2).id] = {"out1": output}
+        assert recovered.recover_output_mapping(invocation_step)
+        assert recovered.output_mapping_axes[(self._step(2).id, "out1")] == (reference,)
+
+    def test_recovered_output_mapping_is_hydrated_once_per_progress(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        progress = self._new_workflow_progress()
+        step_id = self._step(2).id
+        reference = matching.MatchingCollectionAxisReference("axis", "list")
+        progress.outputs[step_id] = {"out1": object()}
+        progress.output_mapping_axes[(step_id, "out1")] = (reference,)
+        hydrated_axis = object()
+        calls = []
+
+        def hydrate(_progress, output, references):
+            calls.append((output, references))
+            return (hydrated_axis,)
+
+        first = progress.mapping_axes_for_output(step_id, "out1", hydrate)
+        second = progress.mapping_axes_for_output(step_id, "out1", hydrate)
+
+        assert first == second == (hydrated_axis,)
+        assert calls == [(progress.outputs[step_id]["out1"], (reference,))]
 
     def test_remaining_steps_with_progress(self):
         self._setup_workflow(TEST_WORKFLOW_YAML)
