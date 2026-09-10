@@ -102,6 +102,15 @@ class BaseJobRunner:
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
+    # Destination params that may be seeded from a runner-level ``default_<param>``
+    # setting. This lets a value be configured once at the runner level in
+    # ``job_conf.yml`` instead of repeated on every destination that targets the
+    # runner, while any destination may still override it. Subclasses that want
+    # this behavior list the destination param names here (without the
+    # ``default_`` prefix) and register the corresponding ``default_<param>``
+    # entries in their runner param specs.
+    runner_default_destination_params: list[str] = []
+
     def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         """Start the job runner"""
         self.app = app
@@ -271,6 +280,28 @@ class BaseJobRunner:
     def parse_destination_params(self, params: dict[str, Any]):
         """Parse the JobDestination ``params`` dict and return the runner's native representation of those params."""
         raise NotImplementedError()
+
+    def _apply_runner_default_destination_params(self, job_destination: JobDestination) -> bool:
+        """Seed unset destination params from runner-level ``default_<param>`` values.
+
+        For each ``<param>`` in :attr:`runner_default_destination_params`, if the
+        destination has not set ``<param>`` and the runner defines a truthy
+        ``default_<param>`` value, copy that value onto the destination. The
+        destination value always wins over the runner-level default.
+
+        Returns ``True`` if any destination param was populated.
+        """
+        params = job_destination.params
+        updated = False
+        for name in self.runner_default_destination_params:
+            if name in params:
+                # Destination overrides the runner-level default.
+                continue
+            runner_value = self.runner_params.get(f"default_{name}")
+            if runner_value:
+                params[name] = runner_value
+                updated = True
+        return updated
 
     def prepare_job(
         self,
