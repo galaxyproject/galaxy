@@ -21,22 +21,20 @@ import jsonschema
 import pytest
 import yaml
 
-from galaxy.tool_util_models import UserToolSourceAuthoringView
+from galaxy.tool_util_models import (
+    _command_input_refs,
+    UserToolSourceAuthoringView,
+)
 from galaxy.util import galaxy_directory
 
 PROMPT_DIR = Path(galaxy_directory()) / "lib" / "galaxy" / "agents" / "prompts"
 CUSTOM_TOOL_PROMPT = PROMPT_DIR / "custom_tool_structured.md"
 
 YAML_FENCE = re.compile(r"```yaml\n(.*?)```", re.DOTALL)
-INPUT_REF = re.compile(r"\$\(inputs\.([A-Za-z_][A-Za-z0-9_]*)")
 
 
-def _yaml_blocks(path: Path) -> list[tuple[int, Any]]:
-    """Parse every ```yaml fence in a prompt, keyed by position for readable failures."""
-    blocks = []
-    for index, raw in enumerate(YAML_FENCE.findall(path.read_text())):
-        blocks.append((index, yaml.safe_load(raw)))
-    return blocks
+def _yaml_blocks(path: Path) -> list[Any]:
+    return [yaml.safe_load(raw) for raw in YAML_FENCE.findall(path.read_text())]
 
 
 def _as_tool(fragment: dict[str, Any]) -> dict[str, Any]:
@@ -58,33 +56,42 @@ def _as_tool(fragment: dict[str, Any]) -> dict[str, Any]:
         "outputs": [],
         **fragment,
     }
-    referenced = set(INPUT_REF.findall(tool["shell_command"]))
+    # Same extractor the model's cross-reference validator uses, so the test never
+    # under-declares an input the validator would insist on.
+    referenced = _command_input_refs(tool["shell_command"])
     for configfile in tool.get("configfiles") or []:
-        referenced |= set(INPUT_REF.findall(configfile.get("content", "")))
+        referenced |= _command_input_refs(configfile.get("content"))
     declared = {declared_input["name"] for declared_input in tool["inputs"]}
     for name in sorted(referenced - declared):
         tool["inputs"].append({"name": name, "type": "data"})
     return tool
 
 
-def _prompt_examples() -> list[tuple[int, dict[str, Any]]]:
-    return [(index, _as_tool(block)) for index, block in _yaml_blocks(CUSTOM_TOOL_PROMPT) if isinstance(block, dict)]
+def _prompt_examples() -> list[dict[str, Any]]:
+    examples = [_as_tool(block) for block in _yaml_blocks(CUSTOM_TOOL_PROMPT) if isinstance(block, dict)]
+    # An empty parametrize list skips rather than fails, so a fence regex that quietly
+    # stops matching would otherwise turn the whole module green.
+    assert examples, f"no ```yaml examples found in {CUSTOM_TOOL_PROMPT}"
+    return examples
 
 
-@pytest.mark.parametrize("index,tool", _prompt_examples())
-def test_custom_tool_prompt_examples_satisfy_pydantic(index: int, tool: dict[str, Any]) -> None:
+PROMPT_EXAMPLES = _prompt_examples()
+AUTHORING_SCHEMA_VALIDATOR = jsonschema.Draft202012Validator(UserToolSourceAuthoringView.model_json_schema())
+
+
+@pytest.mark.parametrize("tool", PROMPT_EXAMPLES)
+def test_custom_tool_prompt_examples_satisfy_pydantic(tool: dict[str, Any]) -> None:
     """Every YAML example in the prompt must validate as a tool."""
     UserToolSourceAuthoringView.model_validate(tool)
 
 
-@pytest.mark.parametrize("index,tool", _prompt_examples())
-def test_custom_tool_prompt_examples_satisfy_json_schema(index: int, tool: dict[str, Any]) -> None:
+@pytest.mark.parametrize("tool", PROMPT_EXAMPLES)
+def test_custom_tool_prompt_examples_satisfy_json_schema(tool: dict[str, Any]) -> None:
     """And must satisfy the dumped schema, which has no before-validators to lean on.
 
     This is the half that catches a scalar where the model declares a list.
     """
-    schema = UserToolSourceAuthoringView.model_json_schema()
-    errors = sorted(jsonschema.Draft202012Validator(schema).iter_errors(tool), key=str)
+    errors = sorted(AUTHORING_SCHEMA_VALIDATOR.iter_errors(tool), key=str)
     assert not errors, "\n".join(f"{list(error.absolute_path)}: {error.message}" for error in errors)
 
 
@@ -96,7 +103,7 @@ def test_custom_tool_prompt_documents_a_data_input_format() -> None:
     """
     formats = [
         declared_input["format"]
-        for _, tool in _prompt_examples()
+        for tool in PROMPT_EXAMPLES
         for declared_input in tool["inputs"]
         if "format" in declared_input
     ]

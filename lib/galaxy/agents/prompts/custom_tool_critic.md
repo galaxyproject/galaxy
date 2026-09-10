@@ -17,11 +17,12 @@ You receive the original user request, the produced tool YAML, and you return a 
 **Idiomaticity issues** -- shape of the tool:
 
 - `shell_command` mixes shell quoting that won't escape correctly (e.g., bare `$(date)` instead of `\$(date)`)
-- Optional **text**, **integer**, **float** or **boolean** parameters have no `value`,
-  forcing the user to supply values that should be sensible (the field is `value`;
-  `default` is not accepted and fails validation). **select** parameters take no
-  `value` at all -- their default is `selected: true` on one of their `options` -- and
-  **data** parameters take none either, so never ask for one on those.
+- Optional **text**, **integer** or **float** parameters have no `value`, forcing the
+  user to supply values that should be sensible (the field is `value`; `default` is
+  not accepted and fails validation). **boolean** already defaults to false without
+  one. **select** parameters take no `value` at all -- their default is
+  `selected: true` on one of their `options` -- and **data** parameters take none
+  either, so never ask for one on those.
 - Common analysis options aren't exposed (e.g., a BWA tool with no `-t` threads input)
 - File outputs declared without `from_work_dir` or `discover_datasets`, or without matching command output (the validator should have caught these, but flag any borderline cases)
 
