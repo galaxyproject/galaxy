@@ -20,6 +20,7 @@ from galaxy import (
 )
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.markdown_parse import is_quotable_argument_value
 from galaxy.model import (
     DatasetCollectionElement,
     History,
@@ -32,7 +33,6 @@ from galaxy.model import (
     User,
     WorkflowStep,
 )
-from galaxy.managers.markdown_parse import is_quotable_argument_value
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.schema.workflows import (
     OutputLabelHint,

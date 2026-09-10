@@ -27,8 +27,8 @@ from galaxy.managers.workflows import (
 )
 from galaxy.model import (
     ImplicitCollectionJobs,
-    Page,
     LandingRequestToWorkflowInvocationAssociation,
+    Page,
     StoredWorkflow,
     WorkflowInvocation,
     WorkflowLandingRequest,
