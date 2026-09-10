@@ -76,6 +76,33 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", coerce_numbers_to_str=True)
 
 
+def split_ftp_host_path(data: Any) -> Any:
+    """Split a path embedded in an FTP ``host`` field into ``host`` + ``root``.
+
+    If ``root`` is already set, no splitting occurs.  A protocol prefix
+    (e.g. ``ftp://``) is stripped before splitting so that values like
+    ``ftp://ftp.gnu.org/gnu/`` are handled correctly.
+    """
+    if not isinstance(data, dict):
+        return data
+    root = data.get("root")
+    if not isinstance(root, str):
+        root = None
+    host = data.get("host")
+    if root is None and isinstance(host, str) and "/" in host:
+        data = dict(data)
+        host = host.removeprefix("ftp://").removeprefix("ftps://")
+        if "/" in host:
+            host_part, _, path_part = host.partition("/")
+            data["host"] = host_part
+            data["root"] = "/" + path_part
+        else:
+            data["host"] = host
+    if isinstance(data.get("root"), str) and ".." in data["root"].split("/"):
+        raise ValueError(f"FTP root must not contain '..' path segments: {data['root']!r}")
+    return data
+
+
 class BaseTemplateVariable(StrictModel):
     name: str
     label: Optional[str] = None
