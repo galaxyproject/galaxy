@@ -1867,6 +1867,8 @@ class WorkflowContentsManager(UsesAnnotations):
         """Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
         """
+        if "id" not in step_dict:
+            raise exceptions.ObjectAttributeMissingException("Workflow step is missing required 'id' attribute.")
         dry_run = kwds.get("dry_run", False)
         step = model.WorkflowStep()
         step.position = step_dict.get("position", model.WorkflowStep.DEFAULT_POSITION)
