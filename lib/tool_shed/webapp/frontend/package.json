@@ -51,7 +51,7 @@
     "jsondiffpatch": "^0.7.6",
     "openapi-fetch": "^0.10.2",
     "pinia": "^2.0.28",
-    "quasar": "^2.5.0",
+    "quasar": "^2.22.0",
     "vue": "^3.2.6",
     "vue-json-pretty": "^2.4.0",
     "vue-router": "4"
