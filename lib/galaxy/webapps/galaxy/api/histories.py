@@ -226,6 +226,11 @@ class FastAPIHistories:
         sort_by: HistorySortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
         search: str | None = SearchQueryParam,
+        project_folder_id: DecodedDatabaseIdField | None = Query(
+            default=None,
+            title="Project Folder ID",
+            description="Restrict to histories filed under this project folder.",
+        ),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         all: bool | None = AllHistoriesQueryParam,
@@ -236,7 +241,11 @@ class FastAPIHistories:
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
     ) -> list[AnyHistoryView]:
-        if search is None:
+        # The folder scope lives on the index_query path, so a folder filter has
+        # to take that path even with no search term. Without this, selecting a
+        # folder fell through to the plain index and silently returned
+        # everything.
+        if search is None and project_folder_id is None:
             return self.service.index(
                 trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
             )
@@ -251,6 +260,7 @@ class FastAPIHistories:
                 limit=limit,
                 offset=offset,
                 search=search,
+                project_folder_id=project_folder_id,
             )
             entries, total_matches = self.service.index_query(
                 trans, payload, serialization_params, include_total_count=True

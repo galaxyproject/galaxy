@@ -19,9 +19,18 @@
  * <HistoryList activeList="shared" />
  */
 
-import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import {
+    faBurn,
+    faColumns,
+    faFolder,
+    faPlus,
+    faTags,
+    faTrash,
+    faTrashRestore,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -38,6 +47,7 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useProjectFolderStore } from "@/stores/projectFolderStore";
 import { updateHistoryFields } from "@/stores/services/history.services";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -54,6 +64,8 @@ import ListHeader from "@/components/Common/ListHeader.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
 import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import HistoryCardList from "@/components/History/HistoryCardList.vue";
+import ProjectFolderBar from "@/components/History/ProjectFolderBar.vue";
+import ProjectFolderPickerModal from "@/components/History/ProjectFolderPickerModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 /**
@@ -144,6 +156,27 @@ const noItems = computed(() => !loading.value && historiesLoaded.value.length ==
 const noResults = computed(() => !loading.value && historiesLoaded.value.length === 0 && Boolean(filterText.value));
 const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted histories" : "Show deleted histories"));
 const showBulkPurge = computed(() => selectedHistories.value.some((h) => !h.purged));
+
+const showFolderPicker = ref(false);
+const { currentFolderId } = storeToRefs(useProjectFolderStore());
+
+/** Total across all folders, kept so the "All histories" count does not
+ * collapse to the size of whichever folder is currently selected. */
+const totalHistoriesUnscoped = ref(0);
+
+/** Re-query when the folder scope changes; the filter is applied server side. */
+async function onFolderChange() {
+    offset.value = 0;
+    resetSelection();
+    await load(true);
+}
+const selectedHistoryIds = computed(() => selectedHistories.value.map((h) => h.id));
+
+/** Refresh after filing so the folder counts and any folder scope are current. */
+async function onFiledIntoFolder() {
+    resetSelection();
+    await load(true);
+}
 const showBulkMultiview = computed(() => selectedHistories.value.length > 1);
 
 const historyListFilters = computed(() => getHistoryListFilters(props.activeList));
@@ -243,6 +276,7 @@ async function load(overlayLoading: boolean = false, silent: boolean = false) {
         search: validatedFilterText(),
         sortBy: sortBy.value,
         sortDesc: sortDesc.value,
+        projectFolderId: currentFolderId.value,
     };
 
     try {
@@ -266,6 +300,9 @@ async function load(overlayLoading: boolean = false, silent: boolean = false) {
         if (data !== undefined) {
             historiesLoaded.value = data;
             totalHistories.value = total!;
+            if (!currentFolderId.value) {
+                totalHistoriesUnscoped.value = total!;
+            }
         }
     } catch (error) {
         if (thisGeneration !== loadGeneration) {
@@ -666,6 +703,8 @@ onMounted(async () => {
             id="history-list-overlay"
             :show="overlay"
             class="h-100 d-flex flex-column history-list-overlay">
+            <ProjectFolderBar class="mb-2" :total-count="totalHistoriesUnscoped" @change="onFolderChange" />
+
             <HistoryCardList
                 :histories="historiesLoaded"
                 :shared-view="sharedView"
@@ -751,6 +790,18 @@ onMounted(async () => {
                 </BButton>
 
                 <BButton
+                    v-if="!showDeleted"
+                    id="history-list-footer-bulk-add-to-project-button"
+                    v-g-tooltip.hover
+                    title="Add selected histories to a project folder"
+                    size="sm"
+                    variant="primary"
+                    @click="showFolderPicker = true">
+                    <FontAwesomeIcon :icon="faFolder" fixed-width />
+                    Add to project ({{ selectedHistories.length }})
+                </BButton>
+
+                <BButton
                     v-if="showBulkMultiview"
                     id="history-list-footer-bulk-open-multiview-button"
                     v-g-tooltip.hover
@@ -782,6 +833,11 @@ onMounted(async () => {
             }`"
             @cancel="onToggleBulkTags"
             @ok="onBulkTagsAdd" />
+
+        <ProjectFolderPickerModal
+            :show-modal.sync="showFolderPicker"
+            :history-ids="selectedHistoryIds"
+            @filed="onFiledIntoFolder" />
     </div>
 </template>
 

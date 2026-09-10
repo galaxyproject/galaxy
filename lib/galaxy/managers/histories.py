@@ -165,6 +165,11 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
             stmt = stmt.outerjoin(self.model_class.users_shared_with)
         stmt = stmt.where(or_(*filters))
 
+        if payload.project_folder_id is not None:
+            # Folders are private, so this is scoped to the user's own folders
+            # by the ownership filters already applied above.
+            stmt = stmt.where(self.model_class.project_folder_id == payload.project_folder_id)
+
         if payload.search:
             search_query = payload.search
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
@@ -873,6 +878,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "tags",
                 "update_time",
                 "preferred_object_store_id",
+                "project_folder_id",
             ],
         )
         self.add_view(
@@ -951,6 +957,13 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             #  after refactoring hierarchy here?
             "user_id": lambda item, key, encode_id=True, **context: (
                 self.app.security.encode_id(item.user_id) if item.user_id is not None and encode_id else item.user_id
+            ),
+            # Encoded like every other id the client sees; without this the raw
+            # integer is emitted and never matches the encoded folder id.
+            "project_folder_id": lambda item, key, encode_id=True, **context: (
+                self.app.security.encode_id(item.project_folder_id)
+                if item.project_folder_id is not None and encode_id
+                else item.project_folder_id
             ),
         }
         self.serializers.update(serializers)
