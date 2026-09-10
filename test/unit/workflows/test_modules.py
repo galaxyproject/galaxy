@@ -1245,6 +1245,22 @@ def test_two_inherited_bindings_share_deepest_residual_axis():
     assert combined.linked_structure is deep
 
 
+def test_linked_axis_identity_uses_database_invocation_id_and_round_trips():
+    collections = matching.CollectionsToMatch()
+    collections.add("input", object())
+    step = bunch.Bunch(
+        input_connections_by_name={"input": [bunch.Bunch(output_step=bunch.Bunch(id=107), output_name="output")]}
+    )
+    progress = bunch.Bunch(workflow_invocation=bunch.Bunch(id=83))
+
+    axis_id = map_over.MapOverPlanner._assign_linked_axis_identity(progress, step, collections)
+    encoded = matching.mapping_axis_id_to_dict(axis_id)
+
+    assert axis_id == ("workflow-map", 83, ((107, "output"),))
+    assert matching.mapping_axis_id_from_dict(encoded) == axis_id
+    assert collections.collections["input"].axis_id == axis_id
+
+
 def mock_structure(collection_type, children_known=False):
     description = bunch.Bunch(collection_type=collection_type)
     description.compatible = lambda other: other.collection_type == collection_type

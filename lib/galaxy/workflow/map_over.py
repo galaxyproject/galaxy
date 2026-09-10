@@ -571,9 +571,9 @@ class MapOverPlanner:
             for connection in step.input_connections_by_name.get(input_name, []):
                 source_tokens.add((connection.output_step.id, connection.output_name))
 
-        invocation_uuid = progress.workflow_invocation.uuid
-        assert invocation_uuid is not None
-        axis_id = ("workflow-map", str(invocation_uuid), tuple(sorted(source_tokens)))
+        invocation_id = progress.workflow_invocation.id
+        assert invocation_id is not None
+        axis_id = ("workflow-map", invocation_id, tuple(sorted(source_tokens)))
         for _input_name, to_match in linked_inputs:
             to_match.axis_id = axis_id
         return axis_id
