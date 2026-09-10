@@ -4,6 +4,7 @@ Base classes for job runner plugins.
 
 import datetime
 import os
+import re
 import string
 import subprocess
 import sys
@@ -23,10 +24,12 @@ from typing import (
     Union,
 )
 
+import jwt
 from sqlalchemy import select
 from sqlalchemy.orm import object_session
 
 from galaxy import model
+from galaxy.authnz.util import provider_name_to_backend
 from galaxy.exceptions import ConfigurationError
 from galaxy.job_execution.output_collect import (
     default_exit_code_file,
@@ -539,6 +542,50 @@ class BaseJobRunner:
     def write_executable_script(self, path: str, contents: str, job_io: DescribesScriptIntegrityChecks) -> None:
         write_script(path, contents, job_io)
 
+    def _configure_docker_username_from_oidc_token_claim(self, job_wrapper: "MinimalJobWrapper") -> None:
+        destination_info = job_wrapper.job_destination.params
+        user_oidc_config = destination_info.get("docker_username_from_oidc_token_claim")
+        if not user_oidc_config:
+            return
+
+        set_user = user_oidc_config.get("set_user", False)
+        expose_as_env = user_oidc_config.get("expose_as_env")
+        if not set_user and not expose_as_env:
+            return
+
+        if set_user and destination_info.get("docker_set_user"):
+            raise ConfigurationError(
+                "docker_set_user cannot be used together with docker_username_from_oidc_token_claim set_user"
+            )
+
+        providers = user_oidc_config.get("providers")
+        if not providers:
+            return
+
+        username = None
+        user = job_wrapper.get_job().user
+        if user is None:
+            raise Exception("Failed to get a username for container from OIDC token, job has no user.")
+        for token_provider, settings in providers.items():
+            try:
+                provider_backend = provider_name_to_backend(token_provider)
+                tokens = user.get_oidc_tokens(provider_backend)
+                oidc_token = tokens.get("access") or tokens.get("id")
+                if not oidc_token:
+                    continue
+                token_user = jwt.decode(oidc_token, options={"verify_signature": False})[settings["claim"]]
+                match = re.match(settings.get("template", ".*"), token_user)
+                if match:
+                    username = match.group(0)
+                    break
+            except Exception:
+                log.debug("Failed to extract Docker user from OIDC provider [%s]", token_provider, exc_info=True)
+
+        if not username:
+            raise Exception("Failed to get a username for container from OIDC token, contact Galaxy admin.")
+
+        destination_info["docker_username_from_token"] = username
+
     def _find_container(
         self,
         job_wrapper: "MinimalJobWrapper",
@@ -582,6 +629,7 @@ class BaseJobRunner:
             job_directory_type=job_directory_type,
         )
 
+        self._configure_docker_username_from_oidc_token_claim(job_wrapper)
         destination_info = job_wrapper.job_destination.params
         container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
         if container:

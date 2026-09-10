@@ -110,6 +110,7 @@ def build_docker_run_command(
     sudo_cmd: str = DEFAULT_SUDO_COMMAND,
     auto_rm: bool = DEFAULT_AUTO_REMOVE,
     set_user: str | None = DEFAULT_SET_USER,
+    set_user_from_host: bool = False,
     host: str | None = DEFAULT_HOST,
     guest_ports: bool | str | list[str] = False,
     host_port_cmd: str | None = None,
@@ -159,14 +160,18 @@ def build_docker_run_command(
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)
     if set_user:
-        user = set_user
-        if set_user == DEFAULT_SET_USER:
+        if set_user_from_host:
+            user_name = shlex.quote(set_user)
+            user = f"`id -u {user_name}`:`id -g {user_name}`"
+        elif set_user == DEFAULT_SET_USER:
             # If future-us is ever in here and fixing this for docker-machine just
             # use cwltool.docker_id - it takes care of this default nicely.
             euid = os.geteuid()
             egid = os.getgid()
 
             user = f"{euid}:{egid}"
+        else:
+            user = set_user
         command_parts.extend(["--user", user])
     full_image = image
     if tag:
