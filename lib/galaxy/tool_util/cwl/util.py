@@ -170,9 +170,11 @@ def galactic_job_json(
         dataset_id = dataset["id"]
         return {"src": "hda", "id": dataset_id}
 
-    def upload_file(file_path: str, secondary_files: str | None, **kwargs) -> dict[str, str]:
+    def upload_file(
+        file_path: str, secondary_files: str | None, client_local: bool = False, **kwargs
+    ) -> dict[str, str]:
         file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
-        target = FileUploadTarget(file_path, secondary_files, **kwargs)
+        target = FileUploadTarget(file_path, secondary_files, client_local=client_local, **kwargs)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
@@ -292,7 +294,13 @@ def galactic_job_json(
             tf.close()
             secondary_files_tar_path = tmp.name
 
-        return upload_file(file_path, secondary_files_tar_path, filetype=filetype, **kwd)
+        return upload_file(
+            file_path,
+            secondary_files_tar_path,
+            client_local=bool(value.get("client_local")),
+            filetype=filetype,
+            **kwd,
+        )
 
     def replacement_directory(value: dict[str, Any]) -> dict[str, Any]:
         file_path = value.get("location", None) or value.get("path", None)
@@ -425,11 +433,15 @@ class FileUploadTarget(UploadTarget):
         path: str | None,
         secondary_files: str | None = None,
         composite_data: list[str] | None = None,
+        client_local: bool = False,
         **kwargs,
     ) -> None:
         self.path = path
         self.secondary_files = secondary_files
         self.composite_data = composite_data
+        # True when path is readable only by this client, so the server
+        # cannot be asked to open it by path.
+        self.client_local = client_local
         self.properties = kwargs
 
     def __str__(self) -> str:
@@ -448,6 +460,9 @@ class ObjectUploadTarget(UploadTarget):
 class DirectoryUploadTarget(UploadTarget):
     def __init__(self, tar_path: str, file_type: str = "directory", name: str = "uploaded directory") -> None:
         self.tar_path = tar_path
+        # replacement_directory() creates this archive on the client, so a
+        # separate Galaxy server can never be expected to resolve its path.
+        self.client_local = True
         self.file_type = file_type
         self.name = name
 
