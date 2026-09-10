@@ -147,9 +147,10 @@ def validate_email(
         if is_email_banned(email, trans.app.config.email_ban_file, trans.app.config.canonical_email_rules):
             message = "This email address has been banned."
 
-    stmt = select(trans.app.model.User).filter(func.lower(trans.app.model.User.email) == email.lower()).limit(1)
-    if not message and check_dup and trans.sa_session.scalars(stmt).first():
-        message = f"User with email '{email}' already exists."
+    if not message and check_dup:
+        stmt = select(trans.app.model.User).filter(func.lower(trans.app.model.User.email) == email.lower()).limit(1)
+        if trans.sa_session.scalars(stmt).first():
+            message = f"User with email '{email}' already exists."
 
     if not message:
         # If the allowlist is not empty filter out any domain not in the list and ignore blocklist.
