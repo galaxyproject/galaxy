@@ -89,7 +89,7 @@ def split_ftp_host_path(data: Any) -> Any:
     if not isinstance(data, dict):
         return data
     root = data.get("root")
-    if not isinstance(root, str):
+    if not isinstance(root, str) or root == "":
         root = None
     host = data.get("host")
     if root is None and isinstance(host, str) and "/" in host:
@@ -101,6 +101,9 @@ def split_ftp_host_path(data: Any) -> Any:
             data["root"] = "/" + path_part
         else:
             data["host"] = host
+    if data.get("root") is not None and (not isinstance(data["root"], str) or data["root"] == ""):
+        data = dict(data)
+        data["root"] = None
     if isinstance(data.get("root"), str) and ".." in data["root"].split("/"):
         raise ValueError(f"FTP root must not contain '..' path segments: {data['root']!r}")
     return data
