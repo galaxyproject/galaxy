@@ -51,6 +51,32 @@ describe("LoginForm", () => {
         axiosMock.reset();
     });
 
+    it("submits new account confirmation with the session CSRF token", async () => {
+        const originalLocation = window.location;
+        const location = jest.spyOn(window, "location", "get").mockImplementation(() => ({
+            ...originalLocation,
+            search: "?confirm=true&provider=keycloak&confirmation_id=pending",
+            assign: jest.fn(),
+        }));
+        const axiosMock = new MockAdapter(axios);
+        axiosMock.onPost().reply(200, { redirect_uri: "/" });
+        try {
+            const wrapper = await mountLoginForm();
+            await wrapper.find("input[type='checkbox']").setChecked();
+            await wrapper.find("button[name='confirm']").trigger("click");
+            await flushPromises();
+            const request = axiosMock.history.post?.[0];
+            expect(request?.url).toBe("/authnz/keycloak/create_user");
+            const body = new URLSearchParams(request?.data);
+            expect(body.get("session_csrf_token")).toBe("sessionCsrfToken");
+            expect(body.get("confirmation_id")).toBe("pending");
+            wrapper.destroy();
+        } finally {
+            axiosMock.restore();
+            location.mockRestore();
+        }
+    });
+
     it("basics", async () => {
         const wrapper = await mountLoginForm();
 
