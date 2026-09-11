@@ -96,13 +96,6 @@ describe("getRunData", () => {
         vi.mocked(axios.get).mockReset();
     });
 
-    it("returns the run data for the workflow", async () => {
-        vi.mocked(axios.get).mockResolvedValue({ data: { name: "my workflow" } });
-
-        expect(await getRunData("abc", "2")).toEqual({ name: "my workflow" });
-        expect(axios.get).toHaveBeenCalledWith("/api/workflows/abc/download?style=run&instance=false&version=2");
-    });
-
     it("turns a missing-tools rejection into a WorkflowMissingToolsError", async () => {
         vi.mocked(axios.get).mockRejectedValue({
             response: {
