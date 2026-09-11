@@ -297,14 +297,12 @@ def get_volume_mounts_for_job(job_wrapper, data_claim=None, working_claim=None):
 def galaxy_instance_id(params):
     """Parse and validate the id of the Galaxy instance from supplied dict.
 
-    This will be added to Jobs and Pods names, so it needs to be DNS friendly,
-    this means: `The Internet standards (Requests for Comments) for protocols mandate that component hostname labels
-    may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9',
-    and the minus sign ('-').`
-
-    It looks for the value set on params['k8s_galaxy_instance_id'], which might or not be set. The
-    idea behind this is to allow the Galaxy instance to trust (or not) existing k8s Jobs and Pods that match the
-    setup of a Job that is being recovered or restarted after a downtime/reboot.
+    The optional value from ``params['k8s_galaxy_instance_id']`` is included in
+    the ``generateName`` prefix for Jobs and their Pods. Kubernetes appends a
+    unique suffix to every submitted Job, so the instance id distinguishes
+    resources belonging to different Galaxy instances rather than providing
+    uniqueness itself. It must be DNS friendly because it becomes part of the
+    generated resource names.
     """
     if "k8s_galaxy_instance_id" in params:
         raw_value = params["k8s_galaxy_instance_id"]

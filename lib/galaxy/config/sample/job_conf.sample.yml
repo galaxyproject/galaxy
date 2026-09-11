@@ -13,10 +13,10 @@ runners:
     #
     # For setting up a DRMAA runner it may be advisable to test with the state set to "error" and use "ok"
     # only if all (including successfull jobs) fail with one of the two exceptions.
-    # 
+    #
     # In case these exceptions may occur transiently a number of retries can be configured.
-    # 
-    # Defaults are shown below. 
+    #
+    # Defaults are shown below.
     # Possible values for the states are "ok" and "error".
     invalidjobexception_state: ok
     invalidjobexception_retries: 0
@@ -146,21 +146,12 @@ runners:
     # terminated and the Job status will become `type: Failed` with `reason: DeadlineExceeded`.
     #k8s_walltime_limit: 172800
 
-    # Identifies the Galaxy instance where this runner belongs. Setting this variable means that the runner
-    # will trust k8s Jobs with the structure galaxy-my-instance-<number> to be its own. This variable needs
-    # to be DNS friendly, and up to 20 characters, as it will go in the k8s Jobs and Pods names. An instance
-    # in this context is understood as a running Galaxy setup that is bound to a particular database stored
-    # state. This is mostly relevant for long term running instances. When resetting a long term running
-    # instance to zero (database and files deleted), one would want to change this instance id to avoid
-    # clashing with previous jobs in the same k8s cluster where the older setup run.
+    # Optionally identifies the Galaxy instance in generated k8s Job and Pod names. The value is included in
+    # the prefix passed to Kubernetes through metadata.generateName; Kubernetes appends a unique suffix to
+    # every submitted Job. This variable needs to be DNS friendly and up to 20 characters. It is useful when
+    # multiple Galaxy instances submit jobs to the same Kubernetes cluster and their resources need to be
+    # distinguished.
     #k8s_galaxy_instance_id: my-instance
-
-    # If the above `k8s_galaxy_instance_id` is not set, when finding an existing k8s job with the same
-    # id as a new job being generated, the runner will attempt to delete that existing job first, to proceed
-    # then to create the new job (the old job is not trusted to have been instructed to do the same as the
-    # new one). This variables controls the timeout for waiting for that job deletion. If the timeout is
-    # exceeded and the existing job is not deleted, the new job won't be added to the Galaxy queue.
-    #k8s_timeout_seconds_job_deletion: 30
 
     # If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
     # to a DEFINED user/group, these variables set the group id that Pods need to use to be able to read and
@@ -362,7 +353,7 @@ runners:
     # RabbitMQ URL from Galaxy server (include credentials).
     amqp_url: <amqp_url>
     # If Pulsar needs to talk to Galaxy at a particular host and port, set that here.
-    #galaxy_url: <galaxy_url>  
+    #galaxy_url: <galaxy_url>
 
   # Using Pulsar and co-execution to run jobs against Google Cloud Platform's Batch service.
   # - https://cloud.google.com/batch/docs/get-started
@@ -595,8 +586,8 @@ execution:
       # Container resolvers can be defined per execution environment using
       # either a yaml file
       #container_resolvers_config_file: null
-      
-      # Alternatively the yaml can be defined inline using 
+
+      # Alternatively the yaml can be defined inline using
       #container_resolvers:
 
     singularity_local:
@@ -605,7 +596,7 @@ execution:
       singularity_enabled: true
 
       # See the above documentation for docker_volumes, singularity_volumes works
-      # the same way. 
+      # the same way.
       #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
 
       # You can configure singularity to run using sudo - this probably should not
