@@ -152,8 +152,7 @@ describe("WorkflowRun.vue", () => {
             const wrapper = mountWithRegisteredUser();
             await settle(wrapper);
 
-            expect(wrapper.vm.workflowError).toBe(MISSING_TOOLS_MESSAGE);
-            expect(wrapper.vm.missingToolIds).toEqual(MISSING_TOOL_IDS);
+            expect(wrapper.find(".alert-danger").text()).toContain(MISSING_TOOLS_MESSAGE);
             const request = wrapper.findComponent(WorkflowMissingToolsRequest);
             expect(request.props("missingToolIds")).toEqual(MISSING_TOOL_IDS);
             // Non-instance run pages are addressed by the stored workflow id already.
@@ -181,8 +180,9 @@ describe("WorkflowRun.vue", () => {
             useHistoryItemsStore().lastUpdateTime = new Date(Date.now() + 1000);
             await settle(wrapper);
 
-            expect(wrapper.vm.workflowError).toBe("Workflow cannot be run because it contains cycles.");
-            expect(wrapper.vm.missingToolIds).toEqual([]);
+            expect(wrapper.find(".alert-danger").text()).toContain(
+                "Workflow cannot be run because it contains cycles.",
+            );
             expect(wrapper.findComponent(WorkflowMissingToolsRequest).props("missingToolIds")).toEqual([]);
             expect(wrapper.find("[data-testid='request-install-btn']").exists()).toBe(false);
         });
@@ -191,13 +191,13 @@ describe("WorkflowRun.vue", () => {
             getRunData.mockRejectedValueOnce(new WorkflowMissingToolsError(MISSING_TOOLS_MESSAGE, MISSING_TOOL_IDS));
             const wrapper = mountWithRegisteredUser();
             await settle(wrapper);
-            expect(wrapper.vm.workflowError).toBe(MISSING_TOOLS_MESSAGE);
+            expect(wrapper.find(".alert-danger").text()).toContain(MISSING_TOOLS_MESSAGE);
 
             useHistoryItemsStore().lastUpdateTime = new Date(Date.now() + 1000);
             await settle(wrapper);
 
-            expect(wrapper.vm.workflowError).toBe("");
-            expect(wrapper.vm.missingToolIds).toEqual([]);
+            expect(wrapper.find(".alert-danger").exists()).toBe(false);
+            expect(wrapper.findComponent(WorkflowMissingToolsRequest).exists()).toBe(false);
             expect(wrapper.vm.workflowModel).not.toBeNull();
         });
     });
