@@ -1,4 +1,4 @@
-"""Integration tests for the CLI shell plugins and runners."""
+"""Real Keycloak coverage for legacy OIDC and Python Social Auth."""
 
 import html
 import os
@@ -44,6 +44,8 @@ OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
         <client_secret>dummyclientsecret</client_secret>
         <redirect_uri>dummy_url</redirect_uri>
         <enable_idp_logout>true</enable_idp_logout>
+        <require_create_confirmation>$require_create_confirmation</require_create_confirmation>
+        <pkce_support>$pkce_support</pkce_support>
         <accepted_audiences>gxyclient</accepted_audiences>
     </provider>
 </OIDC>
@@ -71,8 +73,6 @@ DEBUG_AUTH_PIPELINE = (
 
 
 def wait_till_app_ready(url, timeout=60):
-    import time
-
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -161,6 +161,8 @@ class AbstractTestCases:
             with tempfile.NamedTemporaryFile("w+t", delete=False) as tmp_file:
                 data = Template(OIDC_BACKEND_CONFIG_TEMPLATE).safe_substitute(
                     provider_name=provider_name,
+                    require_create_confirmation=str(getattr(cls, "require_create_confirmation", False)).lower(),
+                    pkce_support=str(getattr(cls, "pkce_support", False)).lower(),
                 )
                 tmp_file.write(data)
                 return tmp_file.name
@@ -202,7 +204,9 @@ class AbstractTestCases:
         def _get_interactor(self, api_key=None, allow_anonymous=False) -> "ApiTestInteractor":
             return super()._get_interactor(api_key=None, allow_anonymous=True)
 
-        def _login_via_keycloak(self, username, password, expected_codes=None, save_cookies=False, session=None):
+        def _login_via_keycloak(
+            self, username, password, expected_codes=None, save_cookies=False, session=None, follow_callback=True
+        ):
 
             if expected_codes is None:
                 expected_codes = [200, 404]
@@ -213,7 +217,12 @@ class AbstractTestCases:
             matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
             assert matches
             auth_url = html.unescape(str(matches.group(1)))
-            response = session.post(auth_url, data={"username": username, "password": password}, verify=False)
+            response = session.post(
+                auth_url,
+                data={"username": username, "password": password},
+                verify=False,
+                allow_redirects=follow_callback,
+            )
             assert response.status_code in expected_codes, response
             if save_cookies:
                 self.galaxy_interactor.cookies = session.cookies
@@ -462,3 +471,134 @@ class TestGalaxyOIDCLoginPSA(AbstractTestCases.BaseKeycloakIntegrationTestCase):
         assert extra_data is not None
         assert "access_token_decoded" in extra_data
         assert "realm_access" in extra_data["access_token_decoded"]
+
+
+class TestOIDCAccountConfirmationIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
+    """Exercise deferred account creation with real provider exchanges and browser sessions."""
+
+    provider_name = "keycloak"
+    REGEX_GALAXY_CSRF_TOKEN = TestGalaxyOIDCLoginIntegration.REGEX_GALAXY_CSRF_TOKEN
+    require_create_confirmation = True
+    pkce_support = True
+
+    @classmethod
+    def patch_oidc_config(cls):
+        keycloak_authnz_init = OIDCAuthnzBaseKeycloak.__init__
+
+        def patched_keycloak_authnz_init(self, *args, **kwargs):
+            server_wrapper = cls._test_driver.server_wrappers[0]
+            keycloak_authnz_init(self, *args, **kwargs)
+            self.config.redirect_uri = (
+                f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
+            )
+
+        cls.config_patcher = patch(
+            "galaxy.authnz.custos_authnz.OIDCAuthnzBaseKeycloak.__init__", patched_keycloak_authnz_init
+        )
+        cls.config_patcher.start()
+
+    def _csrf_token(self, session):
+        response = session.get(f"{self.url}login/start")
+        self._assert_status_code_is(response, 200)
+        match = self.REGEX_GALAXY_CSRF_TOKEN.search(response.text)
+        assert match
+        return match.group(1)
+
+    def _assert_no_account(self, username):
+        sa_session = self._app.model.session
+        assert sa_session.query(model.User).filter_by(email=f"{username}@galaxy.org").count() == 0
+
+    def _begin_confirmation(self, username):
+        session, response = self._login_via_keycloak(
+            username, KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False
+        )
+        callback_url = response.headers["Location"]
+        response = session.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 302)
+        query = parse.parse_qs(parse.urlsplit(response.headers["Location"]).query)
+        assert set(query) == {"confirm", "provider", "confirmation_id"}
+        assert query["confirm"] == ["true"]
+        assert query["provider"] == ["keycloak"]
+        self._assert_no_account(username)
+        response = session.get(f"{self.url}api/users/current")
+        self._assert_status_code_is(response, 200)
+        assert "email" not in response.json()
+        return session, query["confirmation_id"][0]
+
+    def _submit_confirmation(self, session, identifier, *, cancel=False):
+        action = "cancel_user_creation" if cancel else "create_user"
+        return session.post(
+            f"{self.url}authnz/keycloak/{action}",
+            data={"confirmation_id": identifier, "session_csrf_token": self._csrf_token(session)},
+            allow_redirects=False,
+        )
+
+    def test_confirmation_requires_post_and_csrf_then_creates_account(self):
+        session, identifier = self._begin_confirmation("gxyuser")
+        csrf_token = self._csrf_token(session)
+        endpoint = f"{self.url}authnz/keycloak/create_user"
+        response = session.get(endpoint, params={"confirmation_id": identifier})
+        self._assert_status_code_is(response, 405)
+        assert response.headers["Allow"] == "POST"
+        response = session.post(endpoint, data={"confirmation_id": identifier})
+        self._assert_status_code_is(response, 403)
+        # The generic controller route must enforce the same request contract.
+        response = session.get(f"{self.url}authnz/create_user", params={"provider": "keycloak"})
+        self._assert_status_code_is(response, 405)
+        self._assert_no_account("gxyuser")
+
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Cache-Control"] == "no-store"
+        assert response.json()["redirect_uri"] == "/"
+        response = session.get(f"{self.url}api/users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser@galaxy.org"
+        assert self._csrf_token(session) != csrf_token
+        sa_session = self._app.model.session
+        user = sa_session.query(model.User).filter_by(email="gxyuser@galaxy.org").one()
+        association = sa_session.query(model.CustosAuthnzToken).filter_by(user_id=user.id, provider="keycloak").one()
+        assert association.external_user_id
+        assert association.access_token
+        assert association.id_token
+        assert association.refresh_token
+
+    def test_cancellation_prevents_confirmation_and_replay(self):
+        session, identifier = self._begin_confirmation("gxyuser_never_logged_in")
+        response = self._submit_confirmation(session, identifier, cancel=True)
+        self._assert_status_code_is(response, 200)
+        assert response.json() == {}
+        assert response.headers["Cache-Control"] == "no-store"
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 400)
+        response = self._submit_confirmation(session, identifier, cancel=True)
+        self._assert_status_code_is(response, 400)
+        self._assert_no_account("gxyuser_never_logged_in")
+
+    def test_confirmation_is_bound_to_browser(self):
+        session, identifier = self._begin_confirmation("gxyuser_existing")
+        other_browser = requests.Session()
+        response = other_browser.get(f"{self.url}authnz/keycloak/login")
+        self._assert_status_code_is(response, 200)
+        response = self._submit_confirmation(other_browser, identifier)
+        self._assert_status_code_is(response, 400)
+        self._assert_no_account("gxyuser_existing")
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 200)
+        response = other_browser.get(f"{self.url}api/users/current")
+        assert "email" not in response.json()
+
+    def test_callback_is_bound_to_browser_and_cannot_replay(self):
+        session, response = self._login_via_keycloak(
+            "gxyuser_logged_in_once", KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False
+        )
+        callback_url = response.headers["Location"]
+        other_browser = requests.Session()
+        response = other_browser.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 401)
+        response = session.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 302)
+        assert "confirmation_id=" in response.headers["Location"]
+        response = session.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 401)
+        self._assert_no_account("gxyuser_logged_in_once")
