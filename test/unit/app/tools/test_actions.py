@@ -224,6 +224,9 @@ def test_determine_output_format():
     input_based_output = quick_output("txt", format_source="i2")
     __assert_output_format_is("fastq", input_based_output, [("i1", "fasta"), ("i2", "fastq")])
 
+    input_based_output = quick_output("txt", format_source="missing")
+    __assert_output_format_is("txt", input_based_output, [("i1", "fasta")])
+
     change_format_xml = """<data><change_format>
         <when input="options_type.output_type" value="solexa" format="fastqsolexa" />
         <when input="options_type.output_type" value="illumina" format="fastqillumina" />
