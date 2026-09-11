@@ -9,12 +9,14 @@ from galaxy import model
 from galaxy.exceptions import (
     ItemAccessibilityException,
     MalformedContents,
+    ObjectNotFound,
 )
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_util import (
     _remap_galaxy_markdown_calls,
     populate_invocation_markdown,
     ready_galaxy_markdown_for_export,
+    referenced_content_ids,
     to_basic_markdown,
 )
 from galaxy.util import now
@@ -90,6 +92,19 @@ class BaseExportTestCase(BaseTestCase):
         element_reverse.id = 2
         collection.collection_type = "paired"
         return collection
+
+    def _mapped_job_and_icj(self, count=3):
+        """A representative job standing in for an N-element map-over (ICJ)."""
+        job = model.Job()
+        job.id = 1
+        icj = mock.MagicMock()
+        icj.representative_job = job
+        icj.job_list = [job] + [mock.MagicMock() for _ in range(count - 1)]
+        icj_assoc = mock.MagicMock()
+        icj_assoc.implicit_collection_jobs = icj
+        icj_assoc.implicit_collection_jobs_id = 7
+        job.implicit_collection_jobs_association = icj_assoc
+        return job, icj
 
 
 class TestToBasicMarkdown(BaseExportTestCase):
@@ -334,18 +349,6 @@ job_metrics(job_id=1)
         assert "| Cores Allocated | 1 |\n" in result
         assert "| GALAXY_HOME | /path/to/home |\n" in result
 
-    def _mapped_job_and_icj(self, count=3):
-        """A representative job standing in for an N-element map-over (ICJ)."""
-        job = model.Job()
-        job.id = 1
-        icj = mock.MagicMock()
-        icj.representative_job = job
-        icj.job_list = [job] + [mock.MagicMock() for _ in range(count - 1)]
-        icj_assoc = mock.MagicMock()
-        icj_assoc.implicit_collection_jobs = icj
-        job.implicit_collection_jobs_association = icj_assoc
-        return job, icj
-
     def test_tool_stdout_implicit_collection_jobs(self):
         job, icj = self._mapped_job_and_icj(count=3)
         job.tool_stdout = "mapped stdout"
@@ -425,6 +428,7 @@ history_dataset_display(history_dataset_id=1)
 """
         with self._expect_get_hda(hda):
             _, export_markdown, extra_data = self._ready_export(example)
+        assert "history_dataset_display" in export_markdown
         assert "history_datasets" not in extra_data
 
     def test_ready_export_two_datasets_not_baked(self):
@@ -442,6 +446,7 @@ history_dataset_display(history_dataset_id=2)
 """
         self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
         _, export_markdown, extra_data = self._ready_export(example)
+        assert export_markdown.count("history_dataset_display") == 2
         assert "history_datasets" not in extra_data
 
     def test_export_dataset_collection_not_baked(self):
@@ -459,6 +464,7 @@ history_dataset_collection_display(history_dataset_collection_id=1)
 ```
 """
         _, export, extra_data = self._ready_export(example)
+        assert "history_dataset_collection_display" in export
         assert "history_dataset_collections" not in extra_data
 
     def test_galaxy_version(self):
@@ -489,6 +495,7 @@ invocation_time(invocation_id=1)
 ```
 """
         _, result, extra_data = self._ready_export(example)
+        assert "invocation_time" in result
         assert "invocations" not in extra_data
 
     def test_export_replaces_embedded_history_dataset_type(self):
@@ -589,3 +596,130 @@ history_dataset_display(history_dataset_id=2)
 """
         with pytest.raises(MalformedContents):
             _remap_galaxy_markdown_calls(lambda container, line: (line, False), example)
+
+
+class TestReferencedContentCollector(BaseExportTestCase):
+    def test_dataset_display(self):
+        hda = self._new_hda()
+        example = """
+```galaxy
+history_dataset_display(history_dataset_id=1)
+```
+"""
+        with self._expect_get_hda(hda):
+            referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == [("hda", 1)]
+        assert referenced.warnings == []
+
+    def test_multiple_dataset_directives_deduped(self):
+        hda = self._new_hda()
+        hda2 = self._new_hda()
+        hda2.id = 2
+        example = """
+```galaxy
+history_dataset_display(history_dataset_id=1)
+```
+
+```galaxy
+history_dataset_as_image(history_dataset_id=2)
+```
+
+```galaxy
+history_dataset_peek(history_dataset_id=1)
+```
+"""
+        self.app.hda_manager.get_accessible.side_effect = [hda, hda2, hda]
+        referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == [("hda", 1), ("hda", 2)]
+        assert referenced.warnings == []
+
+    def test_collection_display(self):
+        hdca = model.HistoryDatasetCollectionAssociation()
+        hdca.id = 7
+        self.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
+        example = """
+```galaxy
+history_dataset_collection_display(history_dataset_collection_id=7)
+```
+"""
+        referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == [("hdca", 7)]
+        assert referenced.warnings == []
+
+    def test_inaccessible_reference_skipped_with_warning(self):
+        self.app.hda_manager.get_accessible.side_effect = ObjectNotFound("gone")
+        example = """
+```galaxy
+history_dataset_display(history_dataset_id=1)
+```
+"""
+        referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == []
+        assert len(referenced.warnings) == 1
+
+    def test_non_content_directives_ignored(self):
+        example = """
+```galaxy
+generate_time()
+```
+
+```galaxy
+generate_galaxy_version()
+```
+"""
+        referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == []
+        assert referenced.warnings == []
+
+    def test_job_directive_records_plain_job(self):
+        job = model.Job()
+        job.id = 5
+        example = """
+```galaxy
+job_metrics(job_id=5)
+```
+"""
+        with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+            referenced = referenced_content_ids(self.trans, example)
+        assert referenced.job_refs == [5]
+        assert referenced.icj_refs == []
+        assert referenced.refs == []
+
+    def test_job_directive_records_icj(self):
+        job, icj = self._mapped_job_and_icj()
+        example = """
+```galaxy
+tool_stdout(implicit_collection_jobs_id=7)
+```
+"""
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+                referenced = referenced_content_ids(self.trans, example)
+        assert referenced.icj_refs == [7]
+        assert referenced.job_refs == []
+
+    def test_element_job_folded_to_icj(self):
+        # A job_id= directive on a job that belongs to an ICJ is folded to its ICJ.
+        job, _icj = self._mapped_job_and_icj()
+        example = """
+```galaxy
+job_metrics(job_id=1)
+```
+"""
+        with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+            referenced = referenced_content_ids(self.trans, example)
+        assert referenced.icj_refs == [7]
+        assert referenced.job_refs == []
+
+    def test_inaccessible_job_skipped_with_warning(self):
+        example = """
+```galaxy
+job_metrics(job_id=5)
+```
+"""
+        with mock.patch.object(JobManager, "get_accessible_job", side_effect=ItemAccessibilityException("nope")):
+            referenced = referenced_content_ids(self.trans, example)
+        assert referenced.job_refs == []
+        assert referenced.icj_refs == []
+        assert len(referenced.warnings) == 1

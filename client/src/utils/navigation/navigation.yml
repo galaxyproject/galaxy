@@ -705,6 +705,32 @@ pages:
       permissions_button:
         type: data-description
         selector: 'page permissions button'
+      save_view_button:
+        type: data-description
+        selector: 'page save-view button'
+      chat_button:
+        type: data-description
+        selector: 'page chat button'
+      extract_workflow_button:
+        type: data-description
+        selector: 'page extract workflow button'
+      chat_panel:
+        type: data-description
+        selector: 'page chat panel'
+      chat_input: '.page-chat-panel #chat-input'
+      chat_send_button: '.page-chat-panel .send-button'
+      chat_loading: '.page-chat-panel [data-description="chat loading indicator"]'
+      chat_query_cell: '.page-chat-panel .entry-query .query-text'
+      chat_response_content: '.page-chat-panel .entry-response .response-content'
+      chat_new_conversation:
+        type: data-description
+        selector: 'new conversation button'
+      chat_history_button:
+        type: data-description
+        selector: 'chat history button'
+      chat_history_sidebar:
+        type: data-description
+        selector: 'page chat history list'
       revision_compare_current_button:
         type: data-description
         selector: 'revision compare current button'
@@ -1149,6 +1175,7 @@ workflow_extract:
     workflow_name_input: '[data-description="workflow-name-input"]'
     create_button: '[data-description="create-workflow-button"]'
     no_workflow_message: '[data-description="no-workflow-message"]'
+    no_seed_message: '[data-description="no-seed-message"]'
     tool_card: '[data-step-type="tool"]'
     tool_card_with_job_id: '[data-step-type="tool"][data-job-id]'
     mapped_tool_card: '[data-step-kind="mapped-tool"]'
@@ -1156,6 +1183,7 @@ workflow_extract:
     tool_card_checkbox_checked: '[data-step-type="tool"] input[id^="g-card-select-"]:checked'
     card_checkbox_by_job_id: '[data-job-id="${job_id}"] input[id^="g-card-select-"]'
     card_by_icj_id: '[data-icj-id="${icj_id}"]'
+    card_checkbox_by_icj_id: '[data-icj-id="${icj_id}"] input[id^="g-card-select-"]'
     mapped_badge: '[id^="g-card-badge-mapped-tool-"]'
     all_card_checkboxes_checked: '[data-description="workflow-extraction-form"] input[id^="g-card-select-"]:checked'
     output_star_for_job: '[data-job-id="${job_id}"] [data-output-star]'
@@ -1165,6 +1193,10 @@ workflow_extract:
     output_rename_input: '#output-name-input'
     output_rename_confirm: '#rename-modal-output .g-modal-confirm-buttons button:last-of-type'
     output_rename_cancel: '#rename-modal-output .g-modal-confirm-buttons button:first-of-type'
+    step_label_add_for_job: '[data-job-id="${job_id}"] .g-card-rename'
+    step_label_clear_for_job: '[data-job-id="${job_id}"] .g-card-clear-title'
+    step_rename_input: '#step-name-input'
+    step_rename_confirm: '#rename-modal-step .g-modal-confirm-buttons button:last-of-type'
 
 invocations:
   selectors:

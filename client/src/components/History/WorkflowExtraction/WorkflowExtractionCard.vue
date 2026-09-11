@@ -72,6 +72,8 @@ const emit = defineEmits<{
     (e: "select"): void;
     (e: "toggle-output", outputIndex: number): void;
     (e: "rename-output", outputIndex: number): void;
+    (e: "label-step"): void;
+    (e: "clear-step-label"): void;
     (e: "view-job", jobId: string): void;
 }>();
 
@@ -131,6 +133,16 @@ const badges = computed<CardBadge[]>(() => {
     } else {
         badges.push(INPUT_IS_RENAMABLE_BADGE);
     }
+    if (props.job.seed_warning) {
+        badges.push({
+            id: "seed-warning",
+            label: "Seeded as Input",
+            icon: faExclamationTriangle,
+            title: props.job.seed_warning,
+            class: "unselectable",
+            variant: "warning",
+        });
+    }
     badges.push({
         id: "step-type",
         label: meta.label,
@@ -146,6 +158,41 @@ const titleIcon = computed<TitleIcon>(() => {
     return { icon, title: label };
 });
 
+/** Card title: input rows show their (editable) name; tool rows show the step
+ *  label when one is set, falling back to the tool name. Mirrors the workflow
+ *  editor, where a labeled node displays its label rather than the tool name. */
+const cardTitle = computed(() => {
+    if (isInputStep(props.job)) {
+        return props.job.newName;
+    }
+    return props.job.stepLabel || props.job.tool_name || props.job.tool_id || "Unnamed Step";
+});
+
+/** Title pencil tooltip: inputs are renamed, tool steps are labeled (add vs.
+ *  edit depending on whether a label is already set). */
+const renameTitle = computed(() => {
+    if (isInputStep(props.job)) {
+        return "Rename";
+    }
+    return props.job.stepLabel ? "Edit this workflow step's label" : "Add a workflow step label";
+});
+
+/** Tool steps with a label set get a clear (x) beside the pencil to drop it
+ *  back to the unlabeled default. Inputs always have a name, so no clear. */
+const canClearStepLabel = computed(
+    () => props.job.step_type === "tool" && Boolean(props.job.stepLabel) && props.job.checked && !props.job.invalid,
+);
+
+/** The title pencil drives input rename for inputs and label add/edit for tool
+ *  steps, so both step kinds share the same title-adjacent affordance. */
+function onTitleRename() {
+    if (props.job.step_type === "tool") {
+        emit("label-step");
+    } else {
+        emit("rename");
+    }
+}
+
 function displayLabel(output: ExtractionOutput): string {
     return output.label || output.suggested_name || output.name || output.output_name || "Output";
 }
@@ -155,14 +202,18 @@ function displayLabel(output: ExtractionOutput): string {
     <GCard
         :class="{ disabled: Boolean(props.job.invalid) }"
         :badges="badges"
-        :title="isInputStep(props.job) ? props.job.newName : props.job.tool_name || props.job.tool_id || 'Unnamed Step'"
+        :title="cardTitle"
         :title-icon="titleIcon"
-        :can-rename-title="props.job.step_type !== 'tool' && props.job.checked"
+        :can-rename-title="props.job.checked && !props.job.invalid"
+        :rename-title="renameTitle"
+        :can-clear-title="canClearStepLabel"
+        clear-title-tooltip="Remove this workflow step's label"
         selectable
         :selected="props.job.checked"
         select-title="Include as a step in the workflow"
         dim-when-unselected
-        @rename="emit('rename')"
+        @rename="onTitleRename"
+        @clear-title="emit('clear-step-label')"
         @select="emit('select')">
         <template v-slot:select>
             <FontAwesomeIcon
@@ -232,6 +283,18 @@ function displayLabel(output: ExtractionOutput): string {
         font-size: 0.8rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem 0.25rem 0 0;
+    }
+
+    // GCard renders the clear-title control as a neutral icon button; the
+    // destructive (muted -> red on hover) styling is our policy, so we keep it
+    // here rather than push it into GCard's default.
+    :deep(.g-card-clear-title) {
+        color: $text-muted;
+
+        &:hover {
+            background-color: $brand-danger;
+            color: $white;
+        }
     }
 
     .workflow-extraction-output {

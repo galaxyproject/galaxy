@@ -24,6 +24,10 @@ interface RowBase {
     id: string | null;
     checked: boolean;
     invalid?: InvalidReason | null;
+    /** Part of the producing subgraph of a notebook's referenced outputs. False for plain history summaries. */
+    seeded: boolean;
+    /** Set when a job directive seeded this row but its tool is not a workflow step, so it became an input. */
+    seed_warning?: string | null;
     outputs: ExtractionOutput[];
 }
 
@@ -34,6 +38,8 @@ export interface ToolStep extends RowBase {
     tool_version_warning?: string | null;
     implicit_collection_jobs_id?: string | null;
     implicit_collection_jobs_size?: number | null;
+    /** Optional workflow step label; empty string = unlabeled (off by default). */
+    stepLabel: string;
 }
 
 export interface InputStep extends RowBase {
@@ -59,6 +65,8 @@ export function toExtractionRow(job: WorkflowExtractionJob): ExtractionRow {
             id: job.id,
             checked: job.checked,
             invalid: job.invalid,
+            seeded: job.seeded ?? false,
+            seed_warning: job.seed_warning,
             outputs,
             step_type: "tool",
             tool_id: job.tool_id,
@@ -66,12 +74,15 @@ export function toExtractionRow(job: WorkflowExtractionJob): ExtractionRow {
             tool_version_warning: job.tool_version_warning,
             implicit_collection_jobs_id: job.implicit_collection_jobs_id,
             implicit_collection_jobs_size: job.implicit_collection_jobs_size,
+            stepLabel: "",
         };
     }
     return {
         id: job.id,
         checked: job.checked,
         invalid: job.invalid,
+        seeded: job.seeded ?? false,
+        seed_warning: job.seed_warning,
         outputs,
         step_type: job.step_type,
         newName: defaultInputName(outputs),
