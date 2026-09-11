@@ -470,6 +470,7 @@ class BaseJobRunner:
                 # We're synchronously waiting for a task here. This means we have to have a result backend.
                 # That is bad practice and also means this can never become part of another task.
                 try:
+                    log.debug("Dispatching external metadata execution to celery for job: %d", job_wrapper.job_id)
                     set_job_metadata.delay(
                         tool_job_working_directory=job_wrapper.working_directory,
                         job_id=job_wrapper.job_id,
@@ -862,6 +863,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors, Generic[T]):
 
     monitor_queue: Queue[T]
     watched: list[T]
+    always_handle_metadata_externally = False
 
     def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         super().__init__(app, nworkers, **kwargs)
@@ -970,9 +972,19 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors, Generic[T]):
         return collect_output_success, stdout, stderr
 
     def finish_job(self, job_state: T) -> None:
+        """Handle external metadata (if needed), then call _finish_job."""
+        external_metadata = self.always_handle_metadata_externally or not asbool(
+            job_state.job_wrapper.job_destination.params.get("embed_metadata_in_job", True)
+        )
+        if external_metadata:
+            self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
+        self._finish_job(job_state)
+
+    def _finish_job(self, job_state: T) -> None:
         """
         Get the output/error for a finished job, pass to `job_wrapper.finish`
         and cleanup all the job's temporary files.
+        Subclasses override this for post-metadata work.
         """
         galaxy_id_tag = job_state.job_wrapper.get_id_tag()
         external_job_id = job_state.job_id

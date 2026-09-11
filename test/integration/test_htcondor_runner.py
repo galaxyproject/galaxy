@@ -43,6 +43,7 @@ execution:
   environments:
     htcondor_environment:
       runner: htcondor
+      embed_metadata_in_job: false
     local_environment:
       runner: local
 tools:
@@ -651,9 +652,9 @@ class FakeHTCondorJobIntegrationInstance(FakeHTCondorIntegrationInstance):
 fake_job_instance = integration_util.integration_module_instance(FakeHTCondorJobIntegrationInstance)
 
 
-def test_fake_end_to_end_job(fake_job_instance):
-    """Full Galaxy job lifecycle via the htcondor runner backed by the fake module."""
-    fake_job_instance._run_tool_test("simple_constructs")
+def test_fake_end_to_end_job_with_external_metadata(fake_job_instance):
+    """Run a real job and external metadata lifecycle through the HTCondor runner."""
+    fake_job_instance._run_tool_test("metadata_columns")
 
 
 class FakeHTCondorCancelIntegrationInstance(FakeHTCondorIntegrationInstance):
@@ -1337,6 +1338,10 @@ def test_finish_handles_external_metadata(fake_instance, fake_htcondor, runner_f
     method, job_state_record = runner.work_queue.get_nowait()
     assert method == runner.finish_job
     assert job_state_record.job_id == cjs.job_id
+    assert metadata_calls == []
+
+    method(job_state_record)
+
     assert metadata_calls == [(job_wrapper, True)]
     assert runner.watched == []
 
