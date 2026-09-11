@@ -1,5 +1,5 @@
 <template>
-    <b-popover :target="target" triggers="hover" placement="bottomleft" boundary="window">
+    <GPopover :target="target" triggers="hover" placement="bottomleft" boundary="window">
         <template v-slot:title>{{ title }}</template>
         <div class="popover-wide">
             <p v-if="invocationPreferredObjectStoreId">Galaxy Storage has been set at the invocation level.</p>
@@ -17,13 +17,16 @@
                 header.
             </div>
         </div>
-    </b-popover>
+    </GPopover>
 </template>
 
 <script>
 import showTargetPopoverMixin from "@/components/ObjectStore/showTargetPopoverMixin";
 
+import GPopover from "@/components/BaseComponents/GPopover.vue";
+
 export default {
+    components: { GPopover },
     mixins: [showTargetPopoverMixin],
     props: {
         invocationPreferredObjectStoreId: {

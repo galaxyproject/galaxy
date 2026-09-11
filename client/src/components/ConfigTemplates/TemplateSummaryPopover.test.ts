@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { STANDARD_FILE_SOURCE_TEMPLATE } from "./test_fixtures";
 
 import TemplateSummaryPopover from "./TemplateSummaryPopover.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 const localVue = getLocalVue(true);
 
@@ -17,7 +18,7 @@ describe("TemplateSummaryPopover", () => {
             },
             localVue,
         });
-        const popover = wrapper.findComponent({ name: "BPopover" });
-        expect(popover.attributes().target).toEqual("popover-target");
+        const popover = wrapper.findComponent(GPopover);
+        expect(popover.props("target")).toEqual("popover-target");
     });
 });

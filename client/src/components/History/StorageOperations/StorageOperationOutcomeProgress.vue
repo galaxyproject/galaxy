@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { BPopover, BProgress, BProgressBar } from "bootstrap-vue";
+import { BProgress, BProgressBar } from "bootstrap-vue";
 import { computed } from "vue";
 
 import localize from "@/utils/localization";
+
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 type ProgressHeightClass = "storage-operation-progress-sm" | "storage-operation-progress-md";
 
@@ -67,7 +69,7 @@ const popoverTargetId = `storage-operation-progress-${Math.random().toString(36)
             </BProgress>
         </div>
 
-        <BPopover
+        <GPopover
             v-if="props.showDetails"
             :target="popoverTargetId"
             triggers="hover focus"
@@ -88,7 +90,7 @@ const popoverTargetId = `storage-operation-progress-${Math.random().toString(36)
                     {{ props.totalCount }} ({{ progressPercent }}%)
                 </div>
             </div>
-        </BPopover>
+        </GPopover>
     </div>
 </template>
 
