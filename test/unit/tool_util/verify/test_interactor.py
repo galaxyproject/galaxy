@@ -227,3 +227,65 @@ def test_wait_for_job_surfaces_http_status(interactor, mocked):
 def test_wait_for_job_returns_when_job_is_ok(interactor, mocked):
     mocked.get(f"{API}/jobs/job1", json={"state": "ok"})
     interactor.wait_for_job("job1")
+
+
+def test_requests_reuse_one_connection_per_thread():
+    """Polling should not open a fresh TCP connection every time.
+
+    Job-status polling dominates a large run, so a connection per request
+    turns "has this finished yet" into tens of thousands of connects.
+    """
+    import http.server
+    import threading
+
+    from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
+
+    connects = []
+
+    class CountingServer(http.server.ThreadingHTTPServer):
+        def get_request(self):
+            conn, addr = super().get_request()
+            connects.append(addr)
+            return conn, addr
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        # HTTP/1.0 closes after every response, which would hide reuse.
+        protocol_version = "HTTP/1.1"
+
+        def do_GET(self):
+            body = b'{"state": "running"}'
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = CountingServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        interactor = GalaxyInteractorApi(
+            galaxy_url=f"http://127.0.0.1:{server.server_address[1]}",
+            master_api_key="key",
+            api_key="key",
+        )
+        for _ in range(25):
+            interactor._get("jobs/abc")
+    finally:
+        server.shutdown()
+
+    assert len(connects) == 1, f"expected one reused connection, got {len(connects)}"
+
+
+def test_connect_timeout_is_separate_from_the_read_timeout():
+    """A connect that is never answered must not cost the read budget."""
+    from galaxy.tool_util.verify.interactor import (
+        CONNECT_TIMEOUT,
+        DEFAULT_TIMEOUT,
+    )
+
+    connect_timeout, read_timeout = DEFAULT_TIMEOUT
+    assert connect_timeout == CONNECT_TIMEOUT
+    assert connect_timeout < read_timeout

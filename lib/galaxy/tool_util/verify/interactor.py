@@ -6,6 +6,7 @@ import re
 import shutil
 import sys
 import tempfile
+import threading
 import time
 import traceback
 import urllib.parse
@@ -14,6 +15,7 @@ from collections.abc import (
     Callable,
     Generator,
 )
+from http.cookiejar import DefaultCookiePolicy
 from json import dumps
 from logging import getLogger
 from typing import (
@@ -95,7 +97,36 @@ DEFAULT_USE_LEGACY_API: UseLegacyApiT = "always"
 VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False))
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
+
+# Module-level requests.get() and friends open a fresh TCP connection for
+# every call. Job-status polling makes that the dominant cost of a large
+# run: tens of thousands of connects to ask a question whose answer has
+# usually not changed. A Session reuses the connection instead.
+#
+# requests.Session is not thread-safe and --parallel-tests runs tests in a
+# thread pool, so keep one per thread rather than sharing. Cookie storage is
+# blocked so behaviour otherwise matches the module-level calls, which
+# discard their session - callers pass cookies explicitly.
+_thread_local = threading.local()
+
+
+def _session() -> requests.Session:
+    session = getattr(_thread_local, "session", None)
+    if session is None:
+        session = requests.Session()
+        session.cookies.set_policy(DefaultCookiePolicy(allowed_domains=[]))
+        _thread_local.session = session
+    return session
+
+
 DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
+# A TCP connect either completes promptly or is not going to. Passing a
+# single scalar applies the read budget to the connect as well, so a connect
+# that is never answered costs the full read timeout before the test is
+# failed - ten minutes, by default, of waiting for something that will not
+# arrive.
+CONNECT_TIMEOUT: float = float(os.environ.get("GALAXY_TEST_CONNECT_TIMEOUT", 30))
+DEFAULT_TIMEOUT: tuple[float, float] = (CONNECT_TIMEOUT, util.DEFAULT_SOCKET_TIMEOUT)
 CLEANUP_TEST_HISTORIES = "GALAXY_TEST_NO_CLEANUP" not in os.environ
 DEFAULT_TARGET_HISTORY = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
 
@@ -1282,8 +1313,8 @@ class GalaxyInteractorApi:
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, files=files, as_json=json, headers=headers)
-        kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
-        return requests.post(url, **kwd)
+        kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
+        return _session().post(url, **kwd)
 
     def _options(
         self,
@@ -1298,29 +1329,29 @@ class GalaxyInteractorApi:
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
-        kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
-        return requests.options(url, **kwd)
+        kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
+        return _session().options(url, **kwd)
 
     def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False, params=None):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, params=params, headers=headers)
-        kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
-        return requests.delete(url, **kwd)
+        kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
+        return _session().delete(url, **kwd)
 
     def _patch(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
-        kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
-        return requests.patch(url, **kwd)
+        kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
+        return _session().patch(url, **kwd)
 
     def _put(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
-        kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
-        return requests.put(url, **kwd)
+        kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
+        return _session().put(url, **kwd)
 
     def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False, allow_redirects=True):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
@@ -1329,11 +1360,11 @@ class GalaxyInteractorApi:
         if self.cookies:
             kwargs["cookies"] = self.cookies
         # no data for GET
-        return requests.get(
+        return _session().get(
             url,
             params=data,
             headers=headers,
-            timeout=util.DEFAULT_SOCKET_TIMEOUT,
+            timeout=DEFAULT_TIMEOUT,
             allow_redirects=allow_redirects,
             **kwargs,
         )
@@ -1345,7 +1376,7 @@ class GalaxyInteractorApi:
         if self.cookies:
             kwargs["cookies"] = self.cookies
         # no data for HEAD
-        return requests.head(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT, **kwargs)
+        return _session().head(url, params=data, headers=headers, timeout=DEFAULT_TIMEOUT, **kwargs)
 
     def get_api_url(self, path: str) -> str:
         if path.startswith("http"):
