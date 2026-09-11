@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import (
     Any,
     cast,
-    NamedTuple,
     Optional,
     TYPE_CHECKING,
 )
@@ -72,6 +71,10 @@ from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
+from galaxy.tool_util.abstract_tool import (
+    AbstractTool,
+    parse_tool_version_for_comparison,
+)
 from galaxy.tool_util.deps import (
     build_dependency_manager,
     CachedDependencyManager,
@@ -80,11 +83,7 @@ from galaxy.tool_util.deps import (
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
 from galaxy.tool_util.fetcher import ToolLocationFetcher
 from galaxy.tool_util.identifiers import uri_safe_tool_id
-from galaxy.tool_util.loader import (
-    imported_macro_paths,
-    raw_tool_xml_tree,
-    template_macro_params,
-)
+from galaxy.tool_util.loader import template_macro_params
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.tool_util.model_factory import parse_tool
 from galaxy.tool_util.ontologies.ontology_data import (
@@ -101,7 +100,6 @@ from galaxy.tool_util.parameters import (
 from galaxy.tool_util.parser import (
     get_tool_source,
     RequiredFiles,
-    ToolOutputCollectionPart,
 )
 from galaxy.tool_util.parser.interface import (
     InputSource,
@@ -236,10 +234,7 @@ from galaxy.util.json import (
 )
 from galaxy.util.path import StrPath
 from galaxy.util.rules_dsl import RuleSet
-from galaxy.util.template import (
-    fill_template,
-    refactoring_tool,
-)
+from galaxy.util.template import refactoring_tool
 from galaxy.util.tool_shed.common_util import (
     get_tool_shed_repository_url,
     get_tool_shed_url_from_tool_shed_registry,
@@ -378,16 +373,6 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 }
 
 
-def parse_tool_version_for_comparison(version: str):
-    """Parse Galaxy's numeric ``+galaxyN`` suffix as a PEP 440 version."""
-    suffix_marker = "+galaxy"
-    if suffix_marker in version:
-        base, suffix = version.split(suffix_marker, 1)
-        if suffix:
-            version = f"{base}{suffix_marker}.{suffix.lstrip('.')}"
-    return parse_version(version)
-
-
 def tool_requires_galaxy_python_environment(
     *,
     tool_type: str,
@@ -476,18 +461,6 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
     "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
     "sucos_max_score": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
 }
-
-
-class RawToolSource(NamedTuple):
-    """Compact representation of a tool's raw source for transport/serialization.
-
-    Attributes:
-        raw_tool_source: String form of the tool source (typically XML or YAML).
-        tool_source_class: The class name of the ToolSource implementation (e.g., 'XmlToolSource').
-    """
-
-    raw_tool_source: str
-    tool_source_class: str
 
 
 def get_safe_version(tool: "Tool", requested_tool_version: str) -> str | None:
@@ -1169,7 +1142,7 @@ class JobContext(BaseJobContext):
         return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
 
 
-class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
+class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -1306,11 +1279,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def _view(self):
         return self.app.dependency_resolvers_view
-
-    @property
-    def version_object(self):
-        """Parse version string, handling special Galaxy version format."""
-        return parse_tool_version_for_comparison(self.version)
 
     @property
     def sa_session(self):
@@ -1882,29 +1850,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
         return not (self.tool_type == "interactive" or Version(str(self.profile)) >= Version("26.2"))
 
-    def parse_command(self, tool_source):
-        """ """
-        # Command line (template). Optional for tools that do not invoke a local program
-        if (command := tool_source.parse_command()) is not None:
-            self.command = command.lstrip()  # get rid of leading whitespace
-            # Must pre-pend this AFTER processing the cheetah command template
-            self.interpreter = tool_source.parse_interpreter()
-        else:
-            self.command = ""
-            self.interpreter = None
-
-    def parse_shell_command(self, tool_source: ToolSource):
-        self.shell_command = tool_source.parse_shell_command()
-
-    def parse_base_command(self, tool_source: ToolSource):
-        self.base_command = tool_source.parse_base_command()
-
-    def parse_arguments(self, tool_source: ToolSource):
-        self.arguments = tool_source.parse_arguments()
-
-    def parse_environment_variables(self, tool_source):
-        return tool_source.parse_environment_variables()
-
     def parse_inputs(self, tool_source: ToolSource):
         """
         Parse the "<inputs>" element and create appropriate `ToolParameter` s.
@@ -1982,28 +1927,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
         self.outputs, self.output_collections = tool_source.parse_outputs(self.app)
-
-    def to_raw_tool_source(self) -> RawToolSource:
-        """Return a compact representation of this tool's source for external processing.
-
-        Provides both the raw tool source string and the concrete ToolSource class name.
-        """
-        return RawToolSource(
-            raw_tool_source=self.tool_source.to_string(),
-            tool_source_class=type(self.tool_source).__name__,
-        )
-
-    # TODO: Include the tool's name in any parsing warnings.
-    def parse_stdio(self, tool_source: ToolSource):
-        """
-        Parse <stdio> element(s) and fill in self.return_codes,
-        self.stderr_rules, and self.stdout_rules. Return codes have a range
-        and an error type (fault or warning).  Stderr and stdout rules have
-        a regular expression and an error level (fault or warning).
-        """
-        exit_codes, regexes = tool_source.parse_stdio()
-        self.stdio_exit_codes = exit_codes
-        self.stdio_regexes = regexes
 
     def _parse_citations(self, tool_source):
         citation_models = tool_source.parse_citations()
@@ -2247,45 +2170,9 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             help_content = HelpContent(format="restructuredtext", content=help_text)
         return help_content
 
-    def find_output_def(self, name):
-        # name is JobToOutputDatasetAssociation name.
-        # TODO: to defensive, just throw IndexError and catch somewhere
-        # up that stack.
-        if ToolOutputCollectionPart.is_named_collection_part_name(name):
-            collection_name, part = ToolOutputCollectionPart.split_output_name(name)
-            collection_def = self.output_collections.get(collection_name, None)
-            if not collection_def:
-                return None
-            return collection_def.outputs.get(part, None)
-        else:
-            return self.outputs.get(name, None)
-
     @property
     def is_workflow_compatible(self):
         return self._is_workflow_compatible
-
-    def check_workflow_compatible(self, tool_source):
-        """
-        Determine if a tool can be used in workflows. External tools and the
-        upload tool are currently not supported by workflows.
-        """
-        # Multiple page tools are not supported -- we're eliminating most
-        # of these anyway
-        if self.has_multiple_pages:
-            return False
-        # This is probably the best bet for detecting external web tools
-        # right now
-        if self.tool_type.startswith("data_source"):
-            return False
-
-        if hasattr(tool_source, "root"):
-            root = tool_source.root
-            if not string_as_bool(root.get("workflow_compatible", "True")):
-                return False
-
-        # TODO: Anyway to capture tools that dynamically change their own
-        #       outputs?
-        return True
 
     def new_state(self, trans: "ProvidesHistoryContext"):
         """
@@ -2295,26 +2182,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         state = DefaultToolState()
         state.initialize(trans, self)
         return state
-
-    def get_param(self, key):
-        """
-        Returns the parameter named `key` or None if there is no such
-        parameter.
-        """
-        return self.inputs.get(key, None)
-
-    def get_hook(self, name):
-        """
-        Returns an object from the code file referenced by `code_namespace`
-        (this will normally be a callable object)
-        """
-        if self.code_namespace:
-            # Try to look up hook in self.hook_map, otherwise resort to default
-            if name in self.hook_map and self.hook_map[name] in self.code_namespace:
-                return self.code_namespace[self.hook_map[name]]
-            elif name in self.code_namespace:
-                return self.code_namespace[name]
-        return None
 
     def visit_inputs(self, values, callback):
         """
@@ -2942,27 +2809,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         """
         return self._view.get_requirements_status({self.id: self.tool_requirements}, self.installed_tool_dependencies)
 
-    @property
-    def output_discover_patterns(self):
-        # patterns to collect for remote job execution
-        patterns = []
-        for output in self.outputs.values():
-            patterns.extend(output.output_discover_patterns)
-        return patterns
-
-    def build_redirect_url_params(self, param_dict):
-        """
-        Substitute parameter values into self.redirect_url_params
-        """
-        if not self.redirect_url_params:
-            return
-        redirect_url_params = None
-        # Substituting parameter values into the url params
-        redirect_url_params = fill_template(self.redirect_url_params, context=param_dict)
-        # Remove newlines
-        redirect_url_params = redirect_url_params.replace("\n", " ").replace("\r", " ")
-        return redirect_url_params
-
     def parse_redirect_url(self, data, param_dict):
         """
         Parse the REDIRECT_URL tool param. Tools that send data to an external
@@ -3002,22 +2848,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             USERNAME = "Anonymous"
         redirect_url += f"&USERNAME={USERNAME}"
         return redirect_url
-
-    def call_hook(self, hook_name, *args, **kwargs):
-        """
-        Call the custom code hook function identified by 'hook_name' if any,
-        and return the results
-        """
-        try:
-            code = self.get_hook(hook_name)
-            if code:
-                return code(*args, **kwargs)
-        except Exception as e:
-            original_message = ""
-            if len(e.args):
-                original_message = e.args[0]
-            e.args = (f"Error in '{self.name}' hook '{hook_name}', original message: {original_message}",)
-            raise
 
     def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         pass
@@ -3507,23 +3337,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
     def get_default_history_by_trans(self, trans: "ProvidesHistoryContext", create=False):
         return trans.get_history(create=create)
-
-    @classmethod
-    def get_externally_referenced_paths(self, path):
-        """Return relative paths to externally referenced files by the tool
-        described by file at `path`. External components should not assume things
-        about the structure of tool xml files (this is the tool's responsibility).
-        """
-        tree = raw_tool_xml_tree(path)
-        root = tree.getroot()
-        external_paths = []
-        for code_elem in root.findall("code"):
-            external_path = code_elem.get("file")
-            if external_path:
-                external_paths.append(external_path)
-        external_paths.extend(imported_macro_paths(root))
-        # May also need to load external citation files as well at some point.
-        return external_paths
 
 
 class OutputParameterJSONTool(Tool):
