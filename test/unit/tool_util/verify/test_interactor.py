@@ -6,6 +6,8 @@ from typing import (
 )
 
 import pytest
+import responses
+from requests.exceptions import HTTPError
 
 from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
@@ -182,67 +184,46 @@ def test_remote_to_input_forwards_force_path_paste_for_composite_data(force_path
     assert all(call["force_path_paste"] is force_path_paste for call in interactor.calls)
 
 
-class _StatusResponse:
-    """Minimal stand-in for a requests.Response with a chosen status."""
-
-    def __init__(self, status_code, content=b"", payload=None):
-        self.status_code = status_code
-        self.content = content
-        self._payload = payload
-
-    def json(self):
-        if self._payload is None:
-            raise ValueError("Expecting value: line 1 column 1 (char 0)")
-        return self._payload
-
-    def raise_for_status(self):
-        if self.status_code >= 400:
-            raise AssertionError(f"{self.status_code} Server Error")
+GALAXY_URL = "http://galaxy.example"
+API = f"{GALAXY_URL}/api"
 
 
-class _SequencedResponseInteractor(GalaxyInteractorApi):
-    """Interactor handing out canned responses in order, recording requests."""
-
-    def __init__(self, responses, download_attempts=None):
-        self._responses = list(responses)
-        self.requests: list[str] = []
-        self.download_attempts = download_attempts or len(self._responses)
-        self.download_sleep = 0
-
-    def _get(self, *args, **kwds):
-        self.requests.append(args[0])
-        return self._responses.pop(0)
+@pytest.fixture
+def interactor():
+    return GalaxyInteractorApi(
+        galaxy_url=GALAXY_URL, master_api_key="admin", api_key="key", download_attempts=3, download_sleep=0
+    )
 
 
-def test_dataset_fetcher_retries_conflict():
-    """409 means the dataset is not ready yet, so it earns the same retry a
-    transient 500 gets - otherwise the first attempt fails the whole test."""
-    interactor = _SequencedResponseInteractor([_StatusResponse(409), _StatusResponse(200, content=b"payload")])
-    # getattr, not attribute access: the fetcher is name-mangled, which mypy
-    # cannot resolve on an external reference.
-    fetcher = getattr(interactor, "_GalaxyInteractorApi__dataset_fetcher")("hist1")  # noqa: B009
-    assert fetcher("hda1") == b"payload"
-    assert len(interactor.requests) == 2
+@pytest.fixture
+def mocked():
+    with responses.RequestsMock() as rsps:
+        yield rsps
 
 
-def test_dataset_fetcher_does_not_retry_success():
-    interactor = _SequencedResponseInteractor([_StatusResponse(200, content=b"payload")])
-    # getattr, not attribute access: the fetcher is name-mangled, which mypy
-    # cannot resolve on an external reference.
-    fetcher = getattr(interactor, "_GalaxyInteractorApi__dataset_fetcher")("hist1")  # noqa: B009
-    assert fetcher("hda1") == b"payload"
-    assert len(interactor.requests) == 1
+def test_verify_output_dataset_retries_while_dataset_is_not_ready(interactor, mocked):
+    display = f"{API}/histories/hist1/contents/hda1/display"
+    mocked.get(display, status=409)
+    mocked.get(display, body=b"payload")
+    interactor.verify_output_dataset("hist1", "hda1", None, {"assert_list": []}, "some_tool")
+    assert len(mocked.calls) == 2
 
 
-def test_state_ready_surfaces_http_status():
-    """A non-2xx while polling job state must name its status rather than
-    surfacing as a JSON decode error at character 0."""
-    interactor = _SequencedResponseInteractor([_StatusResponse(502)])
-    with pytest.raises(AssertionError) as exc:
-        interactor._state_ready("job1", "boom")
-    assert "502" in str(exc.value)
+def test_verify_output_dataset_gives_up_after_download_attempts(interactor, mocked):
+    display = f"{API}/histories/hist1/contents/hda1/display"
+    for _ in range(3):
+        mocked.get(display, status=409)
+    with pytest.raises(HTTPError, match="409"):
+        interactor.verify_output_dataset("hist1", "hda1", None, {"assert_list": []}, "some_tool")
+    assert len(mocked.calls) == 3
 
 
-def test_state_ready_reads_state_on_success():
-    interactor = _SequencedResponseInteractor([_StatusResponse(200, payload={"state": "ok"})])
-    assert interactor._state_ready("job1", "boom") is True
+def test_wait_for_job_surfaces_http_status(interactor, mocked):
+    mocked.get(f"{API}/jobs/job1", status=502)
+    with pytest.raises(HTTPError, match="502"):
+        interactor.wait_for_job("job1")
+
+
+def test_wait_for_job_returns_when_job_is_ok(interactor, mocked):
+    mocked.get(f"{API}/jobs/job1", json={"state": "ok"})
+    interactor.wait_for_job("job1")

@@ -1249,7 +1249,7 @@ class GalaxyInteractorApi:
                 else:
                     break
 
-            assert response, f"Failed to fetch url '{url}'"
+            assert response is not None, f"Failed to fetch url '{url}'"
             response.raise_for_status()
             return response.content
 
