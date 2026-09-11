@@ -399,17 +399,12 @@ handling:
   # db-transaction-isolation) and the value is an integer > 0. Default is to grab as many jobs ready to run as possible.
   #max_grab: 8
 
-  # Handlers query for and dispatch jobs ready to run in a loop. If the number of jobs in the `new` state grows very
-  # large but they cannot be dispatched due to user concurrency limits, checking all of these jobs on every iteration
-  # can drastically slow down job throughput as each pending job is checked and then deferred due to limits. This option
-  # limits the number of jobs per user returned by the query on each iteration. By default it is set to 100. Setting
-  # this lower can improve throughput for other users when one user submits thousands of independent jobs.
+  # Limits the number of pending jobs each handler checks per user on each pass. Defaults to 100. Lower values can
+  # improve responsiveness for other users when one user has a large backlog, but may increase the time before deferred
+  # jobs are checked again. Anonymous sessions each have their own limit. This setting does not apply to SQLite or
+  # in-memory job queues.
   #
-  # Anonymous sessions have separate windows. This limit does not apply to SQLite or in-memory job queues.
-  # If a destination mapper raises JobNotReadyException to wait for resources, the handler advances through that user's
-  # input-ready jobs in windows of this size, then retries from the beginning. Jobs arriving during a sweep are considered
-  # on the next sweep so they cannot indefinitely delay retries. Ordinary concurrency waits alone do not start a sweep.
-  # Sweep progress is local to each handler and resets on restart; deferred jobs remain in the `new` state.
+  # See https://docs.galaxyproject.org/en/latest/admin/jobs.html#ready-window-size for details.
   #ready_window_size: 100
 
   # An ID or tag of the handler(s) that should handle any jobs not assigned to a specific handler (which is probably
