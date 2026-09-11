@@ -1,4 +1,6 @@
 import logging
+import math
+import time
 from contextlib import asynccontextmanager
 from typing import (
     Any,
@@ -9,18 +11,17 @@ from a2wsgi import WSGIMiddleware
 from fastapi import (
     FastAPI,
     Request,
+    Response,
 )
 from fastapi.openapi.constants import REF_TEMPLATE
-from slowapi import (
-    _rate_limit_exceeded_handler,
-    Limiter,
-)
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
 from tuspyserver import create_tus_router
 
+from galaxy.exceptions import TooManyRequestsException
 from galaxy.schema.generics import ref_to_name
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
@@ -29,6 +30,7 @@ from galaxy.webapps.base.api import (
     add_request_id_middleware,
     build_route_name_index,
     GalaxyFileResponse,
+    get_error_response_for_request,
     include_all_package_routers,
 )
 from galaxy.webapps.base.webapp import (
@@ -299,6 +301,22 @@ def include_mcp(app: FastAPI, gx_app, mcp_app):
         log.error(f"Failed to mount MCP server: {e}")
 
 
+def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
+    """Report a hit rate limit as a regular Galaxy error response.
+
+    The client only surfaces ``err_msg``, so slowapi's default ``{"error": ...}``
+    body would show as a bare "Request failed". ``Retry-After`` is derived from
+    the limit window the same way slowapi's own header injection does it; that
+    injection is not enabled because it requires every limited route to take a
+    ``Response`` parameter.
+    """
+    error = TooManyRequestsException(f"Rate limit exceeded: {exc.detail}")
+    limit_item, identifiers = request.state.view_rate_limit
+    reset_time, _remaining = request.app.state.limiter.limiter.get_window_stats(limit_item, *identifiers)
+    error.retry_after = max(1, math.ceil(reset_time - time.time()))
+    return get_error_response_for_request(request, error)
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
     """Build the FastAPI app that fronts the Galaxy web server."""
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
@@ -318,7 +336,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
     if gx_app.config.use_access_logging_middleware:
         add_raw_context_middlewares(app)
     else:
