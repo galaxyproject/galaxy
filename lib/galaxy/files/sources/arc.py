@@ -54,7 +54,21 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
 
     Exports do not land on the project's default branch: arcfs commits the file as a Git LFS pointer
     on a ``run_results-*`` branch and opens a merge request for it, so an exported file only shows up
-    in a listing once a project maintainer has merged that request.
+    in a listing once a project maintainer has merged that request. That branch is named from a hash
+    of the access token rather than from the export, so everything written with one token shares a
+    branch and the merge request that the first export opened.
+
+    Known limitations, all of them properties of the backend rather than choices made here:
+
+    - Entries carry no size, timestamp or hash. GitLab's repository tree API does not return them,
+      and asking per file would cost a request each.
+    - Search reads at most ``MAX_ITEMS_LIMIT`` entries and filters them by name, so on a server with
+      more ARCs than that, a match beyond the cap is not found. GitLab can search projects server
+      side, but arcfs does not expose that yet.
+    - The root listing is ordered by last activity, so a push between two page requests reorders it,
+      and a listing assembled from several pages can repeat one project and miss another.
+    - The fsspec cache options are accepted for consistency with the other fsspec sources, but arcfs
+      replaces fsspec's expiring cache with a plain dict and ignores them.
     """
 
     plugin_type = "arc"
