@@ -368,28 +368,6 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
         assert actual_preferences == default_preferences
 
-    def test_preferences_get_falls_back_to_default_for_missing_category(self):
-        """Users who saved preferences before a category was introduced have no
-        key for it in their stored blob. ``get`` must fall back to default
-        settings rather than raising ``KeyError`` (which would silently drop
-        the notification at association-creation time).
-        """
-        # Build preferences from a stale blob that predates tool_installation_request.
-        stale_blob = {
-            PersonalNotificationCategory.message: {
-                "enabled": True,
-                "channels": {"push": True, "email": True, "webhook": False},
-            }
-        }
-        preferences = UserNotificationPreferences.model_validate({"preferences": stale_blob})
-
-        settings = preferences.get(PersonalNotificationCategory.tool_installation_request)
-
-        # Default settings, not a raise.
-        assert settings == NotificationCategorySettings()
-        assert settings.enabled is True
-        assert settings.channels.push is True
-
     def test_update_user_notification_preferences(self):
         user = self._create_test_user()
         preferences = self.notification_manager.get_user_notification_preferences(user)
@@ -662,8 +640,26 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
         return role
 
 
+class TestUserNotificationPreferencesFallback:
+    def test_get_falls_back_to_default_for_a_category_missing_from_the_stored_blob(self):
+        # Preferences saved before a category existed have no key for it; a
+        # KeyError here would drop the notification when associations are created.
+        stale_blob = {
+            PersonalNotificationCategory.message: {
+                "enabled": True,
+                "channels": {"push": True, "email": True, "webhook": False},
+            }
+        }
+        preferences = UserNotificationPreferences.model_validate({"preferences": stale_blob})
+
+        settings = preferences.get(PersonalNotificationCategory.tool_installation_request)
+
+        assert settings == NotificationCategorySettings()
+        assert settings.enabled is True
+        assert settings.channels.push is True
+
+
 class TestToolInstallationRequestContentValidation:
-    """Sanitization/bounds on the user-submitted tool-request content models."""
 
     def test_control_characters_are_collapsed_in_single_line_fields(self):
         tool = RequestedTool(name="FastQC\nEvil", requested_version="1.0\r2")
@@ -685,20 +681,12 @@ class TestToolInstallationRequestContentValidation:
         with pytest.raises(ValidationError):
             RequestedTool(tool_url="javascript:alert(1)")
 
-    def test_tools_list_is_bounded(self):
-        with pytest.raises(ValidationError):
-            ToolInstallationRequestCreateContent(tools=[RequestedTool(name=f"tool-{i}") for i in range(51)])
-
     def test_unicode_line_separators_are_sanitized(self):
         # NEL in single-line fields collapses to a space; in multiline fields
         # Unicode line/paragraph separators normalize to newlines.
         tool = RequestedTool(name="FastQC\x85Evil", description="l1\u2028l2\u2029l3")
         assert tool.name == "FastQC Evil"
         assert tool.description == "l1\nl2\nl3"
-
-    def test_zero_width_identifier_is_rejected(self):
-        with pytest.raises(ValidationError):
-            RequestedTool(name="\u200b")
 
     def test_crlf_text_fitting_after_normalization_is_accepted(self):
         # Raw length exceeds the bound, sanitized length does not.
@@ -721,23 +709,17 @@ class TestToolInstallationRequestContentValidation:
                 }
             )
 
-    def test_bidi_and_tag_characters_are_stripped(self):
-        # RTL override (U+202E) must not survive into rendered labels, and a
-        # name made only of Unicode tag characters is not a usable identifier.
-        tool = RequestedTool(name="a\u202eevil\u202cb")
-        assert tool.name == "aevilb"
-        with pytest.raises(ValidationError):
-            RequestedTool(name="\U000e0041\U000e0042")
-
     def test_every_unicode_format_character_is_stripped(self):
-        # The filter is by general category (Cf), not an enumerated list, so
-        # bidi marks outside the classic ranges -- e.g. U+061C ARABIC LETTER
-        # MARK -- are stripped too, and a name made only of them is rejected.
-        tool = RequestedTool(name="bwa\u061c", description="l1\n\u061cl2")
-        assert tool.name == "bwa"
+        # The filter is by general category (Cf), not an enumerated list: the
+        # RTL override (U+202E) must not survive into rendered labels, and bidi
+        # marks outside the classic ranges (U+061C ARABIC LETTER MARK) go too.
+        tool = RequestedTool(name="a\u202eevil\u202cb\u061c", description="l1\n\u061cl2")
+        assert tool.name == "aevilb"
         assert tool.description == "l1\nl2"
-        with pytest.raises(ValidationError):
-            RequestedTool(name="\u061c")
+        # A name made only of format characters (zero-width space, tag characters) is not an identifier.
+        for name in ("\u200b", "\U000e0041\U000e0042", "\u061c"):
+            with pytest.raises(ValidationError):
+                RequestedTool(name=name)
 
     def test_subject_tool_label_is_truncated_for_header_safety(self):
         tool = RequestedTool(tool_url="https://example.org/" + "x" * 1500)
@@ -747,11 +729,13 @@ class TestToolInstallationRequestContentValidation:
         # Short labels are untouched.
         assert ToolInstallationRequestEmailNotificationTemplateBuilder._tool_label(RequestedTool(name="bwa")) == "bwa"
 
-    def test_field_lengths_are_bounded(self):
+    def test_bounds_are_enforced(self):
         with pytest.raises(ValidationError):
             RequestedTool(name="x" * 256)
         with pytest.raises(ValidationError):
             ToolInstallationRequestCreateContent(tools=[RequestedTool(name="bwa")], additional_remarks="x" * 5001)
+        with pytest.raises(ValidationError):
+            ToolInstallationRequestCreateContent(tools=[RequestedTool(name=f"tool-{i}") for i in range(51)])
 
 
 class TestToolInstallationRequestEmailBuilder(NotificationManagerBaseTestCase):
