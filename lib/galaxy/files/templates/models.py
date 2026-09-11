@@ -55,6 +55,7 @@ FileSourceTemplateType = Literal[
     "omero",
     "ssh",
     "ckan",
+    "commoncrawl",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -542,6 +543,18 @@ class CKANFileSourceConfiguration(StrictModel):
     writable: bool = True
 
 
+class CommonCrawlFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["commoncrawl"]
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class CommonCrawlFileSourceConfiguration(StrictModel):
+    type: Literal["commoncrawl"]
+    writable: bool = False
+
+
 FileSourceTemplateConfiguration = Annotated[
     PosixFileSourceTemplateConfiguration
     | S3FSFileSourceTemplateConfiguration
@@ -566,7 +579,8 @@ FileSourceTemplateConfiguration = Annotated[
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
-    | CKANFileSourceTemplateConfiguration,
+    | CKANFileSourceTemplateConfiguration
+    | CommonCrawlFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -594,7 +608,8 @@ FileSourceConfiguration = Annotated[
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
-    | CKANFileSourceConfiguration,
+    | CKANFileSourceConfiguration
+    | CommonCrawlFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -683,6 +698,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
     "ckan": CKANFileSourceConfiguration,
+    "commoncrawl": CommonCrawlFileSourceConfiguration,
 }
 
 

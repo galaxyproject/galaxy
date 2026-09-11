@@ -36,6 +36,7 @@ omero-py #type: omero
 iiif-fsspec # type: iiif
 fs-irods # type: irods, depends on python-irodsclient
 mavedb-fsspec>=0.1.0 # type: mavedb
+commoncrawl-fsspec # type: commoncrawl
 
 # Vault backend
 hvac
