@@ -6,12 +6,12 @@ accesses are reported as dynamic so callers can handle them conservatively.
 """
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import (
     Literal,
     TypeAlias,
 )
-from collections.abc import Sequence
 
 InputPathSegment: TypeAlias = str | int | float
 InputPath: TypeAlias = list[InputPathSegment]
