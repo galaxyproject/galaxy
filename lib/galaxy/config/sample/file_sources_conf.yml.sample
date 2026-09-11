@@ -331,8 +331,9 @@
 
 # ARC (Annotated Research Context) file source backed by a DataPLANT DataHUB (GitLab) instance.
 # Requires the optional 'arcfs-fsspec' package. Public ARCs can be browsed without a token;
-# private ARCs and exports need a personal access token with the "api" scope. Exports are committed
-# to a separate branch and submitted as a merge request rather than to the ARC's default branch.
+# private ARCs and exports need a personal access token with the "api" scope. Exports go to a branch
+# named after the token and reach the ARC through a merge request, not to the default branch, so a
+# token shared between users collects all of their exports on one branch.
 - type: arc
   id: arc-nfdi4plants
   label: DataPLANT DataHUB
