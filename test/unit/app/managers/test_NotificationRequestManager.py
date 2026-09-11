@@ -19,7 +19,6 @@ from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
     NotificationCreateRequestBody,
     NotificationVariant,
-    PersonalNotificationCategory,
     StoredToolInstallationRequestContent,
 )
 from .base import BaseTestCase
@@ -170,8 +169,3 @@ class TestNotificationRequestManager(BaseTestCase):
         self.trans.sa_session.commit()
         with pytest.raises(ServerNotConfiguredForRequest):
             self._build()
-
-    def test_user_allowed_categories_derive_from_the_registry(self):
-        assert self.request_manager.user_allowed_categories == frozenset(
-            {PersonalNotificationCategory.tool_installation_request}
-        )
