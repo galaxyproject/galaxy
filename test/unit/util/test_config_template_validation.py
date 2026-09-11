@@ -339,12 +339,18 @@ def test_split_ftp_host_path(data, expected_host, expected_root):
 
 @pytest.mark.parametrize(
     "root_value",
-    ["/custom", ""],
+    ["/custom"],
 )
 def test_split_ftp_host_path_explicit_root_not_overridden(root_value):
     result = split_ftp_host_path({"host": "ftp.gnu.org/gnu/", "root": root_value})
     assert result["host"] == "ftp.gnu.org/gnu/"
     assert result["root"] == root_value
+
+
+def test_split_ftp_host_path_blank_root_treated_as_unset():
+    result = split_ftp_host_path({"host": "ftp.gnu.org/gnu/", "root": ""})
+    assert result["host"] == "ftp.gnu.org"
+    assert result["root"] == "/gnu/"
 
 
 def test_split_ftp_host_path_preserves_other_keys():
