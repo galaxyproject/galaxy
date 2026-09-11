@@ -17,7 +17,7 @@ from galaxy_test.base.populators import (
 )
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
-TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY = {
+TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY: dict[str, Any] = {
     "recipients": {"user_ids": [], "group_ids": [], "role_ids": []},
     "notification": {
         "source": "tool_installation_request_form",
@@ -418,8 +418,7 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
             private_workflow_id = self.workflow_populator.simple_workflow("tool_installation_request_private")
         submitter = self._setup_user("tool_installation_request_workflow_other@galaxy.test")
         for workflow_id in ("not-an-encoded-id", private_workflow_id):
-            # The module-level body is inferred as dict[str, object]; annotate so the nested assignment type-checks.
-            payload: dict[str, Any] = copy.deepcopy(TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY)
+            payload = copy.deepcopy(TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY)
             payload["notification"]["content"]["workflow_id"] = workflow_id
             with self._different_user(submitter["email"]):
                 response = self._post("notifications", data=payload, json=True)
