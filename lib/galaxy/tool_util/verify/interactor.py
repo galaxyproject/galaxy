@@ -27,12 +27,14 @@ from typing import (
 
 from packaging.version import Version
 from requests import Response
+from requests.adapters import HTTPAdapter
 from requests.cookies import RequestsCookieJar
 from typing_extensions import (
     NotRequired,
     Protocol,
     TypedDict,
 )
+from urllib3.util.retry import Retry
 
 from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
@@ -115,6 +117,15 @@ def _session() -> requests.Session:
     if session is None:
         session = requests.Session()
         session.cookies.set_policy(DefaultCookiePolicy(allowed_domains=[]))
+        # Reusing a connection means eventually reusing one the server has
+        # already closed, which surfaces as a reset rather than a clean
+        # retry - requests mounts its adapters with max_retries=0. urllib3's
+        # default allowed_methods covers only idempotent verbs, so a POST is
+        # never resent; anything else gets one more attempt on a connection
+        # that turned out to be dead.
+        adapter = HTTPAdapter(max_retries=Retry(total=3, connect=3, read=3, status=0, backoff_factor=0.1))
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
         _thread_local.session = session
     return session
 
