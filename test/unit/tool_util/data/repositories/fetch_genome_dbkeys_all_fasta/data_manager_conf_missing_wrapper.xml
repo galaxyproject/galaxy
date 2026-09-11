@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- tool_file points at a wrapper that does not exist, so the manager's outputs
+     cannot be resolved. OutputRefValid must treat the output_ref as not-checked
+     (unknown outputs), never as a demonstrably-missing output. -->
+<data_managers>
+    <data_manager tool_file="data_manager/does_not_exist.xml" id="fetch_genome_all_fasta_dbkeys">
+        <data_table name="all_fasta">
+            <output>
+                <column name="value" />
+                <column name="path" output_ref="no_such_output" />
+            </output>
+        </data_table>
+    </data_manager>
+</data_managers>

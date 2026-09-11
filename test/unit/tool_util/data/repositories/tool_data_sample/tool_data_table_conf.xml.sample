@@ -1,0 +1,10 @@
+<tables>
+    <!-- The real Tool Shed layout: the production loc (tool-data/bar.loc) is absent and
+         the sample ships beside it at tool-data/bar.loc.sample. The loader's own .sample
+         fallback strips the tool-data/ subdir and only looks in tool_data_path root, so it
+         does NOT resolve this (found=False); sample_backed picks it up instead. -->
+    <table name="bar" comment_char="#">
+        <columns>value, name, path</columns>
+        <file path="tool-data/bar.loc" />
+    </table>
+</tables>

@@ -1,0 +1,18 @@
+<tool id="consume_all_fasta" name="Consume all_fasta" version="0.1.0">
+    <description>ordinary consumer of the all_fasta data table</description>
+    <command detect_errors="exit_code"><![CDATA[
+        echo '${reference_genome}' > '${output}'
+    ]]></command>
+    <inputs>
+        <param name="reference_genome" type="select" label="Reference genome">
+            <options from_data_table="all_fasta">
+                <filter type="sort_by" column="2" />
+                <validator type="no_options" message="No reference genomes are available." />
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <help>Consumer used as a fixture for repository data-table linting.</help>
+</tool>

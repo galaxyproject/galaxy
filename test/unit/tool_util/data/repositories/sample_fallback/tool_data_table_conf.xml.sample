@@ -1,0 +1,9 @@
+<tables>
+    <!-- The referenced production loc (foo.loc) does not exist; the loader falls back
+         to foo.loc.sample. This fixture exercises that .sample fallback branch so a
+         resolved-but-sample-backed loc reports found=True with is_sample=True. -->
+    <table name="foo" comment_char="#">
+        <columns>value, name, path</columns>
+        <file path="tool-data/foo.loc" />
+    </table>
+</tables>

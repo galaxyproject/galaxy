@@ -1,0 +1,20 @@
+<tool id="consume_dynamic_table" name="Consume dynamic table" version="0.1.0">
+    <description>consumer whose from_data_table stays non-literal after macro expansion</description>
+    <command detect_errors="exit_code"><![CDATA[
+        echo '${reference_genome}' > '${output}'
+    ]]></command>
+    <inputs>
+        <param name="reference_genome" type="select" label="Reference genome">
+            <!-- @UNRESOLVED_TABLE@ is not a defined token, so it survives macro
+                 expansion as a non-literal name. It must be treated as not-checked,
+                 never flagged as a demonstrably-missing table definition. -->
+            <options from_data_table="@UNRESOLVED_TABLE@">
+                <validator type="no_options" message="No options." />
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <help>Consumer fixture exercising the non-literal from_data_table guard.</help>
+</tool>
