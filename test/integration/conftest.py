@@ -78,6 +78,45 @@ def celery_includes():
     return ["galaxy.celery.tasks"]
 
 
+# Integration instances enable Celery tasks, which sends dataset uploads
+# through a Celery chain instead of the job handler. Class-based tests get the
+# session worker through UsesCeleryTasks' autouse fixtures, but those never
+# attach to the module-level tool tests that integration_tool_runner generates,
+# so such a test only worked when a class-based test happened to run earlier in
+# the same session. Start the worker for every integration session, as the API
+# test conftest does.
+@pytest.fixture(autouse=True, scope="session")
+def request_celery_app(celery_session_app, celery_config):
+    try:
+        yield
+    finally:
+        if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
+            from galaxy.celery import celery_app
+
+            celery_app.fork_pool.stop()
+            celery_app.fork_pool.join(timeout=5)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def request_celery_worker(celery_session_worker, celery_config, celery_worker_parameters):
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def celery_worker_parameters():
+    return {
+        "queues": ("galaxy.internal", "galaxy.external"),
+    }
+
+
+@pytest.fixture(scope="session")
+def celery_parameters():
+    return {
+        "task_create_missing_queues": True,
+        "task_default_queue": "galaxy.internal",
+    }
+
+
 @pytest.fixture
 def temp_file():
     with tempfile.NamedTemporaryFile(delete=True, mode="wb") as fh:
