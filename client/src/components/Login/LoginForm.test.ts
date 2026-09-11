@@ -5,8 +5,16 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { withPrefix } from "@/utils/redirect";
 
 import MountTarget from "./LoginForm.vue";
+
+// Passthrough spy: the assertion below is about the value handed to withPrefix, and happy-dom
+// does not record an assignment to window.location.href.
+vi.mock("@/utils/redirect", async (importOriginal) => {
+    const actual = (await importOriginal()) as { withPrefix: (path: string) => string };
+    return { ...actual, withPrefix: vi.fn((path: string) => actual.withPrefix(path)) };
+});
 
 const localVue = getLocalVue(true);
 const router = injectTestRouter(localVue);
@@ -56,6 +64,27 @@ describe("LoginForm", () => {
                 return HttpResponse.json({});
             }),
         );
+    });
+
+    it("does not re-encode an already-encoded redirect", async () => {
+        // The destination arrives percent-encoded -- webapp.py quotes PATH_INFO before handing
+        // it to /login?redirect=... -- so encoding it again would turn %20 into %2520.
+        const encodedDestination = "/tool_landings/a%20b?public=true";
+        server.use(
+            http.untyped.post(/.*\/user\/login.*/, async () => {
+                return HttpResponse.json({ redirect: encodedDestination });
+            }),
+        );
+
+        const wrapper = await mountLoginForm();
+
+        const inputs = wrapper.findAll("input");
+        await inputs.at(0).setValue("test_user");
+        await inputs.at(1).setValue("test_pwd");
+        await wrapper.find("button[type='submit']").trigger("submit");
+        await flushPromises();
+
+        expect(withPrefix).toHaveBeenCalledWith(encodedDestination);
     });
 
     it("basics", async () => {

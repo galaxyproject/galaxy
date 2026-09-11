@@ -29,6 +29,29 @@ PROVIDER_COOKIE_NAME = "galaxy-oidc-provider"
 LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
 
 
+def stash_login_next(trans: "GalaxyWebTransaction", destination: str | None) -> None:
+    """Remember where the user was headed before handing them to an identity provider.
+
+    Every caller reaches this with a value that came from the client, so the check belongs
+    here rather than at each writer.
+    """
+    if destination and not is_safe_local_redirect(destination):
+        log.warning("Ignoring post-login redirect target outside of Galaxy: %s", destination)
+        destination = None
+    trans.set_cookie(value=destination or "/", name=LOGIN_NEXT_COOKIE_NAME, age=1)
+
+
+def pop_login_next(trans: "GalaxyWebTransaction") -> str:
+    """Where to send the user now that an identity provider has handed them back."""
+    destination = trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME)
+    # This cookie can sometimes be set to a literal string 'None'.
+    if destination and destination != "None":
+        if is_safe_local_redirect(destination):
+            return url_for(destination)
+        log.warning("Ignoring post-login redirect target outside of Galaxy: %s", destination)
+    return url_for("/")
+
+
 class OIDC(BaseUIController):
     @web.json
     @web.expose
@@ -89,11 +112,7 @@ class OIDC(BaseUIController):
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
             return trans.show_error_message(msg)
-        if next:
-            trans.set_cookie(value=next, name=LOGIN_NEXT_COOKIE_NAME, age=1)
-        else:
-            # If no next parameter is provided, ensure we unset any existing next cookie.
-            trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
+        stash_login_next(trans, next)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint)
         if success:
             if redirect and redirect.lower() == "true":
@@ -106,16 +125,7 @@ class OIDC(BaseUIController):
     @web.expose
     def callback(self, trans: "GalaxyWebTransaction", provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else "anonymous"
-        login_next_cookie = trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME)
-        if login_next_cookie and login_next_cookie != "None" and is_safe_local_redirect(login_next_cookie):
-            # This cookie can sometimes be set to a literal string 'None', which we don't want to use as a redirect.
-            login_next = url_for(login_next_cookie)
-        else:
-            # Fallback to default redirect if no login_next cookie is found, or if it points
-            # somewhere we refuse to send the user -- this value reaches us from the client.
-            if login_next_cookie and login_next_cookie != "None":
-                log.warning("Ignoring post-login redirect target outside of Galaxy: %s", login_next_cookie)
-            login_next = url_for("/")
+        login_next = pop_login_next(trans)
         if not bool(kwargs):
             log.warning(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
