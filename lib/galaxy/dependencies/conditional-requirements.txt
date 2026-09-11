@@ -36,7 +36,7 @@ omero-py #type: omero
 iiif-fsspec # type: iiif
 fs-irods # type: irods, depends on python-irodsclient
 mavedb-fsspec>=0.1.0 # type: mavedb
-arcfs-fsspec>=0.1.9 ; python_version >= "3.11" # type: arc
+arcfs-fsspec>=0.1.10 # type: arc
 
 # Vault backend
 hvac
