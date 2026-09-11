@@ -51,7 +51,7 @@ export interface ToolInstallationRequestNotification extends BaseUserNotificatio
  * Caller-supplied fields for a tool installation request.
  *
  * Derived from the create-only content model, which already omits the
- * server-stamped `category`/`requester_email`/`is_confirmation` fields.
+ * server-stamped `category`/`requester_email` fields.
  * `submitToolInstallationRequest` adds the `category` discriminator (required
  * by the OpenAPI union) when building the request payload.
  */

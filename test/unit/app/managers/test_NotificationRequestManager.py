@@ -20,7 +20,7 @@ from galaxy.schema.notifications import (
     NotificationCreateRequestBody,
     NotificationVariant,
     PersonalNotificationCategory,
-    ToolInstallationRequestNotificationContent,
+    StoredToolInstallationRequestContent,
 )
 from .base import BaseTestCase
 
@@ -98,14 +98,14 @@ class TestNotificationRequestManager(BaseTestCase):
         assert admin_request.recipients.user_ids == [self.admin_user.id]
         assert admin_request.galaxy_url == "https://gx"
         content = admin_request.notification.content
-        assert isinstance(content, ToolInstallationRequestNotificationContent)
+        assert isinstance(content, StoredToolInstallationRequestContent)
         assert content.requester_email == self.submitter.email
         assert content.is_confirmation is False
         assert content.tools[0].name == "bwa"
 
         assert confirmation.recipients.user_ids == [self.submitter.id]
         confirmation_content = confirmation.notification.content
-        assert isinstance(confirmation_content, ToolInstallationRequestNotificationContent)
+        assert isinstance(confirmation_content, StoredToolInstallationRequestContent)
         assert confirmation_content.is_confirmation is True
         assert confirmation_content.requester_email == self.submitter.email
 

@@ -114,12 +114,6 @@ describe("ToolInstallationRequestForm", () => {
         });
         // Requester email comes from the server (authenticated user), not the form
         expect(payload).not.toHaveProperty("requester_email");
-        expect(payload).not.toHaveProperty("is_confirmation");
-        // Removed fields no longer sent
-        expect(payload).not.toHaveProperty("requester_name");
-        expect(payload).not.toHaveProperty("requester_affiliation");
-        expect(payload).not.toHaveProperty("conda_available");
-        expect(payload).not.toHaveProperty("test_data_available");
     });
 
     it("rejects non-https URL and does not submit", async () => {

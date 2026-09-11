@@ -24938,14 +24938,10 @@ export interface components {
         };
         /**
          * ToolInstallationRequestCreateContent
-         * @description The client-submittable (request) shape of a tool installation request.
+         * @description A tool installation request as a user submits it.
          *
-         *     Carries only the fields a user supplies: the requested ``tools`` and
-         *     request-level metadata (workflow context, remarks). The two server-stamped
-         *     fields -- ``requester_email`` and ``is_confirmation`` -- are deliberately
-         *     absent so they cannot be set by clients and do not appear in the POST
-         *     request schema. The service stamps them, promoting the content to a
-         *     :class:`ToolInstallationRequestNotificationContent` for persistence.
+         *     The requested ``tools`` plus request-level context: the workflow that needs
+         *     them and any remarks for the admins.
          */
         ToolInstallationRequestCreateContent: {
             /**
@@ -24971,12 +24967,10 @@ export interface components {
         };
         /**
          * ToolInstallationRequestNotificationContent
-         * @description The persisted/response shape of a tool installation request.
+         * @description A tool installation request as delivered to its recipients.
          *
-         *     Extends the create model with the two server-stamped fields. ``requester_email``
-         *     is derived from the authenticated submitter; ``is_confirmation`` selects the
-         *     confirmation vs. admin-facing email template. Both are written by the service
-         *     and never trusted from the client.
+         *     Adds ``requester_email``, taken from the authenticated submitter, so the
+         *     admin's notification card can name and contact the requester.
          */
         ToolInstallationRequestNotificationContent: {
             /**
@@ -24989,12 +24983,6 @@ export interface components {
              * @enum {string}
              */
             category: "tool_installation_request";
-            /**
-             * Is confirmation
-             * @description True on the copy sent to the user who made the request; False on the request sent to admins.
-             * @default false
-             */
-            is_confirmation: boolean;
             /**
              * Requester email
              * @description Email address of the user who made the request.
