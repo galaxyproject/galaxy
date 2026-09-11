@@ -34,7 +34,9 @@ from galaxy.util.config_templates import (
 
 ObjectStoreTemplateVariableType = TemplateVariableType
 ObjectStoreTemplateVariableValueType: TypeAlias = TemplateVariableValueType
-ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3", "onedata", "rucio", "irods"]
+ObjectStoreTemplateType = Literal[
+    "aws_s3", "azure_blob", "boto3", "cloud", "disk", "generic_s3", "onedata", "rucio", "irods"
+]
 
 
 class S3AuthTemplate(StrictModel):
@@ -219,6 +221,135 @@ class Boto3ObjectStoreConfiguration(StrictModel):
     bucket: Boto3Bucket
     connection: Boto3Connection | None = None
     transfer: Boto3Transfer | None = None
+    badges: BadgeList = None
+
+
+# The provider-agnostic (cloudbridge) object store. The auth model is flat:
+# which fields apply depends on the provider, and the store validates the
+# combination at construction time.
+CloudProviderType = Literal["aws", "azure", "google", "openstack"]
+
+
+# User-defined stores are persisted in the database and have to keep working
+# indefinitely, so these models expose only what a user can meaningfully supply
+# and Galaxy can keep honoring: no short-lived credentials (which would expire
+# and leave a dead store), and no server-side file paths (which a user cannot
+# create and should not be able to point Galaxy at). The store itself still
+# supports those options through object_store_conf.yml, where an admin owns the
+# configuration and can change it at will.
+
+
+class CloudAuthTemplate(StrictModel):
+    # aws
+    access_key: str | TemplateExpansion | None = None
+    secret_key: str | TemplateExpansion | None = None
+    # azure (service principal)
+    subscription_id: str | TemplateExpansion | None = None
+    client_id: str | TemplateExpansion | None = None
+    secret: str | TemplateExpansion | None = None
+    tenant: str | TemplateExpansion | None = None
+    storage_account: str | TemplateExpansion | None = None
+    resource_group: str | TemplateExpansion | None = None
+    # google
+    credentials_dict: dict[str, Any] | None = None
+    # openstack (password auth, or an application credential instead)
+    username: str | TemplateExpansion | None = None
+    password: str | TemplateExpansion | None = None
+    project_name: str | TemplateExpansion | None = None
+    auth_url: str | TemplateExpansion | None = None
+    user_domain_name: str | TemplateExpansion | None = None
+    project_domain_name: str | TemplateExpansion | None = None
+    application_credential_id: str | TemplateExpansion | None = None
+    application_credential_secret: str | TemplateExpansion | None = None
+    # shared
+    region: str | TemplateExpansion | None = None
+
+
+class CloudAuth(StrictModel):
+    # aws
+    access_key: str | None = None
+    secret_key: str | None = None
+    # azure (service principal)
+    subscription_id: str | None = None
+    client_id: str | None = None
+    secret: str | None = None
+    tenant: str | None = None
+    storage_account: str | None = None
+    resource_group: str | None = None
+    # google
+    credentials_dict: dict[str, Any] | None = None
+    # openstack (password auth, or an application credential instead)
+    username: str | None = None
+    password: str | None = None
+    project_name: str | None = None
+    auth_url: str | None = None
+    user_domain_name: str | None = None
+    project_domain_name: str | None = None
+    application_credential_id: str | None = None
+    application_credential_secret: str | None = None
+    # shared
+    region: str | None = None
+
+
+class CloudBucketTemplate(StrictModel):
+    name: str | TemplateExpansion
+
+
+class CloudBucket(StrictModel):
+    name: str
+
+
+class CloudConnectionTemplate(StrictModel):
+    endpoint_url: str | TemplateExpansion | None = None
+
+
+class CloudConnection(StrictModel):
+    endpoint_url: str | None = None
+
+
+class CloudTransferTemplate(StrictModel):
+    multipart_threshold: int | TemplateExpansion | None = None
+    multipart_chunksize: int | TemplateExpansion | None = None
+    max_concurrency: int | TemplateExpansion | None = None
+    upload_multipart_threshold: int | TemplateExpansion | None = None
+    upload_multipart_chunksize: int | TemplateExpansion | None = None
+    upload_max_concurrency: int | TemplateExpansion | None = None
+    download_multipart_threshold: int | TemplateExpansion | None = None
+    download_multipart_chunksize: int | TemplateExpansion | None = None
+    download_max_concurrency: int | TemplateExpansion | None = None
+
+
+class CloudTransfer(StrictModel):
+    multipart_threshold: int | None = None
+    multipart_chunksize: int | None = None
+    max_concurrency: int | None = None
+    upload_multipart_threshold: int | None = None
+    upload_multipart_chunksize: int | None = None
+    upload_max_concurrency: int | None = None
+    download_multipart_threshold: int | None = None
+    download_multipart_chunksize: int | None = None
+    download_max_concurrency: int | None = None
+
+
+class CloudObjectStoreTemplateConfiguration(StrictModel):
+    type: Literal["cloud"]
+    provider: CloudProviderType
+    auth: CloudAuthTemplate
+    bucket: CloudBucketTemplate
+    connection: CloudConnectionTemplate | None = None
+    transfer: CloudTransferTemplate | None = None
+    badges: BadgeList = None
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class CloudObjectStoreConfiguration(StrictModel):
+    type: Literal["cloud"]
+    provider: CloudProviderType
+    auth: CloudAuth
+    bucket: CloudBucket
+    connection: CloudConnection | None = None
+    transfer: CloudTransfer | None = None
     badges: BadgeList = None
 
 
@@ -450,6 +581,7 @@ class IrodsObjectStoreConfiguration(StrictModel):
 ObjectStoreTemplateConfiguration = Annotated[
     AwsS3ObjectStoreTemplateConfiguration
     | Boto3ObjectStoreTemplateConfiguration
+    | CloudObjectStoreTemplateConfiguration
     | GenericS3ObjectStoreTemplateConfiguration
     | DiskObjectStoreTemplateConfiguration
     | AzureObjectStoreTemplateConfiguration
@@ -462,6 +594,7 @@ ObjectStoreTemplateConfiguration = Annotated[
 ObjectStoreConfiguration = Annotated[
     AwsS3ObjectStoreConfiguration
     | Boto3ObjectStoreConfiguration
+    | CloudObjectStoreConfiguration
     | DiskObjectStoreConfiguration
     | AzureObjectStoreConfiguration
     | GenericS3ObjectStoreConfiguration
@@ -537,6 +670,7 @@ def template_to_configuration(
 TypesToConfigurationClasses: dict[ObjectStoreTemplateType, type[ObjectStoreConfiguration]] = {
     "aws_s3": AwsS3ObjectStoreConfiguration,
     "boto3": Boto3ObjectStoreConfiguration,
+    "cloud": CloudObjectStoreConfiguration,
     "generic_s3": GenericS3ObjectStoreConfiguration,
     "azure_blob": AzureObjectStoreConfiguration,
     "disk": DiskObjectStoreConfiguration,
