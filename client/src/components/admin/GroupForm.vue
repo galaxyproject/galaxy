@@ -3,7 +3,7 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { ref } from "vue";
 import Multiselect from "vue-multiselect";
 import { useRouter } from "vue-router/composables";
@@ -11,6 +11,7 @@ import { useRouter } from "vue-router/composables";
 import { GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
@@ -235,10 +236,10 @@ loadGroupData();
                     </FormElementLabel>
                 </template>
             </FormCard>
-            <BButton id="admin-group-submit" class="my-2" variant="primary" @click="onSubmit">
+            <GButton id="admin-group-submit" class="my-2" color="blue" @click="onSubmit">
                 <FontAwesomeIcon :icon="faSave" class="mr-1" />
                 <span v-localize>{{ isEditMode ? "Save" : "Create" }}</span>
-            </BButton>
+            </GButton>
         </div>
     </div>
 </template>

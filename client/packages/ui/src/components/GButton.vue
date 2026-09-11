@@ -55,7 +55,11 @@ const emit = defineEmits<{
 
 function onClick(event: PointerEvent) {
     if (props.disabled) {
+        // Mirror a native disabled control, which dispatches no click event at all:
+        // without stopping propagation the click still bubbles to clickable ancestors
+        // and any `.stop`/`.prevent` modifier the caller put on this component is dead.
         event.preventDefault();
+        event.stopPropagation();
     } else {
         emit("click", event);
         emit("update:pressed", !props.pressed);
@@ -91,6 +95,14 @@ const buttonElementRef = useResolveElement(buttonRef);
 </script>
 
 <template>
+    <!--
+        `@click` binds a DOM listener when the root is a plain `button`/`a`, where Vue 2
+        ignores `nativeOn`. When the root is a RouterLink the roles swap: vue-router 3
+        never emits a `click` component event and does not merge `$listeners`, so only
+        `@click.native` reaches the rendered `<a>`. Exactly one of the two fires for any
+        given root, so the handler never runs twice. Both can collapse to a single
+        `@click` on Vue 3, where listeners fall through to a component's root element.
+    -->
     <component
         :is="baseComponent"
         ref="buttonRef"
@@ -99,10 +111,12 @@ const buttonElementRef = useResolveElement(buttonRef);
         :class="{ ...variantClasses, ...styleClasses }"
         :to="!props.disabled ? props.to : ''"
         :href="!props.disabled ? (props.to ?? props.href) : ''"
+        :type="baseComponent === 'button' ? ($attrs.type ?? 'button') : undefined"
         :title="props.tooltip ? false : currentTitle"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
-        @click="onClick">
+        @click="onClick"
+        @click.native="onClick">
         <slot></slot>
 
         <!-- TODO: make tooltip a sibling in Vue 3 -->
@@ -119,6 +133,10 @@ const buttonElementRef = useResolveElement(buttonRef);
     display: inline-flex;
     gap: var(--spacing-1);
     align-items: center;
+    // Bootstrap's `.btn` centred its content with `text-align: center`; an inline-flex
+    // box needs `justify-content` for the same effect, otherwise a full-width or
+    // fixed-size button leaves its label or glyph at flex-start.
+    justify-content: center;
     margin: 0;
     border: 1px solid;
     border-radius: var(--spacing-1);
@@ -185,6 +203,18 @@ const buttonElementRef = useResolveElement(buttonRef);
             border-color: var(--color-grey-600);
         }
 
+        // This block out-ranks the `&:hover, &:focus-visible` rule above, so the
+        // feedback has to be restated here or a pressed solid button looks inert.
+        &.g-pressed:not(.g-outline):not(.g-transparent) {
+            background-color: var(--color-grey-400);
+            border-color: var(--color-grey-600);
+
+            &:hover,
+            &:focus-visible {
+                background-color: var(--color-grey-500);
+            }
+        }
+
         &.g-outline.g-pressed {
             background-color: var(--color-grey-600);
             color: var(--color-grey-100);
@@ -211,6 +241,18 @@ const buttonElementRef = useResolveElement(buttonRef);
 
             &:focus-visible {
                 border-color: var(--color-#{$color}-900);
+            }
+
+            // See the grey block above: restate the hover / focus-visible feedback
+            // that this higher-specificity selector would otherwise swallow.
+            &.g-pressed:not(.g-outline):not(.g-transparent) {
+                background-color: var(--color-#{$color}-700);
+                border-color: var(--color-#{$color}-900);
+
+                &:hover,
+                &:focus-visible {
+                    background-color: var(--color-#{$color}-900);
+                }
             }
         }
 
@@ -321,11 +363,28 @@ const buttonElementRef = useResolveElement(buttonRef);
 </style>
 
 <style lang="scss">
-// Fix for GButton inside Bootstrap input-group-append
-// Prevents horizontal scrolling issues caused by flex layout conflicts
-// This must be unscoped to target Bootstrap's input-group-append
-.input-group-append .g-button {
+// Fixes for GButton inside a Bootstrap input group. These must be unscoped to target
+// Bootstrap's `.input-group-append` / `.input-group-prepend` wrappers, whose own rules
+// only ever matched `.btn`.
+.input-group-append .g-button,
+.input-group-prepend .g-button {
+    // Prevents horizontal scrolling issues caused by flex layout conflicts
     flex-shrink: 0;
     overflow: hidden;
+
+    // Lifts the focus ring above the adjacent input, like Bootstrap's `.input-group > .btn`
+    position: relative;
+    z-index: 2;
+}
+
+// Square off the edge that meets the input, so there is no seam against the control
+.input-group-append .g-button {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.input-group-prepend .g-button {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
 }
 </style>

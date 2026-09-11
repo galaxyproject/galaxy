@@ -1,28 +1,26 @@
 <template>
     <FormCard :title="stepTitle" :icon="nodeIcon">
         <template v-slot:operations>
-            <b-button
+            <GButton
                 v-if="isSubworkflow"
                 v-g-tooltip.hover
-                role="button"
                 title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."
-                variant="link"
-                size="sm"
+                transparent
+                size="small"
                 class="float-right py-0 px-1"
                 @click="onEditSubworkflow">
                 <span class="fa fa-pencil-alt" />
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 v-if="isSubworkflow"
                 v-g-tooltip.hover
-                role="button"
                 title="Upgrade this Workflow Step to latest Subworkflow version."
-                variant="link"
-                size="sm"
+                transparent
+                size="small"
                 class="float-right py-0 px-1"
                 @click="onUpgradeSubworkflow">
                 <span class="fa fa-sync" />
-            </b-button>
+            </GButton>
         </template>
         <template v-slot:body>
             <FormElement
@@ -90,6 +88,7 @@ import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 
 import FormConditional from "./FormConditional.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";

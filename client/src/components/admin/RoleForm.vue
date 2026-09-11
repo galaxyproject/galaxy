@@ -32,10 +32,10 @@
                     </FormElementLabel>
                 </template>
             </FormCard>
-            <BButton id="role-submit" class="my-2" variant="primary" @click="onSubmit">
+            <GButton id="role-submit" class="my-2" color="blue" @click="onSubmit">
                 <FontAwesomeIcon :icon="faSave" class="mr-1" />
                 <span v-localize>Create</span>
-            </BButton>
+            </GButton>
         </div>
     </div>
 </template>
@@ -43,12 +43,13 @@
 <script setup lang="ts">
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormSelection from "@/components/Form/Elements/FormSelection.vue";
 import FormCard from "@/components/Form/FormCard.vue";

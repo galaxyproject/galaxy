@@ -6,6 +6,7 @@ import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
@@ -81,29 +82,28 @@ watch(
     <b-card v-else body-class="p-0" class="workflow-display">
         <b-card-header v-if="!embedded">
             <span class="float-right">
-                <b-button
+                <GButton
                     v-g-tooltip.hover
                     :href="downloadUrl"
-                    variant="link"
-                    size="sm"
-                    role="button"
+                    transparent
+                    size="small"
+                    icon-only
                     title="Download Workflow"
-                    type="button"
                     class="py-0 px-1"
                     data-description="workflow download">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-g-tooltip.hover
                     :href="importUrl"
-                    role="button"
-                    variant="link"
+                    transparent
+                    size="small"
+                    icon-only
                     title="Import Workflow"
-                    type="button"
                     class="py-0 px-1"
                     data-description="workflow import">
                     <span class="fa fa-upload" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Workflow:</span>

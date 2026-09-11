@@ -34,7 +34,7 @@ function mountTarget(props = {}) {
         propsData: props,
         stubs: {
             FontAwesomeIcon: true,
-            BButton: true,
+            GButton: true,
             BAlert: true,
         },
         directives: {

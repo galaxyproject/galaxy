@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faBurn, faCheckCircle, faCopy, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -396,17 +396,17 @@ onMounted(() => {
                     {{ localize("Copy Selected") }} ({{ selectedItemIds.length }})
                 </GButton>
 
-                <BButton
+                <GButton
                     id="dataset-list-footer-bulk-delete-button"
                     v-g-tooltip.hover
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     :disabled="bulkDeleteOrRestoreLoading || bulkCopyLoading"
                     :title="bulkDeleteOrRestoreLoading ? 'Deleting datasets' : 'Delete selected datasets'"
                     @click="onBulkDelete">
                     <FontAwesomeIcon :icon="faTrash" />
                     {{ localize("Delete Selected") }} ({{ selectedItemIds.length }})
-                </BButton>
+                </GButton>
             </div>
 
             <BPagination

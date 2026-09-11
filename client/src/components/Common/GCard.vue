@@ -2,15 +2,18 @@
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faEdit, faPen, faSpinner, faStar, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BButtonGroup, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
+import { BBadge, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { sizeToGSize, variantToColor } from "@/components/BaseComponents/variantToColor";
 import { useMarkdown } from "@/composables/markdown";
 import { useUid } from "@/composables/utils/uid";
 import localize from "@/utils/localization";
 
 import type { CardAction, CardBadge, CardIndicator, Title, TitleIcon, TitleSize } from "./GCard.types";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -407,16 +410,16 @@ function onKeyDown(event: KeyboardEvent) {
                                             </template>
 
                                             <slot name="titleActions">
-                                                <BButton
+                                                <GButton
                                                     v-if="props.canRenameTitle"
                                                     :id="getElementId(props.id, 'rename')"
                                                     v-g-tooltip.hover
                                                     class="inline-icon-button g-card-rename"
-                                                    variant="link"
+                                                    transparent
                                                     :title="localize(props.renameTitle)"
                                                     @click="emit('rename')">
                                                     <FontAwesomeIcon :icon="faPen" fixed-width />
-                                                </BButton>
+                                                </GButton>
                                             </slot>
                                         </Heading>
                                     </slot>
@@ -453,7 +456,7 @@ function onKeyDown(event: KeyboardEvent) {
                         <div class="align-items-start d-flex flex-row-reverse flex-wrap gap-1 flex-shrink-0">
                             <div>
                                 <slot v-if="props.showBookmark" name="bookmark">
-                                    <BButton
+                                    <GButton
                                         v-if="!bookmarkLoading"
                                         :id="
                                             getElementId(
@@ -463,21 +466,21 @@ function onKeyDown(event: KeyboardEvent) {
                                         "
                                         v-g-tooltip.hover
                                         class="inline-icon-button"
-                                        variant="link"
+                                        transparent
                                         :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
                                         @click="toggleBookmark">
                                         <FontAwesomeIcon :icon="props.bookmarked ? faStar : farStar" fixed-width />
-                                    </BButton>
-                                    <BButton
+                                    </GButton>
+                                    <GButton
                                         v-else
                                         :id="getElementId(props.id, 'bookmark-loading')"
                                         v-g-tooltip.hover
                                         class="inline-icon-button"
-                                        variant="link"
+                                        transparent
                                         :title="localize('Bookmarking...')"
                                         disabled>
                                         <FontAwesomeIcon :icon="faSpinner" spin fixed-width />
-                                    </BButton>
+                                    </GButton>
                                 </slot>
 
                                 <slot name="extra-actions">
@@ -556,15 +559,15 @@ function onKeyDown(event: KeyboardEvent) {
                                 <div :id="getElementId(props.id, 'indicators')" class="align-self-baseline">
                                     <slot name="indicators">
                                         <template v-for="indicator in props.indicators">
-                                            <BButton
+                                            <GButton
                                                 v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="`${indicator.id}-button`"
                                                 v-g-tooltip.hover
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
-                                                :variant="indicator.variant || 'outline-secondary'"
-                                                :size="indicator.size || 'sm'"
+                                                v-bind="variantToColor(indicator.variant || 'outline-secondary')"
+                                                :size="sizeToGSize(indicator.size || 'sm')"
                                                 :to="indicator.to"
                                                 :href="indicator.href"
                                                 :disabled="indicator.disabled"
@@ -575,7 +578,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                     :icon="indicator.icon"
                                                     fixed-width />
                                                 {{ localize(indicator.label) }}
-                                            </BButton>
+                                            </GButton>
                                             <FontAwesomeIcon
                                                 v-else-if="(indicator.visible ?? true) && indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
@@ -642,21 +645,20 @@ function onKeyDown(event: KeyboardEvent) {
 
                         <div class="align-items-center d-flex flex-gapx-1 justify-content-end ml-auto">
                             <slot name="secondary-actions">
-                                <BButtonGroup
+                                <GButtonGroup
                                     v-if="props.secondaryActions?.length"
                                     :id="getElementId(props.id, 'secondary-actions')"
-                                    size="sm"
                                     class="mt-1">
                                     <template v-for="sa in props.secondaryActions">
-                                        <BButton
+                                        <GButton
                                             v-if="sa.visible ?? true"
                                             :id="getActionId(props.id, sa.id)"
                                             :key="sa.id"
                                             v-g-tooltip.hover
                                             :disabled="sa.disabled"
                                             :title="localize(sa.title)"
-                                            :variant="sa.variant || 'outline-primary'"
-                                            :size="sa.size || 'sm'"
+                                            v-bind="variantToColor(sa.variant || 'outline-primary')"
+                                            :size="sizeToGSize(sa.size || 'sm')"
                                             :to="sa.to"
                                             :href="sa.href"
                                             :target="sa.externalLink ? '_blank' : undefined"
@@ -669,31 +671,33 @@ function onKeyDown(event: KeyboardEvent) {
                                             <span class="g-card-secondary-action-label">
                                                 {{ localize(sa.label) }}
                                             </span>
-                                        </BButton>
+                                        </GButton>
                                     </template>
-                                </BButtonGroup>
+                                </GButtonGroup>
                             </slot>
 
                             <div :id="getElementId(props.id, 'primary-actions')" class="d-flex flex-gapx-1">
                                 <slot name="primary-actions">
                                     <template v-if="props.primaryActions?.length">
                                         <template v-for="pa in props.primaryActions">
-                                            <BButton
+                                            <GButton
                                                 v-if="pa.visible ?? true"
                                                 :id="getActionId(props.id, pa.id)"
                                                 :key="pa.id"
                                                 v-g-tooltip.hover
-                                                class="mt-1"
                                                 :disabled="pa.disabled"
                                                 :title="localize(pa.title)"
-                                                :variant="pa.variant || 'primary'"
-                                                :size="pa.size || 'sm'"
+                                                v-bind="variantToColor(pa.variant || 'primary')"
+                                                :size="sizeToGSize(pa.size || 'sm')"
                                                 :to="pa.to"
                                                 :href="pa.href"
-                                                :class="{
-                                                    'inline-icon-button': pa.inline,
-                                                    [String(pa.class)]: pa.class,
-                                                }"
+                                                :class="[
+                                                    'mt-1',
+                                                    {
+                                                        'inline-icon-button': pa.inline,
+                                                        [String(pa.class)]: pa.class,
+                                                    },
+                                                ]"
                                                 @click.stop="pa.handler">
                                                 <FontAwesomeIcon
                                                     v-if="pa.icon"
@@ -701,7 +705,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                     :size="pa.size || undefined"
                                                     fixed-width />
                                                 {{ localize(pa.label) }}
-                                            </BButton>
+                                            </GButton>
                                         </template>
                                     </template>
                                 </slot>

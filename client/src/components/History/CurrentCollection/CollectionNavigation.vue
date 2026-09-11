@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { faAngleDoubleLeft, faAngleLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CollectionEntry } from "@/api";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     historyName: string;
@@ -38,20 +39,21 @@ function close() {
 
 <template>
     <div class="mx-1 mt-1">
-        <BButton
+        <GButton
             v-g-tooltip:hover="historyName"
-            size="sm"
+            size="small"
             class="text-left text-decoration-none overflow-hidden text-nowrap w-100"
             style="text-overflow: ellipsis"
-            variant="link"
+            transparent
+            color="blue"
             @click="close">
             <FontAwesomeIcon :icon="faAngleDoubleLeft" class="mr-1" data-description="back to history" fixed-width />
             <span> History: {{ historyName }} </span>
-        </BButton>
+        </GButton>
 
-        <BButton v-if="previousName" size="sm" class="text-decoration-none" variant="link" @click="back">
+        <GButton v-if="previousName" size="small" class="text-decoration-none" transparent color="blue" @click="back">
             <FontAwesomeIcon :icon="faAngleLeft" class="mr-1" fixed-width />
             <span>{{ previousName }}</span>
-        </BButton>
+        </GButton>
     </div>
 </template>

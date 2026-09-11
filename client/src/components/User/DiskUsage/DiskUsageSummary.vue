@@ -12,6 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
 
 const { config, isConfigLoaded } = useConfig(true);
@@ -103,15 +104,10 @@ onMounted(async () => {
                 <b-spinner small class="mr-2" />
                 <span v-localize>Recalculating disk usage... this may take some time, please check back later.</span>
             </b-alert>
-            <b-button
-                v-else
-                id="refresh-disk-usage"
-                title="Recalculate disk usage"
-                variant="primary"
-                @click="onRefresh">
+            <GButton v-else id="refresh-disk-usage" title="Recalculate disk usage" color="blue" @click="onRefresh">
                 <FontAwesomeIcon :icon="faSyncAlt" class="mr-1" />
                 <span v-localize>Refresh</span>
-            </b-button>
+            </GButton>
         </b-container>
     </div>
 </template>

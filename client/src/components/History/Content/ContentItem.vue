@@ -8,7 +8,7 @@ import {
     faExchangeAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
@@ -25,6 +25,7 @@ import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
 import ContentOptions from "./ContentOptions.vue";
 import DatasetDetails from "./Dataset/DatasetDetails.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -324,38 +325,41 @@ function unexpandedClick(event: Event) {
         <div class="p-1 cursor-pointer" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1" data-description="content item header info">
-                    <BButton v-if="selectable" class="selector p-0" @click.stop="onButtonSelect">
+                    <GButton v-if="selectable" class="selector p-0" @click.stop="onButtonSelect">
                         <FontAwesomeIcon v-if="selected" fixed-width size="lg" :icon="faCheckSquare" />
                         <FontAwesomeIcon v-else fixed-width size="lg" :icon="faSquare" />
-                    </BButton>
-                    <BButton
+                    </GButton>
+                    <GButton
                         v-if="highlight == 'input'"
                         v-g-tooltip.hover
-                        variant="link"
+                        transparent
+                        icon-only
                         class="p-0"
                         title="Input"
                         @click.stop="toggleHighlights">
                         <FontAwesomeIcon class="text-info" :icon="faArrowCircleUp" />
-                    </BButton>
-                    <BButton
+                    </GButton>
+                    <GButton
                         v-else-if="highlight == 'active'"
                         v-g-tooltip.hover
-                        variant="link"
+                        transparent
+                        icon-only
                         class="p-0"
                         title="Inputs/Outputs highlighted for this item"
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
                         <FontAwesomeIcon :icon="faCheckCircle" />
-                    </BButton>
-                    <BButton
+                    </GButton>
+                    <GButton
                         v-else-if="highlight == 'output'"
                         v-g-tooltip.hover
-                        variant="link"
+                        transparent
+                        icon-only
                         class="p-0"
                         title="Output"
                         @click.stop="toggleHighlights">
                         <FontAwesomeIcon class="text-info" :icon="faArrowCircleDown" />
-                    </BButton>
+                    </GButton>
                     <span v-if="hasStateIcon" class="state-icon">
                         <FontAwesomeIcon
                             fixed-width
@@ -372,18 +376,19 @@ function unexpandedClick(event: Event) {
                     </BBadge>
                 </span>
                 <span class="align-self-start btn-group">
-                    <BButton
+                    <GButton
                         v-if="item.sub_items?.length && !isSubItem"
                         v-g-tooltip.hover
                         title="Show converted items"
                         tabindex="0"
                         class="display-btn px-1 align-items-center"
-                        size="sm"
-                        variant="link"
+                        size="small"
+                        transparent
+                        color="blue"
                         @click.prevent.stop="subItemsVisible = !subItemsVisible">
                         <FontAwesomeIcon :icon="faExchangeAlt" />
                         <span class="indicator">{{ item.sub_items?.length }}</span>
-                    </BButton>
+                    </GButton>
                     <ContentOptions
                         v-if="!isPlaceholder && !item.purged"
                         :writable="writable"

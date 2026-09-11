@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed, reactive, ref, set } from "vue";
 
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -53,19 +53,19 @@ function toggleCategory(category: string) {
             </ExternalLink>
         </p>
 
-        <BButton class="ui-link" @click="mainOpen = !mainOpen">
+        <GButton class="ui-link" @click="mainOpen = !mainOpen">
             <b>
                 Tutorials available in {{ trainingCategories.length }}
                 {{ trainingCategories.length > 1 ? "categories" : "category" }}
             </b>
             <FontAwesomeIcon :icon="faCaretDown" />
-        </BButton>
+        </GButton>
         <GCollapse v-model="mainOpen">
             <div v-for="category in trainingCategories" :key="category">
-                <BButton class="ui-link ml-3" @click="toggleCategory(category)">
+                <GButton class="ui-link ml-3" @click="toggleCategory(category)">
                     {{ category }} ({{ tutorialsInCategory(category).length }})
                     <FontAwesomeIcon :icon="faCaretDown" />
-                </BButton>
+                </GButton>
                 <GCollapse :visible="!!categoryOpen[category]">
                     <ul class="d-flex flex-column my-1">
                         <li v-for="tutorial in tutorialsInCategory(category)" :key="tutorial.title">
