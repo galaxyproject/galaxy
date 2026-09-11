@@ -1,4 +1,3 @@
-import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 
@@ -37,8 +36,6 @@ ROOT_MARKER = ":-:"
 # GitLab silently caps ``per_page`` at 100, while arcfs derives the page number from the requested
 # limit, so larger pages have to be assembled from several requests instead of asked for directly.
 GITLAB_MAX_PER_PAGE = 100
-# ``arcfs-fsspec`` requires a newer interpreter than Galaxy itself does.
-MINIMUM_PYTHON_VERSION = (3, 11)
 
 
 class ARCFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
@@ -69,20 +66,6 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
     template_config_class = ARCFileSourceTemplateConfiguration
     resolved_config_class = ARCFileSourceConfiguration
 
-    @property
-    def required_package_exception(self) -> Exception:
-        # The conditional requirement carries a ``python_version >= "3.11"`` marker, so on an older
-        # interpreter the package is skipped at install time and cannot be installed by hand either.
-        # Say so, instead of sending the admin to a ``pip install`` that fails on Requires-Python.
-        if sys.version_info < MINIMUM_PYTHON_VERSION:
-            required = ".".join(str(part) for part in MINIMUM_PYTHON_VERSION)
-            running = ".".join(str(part) for part in sys.version_info[:3])
-            return Exception(
-                f"{super().required_package_exception} It requires Python {required} or newer, "
-                f"but Galaxy is running on Python {running}."
-            )
-        return super().required_package_exception
-
     def _open_fs(
         self,
         context: FilesSourceRuntimeContext[ARCFileSourceConfiguration],
@@ -110,10 +93,12 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
         """Open a filesystem for one operation and translate arcfs failures into Galaxy exceptions.
 
         ``_open_fs`` builds a fresh instance per operation, so closing it here cannot affect anything
-        else in flight. ``description`` completes the "Problem ..." message of unexpected failures.
+        else in flight. ``description`` completes the "Problem ..." message of unexpected failures,
+        including the one raised when the package is missing.
         """
-        fs = self._open_fs(context, self._get_cache_options(context.config))
+        fs = None
         try:
+            fs = self._open_fs(context, self._get_cache_options(context.config))
             yield fs, context.config
         except MessageException:
             raise  # already an actionable Galaxy exception, don't wrap it again
@@ -135,7 +120,8 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
         except Exception as e:
             raise MessageException(f"Problem {description}. Reason: {e}") from e
         finally:
-            fs.close()
+            if fs is not None:
+                fs.close()
 
     def _list(
         self,
