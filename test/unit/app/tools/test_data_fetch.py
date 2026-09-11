@@ -895,48 +895,6 @@ def test_directory_path_with_a_trailing_slash(tmp_path):
     assert staged == [os.path.join("some_dir", "a.txt")]
 
 
-def test_internal_directory_symlinks_are_materialized_when_purging(tmp_path, monkeypatch):
-    """A link staying inside the tree is followed, and forces a copy.
-
-    A rename would relocate the link itself, leaving a relative one dangling.
-    """
-    source = tmp_path / "some_dir"
-    (source / "data").mkdir(parents=True)
-    (source / "data" / "chunk").write_text("payload")
-    (source / "a").symlink_to(os.path.join("data", "chunk"))
-
-    copied = []
-    real_copytree = shutil.copytree
-
-    def spy_copytree(src, dst, *args, **kwargs):
-        copied.append(src)
-        return real_copytree(src, dst, *args, **kwargs)
-
-    monkeypatch.setattr(shutil, "copytree", spy_copytree)
-
-    result, staged = _fetch_single_path(str(source), purge_source=True)
-
-    assert "error_message" not in result, result.get("error_message")
-    assert staged == [os.path.join("some_dir", "a"), os.path.join("some_dir", "data", "chunk")]
-    assert copied, "a tree holding symlinks must be copied, not renamed"
-
-
-def test_directory_symlinks_pointing_outside_the_tree_are_refused(tmp_path):
-    """Following such a link would copy files the requester may not be entitled to."""
-    outside = tmp_path / "secret"
-    outside.write_text("not yours")
-    source = tmp_path / "some_dir"
-    source.mkdir()
-    (source / "a").symlink_to(os.path.join("..", "secret"))
-
-    result, staged = _fetch_single_path(str(source), purge_source=True)
-
-    assert "points outside it" in result["error_message"]
-    assert staged == [], "nothing may be staged from a rejected directory"
-    assert source.is_dir(), "the source must be left alone"
-    assert outside.read_text() == "not yours"
-
-
 def test_a_directory_holding_a_text_file_named_meta_is_not_zarr(tmp_path):
     """The zarr layout check alone matches an ordinary directory."""
     source = tmp_path / "notes"
@@ -947,21 +905,6 @@ def test_a_directory_holding_a_text_file_named_meta_is_not_zarr(tmp_path):
 
     assert "error_message" not in result, result.get("error_message")
     assert result["ext"] == "directory"
-
-
-def test_a_symlinked_directory_root_is_materialized_when_purging(tmp_path):
-    """Renaming a symlinked root would relocate the link, not the tree."""
-    real = tmp_path / "real_store"
-    real.mkdir()
-    (real / "a.txt").write_text("payload")
-    source = tmp_path / "some_dir"
-    source.symlink_to(os.path.join(".", "real_store"))
-
-    result, staged = _fetch_single_path(str(source), purge_source=True)
-
-    assert "error_message" not in result, result.get("error_message")
-    assert staged == [os.path.join("some_dir", "a.txt")]
-    assert result["_staged_content"] == "payload", "the tree must be followed, not the link moved"
 
 
 def test_a_directory_holding_a_json_meta_file_is_not_zarr(tmp_path):
@@ -994,24 +937,101 @@ def test_non_object_json_meta_is_a_failed_sniff_not_an_error(tmp_path, meta_cont
     assert staged == [os.path.join("notes", "meta")]
 
 
-@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root ignores file permissions")
-def test_staging_never_dereferences_an_escaping_link(tmp_path):
-    """Containment is settled on the staged tree, so the target is never read.
+@pytest.mark.parametrize(
+    "make_link",
+    [
+        pytest.param(lambda root: os.symlink("chunk", os.path.join(root, "a")), id="internal"),
+        pytest.param(lambda root: os.symlink(os.path.join("..", "secret"), os.path.join(root, "a")), id="escaping"),
+        pytest.param(lambda root: os.symlink(os.pardir, os.path.join(root, "a")), id="ancestor"),
+    ],
+)
+def test_directory_uploads_refuse_symlinks(tmp_path, make_link):
+    """Links are refused rather than followed or carried into the dataset.
 
-    The target is made unreadable: dereferencing it during the copy would
-    fail with PermissionError, so our own refusal proves it was not followed.
+    Following one reads a path the requester only pointed at; an ancestor
+    link makes the copy recurse into its own destination.
     """
-    outside = tmp_path / "secret"
-    outside.write_text("not yours")
-    outside.chmod(0o000)
+    (tmp_path / "secret").write_text("not yours")
     source = tmp_path / "some_dir"
     source.mkdir()
-    (source / "a").symlink_to(os.path.join("..", "secret"))
+    (source / "chunk").write_text("payload")
+    make_link(str(source))
 
-    try:
-        result, staged = _fetch_single_path(str(source), purge_source=False)
-    finally:
-        outside.chmod(0o600)
+    result, staged = _fetch_single_path(str(source), purge_source=True)
 
-    assert "points outside it" in result["error_message"], result.get("error_message")
+    assert "symbolic links are not supported" in result["error_message"]
+    assert staged == [], "nothing may be staged from a refused directory"
+    assert source.is_dir(), "the source must be left alone"
+
+
+def test_a_symlinked_directory_root_is_refused(tmp_path):
+    real = tmp_path / "real_store"
+    real.mkdir()
+    (real / "a.txt").write_text("payload")
+    source = tmp_path / "some_dir"
+    source.symlink_to(os.path.join(".", "real_store"))
+
+    result, _ = _fetch_single_path(str(source), purge_source=True)
+
+    assert "symbolic links are not supported" in result["error_message"]
+    assert real.is_dir()
+
+
+def test_a_directory_containing_the_staging_location_is_refused(tmp_path):
+    """Copying a tree into itself walks into its own output.
+
+    Reachable by naming the job working directory or any ancestor of it.
+    """
+    with _execute_context() as execute_context:
+        job_directory = execute_context.job_directory
+        execute_context.execute_request(
+            {
+                "targets": [
+                    {
+                        "destination": {"type": "hdas"},
+                        "elements": [{"src": "path", "path": job_directory}],
+                    }
+                ]
+            },
+            datatypes_registry=STOCK_DATATYPES_CONF,
+        )
+        result = _unnamed_output(execute_context)["elements"][0]
+
+    assert "contains the location it would be staged to" in result["error_message"]
+
+
+def test_the_filesystem_root_is_refused(tmp_path):
+    result, staged = _fetch_single_path(os.sep, purge_source=False)
+
+    assert "error_message" in result, "uploading / must not be attempted"
     assert staged == []
+
+
+@pytest.mark.parametrize(
+    "checksum",
+    [
+        pytest.param({"hashes": [{"hash_function": "MD5", "hash_value": "0" * 32}]}, id="hashes-list"),
+        pytest.param({"MD5": "0" * 32}, id="md5-key"),
+        pytest.param({"SHA-256": "0" * 64}, id="sha256-key"),
+    ],
+)
+def test_directory_uploads_refuse_checksums(tmp_path, checksum):
+    """A checksum cannot be verified for a directory, so it must not be accepted.
+
+    Reporting success while silently skipping the check would be worse than
+    refusing it.
+    """
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "a.txt").write_text("hello")
+
+    with _execute_context() as execute_context:
+        element = {"src": "path", "path": str(source)}
+        element.update(checksum)
+        execute_context.execute_request(
+            {"targets": [{"destination": {"type": "hdas"}, "elements": [element]}]},
+            datatypes_registry=STOCK_DATATYPES_CONF,
+        )
+        result = _unnamed_output(execute_context)["elements"][0]
+
+    assert "checksums are not supported" in result["error_message"]

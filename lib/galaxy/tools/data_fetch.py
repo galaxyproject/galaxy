@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 import tempfile
+from collections.abc import Iterator
 from io import StringIO
 from typing import (
     Any,
@@ -267,22 +268,30 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 raise Exception(f"Non-composite datatype [{datatype}] attempting to be created with composite data.")
             return _resolve_item_with_primary(item)
 
-    def _tree_contains_symlinks(path: str) -> bool:
-        """Whether ``path`` is a symlink, or anything beneath it is.
+    def _reject_symlinks(root: str, name: str) -> None:
+        """Refuse a directory tree containing symlinks of any kind.
 
-        Only decides how to stage. Containment is settled afterwards, on the
-        staged tree, because a source we do not control can change under us.
-        The root is checked explicitly: ``os.walk`` follows a symlinked root
-        and would only ever report on its children.
+        Following a link means reading a path the requester only pointed at,
+        with Galaxy's privileges, and a link to an ancestor makes the copy
+        recurse into its own destination. Preserving them instead leaves the
+        dataset holding links into a tree it does not own. Neither is worth
+        carrying for a first version, so directories that contain them are
+        refused outright.
         """
-        if os.path.islink(path):
-            return True
-        for dirpath, dirnames, filenames in os.walk(path):
-            if any(os.path.islink(os.path.join(dirpath, entry)) for entry in dirnames + filenames):
-                return True
-        return False
+        for candidate in (root, *_walk_entries(root)):
+            if os.path.islink(candidate):
+                where = os.path.relpath(candidate, root) if candidate != root else "the directory itself"
+                raise UploadProblemException(
+                    f"Directory [{name}] contains a symbolic link [{where}]; "
+                    "symbolic links are not supported in directory uploads."
+                )
 
-    def _stage_directory(path: str, staged: str, purge_source: bool, has_symlinks: bool) -> bool:
+    def _walk_entries(root: str) -> Iterator[str]:
+        for dirpath, dirnames, filenames in os.walk(root):
+            for entry in dirnames + filenames:
+                yield os.path.join(dirpath, entry)
+
+    def _stage_directory(path: str, staged: str, purge_source: bool) -> bool:
         """Place a source directory at ``staged``, optionally purging the source.
 
         Staging and cleanup are kept separate. ``shutil.move`` would do both,
@@ -291,16 +300,12 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
         incomplete trees. A rename either moves the whole tree or changes
         nothing, so it is safe to attempt first and fall back to copying.
 
-        Nothing here follows a symlink: the copy preserves them as links, and
-        a rename reads no targets at all. Whether they may be followed is
-        decided later, against the staged tree.
-
         Returns whether the source is already gone, which a rename makes true
         as a side effect. Copying leaves the purge to the caller, so that it
         happens only once the staged tree has been accepted.
         """
         os.makedirs(os.path.dirname(staged), exist_ok=True)
-        if purge_source and not has_symlinks:
+        if purge_source:
             try:
                 os.rename(path, staged)
                 return True
@@ -309,40 +314,6 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 pass
         shutil.copytree(path, staged, symlinks=True)
         return False
-
-    def _materialize_staged_symlinks(staged: str, name: str) -> None:
-        """Replace links in the staged tree with their contents.
-
-        Staging never dereferences, so this is the first time a target is
-        read - and by now it is read from a tree we own, not one the
-        requester can still change. Checking the source beforehand instead
-        would leave a window in which a file could be swapped for a link
-        pointing anywhere the Galaxy process can read.
-
-        A link that leaves the tree is refused rather than followed.
-        """
-        root = os.path.realpath(staged)
-        links = []
-        for dirpath, dirnames, filenames in os.walk(staged):
-            for entry in dirnames + filenames:
-                entry_path = os.path.join(dirpath, entry)
-                if not os.path.islink(entry_path):
-                    continue
-                target = os.path.realpath(entry_path)
-                if target != root and not in_directory(target, root):
-                    raise UploadProblemException(
-                        f"Directory [{name}] contains a symbolic link that points outside it "
-                        f"[{os.path.relpath(entry_path, staged)}]; such links are not followed."
-                    )
-                links.append(entry_path)
-
-        for link in links:
-            target = os.path.realpath(link)
-            os.remove(link)
-            if os.path.isdir(target):
-                shutil.copytree(target, link, symlinks=True)
-            else:
-                shutil.copy2(target, link)
 
     def _resolve_directory_item(
         item: dict[str, Any],
@@ -375,15 +346,36 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                     f"Directory [{name}] cannot be uploaded as datatype [{ext}], which is not a directory datatype."
                 )
 
-        has_symlinks = _tree_contains_symlinks(path)
+        if item.get("hashes") or any(item.get(hash_function) for hash_function in HASH_NAMES):
+            raise UploadProblemException(
+                f"Directory [{name}] was given a checksum, which cannot be verified for a directory; "
+                "checksums are not supported in directory uploads."
+            )
+
+        # Cheap refusals first: walking the tree below is proportional to its
+        # size, and naming "/" would otherwise walk the whole filesystem.
+        source_root = os.path.realpath(path)
+        working_directory = os.path.realpath(upload_config.working_directory)
+        if working_directory == source_root or in_directory(working_directory, source_root):
+            # Everything staged lands under the working directory, so copying
+            # such a tree would walk into its own output. Reachable by naming
+            # the job directory or anything above it, "." or "/".
+            raise UploadProblemException(
+                f"Directory [{name}] contains the location it would be staged to and cannot be uploaded from there."
+            )
+
+        # Before anything is written, so a refusal leaves the source untouched.
+        _reject_symlinks(path, name)
+
         primary_file = stream_to_file(
             StringIO(""), prefix="upload_directory_primary_file", dir=upload_config.working_directory
         )
         extra_files_path = f"{primary_file}_extra"
         staged = os.path.join(extra_files_path, os.path.basename(path))
-        purged = _stage_directory(path, staged, purge_source, has_symlinks)
-        if has_symlinks:
-            _materialize_staged_symlinks(staged, name)
+        purged = _stage_directory(path, staged, purge_source)
+        # A raced-in link cannot have been followed - nothing here dereferences -
+        # but it must not reach the dataset either.
+        _reject_symlinks(staged, name)
         if purge_source and not purged:
             # Only now that the staged tree has been accepted.
             shutil.rmtree(path, ignore_errors=True)
