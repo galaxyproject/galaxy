@@ -1241,7 +1241,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.shell_command: str | None = None
         self.javascript_requirements: list[JavascriptRequirement] | None = None
         self.credentials: list[CredentialsRequirement] | None = None
-        self._is_workflow_compatible = None
+        self._is_workflow_compatible: bool | None = None
         self.__tests: str | None = None
         self.__tests_parsed: bool = False
         self.parameters: list[ToolParameterT] | None = None
@@ -2824,6 +2824,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         """
         redirect_url = param_dict.get("REDIRECT_URL")
         redirect_url_params = self.build_redirect_url_params(param_dict)
+        assert redirect_url_params is not None
         # Add the parameters to the redirect url.  We're splitting the param
         # string on '**^**' because the self.parse() method replaced white
         # space with that separator.

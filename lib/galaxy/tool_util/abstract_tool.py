@@ -10,6 +10,7 @@ on ``galaxy-app``.
 from typing import (
     Any,
     NamedTuple,
+    TYPE_CHECKING,
 )
 
 from galaxy.tool_util.loader import (
@@ -17,14 +18,24 @@ from galaxy.tool_util.loader import (
     raw_tool_xml_tree,
 )
 from galaxy.tool_util.parser import ToolOutputCollectionPart
-from galaxy.tool_util.parser.interface import ToolSource
-from galaxy.tool_util.parser.output_objects import (
-    ToolOutputBase,
-    ToolOutputCollection,
-)
 from galaxy.tool_util.version import parse_version
 from galaxy.util import string_as_bool
 from galaxy.util.template import fill_template
+
+if TYPE_CHECKING:
+    from packaging.version import Version
+
+    from galaxy.tool_util.parser.interface import ToolSource
+    from galaxy.tool_util.parser.output_objects import (
+        ToolOutputBase,
+        ToolOutputCollection,
+    )
+    from galaxy.tool_util.parser.stdio import (
+        ToolStdioExitCode,
+        ToolStdioRegex,
+    )
+    from galaxy.tool_util.version import LegacyVersion
+    from galaxy.util.path import StrPath
 
 
 class RawToolSource(NamedTuple):
@@ -39,7 +50,7 @@ class RawToolSource(NamedTuple):
     tool_source_class: str
 
 
-def parse_tool_version_for_comparison(version: str):
+def parse_tool_version_for_comparison(version: str) -> "LegacyVersion | Version":
     """Parse Galaxy's numeric ``+galaxyN`` suffix as a PEP 440 version."""
     suffix_marker = "+galaxy"
     if suffix_marker in version:
@@ -56,7 +67,7 @@ class AbstractTool:
     (jobs, database, security) live on ``galaxy.tools.Tool`` instead.
     """
 
-    tool_source: ToolSource
+    tool_source: "ToolSource"
     id: str | None
     name: str
     version: str
@@ -66,18 +77,18 @@ class AbstractTool:
     shell_command: str | None
     base_command: list[str] | None
     arguments: list[str] | None
-    stdio_exit_codes: list
-    stdio_regexes: list
+    stdio_exit_codes: "list[ToolStdioExitCode]"
+    stdio_regexes: "list[ToolStdioRegex]"
     inputs: dict[str, Any]
-    outputs: dict[str, ToolOutputBase]
-    output_collections: dict[str, ToolOutputCollection]
+    outputs: "dict[str, ToolOutputBase]"
+    output_collections: "dict[str, ToolOutputCollection]"
     has_multiple_pages: bool
     code_namespace: dict[str, Any]
     hook_map: dict[str, str]
     redirect_url_params: str | None
 
     @property
-    def version_object(self):
+    def version_object(self) -> "LegacyVersion | Version":
         """Parse version string, handling special Galaxy version format."""
         return parse_tool_version_for_comparison(self.version)
 
@@ -91,7 +102,7 @@ class AbstractTool:
             tool_source_class=type(self.tool_source).__name__,
         )
 
-    def parse_command(self, tool_source):
+    def parse_command(self, tool_source: "ToolSource") -> None:
         """ """
         # Command line (template). Optional for tools that do not invoke a local program
         if (command := tool_source.parse_command()) is not None:
@@ -102,20 +113,20 @@ class AbstractTool:
             self.command = ""
             self.interpreter = None
 
-    def parse_shell_command(self, tool_source: ToolSource):
+    def parse_shell_command(self, tool_source: "ToolSource") -> None:
         self.shell_command = tool_source.parse_shell_command()
 
-    def parse_base_command(self, tool_source: ToolSource):
+    def parse_base_command(self, tool_source: "ToolSource") -> None:
         self.base_command = tool_source.parse_base_command()
 
-    def parse_arguments(self, tool_source: ToolSource):
+    def parse_arguments(self, tool_source: "ToolSource") -> None:
         self.arguments = tool_source.parse_arguments()
 
-    def parse_environment_variables(self, tool_source):
+    def parse_environment_variables(self, tool_source: "ToolSource") -> list[dict[str, Any]]:
         return tool_source.parse_environment_variables()
 
     # TODO: Include the tool's name in any parsing warnings.
-    def parse_stdio(self, tool_source: ToolSource):
+    def parse_stdio(self, tool_source: "ToolSource") -> None:
         """
         Parse <stdio> element(s) and fill in self.return_codes,
         self.stderr_rules, and self.stdout_rules. Return codes have a range
@@ -126,7 +137,7 @@ class AbstractTool:
         self.stdio_exit_codes = exit_codes
         self.stdio_regexes = regexes
 
-    def find_output_def(self, name):
+    def find_output_def(self, name: str) -> "ToolOutputBase | None":
         # name is JobToOutputDatasetAssociation name.
         # TODO: to defensive, just throw IndexError and catch somewhere
         # up that stack.
@@ -140,14 +151,14 @@ class AbstractTool:
             return self.outputs.get(name, None)
 
     @property
-    def output_discover_patterns(self):
+    def output_discover_patterns(self) -> list[str]:
         # patterns to collect for remote job execution
         patterns = []
         for output in self.outputs.values():
             patterns.extend(output.output_discover_patterns)
         return patterns
 
-    def check_workflow_compatible(self, tool_source):
+    def check_workflow_compatible(self, tool_source: "ToolSource") -> bool:
         """
         Determine if a tool can be used in workflows. External tools and the
         upload tool are currently not supported by workflows.
@@ -170,14 +181,14 @@ class AbstractTool:
         #       outputs?
         return True
 
-    def get_param(self, key):
+    def get_param(self, key: str) -> Any:
         """
         Returns the parameter named `key` or None if there is no such
         parameter.
         """
         return self.inputs.get(key, None)
 
-    def get_hook(self, name):
+    def get_hook(self, name: str) -> Any:
         """
         Returns an object from the code file referenced by `code_namespace`
         (this will normally be a callable object)
@@ -190,7 +201,7 @@ class AbstractTool:
                 return self.code_namespace[name]
         return None
 
-    def call_hook(self, hook_name, *args, **kwargs):
+    def call_hook(self, hook_name: str, *args: Any, **kwargs: Any) -> Any:
         """
         Call the custom code hook function identified by 'hook_name' if any,
         and return the results
@@ -206,13 +217,12 @@ class AbstractTool:
             e.args = (f"Error in '{self.name}' hook '{hook_name}', original message: {original_message}",)
             raise
 
-    def build_redirect_url_params(self, param_dict):
+    def build_redirect_url_params(self, param_dict: dict[str, Any]) -> str | None:
         """
         Substitute parameter values into self.redirect_url_params
         """
         if not self.redirect_url_params:
-            return
-        redirect_url_params = None
+            return None
         # Substituting parameter values into the url params
         redirect_url_params = fill_template(self.redirect_url_params, context=param_dict)
         # Remove newlines
@@ -220,7 +230,7 @@ class AbstractTool:
         return redirect_url_params
 
     @classmethod
-    def get_externally_referenced_paths(cls, path):
+    def get_externally_referenced_paths(cls, path: "StrPath") -> list[str]:
         """Return relative paths to externally referenced files by the tool
         described by file at `path`. External components should not assume things
         about the structure of tool xml files (this is the tool's responsibility).
