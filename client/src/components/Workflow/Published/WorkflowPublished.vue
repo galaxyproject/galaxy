@@ -119,7 +119,7 @@ defineExpose({
     <div id="columns" class="workflow-published">
         <ActivityBar v-if="!props.embed && !props.quickView" />
 
-        <div id="center" class="container-root" :class="{ 'm-3': !props.quickView }">
+        <div id="center" class="container-root" :class="{ 'p-3': !props.quickView }">
             <div v-if="loading">
                 <Heading h1 separator size="lg">
                     <FontAwesomeIcon :icon="faSpinner" spin />
