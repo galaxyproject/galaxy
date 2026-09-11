@@ -654,7 +654,7 @@ function onKeyDown(event: KeyboardEvent) {
                                 <GButtonGroup
                                     v-if="props.secondaryActions?.length"
                                     :id="getElementId(props.id, 'secondary-actions')"
-                                    class="mt-1">
+                                    class="g-card-secondary-actions mt-1">
                                     <template v-for="sa in props.secondaryActions">
                                         <GButton
                                             v-if="sa.visible ?? true"
@@ -856,6 +856,15 @@ function onKeyDown(event: KeyboardEvent) {
         .g-card-secondary-action-label {
             @container g-card (max-width: #{$breakpoint-sm}) {
                 display: none;
+            }
+        }
+
+        .g-card-secondary-actions .g-button {
+            @container g-card (max-width: #{$breakpoint-sm}) {
+                // With the label hidden only the icon is left in an inline-flex box, which has
+                // no line box and collapses to `1em` tall; keep these as tall as the labelled
+                // primary actions beside them (`1.5em` line box plus padding and border).
+                min-height: calc(1.5em + 2 * var(--spacing-1) + 2px);
             }
         }
     }
