@@ -260,14 +260,10 @@ class RequestedTool(Model):
 
 
 class ToolInstallationRequestCreateContent(Model):
-    """The client-submittable (request) shape of a tool installation request.
+    """A tool installation request as a user submits it.
 
-    Carries only the fields a user supplies: the requested ``tools`` and
-    request-level metadata (workflow context, remarks). The two server-stamped
-    fields -- ``requester_email`` and ``is_confirmation`` -- are deliberately
-    absent so they cannot be set by clients and do not appear in the POST
-    request schema. The service stamps them, promoting the content to a
-    :class:`ToolInstallationRequestNotificationContent` for persistence.
+    The requested ``tools`` plus request-level context: the workflow that needs
+    them and any remarks for the admins.
     """
 
     category: Literal[PersonalNotificationCategory.tool_installation_request] = (
@@ -305,12 +301,10 @@ class ToolInstallationRequestCreateContent(Model):
 
 
 class ToolInstallationRequestNotificationContent(ToolInstallationRequestCreateContent):
-    """The persisted/response shape of a tool installation request.
+    """A tool installation request as delivered to its recipients.
 
-    Extends the create model with the two server-stamped fields. ``requester_email``
-    is derived from the authenticated submitter; ``is_confirmation`` selects the
-    confirmation vs. admin-facing email template. Both are written by the service
-    and never trusted from the client.
+    Adds ``requester_email``, taken from the authenticated submitter, so the
+    admin's notification card can name and contact the requester.
     """
 
     requester_email: str | None = Field(
@@ -318,11 +312,18 @@ class ToolInstallationRequestNotificationContent(ToolInstallationRequestCreateCo
         title="Requester email",
         description="Email address of the user who made the request.",
     )
-    is_confirmation: bool = Field(
-        default=False,
-        title="Is confirmation",
-        description="True on the copy sent to the user who made the request; False on the request sent to admins.",
-    )
+
+
+class StoredToolInstallationRequestContent(ToolInstallationRequestNotificationContent):
+    """A tool installation request as persisted.
+
+    ``is_confirmation`` selects the confirmation email template for the
+    submitter's copy; ``workflow_name`` is the referenced workflow's name at
+    submission time, so rendering needs no database lookup.
+    """
+
+    is_confirmation: bool = False
+    workflow_name: str | None = None
 
 
 NotificationContentField = Field(
@@ -348,10 +349,18 @@ AnyNotificationContent = Annotated[
     NotificationContentField,
 ]
 
+# Server-side content union for stored notifications. Same as
+# ``AnyNotificationContent`` except the tool-installation-request entry is the
+# stored model with its server-only fields. Never used in a response model.
+AnyInternalNotificationContent = Annotated[
+    _CommonUserNotificationContent | StoredToolInstallationRequestContent | BroadcastNotificationContent,
+    NotificationContentField,
+]
+
 # Request-side content union. Same as ``AnyNotificationContent`` except the
 # tool-installation-request entry uses the create-only model, which omits the
-# server-stamped ``requester_email`` / ``is_confirmation`` fields so clients
-# cannot set them and they stay out of the POST request schema.
+# server-stamped ``requester_email`` so clients cannot set it and it stays out
+# of the POST request schema.
 AnyUserNotificationCreateContent = Annotated[
     _CommonUserNotificationContent | ToolInstallationRequestCreateContent,
     NotificationContentField,
@@ -508,15 +517,15 @@ class NotificationCreateData(Model):
 class InternalNotificationCreateData(NotificationCreateData):
     """Internal variant of :class:`NotificationCreateData` for server-built notifications.
 
-    ``content`` is the full notification content union instead of the
-    client-submittable create union, so server-stamped content models (e.g. a
-    tool installation request carrying ``requester_email``/``is_confirmation``)
-    survive typed serialization round-trips such as the Celery task dispatch.
-    This model never appears in the API schema; clients submit
+    ``content`` is the stored content union instead of the client-submittable
+    create union, so server-stamped content models (e.g. a tool installation
+    request carrying ``requester_email`` and ``is_confirmation``) survive typed
+    serialization round-trips such as the Celery task dispatch. This model
+    never appears in the API schema; clients submit
     :class:`NotificationCreateData` instead.
     """
 
-    content: AnyNotificationContent
+    content: AnyInternalNotificationContent
 
 
 class GenericNotificationRecipients(GenericModel, Generic[DatabaseIdT], PatchGenericPickle):

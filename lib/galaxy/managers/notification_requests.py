@@ -27,7 +27,7 @@ from galaxy.managers.users import UserManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
 from galaxy.schema.notifications import (
-    AnyNotificationContent,
+    AnyInternalNotificationContent,
     AnyNotificationCreateContent,
     InternalNotificationCreateData,
     NotificationCategory,
@@ -36,8 +36,8 @@ from galaxy.schema.notifications import (
     NotificationRecipients,
     NotificationVariant,
     PersonalNotificationCategory,
+    StoredToolInstallationRequestContent,
     ToolInstallationRequestCreateContent,
-    ToolInstallationRequestNotificationContent,
 )
 from galaxy.work.context import SessionRequestContext
 
@@ -81,7 +81,7 @@ class NotificationRequestHandler(Protocol):
 
     def stamp_content(
         self, content: AnyNotificationCreateContent, ctx: RequestHandlerContext
-    ) -> AnyNotificationContent:
+    ) -> AnyInternalNotificationContent:
         """Rewrite the client-supplied content server-side (e.g. stamp the requester email).
 
         Must raise ``RequestParameterInvalidException`` when the content type does
@@ -121,44 +121,46 @@ class ToolInstallationRequestHandler:
 
     def stamp_content(
         self, content: AnyNotificationCreateContent, ctx: RequestHandlerContext
-    ) -> AnyNotificationContent:
+    ) -> AnyInternalNotificationContent:
         if not isinstance(content, ToolInstallationRequestCreateContent):
             raise RequestParameterInvalidException(
                 "The notification content does not match the tool_installation_request category."
             )
-        # Promote the request (create) content to the persisted content model and
+        workflow_id, workflow_name = self._accessible_workflow(content.workflow_id, ctx)
+        # Promote the request (create) content to the stored content model and
         # stamp the requester's real email server-side (never trust the client).
         # is_confirmation is forced False on the admin-facing copy; build_confirmation
         # below decides which copy is the confirmation.
         # model_construct reuses the already-validated field values instead of
         # re-running every sanitizer and bound check on them.
-        return ToolInstallationRequestNotificationContent.model_construct(
-            **{**dict(content), "workflow_id": self._accessible_workflow_id(content.workflow_id, ctx)},
+        return StoredToolInstallationRequestContent.model_construct(
+            **{**dict(content), "workflow_id": workflow_id},
             requester_email=ctx.sender.email,
             is_confirmation=False,
+            workflow_name=workflow_name,
         )
 
     @staticmethod
-    def _accessible_workflow_id(workflow_id: str | None, ctx: RequestHandlerContext) -> str | None:
-        """Canonical encoded id of the referenced stored workflow, verified accessible to the submitter.
+    def _accessible_workflow(workflow_id: str | None, ctx: RequestHandlerContext) -> tuple[str | None, str | None]:
+        """Canonical encoded id and name of the referenced stored workflow, verified accessible to the submitter.
 
-        The id is rendered as a run link and resolved to the workflow name in the
-        admin-facing notification, so it must name a ``StoredWorkflow`` (not a
-        ``Workflow`` instance id, which the run page also accepts) that the
-        submitter can access -- otherwise a submitter could make the admin email
-        display and link another user's private workflow. One error message for
-        every failure mode, so an inaccessible id is not distinguishable from a
+        The id is rendered as a run link and the name is shown in the admin-facing
+        notification, so it must name a ``StoredWorkflow`` (not a ``Workflow``
+        instance id, which the run page also accepts) that the submitter can
+        access -- otherwise a submitter could make the admin email display and
+        link another user's private workflow. One error message for every
+        failure mode, so an inaccessible id is not distinguishable from a
         missing one.
         """
         if workflow_id is None:
-            return None
+            return None, None
         try:
             stored_workflow = ctx.workflows_manager.get_stored_accessible_workflow(
                 ctx.trans, workflow_id, by_stored_id=True
             )
         except (MalformedId, ObjectNotFound, ItemAccessibilityException):
             raise RequestParameterInvalidException("workflow_id does not refer to a workflow accessible to you.")
-        return ctx.trans.security.encode_id(stored_workflow.id)
+        return ctx.trans.security.encode_id(stored_workflow.id), stored_workflow.name
 
     def resolve_recipients(self, ctx: RequestHandlerContext) -> NotificationRecipients:
         admin_users = ctx.user_manager.admins()
@@ -176,8 +178,8 @@ class ToolInstallationRequestHandler:
         notification_data = admin_request.notification
         content = notification_data.content
         # stamp_content rejects any other content type for this category, so the
-        # admin request always carries the promoted model; assert only narrows the type.
-        assert isinstance(content, ToolInstallationRequestNotificationContent)
+        # admin request always carries the stored model; assert only narrows the type.
+        assert isinstance(content, StoredToolInstallationRequestContent)
         confirmation_content = content.model_copy(update={"is_confirmation": True})
         confirmation_notification = notification_data.model_copy(update={"content": confirmation_content})
         return admin_request.model_copy(
