@@ -6,6 +6,8 @@ from typing import (
 )
 
 import pytest
+import responses
+from requests.exceptions import HTTPError
 
 from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
@@ -180,3 +182,48 @@ def test_remote_to_input_forwards_force_path_paste_for_composite_data(force_path
     )
     assert len(interactor.calls) == 2
     assert all(call["force_path_paste"] is force_path_paste for call in interactor.calls)
+
+
+GALAXY_URL = "http://galaxy.example"
+API = f"{GALAXY_URL}/api"
+
+
+@pytest.fixture
+def interactor():
+    return GalaxyInteractorApi(
+        galaxy_url=GALAXY_URL, master_api_key="admin", api_key="key", download_attempts=3, download_sleep=0
+    )
+
+
+@pytest.fixture
+def mocked():
+    with responses.RequestsMock() as rsps:
+        yield rsps
+
+
+def test_verify_output_dataset_retries_while_dataset_is_not_ready(interactor, mocked):
+    display = f"{API}/histories/hist1/contents/hda1/display"
+    mocked.get(display, status=409)
+    mocked.get(display, body=b"payload")
+    interactor.verify_output_dataset("hist1", "hda1", None, {"assert_list": []}, "some_tool")
+    assert len(mocked.calls) == 2
+
+
+def test_verify_output_dataset_gives_up_after_download_attempts(interactor, mocked):
+    display = f"{API}/histories/hist1/contents/hda1/display"
+    for _ in range(3):
+        mocked.get(display, status=409)
+    with pytest.raises(HTTPError, match="409"):
+        interactor.verify_output_dataset("hist1", "hda1", None, {"assert_list": []}, "some_tool")
+    assert len(mocked.calls) == 3
+
+
+def test_wait_for_job_surfaces_http_status(interactor, mocked):
+    mocked.get(f"{API}/jobs/job1", status=502)
+    with pytest.raises(HTTPError, match="502"):
+        interactor.wait_for_job("job1")
+
+
+def test_wait_for_job_returns_when_job_is_ok(interactor, mocked):
+    mocked.get(f"{API}/jobs/job1", json={"state": "ok"})
+    interactor.wait_for_job("job1")
