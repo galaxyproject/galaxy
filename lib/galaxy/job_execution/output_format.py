@@ -4,10 +4,16 @@ import json
 import logging
 import re
 from collections.abc import Mapping
-from typing import Optional, TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance, HistoryDatasetCollectionAssociation
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetCollectionAssociation,
+    )
     from galaxy.tools.execution_helpers import ToolExecutionCache
 
 log = logging.getLogger(__name__)
