@@ -7,6 +7,7 @@ import logging
 from fastapi import (
     Body,
     Query,
+    Request,
     Response,
     status,
 )
@@ -32,16 +33,31 @@ from galaxy.schema.notifications import (
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.webapps.galaxy.api.common import NotificationIdPathParam
+from galaxy.webapps.galaxy.fast_app import limiter
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from . import (
     depends,
     DependsOnTrans,
+    get_app,
     Router,
 )
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["notifications"])
+
+# slowapi parses the rate a provider returns before it consults ``exempt_when``,
+# so a disabled limit still has to yield a parseable value; it is never enforced.
+_DISABLED_RATE_LIMIT_PLACEHOLDER = "1/second"
+
+
+def _send_notification_rate_limit() -> str:
+    """The ``send_notification_rate_limit`` option (per API key or session), read on every request."""
+    return get_app().config.send_notification_rate_limit or _DISABLED_RATE_LIMIT_PLACEHOLDER
+
+
+def _send_notification_rate_limit_disabled() -> bool:
+    return not get_app().config.send_notification_rate_limit
 
 
 @router.cbv
@@ -224,14 +240,22 @@ class FastAPINotifications:
     @router.post(
         "/api/notifications",
         summary="Sends a notification to a list of recipients (users, groups or roles).",
-        require_admin=True,
     )
+    @limiter.limit(_send_notification_rate_limit, exempt_when=_send_notification_rate_limit_disabled)
     def send_notification(
         self,
+        request: Request,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: NotificationCreateRequestBody = Body(),
     ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
-        """Sends a notification to a list of recipients (users, groups or roles)."""
+        """Sends a notification to a list of recipients (users, groups or roles).
+
+        Administrators can address arbitrary recipients. Other authenticated users can only
+        submit the request categories Galaxy accepts from users (currently
+        ``tool_installation_request``); for those, the recipients are resolved server-side and
+        the ``recipients`` field is ignored. Submissions are rate-limited per user
+        (``send_notification_rate_limit``).
+        """
         return self.service.send_notification(sender_context=trans, payload=payload)
 
     @router.post(

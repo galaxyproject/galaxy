@@ -6,7 +6,7 @@ import { snakeCaseToTitleCase } from "@/utils/strings";
 
 import NotificationsChannelSettings from "./NotificationsChannelSettings.vue";
 
-const categoryDescriptionMap: Record<NotificationCategory, string> = {
+const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     message: `
         You will receive these notifications only when your Galaxy administrators send you a message.
         Please note that for certain critical or urgent messages, you will receive notifications even if you have disabled this channel.

@@ -1143,7 +1143,10 @@ class WorkflowContentsManager(UsesAnnotations):
                 if step_errors:
                     errors[step.id] = step_errors
         if missing_tools:
-            raise exceptions.MessageException(f"Following tools missing: {', '.join(missing_tools)}")
+            raise exceptions.MessageException(
+                f"Following tools missing: {', '.join(missing_tools)}",
+                missing_tool_ids=missing_tools,
+            )
         step_order_indices = {}
         for step in workflow.steps:
             step_order_indices[step.id] = step.order_index

@@ -11,6 +11,7 @@ from fastapi import (
     Request,
 )
 from fastapi.openapi.constants import REF_TEMPLATE
+from limits import parse_many
 from slowapi import (
     _rate_limit_exceeded_handler,
     Limiter,
@@ -21,6 +22,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
 from tuspyserver import create_tus_router
 
+from galaxy.exceptions import ConfigurationError
 from galaxy.schema.generics import ref_to_name
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
@@ -299,6 +301,16 @@ def include_mcp(app: FastAPI, gx_app, mcp_app):
         log.error(f"Failed to mount MCP server: {e}")
 
 
+def validate_rate_limit_options(config) -> None:
+    """Reject a rate limit option slowapi cannot parse at startup rather than on the first request."""
+    value = config.send_notification_rate_limit
+    if value:
+        try:
+            parse_many(value)
+        except ValueError as e:
+            raise ConfigurationError(f"Invalid value for send_notification_rate_limit ({value!r}): {e}") from e
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
     """Build the FastAPI app that fronts the Galaxy web server."""
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
@@ -317,6 +329,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
 
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
+    validate_rate_limit_options(gx_app.config)
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
     if gx_app.config.use_access_logging_middleware:

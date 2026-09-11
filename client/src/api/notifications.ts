@@ -1,4 +1,6 @@
+import { GalaxyApi } from "@/api";
 import type { components } from "@/api/schema";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export type BaseUserNotification = components["schemas"]["UserNotificationResponse"];
 export type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"]["preferences"];
@@ -33,7 +35,33 @@ export interface MessageNotificationCreateRequest extends NotificationCreateRequ
     notification: MessageNotificationCreateData;
 }
 
-export type UserNotification = MessageNotification | SharedItemNotification | StorageOperationNotification;
+export type ToolInstallationRequestNotificationContent =
+    components["schemas"]["ToolInstallationRequestNotificationContent"];
+
+export type ToolInstallationRequestCreateContent = components["schemas"]["ToolInstallationRequestCreateContent"];
+
+export type RequestedTool = components["schemas"]["RequestedTool"];
+
+export interface ToolInstallationRequestNotification extends BaseUserNotification {
+    category: "tool_installation_request";
+    content: ToolInstallationRequestNotificationContent;
+}
+
+/**
+ * Caller-supplied fields for a tool installation request.
+ *
+ * Derived from the create-only content model, which already omits the
+ * server-stamped `category`/`requester_email`/`is_confirmation` fields.
+ * `submitToolInstallationRequest` adds the `category` discriminator (required
+ * by the OpenAPI union) when building the request payload.
+ */
+export type ToolInstallationRequestInput = Omit<ToolInstallationRequestCreateContent, "category">;
+
+export type UserNotification =
+    | MessageNotification
+    | SharedItemNotification
+    | StorageOperationNotification
+    | ToolInstallationRequestNotification;
 
 export type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
 
@@ -43,3 +71,24 @@ export type NotificationVariants = components["schemas"]["NotificationVariant"];
 
 export type NewSharedItemNotificationContentItemType =
     components["schemas"]["NewSharedItemNotificationContent"]["item_type"];
+
+/** Submit a tool installation request as the authenticated user. */
+export async function submitToolInstallationRequest(content: ToolInstallationRequestInput) {
+    const { error } = await GalaxyApi().POST("/api/notifications", {
+        body: {
+            recipients: { user_ids: [], group_ids: [], role_ids: [] },
+            notification: {
+                source: "tool_installation_request_form",
+                category: "tool_installation_request",
+                variant: "info",
+                content: {
+                    ...content,
+                    category: "tool_installation_request",
+                },
+            },
+        },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+}

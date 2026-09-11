@@ -138,6 +138,12 @@ class TestUserManager(BaseTestCase):
             self.user_manager.error_unless_admin(user2)
         assert self.user_manager.error_unless_admin(self.admin_user) == self.admin_user
 
+    def test_admins_excludes_deleted_accounts(self):
+        self.log("a deleted account still listed in admin_users is not an admin recipient")
+        self.admin_user.deleted = True
+        self.trans.sa_session.commit()
+        assert self.user_manager.admins() == []
+
     def test_anonymous(self):
         anon = None
         user2 = self.user_manager.create(**user2_data)

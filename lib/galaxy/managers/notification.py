@@ -3,6 +3,7 @@ from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 from typing import (
+    Any,
     cast,
     NamedTuple,
 )
@@ -23,7 +24,10 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.engine import CursorResult
-from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.orm import (
+    InstrumentedAttribute,
+    object_session,
+)
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
@@ -43,16 +47,19 @@ from galaxy.model import (
     DatasetStorageOperationRun,
     GroupRoleAssociation,
     Notification,
+    StoredWorkflow,
     User,
     UserGroupAssociation,
     UserNotificationAssociation,
     UserRoleAssociation,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.fields import decode_id
 from galaxy.schema.notifications import (
     AnyNotificationContent,
     BroadcastNotificationCreateRequest,
     BroadcastNotificationResponse,
+    InternalNotificationCreateData,
     MandatoryNotificationCategory,
     MessageNotificationContent,
     NewSharedItemNotificationContent,
@@ -66,7 +73,9 @@ from galaxy.schema.notifications import (
     NotificationResponse,
     NotificationVariant,
     PersonalNotificationCategory,
+    RequestedTool,
     StorageOperationNotificationContent,
+    ToolInstallationRequestNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
@@ -79,6 +88,10 @@ from galaxy.schema.storage_operations import (
 from galaxy.util import now
 
 log = logging.getLogger(__name__)
+
+# Sentinel for the cached workflow_name lookup: distinguishes "not yet resolved"
+# from "resolved to None" (a valid result when the workflow cannot be found).
+_UNSET: Any = object()
 
 
 NOTIFICATION_PREFERENCES_SECTION_NAME = "notifications"
@@ -212,7 +225,7 @@ class NotificationManager:
 
         notification_request = NotificationCreateRequest(
             recipients=NotificationRecipients.model_construct(user_ids=[user_id]),
-            notification=NotificationCreateData(
+            notification=InternalNotificationCreateData(
                 source="galaxy",
                 category=PersonalNotificationCategory.storage_operation,
                 variant=variant,
@@ -245,8 +258,9 @@ class NotificationManager:
     ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Sends a notification to a list of recipients (users, groups or roles).
 
-        If `force_sync` is set to `True`, the notification recipients will be processed synchronously instead of
-        in a background task.
+        If `force_sync` is set to `True`, recipient association creation will be
+        processed synchronously instead of in a background task. Other notification
+        channels are still dispatched by the regular background dispatcher.
 
         Note: This function is meant for internal use from other callers that don't need to check sender permissions.
         """
@@ -259,6 +273,8 @@ class NotificationManager:
             return async_task_summary(result)
 
         notification, recipient_user_count = self.send_notification_to_recipients(request)
+        if notification is None:
+            raise RuntimeError("Expected notification to be created before delivery.")
         return NotificationCreatedResponse(
             total_notifications_sent=recipient_user_count,
             notification=NotificationResponse.model_validate(notification),
@@ -328,10 +344,11 @@ class NotificationManager:
 
     def _dispatch_notification_to_users(self, notification: Notification):
         users = self._get_associated_users(notification)
+        category = cast(PersonalNotificationCategory, notification.category)
         for user in users:
             try:
                 if self._is_user_subscribed_to_notification(user, notification):
-                    settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
+                    settings = self._get_user_category_settings(user, category)
                     self._send_via_channels(notification, user, settings.channels)
             except Exception as e:
                 log.error(f"Error sending notification to user {user.id}. Reason: {util.unicodify(e)}")
@@ -354,7 +371,8 @@ class NotificationManager:
         if self._is_urgent(notification):
             # Urgent notifications are always sent
             return True
-        category_settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
+        category = cast(PersonalNotificationCategory, notification.category)
+        category_settings = self._get_user_category_settings(user, category)
         return self._is_subscribed_to_category(category_settings)
 
     def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
@@ -772,10 +790,11 @@ class NotificationContext(BaseModel):
     user_email: str
     date: str
     hostname: str
-    contact_email: str
+    contact_email: str | None = None
     variant: str
-    notification_settings_url: str
+    notification_settings_url: str | None = None
     content: AnyNotificationContent
+    workflow_name: str | None = None
     galaxy_url: str | None = None
 
 
@@ -828,17 +847,39 @@ class EmailNotificationTemplateBuilder(Protocol):
             galaxy_url=self.notification.galaxy_url,
         )
 
+    def get_template_path(self, template_format: TemplateFormats) -> str:
+        """Returns the path of the template used to render the email body.
+
+        Subclasses can override this to select a different template (e.g. a
+        confirmation template for a specific recipient) without re-implementing
+        the whole render pipeline.
+        """
+        return f"mail/notifications/{self.notification.category}-email.{template_format.value}"
+
+    #: Whether the HTML body should be autoescaped. Defaults to ``True`` to
+    #: secure templates that render raw user-supplied content. Templates that
+    #: inject pre-rendered HTML (e.g. via ``to_html``) must opt out by setting
+    #: this to ``False``; document the reason at the opt-out site.
+    autoescape_html: bool = True
+
     def get_body(self, template_format: TemplateFormats) -> str:
-        template_path = f"mail/notifications/{self.notification.category}-email.{template_format.value}"
+        template_path = self.get_template_path(template_format)
         context = self.build_context(template_format)
+        # Only autoescape when the builder opts in, and never for plain text.
+        autoescape = self.autoescape_html and template_format == TemplateFormats.HTML
         return templates.render(
             template_path,
             context.model_dump(),
             self.config.templates_dir,
+            autoescape=autoescape,
         )
 
 
 class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    # content['message'] is pre-rendered to HTML via to_html() and is marked
+    # | safe in the template; the remaining fields (subject, name, hostname) are
+    # raw/user-controlled, so keep autoescape on to escape them.
+    autoescape_html = True
     markdown_to = {
         TemplateFormats.HTML: to_html,
         TemplateFormats.TXT: lambda x: x,  # TODO: strip markdown?
@@ -855,6 +896,9 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 
 
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    # item_name/owner_name are raw user-supplied strings; escape them in HTML.
+    autoescape_html = True
+
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
         content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         return content
@@ -865,6 +909,9 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
 
 
 class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    # content['message'] is pre-rendered to HTML via to_html(); autoescape would
+    # double-escape it, so this template must opt out.
+    autoescape_html = False
     markdown_to = {
         TemplateFormats.HTML: to_html,
         TemplateFormats.TXT: lambda x: x,
@@ -880,12 +927,98 @@ class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplate
         return f"[Galaxy] {content.subject}"
 
 
+class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    _workflow_name: Any = _UNSET
+    _content: Any = _UNSET
+    # Tool request fields are raw user input; escape them in the HTML body.
+    autoescape_html = True
+
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        # model_validate (not model_construct): the stored JSON holds the nested
+        # tools as plain dicts, which must be coerced into RequestedTool models
+        # for the attribute access in _tool_label/get_subject. The content is
+        # format-independent for this builder and consulted several times per
+        # email (subject, template selection, both bodies), so validate once.
+        if self._content is _UNSET:
+            self._content = ToolInstallationRequestNotificationContent.model_validate(self.notification.content)
+        return self._content
+
+    def _is_confirmation(self) -> bool:
+        """Whether this email renders the request confirmation sent to the requester.
+
+        The service stamps ``is_confirmation`` on the notification content when
+        building the requester's copy, so the template is selected from a real
+        content field rather than by re-inferring the recipient's identity from
+        email-string matching at render time.
+        """
+        content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
+        return bool(content.is_confirmation)
+
+    def get_template_path(self, template_format: TemplateFormats) -> str:
+        if self._is_confirmation():
+            return f"mail/notifications/tool_installation_request_confirmation-email.{template_format.value}"
+        return super().get_template_path(template_format)
+
+    def build_context(self, template_format: TemplateFormats) -> NotificationContext:
+        context = EmailNotificationTemplateBuilder.build_context(self, template_format)
+        content = cast(ToolInstallationRequestNotificationContent, context.content)
+        workflow_name = self._get_workflow_name(content.workflow_id)
+        return context.model_copy(update={"workflow_name": workflow_name})
+
+    def _get_workflow_name(self, workflow_id: str | None) -> str | None:
+        # Resolved once per builder; send() renders both TXT and HTML bodies,
+        # so caching avoids a duplicate StoredWorkflow lookup.
+        if self._workflow_name is not _UNSET:
+            return self._workflow_name
+        self._workflow_name = self._resolve_workflow_name(workflow_id)
+        return self._workflow_name
+
+    def _resolve_workflow_name(self, workflow_id: str | None) -> str | None:
+        if not workflow_id:
+            return None
+        try:
+            workflow_db_id = decode_id(workflow_id)
+        except Exception:
+            return None
+
+        session = object_session(self.notification)
+        if session is None:
+            return None
+
+        stored_workflow = session.get(StoredWorkflow, workflow_db_id)
+        return stored_workflow.name if stored_workflow else None
+
+    #: Subject lines must stay well under the RFC 5322 998-char header limit;
+    #: a space-free label (e.g. a long URL) cannot be folded by the mailer.
+    _SUBJECT_LABEL_MAX_LENGTH = 100
+
+    @classmethod
+    def _tool_label(cls, tool: RequestedTool) -> str:
+        """A display label for a requested tool: name, else shed id, else URL; truncated for header use."""
+        label = tool.name or tool.tool_shed_id or tool.tool_url or "(unspecified)"
+        if len(label) > cls._SUBJECT_LABEL_MAX_LENGTH:
+            label = f"{label[:cls._SUBJECT_LABEL_MAX_LENGTH]}..."
+        return label
+
+    def get_subject(self) -> str:
+        content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
+        tools = content.tools
+        if self._is_confirmation():
+            if len(tools) == 1:
+                return f"[Galaxy] Tool installation request submitted: {self._tool_label(tools[0])}"
+            return f"[Galaxy] Tool installation request submitted ({len(tools)} tools)"
+        if len(tools) == 1:
+            return f"[Galaxy] Tool installation request: {self._tool_label(tools[0])}"
+        return f"[Galaxy] Tool installation request ({len(tools)} tools)"
+
+
 class EmailNotificationChannelPlugin(NotificationChannelPlugin):
     # Register the supported email templates here
     email_templates_by_category: dict[PersonalNotificationCategory, type[EmailNotificationTemplateBuilder]] = {
         PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.storage_operation: StorageOperationEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.tool_installation_request: ToolInstallationRequestEmailNotificationTemplateBuilder,
     }
 
     def send(self, notification: Notification, user: User):

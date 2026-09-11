@@ -3,6 +3,7 @@ import type {
     NewSharedItemNotificationContentItemType,
     NotificationVariants,
     SharedItemNotification,
+    ToolInstallationRequestNotification,
     UserNotification,
 } from "@/api/notifications";
 
@@ -58,6 +59,38 @@ export function generateNewSharedItemNotification(): SharedItemNotification {
             item_name: generateRandomString(),
             owner_name: generateRandomString(),
             slug: generateRandomString(),
+        },
+        seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
+        deleted: false,
+    };
+}
+
+export function generateToolInstallationRequestNotification(): ToolInstallationRequestNotification {
+    return {
+        id: "notification-" + Math.floor(Math.random() * 1000000),
+        source: "tool_installation_request_form",
+        category: "tool_installation_request",
+        variant: generateRandomVariant(),
+        create_time: new Date(Date.now() + 1).toISOString(),
+        update_time: new Date(Date.now() + 2).toISOString(),
+        publication_time: new Date(Date.now() + 3).toISOString(),
+        expiration_time: new Date(Date.now() + 86400000).toISOString(),
+        content: {
+            category: "tool_installation_request",
+            tools: [
+                {
+                    name: generateRandomString(),
+                    tool_shed_id: null,
+                    tool_url: "https://github.com/example/tool",
+                    description: "A useful scientific analysis tool",
+                    scientific_domain: "Genomics",
+                    requested_version: "1.0.0",
+                },
+            ],
+            workflow_id: null,
+            additional_remarks: null,
+            requester_email: "requester@example.com",
+            is_confirmation: false,
         },
         seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
         deleted: false,

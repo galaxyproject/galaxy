@@ -6263,6 +6263,29 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``send_notification_rate_limit``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum rate at which a single user may send notifications through
+    the ``POST /api/notifications`` endpoint. Requests are counted per
+    API key or session, so the limit is per user rather than per
+    client address, and it applies to every sender, including
+    administrators. It bounds how many notifications (and, for tool
+    installation requests submitted by users, admin-facing emails) one
+    account can generate.
+    The value follows the notation of the ``limits`` library:
+    ``<count>/<unit>`` or ``<count> per <n> <unit>``, where the unit
+    is one of ``second``, ``minute``, ``hour``, ``day``, ``month`` or
+    ``year``, e.g. ``10/minute`` or ``100 per hour``. The counter is
+    kept in memory by each web worker process, so with several workers
+    the effective limit is a multiple of this value. Leave empty to
+    disable the limit.
+:Default: ``10/minute``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``help_forum_api_url``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -6282,6 +6305,24 @@
 :Description:
     Enable the integration of the Galaxy Help Forum in the tool panel.
     This requires the help_forum_api_url to be set.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_installation_request_form``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable the Tool Installation Request Form in the toolbox, allowing
+    users to request new tools to be installed on this Galaxy
+    instance.
+    When enabled, a "Request Tool Installation" button will appear in
+    the tool panel. Submitted requests are sent as notifications to
+    all admin users via Galaxy's notification system, which must also
+    be enabled.
+    This requires ``enable_notification_system`` to be set to
+    ``true``.
 :Default: ``false``
 :Type: bool
 
