@@ -86,6 +86,16 @@ describe("FormPickValue", () => {
     });
 
     describe("mode changes", () => {
+        it("emits the failure-tolerant selection mode", () => {
+            const wrapper = mountPickValue();
+            const formElement = wrapper.findComponent(FormElement);
+            formElement.vm.$emit("input", "first_ok_or_skip");
+
+            const state = getLastEmittedState(wrapper);
+            expect(state.mode).toBe("first_ok_or_skip");
+            expect(state.num_inputs).toBe(2);
+        });
+
         it("emits onChange with updated mode", () => {
             const wrapper = mountPickValue();
             const formElement = wrapper.findComponent(FormElement);
