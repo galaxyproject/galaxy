@@ -1,0 +1,37 @@
+- id: openbis
+  version: 0
+  name: openBIS
+  description: |
+      Connect an openBIS instance as a Galaxy file source for
+      browsing existing DataSets and importing/exporting AFS files. DataSets are
+      read-only because openBIS recommends AFS for new files.
+
+      You need the base URL of your openBIS instance and a Personal Access Token (PAT),
+      generated from your user profile in the openBIS ELN-LIMS UI (or via the v3 API).
+  variables:
+    base_url:
+      label: openBIS URL
+      type: string
+      help: Base URL of your openBIS instance (for example https://local.openbis.ch).
+    verify_certificates:
+      label: Verify TLS certificates?
+      type: boolean
+      optional: true
+      help: Disable only for instances with a self-signed/untrusted certificate.
+      default: true
+    writable:
+      label: Writable?
+      type: boolean
+      optional: true
+      help: Allow uploading files and creating folders in openBIS AFS. Existing DataSets remain read-only.
+      default: false
+  secrets:
+    token:
+      label: Personal Access Token
+      help: A PAT generated from your openBIS user profile (starts with "$pat-...").
+  configuration:
+    type: openbis
+    base_url: "{{ variables.base_url }}"
+    token: "{{ secrets.token }}"
+    verify_certificates: "{{ variables.get('verify_certificates', true) }}"
+    writable: "{{ variables.writable }}"
