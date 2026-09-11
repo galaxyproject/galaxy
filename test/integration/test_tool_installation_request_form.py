@@ -95,10 +95,15 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
         assert (
             len(tool_installation_request_notifications) >= 1
         ), f"Expected at least one tool_installation_request notification for admin, got: {notifications}"
-        # The admin-facing copy must not be flagged as a confirmation.
-        assert all(
-            not n.get("content", {}).get("is_confirmation", False) for n in tool_installation_request_notifications
-        ), "Admin-facing tool request notification must have is_confirmation=False"
+        # The admin inbox is shared across this class, so pick out this
+        # submission by the requester email the server stamped on it.
+        own = [n for n in tool_installation_request_notifications if n["content"]["requester_email"] == user["email"]]
+        assert own, f"Expected a tool_installation_request notification from {user['email']}, got: {notifications}"
+        # Server-only content (the confirmation flag, the stamped workflow name)
+        # stays out of the public response.
+        for notification in tool_installation_request_notifications:
+            assert "is_confirmation" not in notification["content"]
+            assert "workflow_name" not in notification["content"]
 
     def test_sender_receives_notification_too(self):
         """The submitter should also receive the notification in their own inbox."""
@@ -112,10 +117,11 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
         assert (
             len(tool_installation_request_notifications) >= 1
         ), f"Expected sender to receive the notification, got: {notifications}"
-        # The submitter's copy must be the confirmation (is_confirmation=True).
-        assert any(
-            n.get("content", {}).get("is_confirmation", False) for n in tool_installation_request_notifications
-        ), "Sender's tool request notification must have is_confirmation=True"
+        # The submitter's copy shows the same public content as the admin's; the
+        # flag that selects its confirmation email template is server-only.
+        own = [n for n in tool_installation_request_notifications if n["content"]["requester_email"] == user["email"]]
+        assert own, f"Expected the submitter's own copy, got: {notifications}"
+        assert all("is_confirmation" not in n["content"] for n in own)
 
     def test_admin_submitter_receives_only_admin_copy(self):
         """An admin who submits their own request gets the admin copy, not a separate confirmation."""
@@ -398,6 +404,7 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
         ), f"Expected at least one tool_installation_request notification with workflow_id, got: {notifications}"
         content = workflow_tool_notifications[0]["content"]
         assert content["workflow_id"] == workflow_id
+        assert "workflow_name" not in content
         assert len(content["tools"]) == 2
 
     def test_workflow_id_must_name_a_workflow_accessible_to_the_submitter(self):

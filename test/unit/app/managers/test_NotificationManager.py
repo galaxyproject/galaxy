@@ -19,6 +19,8 @@ from galaxy.managers.notification import (
     DefaultStrategy,
     NotificationManager,
     NotificationRecipientResolver,
+    TemplateFormats,
+    ToolInstallationRequestEmailNotificationTemplateBuilder,
 )
 from galaxy.model import (
     DatasetStorageOperationRun,
@@ -41,9 +43,11 @@ from galaxy.schema.notifications import (
     NotificationVariant,
     PersonalNotificationCategory,
     RequestedTool,
+    StoredToolInstallationRequestContent,
     ToolInstallationRequestCreateContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
+    UserNotificationResponse,
     UserNotificationUpdateRequest,
 )
 from galaxy.schema.storage_operations import (
@@ -736,8 +740,6 @@ class TestToolInstallationRequestContentValidation:
             RequestedTool(name="\u061c")
 
     def test_subject_tool_label_is_truncated_for_header_safety(self):
-        from galaxy.managers.notification import ToolInstallationRequestEmailNotificationTemplateBuilder
-
         tool = RequestedTool(tool_url="https://example.org/" + "x" * 1500)
         label = ToolInstallationRequestEmailNotificationTemplateBuilder._tool_label(tool)
         assert len(label) <= ToolInstallationRequestEmailNotificationTemplateBuilder._SUBJECT_LABEL_MAX_LENGTH + 3
@@ -750,3 +752,56 @@ class TestToolInstallationRequestContentValidation:
             RequestedTool(name="x" * 256)
         with pytest.raises(ValidationError):
             ToolInstallationRequestCreateContent(tools=[RequestedTool(name="bwa")], additional_remarks="x" * 5001)
+
+
+class TestToolInstallationRequestEmailBuilder(NotificationManagerBaseTestCase):
+    """The email builder renders from the stored content alone, without a database lookup."""
+
+    def _send_stored_request(self, user: User, **content_overrides):
+        content = StoredToolInstallationRequestContent(
+            tools=[RequestedTool(name="bwa")],
+            workflow_id="deadbeef",
+            workflow_name="Mapping pipeline",
+            requester_email="requester@user.email",
+            **content_overrides,
+        )
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
+            notification=InternalNotificationCreateData(
+                source="tool_installation_request_form",
+                category=PersonalNotificationCategory.tool_installation_request,
+                variant=NotificationVariant.info,
+                content=content,
+            ),
+            galaxy_url="https://test.galaxy.url",
+        )
+        notification, _ = self.notification_manager.send_notification_to_recipients(request)
+        assert notification
+        return notification
+
+    def test_admin_email_renders_the_stamped_workflow_name(self):
+        admin = self._create_test_user()
+        notification = self._send_stored_request(admin)
+        builder = ToolInstallationRequestEmailNotificationTemplateBuilder(self.app.config, notification, admin)
+        assert "Mapping pipeline" in builder.get_body(TemplateFormats.TXT)
+        assert "Mapping pipeline" in builder.get_body(TemplateFormats.HTML)
+        assert "confirmation" not in builder.get_template_path(TemplateFormats.TXT)
+        assert builder.get_subject() == "[Galaxy] Tool installation request: bwa"
+
+    def test_confirmation_copy_selects_the_confirmation_template(self):
+        requester = self._create_test_user()
+        notification = self._send_stored_request(requester, is_confirmation=True)
+        builder = ToolInstallationRequestEmailNotificationTemplateBuilder(self.app.config, notification, requester)
+        assert "confirmation" in builder.get_template_path(TemplateFormats.TXT)
+        assert builder.get_subject() == "[Galaxy] Tool installation request submitted: bwa"
+
+    def test_server_only_fields_do_not_reach_the_response_model(self):
+        admin = self._create_test_user()
+        self._send_stored_request(admin)
+        user_notification = self.notification_manager.get_user_notifications(admin)[0]
+        with patch.object(Security, "security", self.trans.security, create=True):
+            response = UserNotificationResponse.model_validate(user_notification)
+        content = response.content.model_dump()
+        assert content["requester_email"] == "requester@user.email"
+        assert "is_confirmation" not in content
+        assert "workflow_name" not in content

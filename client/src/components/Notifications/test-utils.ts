@@ -90,7 +90,6 @@ export function generateToolInstallationRequestNotification(): ToolInstallationR
             workflow_id: null,
             additional_remarks: null,
             requester_email: "requester@example.com",
-            is_confirmation: false,
         },
         seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
         deleted: false,

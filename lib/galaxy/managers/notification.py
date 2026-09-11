@@ -3,7 +3,6 @@ from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 from typing import (
-    Any,
     cast,
     NamedTuple,
 )
@@ -26,7 +25,6 @@ from sqlalchemy import (
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import (
     InstrumentedAttribute,
-    object_session,
 )
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
@@ -47,15 +45,14 @@ from galaxy.model import (
     DatasetStorageOperationRun,
     GroupRoleAssociation,
     Notification,
-    StoredWorkflow,
     User,
     UserGroupAssociation,
     UserNotificationAssociation,
     UserRoleAssociation,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.fields import decode_id
 from galaxy.schema.notifications import (
+    AnyInternalNotificationContent,
     AnyNotificationContent,
     BroadcastNotificationCreateRequest,
     BroadcastNotificationResponse,
@@ -75,7 +72,7 @@ from galaxy.schema.notifications import (
     PersonalNotificationCategory,
     RequestedTool,
     StorageOperationNotificationContent,
-    ToolInstallationRequestNotificationContent,
+    StoredToolInstallationRequestContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
@@ -91,7 +88,6 @@ log = logging.getLogger(__name__)
 
 # Sentinel for the cached workflow_name lookup: distinguishes "not yet resolved"
 # from "resolved to None" (a valid result when the workflow cannot be found).
-_UNSET: Any = object()
 
 
 NOTIFICATION_PREFERENCES_SECTION_NAME = "notifications"
@@ -793,7 +789,7 @@ class NotificationContext(BaseModel):
     contact_email: str | None = None
     variant: str
     notification_settings_url: str | None = None
-    content: AnyNotificationContent
+    content: AnyInternalNotificationContent
     workflow_name: str | None = None
     galaxy_url: str | None = None
 
@@ -928,31 +924,29 @@ class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplate
 
 
 class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
-    _workflow_name: Any = _UNSET
-    _content: Any = _UNSET
+    _content: StoredToolInstallationRequestContent | None = None
     # Tool request fields are raw user input; escape them in the HTML body.
     autoescape_html = True
 
-    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+    def get_content(self, template_format: TemplateFormats) -> StoredToolInstallationRequestContent:
         # model_validate (not model_construct): the stored JSON holds the nested
         # tools as plain dicts, which must be coerced into RequestedTool models
         # for the attribute access in _tool_label/get_subject. The content is
         # format-independent for this builder and consulted several times per
         # email (subject, template selection, both bodies), so validate once.
-        if self._content is _UNSET:
-            self._content = ToolInstallationRequestNotificationContent.model_validate(self.notification.content)
+        if self._content is None:
+            self._content = StoredToolInstallationRequestContent.model_validate(self.notification.content)
         return self._content
 
     def _is_confirmation(self) -> bool:
         """Whether this email renders the request confirmation sent to the requester.
 
-        The service stamps ``is_confirmation`` on the notification content when
+        The request handler stamps ``is_confirmation`` on the stored content when
         building the requester's copy, so the template is selected from a real
         content field rather than by re-inferring the recipient's identity from
         email-string matching at render time.
         """
-        content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
-        return bool(content.is_confirmation)
+        return self.get_content(TemplateFormats.TXT).is_confirmation
 
     def get_template_path(self, template_format: TemplateFormats) -> str:
         if self._is_confirmation():
@@ -961,32 +955,7 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
 
     def build_context(self, template_format: TemplateFormats) -> NotificationContext:
         context = EmailNotificationTemplateBuilder.build_context(self, template_format)
-        content = cast(ToolInstallationRequestNotificationContent, context.content)
-        workflow_name = self._get_workflow_name(content.workflow_id)
-        return context.model_copy(update={"workflow_name": workflow_name})
-
-    def _get_workflow_name(self, workflow_id: str | None) -> str | None:
-        # Resolved once per builder; send() renders both TXT and HTML bodies,
-        # so caching avoids a duplicate StoredWorkflow lookup.
-        if self._workflow_name is not _UNSET:
-            return self._workflow_name
-        self._workflow_name = self._resolve_workflow_name(workflow_id)
-        return self._workflow_name
-
-    def _resolve_workflow_name(self, workflow_id: str | None) -> str | None:
-        if not workflow_id:
-            return None
-        try:
-            workflow_db_id = decode_id(workflow_id)
-        except Exception:
-            return None
-
-        session = object_session(self.notification)
-        if session is None:
-            return None
-
-        stored_workflow = session.get(StoredWorkflow, workflow_db_id)
-        return stored_workflow.name if stored_workflow else None
+        return context.model_copy(update={"workflow_name": self.get_content(template_format).workflow_name})
 
     #: Subject lines must stay well under the RFC 5322 998-char header limit;
     #: a space-free label (e.g. a long URL) cannot be folded by the mailer.
@@ -1001,8 +970,7 @@ class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationT
         return label
 
     def get_subject(self) -> str:
-        content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
-        tools = content.tools
+        tools = self.get_content(TemplateFormats.TXT).tools
         if self._is_confirmation():
             if len(tools) == 1:
                 return f"[Galaxy] Tool installation request submitted: {self._tool_label(tools[0])}"
