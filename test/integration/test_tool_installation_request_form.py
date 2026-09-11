@@ -427,50 +427,6 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
                 assert "workflow_id" in response.json()["err_msg"]
 
 
-class TestToolInstallationRequestFormEmailDeliveryIntegration(ToolInstallationRequestFormIntegrationBase):
-    email_directory: ClassVar[str]
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
-        cls.email_directory = cls._test_driver.mkdtemp()
-        config["enable_celery_tasks"] = True
-        config["email_from"] = "galaxy-no-reply@example.com"
-        config["smtp_server"] = f"mock_emails_to_path://{cls.email_directory}/email.json"
-
-    def test_submission_creates_notification_without_sending_admin_email_synchronously(self):
-        """Tool installation requests return the notification synchronously but leave email delivery to Celery."""
-        user = self._setup_user("tool_installation_request_email_delivery@galaxy.test")
-        with self._different_user(user["email"]):
-            update_request = {
-                "preferences": {
-                    "tool_installation_request": {
-                        "enabled": True,
-                        "channels": {"push": True, "email": False},
-                    }
-                }
-            }
-            update_response = self._put("notifications/preferences", data=update_request, json=True)
-            self._assert_status_code_is_ok(update_response)
-
-            response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
-            self._assert_status_code_is(response, 200)
-            data = response.json()
-            task_id = data["id"]
-            assert task_id
-
-            self.dataset_populator.wait_on_task_id(task_id)
-
-            # verify the notification was created
-            notifications = self._get("notifications").json()
-            tool_installation_request_notifications = [
-                n for n in notifications if n.get("category") == "tool_installation_request"
-            ]
-            assert len(tool_installation_request_notifications) >= 1
-
-        assert not os.path.exists(os.path.join(self.email_directory, "email.json"))
-
-
 class TestToolInstallationRequestFormEmailContentIntegration(ToolInstallationRequestFormIntegrationBase):
     """End-to-end rendering/delivery of the tool-request email via the real dispatch path."""
 
@@ -523,6 +479,36 @@ class TestToolInstallationRequestFormEmailContentIntegration(ToolInstallationReq
         assert re.search(r"^Version: +0\.12\.1\nRemarks:", body, re.MULTILINE)
         html = email["html"]
         assert "FastQC" in html and "Genomics" in html
+
+    def test_admin_email_is_sent_by_the_dispatcher_not_the_request(self):
+        """Submitting only creates the notification; the admin email is rendered and sent by the periodic dispatcher."""
+        email_path = os.path.join(self.email_directory, "email.json")
+        if os.path.exists(email_path):
+            # Left behind by an earlier test in this class; the mock mailer writes one file.
+            os.remove(email_path)
+        user = self._setup_user("tool_installation_request_email_delivery@galaxy.test")
+        with self._different_user(user["email"]):
+            # Opt the submitter out of email so the admin's is the only email produced.
+            update_request = {
+                "preferences": {
+                    "tool_installation_request": {
+                        "enabled": True,
+                        "channels": {"push": True, "email": False},
+                    }
+                }
+            }
+            self._assert_status_code_is_ok(self._put("notifications/preferences", data=update_request, json=True))
+            response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
+            self._assert_status_code_is(response, 200)
+            self.dataset_populator.wait_on_task_id(response.json()["id"])
+            assert self._get("notifications").json()
+
+        assert not os.path.exists(email_path), "The request path must not send the email itself"
+        assert self._app.notification_manager.dispatch_pending_notifications_via_channels() >= 1
+        with open(email_path) as f:
+            email = json.load(f)
+        assert email["to"] == ADMIN_TEST_USER
+        assert re.search(rf"^Requested by: {re.escape(user['email'])}$", email["body"], re.MULTILINE)
 
 
 class TestToolInstallationRequestFormDisabledIntegration(IntegrationTestCase):
