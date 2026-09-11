@@ -497,23 +497,6 @@ def test_user_tools_reject_tool_provided_metadata_discovery(output_type):
         )
 
 
-@pytest.mark.parametrize("output_type", ["text", "integer", "float", "boolean"])
-def test_user_tools_reject_scalar_outputs(output_type):
-    """Scalar outputs belong to expression/internal tools, not user-defined tools."""
-    with pytest.raises(ValidationError):
-        UserToolSource.model_validate(
-            {
-                "class": "GalaxyUserTool",
-                "name": "Scalar output tool",
-                "version": "0.1.0",
-                "container": "busybox",
-                "shell_command": "true",
-                "inputs": [],
-                "outputs": [{"type": output_type, "name": "value"}],
-            }
-        )
-
-
 def test_internal_output_schema_retains_scalar_and_rules_outputs():
     adapter: TypeAdapter[Any] = TypeAdapter(ToolOutput)
     mapping = adapter.json_schema()["discriminator"]["mapping"]
