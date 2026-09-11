@@ -1,0 +1,38 @@
+<mzSpecLib>
+MS:1003186|library format version=1.0
+MS:1003188|library name=test spectral library
+<AttributeSet Spectrum=all>
+MS:1000008|ionization type=MS:1000073|electrospray ionization
+MS:1000465|scan polarity=MS:1000130|positive scan
+<Spectrum=1>
+MS:1003063|universal spectrum identifier=mzspec:test:scan:1
+MS:1003061|library spectrum name=peptide_1
+MS:1000894|retention time=12.5
+MS:1003208|experimental precursor monoisotopic m/z=456.2345
+[1]MS:1000482|fragmentation type=MS:1000133|collision-induced dissociation
+MS:1003059|number of peaks=5
+<Analyte=1>
+MS:1000041|charge state=2
+MS:1000866|molecular formula=C20H35N5O4
+<Peaks>
+100.5	1000
+150.2	5000
+200.8	2500
+250.3	3500
+300.1	1500
+
+<Spectrum=2>
+MS:1003063|universal spectrum identifier=mzspec:test:scan:2
+MS:1003061|library spectrum name=peptide_2
+MS:1000894|retention time=15.8
+MS:1003208|experimental precursor monoisotopic m/z=789.1234
+[1]MS:1000482|fragmentation type=MS:1000133|collision-induced dissociation
+MS:1003059|number of peaks=4
+<Analyte=1>
+MS:1000041|charge state=3
+MS:1000866|molecular formula=C35H55N9O8
+<Peaks>
+120.3	2000
+180.6	3000
+250.9	4500
+300.1	1500
