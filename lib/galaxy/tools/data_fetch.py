@@ -270,15 +270,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             return _resolve_item_with_primary(item)
 
     def _reject_symlinks(root: str, name: str) -> None:
-        """Refuse a directory tree containing symlinks of any kind.
-
-        Following a link means reading a path the requester only pointed at,
-        with Galaxy's privileges, and a link to an ancestor makes the copy
-        recurse into its own destination. Preserving them instead leaves the
-        dataset holding links into a tree it does not own. Neither is worth
-        carrying for a first version, so directories that contain them are
-        refused outright.
-        """
+        """Raise UploadProblemException if the root or any entry is a symlink."""
         for candidate in chain((root,), _walk_entries(root)):
             if os.path.islink(candidate):
                 where = os.path.relpath(candidate, root) if candidate != root else "the directory itself"
@@ -293,21 +285,11 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 yield os.path.join(dirpath, entry)
 
     def _stage_directory(path: str, staged: str, purge_source: bool) -> bool:
-        """Place a source directory at ``staged``, optionally purging the source.
-
-        Staging and cleanup are kept separate. ``shutil.move`` would do both,
-        but its copy-then-delete fallback can leave the source half-removed if
-        the delete fails, and recovering from that means choosing between two
-        incomplete trees. A rename either moves the whole tree or changes
-        nothing, so it is safe to attempt first and fall back to copying.
-
-        Returns whether the source is already gone, which a rename makes true
-        as a side effect. Copying leaves the purge to the caller, so that it
-        happens only once the staged tree has been accepted.
-        """
+        """Stage the directory and return whether the source was removed."""
         os.makedirs(os.path.dirname(staged), exist_ok=True)
         if purge_source:
             try:
+                # Use rename to keep source deletion atomic.
                 os.rename(path, staged)
                 return True
             except OSError:
@@ -324,14 +306,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
         link_data_only: bool,
         purge_source: bool,
     ):
-        """Turn a directory on disk into a single directory-typed dataset.
-
-        Directory datatypes keep their content in extra files with an empty
-        primary file, which is the shape CONVERTER_archive_to_directory
-        produces from an uploaded archive. Staging the tree under its own
-        basename keeps that layout identical, so store_root resolves the same
-        way whichever route the data arrived by.
-        """
+        """Stage a directory dataset with an empty primary file and content in extra files."""
         if link_data_only:
             raise UploadProblemException(
                 f"Directory [{name}] cannot be linked to without copying; linking directory datasets is not implemented."
@@ -353,32 +328,26 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 "checksums are not supported in directory uploads."
             )
 
-        # Cheap refusals first: walking the tree below is proportional to its
-        # size, and naming "/" would otherwise walk the whole filesystem.
+        # Check containment before walking the tree to avoid scanning ancestors such as "/".
         source_root = os.path.realpath(path)
         working_directory = os.path.realpath(upload_config.working_directory)
         if working_directory == source_root or in_directory(working_directory, source_root):
-            # Everything staged lands under the working directory, so copying
-            # such a tree would walk into its own output. Reachable by naming
-            # the job directory or anything above it, "." or "/".
             raise UploadProblemException(
                 f"Directory [{name}] contains the location it would be staged to and cannot be uploaded from there."
             )
 
-        # Before anything is written, so a refusal leaves the source untouched.
         _reject_symlinks(path, name)
 
         primary_file = stream_to_file(
             StringIO(""), prefix="upload_directory_primary_file", dir=upload_config.working_directory
         )
         extra_files_path = f"{primary_file}_extra"
+        # Match the archive converter's layout for store_root metadata.
         staged = os.path.join(extra_files_path, os.path.basename(path))
         purged = _stage_directory(path, staged, purge_source)
-        # A raced-in link cannot have been followed - nothing here dereferences -
-        # but it must not reach the dataset either.
+        # Reject links introduced since source validation.
         _reject_symlinks(staged, name)
         if purge_source and not purged:
-            # Only now that the staged tree has been accepted.
             shutil.rmtree(path, ignore_errors=True)
 
         if sniff_ext:
@@ -423,8 +392,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             name, path = _has_src_to_name(item) or "Deferred Dataset", None
 
         if path is not None and os.path.isdir(path):
-            # normpath so a trailing slash does not empty out the basename the
-            # dataset is named and staged by.
+            # Strip trailing slashes before deriving the basename.
             path = os.path.normpath(path)
             return _resolve_directory_item(
                 item,

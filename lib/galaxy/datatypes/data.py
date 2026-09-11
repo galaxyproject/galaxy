@@ -1281,13 +1281,7 @@ class Directory(Data):
     file_ext = "directory"
 
     def sniff_directory(self, path: str) -> bool:
-        """Whether the tree rooted at ``path`` holds this datatype's content.
-
-        Directory datatypes are identified by their layout rather than by the
-        bytes of a single file, so they cannot use the normal ``sniff`` path.
-        ``path`` is an extra-files directory, holding the store either at its
-        root or in a single subdirectory.
-        """
+        """Return whether the extra-files directory at ``path`` matches this datatype."""
         return False
 
     def _archive_main_file(
@@ -1380,10 +1374,6 @@ class ZarrDirectory(Directory):
             metadata = self._load_zarr_metadata_file(os.path.join(path, store_root))
         except (OSError, ValueError):
             return False
-        # The candidate is only named like Zarr metadata so far. Requiring an
-        # object carrying the format version keeps an ordinary directory
-        # holding a file called "meta" - whatever it contains - from being
-        # taken for a store it cannot be read as.
         return isinstance(metadata, dict) and metadata.get("zarr_format") is not None
 
     def _find_store_root_folder_name(self, dataset: DatasetProtocol) -> str | None:

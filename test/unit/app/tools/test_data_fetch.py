@@ -17,8 +17,7 @@ import responses
 from galaxy.tools.data_fetch import main
 from galaxy.util import galaxy_directory
 
-# galaxy_directory rather than a walk up from __file__: the packages test
-# suite copies this module elsewhere in the tree.
+# Package tests relocate this module.
 GALAXY_ROOT = galaxy_directory()
 STOCK_DATATYPES_CONF = os.path.join(GALAXY_ROOT, "lib", "galaxy", "config", "sample", "datatypes_conf.xml.sample")
 
@@ -631,11 +630,7 @@ def _fetch_single_path(
     link_data_only: Any = None,
     purge_source: Any = None,
 ) -> tuple[dict[str, Any], list[str]]:
-    """Fetch one path and return its result plus the extra-files tree.
-
-    The tree is listed before the job directory is torn down, since the
-    staged files do not outlive the execute context.
-    """
+    """Fetch one path and return its metadata and relative extra-file paths."""
     with _execute_context() as execute_context:
         element: dict[str, Any] = {"src": "path", "path": path}
         if ext is not None:
@@ -660,8 +655,6 @@ def _fetch_single_path(
         if result.get("filename"):
             result["_primary_file_size"] = os.path.getsize(result["filename"])
         if len(staged) == 1 and extra_files:
-            # None when the staged entry cannot be read at all - a symlink
-            # left dangling by the staging, for instance.
             only = os.path.join(extra_files, staged[0])
             result["_staged_content"] = None
             if os.path.isfile(only) and os.path.getsize(only) < 4096:
@@ -671,7 +664,6 @@ def _fetch_single_path(
 
 
 def test_directory_path_is_staged_as_directory_dataset(tmp_path):
-    """A src=path pointing at a plain directory must not be opened as a file."""
     source = tmp_path / "some_dir"
     (source / "nested").mkdir(parents=True)
     (source / "nested" / "a.txt").write_text("hello")
@@ -686,7 +678,6 @@ def test_directory_path_is_staged_as_directory_dataset(tmp_path):
 
 
 def test_zarr_directory_path_is_detected(tmp_path):
-    """The zarr layout is recognised from the tree, since ext is 'auto'."""
     source = tmp_path / "input9.zarr"
     source.mkdir()
     _write_zarr_store(str(source))
@@ -699,7 +690,6 @@ def test_zarr_directory_path_is_detected(tmp_path):
 
 
 def test_zarr_directory_detected_without_a_zarr_suffix(tmp_path):
-    """Detection is by layout, not by the directory's name."""
     source = tmp_path / "plainly_named"
     source.mkdir()
     _write_zarr_store(str(source))
@@ -718,14 +708,7 @@ def test_zarr_directory_detected_without_a_zarr_suffix(tmp_path):
         pytest.param(lambda root: _write_ome_sidecar(root), id="bioformats2raw-sidecar"),
     ],
 )
-def test_directory_detection_stops_at_the_storage_format(tmp_path, describe_store):
-    """Auto-detection yields zarr, never the ome_zarr profile layered on it.
-
-    The archive route says the same for identical bytes - the zarr.zip
-    converter is registered with target_datatype="zarr" - and one store
-    should not get two types depending on how it arrived. ome_zarr remains
-    available by asking for it explicitly.
-    """
+def test_ome_zarr_directory_is_detected_as_zarr(tmp_path, describe_store):
     source = tmp_path / "image.zarr"
     source.mkdir()
     _write_zarr_store(str(source))
@@ -734,7 +717,7 @@ def test_directory_detection_stops_at_the_storage_format(tmp_path, describe_stor
     assert _fetch_single_path(str(source))[0]["ext"] == "zarr"
 
 
-def test_ome_zarr_can_still_be_requested_explicitly(tmp_path):
+def test_explicit_ome_zarr_extension(tmp_path):
     source = tmp_path / "image.zarr"
     source.mkdir()
     _write_zarr_store(str(source))
@@ -752,7 +735,6 @@ def test_explicit_ext_overrides_directory_sniffing(tmp_path):
 
 
 def test_directory_upload_rejects_a_non_directory_datatype(tmp_path):
-    """An ordinary ext would report success while hiding all content in extra files."""
     source = tmp_path / "some_dir"
     source.mkdir()
     (source / "a.txt").write_text("hello")
@@ -801,15 +783,11 @@ def test_directory_upload_keeps_the_source_when_not_purging(tmp_path):
 
 @pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root ignores directory permissions")
 def test_directory_purge_keeps_the_staged_copy_when_the_source_cannot_be_removed(tmp_path):
-    """A source we cannot unlink must cost us the source, never the staged copy.
-
-    A writable directory inside a non-writable parent is the awkward case:
-    its contents can be deleted but the directory itself cannot.
-    """
     parent = tmp_path / "locked"
     source = parent / "some_dir"
     source.mkdir(parents=True)
     (source / "a.txt").write_text("hello")
+    # Removing source requires write permission on parent.
     parent.chmod(0o500)
     try:
         result, staged = _fetch_single_path(str(source), purge_source=True)
@@ -820,8 +798,7 @@ def test_directory_purge_keeps_the_staged_copy_when_the_source_cannot_be_removed
     assert staged == [os.path.join("some_dir", "a.txt")], "the staged tree must survive intact"
 
 
-def test_directory_purge_renames_rather_than_copying_within_a_filesystem(tmp_path, monkeypatch):
-    """A same-filesystem purge should be a rename, not a full copy and delete."""
+def test_directory_purge_renames_within_a_filesystem(tmp_path, monkeypatch):
     source = tmp_path / "some_dir"
     source.mkdir()
     (source / "a.txt").write_text("hello")
@@ -844,12 +821,6 @@ def test_directory_purge_renames_rather_than_copying_within_a_filesystem(tmp_pat
 
 
 def test_directory_purge_falls_back_to_copying_when_the_source_is_read_only(tmp_path, monkeypatch):
-    """A read-only source must be copied and retained, not fail the upload.
-
-    Models a read-only mount: the rename is refused, and the cleanup that
-    follows the copy removes nothing. Both are scoped to this source so the
-    rest of the fetch behaves normally.
-    """
     source = tmp_path / "some_dir"
     source.mkdir()
     (source / "a.txt").write_text("hello")
@@ -883,7 +854,6 @@ def test_directory_purge_falls_back_to_copying_when_the_source_is_read_only(tmp_
 
 
 def test_directory_path_with_a_trailing_slash(tmp_path):
-    """A trailing slash must not produce an empty basename."""
     source = tmp_path / "some_dir"
     source.mkdir()
     (source / "a.txt").write_text("hello")
@@ -896,7 +866,6 @@ def test_directory_path_with_a_trailing_slash(tmp_path):
 
 
 def test_a_directory_holding_a_text_file_named_meta_is_not_zarr(tmp_path):
-    """The zarr layout check alone matches an ordinary directory."""
     source = tmp_path / "notes"
     source.mkdir()
     (source / "meta").write_text("just some notes, not JSON\n")
@@ -908,7 +877,6 @@ def test_a_directory_holding_a_text_file_named_meta_is_not_zarr(tmp_path):
 
 
 def test_a_directory_holding_a_json_meta_file_is_not_zarr(tmp_path):
-    """Valid JSON is not enough; Zarr metadata has to identify itself."""
     source = tmp_path / "notes"
     source.mkdir()
     (source / "meta").write_text('{"description": "notes"}')
@@ -920,12 +888,7 @@ def test_a_directory_holding_a_json_meta_file_is_not_zarr(tmp_path):
 
 
 @pytest.mark.parametrize("meta_content", ["[1]", '"notes"', "null", "12"])
-def test_non_object_json_meta_is_a_failed_sniff_not_an_error(tmp_path, meta_content):
-    """Valid JSON that is not an object must fall back, not fail the upload.
-
-    Sniffing happens after the source may already have been moved, so a
-    raising sniffer would lose the data.
-    """
+def test_non_object_json_meta_uses_directory_datatype(tmp_path, meta_content):
     source = tmp_path / "notes"
     source.mkdir()
     (source / "meta").write_text(meta_content)
@@ -946,11 +909,6 @@ def test_non_object_json_meta_is_a_failed_sniff_not_an_error(tmp_path, meta_cont
     ],
 )
 def test_directory_uploads_refuse_symlinks(tmp_path, make_link):
-    """Links are refused rather than followed or carried into the dataset.
-
-    Following one reads a path the requester only pointed at; an ancestor
-    link makes the copy recurse into its own destination.
-    """
     (tmp_path / "secret").write_text("not yours")
     source = tmp_path / "some_dir"
     source.mkdir()
@@ -978,10 +936,6 @@ def test_a_symlinked_directory_root_is_refused(tmp_path):
 
 
 def test_a_directory_containing_the_staging_location_is_refused(tmp_path):
-    """Copying a tree into itself walks into its own output.
-
-    Reachable by naming the job working directory or any ancestor of it.
-    """
     with _execute_context() as execute_context:
         job_directory = execute_context.job_directory
         execute_context.execute_request(
@@ -1016,11 +970,6 @@ def test_the_filesystem_root_is_refused(tmp_path):
     ],
 )
 def test_directory_uploads_refuse_checksums(tmp_path, checksum):
-    """A checksum cannot be verified for a directory, so it must not be accepted.
-
-    Reporting success while silently skipping the check would be worse than
-    refusing it.
-    """
     source = tmp_path / "some_dir"
     source.mkdir()
     (source / "a.txt").write_text("hello")

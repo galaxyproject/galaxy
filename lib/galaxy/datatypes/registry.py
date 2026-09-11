@@ -667,10 +667,10 @@ class Registry:
         return self.datatypes_by_extension.get(ext, None)
 
     def sniff_directory(self, path: str) -> str:
-        """Return the extension of the directory datatype whose layout ``path`` matches.
+        """Detect the datatype of the extra-files directory at ``path``.
 
-        Falls back to the generic ``directory`` type. Where several match, the
-        most derived wins, so ome_zarr is preferred over its zarr base class.
+        Return the matching extension with the deepest inheritance hierarchy,
+        or ``directory`` if none match.
         """
         matches = []
         for datatype in self.datatypes_by_extension.values():
@@ -680,8 +680,6 @@ class Registry:
                 if datatype.sniff_directory(path):
                     matches.append(datatype)
             except Exception:
-                # As in sniff.guess_ext: one datatype's sniffer must not
-                # decide the outcome for every other.
                 self.log.exception("Directory sniffing failed for datatype %s", datatype.file_ext)
         if not matches:
             return data.Directory.file_ext
