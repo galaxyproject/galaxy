@@ -346,6 +346,7 @@ class MockTrans:
         self.anonymous = False
         self.debug = True
         self.user_is_admin = True
+        self.host = "galaxy.test"
         self.url_builder = mock_url_builder
 
         self.galaxy_session = None

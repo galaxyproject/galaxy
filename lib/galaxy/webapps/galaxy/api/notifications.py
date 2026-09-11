@@ -35,6 +35,7 @@ from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.webapps.galaxy.api.common import NotificationIdPathParam
 from galaxy.webapps.galaxy.fast_app import limiter
 from galaxy.webapps.galaxy.services.notifications import NotificationService
+from galaxy.work.context import SessionRequestContext
 from . import (
     depends,
     DependsOnTrans,
@@ -245,7 +246,7 @@ class FastAPINotifications:
     def send_notification(
         self,
         request: Request,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: NotificationCreateRequestBody = Body(),
     ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Sends a notification to a list of recipients (users, groups or roles).
