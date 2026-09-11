@@ -1,8 +1,6 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from aiohttp import ClientResponseError
-
 from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
@@ -103,21 +101,30 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
         except MessageException:
             raise  # already an actionable Galaxy exception, don't wrap it again
         except PermissionError as e:
-            # arcfs 0.1.9 does not raise this for authentication, but a future version might.
+            if e.filename is not None:
+                # Refused by the local filesystem, so the user's ARC credentials are not the problem.
+                raise MessageException(f"Problem {description}. Reason: {e.strerror or e}") from e
+            # arcfs does not raise this for authentication today, but a future version might.
             raise AuthenticationRequired(self._credentials_message(e))
-        except ClientResponseError as e:
-            # GitLab answers 401/403 for a missing, invalid, expired or insufficiently scoped token.
-            if e.status in (401, 403):
-                raise AuthenticationRequired(self._credentials_message(f"{e.status} {e.message}"))
-            raise MessageException(f"Problem {description}. Reason: {e}") from e
         except FileNotFoundError as e:
-            # arcfs raises this both for an ARC without any commit yet, where it carries the numeric
+            if e.filename is not None:
+                # A local path that Galaxy staged, not anything in the ARC. Saying the ARC is missing
+                # would be wrong, and would put a server-side path in front of the user.
+                raise MessageException(f"Problem {description}. Reason: {e.strerror or e}") from e
+            # arcfs raises this bare for an ARC without any commit yet, where it carries the numeric
             # project id, and for one that was removed or is invisible to these credentials.
             raise ObjectNotFound(
                 f"Could not find {e} in {self.label}. The ARC may be empty, may have been removed, "
                 "or may not be visible with your credentials."
             ) from e
         except Exception as e:
+            # GitLab answers 401/403 for a missing, invalid, expired or insufficiently scoped token.
+            # aiohttp reports those as ClientResponseError, which is not an OSError, so it arrives
+            # here. Matching on the status keeps this module importable without aiohttp, which the
+            # standalone galaxy-files package does not depend on.
+            status = getattr(e, "status", None)
+            if status in (401, 403):
+                raise AuthenticationRequired(self._credentials_message(f"{status} {getattr(e, 'message', e)}"))
             raise MessageException(f"Problem {description}. Reason: {e}") from e
         finally:
             if fs is not None:
@@ -148,7 +155,9 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
                 raise RequestParameterInvalidException(
                     "Listing all ARCs recursively is not supported. Please list a single ARC instead."
                 )
-            return super()._list(context, path, recursive, write_intent, limit, offset, query, sort_by)
+            with self._filesystem(context, f"listing file source path {path}") as (fs, config):
+                entries, total = self._list_recursive(fs, self._to_filesystem_path(path, config), config)
+                return self._apply_pagination(entries, limit, offset), total
 
         with self._filesystem(context, f"listing file source path {path}") as (fs, config):
             fs_path = self._to_filesystem_path(path, config)
@@ -156,39 +165,59 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
             if query:
                 # The generic implementation globs, which needs ``_info``; arcfs implements no
                 # ``_info``, so globbing fails with a bare NotImplementedError.
-                matched = self._filter_by_name(self._collect_pages(fs, fs_path, config)[0], query)
+                entries, total = self._collect_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT)
+                if total > len(entries):
+                    self._on_listing_exceeded()
+                matched = self._filter_by_name(entries, query)
                 return self._apply_pagination(matched, limit, offset), len(matched)
 
-            if limit is None or limit > GITLAB_MAX_PER_PAGE:
-                cap = MAX_ITEMS_LIMIT if limit is None else min((offset or 0) + limit, MAX_ITEMS_LIMIT)
-                entries, total = self._collect_pages(fs, fs_path, config, cap)
+            if limit is None:
+                entries, total = self._collect_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT)
+                if total > len(entries):
+                    self._on_listing_exceeded()
                 return self._apply_pagination(entries, limit, offset), total
 
-            infos, total = fs.list_page(fs_path, True, offset=offset or 0, limit=limit)
-            return [self._info_to_entry(info, config) for info in infos], total
+            start = offset or 0
+            if limit <= GITLAB_MAX_PER_PAGE and start % limit == 0:
+                # arcfs maps this straight onto one GitLab page. Any other window would make it fetch
+                # the whole listing instead, so those go through the window collector below.
+                infos, total = fs.list_page(fs_path, True, offset=start, limit=limit)
+                return [self._info_to_entry(info, config) for info in infos], total
 
-    def _collect_pages(
+            return self._collect_window(fs, fs_path, config, start, limit)
+
+    def _collect_window(
         self,
         fs: "GitLabARCFileSystem",
         fs_path: str,
         config: ARCFileSourceConfiguration,
-        cap: int = MAX_ITEMS_LIMIT,
+        start: int,
+        count: int,
     ) -> tuple[list[AnyRemoteEntry], int]:
-        """Assemble a listing from consecutive pages, stopping after ``cap`` entries.
+        """Return up to ``count`` entries from ``start``, read as whole aligned pages.
 
-        Requesting everything in one call instead would make arcfs retain the entire catalogue, and on
-        instances that do not report page totals it falls back to walking every project it can see.
+        arcfs serves a window from one GitLab page only when the offset is a multiple of the limit,
+        and otherwise fetches the entire listing and slices it. Asking for whole pages keeps every
+        request on the cheap path, and reading only the pages that cover the window means a far page
+        does not cost a walk from the beginning.
         """
+        page_size = GITLAB_MAX_PER_PAGE
+        page_start = (start // page_size) * page_size
         entries: list[AnyRemoteEntry] = []
         total = 0
-        while len(entries) < cap:
-            requested = min(GITLAB_MAX_PER_PAGE, cap - len(entries))
-            infos, total = fs.list_page(fs_path, True, offset=len(entries), limit=requested)
+        position = page_start
+        while position < start + count:
+            infos, total = fs.list_page(fs_path, True, offset=position, limit=page_size)
             entries.extend(self._info_to_entry(info, config) for info in infos)
-            if len(infos) < requested:
-                return entries, max(total, len(entries))
-        self._on_listing_exceeded()
-        return entries, max(total, len(entries))
+            position += page_size
+            if len(infos) < page_size:
+                break
+        window = entries[start - page_start : start - page_start + count]
+        if not entries:
+            # The window starts past the end, so ``page_start`` says nothing about how many entries
+            # exist. Claiming it as the total would keep a pager offering pages that are all empty.
+            return window, total
+        return window, max(total, page_start + len(entries))
 
     def _adapt_entry_path(self, filesystem_path: str, config: ARCFileSourceConfiguration) -> str:
         """Insert a "/" after the marker, turning ``group/repo:-:file`` into ``group/repo:-:/file``."""

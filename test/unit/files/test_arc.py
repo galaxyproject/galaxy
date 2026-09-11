@@ -7,6 +7,7 @@ credentials are unavailable.
 """
 
 import asyncio
+import logging
 import os
 from urllib.parse import quote
 from uuid import uuid4
@@ -39,7 +40,10 @@ from galaxy.files.sources.arc import (
     ROOT_MARKER,
 )
 from galaxy.util import requests
-from galaxy.util.unittest_utils import skip_if_site_down
+from galaxy.util.unittest_utils import (
+    skip_if_site_down,
+    skip_unless_environ,
+)
 from ._util import (
     assert_realizes_as,
     configured_file_sources,
@@ -73,6 +77,8 @@ FAKE_FILES = {
 }
 # A catalogue larger than a single GitLab page, to exercise multi-page assembly.
 LARGE_TREE = {"": [{"name": f"group/repo{i:03d}:-:", "type": "directory"} for i in range(250)]}
+# Larger than MAX_ITEMS_LIMIT, so windows beyond that bound can be exercised.
+HUGE_TREE = {"": [{"name": f"group/repo{i:04d}:-:", "type": "directory"} for i in range(1500)]}
 
 
 class FakeRecorder:
@@ -105,21 +111,28 @@ def _make_fake_fs_class(recorder: FakeRecorder, tree: dict, files: dict):
             return entries if detail else [e["name"] for e in entries]
 
         def list_page(self, path, detail=True, *, offset=0, limit=50, **kwargs):
-            recorder.list_page_calls.append({"path": self._key(path), "offset": offset, "limit": limit})
+            key = self._key(path)
+            recorder.list_page_calls.append({"path": key, "offset": offset, "limit": limit})
             if recorder.list_page_error is not None:
                 raise recorder.list_page_error
-            entries = tree.get(self._key(path), [])
-            # GitLab silently caps ``per_page``; a caller asking for more gets a short page.
-            effective_limit = min(limit, GITLAB_MAX_PER_PAGE)
-            return entries[offset : offset + effective_limit], len(entries)
+            entries = tree.get(key, [])
+            if limit > 0 and offset % limit != 0:
+                # arcfs can only map a window onto a GitLab page when the offset is a multiple of
+                # the limit; anything else makes it fetch and keep the whole listing.
+                recorder.ls_calls.append(key)
+            return entries[offset : offset + limit], len(entries)
 
         def walk(self, path, detail=True, **kwargs):
-            key = self._key(path)
-            recorder.walk_calls.append(key)
-            entries = tree.get(key, [])
-            dirs = {e["name"]: e for e in entries if e["type"] == "directory"}
-            found = {e["name"]: e for e in entries if e["type"] == "file"}
-            yield key, dirs, found
+            # fsspec's walk descends into every subdirectory, so the fake has to as well.
+            pending = [self._key(path)]
+            while pending:
+                key = pending.pop(0)
+                recorder.walk_calls.append(key)
+                entries = tree.get(key, [])
+                dirs = {e["name"]: e for e in entries if e["type"] == "directory"}
+                found = {e["name"]: e for e in entries if e["type"] == "file"}
+                yield key, dirs, found
+                pending.extend(dirs)
 
         def get_file(self, rpath, lpath, **kwargs):
             key = self._key(rpath)
@@ -154,6 +167,11 @@ def fake_fs(monkeypatch) -> FakeRecorder:
 @pytest.fixture
 def large_fake_fs(monkeypatch) -> FakeRecorder:
     return _install_fake(monkeypatch, LARGE_TREE, {})
+
+
+@pytest.fixture
+def huge_fake_fs(monkeypatch) -> FakeRecorder:
+    return _install_fake(monkeypatch, HUGE_TREE, {})
 
 
 def _source_config(**overrides) -> dict:
@@ -225,12 +243,22 @@ def test_anonymous_access_passes_no_token(fake_fs):
 
 def test_paginated_listing_uses_list_page_and_reports_total(fake_fs):
     source = _arc_source()
-    entries, total = source.list("/", limit=2, offset=1, user_context=user_context_fixture())
-    assert fake_fs.list_page_calls == [{"path": "", "offset": 1, "limit": 2}]
+    entries, total = source.list("/", limit=1, offset=1, user_context=user_context_fixture())
+    assert fake_fs.list_page_calls == [{"path": "", "offset": 1, "limit": 1}]
     assert fake_fs.ls_calls == []
     assert total == 3
-    assert [e.path for e in entries] == ["group/sub/repo2:-:/", "other/repo3:-:/"]
+    assert [e.path for e in entries] == ["group/sub/repo2:-:/"]
     assert fake_fs.closed == 1, "the filesystem should be closed after a paginated listing"
+
+
+def test_window_arcfs_cannot_page_is_read_as_whole_pages(fake_fs):
+    """arcfs fetches the entire listing unless the offset is a multiple of the limit."""
+    source = _arc_source()
+    entries, total = source.list("/", limit=2, offset=1, user_context=user_context_fixture())
+    assert [e.path for e in entries] == ["group/sub/repo2:-:/", "other/repo3:-:/"]
+    assert total == 3
+    assert fake_fs.ls_calls == [], "no request may fall back to a full listing"
+    assert all(call["offset"] % call["limit"] == 0 for call in fake_fs.list_page_calls)
 
 
 def test_unpaginated_listing_is_assembled_from_pages(fake_fs):
@@ -248,6 +276,7 @@ def test_large_limit_is_assembled_from_capped_pages(large_fake_fs):
     source = _arc_source()
     entries, total = source.list("/", limit=150, offset=0, user_context=user_context_fixture())
     assert all(call["limit"] <= GITLAB_MAX_PER_PAGE for call in large_fake_fs.list_page_calls)
+    assert large_fake_fs.ls_calls == []
     assert total == 250
     assert len(entries) == 150
     assert len({e.path for e in entries}) == 150, "pages must not repeat entries"
@@ -266,8 +295,26 @@ def test_recursive_listing_inside_a_project_uses_walk(fake_fs):
     source = _arc_source()
     entries, _ = source.list("group/repo1:-:/", recursive=True, limit=10, offset=0, user_context=user_context_fixture())
     assert fake_fs.list_page_calls == []
-    assert fake_fs.walk_calls == ["group/repo1:-:"]
-    assert {e.path for e in entries} == {"group/repo1:-:/README.md", "group/repo1:-:/assays"}
+    assert fake_fs.walk_calls == ["group/repo1:-:", "group/repo1:-:assays"]
+    assert {e.path for e in entries} == {
+        "group/repo1:-:/README.md",
+        "group/repo1:-:/assays",
+        "group/repo1:-:/assays/measurements.csv",
+    }
+    assert fake_fs.closed == 1, "a recursive listing must close the filesystem too"
+
+
+def test_recursive_listing_translates_errors(fake_fs, monkeypatch):
+    """Recursion must go through the same error handling as every other operation."""
+    source = _arc_source()
+
+    def boom(*args, **kwargs):
+        raise FileNotFoundError("4481")
+
+    monkeypatch.setattr(source, "_list_recursive", boom)
+    with pytest.raises(ObjectNotFound, match="4481"):
+        source.list("group/repo1:-:/", recursive=True, user_context=user_context_fixture())
+    assert fake_fs.closed == 1
 
 
 def test_recursive_listing_of_the_root_is_rejected(fake_fs):
@@ -444,6 +491,72 @@ def test_other_errors_become_message_exception(fake_fs):
         source.list("/", limit=5, offset=0, user_context=user_context_fixture())
 
 
+def test_window_beyond_the_listing_cap_still_returns_entries(huge_fake_fs):
+    """Reading only the pages that cover the window keeps far pages reachable and cheap."""
+    source = _arc_source()
+    entries, total = source.list("/", limit=200, offset=1000, user_context=user_context_fixture())
+    assert len(entries) == 200
+    assert entries[0].name == "group/repo1000"
+    assert entries[-1].name == "group/repo1199"
+    assert total == 1500
+    # Only the pages covering the window, not a walk from the beginning.
+    assert [call["offset"] for call in huge_fake_fs.list_page_calls] == [1000, 1100]
+
+
+def test_window_past_the_end_reports_the_real_total(huge_fake_fs):
+    """A pager told there are more entries than exist keeps offering empty pages."""
+    source = _arc_source()
+    entries, total = source.list("/", limit=150, offset=2000, user_context=user_context_fixture())
+    assert entries == []
+    assert total == 1500
+
+
+def test_a_satisfied_window_does_not_warn_about_the_item_cap(large_fake_fs, caplog):
+    source = _arc_source()
+    with caplog.at_level(logging.WARNING):
+        entries, _ = source.list("/", limit=101, offset=0, user_context=user_context_fixture())
+    assert len(entries) == 101
+    assert "exceeded maximum items" not in caplog.text
+
+
+def test_unpaginated_listing_warns_when_it_truncates(huge_fake_fs, caplog):
+    source = _arc_source()
+    with caplog.at_level(logging.WARNING):
+        entries, total = source.list("/", user_context=user_context_fixture())
+    assert len(entries) == 1000
+    assert total == 1500
+    assert "exceeded maximum items" in caplog.text
+
+
+def test_local_file_errors_are_not_blamed_on_the_arc(fake_fs, monkeypatch):
+    """A missing staging directory is not a missing ARC, and must not leak the server path."""
+    source = _arc_source()
+
+    def missing_local_file(rpath, lpath, **kwargs):
+        raise FileNotFoundError(2, "No such file or directory", "/srv/galaxy/tmp/staging/tmp123")
+
+    monkeypatch.setattr(source, "_open_fs", lambda *a, **k: _LocalFailureFs(missing_local_file, fake_fs))
+    with pytest.raises(MessageException) as caught:
+        source.realize_to(
+            "group/repo1:-:/README.md", "/srv/galaxy/tmp/staging/tmp123", user_context=user_context_fixture()
+        )
+    message = str(caught.value)
+    assert "ARC may be empty" not in message
+    assert "check your credentials" not in message
+    assert "/srv/galaxy/tmp/staging" not in message
+
+
+class _LocalFailureFs:
+    """Filesystem whose download fails the way a local path problem does."""
+
+    def __init__(self, get_file, recorder):
+        self.get_file = get_file
+        self._recorder = recorder
+
+    def close(self):
+        self._recorder.closed += 1
+
+
 # --- live tests against real GitLab instances ---
 
 
@@ -463,6 +576,7 @@ def _skip_if_transient(e: Exception):
         pytest.skip(f"DataHUB unreachable: {e}")
 
 
+@skip_unless_environ("GALAXY_TEST_ARC_LIVE")
 @skip_if_site_down(PUBLIC_DATAHUB_URL)
 def test_public_datahub_listing_and_download():
     pytest.importorskip("arcfs")
