@@ -672,11 +672,9 @@ class Registry:
         Falls back to the generic ``directory`` type. Where several match, the
         most derived wins, so ome_zarr is preferred over its zarr base class.
         """
-        from galaxy.datatypes.data import Directory
-
         matches = []
         for datatype in self.datatypes_by_extension.values():
-            if not isinstance(datatype, Directory):
+            if not isinstance(datatype, data.Directory):
                 continue
             try:
                 if datatype.sniff_directory(path):
@@ -686,7 +684,7 @@ class Registry:
                 # decide the outcome for every other.
                 self.log.exception("Directory sniffing failed for datatype %s", datatype.file_ext)
         if not matches:
-            return Directory.file_ext
+            return data.Directory.file_ext
         best = max(matches, key=lambda datatype: len(type(datatype).__mro__))
         return best.file_ext
 

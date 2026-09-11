@@ -7,6 +7,7 @@ import sys
 import tempfile
 from collections.abc import Iterator
 from io import StringIO
+from itertools import chain
 from typing import (
     Any,
 )
@@ -278,7 +279,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
         carrying for a first version, so directories that contain them are
         refused outright.
         """
-        for candidate in (root, *_walk_entries(root)):
+        for candidate in chain((root,), _walk_entries(root)):
             if os.path.islink(candidate):
                 where = os.path.relpath(candidate, root) if candidate != root else "the directory itself"
                 raise UploadProblemException(
