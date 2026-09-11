@@ -57,7 +57,10 @@ from galaxy.exceptions import (
     RequestParameterMissingException,
 )
 from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    str_removeprefix,
+)
 
 log = logging.getLogger(__name__)
 
@@ -91,7 +94,7 @@ def split_ftp_host_path(data: Any) -> Any:
     host = data.get("host")
     if root is None and isinstance(host, str) and "/" in host:
         data = dict(data)
-        host = host.removeprefix("ftp://").removeprefix("ftps://")
+        host = str_removeprefix(str_removeprefix(host, "ftp://"), "ftps://")
         if "/" in host:
             host_part, _, path_part = host.partition("/")
             data["host"] = host_part
