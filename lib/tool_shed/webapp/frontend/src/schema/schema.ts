@@ -3706,6 +3706,11 @@ export interface components {
              */
             format?: string | null
             /**
+             * Format Source
+             * @description Input whose datatype supplies the default format for collection elements.
+             */
+            format_source?: string | null
+            /**
              * Hidden
              * @description If true, the output will not be shown in the history.
              */
@@ -3715,6 +3720,11 @@ export interface components {
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null
+            /**
+             * Metadata Source
+             * @description Dataset input whose metadata supplies defaults for collection elements.
+             */
+            metadata_source?: string | null
             /**
              * Name
              * @description Parameter name. Used when referencing parameter in workflows.

@@ -217,6 +217,12 @@ class GenericToolOutputCollection(
     Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
 ):
     type: Literal["collection"]
+    format_source: Annotated[
+        Optional[str], Field(description="Input whose datatype supplies the default format for collection elements.")
+    ] = None
+    metadata_source: Annotated[
+        Optional[str], Field(description="Dataset input whose metadata supplies defaults for collection elements.")
+    ] = None
     format: Annotated[
         Optional[str],
         Field(description="Default datatype extension assigned to collection elements."),

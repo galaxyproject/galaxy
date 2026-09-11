@@ -46,7 +46,9 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
     if num_discover_dataset_blocks == 0 and legacy:
         collectors = [DEFAULT_DATASET_COLLECTOR_DESCRIPTION]
     else:
-        default_format = elem.attrib.get("format")
+        default_format = (
+            None if elem.tag == "collection" and elem.attrib.get("format_source") else elem.attrib.get("format")
+        )
         collectors = []
         for e in primary_dataset_elems:
             description_attributes = _inherit_default_format(e.attrib, default_format)
@@ -59,7 +61,9 @@ def dataset_collector_descriptions_from_output_dict(as_dict):
     discover_datasets_dicts = as_dict.get("discover_datasets") or []
     if is_dict(discover_datasets_dicts):
         discover_datasets_dicts = [discover_datasets_dicts]
-    default_format = as_dict.get("format")
+    default_format = (
+        None if as_dict.get("type") == "collection" and as_dict.get("format_source") else as_dict.get("format")
+    )
     discover_datasets_dicts = [
         _inherit_default_format(description, default_format) for description in discover_datasets_dicts
     ]

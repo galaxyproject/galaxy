@@ -11,6 +11,10 @@ from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.metadata.set_metadata import load_job_metadata
 from galaxy.model.store.discover import InvalidDiscoveredFilePathError
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tool_util.parser.yaml import YamlToolSource
+from galaxy.tool_util.provided_metadata import NullToolProvidedMetadata
+from galaxy.tool_util_models import UserToolSource
+from galaxy.tools import create_tool_from_source
 from galaxy.util import (
     galaxy_directory,
     safe_makedirs,
@@ -234,6 +238,118 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         self._write_job_files()
         self.exec_metadata_command(command)
         # Emulate job stuff here...
+
+    @pytest.mark.parametrize("source_kind", ["xml", "user"])
+    @pytest.mark.parametrize("strategy", ["directory", "extended"])
+    @pytest.mark.parametrize("discovery_format", [None, "tabular", "captured", "metadata_only", "missing_source"])
+    def test_collection_input_sources(self, source_kind, strategy, discovery_format):
+        self.app.config.metadata_strategy = strategy
+        pattern = r"(?P<name>result)\.txt"
+        discovery = {"pattern": pattern}
+        expected_format = "interval"
+        if discovery_format == "captured":
+            discovery["pattern"] = r"(?P<name>result)\.(?P<ext>txt)"
+            expected_format = "txt"
+        elif discovery_format == "tabular":
+            discovery["format"] = discovery_format
+            expected_format = discovery_format
+        format_source = "input"
+        if discovery_format == "metadata_only":
+            format_source = None
+            expected_format = "txt"
+        elif discovery_format == "missing_source":
+            format_source = "unavailable"
+            expected_format = "txt"
+        if source_kind == "user":
+            source = UserToolSource.model_validate(
+                {
+                    "class": "GalaxyUserTool",
+                    "id": "collection_sources",
+                    "name": "Collection sources",
+                    "version": "1.0",
+                    "container": "busybox",
+                    "shell_command": "true",
+                    "inputs": [{"name": "input", "type": "data", "format": ["interval"]}],
+                    "outputs": [
+                        {
+                            "name": "output",
+                            "type": "collection",
+                            "collection_type": "list",
+                            "format": "txt",
+                            "format_source": format_source,
+                            "metadata_source": "input",
+                            "discover_datasets": [discovery],
+                        }
+                    ],
+                }
+            )
+            self.tool = create_tool_from_source(self.app, YamlToolSource(source.model_dump(by_alias=True)))
+        else:
+            attributes = " ".join(f'{key}="{value}"' for key, value in discovery.items())
+            source_attribute = f'format_source="{format_source}"' if format_source else ""
+            self._init_tool(f"""<tool id="sources" name="Collection sources" version="1.0" profile="26.1">
+                <command>exit 0</command>
+                <inputs><param name="input" type="data" format="interval" /></inputs>
+                <outputs><collection name="output" type="list" format="txt"
+                    {source_attribute} metadata_source="input">
+                    <discover_datasets {attributes} />
+                </collection></outputs>
+            </tool>""".replace("(?P<", "(?P&lt;"))
+        output_model = self.tool.output_collections["output"].to_model()
+        assert output_model.format_source == format_source
+        assert output_model.metadata_source == "input"
+        input_dataset = self._create_output_dataset(extension="interval")
+        input_dataset.init_meta()
+        input_dataset.metadata.chromCol = 3
+        input_dataset.metadata.startCol = 1
+        input_dataset.metadata.endCol = 2
+        input_dataset.metadata.data_lines = 42
+        input_dataset.dbkey = "hg38"
+        self._write_output_dataset_contents(input_dataset, "10\t20\tchr1\n")
+        self.job.add_input_dataset("input", input_dataset)
+        collection = model.DatasetCollection(collection_type="list", populated=False)
+        hdca = self._create_output_dataset_collection(collection=collection)
+        self._write_work_dir_file("result.txt", "10\t20\tchr1\n")
+        if strategy == "extended":
+            command = self.metadata_command({}, {"output": hdca})
+            self._write_job_files()
+            self.exec_metadata_command(command)
+            populated_path = os.path.join(self.job_working_directory, "metadata", "outputs_populated")
+            with open(os.path.join(populated_path, "datasets_attrs.txt")) as f:
+                datasets = json.load(f)
+            assert len(datasets) == 1
+            dataset_attrs = datasets[0]
+            assert dataset_attrs["extension"] == expected_format
+            metadata = dataset_attrs["metadata"]
+            assert metadata["dbkey"] == "hg38"
+            if expected_format == "interval":
+                assert metadata["chromCol"] == 3
+                assert metadata["startCol"] == 1
+                assert metadata["endCol"] == 2
+                assert metadata["data_lines"] == 1
+            return
+        else:
+            self.tool.discover_outputs(
+                {},
+                {"output": hdca},
+                NullToolProvidedMetadata(),
+                self.tool_working_directory,
+                self.job,
+                input_ext="interval",
+                input_dbkey="?",
+                inp_data={"input": input_dataset},
+            )
+        self.app.model.session.flush()
+        assert hdca.collection.populated
+        assert len(hdca.collection.dataset_instances) == 1
+        dataset = hdca.collection.dataset_instances[0]
+        assert dataset.extension == expected_format
+        assert dataset.dbkey == "hg38"
+        if expected_format == "interval":
+            assert dataset.metadata.chromCol == 3
+            assert dataset.metadata.startCol == 1
+            assert dataset.metadata.endCol == 2
+            assert dataset.metadata.data_lines == 1
 
     def test_extended_metadata_rejects_unprivileged_tool_unnamed_outputs(self):
         self.app.config.metadata_strategy = "extended"
