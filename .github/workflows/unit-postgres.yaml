@@ -57,3 +57,6 @@ jobs:
       - name: Run test migrate database
         run: ./run_tests.sh -unit test/unit/app/test_migrate_database.py
         working-directory: 'galaxy root'
+      - name: Run job handler ready window tests
+        run: ./run_tests.sh -unit test/unit/app/jobs/test_handler.py
+        working-directory: 'galaxy root'
