@@ -1,4 +1,4 @@
-import { faFilter, faUnlockAlt, faUser, type IconDefinition } from "font-awesome-6";
+import { faFilter, faSliders, faUnlockAlt, type IconDefinition } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 
 import { isRegisteredUser } from "@/api";
@@ -6,7 +6,7 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
-export type UserPreferencesKey = "information" | "password" | "toolbox_filters";
+export type UserPreferencesKey = "password" | "toolbox_filters" | "extra_preferences";
 
 interface UserPreference {
     title: string;
@@ -30,20 +30,6 @@ export const getUserPreferencesModel: (user_id?: string) => UserPreferencesModel
     }
 
     return {
-        information: {
-            title: localize("Manage Information"),
-            id: "edit-preferences-information",
-            description:
-                isConfigLoaded.value &&
-                config.value.enable_account_interface &&
-                !config.value.use_remote_user &&
-                !config.value.disable_local_accounts
-                    ? localize("Edit your email, addresses and custom parameters or change your public name.")
-                    : localize("Edit your addresses and custom parameters."),
-            url: `/api/users/${user_id}/information/inputs`,
-            icon: faUser,
-            redirect: "/user",
-        },
         password: {
             title: localize("Change Password"),
             id: "edit-preferences-password",
@@ -67,6 +53,16 @@ export const getUserPreferencesModel: (user_id?: string) => UserPreferencesModel
             submitTitle: "Save Filters",
             redirect: "/user",
             disabled: isConfigLoaded.value && !config.value.has_user_tool_filters,
+        },
+        extra_preferences: {
+            title: localize("Extra Configurations"),
+            id: "edit-preferences-extra",
+            description: localize("Settings this Galaxy instance defines, such as external service credentials."),
+            url: `/api/users/${user_id}/extra_preferences/inputs`,
+            icon: faSliders,
+            submitTitle: "Save Settings",
+            redirect: "/user",
+            disabled: isConfigLoaded.value && !config.value.has_user_preferences_extra,
         },
     };
 };
