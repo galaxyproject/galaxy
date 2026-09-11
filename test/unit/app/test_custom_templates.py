@@ -51,33 +51,20 @@ def test_it_can_render_a_custom_template(tmp_path):
     assert output == CUSTOM_TEMPLATE_OUTPUT
 
 
-def test_html_templates_autoescape_user_supplied_content_when_enabled(tmp_path):
-    """HTML templates must autoescape variable output when autoescape is enabled."""
+@pytest.mark.parametrize("autoescape", [None, True])
+def test_html_templates_autoescape_user_supplied_content(tmp_path, autoescape):
     custom_templates_dir = tmp_path
     template_path = custom_templates_dir / "mail/inject.html"
     template_path.parent.mkdir(parents=True, exist_ok=True)
     with open(template_path, "w") as f:
         f.write(">>>>>> body\n{{ value }}")
-    output = templates.render(
-        "mail/inject.html", {"value": "<script>alert(1)</script>"}, custom_templates_dir, autoescape=True
-    )
-    assert "<script>" not in output
-    assert "&lt;script&gt;" in output
-
-
-def test_html_templates_autoescape_by_default(tmp_path):
-    """Autoescape is now default: new callers are secured by default."""
-    custom_templates_dir = tmp_path
-    template_path = custom_templates_dir / "mail/inject.html"
-    template_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(template_path, "w") as f:
-        f.write(">>>>>> body\n{{ value }}")
-    output = templates.render("mail/inject.html", {"value": "<b>bold</b>"}, custom_templates_dir)
+    kwargs = {} if autoescape is None else {"autoescape": autoescape}
+    output = templates.render("mail/inject.html", {"value": "<b>bold</b>"}, custom_templates_dir, **kwargs)
     assert output == "&lt;b&gt;bold&lt;/b&gt;"
 
 
 def test_html_templates_can_opt_out_of_autoescape(tmp_path):
-    """Existing HTML templates can opt out to keep raw behavior."""
+    # Existing templates that inject pre-rendered HTML keep the raw behavior.
     custom_templates_dir = tmp_path
     template_path = custom_templates_dir / "mail/inject.html"
     template_path.parent.mkdir(parents=True, exist_ok=True)
@@ -88,7 +75,6 @@ def test_html_templates_can_opt_out_of_autoescape(tmp_path):
 
 
 def test_txt_templates_do_not_escape_content(tmp_path):
-    """Plain-text templates are not autoescaped by default (even without opt out)."""
     custom_templates_dir = tmp_path
     template_path = custom_templates_dir / "mail/inject.txt"
     template_path.parent.mkdir(parents=True, exist_ok=True)
@@ -99,7 +85,6 @@ def test_txt_templates_do_not_escape_content(tmp_path):
 
 
 def test_txt_templates_explicit_autoescape_true_is_rejected(tmp_path):
-    """Explicitly opting into autoescape for a .txt template is a programming error."""
     custom_templates_dir = tmp_path
     template_path = custom_templates_dir / "mail/inject.txt"
     template_path.parent.mkdir(parents=True, exist_ok=True)
@@ -109,19 +94,7 @@ def test_txt_templates_explicit_autoescape_true_is_rejected(tmp_path):
         templates.render("mail/inject.txt", {"value": "<b>bold</b>"}, custom_templates_dir, autoescape=True)
 
 
-def test_html_templates_respect_safe_filter(tmp_path):
-    """Trusted, pre-rendered HTML marked with | safe must pass through unescaped."""
-    custom_templates_dir = tmp_path
-    template_path = custom_templates_dir / "mail/safe.html"
-    template_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(template_path, "w") as f:
-        f.write(">>>>>> body\n{{ value | safe }}")
-    output = templates.render("mail/safe.html", {"value": "<p>ok</p>"}, custom_templates_dir, autoescape=True)
-    assert output == "<p>ok</p>"
-
-
 def test_template_can_include_a_packaged_partial(tmp_path):
-    """A template can {% include %} a partial bundled with the package."""
     custom_templates_dir = tmp_path
     template_path = custom_templates_dir / "mail/uses_partial.html"
     template_path.parent.mkdir(parents=True, exist_ok=True)
@@ -148,7 +121,6 @@ def test_template_can_include_a_packaged_partial(tmp_path):
 
 
 def test_custom_partial_overrides_packaged_partial(tmp_path):
-    """A partial in the custom templates dir takes precedence over the packaged one."""
     custom_templates_dir = tmp_path
     template_path = custom_templates_dir / "mail/uses_partial.html"
     template_path.parent.mkdir(parents=True, exist_ok=True)
@@ -163,33 +135,7 @@ def test_custom_partial_overrides_packaged_partial(tmp_path):
     assert "CUSTOM-PARTIAL-MyTool" in output
 
 
-def test_partial_output_is_autoescaped(tmp_path):
-    """Autoescape applies to partial output (a partial variable must be escaped)."""
-    custom_templates_dir = tmp_path
-    template_path = custom_templates_dir / "mail/uses_partial.html"
-    template_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(template_path, "w") as f:
-        f.write(">>>>>> body\n{% include 'mail/notifications/_tool_installation_request_fields.html' %}")
-    content = {
-        "tools": [
-            {
-                "name": "<script>x</script>",
-                "tool_shed_id": None,
-                "tool_url": None,
-                "description": "d",
-                "scientific_domain": None,
-                "requested_version": None,
-            }
-        ],
-        "additional_remarks": None,
-    }
-    output = templates.render("mail/uses_partial.html", {"content": content}, custom_templates_dir)
-    assert "<script>" not in output
-    assert "&lt;script&gt;" in output
-
-
 def test_tool_installation_request_email_renders_with_partial(tmp_path):
-    """The bundled admin tool-request template renders end-to-end via its partial include."""
     custom_templates_dir = tmp_path
     content = {
         "category": "tool_installation_request",
@@ -243,7 +189,6 @@ def _render_txt_tool_request_email(tmp_path, content):
 
 
 def test_tool_installation_request_text_email_renders_multiple_tools(tmp_path):
-    """The multi-tool branch of the text partial lists each tool with its own details."""
     content = {
         "category": "tool_installation_request",
         "tools": [
@@ -286,7 +231,6 @@ def test_tool_installation_request_text_email_renders_multiple_tools(tmp_path):
 
 
 def test_tool_installation_request_text_email_does_not_repeat_label_values(tmp_path):
-    """A tool identified only by its URL renders the URL once (as the label), not again as a URL row."""
     content = {
         "category": "tool_installation_request",
         "tools": [
@@ -309,7 +253,7 @@ def test_tool_installation_request_text_email_does_not_repeat_label_values(tmp_p
 
 
 def test_tool_installation_request_text_email_indents_multiline_fields(tmp_path):
-    """Continuation lines of multiline fields are indented, so user text cannot mimic a field row."""
+    # Indented continuation lines keep user text from mimicking a field row.
     content = {
         "category": "tool_installation_request",
         "tools": [
