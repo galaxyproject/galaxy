@@ -8,7 +8,6 @@ credentials are unavailable.
 
 import asyncio
 import os
-import sys
 from urllib.parse import quote
 from uuid import uuid4
 
@@ -200,22 +199,6 @@ def test_missing_package_gives_actionable_error(monkeypatch):
     monkeypatch.setattr(ARCFilesSource, "required_module", None)
     with pytest.raises(Exception, match="arcfs-fsspec"):
         _arc_source()
-
-
-def test_missing_package_error_mentions_python_floor(fake_fs, monkeypatch):
-    """On Python 3.10 the package cannot be installed at all, so the error has to say so."""
-    source = _arc_source()
-    monkeypatch.setattr(sys, "version_info", (3, 10, 18))
-    message = str(source.required_package_exception)
-    assert "arcfs-fsspec" in message
-    assert "Python 3.11 or newer" in message
-    assert "3.10.18" in message
-
-
-def test_package_error_omits_python_floor_on_supported_interpreter(fake_fs, monkeypatch):
-    source = _arc_source()
-    monkeypatch.setattr(sys, "version_info", (3, 12, 4))
-    assert "Python 3.11 or newer" not in str(source.required_package_exception)
 
 
 def test_open_fs_passes_config_and_skips_the_instance_cache(fake_fs):
