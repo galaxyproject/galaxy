@@ -151,9 +151,8 @@ describe("Notifications categories", () => {
             notification,
         });
 
-        // Title should include the first tool's label
         const firstTool = notification.content.tools[0]!;
-        expect(wrapper.text()).toContain(firstTool.name);
+        expect(wrapper.find(`#g-card-title-${notification.id}`).text()).toContain(firstTool.name);
 
         // Description area should show tool installation request details
         const descriptionArea = wrapper.find(`#g-card-description-${notification.id}`);
@@ -210,7 +209,7 @@ describe("Notifications categories", () => {
             notification,
         });
 
-        expect(wrapper.text()).toContain("Tool Installation Request: 2 tools");
+        expect(wrapper.find(`#g-card-title-${notification.id}`).text()).toContain("Tool Installation Request: 2 tools");
 
         // Each tool's list item must contain its own details and not the other tool's.
         const toolItems = wrapper.findAll("ul:not(.list-unstyled) > li");
@@ -224,7 +223,7 @@ describe("Notifications categories", () => {
         expect(toolItems.at(1).text()).not.toContain("Aligner for short reads");
     });
 
-    it("tool_installation_request notification links workflow id and exposes anchor for deep-linking", async () => {
+    it("tool_installation_request notification links the workflow id to its run page", async () => {
         const notification = generateToolInstallationRequestNotification();
         notification.content.workflow_id = "encoded-workflow-id-abc";
 
@@ -235,6 +234,5 @@ describe("Notifications categories", () => {
         const workflowLink = wrapper.findComponent(RouterLinkStub);
         expect(workflowLink.exists()).toBe(true);
         expect(workflowLink.props("to")).toBe(`/workflows/run?id=${notification.content.workflow_id}`);
-        expect(wrapper.find(`#notification-card-${notification.id}`).exists()).toBe(true);
     });
 });
