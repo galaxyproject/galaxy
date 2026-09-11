@@ -21,9 +21,12 @@
           default: false
           help: |
               Allow Galaxy to write data to your ARCs. This requires an access token with write
-              access. Exported files are not committed to the ARC's default branch: each export is
-              committed to a separate branch and submitted as a merge request, so it appears in the
-              ARC once a maintainer has merged that request.
+              access. Exported files are not committed to the ARC's default branch. They go to a
+              branch named after the access token, and the first export to an ARC opens a merge
+              request for it, so an exported file appears in the ARC once a maintainer has merged
+              that request. Later exports made with the same token are added to the same branch and
+              the same merge request, so a token shared between people collects everybody's exports
+              together.
   secrets:
       token:
           label: DataHUB Access Token
