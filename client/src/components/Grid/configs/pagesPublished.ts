@@ -124,7 +124,7 @@ const gridConfig: GridConfig = {
     id: "pages-published-grid",
     actions: actions,
     fields: fields,
-    filtering: new Filtering(validFilters, undefined, false, false),
+    filtering: new Filtering(validFilters, undefined, false),
     getData: getData,
     plural: GRID_LABELS.gridPlural,
     sortBy: "update_time",

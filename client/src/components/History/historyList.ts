@@ -51,7 +51,7 @@ export function getHistoryListFilters(activeList = "my") {
             },
             undefined,
             false,
-            false,
+            "name",
         );
     } else {
         return new Filtering(
@@ -66,7 +66,7 @@ export function getHistoryListFilters(activeList = "my") {
             },
             undefined,
             false,
-            false,
+            "name",
         );
     }
 }

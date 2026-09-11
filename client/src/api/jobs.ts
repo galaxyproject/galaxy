@@ -1,4 +1,4 @@
-import type { components } from "@/api/schema";
+import type { components, GalaxyApiPaths } from "@/api/schema";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { GalaxyApi } from "./client";
@@ -12,6 +12,7 @@ export type JobDetails = components["schemas"]["ShowFullJobResponse"] | componen
 export type JobInputSummary = components["schemas"]["JobInputSummary"];
 export type JobDisplayParametersSummary = components["schemas"]["JobDisplayParametersSummary"];
 export type JobMetric = components["schemas"]["JobMetric"];
+export type JobsQueryParams = GalaxyApiPaths["/api/jobs"]["get"]["parameters"]["query"];
 
 export type JobMessage =
     | components["schemas"]["ExitCodeJobMessage"]
@@ -20,9 +21,30 @@ export type JobMessage =
     | components["schemas"]["OutputCollectionSecurityJobMessage"]
     | components["schemas"]["OutputDiscoveryJobMessage"];
 
+export type JobFetchExtraParams = Omit<JobsQueryParams, "limit" | "offset" | "order_by">;
+
 export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting", "paused", "resubmitted", "upload"];
 export const ERROR_STATES = ["error", "deleted", "deleting", "failed"];
 export const TERMINAL_STATES = ["ok", "skipped", "stop", "stopping"].concat(ERROR_STATES);
+
+/** All the states a job can be in, ordered from "just created" to "done", for display in filters. */
+export const JOB_STATES: JobState[] = [
+    "new",
+    "resubmitted",
+    "upload",
+    "waiting",
+    "queued",
+    "running",
+    "paused",
+    "stop",
+    "stopped",
+    "ok",
+    "skipped",
+    "error",
+    "failed",
+    "deleting",
+    "deleted",
+];
 
 interface JobDef {
     tool_id: string;
@@ -63,4 +85,30 @@ export async function deleteJob(jobId: string, message?: string): Promise<boolea
     }
 
     return data;
+}
+
+/**
+ * Fetch a page of jobs.
+ *
+ * @param offset Return jobs starting from this position
+ * @param limit Maximum number of jobs to return
+ * @param extraProps Additional query params, e.g. `user_id` or the filters built by `jobsFilterParams`
+ * @returns A tuple of the list of jobs and the total number of matching jobs
+ */
+export async function fetchJobs(offset = 0, limit = 20, extraProps?: JobFetchExtraParams) {
+    const params: JobsQueryParams = {
+        limit,
+        offset,
+        order_by: "update_time",
+        ...extraProps,
+    };
+
+    const { data, error, response } = await GalaxyApi().GET("/api/jobs", { params: { query: params } });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
+    return [data, totalMatches] as const;
 }

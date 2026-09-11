@@ -125,6 +125,21 @@ export function toLowerNoQuotes<T>(value: T): string {
     return toLower(value).replace(/('|")/g, "");
 }
 
+/** Whether a value is wrapped in a matching pair of surrounding quotes, e.g. `'foo'` or `"foo"`.
+ * A quoted value signals an exact, case-sensitive backend match.
+ * */
+export function isQuoted<T>(value: T): boolean {
+    return typeof value === "string" && /^(['"]).*\1$/.test(value);
+}
+
+/** Strips one layer of matching surrounding quotes, preserving case. Leaves unquoted values as is.
+ * @param value
+ * @returns The value without its surrounding quote pair
+ * */
+export function stripQuotes<T>(value: T): string {
+    return isQuoted(value) ? String(value).slice(1, -1) : String(value);
+}
+
 /** Converts name tags starting with '#' to 'name:'
  * @param value
  * @returns String value with 'name:' replaced with '#'
@@ -248,42 +263,29 @@ export function compare<T>(attribute: string, variant: string, converter?: Conve
     };
 }
 
-/**
- * Class for filtering (menus). Handles user input as one string filterText
- * or multiple filters (e.g. 'name:foo type:bar'), with appropriate functions.
- * @param validFilters: Record of valid filters with their handlers,
- *                      and FilterMenu properties (if menuItem = true)
- * @param validAliases: Array of valid aliases for filters
- * @param quoteStrings: Whether to auto quote filter strings in the query
- * @param nameMatching: Whether to apply name filter for unspecified filterText
- *                      (e.g. filterText = 'foo' -> 'name:foo').
- *                      Typically, when this is false, we index every field in
- *                      the backend for unspecified filterText.
- * @returns Filtering object
- * */
 export default class Filtering<T> {
-    validFilters: Record<string, ValidFilter<T>>;
-    validAliases: Array<[string, string]>;
+    /** Filter keys/values to apply when `filterText` is empty, built from `validFilters[key].default` */
     defaultFilters: Record<string, T>;
-    quoteStrings: boolean;
-    nameMatching: boolean;
 
+    /**
+     * Class for filtering (menus). Handles user input as one string filterText
+     * or multiple filters (e.g. 'name:foo type:bar'), with appropriate functions.
+     * @param validFilters Record of valid filters with their handlers,
+     *                      and FilterMenu properties (if menuItem = true)
+     * @param validAliases Array of valid aliases for filters
+     * @param quoteStrings Whether to auto quote filter strings in the query
+     * @param autoFilterKey Filter key that unspecified text (e.g. 'foo' in 'foo type:bar') maps to,
+     *                      e.g. 'name'. Must already be declared in `validFilters`. Omit to leave
+     *                      unspecified text unmatched.
+     */
     constructor(
-        validFilters: Record<string, ValidFilter<T>>,
-        validAliases?: Array<[string, string]>,
-        quoteStrings = true,
-        nameMatching = true,
+        public validFilters: Record<string, ValidFilter<T>>,
+        public validAliases: Array<[string, string]> = defaultValidAliases,
+        public quoteStrings = true,
+        public autoFilterKey?: string,
     ) {
-        this.validFilters = validFilters;
-        this.validAliases = validAliases || defaultValidAliases;
-        this.quoteStrings = quoteStrings;
-        this.nameMatching = nameMatching;
-        // If (default) we are nameMatching, add `name` filter if not present
-        if (this.nameMatching && this.validFilters["name"] === undefined) {
-            this.validFilters["name"] = {
-                handler: contains("name"),
-                menuItem: false,
-            };
+        if (this.autoFilterKey !== undefined && this.validFilters[this.autoFilterKey] === undefined) {
+            throw new Error(`Filtering: autoFilterKey "${this.autoFilterKey}" must be declared in validFilters`);
         }
         this.defaultFilters = this.createDefaultFiltersIfPresent();
         this.addRangedFiltersIfNotPresent();
@@ -360,14 +362,121 @@ export default class Filtering<T> {
         );
     }
 
+    /**
+     * Returns `autoFilterKey`, unless it appears in `filterText` as an explicit
+     * `autoFilterKey:value` token (i.e. the user typed it themselves).
+     *
+     * @param filterText Raw filter text string
+     * @returns `autoFilterKey` if not explicitly typed, else `undefined`
+     * @example
+     * // autoFilterKey = "name"
+     * getUnspecifiedTextKey("foo") // returns "name"
+     * getUnspecifiedTextKey("name:foo") // returns undefined
+     */
+    private getUnspecifiedTextKey(filterText: string): string | undefined {
+        if (this.autoFilterKey === undefined) {
+            return undefined;
+        }
+        filterText = filterText.trim();
+        const pairSplitRE = this.quoteStrings
+            ? /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g
+            : /(\S+):(.*?)(?=\s+\S+:|$)/g;
+        const matches = filterText.match(pairSplitRE) || [];
+        for (const pair of matches) {
+            const elgRE = /(\S+)([:><])(.+)/g;
+            const elgMatch = elgRE.exec(pair);
+            if (!elgMatch) {
+                continue;
+            }
+            let field = elgMatch[1];
+            const elg = elgMatch[2];
+            for (const [alias, substitute] of this.validAliases) {
+                if (elg === alias) {
+                    field = `${field}${substitute}`;
+                    break;
+                }
+            }
+            const normalizedField = field?.split("-").join("_");
+            if (normalizedField === this.autoFilterKey) {
+                // an explicit `autoFilterKey:value` token exists -- the user typed it themselves
+                return undefined;
+            }
+        }
+        return this.autoFilterKey;
+    }
+
+    /**
+     * Re-scans `filterText` for `key:'value'` tokens whose value is quoted. `getFiltersForText`
+     * strips the quotes from the stored value, so `getQueryDict`/`getFilterText` call this to
+     * learn which filters the user quoted (an exact, case-sensitive match request).
+     *
+     * @param filterText Raw filter text string
+     * @returns Set of normalized field names (`create_time_gt`, not `create-time>`) with quoted values
+     */
+    private getQuotedFilterKeys(filterText: string): Set<string> {
+        const quotedKeys = new Set<string>();
+        if (!this.quoteStrings) {
+            return quotedKeys;
+        }
+        const pairSplitRE = /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g;
+        const matches = filterText.trim().match(pairSplitRE) || [];
+
+        /**
+         * Tokens with no `key:value` shape at all, i.e. unspecified text; folded into
+         * `autoFilterKey`, collected so a *single*, quoted bare token (e.g. `'Grep1'` on its own)
+         * can count as quoted below.
+         */
+        const unstructuredPairs: string[] = [];
+        for (const pair of matches) {
+            const elgMatch = /(\S+)([:><])(.+)/g.exec(pair);
+            if (!elgMatch) {
+                unstructuredPairs.push(pair);
+                continue;
+            }
+            let field = elgMatch[1]!;
+            const elg = elgMatch[2];
+            const value = elgMatch[3]!;
+            for (const [alias, substitute] of this.validAliases) {
+                if (elg === alias) {
+                    field = `${field}${substitute}`;
+                    break;
+                }
+            }
+            if (isQuoted(value)) {
+                quotedKeys.add(field.split("-").join("_"));
+            }
+        }
+        if (this.autoFilterKey !== undefined && unstructuredPairs.length === 1 && isQuoted(unstructuredPairs[0]!)) {
+            quotedKeys.add(this.autoFilterKey);
+        }
+        return quotedKeys;
+    }
+
+    /**
+     * The valid filter key whose backend query should be used for an exact, case-sensitive match
+     * of `key` — a sibling `${key}_eq` filter if one is declared (e.g. `name` -> `name_eq`),
+     * otherwise `key` itself.
+     */
+    private exactMatchKeyFor(key: string): string {
+        return this.validFilters[`${key}_eq`] !== undefined ? `${key}_eq` : key;
+    }
+
     /** Build a text filter from filters {filter: "value", ...} => "filter:value"
      * @param filters Object containing filters
      * @param backendFormatted If true, returns a string formatted for the backend
+     * @param sourceFilterText The filterText `filters` came from, if any. Used to tell whether
+     *                      `autoFilterKey`'s value was unspecified text (write back as plain text)
+     *                      or an explicit `key:value` token (write back as `key:value`).
      * @returns Parsed filter text string
      * */
-    getFilterText(filters: Record<string, T>, backendFormatted = false): string {
+    getFilterText(filters: Record<string, T>, backendFormatted = false, sourceFilterText?: string): string {
         filters = this.getValidFilters(filters, backendFormatted).validFilters;
         const hasDefaults = this.containsDefaults(filters);
+        const unspecifiedTextKey =
+            sourceFilterText !== undefined ? this.getUnspecifiedTextKey(sourceFilterText) : undefined;
+        // keys the user quoted in the source text -- re-emitted quoted so the exact-match intent survives
+        const quotedKeys =
+            sourceFilterText !== undefined ? this.getQuotedFilterKeys(sourceFilterText) : new Set<string>();
 
         let newFilterText = "";
         Object.entries(filters).forEach(([key, value]) => {
@@ -377,7 +486,10 @@ export default class Filtering<T> {
                 if (newFilterText) {
                     newFilterText += " ";
                 }
-                if (this.validFilters[key]?.type === Boolean && this.validFilters[key]?.boolType === "is") {
+                if (key === unspecifiedTextKey) {
+                    // write unspecified text back as plain text, not `key:value`
+                    newFilterText += `${value}`;
+                } else if (this.validFilters[key]?.type === Boolean && this.validFilters[key]?.boolType === "is") {
                     if (value === true) {
                         newFilterText += `is:${key}`;
                     }
@@ -386,8 +498,13 @@ export default class Filtering<T> {
                         .map((v) => this.getConvertedValue(key, v, backendFormatted))
                         .filter((v) => v !== undefined) as T[];
                     newFilterText += `${convertedValues.map((v) => `${this.toAliasKey(key)}${v}`).join(" ")}`;
-                } else if (this.quoteStrings && String(value).includes(" ")) {
-                    newFilterText += `${this.toAliasKey(key)}'${value}'`;
+                } else if (
+                    this.quoteStrings &&
+                    (quotedKeys.has(key) || isQuoted(value) || String(value).includes(" "))
+                ) {
+                    // re-emit quoted: the user quoted it in the source text, it's already a
+                    // quoted literal (e.g. from setFilterValue), or it contains a space
+                    newFilterText += `${this.toAliasKey(key)}'${stripQuotes(value)}'`;
                 } else {
                     newFilterText += `${this.toAliasKey(key)}${value}`;
                 }
@@ -423,7 +540,18 @@ export default class Filtering<T> {
             : /(\S+):(.*?)(?=\s+\S+:|$)/g;
         const matches = filterText.match(pairSplitRE);
         let result: Record<string, T> = {};
-        let hasMatches = false;
+        /** Tokens with no `key:value` shape at all, i.e. unspecified text; folded into
+         * `autoFilterKey` below, alongside any other filters matched in the same filterText
+         */
+        const unstructuredPairs: string[] = [];
+        if (!this.quoteStrings) {
+            // this regex only matches from the first `key:` onward, so grab any leading text separately
+            const firstMatchStart = matches?.length ? filterText.indexOf(matches[0]!) : filterText.length;
+            const leadingText = filterText.slice(0, firstMatchStart).trim();
+            if (leadingText) {
+                unstructuredPairs.push(leadingText);
+            }
+        }
         if (matches) {
             matches.forEach((pair) => {
                 const elgRE = /(\S+)([:><])(.+)/g;
@@ -446,8 +574,13 @@ export default class Filtering<T> {
                         this.validFilters[normalizedField]?.boolType !== "is" &&
                         ((!validate && normalizedField !== "is") || this.validFilters[normalizedField])
                     ) {
-                        // removes quotation and applies lower-case to filter value
-                        const newVal = this.quoteStrings ? (toLowerNoQuotes(value) as T) : (value as T);
+                        // A quoted value keeps its original case (exact, case-sensitive match);
+                        // an unquoted value is folded to lower case (case-insensitive match).
+                        // Either way the surrounding quotes are stripped from the stored value —
+                        // `getQueryDict`/`getFilterText` re-derive quoted-ness from the source text.
+                        const newVal = this.quoteStrings
+                            ? ((isQuoted(value) ? stripQuotes(value) : toLowerNoQuotes(value)) as T)
+                            : (value as T);
                         // if the field is a MultiTags field, we need to push each value to an array
                         if (this.validFilters[normalizedField]?.type === "MultiTags") {
                             if (result[normalizedField] === undefined) {
@@ -458,7 +591,6 @@ export default class Filtering<T> {
                         } else {
                             result[normalizedField] = newVal;
                         }
-                        hasMatches = true;
                     } else if (
                         value &&
                         field === "is" &&
@@ -467,14 +599,20 @@ export default class Filtering<T> {
                     ) {
                         // handle `is:filter` syntax
                         result[value] = true as T;
-                        hasMatches = true;
                     }
+                } else {
+                    unstructuredPairs.push(pair);
                 }
             });
         }
-        // assume name matching if no filter key has been matched
-        if (this.nameMatching && !hasMatches && filterText.length > 0) {
-            result["name"] = filterText as T;
+        // fold unspecified text into the auto-filter key (make sure quoted tokens are stripped of quotes)
+        if (this.autoFilterKey !== undefined && unstructuredPairs.length > 0) {
+            const unmatchedText =
+                unstructuredPairs.length === 1 && isQuoted(unstructuredPairs[0]!)
+                    ? stripQuotes(unstructuredPairs[0]!)
+                    : unstructuredPairs.join(" ");
+            const existing = result[this.autoFilterKey];
+            result[this.autoFilterKey] = (existing !== undefined ? `${existing} ${unmatchedText}` : unmatchedText) as T;
         }
         // check if any default filter keys have been used in the filter text
         if (this.defaultFilters !== undefined) {
@@ -512,7 +650,7 @@ export default class Filtering<T> {
         } else {
             validFilters = Object.assign(existingFilters, validFilters);
         }
-        return this.getFilterText(validFilters);
+        return this.getFilterText(validFilters, false, existingText);
     }
 
     /** Takes a filters object and returns a new object with only valid filters
@@ -571,15 +709,25 @@ export default class Filtering<T> {
     }
 
     /** Returns a dictionary with query key and values.
+     *
+     * A quoted filter value (`name:'GREP'`) is an exact, case-sensitive match: it is routed
+     * through the filter's sibling `${key}_eq` handler if one exists (`name-eq`, which the
+     * backend compares with `==`), rather than the default (`name-contains`, a case-insensitive
+     * substring match). The value keeps its original case; `getFiltersForText` has already
+     * stripped the surrounding quotes.
+     *
      * @param filterText Raw filter text string
      * @returns Dictionary with query key and values
      */
     getQueryDict(filterText: string) {
         const queryDict: Record<string, T> = {};
         const filters = this.getFiltersForText(filterText);
+        const quotedKeys = this.getQuotedFilterKeys(filterText);
         for (const [key, value] of filters) {
-            const query = this.validFilters[key]?.handler.query;
-            const converter = this.validFilters[key]?.handler.converter;
+            const queryKey = quotedKeys.has(key) ? this.exactMatchKeyFor(key) : key;
+            const handler = this.validFilters[queryKey]?.handler;
+            const query = handler?.query;
+            const converter = handler?.converter;
             if (query) {
                 queryDict[query] = converter ? converter(value) : value;
             }
