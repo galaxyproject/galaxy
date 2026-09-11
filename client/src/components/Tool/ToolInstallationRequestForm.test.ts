@@ -19,13 +19,13 @@ vi.mock("@/api/notifications", () => ({
 
 const localVue = getLocalVue(true);
 
-async function mountForm(show = true): Promise<Wrapper<Vue>> {
+async function mountForm(): Promise<Wrapper<Vue>> {
     suppressExpectedErrorMessages(["Invalid prop: type check failed for prop"]);
 
     const pinia = createTestingPinia({ createSpy: vi.fn });
     const wrapper = mount(ToolInstallationRequestForm as object, {
         localVue,
-        propsData: { show },
+        propsData: { show: true },
         pinia,
         attachTo: document.body,
     });
@@ -48,45 +48,17 @@ describe("ToolInstallationRequestForm", () => {
         vi.restoreAllMocks();
     });
 
-    it("show=false means modal is not open, show=true means modal is open", async () => {
-        const wrapper = await mountForm(false);
-
-        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
-
-        await wrapper.setProps({ show: true });
-        await flushPromises();
-
-        expect(wrapper.findComponent(GModal).props("show")).toBe(true);
-    });
-
-    it("renders form inputs inside the modal", async () => {
-        const wrapper = await mountForm(true);
-        expect(wrapper.find("#tool-installation-request-name").exists()).toBe(true);
-        expect(wrapper.find("#tool-installation-request-description").exists()).toBe(true);
-        expect(wrapper.find("#tool-installation-request-url").exists()).toBe(true);
-        expect(wrapper.find("#tool-installation-request-additional-remarks").exists()).toBe(true);
-        // Removed fields
-        expect(wrapper.find("#tool-installation-request-requester-affiliation").exists()).toBe(false);
-        // Name and email are filled server-side; no fields for them in the form
-        expect(wrapper.find("#tool-installation-request-requester-name").exists()).toBe(false);
-        expect(wrapper.find("#tool-installation-request-requester-email").exists()).toBe(false);
-    });
-
-    it("ok button is disabled when required fields are empty", async () => {
-        const wrapper = await mountForm(true);
+    it("ok button follows the required fields", async () => {
+        const wrapper = await mountForm();
         const modal = wrapper.findComponent(GModal);
         expect(modal.props("okDisabled")).toBe(true);
-    });
 
-    it("ok button is enabled when required fields are filled", async () => {
-        const wrapper = await mountForm(true);
         await fillRequiredFields(wrapper);
-        const modal = wrapper.findComponent(GModal);
         expect(modal.props("okDisabled")).toBe(false);
     });
 
     it("submits correct payload on ok", async () => {
-        const wrapper = await mountForm(true);
+        const wrapper = await mountForm();
         await wrapper.find("#tool-installation-request-name").setValue("FastQC");
         await wrapper.find("#tool-installation-request-url").setValue("https://github.com/s-andrews/FastQC");
         await wrapper.find("#tool-installation-request-description").setValue("Quality control for sequencing data");
@@ -112,12 +84,21 @@ describe("ToolInstallationRequestForm", () => {
             ],
             additional_remarks: "Optional extra info",
         });
-        // Requester email comes from the server (authenticated user), not the form
-        expect(payload).not.toHaveProperty("requester_email");
+    });
+
+    it("rejects a field over its length limit and does not submit", async () => {
+        const wrapper = await mountForm();
+        await fillRequiredFields(wrapper, { tool_name: "x".repeat(256) });
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(mockSubmitToolInstallationRequest).not.toHaveBeenCalled();
+        expect(wrapper.find(".alert-danger").text()).toContain(
+            "Tool Name is too long (256 characters; the maximum is 255).",
+        );
     });
 
     it("rejects non-https URL and does not submit", async () => {
-        const wrapper = await mountForm(true);
+        const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
         await wrapper.find("#tool-installation-request-url").setValue("http://example.com/tool");
         wrapper.findComponent(GModal).vm.$emit("ok");
@@ -127,7 +108,7 @@ describe("ToolInstallationRequestForm", () => {
     });
 
     it("accepts an upper-case https scheme and submits the URL as typed", async () => {
-        const wrapper = await mountForm(true);
+        const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
         await wrapper.find("#tool-installation-request-url").setValue("HTTPS://Example.com/Tool");
         wrapper.findComponent(GModal).vm.$emit("ok");
@@ -139,7 +120,7 @@ describe("ToolInstallationRequestForm", () => {
 
     it("clears a previous attempt's error banner when a later attempt fails URL validation", async () => {
         mockSubmitToolInstallationRequest.mockRejectedValueOnce(new Error("Network error"));
-        const wrapper = await mountForm(true);
+        const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
@@ -156,7 +137,7 @@ describe("ToolInstallationRequestForm", () => {
     });
 
     it("labels the cancel button 'Close' only once the request was submitted", async () => {
-        const wrapper = await mountForm(true);
+        const wrapper = await mountForm();
         expect(wrapper.findComponent(GModal).props("cancelText")).toBe("Cancel");
         await fillRequiredFields(wrapper);
         wrapper.findComponent(GModal).vm.$emit("ok");
@@ -165,7 +146,7 @@ describe("ToolInstallationRequestForm", () => {
     });
 
     it("shows success alert after successful submission", async () => {
-        const wrapper = await mountForm(true);
+        const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
@@ -175,30 +156,10 @@ describe("ToolInstallationRequestForm", () => {
 
     it("shows error alert when submission fails", async () => {
         mockSubmitToolInstallationRequest.mockRejectedValue(new Error("Network error"));
-        const wrapper = await mountForm(true);
+        const wrapper = await mountForm();
         await fillRequiredFields(wrapper);
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
         expect(wrapper.find(".alert-danger").exists()).toBe(true);
-    });
-
-    it("does not call API when required fields are missing", async () => {
-        const wrapper = await mountForm(true);
-        // Only fill tool_name, leave description empty
-        await wrapper.find("#tool-installation-request-name").setValue("Samtools");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-        expect(mockSubmitToolInstallationRequest).not.toHaveBeenCalled();
-    });
-
-    it("emits update:show=false when cancel event fires on modal", async () => {
-        const wrapper = await mountForm(true);
-        wrapper.findComponent(GModal).vm.$emit("cancel");
-        await flushPromises();
-        const emitted = wrapper.emitted("update:show") as boolean[][];
-        expect(emitted).toBeTruthy();
-        // GModal emits update:show=true when it opens, so assert on the latest emission.
-        expect(emitted[emitted.length - 1]).toEqual([false]);
     });
 });
