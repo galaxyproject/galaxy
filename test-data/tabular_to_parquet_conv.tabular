@@ -1,0 +1,5 @@
+name	age	score	active
+Alice	30	95.5	true
+Bob	25	87.3	false
+Charlie	35	92.1	true
+Diana		78.9	false

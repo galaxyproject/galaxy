@@ -1,0 +1,41 @@
+<!-- In order to use this converter the admin has to install its dependency pyarrow e.g. through the Galaxy admin UI -->
+<tool id="CONVERTER_parquet_to_tabular" name="Convert Parquet to tabular" version="1.0.0" profile="19.05">
+    <requirements>
+        <requirement type="package" version="24.0.0">pyarrow</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/parquet_to_tabular_converter.py' '$input' '$output'</command>
+    <inputs>
+        <param name="input" type="data" format="parquet" label="Parquet file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="tabular"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="parquet" value="parq_to_tabular_conv.parquet"/>
+            <output name="output" ftype="tabular" value="parq_to_tabular_conv.tabular"/>
+        </test>
+    </tests>
+    <help>
+What it does
+------------
+Converts Parquet files to tabular format.
+
+All columns are converted to strings, with nested structures serialized as JSON.
+
+Supported Data Types
+--------------------
+The following Parquet data types are supported:
+
+- **integer**: Converted to integer strings (e.g., "42")
+- **floating-point**: Converted to floating-point strings (e.g., "3.14")
+- **boolean**: Converted to "True" or "False" strings
+- **string**: Preserved as-is
+- **date, time, timestamp**: Converted to string representation
+- **list/array**: Serialized as JSON array (e.g., "[1,2,3]")
+- **struct/map/dict**: Serialized as JSON object (e.g., '{"key":"value"}')
+- **null**: Converted to empty string
+
+Note: JSON arrays/objects are quoted in the output to protect internal tabs and commas.
+    </help>
+</tool>
