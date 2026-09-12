@@ -193,8 +193,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         file_ok = self._download(rel_path, cache_path=cache_path, cache_target=cache_target)
         if file_ok:
             fix_permissions(self.config, cache_dir)
-        else:
-            unlink(cache_path, ignore_errors=True)
         return file_ok
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -569,8 +567,8 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         raise NotImplementedError()
 
     @contextmanager
-    def _atomic_download(self, cache_path):
-        """Download to a temp file then atomically rename to prevent serving partial files.
+    def _atomic_download(self, cache_path: str, expected_size: int | None = None) -> Iterator[str]:
+        """Download to a unique temp file, optionally validate its size, then publish atomically.
 
         Usage::
 
@@ -586,15 +584,15 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         tmp_path = f"{cache_path}.{uuid4().hex}.tmp"
         try:
             yield tmp_path
-            os.rename(tmp_path, cache_path)
-        except BaseException:
-            # Catch BaseException (not just Exception) so that KeyboardInterrupt
-            # and SystemExit also trigger cleanup — we re-raise immediately, so
-            # propagation is not blocked. Without this, interrupted downloads
-            # leave .tmp files that poison the cache on next startup.
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-            raise
+            downloaded_size = os.path.getsize(tmp_path)
+            if expected_size is not None and expected_size >= 0 and downloaded_size != expected_size:
+                raise OSError(
+                    f"downloaded object size does not match remote size for {cache_path}: "
+                    f"expected {expected_size}, got {downloaded_size}"
+                )
+            os.replace(tmp_path, cache_path)
+        finally:
+            unlink(tmp_path, ignore_errors=True)
 
     def _download(self, rel_path: str, *, cache_path: str, cache_target: CacheTarget) -> bool:
         raise NotImplementedError()
