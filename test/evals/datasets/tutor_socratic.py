@@ -17,7 +17,6 @@ Scored two ways:
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_ai.models import Model
@@ -142,7 +141,7 @@ Return a number; no commentary.
 """
 
 
-def _judge(rubric: str, judge_model: Optional[Model]) -> tuple:
+def _judge(rubric: str, judge_model: Model | None) -> tuple:
     if judge_model is None:
         return ()
     return (
@@ -157,9 +156,9 @@ def _judge(rubric: str, judge_model: Optional[Model]) -> tuple:
 
 
 def tutor_socratic_dataset(
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
-    extra_queries: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
+    extra_queries: list[str] | None = None,
 ) -> Dataset[str, str, dict[str, Any]]:
     """Build the tutor_socratic Dataset.
 

@@ -262,10 +262,10 @@ def build_tool_recommendation(
 
 def build_tutor_socratic(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     """Pedagogical quality of the teaching assistant: guide vs. just answer."""
     dataset = tutor_socratic_dataset(judge_model=judge_model, only=only)

@@ -11,7 +11,6 @@ import logging
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_ai import Agent
@@ -24,6 +23,8 @@ from .base import (
     BaseGalaxyAgent,
     extract_result_content,
     GalaxyAgentDependencies,
+    JOB_LOG_EXCERPT_CHARS,
+    truncate_middle,
 )
 from .gtn import GTNSearchDB
 from .operations import AgentOperationsManager
@@ -50,7 +51,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         # degrades to coaching-only if the database can't be loaded.
         db_path = getattr(deps.config, "gtn_database_path", None)
         download_url = getattr(deps.config, "gtn_database_url", None)
-        self.gtn_db: Optional[GTNSearchDB] = None
+        self.gtn_db: GTNSearchDB | None = None
         try:
             self.gtn_db = GTNSearchDB(db_path=db_path, download_url=download_url)
         except Exception as e:
@@ -143,6 +144,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             except Exception as e:
                 return f"Could not retrieve job info: {e}"
             job_info = status.get("job", {})
+            stderr = truncate_middle(str(job_info.get("stderr") or ""), JOB_LOG_EXCERPT_CHARS)
 
             # Also try to get analysis from the error analysis agent
             analysis = ""
@@ -151,7 +153,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                     AgentType.ERROR_ANALYSIS,
                     f"Analyze job failure: tool={job_info.get('tool_id')}, "
                     f"exit_code={job_info.get('exit_code')}, "
-                    f"stderr={str(job_info.get('stderr', ''))[:300]}",
+                    f"stderr={stderr}",
                     ctx,
                 )
             except Exception as e:
@@ -163,7 +165,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
                 f"- Tool: {job_info.get('tool_id', 'unknown')}\n"
                 f"- State: {job_info.get('state', 'unknown')}\n"
                 f"- Exit code: {job_info.get('exit_code', 'N/A')}\n"
-                f"- Stderr: {str(job_info.get('stderr', 'none'))[:300]}\n\n"
+                f"- Stderr: {stderr or 'none'}\n\n"
                 f"Analysis: {analysis}"
             )
 
@@ -265,18 +267,11 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         except Exception as e:
             log.warning(f"Failed to record interaction: {e}")
 
-        prompt_parts = [query]
-        if context:
-            # Filter out conversation_history from context display (it's handled separately)
-            display_context = {k: v for k, v in context.items() if k != "conversation_history" and v}
-            if isinstance(display_context.get("job_id"), int):
-                # The shared context uses database IDs; tutor operations require encoded IDs.
-                display_context["job_id"] = self.deps.trans.security.encode_id(display_context["job_id"])
-            if display_context:
-                context_str = "\n".join([f"{k}: {v}" for k, v in display_context.items()])
-                prompt_parts.insert(0, f"Context:\n{context_str}\n")
-
-        return "\n".join(prompt_parts)
+        display_context = dict(context)
+        if isinstance(display_context.get("job_id"), int):
+            # The shared context uses database IDs; tutor operations require encoded IDs.
+            display_context["job_id"] = self.deps.trans.security.encode_id(display_context["job_id"])
+        return super()._prepare_prompt(query, display_context)
 
     def _format_response(self, result: Any, query: str, context: dict[str, Any]) -> AgentResponse:
         """Format response with tutor-specific metadata and suggestions."""

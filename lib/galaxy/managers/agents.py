@@ -126,7 +126,7 @@ class AgentService:
             log.info(f"User explicitly requested agent: {agent_type}")
             return await self.execute_agent(agent_type, query, trans, user, context)
 
-    def _tutor_mode_enabled(self, trans: ProvidesUserContext) -> bool:
+    def _tutor_mode_enabled(self, trans: SessionRequestContext) -> bool:
         """Whether the user has persisted learning mode on.
 
         A failed lookup falls through to normal routing rather than breaking the

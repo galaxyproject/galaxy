@@ -11,6 +11,7 @@ from galaxy.agents import (
     AgentType,
     GalaxyAgentDependencies,
 )
+from galaxy.agents.base import JOB_LOG_EXCERPT_CHARS
 from galaxy.agents.registry import build_default_registry
 from galaxy.agents.teaching_assistant import TeachingAssistantAgent
 
@@ -123,10 +124,12 @@ class TestTeachingAssistantAgent:
         else:
             self.mock_trans.security.encode_id.assert_not_called()
 
-    async def test_error_analysis_passes_stderr_to_specialist(self):
+    @pytest.mark.parametrize("log_prefix", ["", "HISAT2 starting\n" + "progress\n" * 1000])
+    async def test_error_analysis_passes_stderr_to_specialist(self, log_prefix):
         agent = TeachingAssistantAgent(self.deps)
+        stderr = log_prefix + "No index found"
         agent.ops.get_job_status = mock.Mock(
-            return_value={"job": {"tool_id": "hisat2", "state": "error", "exit_code": 1, "stderr": "No index found"}}
+            return_value={"job": {"tool_id": "hisat2", "state": "error", "exit_code": 1, "stderr": stderr}}
         )
         agent._call_agent_from_tool = mock.AsyncMock(return_value="Check which reference index was selected.")
         ctx = mock.Mock()
@@ -134,9 +137,31 @@ class TestTeachingAssistantAgent:
         result = await agent.agent._function_toolset.tools["analyze_error"].function(ctx, "encoded-job")
 
         agent.ops.get_job_status.assert_called_once_with("encoded-job", full=True)
-        assert "Stderr: No index found" in result
-        assert "stderr=No index found" in agent._call_agent_from_tool.call_args.args[1]
+        assert "No index found" in result
+        delegated_query = agent._call_agent_from_tool.call_args.args[1]
+        assert "No index found" in delegated_query
+        assert len(delegated_query.split("stderr=", 1)[1]) <= JOB_LOG_EXCERPT_CHARS
+        if log_prefix:
+            assert "HISAT2 starting" in result
+            assert "HISAT2 starting" in delegated_query
         assert "Check which reference index was selected." in result
+
+    def test_prompt_excludes_internal_routing_state(self):
+        agent = TeachingAssistantAgent(self.deps)
+        context = {
+            "history_name": "RNA-seq practice",
+            "run_state": "internal execution bookkeeping",
+            "responding_to_clarification": True,
+            "conversation_history": [{"role": "user", "content": "prior question"}],
+        }
+
+        prompt = agent._prepare_prompt("Help me interpret the results", context)
+
+        assert "RNA-seq practice" in prompt
+        assert "Help me interpret the results" in prompt
+        assert "internal execution bookkeeping" not in prompt
+        assert "responding_to_clarification" not in prompt
+        assert "prior question" not in prompt
 
     def test_agent_has_tools(self):
         """The pydantic-ai agent should have registered tools."""

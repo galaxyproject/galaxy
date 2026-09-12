@@ -14,7 +14,6 @@ from datetime import (
 )
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.managers.context import ProvidesUserContext
@@ -88,7 +87,7 @@ class LearningStateManager:
         """Disable tutor mode for the user."""
         return self.update_learning_state(trans, {"tutor_mode_enabled": False})
 
-    def _get_preference(self, trans: ProvidesUserContext, key: str) -> Optional[str]:
+    def _get_preference(self, trans: ProvidesUserContext, key: str) -> str | None:
         """Get a user preference value.
 
         ``user.preferences`` is an association proxy that behaves like a dict

@@ -368,7 +368,7 @@ def make_tool_recommendation_task(
 
 def make_tutor_socratic_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[str]]:
     """Build an async callable: learner query -> teaching-assistant response content.
