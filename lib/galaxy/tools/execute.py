@@ -419,7 +419,9 @@ def _execute(
             )()
             job2.set_runner_external_id(async_result.task_id)
             continue
-        tool.app.job_manager.enqueue(job2, tool=tool, flush=False)
+        tool.app.job_manager.enqueue(
+            job2, tool=tool, flush=False, handler=getattr(trans, "origin_job_handler", None)
+        )
         trans.log_event(f"Added job to the job queue, id: {str(job2.id)}", tool_id=tool_id)
     trans.sa_session.commit()
 
