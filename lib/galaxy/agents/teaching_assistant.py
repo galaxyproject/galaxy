@@ -96,19 +96,19 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             return f"Found {len(results)} relevant tutorials:\n\n" + "\n".join(formatted)
 
         @agent.tool
-        async def get_learning_pathway(ctx, topic: str) -> str:
+        async def suggest_tutorials(ctx, topic: str) -> str:
             """Suggest an ordered set of tutorials for a topic, easiest first."""
             if teaching_assistant.gtn_db is None:
-                return "Learning pathway lookup is not available right now."
+                return "Tutorial search is not available right now."
             results = teaching_assistant.gtn_db.search(topic, limit=8)
             if not results:
-                return f"No learning pathway found for '{topic}'."
+                return f"No tutorials found for '{topic}'."
             difficulty_order = {"introductory": 0, "beginner": 0, "intermediate": 1, "advanced": 2}
             ordered = sorted(results, key=lambda r: difficulty_order.get((r.difficulty or "").lower(), 1))
             formatted = []
             for i, r in enumerate(ordered, start=1):
-                formatted.append(f"Step {i}: **{r.title}** (difficulty: {r.difficulty or 'unknown'})\n  URL: {r.url}")
-            return f"A suggested learning pathway for '{topic}':\n\n" + "\n".join(formatted)
+                formatted.append(f"{i}. **{r.title}** (difficulty: {r.difficulty or 'unknown'})\n  URL: {r.url}")
+            return f"Suggested tutorials for '{topic}', easiest first:\n\n" + "\n".join(formatted)
 
         @agent.tool
         async def check_user_context(ctx) -> str:
@@ -223,27 +223,19 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             except Exception as e:
                 return f"Could not run tool '{tool_id}': {e}"
 
-            # Only a real execution counts toward the empower-vs-dependence signal --
-            # the read-only describe path above is coaching, not showing.
+            if not result.get("jobs"):
+                return (
+                    f"No demonstration jobs were submitted for tool '{tool_id}'.\n"
+                    f"Result: {json.dumps(result, default=str)[:500]}"
+                )
+
+            # Descriptions and failed submissions must not inflate the execution count.
             try:
                 teaching_assistant.learning_state_manager.record_demonstration(teaching_assistant.deps.trans)
             except Exception as e:
                 log.warning(f"Failed to record demonstration: {e}")
 
-            return f"Demonstration: Ran tool '{tool_id}' in history.\nResult: {json.dumps(result, default=str)[:500]}"
-
-        @agent.tool
-        async def save_learning_note(ctx, content: str) -> str:
-            """Prompt the learner to record a takeaway.
-
-            Saving notes to a history notebook isn't wired up yet, so this does not
-            persist anything -- it just encourages the learner to write it down. Be
-            honest with them that it isn't saved automatically.
-            """
-            return (
-                "Saving notes to your history isn't available yet, but this is a good moment "
-                "to jot down what you just learned in your own words."
-            )
+            return f"Demonstration submitted with tool '{tool_id}'.\nResult: {json.dumps(result, default=str)[:500]}"
 
         return agent
 
@@ -263,12 +255,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         except Exception:
             return "No learning state available."
 
-        lines = [
-            f"**User expertise level:** {state.get('expertise_level', 'beginner')}",
-            f"**Scaffolding level:** {state.get('scaffolding_level', 3)} (1=max support, 5=minimal)",
-            f"**Interaction count:** {state.get('interaction_count', 0)}",
-        ]
-        return "\n".join(lines)
+        return f"**Scaffolding level:** {state.get('scaffolding_level', 3)} (1=max support, 5=minimal)"
 
     def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
         """Prepare prompt with learning context included."""

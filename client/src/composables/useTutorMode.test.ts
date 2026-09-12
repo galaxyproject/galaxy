@@ -16,23 +16,21 @@ describe("useTutorMode", () => {
     });
 
     it("defaults to tutor mode off", () => {
-        const { tutorModeEnabled, scaffoldingLevel, expertiseLevel } = useTutorMode();
+        const { tutorModeEnabled, scaffoldingLevel } = useTutorMode();
         expect(tutorModeEnabled.value).toBe(false);
         expect(scaffoldingLevel.value).toBeNull();
-        expect(expertiseLevel.value).toBeNull();
     });
 
     it("fetchTutorState applies the backend learning state", async () => {
         mockGET.mockResolvedValue({
-            data: { tutor_mode_enabled: true, scaffolding_level: 2, expertise_level: "intermediate" },
+            data: { tutor_mode_enabled: true, scaffolding_level: 2 },
             error: undefined,
         });
-        const { tutorModeEnabled, scaffoldingLevel, expertiseLevel, fetchTutorState } = useTutorMode();
+        const { tutorModeEnabled, scaffoldingLevel, fetchTutorState } = useTutorMode();
         await fetchTutorState();
         expect(mockGET).toHaveBeenCalledWith("/api/chat/tutor/state");
         expect(tutorModeEnabled.value).toBe(true);
         expect(scaffoldingLevel.value).toBe(2);
-        expect(expertiseLevel.value).toBe("intermediate");
     });
 
     it("setTutorMode posts a bare boolean and updates from the response", async () => {

@@ -1,10 +1,9 @@
 """
 Learning state management for the AI cognitive tutor.
 
-Stores per-user learning progress in UserPreference as JSON,
+Stores per-user tutoring preferences and usage in UserPreference as JSON,
 avoiding the need for database migrations. The learning state
-tracks the user's inferred expertise level, scaffolding preference,
-and interaction/demonstration counts.
+tracks scaffolding preferences and interaction/demonstration counts.
 """
 
 import json
@@ -25,7 +24,6 @@ log = logging.getLogger(__name__)
 LEARNING_STATE_KEY = "learning_state"
 
 DEFAULT_LEARNING_STATE: dict[str, Any] = {
-    "expertise_level": "beginner",
     "scaffolding_level": 3,
     "interaction_count": 0,
     "demonstrations_count": 0,
@@ -49,9 +47,11 @@ class LearningStateManager:
 
         try:
             state = json.loads(pref)
-            # Merge with defaults to handle schema evolution
+            if not isinstance(state, dict):
+                raise TypeError("Learning state must be an object")
+            # Ignore retired fields, including expertise inferred from message counts.
             merged = dict(DEFAULT_LEARNING_STATE)
-            merged.update(state)
+            merged.update({key: value for key, value in state.items() if key in merged})
             return merged
         except (json.JSONDecodeError, TypeError):
             log.warning(f"Corrupted learning state for user {user.id}, returning defaults")
@@ -66,21 +66,15 @@ class LearningStateManager:
         return state
 
     def record_interaction(self, trans: ProvidesUserContext) -> dict[str, Any]:
-        """Increment interaction count, refresh expertise, and update timestamp."""
+        """Increment interaction count and update timestamp."""
         state = self.get_learning_state(trans)
         state["interaction_count"] = state.get("interaction_count", 0) + 1
         state["last_interaction"] = datetime.now(timezone.utc).isoformat()
-        self._maybe_adjust_expertise(state)
         self._set_preference(trans, LEARNING_STATE_KEY, json.dumps(state))
         return state
 
     def record_demonstration(self, trans: ProvidesUserContext) -> dict[str, Any]:
-        """Count a time the tutor demonstrated a concept rather than coaching.
-
-        Demonstrations are powerful but can foster dependence, so tracking how
-        often a learner is shown vs. guided is the signal for the grant's
-        empower-vs-dependence question.
-        """
+        """Count a demonstration that submitted at least one job."""
         state = self.get_learning_state(trans)
         state["demonstrations_count"] = state.get("demonstrations_count", 0) + 1
         self._set_preference(trans, LEARNING_STATE_KEY, json.dumps(state))
@@ -93,16 +87,6 @@ class LearningStateManager:
     def disable_tutor_mode(self, trans: ProvidesUserContext) -> dict[str, Any]:
         """Disable tutor mode for the user."""
         return self.update_learning_state(trans, {"tutor_mode_enabled": False})
-
-    def _maybe_adjust_expertise(self, state: dict[str, Any]) -> None:
-        """Infer expertise level from cumulative tutor interactions."""
-        interaction_count = state.get("interaction_count", 0)
-        if interaction_count >= 100:
-            state["expertise_level"] = "advanced"
-        elif interaction_count >= 30:
-            state["expertise_level"] = "intermediate"
-        else:
-            state["expertise_level"] = "beginner"
 
     def _get_preference(self, trans: ProvidesUserContext, key: str) -> Optional[str]:
         """Get a user preference value.

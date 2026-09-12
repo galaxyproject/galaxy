@@ -93,15 +93,14 @@ class TestTeachingAssistantAgent:
         agent = TeachingAssistantAgent(self.deps)
         prompt = agent.get_system_prompt()
         # Default state should be injected
-        assert "beginner" in prompt
         assert "Scaffolding level" in prompt
 
     def test_build_learning_context_default(self):
-        """Default learning context should reflect beginner state."""
+        """Learning context should expose support preferences without inferring competence."""
         agent = TeachingAssistantAgent(self.deps)
         context = agent._build_learning_context()
-        assert "beginner" in context
-        assert "3" in context  # default scaffolding level
+        assert "Scaffolding level:** 3" in context
+        assert "expertise" not in context.lower()
 
     def test_tutor_specific_fallback(self):
         """Fallback message should mention training.galaxyproject.org."""
@@ -145,12 +144,12 @@ class TestTeachingAssistantAgent:
         toolset = agent.agent._function_toolset
         tool_names = list(toolset.tools.keys())
         assert "search_training_materials" in tool_names
-        assert "get_learning_pathway" in tool_names
+        assert "suggest_tutorials" in tool_names
         assert "check_user_context" in tool_names
         assert "analyze_error" in tool_names
         assert "recommend_tools" in tool_names
         assert "demonstrate_concept" in tool_names
-        assert "save_learning_note" in tool_names
+        assert "save_learning_note" not in tool_names
 
 
 class TestLearningStateManager:
@@ -171,7 +170,6 @@ class TestLearningStateManager:
     def test_get_default_state(self):
         """Should return default state when no preference exists."""
         state = self.manager.get_learning_state(self.mock_trans)
-        assert state["expertise_level"] == "beginner"
         assert state["scaffolding_level"] == 3
         assert state["interaction_count"] == 0
         assert state["tutor_mode_enabled"] is False
@@ -193,16 +191,17 @@ class TestLearningStateManager:
         self.mock_user.preferences = {"learning_state": json.dumps(saved_state)}
 
         state = self.manager.get_learning_state(self.mock_trans)
-        assert state["expertise_level"] == "intermediate"
+        assert "expertise_level" not in state
         assert state["scaffolding_level"] == 2
         assert state["interaction_count"] == 42
         assert state["tutor_mode_enabled"] is True
         # Should merge with defaults for missing keys
         assert "demonstrations_count" in state
 
-    def test_corrupted_json_returns_defaults(self):
+    @pytest.mark.parametrize("preference", ["not valid json{{", "[]", "null"])
+    def test_corrupted_json_returns_defaults(self, preference):
         """Should handle corrupted JSON gracefully."""
-        self.mock_user.preferences = {"learning_state": "not valid json{{"}
+        self.mock_user.preferences = {"learning_state": preference}
 
         state = self.manager.get_learning_state(self.mock_trans)
         assert state == DEFAULT_LEARNING_STATE
@@ -223,27 +222,20 @@ class TestLearningStateManager:
         assert state["interaction_count"] == 1
         assert state["last_interaction"] is not None
 
-    def test_record_interaction_advances_expertise(self):
-        """Crossing 30 interactions should promote beginner -> intermediate."""
+    @pytest.mark.parametrize("count", [29, 99])
+    def test_record_interaction_does_not_infer_expertise(self, count):
         saved = dict(DEFAULT_LEARNING_STATE)
-        saved["interaction_count"] = 29
+        saved["interaction_count"] = count
+        saved["expertise_level"] = "advanced"
         self.mock_user.preferences = {"learning_state": json.dumps(saved)}
 
         state = self.manager.record_interaction(self.mock_trans)
-        assert state["interaction_count"] == 30
-        assert state["expertise_level"] == "intermediate"
-
-    def test_expertise_advances_to_advanced(self):
-        """Crossing 100 interactions should infer advanced."""
-        saved = dict(DEFAULT_LEARNING_STATE)
-        saved["interaction_count"] = 99
-        self.mock_user.preferences = {"learning_state": json.dumps(saved)}
-
-        state = self.manager.record_interaction(self.mock_trans)
-        assert state["expertise_level"] == "advanced"
+        assert state["interaction_count"] == count + 1
+        assert "expertise_level" not in state
+        assert "expertise_level" not in json.loads(self.mock_user.preferences["learning_state"])
 
     def test_record_demonstration(self):
-        """Should increment the demonstrations count (empower-vs-dependence signal)."""
+        """Should increment the count of submitted demonstration runs."""
         state = self.manager.record_demonstration(self.mock_trans)
         assert state["demonstrations_count"] == 1
 
@@ -254,7 +246,6 @@ class TestSchemaAdditions:
     def test_learning_state_defaults(self):
         """LearningState should have sensible defaults."""
         state = LearningState()
-        assert state.expertise_level == "beginner"
         assert state.scaffolding_level == 3
         assert state.tutor_mode_enabled is False
 
@@ -267,7 +258,7 @@ class TestSchemaAdditions:
             "tutor_mode_enabled": True,
         }
         state = LearningState(**data)
-        assert state.expertise_level == "advanced"
+        assert "expertise_level" not in state.model_dump()
         assert state.interaction_count == 120
 
     def test_tutor_mode_toggle(self):
@@ -331,14 +322,41 @@ class TestTeachingAssistantWiring:
         with pytest.raises(ImportError):
             __import__("galaxy.agents.stubs")
 
-    def test_tool_execution_gated_off_by_default(self):
-        """demonstrate_concept must not run tools unless explicitly enabled."""
-        self.mock_config.tutor_allow_tool_execution = False
+    @pytest.mark.parametrize("enabled", [None, False, True])
+    async def test_demonstration_only_executes_and_counts_when_enabled(self, enabled):
+        if enabled is None:
+            del self.mock_config.tutor_allow_tool_execution
+        else:
+            self.mock_config.tutor_allow_tool_execution = enabled
+        self.mock_trans.get_history.return_value = mock.Mock(id=23)
+        self.mock_trans.security.encode_id.return_value = "history-23"
         agent = TeachingAssistantAgent(self.deps)
-        assert agent._tool_execution_allowed() is False
+        agent.ops = mock.Mock()
+        agent.ops.get_tool_details.return_value = {"id": "fastqc", "name": "FastQC"}
+        agent.ops.run_tool.return_value = {"jobs": [{"id": "job-1"}]}
 
-    def test_tool_execution_can_be_enabled(self):
-        """Trusted deployments can opt in to live tool execution."""
+        await agent.agent._function_toolset.tools["demonstrate_concept"].function(mock.Mock(), "fastqc", "{}")
+
+        if enabled:
+            agent.ops.run_tool.assert_called_once_with("history-23", "fastqc", {})
+            agent.ops.get_tool_details.assert_not_called()
+        else:
+            agent.ops.run_tool.assert_not_called()
+            agent.ops.get_tool_details.assert_called_once_with("fastqc", io_details=True)
+        state = agent.learning_state_manager.get_learning_state(self.mock_trans)
+        assert state["demonstrations_count"] == (1 if enabled else 0)
+
+    @pytest.mark.parametrize("failure", [RuntimeError("Tool unavailable"), None])
+    async def test_demonstration_without_submitted_jobs_does_not_count(self, failure):
         self.mock_config.tutor_allow_tool_execution = True
+        self.mock_trans.get_history.return_value = mock.Mock(id=23)
+        self.mock_trans.security.encode_id.return_value = "history-23"
         agent = TeachingAssistantAgent(self.deps)
-        assert agent._tool_execution_allowed() is True
+        agent.ops = mock.Mock()
+        agent.ops.run_tool.side_effect = failure
+        agent.ops.run_tool.return_value = {"jobs": []}
+
+        result = await agent.agent._function_toolset.tools["demonstrate_concept"].function(mock.Mock(), "fastqc", "{}")
+
+        assert ("Could not run tool" if failure else "No demonstration jobs were submitted") in result
+        assert agent.learning_state_manager.get_learning_state(self.mock_trans)["demonstrations_count"] == 0

@@ -544,8 +544,8 @@ class ChatAPI:
         """Update the user's learning state (partial update).
 
         Only a small allowlist of fields is user-settable. Fields that get injected into
-        the tutor's system prompt or are derived server-side (expertise_level,
-        interaction_count, ...) are intentionally rejected here so a user cannot inject
+        the tutor's system prompt or are derived server-side (interaction_count,
+        demonstrations_count, ...) are intentionally rejected here so a user cannot inject
         prompt content or forge their own progress.
         """
         updates: dict[str, Any] = {}

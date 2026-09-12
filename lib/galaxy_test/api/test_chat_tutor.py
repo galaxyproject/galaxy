@@ -11,7 +11,6 @@ from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
 EXPECTED_STATE_KEYS = {
-    "expertise_level",
     "scaffolding_level",
     "interaction_count",
     "demonstrations_count",
@@ -37,7 +36,7 @@ class TestChatTutorApi(ApiTestCase):
         assert EXPECTED_STATE_KEYS.issubset(state.keys())
         assert isinstance(state["scaffolding_level"], int)
         assert 1 <= state["scaffolding_level"] <= 5
-        assert isinstance(state["expertise_level"], str)
+        assert "expertise_level" not in state
         assert isinstance(state["tutor_mode_enabled"], bool)
 
     def test_toggle_tutor_mode_on_and_off(self):
@@ -80,8 +79,7 @@ class TestChatTutorApi(ApiTestCase):
             "tutor_feedback",
             "avg_conversation_length",
             "scaffolding_distribution",
-            "expertise_distribution",
             "total_demonstrations",
-            "demonstration_reliance",
+            "demonstrations_per_interaction",
         ):
             assert key in data

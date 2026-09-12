@@ -36,8 +36,8 @@ MESSAGE_SCAN_LIMIT = 50000
 class TutorAnalyticsManager:
     """Aggregate tutor usage metrics from existing chat and preference tables.
 
-    Metrics cover the most recent ``MESSAGE_SCAN_LIMIT`` chat messages rather than
-    all-time history, to keep the query bounded.
+    Message metrics cover the most recent ``MESSAGE_SCAN_LIMIT`` chat messages.
+    Preference distributions describe current state; usage counters are lifetime totals.
     """
 
     def _recent_messages(self, trans: ProvidesUserContext) -> list[ChatExchangeMessage]:
@@ -82,7 +82,6 @@ class TutorAnalyticsManager:
         total_interactions = 0
         total_demonstrations = 0
         scaffolding_distribution: dict[int, int] = {}
-        expertise_distribution: dict[str, int] = {}
         for state in states:
             if state.get("tutor_mode_enabled"):
                 tutor_enabled_users += 1
@@ -90,8 +89,6 @@ class TutorAnalyticsManager:
             total_demonstrations += state.get("demonstrations_count", 0)
             level = state.get("scaffolding_level", DEFAULT_LEARNING_STATE["scaffolding_level"])
             scaffolding_distribution[level] = scaffolding_distribution.get(level, 0) + 1
-            expertise = state.get("expertise_level", DEFAULT_LEARNING_STATE["expertise_level"])
-            expertise_distribution[expertise] = expertise_distribution.get(expertise, 0) + 1
 
         return {
             "total_messages": total_messages,
@@ -104,11 +101,11 @@ class TutorAnalyticsManager:
             },
             "learning_state_users": tutor_enabled_users,
             "scaffolding_distribution": scaffolding_distribution,
-            "expertise_distribution": expertise_distribution,
-            # Empower-vs-dependence signal: how often learners are shown vs. guided.
             "total_interactions": total_interactions,
             "total_demonstrations": total_demonstrations,
-            "demonstration_reliance": (total_demonstrations / total_interactions) if total_interactions else 0.0,
+            "demonstrations_per_interaction": (
+                (total_demonstrations / total_interactions) if total_interactions else 0.0
+            ),
         }
 
     def get_downvoted_tutor_queries(self, trans: ProvidesUserContext) -> list[str]:

@@ -60,9 +60,9 @@ class TestTutorAnalytics:
         result = self.manager._aggregate([], states)
         assert result["learning_state_users"] == 2
         assert result["scaffolding_distribution"] == {3: 2, 2: 1}
-        assert result["expertise_distribution"] == {"beginner": 2, "intermediate": 1}
+        assert "expertise_distribution" not in result
 
-    def test_demonstration_reliance(self):
+    def test_demonstrations_per_interaction(self):
         states = [
             {"interaction_count": 10, "demonstrations_count": 2},
             {"interaction_count": 5, "demonstrations_count": 3},
@@ -70,12 +70,12 @@ class TestTutorAnalytics:
         result = self.manager._aggregate([], states)
         assert result["total_interactions"] == 15
         assert result["total_demonstrations"] == 5
-        assert result["demonstration_reliance"] == 5 / 15
+        assert result["demonstrations_per_interaction"] == 5 / 15
 
-    def test_demonstration_reliance_empty(self):
+    def test_demonstrations_per_interaction_empty(self):
         result = self.manager._aggregate([], [])
         assert result["total_demonstrations"] == 0
-        assert result["demonstration_reliance"] == 0.0
+        assert result["demonstrations_per_interaction"] == 0.0
 
     def test_downvoted_tutor_queries(self):
         messages = [

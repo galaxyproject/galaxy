@@ -211,14 +211,24 @@ All registered agents are enabled when the AI system is active.
 The `teaching_assistant` agent powers an opt-in "learning mode" in the Galaxy AI
 panel. With it off (the default), the panel answers questions directly. With it on,
 the agent uses Socratic questioning and scaffolded hints, grounds its answers in GTN
-training material, and tracks per-user learning state (expertise level, scaffolding
-level, completed tutorials). That state is stored as a user preference, so no database
-migration is required.
+training material, and stores scaffolding preferences and interaction/demonstration
+counts as user preferences. It does not infer expertise or track tutorial completion.
+No database migration is required. Notebook context continues to use the page
+assistant when learning mode is enabled.
 
 To demonstrate a concept, the tutor can run a Galaxy tool on the user's data. This is
 disabled by default for safety: with it off, the tutor describes the tool and its
 inputs instead of executing anything. Set `tutor_allow_tool_execution: true` to allow
 live demonstrations in trusted or evaluation deployments.
+
+The admin-only `/api/chat/tutor/analytics` endpoint reports usage and feedback, not
+learning outcomes. Message statistics cover the most recent 50,000 saved turns;
+interaction and demonstration counters are lifetime totals. Conversation-length
+statistics group any exchange containing a tutor turn under tutor conversations,
+including exchanges where the learner switched modes. `demonstrations_per_interaction`
+counts demonstrations that submitted at least one job per tutor interaction. It stays
+zero in deployments where execution has never been enabled; it does not measure
+dependence or mastery.
 
 ```yaml
 galaxy:

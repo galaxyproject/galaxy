@@ -249,10 +249,9 @@ class WorkflowReportResponse(BaseModel):
 class LearningState(BaseModel):
     """User's learning state for the cognitive tutor."""
 
-    expertise_level: str = Field(default="beginner", description="User expertise: beginner, intermediate, advanced")
     scaffolding_level: int = Field(default=3, description="Scaffolding level 1-5 (1=max support, 5=minimal)")
     interaction_count: int = Field(default=0, description="Total tutor interactions")
-    demonstrations_count: int = Field(default=0, description="Times the tutor demonstrated a concept")
+    demonstrations_count: int = Field(default=0, description="Demonstrations that submitted at least one job")
     tutor_mode_enabled: bool = Field(default=False, description="Whether tutor mode is active")
     last_interaction: str | None = Field(default=None, description="ISO timestamp of last interaction")
 
