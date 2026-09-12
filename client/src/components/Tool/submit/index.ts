@@ -1,11 +1,12 @@
 import * as Sentry from "@sentry/vue";
 
+import type { JobResponse, SubmitToolJobParams } from "@/api/jobs";
 import { useConfigStore } from "@/stores/configurationStore";
 
 import { submitToolJob as submitAsync } from "./submitAsync";
 import { submitToolJob as submitLegacy } from "./submitLegacy";
 
-export async function submitToolJob(params) {
+export async function submitToolJob(params: SubmitToolJobParams): Promise<JobResponse> {
     const configStore = useConfigStore();
     const toolRequestsEnabled = configStore.config?.enable_tool_requests !== false;
     const celeryEnabled = !!configStore.config?.enable_celery_tasks;
