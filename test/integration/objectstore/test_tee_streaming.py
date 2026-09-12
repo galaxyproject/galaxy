@@ -5,7 +5,7 @@ bytes are written into Galaxy's cache on the way past, so the client gets its fi
 instead of waiting for the whole object to be pulled in -- and objects too big for the cache can be
 downloaded at all. Requests that need random access (Range, HEAD) still get a cached file. Runs
 against a boto3 object store and a cloudbridge (cloud) object store, each backed by a disposable
-minio container.
+SeaweedFS container.
 """
 
 import os
@@ -23,7 +23,7 @@ from ._base import (
     OBJECT_STORE_HOST,
     OBJECT_STORE_PORT,
     OBJECT_STORE_SECRET_KEY,
-    start_minio,
+    start_seaweedfs,
 )
 
 BOTO3_TEE_STREAMING_CONFIG = string.Template("""
@@ -69,7 +69,7 @@ class TeeStreamingIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
     @classmethod
     def setUpClass(cls):
         cls.container_name = f"{cls.__name__}_container"
-        start_minio(cls.container_name)
+        start_seaweedfs(cls.container_name)
         super().setUpClass()
 
     @classmethod
