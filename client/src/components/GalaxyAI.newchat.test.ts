@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { h, ref } from "vue";
 
+import type { ActiveContext } from "@/composables/useActiveContext";
 import { useChatStore } from "@/stores/chatStore";
 
 import GalaxyAI from "./GalaxyAI.vue";
@@ -52,8 +53,10 @@ vi.mock("@/app", () => ({
 vi.mock("@/components/GalaxyAI/ChatMessageCell.vue", () => ({ default: ChatMessageCellStub }));
 vi.mock("@/components/GalaxyAI/ChatInput.vue", () => ({ default: ChatInputStub }));
 
+const mockActiveContext = ref<ActiveContext | null>(null);
+
 vi.mock("@/composables/useActiveContext", () => ({
-    useActiveContext: () => ({ activeContext: ref(null), contextLabel: ref("") }),
+    useActiveContext: () => ({ activeContext: mockActiveContext, contextLabel: ref("") }),
 }));
 
 vi.mock("@/composables/agentActions", () => ({
@@ -122,8 +125,35 @@ function deferredResponse() {
 describe("GalaxyAI", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockActiveContext.value = null;
         mockGet.mockResolvedValue({ data: [], error: undefined });
     });
+
+    it.each([null, { contextType: "notebook", pageId: "page-1", historyId: "hist-1" }] as const)(
+        "leaves routing to the server with persisted learning mode and context %j",
+        async (context) => {
+            mockActiveContext.value = context;
+            mockGet.mockImplementation(async (path: string) => ({
+                data: path === "/api/chat/tutor/state" ? { tutor_mode_enabled: true, scaffolding_level: 3 } : [],
+                error: undefined,
+            }));
+            mockPost.mockResolvedValue({ data: { response: "Here you go", exchange_id: "exchange-123" } });
+            const { wrapper } = mountChat();
+            await flushPromises();
+
+            expect(wrapper.find(".tutor-scaffolding").exists()).toBe(true);
+            await sendMessage(wrapper, "help me understand this analysis");
+
+            expect(mockPost).toHaveBeenCalledWith(
+                "/api/chat",
+                expect.objectContaining({
+                    params: { query: { agent_type: "auto" } },
+                    body: expect.objectContaining({ context: context ? JSON.stringify(context) : null }),
+                }),
+            );
+            wrapper.destroy();
+        },
+    );
 
     it("appends the response and records the exchange id on a normal exchange", async () => {
         mockPost.mockResolvedValue({

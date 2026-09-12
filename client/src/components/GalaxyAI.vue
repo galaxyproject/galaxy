@@ -113,9 +113,9 @@ const query = ref("");
 const messages = ref<ChatMessage[]>([]);
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
-// Tutor ("learning") mode: when on, exchanges route to the teaching_assistant agent.
 const { tutorModeEnabled, scaffoldingLevel, fetchTutorState, setTutorMode } = useTutorMode();
-const selectedAgentType = computed(() => (tutorModeEnabled.value ? "teaching_assistant" : "auto"));
+// The server applies the saved learning preference after checking notebook context.
+const selectedAgentType = ref("auto");
 const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
 
