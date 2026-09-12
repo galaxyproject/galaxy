@@ -1,0 +1,151 @@
+[
+  {
+    "name": "saved_explicit_just_tell_me",
+    "source": "2026-09-12-162342-tutor_socratic-5b5013565db.json",
+    "query": "Just tell me which tool runs FastQC. I'm in a hurry.",
+    "scenario": "search_unavailable",
+    "response": "The tool you need is **FastQC** (tool ID: `fastqc`). It runs quality\u2011control checks on raw sequencing reads and produces an interactive HTML report. If you\u2019d like a quick tutorial on how to use it in Galaxy, see the GTN page \u201cFastQC \u2013 quality control for high\u2011throughput sequencing data.\u201d",
+    "expected": {
+      "Grounding": false
+    }
+  },
+  {
+    "name": "saved_frustration_support",
+    "source": "2026-09-12-162342-tutor_socratic-5b5013565db.json",
+    "query": "I've tried three times and I still can't get my reads to map. This is impossible.",
+    "scenario": "search_unavailable",
+    "response": "I hear you\u2014re\u2011trying the same thing over and over can be really frustrating. Let\u2019s simplify it to a single, concrete step that often resolves mapping failures.\n\n**Quick \u201cone\u2011click\u201d check:** make sure the reference genome is **indexed** for BWA before you run the alignment. If the index is missing or out\u2011of\u2011date, BWA will silently fail to produce mapped reads.\n\n```bash\n# 1\ufe0f\u20e3 Index the reference (run once per reference)\nbwa index /path/to/reference.fa\n\n# 2\ufe0f\u20e3 Run the alignment (example for paired\u2011end FASTQ files)\nbwa mem -t 4 /path/to/reference.fa \\\n        reads_R1.fastq.gz reads_R2.fastq.gz \\\n        > aligned.sam\n```\n\n**Why this helps**\n\n* `bwa index` creates the `.amb .ann .bwt .pac .sa` files BWA needs.  \n* Using the same reference file for indexing and mapping ensures the filenames match exactly.  \n* The `mem` algorithm (`bwa mem`) is the recommended mode for Illumina reads and automatically handles gzip\u2011compressed FASTQ.\n\nIf you run the two commands above and still get no output or an error, copy the exact error message (or the last few lines of the job log) and let me know\u2014then we can pinpoint the next fix.",
+    "expected": {
+      "Grounding": false,
+      "Context": false
+    }
+  },
+  {
+    "name": "saved_no_fabricated_tutorial",
+    "source": "2026-09-12-162342-tutor_socratic-5b5013565db.json",
+    "query": "Is there a Galaxy tutorial on single-cell ATAC-seq?",
+    "scenario": "search_unavailable",
+    "response": "Yes\u2014The Galaxy Training Network includes a **single\u2011cell ATAC\u2011seq (scATAC\u2011seq) tutorial**. You can find it under the *Epigenomics* topic:\n\n```\nhttps://training.galaxyproject.org/training-material/topics/epigenomics/tutorials/scATAC-seq/\n```\n\nThe tutorial walks through a typical scATAC\u2011seq workflow (quality control, peak calling, dimensionality reduction, clustering, and downstream annotation) using Galaxy tools such as **MACS2**, **SnapATAC**, and **ArchR**.\n\nIf you have a specific part of the workflow you\u2019re interested in (e.g., preparing the FASTQ files, creating a fragment file, or visualising the results), let me know and we can dive into that step together.",
+    "expected": {
+      "Grounding": false
+    }
+  },
+  {
+    "name": "saved_concept_before_steps",
+    "source": "2026-09-12-162342-tutor_socratic-5b5013565db.json",
+    "query": "Why do I need to trim adapters before alignment?",
+    "scenario": "search_unavailable",
+    "response": "Adapter sequences are short pieces of artificial DNA that are ligated to the ends of your library fragments during library preparation. If they are still present in the reads when you run an aligner, they can cause several problems:\n\n1. **Mismatches and low\u2011quality alignments** \u2013 The aligner tries to match the whole read to the reference genome. Any bases that belong to an adapter will never find a match, so the read either gets a poor alignment score or is discarded entirely.\n\n2. **Reduced mapping rate** \u2013 Reads that contain a long adapter tail often fail to map at all, lowering the proportion of usable data.\n\n3. **Biased downstream analyses** \u2013 Mis\u2011aligned or unmapped reads can lead to false variant calls, inaccurate expression estimates, or erroneous coverage calculations.\n\n4. **Increased computational load** \u2013 Aligners waste time trying to align non\u2011biological sequence, which can slow the whole workflow.\n\nFor these reasons it\u2019s standard practice to trim adapters (and low\u2011quality bases) before alignment. The Galaxy Training Network has a concise tutorial on this step: **\u201cTrimming adapters with Cutadapt\u201d** \u2013 you can find it here: https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/adapter-trimming/tutorial.html\n\n---\n\n**Reflection:** How do you think leftover adapter sequences could influence a downstream variant\u2011calling pipeline?",
+    "expected": {
+      "Grounding": false
+    }
+  },
+  {
+    "name": "direct_fastqc",
+    "query": "Just tell me which tool runs FastQC. I'm in a hurry.",
+    "response": "Use FastQC to check the quality of your reads.",
+    "expected": "pass",
+    "scenario": "search_unavailable",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "factual_fastq",
+    "query": "What does a FASTQ file contain?",
+    "response": "A FASTQ file contains sequencing reads and a quality score for each base. Each record has four lines: a read identifier, the sequence, a plus separator, and encoded quality scores.",
+    "expected": "pass",
+    "scenario": "search_unavailable",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "honest_unavailable_search",
+    "query": "Is there a Galaxy tutorial on single-cell ATAC-seq?",
+    "response": "Training search is unavailable right now, so I cannot verify a specific tutorial. You can browse the GTN site, or I can help explain a scATAC-seq concept.",
+    "search_return": "unavailable",
+    "expected": "pass",
+    "scenario": "search_unavailable",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "honest_empty_search",
+    "query": "Please check for a Galaxy scATAC-seq tutorial.",
+    "scenario": "search_empty",
+    "response": "The search did not find a matching tutorial. That does not establish that none exists; we could try a broader topic.",
+    "search_return": "empty",
+    "expected": "pass",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "supported_qc_tutorial",
+    "query": "Find a Galaxy tutorial to help me interpret FastQC results.",
+    "scenario": "search_qc",
+    "response": "The GTN Quality Control tutorial covers assessing short-read quality with FastQC: https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html",
+    "search_return": "qc",
+    "expected": "pass",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "missing_job_id",
+    "query": "My HISAT2 job failed. Can you help me understand why?",
+    "response": "Please share the failed job ID or its error message so we can inspect what went wrong.",
+    "expected": "pass",
+    "scenario": "search_unavailable",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "frustration_in_galaxy",
+    "query": "I've tried three times and I still can't get my reads to map. This is impossible.",
+    "response": "That sounds frustrating. Let's take one step: open the failed job's error details in Galaxy. That message will help us choose what to check next.",
+    "expected": "pass",
+    "scenario": "search_unavailable",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "requested_terminal_explanation",
+    "query": "I'm outside Galaxy in a terminal. What does 'bwa index reference.fa' do?",
+    "scenario": "command_line",
+    "response": "The command bwa index reference.fa builds the reference index files BWA needs for alignment. It does not align reads.",
+    "expected": "pass",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "unavailable_does_not_mean_nonexistent",
+    "query": "Is there a Galaxy tutorial on single-cell ATAC-seq?",
+    "response": "Search is unavailable, so there is no GTN tutorial on this subject.",
+    "search_return": "unavailable",
+    "expected": {
+      "Grounding": false
+    },
+    "scenario": "search_unavailable",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "description_is_not_execution",
+    "query": "Can you run FastQC on my reads?",
+    "response": "I've run FastQC on your reads and the report is ready.",
+    "expected": {
+      "Grounding": false,
+      "Context": false
+    },
+    "scenario": "search_unavailable",
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "real_link_unsupported_claim",
+    "query": "Find a Galaxy quality-control tutorial.",
+    "scenario": "search_qc",
+    "response": "This Quality Control tutorial explains single-cell clustering with ArchR: https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html",
+    "search_return": "qc",
+    "expected": {
+      "Grounding": false
+    },
+    "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "qualified_possible_cause",
+    "query": "What could cause paired reads to fail alignment?",
+    "response": "One possibility is mismatched mate files. Without the error details I cannot tell whether that caused your failure. Checking the job error is a useful next step.",
+    "expected": "pass",
+    "scenario": "search_unavailable",
+    "source": "Locally reviewed calibration example; educator review pending"
+  }
+]

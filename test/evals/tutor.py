@@ -39,9 +39,12 @@ class _Tutorial:
 class _Search:
     def __init__(self, scenario: str):
         self.scenario = scenario
+        self.retrieved_materials = []
 
     def search(self, query: str, limit: int):
-        return [_Tutorial()] if self.scenario == "search_qc" else []
+        results = [_Tutorial()] if self.scenario == "search_qc" else []
+        self.retrieved_materials.extend(r.to_dict() for r in results)
+        return results
 
 
 class _Operations:
@@ -134,6 +137,8 @@ async def run_tutor_case(
 
     async def recording_run(*args, **kwargs):
         attempt: dict[str, Any] = {"completed": False}
+        if tutor.gtn_db is not None:
+            tutor.gtn_db.retrieved_materials.clear()
         with capture_run_messages() as messages:
             try:
                 result = await original_run(*args, **kwargs)
@@ -145,6 +150,9 @@ async def run_tutor_case(
                 raise
             finally:
                 attempt["tool_calls"] = _tool_calls(messages)
+                attempt["retrieved_materials"] = (
+                    list(tutor.gtn_db.retrieved_materials) if tutor.gtn_db is not None else []
+                )
                 attempts.append(attempt)
 
     # Capture each attempt on this instance; concurrent cases and nested agents must stay independent.
