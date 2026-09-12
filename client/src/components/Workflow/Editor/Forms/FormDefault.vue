@@ -51,6 +51,7 @@
                 @onChangePostJobActions="onChangePostJobActions" />
             <FormInputCollection
                 v-else-if="type == 'data_collection_input'"
+                :key="formKey"
                 :step="step"
                 :datatypes="datatypes"
                 :inputs="configForm?.inputs"
