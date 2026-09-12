@@ -1280,6 +1280,10 @@ class Directory(Data):
 
     file_ext = "directory"
 
+    def sniff_directory(self, path: str) -> bool:
+        """Return whether the extra-files directory at ``path`` matches this datatype."""
+        return False
+
     def _archive_main_file(
         self, archive: ZipstreamWrapper, display_name: str, data_filename: str
     ) -> tuple[bool, str, str]:
@@ -1362,22 +1366,34 @@ class ZarrDirectory(Directory):
 
         return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
+    def sniff_directory(self, path: str) -> bool:
+        store_root = self._store_root_folder_name(path)
+        if store_root is None:
+            return False
+        try:
+            metadata = self._load_zarr_metadata_file(os.path.join(path, store_root))
+        except (OSError, ValueError):
+            return False
+        return isinstance(metadata, dict) and metadata.get("zarr_format") is not None
+
     def _find_store_root_folder_name(self, dataset: DatasetProtocol) -> str | None:
         """Returns the name of the root folder where the Zarr store is located.
 
         The Zarr store can be directly in the extra files folder or in a subfolder.
         """
-        extra_files_path = dataset.extra_files_path
+        return self._store_root_folder_name(dataset.extra_files_path)
+
+    def _store_root_folder_name(self, extra_files_path: str) -> str | None:
+        if not os.path.isdir(extra_files_path):
+            return None
         if self._find_zarr_metadata_file(extra_files_path):
             return ""  # The store is in the root of the extra files folder
         items_in_path = os.listdir(extra_files_path)
+        if len(items_in_path) != 1:
+            return None
         sub_folder_name = items_in_path[0]
         zarr_store_path = os.path.join(extra_files_path, sub_folder_name)
-        if (
-            len(items_in_path) == 1
-            and os.path.isdir(zarr_store_path)
-            and self._find_zarr_metadata_file(zarr_store_path)
-        ):
+        if os.path.isdir(zarr_store_path) and self._find_zarr_metadata_file(zarr_store_path):
             return sub_folder_name  # The store is in a subfolder of the extra files folder
         return None  # The directory structure does not look like Zarr format
 

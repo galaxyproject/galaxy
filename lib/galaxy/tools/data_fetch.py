@@ -5,7 +5,9 @@ import os
 import shutil
 import sys
 import tempfile
+from collections.abc import Iterator
 from io import StringIO
+from itertools import chain
 from typing import (
     Any,
 )
@@ -13,6 +15,7 @@ from typing import (
 import bdbag.bdbag_api
 
 from galaxy.datatypes import sniff
+from galaxy.datatypes.data import Directory
 from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.upload_util import (
     handle_upload,
@@ -266,6 +269,103 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 raise Exception(f"Non-composite datatype [{datatype}] attempting to be created with composite data.")
             return _resolve_item_with_primary(item)
 
+    def _reject_symlinks(root: str, name: str) -> None:
+        """Raise UploadProblemException if the root or any entry is a symlink."""
+        for candidate in chain((root,), _walk_entries(root)):
+            if os.path.islink(candidate):
+                where = os.path.relpath(candidate, root) if candidate != root else "the directory itself"
+                raise UploadProblemException(
+                    f"Directory [{name}] contains a symbolic link [{where}]; "
+                    "symbolic links are not supported in directory uploads."
+                )
+
+    def _walk_entries(root: str) -> Iterator[str]:
+        for dirpath, dirnames, filenames in os.walk(root):
+            for entry in dirnames + filenames:
+                yield os.path.join(dirpath, entry)
+
+    def _stage_directory(path: str, staged: str, purge_source: bool) -> bool:
+        """Stage the directory and return whether the source was removed."""
+        os.makedirs(os.path.dirname(staged), exist_ok=True)
+        if purge_source:
+            try:
+                # Use rename to keep source deletion atomic.
+                os.rename(path, staged)
+                return True
+            except OSError:
+                # Different filesystem, or a source we may not unlink.
+                pass
+        shutil.copytree(path, staged, symlinks=True)
+        return False
+
+    def _resolve_directory_item(
+        item: dict[str, Any],
+        name: str,
+        path: str,
+        requested_ext: str | None,
+        link_data_only: bool,
+        purge_source: bool,
+    ):
+        """Stage a directory dataset with an empty primary file and content in extra files."""
+        if link_data_only:
+            raise UploadProblemException(
+                f"Directory [{name}] cannot be linked to without copying; linking directory datasets is not implemented."
+            )
+
+        registry = upload_config.registry
+        ext = requested_ext
+        sniff_ext = ext in (None, "auto", "data")
+        if not sniff_ext:
+            datatype = registry.get_datatype_by_extension(ext)
+            if not isinstance(datatype, Directory):
+                raise UploadProblemException(
+                    f"Directory [{name}] cannot be uploaded as datatype [{ext}], which is not a directory datatype."
+                )
+
+        if item.get("hashes") or any(item.get(hash_function) for hash_function in HASH_NAMES):
+            raise UploadProblemException(
+                f"Directory [{name}] was given a checksum, which cannot be verified for a directory; "
+                "checksums are not supported in directory uploads."
+            )
+
+        # Check containment before walking the tree to avoid scanning ancestors such as "/".
+        source_root = os.path.realpath(path)
+        working_directory = os.path.realpath(upload_config.working_directory)
+        if working_directory == source_root or in_directory(working_directory, source_root):
+            raise UploadProblemException(
+                f"Directory [{name}] contains the location it would be staged to and cannot be uploaded from there."
+            )
+
+        _reject_symlinks(path, name)
+
+        primary_file = stream_to_file(
+            StringIO(""), prefix="upload_directory_primary_file", dir=upload_config.working_directory
+        )
+        extra_files_path = f"{primary_file}_extra"
+        # Match the archive converter's layout for store_root metadata.
+        staged = os.path.join(extra_files_path, os.path.basename(path))
+        purged = _stage_directory(path, staged, purge_source)
+        # Reject links introduced since source validation.
+        _reject_symlinks(staged, name)
+        if purge_source and not purged:
+            shutil.rmtree(path, ignore_errors=True)
+
+        if sniff_ext:
+            ext = registry.sniff_directory(extra_files_path)
+        rval: dict[str, Any] = {
+            "name": name,
+            "dbkey": item.get("dbkey", "?"),
+            "ext": ext,
+            "link_data_only": False,
+            "sources": [],
+            "hashes": [],
+            "info": f"uploaded {ext} directory",
+            "state": "ok",
+            "filename": primary_file,
+            "extra_files": os.path.abspath(extra_files_path),
+        }
+        return _copy_and_validate_simple_attributes(item, rval)
+
     def _resolve_item_with_primary(item):
         error_message = None
         converted_path = None
@@ -290,6 +390,19 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 default_in_place = True
         else:
             name, path = _has_src_to_name(item) or "Deferred Dataset", None
+
+        if path is not None and os.path.isdir(path):
+            # Strip trailing slashes before deriving the basename.
+            path = os.path.normpath(path)
+            return _resolve_directory_item(
+                item,
+                name or os.path.basename(path),
+                path,
+                item.get("ext", "auto"),
+                link_data_only,
+                item.get("purge_source", True),
+            )
+
         sources = []
 
         url = item.get("url")
