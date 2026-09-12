@@ -110,7 +110,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
 const gridConfig: GridConfig = {
     id: "visualizations-published-grid",
     fields: fields,
-    filtering: new Filtering(validFilters, undefined, false, false),
+    filtering: new Filtering(validFilters, undefined, false),
     getData: getData,
     plural: "Visualizations",
     sortBy: "update_time",

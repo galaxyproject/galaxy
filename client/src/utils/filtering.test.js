@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import Filtering, { contains, equals } from "@/utils/filtering";
 
 const filterTexts = [
     "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
@@ -106,7 +107,7 @@ describe("filtering", () => {
         });
     });
     test("parse filter text as entries", () => {
-        filterTexts.forEach((filterText) => {
+        filterTexts.forEach((filterText, i) => {
             const filters = HistoryFilters.getFiltersForText(filterText);
             expect(filters[0][0]).toBe("name");
             expect(filters[0][1]).toBe("name of item");
@@ -127,7 +128,9 @@ describe("filtering", () => {
             expect(filters[8][0]).toBe("deleted");
             expect(filters[8][1]).toBe("false");
             expect(filters[9][0]).toBe("visible");
-            expect(filters[9][1]).toBe("true");
+            // filterTexts[0] quotes `visible:'TRUE'`, so its parsed value keeps the original
+            // case; filterTexts[1] uses the bare `visible:true`. toBool folds both downstream.
+            expect(filters[9][1]).toBe(i === 0 ? "TRUE" : "true");
             const filters_eq = HistoryFilters.getFiltersForText('genome_build_eq:"hg19"');
             expect(filters_eq[0][0]).toBe("genome_build_eq");
             expect(filters_eq[0][1]).toBe("hg19");
@@ -136,7 +139,9 @@ describe("filtering", () => {
     test("parse filter text as query dictionary", () => {
         filterTexts.forEach((filterText) => {
             const queryDict = HistoryFilters.getQueryDict(filterText);
+            // both fixtures quote the name (`name:'name of item'`) but the value has a space
             expect(queryDict["name-contains"]).toBe("name of item");
+            expect(queryDict["name-eq"]).toBeUndefined();
             expect(queryDict["hid-gt"]).toBe("10");
             expect(queryDict["hid-lt"]).toBe("100");
             expect(queryDict["create_time-gt"]).toBe(1609459200);
@@ -167,7 +172,7 @@ describe("filtering", () => {
                 filterTexts[0],
                 true,
             ),
-        ).toEqual("name:'name of item' hid>10 update_time<2022-01-01 extension:ext");
+        ).toEqual("name:'name of item' hid>10 update_time<'2022-01-01' extension:ext");
         expect(HistoryFilters.applyFiltersToText({ deleted: "any", visible: true }, "")).toEqual(
             "deleted:any visible:true",
         );
@@ -230,9 +235,12 @@ describe("filtering", () => {
             deleted: "false",
             visible: "true",
         };
-        // iterate through filterTexts and compare with parsedFilters
-        filterTexts.forEach((filterText) => {
-            expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(parsedFilters);
+        // iterate through filterTexts and compare with parsedFilters. filterTexts[0] quotes
+        // `visible:'TRUE'`, so its parsed value keeps the original case (see the quoted-value
+        // block below); everything else folds the same either way.
+        filterTexts.forEach((filterText, i) => {
+            const expected = i === 0 ? { ...parsedFilters, visible: "TRUE" } : parsedFilters;
+            expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(expected);
         });
     });
     test("named tag (hash) conversion", () => {
@@ -247,5 +255,232 @@ describe("filtering", () => {
         expect(filtersQuoteDouble[0][1]).toBe("#test me");
         const queryDict = HistoryFilters.getQueryDict("tag:#test");
         expect(queryDict["tag"]).toBe("name:test");
+    });
+});
+
+/**
+ * Quoted filter values (`name:'GREP'`) are meant to produce an exact, case-sensitive
+ * backend match, while the unquoted form (`name:grep`) stays a case-insensitive substring
+ * match. This was fully broken: `getFiltersForText` lowercased + unquoted every value at
+ * parse time, so both forms produced byte-identical output everywhere.
+ *
+ * Contract:
+ * - unquoted: value is lowercased at parse; backend query uses the `-contains` handler.
+ * - quoted:   value keeps its original case; if the filter has a sibling `<key>_eq`
+ *             handler, the backend query routes through it (`<attr>-eq`, exact match).
+ *             Local (`testFilters`) matching is unaffected — it stays case-insensitive.
+ */
+describe("quoted filter values (exact, case-sensitive backend match)", () => {
+    // A filter set with a `name`/`name_eq` sibling pair and no default filters, so the
+    // parsed output isn't padded with `deleted`/`visible` defaults.
+    const F = new Filtering(
+        {
+            name: { type: String, handler: contains("name"), menuItem: true },
+            name_eq: { handler: equals("name"), menuItem: false },
+            state: { type: String, handler: equals("state"), menuItem: true },
+        },
+        undefined,
+        true,
+    );
+
+    test("getFiltersForText keeps original case for quoted values, folds unquoted", () => {
+        expect(Object.fromEntries(F.getFiltersForText("name:'GREP'"))).toEqual({ name: "GREP" });
+        expect(Object.fromEntries(F.getFiltersForText("name:GREP"))).toEqual({ name: "grep" });
+        expect(Object.fromEntries(F.getFiltersForText('name:"GREP"'))).toEqual({ name: "GREP" });
+    });
+
+    test("getFiltersForText strips the surrounding quotes from the stored value", () => {
+        const [[, value]] = F.getFiltersForText("name:'GREP'");
+        expect(value).toBe("GREP");
+        expect(value).not.toContain("'");
+    });
+
+    test("getQueryDict routes a quoted value through the sibling _eq handler", () => {
+        // quoted -> exact, case preserved
+        expect(F.getQueryDict("name:'GREP'")).toEqual({ "name-eq": "GREP" });
+        // unquoted -> case-insensitive substring, lowercased
+        expect(F.getQueryDict("name:GREP")).toEqual({ "name-contains": "grep" });
+    });
+
+    test("getQueryDict routes quoted genome_build through genome_build_eq (HistoryFilters)", () => {
+        expect(HistoryFilters.getQueryDict("genome_build:'Hg19'")).toMatchObject({ "genome_build-eq": "Hg19" });
+        expect(HistoryFilters.getQueryDict("genome_build:hg19")).toMatchObject({ "genome_build-contains": "hg19" });
+    });
+
+    test("getQueryString emits the routed, case-preserved query", () => {
+        expect(F.getQueryString("name:'GREP'")).toBe("q=name-eq&qv=GREP");
+        expect(F.getQueryString("name:grep")).toBe("q=name-contains&qv=grep");
+    });
+
+    test("a quoted value with no _eq sibling still strips quotes and preserves case", () => {
+        // `state` here has no `state_eq`; best-effort: quotes gone, case kept, normal `equals` handler
+        expect(F.getQueryDict("state:'OK'")).toEqual({ "state-eq": "OK" });
+    });
+
+    test("getFilterText round-trips a quoted value unchanged", () => {
+        expect(F.getFilterText({ name: "GREP" }, false, "name:'GREP'")).toBe("name:'GREP'");
+        // unquoted source -> unquoted output
+        expect(F.getFilterText({ name: "grep" }, false, "name:grep")).toBe("name:grep");
+    });
+
+    test("getFilterText keeps quoting values that contain a space", () => {
+        expect(F.getFilterText({ name: "name of item" })).toBe("name:'name of item'");
+    });
+
+    test("getFilterValue returns the case-preserved value for a quoted filter", () => {
+        expect(F.getFilterValue("name:'GREP'", "name")).toBe("GREP");
+        expect(F.getFilterValue("name:grep", "name")).toBe("grep");
+    });
+
+    test("local testFilters matching is unaffected by quoting (stays case-insensitive)", () => {
+        const quoted = HistoryFilters.getFiltersForText("name:'GREP'");
+        const unquoted = HistoryFilters.getFiltersForText("name:grep");
+        const item = { name: "my grep tool", deleted: false, visible: true };
+        expect(HistoryFilters.testFilters(quoted, { ...item })).toBe(true);
+        expect(HistoryFilters.testFilters(unquoted, { ...item })).toBe(true);
+    });
+
+    test("checkFilter stays case-insensitive for quoted values", () => {
+        expect(HistoryFilters.checkFilter("name:'GREP'", "name", "grep")).toBe(true);
+    });
+});
+
+/**
+ * A single quoted bare token (`'Grep1'` typed on its own, with no `key:`) is an exact-match
+ * request for the `autoFilterKey`: the quotes are stripped from the folded value, and the query
+ * routes through the `_eq` handler like a keyed quoted value would. An unquoted bare token, or
+ * more than one bare token, stays a plain case-insensitive substring search.
+ */
+describe("a lone quoted bare token routes autoFilterKey through exact match", () => {
+    const F = new Filtering(
+        {
+            search: { type: String, handler: contains("search"), menuItem: true },
+            search_eq: { handler: equals("search"), menuItem: false },
+        },
+        undefined,
+        true,
+        "search",
+    );
+
+    test("getFiltersForText strips the quotes when folding into autoFilterKey", () => {
+        expect(Object.fromEntries(F.getFiltersForText("'Grep1'"))).toEqual({ search: "Grep1" });
+        // an unquoted bare token is folded verbatim (the backend lowercases a `-contains` search)
+        expect(Object.fromEntries(F.getFiltersForText("Grep1"))).toEqual({ search: "Grep1" });
+    });
+
+    test("getQueryDict routes the lone quoted bare token to the _eq handler", () => {
+        expect(F.getQueryDict("'Grep1'")).toEqual({ "search-eq": "Grep1" });
+        expect(F.getQueryDict("Grep1")).toEqual({ "search-contains": "Grep1" });
+    });
+
+    test("more than one bare token is a plain search, not an exact match", () => {
+        expect(F.getQueryDict("foo 'Grep1'")["search-eq"]).toBeUndefined();
+    });
+
+    test("getFilterText writes the folded value back unlabeled, keeping its exact-match quotes", () => {
+        expect(F.getFilterText({ search: "Grep1" }, false, "'Grep1'")).toBe("'Grep1'");
+        // an unquoted bare token stays unquoted
+        expect(F.getFilterText({ search: "Grep1" }, false, "Grep1")).toBe("Grep1");
+    });
+
+    test("the exact-match quotes survive applying another filter alongside the bare token", () => {
+        // regression: the `key === unspecifiedTextKey` branch used to write the value before the
+        // quoting could be applied, so adding a sibling filter silently dropped the exact match
+        // (JobsFilters uses this shape: quoted bare text for an exact tool search, plus state:)
+        const cf = new Filtering(
+            {
+                search: { type: String, handler: contains("search"), menuItem: true },
+                search_eq: { handler: equals("search"), menuItem: false },
+                state: { type: String, handler: equals("state"), menuItem: true },
+            },
+            undefined,
+            true,
+            "search",
+        );
+        expect(cf.applyFiltersToText({ state: "ok" }, "'Grep1'")).toBe("'Grep1' state:ok");
+    });
+});
+
+describe("quote matching + unspecified text + autoFilterKey combined (JobsFilters-shaped)", () => {
+    const JF = new Filtering(
+        {
+            tool_id: { type: String, handler: contains("tool_id"), menuItem: true },
+            tool_id_eq: { handler: equals("tool_id"), menuItem: false },
+            state: { type: String, handler: equals("state"), menuItem: true },
+        },
+        undefined,
+        true,
+        "tool_id",
+    );
+
+    test("unquoted unspecified text is a plain, case-folded contains search", () => {
+        expect(JF.getQueryDict("grep1")).toEqual({ "tool_id-contains": "grep1" });
+    });
+
+    test("an explicit key:value is unaffected by quoting rules for unspecified text", () => {
+        expect(JF.getQueryDict("tool_id:foo")).toEqual({ "tool_id-contains": "foo" });
+        expect(JF.getQueryDict("tool_id:'Foo'")).toEqual({ "tool_id-eq": "Foo" });
+    });
+
+    test("a quoted bare token is an exact match, case preserved", () => {
+        expect(JF.getQueryDict("'Grep1'")).toEqual({ "tool_id-eq": "Grep1" });
+    });
+
+    test("adding state: alongside a quoted bare token keeps the exact match (regression)", () => {
+        const text = JF.applyFiltersToText({ state: "ok" }, "'Grep1'");
+        expect(text).toBe("'Grep1' state:ok");
+        expect(JF.getQueryDict(text)).toEqual({ "tool_id-eq": "Grep1", "state-eq": "ok" });
+    });
+
+    test("adding state: alongside an unquoted bare token stays a plain search", () => {
+        const text = JF.applyFiltersToText({ state: "ok" }, "grep1");
+        expect(text).toBe("grep1 state:ok");
+        expect(JF.getQueryDict(text)).toEqual({ "tool_id-contains": "grep1", "state-eq": "ok" });
+    });
+
+    test("unspecified text alongside an explicit key:value does not itself become an exact match", () => {
+        // two bare/keyed tokens for the same autoFilterKey -- only a LONE quoted bare token is exact
+        expect(JF.getQueryDict("grep1 tool_id:foo")["tool_id-eq"]).toBeUndefined();
+    });
+});
+
+/**
+ * Quoting a value for `getFilterText` to keep it as one token (because it contains whitespace) must not
+ * be re-read as an exact-match request on the next parse, and a quoted state must follow whichever
+ * occurrence of a repeated key actually survives.
+ */
+describe("quoting for whitespace grouping is syntactic, not an exact-match signal", () => {
+    test("getFilterText -> getQueryDict round-trip: a multi-word contains value stays contains", () => {
+        const text = HistoryFilters.getFilterText({
+            name: "foo bar",
+            ...HistoryFilters.defaultFilters,
+        });
+        expect(text).toBe("name:'foo bar'");
+        expect(HistoryFilters.getQueryDict(text)).toMatchObject({ "name-contains": "foo bar" });
+        expect(HistoryFilters.getQueryDict(text)["name-eq"]).toBeUndefined();
+    });
+
+    test("a single-word quoted value stays an unambiguous exact match", () => {
+        const text = HistoryFilters.getFilterText({
+            name: "GREP",
+            ...HistoryFilters.defaultFilters,
+        });
+        // no source text and no whitespace -> nothing forces quoting here, so this stays unquoted
+        expect(text).toBe("name:GREP");
+        // but a user who explicitly quotes a single word still gets the exact match
+        expect(HistoryFilters.getQueryDict("name:'GREP'")).toMatchObject({ "name-eq": "GREP" });
+    });
+
+    test("duplicate keys: the surviving value's quote-state wins, not any earlier occurrence", () => {
+        // last `name:` wins the value (existing behavior); it must also decide exact-vs-contains
+        expect(HistoryFilters.getQueryDict("name:'Exact' name:partial")).toMatchObject({
+            "name-contains": "partial",
+        });
+        expect(HistoryFilters.getQueryDict("name:'Exact' name:partial")["name-eq"]).toBeUndefined();
+
+        expect(HistoryFilters.getQueryDict("name:partial name:'Exact'")).toMatchObject({
+            "name-eq": "Exact",
+        });
+        expect(HistoryFilters.getQueryDict("name:partial name:'Exact'")["name-contains"]).toBeUndefined();
     });
 });

@@ -195,9 +195,13 @@ export default {
                 handler: { placeholder: "handler", type: String, handler: contains("handler"), menuItem: true },
                 runner: { placeholder: "job runner", type: String, handler: contains("runner"), menuItem: true },
                 tool: { placeholder: "tool id", type: String, handler: contains("tool"), menuItem: true },
+                /** Unspecified text (e.g. the user just typing "grep1" with no `key:value` filter), which is
+                 * sent to the backend `search` param as is, alongside `user:`/`tool:`/etc. */
+                unspecified_text: { handler: contains("unspecified_text"), menuItem: false },
             },
             undefined,
             false,
+            "unspecified_text",
         );
 
         function appendTagFilter(filterName, filterVal) {

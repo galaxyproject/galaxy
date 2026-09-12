@@ -288,7 +288,7 @@ function validatedFilterText() {
         return filterText.value;
     }
     // there are valid filters derived from the `filterText`
-    return filterClass?.getFilterText(validFilters.value || {}, false) || "";
+    return filterClass?.getFilterText(validFilters.value || {}, false, filterText.value) || "";
 }
 
 /**

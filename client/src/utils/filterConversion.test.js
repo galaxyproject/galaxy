@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { getHistoryListFilters } from "@/components/History/historyList";
 import { quoteToolTagValue } from "@/components/Panels/utilities";
 import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
 import Filtering, { contains } from "@/utils/filtering";
@@ -20,7 +21,6 @@ describe("test filtering helpers to convert filters to filter text", () => {
             },
         },
         undefined,
-        false,
         false,
     );
     it("conversion from filters to new filter text", async () => {
@@ -150,5 +150,100 @@ describe("test filtering helpers to convert filter text to filters", () => {
         filterText = "name:name invalid:invalid user:testUser";
         filters["user"] = "testUser";
         expect(getFilters(PublishedWorkflowFilters, filterText)).toEqual(filters);
+    });
+});
+
+/**
+ * `validatedFilterText` in WorkflowList.vue/HistoryList.vue/GridList.vue/CredentialsManagement.vue
+ * all follow this same shape: pass `filterText` through untouched if nothing matched, otherwise
+ * rebuild it from the parsed filters. Mirrored here so a regression in any of those trips this test
+ *
+ * **TODO:** _We need to put this in a centralized file (maybe the `Filtering` class...)._
+ */
+function validatedFilterText(filterClass, filterText) {
+    const rawFilters = Object.fromEntries(filterClass.getFiltersForText(filterText, true, false));
+    if (Object.keys(rawFilters).length === 0) {
+        return filterText;
+    }
+    const validFilters = filterClass.getValidFilters(rawFilters, true).validFilters;
+    return filterClass.getFilterText(validFilters, true, filterText);
+}
+
+describe("validatedFilterText keeps unspecified text alongside other filters", () => {
+    // WorkflowList (getWorkflowFilters) intentionally has no autoFilterKey: it uses
+    // quoteStrings: false, whose regex matches a filter value up to the *next* `key:` token so
+    // values can contain unquoted spaces (e.g. `tool:my tool name`). That means it can't tell
+    // "tag:foo bar" apart from "tag value is 'foo bar'".
+    // `autoFilterKey` would corrupt the tag value by absorbing trailing unspecified text into it.
+    // Pure unspecified text alone still passes straight through untouched.
+    it("WorkflowList (getWorkflowFilters) leaves multi-word tag values untouched", () => {
+        const wf = getWorkflowFilters("my");
+        expect(validatedFilterText(wf, "tag:amrfinderplus_report metagenomics")).toBe(
+            "tag:amrfinderplus_report metagenomics",
+        );
+        expect(validatedFilterText(wf, "grep1")).toBe("grep1");
+    });
+
+    it("HistoryList (getHistoryListFilters)", () => {
+        const hl = getHistoryListFilters("my");
+        expect(validatedFilterText(hl, "grep1 tag:foo")).toBe("tag:foo grep1");
+        expect(validatedFilterText(hl, "grep1")).toBe("grep1");
+    });
+
+    it("CredentialsManagement (name/tool/service)", () => {
+        const cf = new Filtering(
+            {
+                name: { type: String, handler: contains("name"), menuItem: true },
+                tool: { type: String, handler: contains("tool"), menuItem: true },
+                service: { type: String, handler: contains("service"), menuItem: true },
+            },
+            undefined,
+            true,
+            "name",
+        );
+        expect(validatedFilterText(cf, "grep1 tool:foo")).toBe("tool:foo grep1");
+        expect(validatedFilterText(cf, "grep1")).toBe("grep1");
+    });
+
+    it("GridList (a config with name + another filter)", () => {
+        const gf = new Filtering(
+            {
+                name: { type: String, handler: contains("name"), menuItem: true },
+                extension: { type: String, handler: contains("extension"), menuItem: true },
+            },
+            undefined,
+            true,
+            "name",
+        );
+        expect(validatedFilterText(gf, "grep1 extension:txt")).toBe("extension:txt grep1");
+        expect(validatedFilterText(gf, "grep1")).toBe("grep1");
+    });
+});
+
+describe("quoteStrings: false (Workflows) maintains behavior with unquoted multi-word values", () => {
+    const wf = getWorkflowFilters("my");
+
+    it("parses key:value tokens the same way", () => {
+        expect(Object.fromEntries(wf.getFiltersForText("name:RNAseq tag:foo"))).toEqual({
+            name: "RNAseq",
+            tag: ["foo"],
+        });
+    });
+
+    it("keeps a quoted value's quotes in the parsed value (no stripping in this mode)", () => {
+        expect(Object.fromEntries(wf.getFiltersForText("name:'RNAseq'"))).toEqual({ name: "'RNAseq'" });
+    });
+
+    it("leaves multi-word unquoted values intact", () => {
+        expect(Object.fromEntries(wf.getFiltersForText("name:my workflow name"))).toEqual({
+            name: "my workflow name",
+        });
+    });
+
+    it("validates filter text unchanged", () => {
+        expect(validatedFilterText(wf, "name:RNAseq is:published")).toBe("name:RNAseq is:published");
+        expect(validatedFilterText(wf, "tag:amrfinderplus_report metagenomics")).toBe(
+            "tag:amrfinderplus_report metagenomics",
+        );
     });
 });
