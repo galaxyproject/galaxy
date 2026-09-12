@@ -135,6 +135,7 @@ if (connections) {
                 :step="step"
                 :datatypes="datatypes"
                 :post-job-actions="postJobActions ?? {}"
+                :supports-job-based-actions="false"
                 @onChange="onChangePostJobActions" />
         </div>
     </div>
