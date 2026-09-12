@@ -115,6 +115,9 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
                     inputs=inputs,
                     history_id=history_id,
                 )
+                job = self.dataset_populator.check_run(run_response)
+                job_state = self.dataset_populator.wait_for_job(job["id"], timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
+                assert job_state == "error"
                 with pytest.raises(AssertionError):
                     self.dataset_populator.wait_for_tool_run(
                         history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT

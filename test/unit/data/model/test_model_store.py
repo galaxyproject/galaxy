@@ -991,6 +991,21 @@ def test_import_job_with_output_copy():
     assert copy.extension == "txt"
 
 
+def test_import_existing_job_reports_state_without_applying_it():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    job = h.active_datasets[-1].creating_job
+    assert job
+    job.state = model.Job.states.RUNNING
+    app.commit()
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
+    )
+    object_import_tracker = import_model_store.perform_import()
+    assert job.state == model.Job.states.RUNNING
+    assert app.model.session.scalar(select(model.Job.state).where(model.Job.id == job.id)) == model.Job.states.RUNNING
+    assert object_import_tracker.job_states_by_id == {job.id: model.Job.states.OK}
+
+
 def test_import_datasets_with_ids_fails_if_not_editing_models():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
     u = h.user
