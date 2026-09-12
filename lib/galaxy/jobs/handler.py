@@ -19,6 +19,7 @@ from typing import (
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql.expression import (
     and_,
+    case,
     func,
     not_,
     null,
@@ -74,6 +75,8 @@ log = get_logger(__name__)
     "user_over_total_walltime",
 )
 DEFAULT_JOB_RUNNER_FAILURE_MESSAGE = "Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator."
+
+ReadyJobPartition = tuple[int | None, int | None]
 
 
 class JobHandlerI:
@@ -268,6 +271,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         self.waiting_jobs: list[int] = []
         # Contains wrappers of jobs that are limited or ready (so they aren't created unnecessarily/multiple times)
         self.job_wrappers: dict[int, JobWrapper] = {}
+        # A mapper deferral starts a bounded sweep of that user's ready jobs.
+        # Retain only (last selected id, sweep end id), never the deferred backlog.
+        self._ready_job_cursors: dict[ReadyJobPartition, tuple[int, int]] = {}
+        self._mapper_waiting_partitions: set[ReadyJobPartition] = set()
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
         self.job_grabber = None
@@ -440,70 +447,12 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         # Pull all new jobs from the queue at once
         jobs_to_check: list[model.Job] = []
         resubmit_jobs = []
+        next_ready_job_cursors: dict[ReadyJobPartition, tuple[int, int]] = {}
+        self._mapper_waiting_partitions.clear()
         if self.track_jobs_in_database:
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()
-            # Fetch all new jobs
-            hda_not_ready = (
-                self.sa_session.query(model.Job.id)
-                .enable_eagerloads(False)
-                .join(model.JobToInputDatasetAssociation)
-                .join(model.HistoryDatasetAssociation)
-                .join(model.Dataset)
-                .filter(
-                    and_(
-                        model.Job.state == model.Job.states.NEW, model.Dataset.state.in_(model.Dataset.non_ready_states)
-                    )
-                )
-                .subquery()
-            )
-            ldda_not_ready = (
-                self.sa_session.query(model.Job.id)
-                .enable_eagerloads(False)
-                .join(model.JobToInputLibraryDatasetAssociation)
-                .join(model.LibraryDatasetDatasetAssociation)
-                .join(model.Dataset)
-                .filter(
-                    and_(
-                        model.Job.state == model.Job.states.NEW, model.Dataset.state.in_(model.Dataset.non_ready_states)
-                    )
-                )
-                .subquery()
-            )
-            coalesce_exp = func.coalesce(
-                model.Job.table.c.user_id, model.Job.table.c.session_id
-            )  # accommodate jobs by anonymous users
-            rank = func.rank().over(partition_by=coalesce_exp, order_by=model.Job.table.c.id).label("rank")
-            job_filter_conditions: tuple[ColumnExpressionArgument[bool], ...] = (
-                (model.Job.state == model.Job.states.NEW),
-                (model.Job.handler == self.app.config.server_name),
-                ~model.Job.table.c.id.in_(select(hda_not_ready)),
-                ~model.Job.table.c.id.in_(select(ldda_not_ready)),
-            )
-            if self.app.config.user_activation_on:
-                job_filter_conditions += (or_((model.Job.user_id == null()), (model.User.active == true())),)
-            assert self.sa_session.bind is not None
-            if self.sa_session.bind.dialect.name == "sqlite":
-                query_objects: tuple[_ColumnsClauseArgument, ...] = (model.Job,)
-            else:
-                query_objects = (model.Job, rank)
-            ready_query = (
-                self.sa_session.query(*query_objects)
-                .enable_eagerloads(False)
-                .outerjoin(model.User)
-                .filter(and_(*job_filter_conditions))
-                .order_by(model.Job.id)
-            )
-            if self.sa_session.bind.dialect.name == "sqlite":
-                jobs_to_check = ready_query.all()
-            else:
-                ranked = ready_query.subquery()
-                jobs_to_check = (
-                    self.sa_session.query(model.Job)
-                    .join(ranked, model.Job.id == ranked.c.id)
-                    .filter(ranked.c.rank <= self.app.job_config.handler_ready_window_size)
-                    .all()
-                )
+            jobs_to_check, next_ready_job_cursors = self._select_ready_jobs()
             # Filter jobs with invalid input states
             jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
             # Fetch all "resubmit" jobs
@@ -608,8 +557,117 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         # Remove cached wrappers for any jobs that are no longer being tracked
         for id in set(self.job_wrappers.keys()) - set(new_waiting_jobs):
             del self.job_wrappers[id]
+        # Finish a started sweep even if its next window only contains ordinary
+        # concurrency waits. Reset at the end (or when no candidates remain) so
+        # deferred jobs are retried, and stale partitions are discarded each poll.
+        self._ready_job_cursors = {
+            partition: (after, end)
+            for partition, (after, end) in next_ready_job_cursors.items()
+            if after < end and (partition in self._ready_job_cursors or partition in self._mapper_waiting_partitions)
+        }
+        self._mapper_waiting_partitions.clear()
         # Commit updated state
         self.sa_session.commit()
+
+    def _select_ready_jobs(self) -> tuple[list[model.Job], dict[ReadyJobPartition, tuple[int, int]]]:
+        """Return this handler's input-ready NEW jobs and each partition's sweep cursor.
+
+        On PostgreSQL each user or anonymous session contributes at most
+        ``ready_window_size`` jobs. An active sweep cursor narrows a partition to
+        the IDs after its last selected job and up to its frozen sweep end.
+        """
+        jobs_to_check: list[model.Job] = []
+        next_ready_job_cursors: dict[ReadyJobPartition, tuple[int, int]] = {}
+        # Fetch all new jobs
+        hda_not_ready = (
+            self.sa_session.query(model.Job.id)
+            .enable_eagerloads(False)
+            .join(model.JobToInputDatasetAssociation)
+            .join(model.HistoryDatasetAssociation)
+            .join(model.Dataset)
+            .filter(
+                and_(model.Job.state == model.Job.states.NEW, model.Dataset.state.in_(model.Dataset.non_ready_states))
+            )
+            .subquery()
+        )
+        ldda_not_ready = (
+            self.sa_session.query(model.Job.id)
+            .enable_eagerloads(False)
+            .join(model.JobToInputLibraryDatasetAssociation)
+            .join(model.LibraryDatasetDatasetAssociation)
+            .join(model.Dataset)
+            .filter(
+                and_(model.Job.state == model.Job.states.NEW, model.Dataset.state.in_(model.Dataset.non_ready_states))
+            )
+            .subquery()
+        )
+        # User and anonymous session IDs have separate namespaces. Authenticated
+        # sessions share their user's window, regardless of the session ID.
+        partition = (
+            model.Job.user_id,
+            case((model.Job.user_id == null(), model.Job.session_id)),
+        )
+        rank = func.rank().over(partition_by=partition, order_by=model.Job.id).label("rank")
+        window_end = func.max(model.Job.id).over(partition_by=partition).label("window_end")
+        job_filter_conditions: tuple[ColumnExpressionArgument[bool], ...] = (
+            (model.Job.state == model.Job.states.NEW),
+            (model.Job.handler == self.app.config.server_name),
+            ~model.Job.table.c.id.in_(select(hda_not_ready)),
+            ~model.Job.table.c.id.in_(select(ldda_not_ready)),
+        )
+        if self.app.config.user_activation_on:
+            job_filter_conditions += (or_((model.Job.user_id == null()), (model.User.active == true())),)
+        if self._ready_job_cursors:
+            # Apply the cursor BEFORE ranking so each user still gets at most
+            # ready_window_size candidates. Freeze the sweep end so arrivals
+            # cannot indefinitely postpone retries of earlier deferred jobs.
+            job_filter_conditions += (
+                case(
+                    *(
+                        (
+                            (
+                                model.Job.user_id == user_id
+                                if user_id is not None
+                                else and_(model.Job.user_id == null(), model.Job.session_id == session_id)
+                            ),
+                            and_(model.Job.id > after, model.Job.id <= end),
+                        )
+                        for (user_id, session_id), (after, end) in self._ready_job_cursors.items()
+                    ),
+                    else_=true(),
+                ),
+            )
+        assert self.sa_session.bind is not None
+        if self.sa_session.bind.dialect.name == "sqlite":
+            query_objects: tuple[_ColumnsClauseArgument, ...] = (model.Job,)
+        else:
+            query_objects = (model.Job, rank, window_end)
+        ready_query = (
+            self.sa_session.query(*query_objects)
+            .enable_eagerloads(False)
+            .outerjoin(model.User)
+            .filter(and_(*job_filter_conditions))
+            .order_by(model.Job.id)
+        )
+        if self.sa_session.bind.dialect.name == "sqlite":
+            jobs_to_check = ready_query.all()
+        else:
+            ranked = ready_query.subquery()
+            candidates = (
+                self.sa_session.query(model.Job, ranked.c.window_end)
+                .join(ranked, model.Job.id == ranked.c.id)
+                .filter(ranked.c.rank <= self.app.job_config.handler_ready_window_size)
+                .order_by(model.Job.id)
+                .all()
+            )
+            for job, end in candidates:
+                jobs_to_check.append(job)
+                next_ready_job_cursors[self._ready_job_partition(job)] = (job.id, end)
+        return jobs_to_check, next_ready_job_cursors
+
+    @staticmethod
+    def _ready_job_partition(job: model.Job) -> ReadyJobPartition:
+        return job.user_id, job.session_id if job.user_id is None else None
 
     def __filter_jobs_with_invalid_input_states(self, jobs):
         """
@@ -749,6 +807,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             return JOB_ERROR, job_destination
         except JobNotReadyException as e:
             job_state = e.job_state or JOB_WAIT
+            if self.track_jobs_in_database and job_state == JOB_WAIT:
+                self._mapper_waiting_partitions.add(self._ready_job_partition(job))
             return job_state, None
         except Exception as e:
             failure_message = getattr(e, "failure_message", DEFAULT_JOB_RUNNER_FAILURE_MESSAGE)

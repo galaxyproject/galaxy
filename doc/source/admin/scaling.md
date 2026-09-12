@@ -313,6 +313,8 @@ process uses each final `server_name` on a given hostname, regardless of the con
 
 ### Job and Workflow Handling
 
+To tune how many pending jobs each handler checks per user, see [Ready window size](jobs.md#ready-window-size), including the tradeoff between responsiveness for other users and retry delays for deferred jobs.
+
 ```{warning}
 In all strategies, once a handler has been assigned jobs, you cannot unconfigure that handler (e.g. to decrease the
 number of handlers) until it has finished processing all its assigned jobs, or else its jobs will never reach a
