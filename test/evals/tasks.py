@@ -29,9 +29,9 @@ from galaxy.agents.custom_tool import CustomToolAgent
 from galaxy.agents.error_analysis import ErrorAnalysisAgent
 from galaxy.agents.registry import build_default_registry
 from galaxy.agents.router import QueryRouterAgent
-from galaxy.agents.teaching_assistant import TeachingAssistantAgent
 from galaxy.agents.tools import ToolRecommendationAgent
 from .datasets import build_history
+from .tutor import run_tutor_case
 
 UsageBuffer = list[dict[str, int]] | None
 
@@ -370,20 +370,20 @@ def make_tutor_socratic_task(
     deps: GalaxyAgentDependencies,
     context: dict | None = None,
     usage_buffer: UsageBuffer = None,
-) -> Callable[[str], Awaitable[str]]:
-    """Build an async callable: learner query -> teaching-assistant response content.
+) -> Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]:
+    """Run the production tutor against controlled services and retain its evidence.
 
-    Like the other no-live-Galaxy tasks, deps here are MagicMocks, so the tutor's
-    GTN search and operations tools degrade to unavailable. That means we're scoring
-    the model's pedagogical framing (Socratic questioning, knowing when to just tell),
-    not its grounded tool use.
+    Tutor scenarios always use fixtures, including under the live-Galaxy runner.
+    They measure behavior against known tool responses, not live service integration.
     """
 
-    async def tutor_socratic_task(query: str) -> str:
-        agent = TeachingAssistantAgent(deps)
-        response = await agent.process(query, context=context)
-        _record_response_usage(usage_buffer, response)
-        return response.content
+    async def tutor_socratic_task(case_input: dict[str, Any]) -> dict[str, Any]:
+        return await run_tutor_case(
+            deps,
+            case_input,
+            context=context,
+            record_usage=lambda response: _record_response_usage(usage_buffer, response),
+        )
 
     return tutor_socratic_task
 
