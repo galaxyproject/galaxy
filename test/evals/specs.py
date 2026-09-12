@@ -269,11 +269,10 @@ def build_tutor_socratic(
 ) -> BuiltDataset:
     """Pedagogical quality of the teaching assistant: guide vs. just answer."""
     dataset = tutor_socratic_dataset(judge_model=judge_model, only=only)
-    dataset.add_evaluator(MustMention())
     return BuiltDataset(
         dataset=dataset,
         task=make_tutor_socratic_task(deps, usage_buffer=usage_buffer),
-        primary_score="LLMJudge",
+        primary_score="RequiredChecks",
     )
 
 

@@ -9,10 +9,8 @@ good response depends on the situation:
 - Some queries: just tell them -- an explicit "just tell me", clear frustration, or a
   simple factual lookup. Coaching there obstructs rather than helps.
 
-Scored two ways:
-- MustMention (deterministic): keyword(s) essential for the case (used sparingly,
-  mostly for the direct-answer cases).
-- LLMJudge (fuzzy): a per-case rubric encoding the expected pedagogical behavior.
+Each case uses controlled service fixtures, checks retrieved citations and required
+actions, and judges grounding, correctness, context, and pedagogy separately.
 """
 
 from typing import (
@@ -24,9 +22,11 @@ from pydantic_evals import (
     Case,
     Dataset,
 )
-from pydantic_evals.evaluators import (
-    LLMJudge,
-    OutputConfig,
+
+from ..tutor_evaluators import (
+    tutor_metadata,
+    TutorEvidence,
+    TutorQuality,
 )
 
 _PROTO_CASES: list[dict[str, Any]] = [
@@ -155,51 +155,6 @@ _PROTO_CASES: list[dict[str, Any]] = [
 ]
 
 
-_RUBRIC_TEMPLATE = """\
-You are reviewing a response from a teaching-assistant agent whose job is to help
-users LEARN to use Galaxy, not just to hand them answers.
-
-For this case, the expected pedagogical behavior is:
-{expectation}
-
-Score the response between 0.0 and 1.0 on how well it matches that expectation. A
-high score requires all of:
-1. The response fits the expected mode for this situation -- guide with a question or
-   hint when coaching is appropriate; answer directly when the learner asked for that
-   or the question is simply factual.
-2. It does not fabricate tool names, tutorial titles, or URLs.
-3. It is supportive and moves the learner forward rather than stalling them.
-
-Return a number; no commentary.
-"""
-
-
-_REGRESSION_RUBRIC = """\
-You are reviewing a teaching-assistant response to a learner question that a real
-user previously rated unhelpful.
-
-Score the response between 0.0 and 1.0 on whether it is now a genuinely helpful tutor
-response: it engages the learner's actual question, guides or answers appropriately,
-and does not fabricate tool names, tutorial titles, or URLs.
-
-Return a number; no commentary.
-"""
-
-
-def _judge(rubric: str, judge_model: Model | None) -> tuple:
-    if judge_model is None:
-        return ()
-    return (
-        LLMJudge(
-            rubric=rubric,
-            model=judge_model,
-            include_input=True,
-            score=OutputConfig(evaluation_name="LLMJudge"),
-            assertion=False,
-        ),
-    )
-
-
 def tutor_socratic_dataset(
     judge_model: Model | None = None,
     only: list[str] | None = None,
@@ -207,8 +162,8 @@ def tutor_socratic_dataset(
 ) -> Dataset[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Build the tutor_socratic Dataset.
 
-    If judge_model is given, attaches a per-case LLMJudge whose rubric embeds the
-    expected pedagogical behavior for that case.
+    The judge receives the answer, environment, and actual tool returns. Missing
+    judgments leave the case incomplete; required checks are listed in metadata.
 
     extra_queries appends regression cases -- typically real learner questions whose
     tutor answer was downvoted (see TutorAnalyticsManager.get_downvoted_tutor_queries),
@@ -224,12 +179,7 @@ def tutor_socratic_dataset(
                 name=proto["name"],
                 inputs={"query": proto["query"], "scenario": proto.get("scenario", "search_unavailable")},
                 expected_output=None,
-                metadata={
-                    "must_mention": proto["must_mention"],
-                    "mode": proto["mode"],
-                    "expectation": proto["expectation"],
-                },
-                evaluators=_judge(_RUBRIC_TEMPLATE.format(expectation=proto["expectation"]), judge_model),
+                metadata=tutor_metadata(proto),
             )
         )
     for i, query in enumerate(extra_queries or [], start=1):
@@ -238,8 +188,7 @@ def tutor_socratic_dataset(
                 name=f"regression_{i}",
                 inputs={"query": query, "scenario": "search_unavailable"},
                 expected_output=None,
-                metadata={"must_mention": [], "mode": "regression"},
-                evaluators=_judge(_REGRESSION_RUBRIC, judge_model),
+                metadata=tutor_metadata({"mode": "regression", "expectation": "Provide useful, appropriate guidance."}),
             )
         )
-    return Dataset(name="tutor_socratic", cases=cases)
+    return Dataset(name="tutor_socratic", cases=cases, evaluators=[TutorEvidence(), TutorQuality(judge_model)])

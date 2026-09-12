@@ -12,8 +12,20 @@ markdown comparison table. The point is to weigh models against each other
 Llama-4-Maverick win on error analysis?") and to iterate on prompts with
 real measurement. Not run in CI.
 
+The CLI exits **0** only when the selected evaluations complete and their required
+checks pass, **1** when checks fail, and **2** when evaluation is incomplete
+(including setup errors, missing judgments, timeouts, or interruption). It writes
+the available report before returning a verdict. A successful report write does
+not imply successful model behavior. Offline harness tests run without model
+services in `test/unit/app/test_tutor_evals.py`.
+
 Current datasets:
 
+- **tutor_socratic**: twelve tutor scenarios covering coaching, direct answers,
+  frustration, unavailable/empty/successful tutorial search, known job errors,
+  explicit terminal help, and disabled execution. Uses controlled service fixtures
+  and the production tutor prompt, tools, and processing path. Every required
+  assertion must pass; good pedagogy cannot compensate for unsupported claims.
 - **routing**: (query, expected handoff target) pairs against `QueryRouterAgent`.
   Scored by `HandoffMatch` (deterministic).
 - **error_analysis**: prose failure descriptions against `ErrorAnalysisAgent`.
@@ -80,6 +92,10 @@ iteration, no Galaxy startup, ideal for prompt work and cross-model
 comparison. Cases marked `requires_galaxy=True` are filtered out by
 default.
 
+The tutor dataset instead uses explicit, isolated fixtures for every case. This
+also applies when selecting `tutor_socratic` in the live runner: that dataset
+measures behavior against known service responses, not live GTN/database wiring.
+
 ### Real flight check -- pytest live runner
 
 `test/integration/test_live_evals.py` runs the same datasets inside a
@@ -142,12 +158,57 @@ history-needing staining-quantification cases (`history_sanity_check`,
 get exercised. Default scope is `staining_quantification` only;
 override with `EVALS_DATASETS`.
 
-The default judge is `Llama-4-Maverick-17B-128E-Instruct` rather than
-`gpt-oss-120b` because gpt-oss-120b tends to grade itself too
-charitably; Maverick scores hand-checked-correct responses more
-accurately. Override with `EVALS_JUDGE_MODEL` if Maverick isn't
-reachable. (The standalone CLI keeps `gpt-oss-120b` as its default
-judge for baseline continuity.)
+The live runner defaults to `Llama-4-Maverick-17B-128E-Instruct`; the standalone
+CLI defaults to `gpt-oss-120b`. These defaults are configuration choices, not
+evidence that a judge is reliable for a given dataset. Use the tutor calibration
+command below before trusting a judge's tutor results. Override the live runner
+with `EVALS_JUDGE_MODEL` or the CLI with `--judge-model`.
+
+## Tutor evidence and evaluator calibration
+
+Tutor task outputs retain the response, controlled environment, each model-run
+attempt, actual tool calls/returns, and tutorial records returned by the fixture.
+Capturing attempts separately prevents retry evidence from being attached to the
+wrong answer. Fallbacks are incomplete. Search unavailable and search with no
+matches are distinct fixtures.
+
+`TutorEvidence` checks that GTN citation URLs were both retrieved as actual records
+and returned to the tutor. Echoed query text and specialist model prose cannot
+authorize citations. A GTN homepage link is allowed as general navigation. These
+checks establish URL provenance, not whether every description of a tutorial is
+correct. The judge sees the actual evidence and separately evaluates grounding,
+scientific correctness, context, and pedagogy, recording a reason for each.
+Required content and lookup actions are checked only for applicable cases.
+
+The saved September 12 answers exposed a judge that awarded full scores to
+unsupported tutorial references and inappropriate shell advice. Replay those
+answers and valid alternatives to evaluate the evaluator itself:
+
+```bash
+# From the repository root, with the configured proxy key exported:
+PYTHONPATH=lib:test .venv/bin/python -m evals.calibrate_tutor \
+    --model-config test/evals/models.yaml --judge-model gpt-oss-120b --repeat 2
+
+PYTHONPATH=lib:test .venv/bin/python -m evals.run_evals \
+    --model-config test/evals/models.yaml --datasets tutor_socratic \
+    --models gpt-oss-120b --judge-model gpt-oss-120b
+```
+
+Calibration replays fixed answers; it does not ask a candidate model to regenerate
+them. Its declared tool evidence is a fixture, not a recovered trace from the old
+run. `CalibrationMatch` compares the evaluator's decisions with reference labels;
+`FalseAcceptance` counts approvals of known failures, and `FalseRejection` counts
+rejections of valid examples. A disagreement or incomplete judgment makes the
+calibration CLI fail. The examples were reviewed during development and still
+need educator review and a separate held-out set. Agreement on this small set
+does not establish general judge reliability, independent validation when the
+candidate and judge are the same model, or learning effectiveness.
+
+Reports show the overall verdict and separate assertions, with reasons preserved
+in Markdown and JSON. Missing checks and errors prevent an overall pass. Old
+judge-only baselines are marked incomparable; incomplete runs are excluded from
+quality-change claims. The live-Galaxy pytest runner remains a measurement runner
+and does not enforce the CLI's exit gate.
 
 ### Diffing against a previous run
 

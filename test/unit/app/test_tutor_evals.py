@@ -2,17 +2,25 @@
 
 import asyncio
 import json
+from dataclasses import dataclass
 from types import SimpleNamespace
 
 import pytest
 
 pytest.importorskip("pydantic_evals")
 
+from test.evals import run_evals
 from test.evals.calibrate_tutor import (
     calibration_dataset,
     calibration_output,
     EXAMPLES,
     replay_answer,
+)
+from test.evals.run_evals import (
+    case_verdict,
+    DatasetResult,
+    evaluation_exit_code,
+    render_markdown,
 )
 from test.evals.tutor import (
     JOB_ID,
@@ -31,6 +39,15 @@ from pydantic_ai.messages import (
     ToolCallPart,
 )
 from pydantic_ai.models.function import FunctionModel
+from pydantic_evals import (
+    Case,
+    Dataset,
+)
+from pydantic_evals.evaluators import (
+    EvaluationReason,
+    Evaluator,
+)
+from pydantic_evals.reporting import EvaluationReport
 
 from galaxy.agents.base import GalaxyAgentDependencies
 
@@ -247,3 +264,133 @@ async def test_calibration_detects_a_judge_that_approves_everything():
     assert bad.assertions["CalibrationMatch"].value is False
     assert bad.scores["FalseAcceptance"].value == 1.0
     assert cases["direct_fastqc"].assertions["CalibrationMatch"].value is True
+
+
+@dataclass
+class FixedChecks(Evaluator):
+    values: dict
+
+    def evaluate(self, ctx):
+        return self.values
+
+
+async def evaluated_result(values, required):
+    dataset = Dataset(
+        name="test",
+        cases=[Case(name="example", inputs="question", metadata={"required_assertions": required})],
+        evaluators=[FixedChecks(values)],
+    )
+    report = await dataset.evaluate(lambda _: "answer", progress=False)
+    return DatasetResult("tutor_socratic", "test", "RequiredChecks", report)
+
+
+@pytest.mark.parametrize(
+    "values, required, status, exit_code",
+    [
+        ({"Grounding": True, "Pedagogy": True}, ["Grounding", "Pedagogy"], "pass", 0),
+        ({"Grounding": False, "Pedagogy": True, "LLMJudge": 1.0}, ["Grounding", "Pedagogy"], "fail", 1),
+        ({"Pedagogy": True}, ["Grounding", "Pedagogy"], "incomplete", 2),
+        ({"EvidenceComplete": False}, ["EvidenceComplete"], "incomplete", 2),
+        ({"Pedagogy": True}, [], "incomplete", 2),
+    ],
+)
+async def test_required_checks_control_reports_and_cli(values, required, status, exit_code, monkeypatch):
+    result = await evaluated_result(values, required)
+    assert case_verdict(result, result.report.cases[0])[0] == status
+    assert evaluation_exit_code([result]) == exit_code
+    markdown = render_markdown([result])
+    assert f"Overall pass | {1 if status == 'pass' else 0}/1" in markdown
+    if status == "incomplete":
+        assert "INCOMPLETE" in markdown
+
+    async def suite(**kwargs):
+        return [result]
+
+    monkeypatch.setattr(run_evals, "run_eval_suite", suite)
+    monkeypatch.setattr(run_evals, "_load_model_config", lambda _: ("unused", {"test": {}}))
+    monkeypatch.setattr(
+        run_evals,
+        "parse_args",
+        lambda: SimpleNamespace(
+            datasets="tutor_socratic",
+            models="test",
+            model_config=None,
+            only=None,
+            judge_model="test",
+            include_galaxy_required=False,
+            max_concurrency=1,
+            repeat=1,
+            baseline=None,
+            no_write=True,
+        ),
+    )
+    assert await run_evals.amain() == exit_code
+
+
+def test_empty_evaluation_cannot_pass():
+    assert evaluation_exit_code([]) == 2
+    result = DatasetResult("tutor_socratic", "test", "RequiredChecks", EvaluationReport(name="empty", cases=[]))
+    assert evaluation_exit_code([result]) == 2
+
+
+async def test_judge_failure_is_incomplete_even_if_other_checks_pass():
+    class BrokenJudge(Evaluator):
+        def evaluate(self, ctx):
+            raise RuntimeError("judge unavailable")
+
+    dataset = Dataset(
+        name="test",
+        cases=[Case(name="example", inputs="query", metadata={"required_assertions": ["Grounding"]})],
+        evaluators=[FixedChecks({"Grounding": True}), BrokenJudge()],
+    )
+    report = await dataset.evaluate(lambda _: "answer", progress=False)
+    result = DatasetResult("tutor_socratic", "test", "RequiredChecks", report)
+    assert evaluation_exit_code([result]) == 2
+    assert "judge unavailable" in render_markdown([result])
+
+
+async def test_timeout_is_counted_in_overall_denominator():
+    def task(_):
+        raise TimeoutError("request timeout")
+
+    report = await Dataset(name="test", cases=[Case(name="timeout", inputs="query")]).evaluate(task, progress=False)
+    result = DatasetResult("tutor_socratic", "test", "RequiredChecks", report)
+    assert evaluation_exit_code([result]) == 2
+    assert "Overall pass | 0/1 (1 incomplete)" in render_markdown([result])
+
+
+async def test_reasons_and_requirements_survive_saved_report(tmp_path):
+    result = await evaluated_result(
+        {"Grounding": EvaluationReason(value=False, reason="The tutorial was not retrieved.")}, ["Grounding"]
+    )
+    path = tmp_path / "report.json"
+    path.write_text(run_evals._serialize_results([result]))
+    restored = run_evals._load_baseline(str(path))
+    assert evaluation_exit_code(restored) == 1
+    assert "The tutorial was not retrieved." in render_markdown(restored)
+
+
+async def test_old_judge_only_baseline_is_explicitly_not_comparable():
+    result = await evaluated_result({"Grounding": False}, ["Grounding"])
+    old = DatasetResult("tutor_socratic", "test", "LLMJudge", result.report)
+    assert "scoring changed; baseline is not comparable" in render_markdown([result], baseline=[old])
+
+
+async def test_incomplete_baseline_does_not_become_a_quality_improvement():
+    old = await evaluated_result({}, ["Grounding"])
+    new = await evaluated_result({"Grounding": True}, ["Grounding"])
+    report = render_markdown([new], baseline=[old])
+    assert "incomplete evaluation; quality comparison omitted" in report
+    assert "**Improvements:**" not in report
+
+
+@pytest.mark.parametrize(
+    "error", [ValueError("bad configuration"), SystemExit("missing key"), asyncio.CancelledError()]
+)
+def test_cli_setup_errors_and_cancellation_are_incomplete(error):
+    async def failing_main():
+        raise error
+
+    with pytest.raises(SystemExit) as exc:
+        run_evals.run_cli(failing_main)
+    assert exc.value.code == 2

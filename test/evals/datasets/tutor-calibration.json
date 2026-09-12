@@ -147,5 +147,14 @@
     "expected": "pass",
     "scenario": "search_unavailable",
     "source": "Locally reviewed calibration example; educator review pending"
+  },
+  {
+    "name": "conceptual_coaching_question",
+    "source": "2026-09-12-190518-tutor_socratic-12a46a4f716.json; locally reviewed false rejection",
+    "query": "Why do I need to trim adapters before alignment?",
+    "scenario": "search_unavailable",
+    "response": "That\u2019s a great question!\u202fWhat do you think might happen to the alignment results if the adapter sequences are still present in your reads when you try to map them to a reference genome?",
+    "expectation": "A conceptual why question can be addressed with a relevant coaching question or an explanation. A full explanation is not required in this first turn.",
+    "expected": "pass"
   }
 ]

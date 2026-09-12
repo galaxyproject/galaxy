@@ -1,6 +1,8 @@
 """Replay fixed answers to check whether the tutor evaluator accepts known failures."""
 
+import argparse
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,6 +16,17 @@ from pydantic_evals.evaluators import (
     Evaluator,
 )
 
+from .judge import build_judge_model
+from .run_evals import (
+    _load_model_config,
+    _resolve_api_key,
+    _resolve_proxy_url,
+    DatasetResult,
+    evaluation_exit_code,
+    render_markdown,
+    run_cli,
+    write_eval_report,
+)
 from .tutor import QC_URL
 from .tutor_evaluators import (
     tutor_metadata,
@@ -131,3 +144,31 @@ def calibration_dataset(model: Model, only: list[str] | None = None):
 
 def replay_answer(case_input: dict) -> dict:
     return case_input["recorded_output"]
+
+
+async def amain() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model-config")
+    parser.add_argument("--judge-model", required=True)
+    parser.add_argument("--only", help="Comma-separated calibration example names.")
+    parser.add_argument("--repeat", type=int, default=1)
+    parser.add_argument("--max-concurrency", type=int, default=2)
+    parser.add_argument("--results-dir", default="test/evals/results")
+    args = parser.parse_args()
+    if args.repeat < 1 or args.max_concurrency < 1:
+        parser.error("repeat and max-concurrency must be positive")
+    _, config = _load_model_config(args.model_config)
+    model = build_judge_model(
+        args.judge_model, _resolve_proxy_url(args.judge_model, config), _resolve_api_key(args.judge_model, config)
+    )
+    dataset = calibration_dataset(model, only=args.only.split(",") if args.only else None)
+    report = await dataset.evaluate(replay_answer, max_concurrency=args.max_concurrency, repeat=args.repeat)
+    results = [DatasetResult("tutor_calibration", args.judge_model, "RequiredChecks", report)]
+    paths = write_eval_report(results, ["tutor_calibration"], Path(args.results_dir))
+    print(render_markdown(results))
+    print(f"Wrote {paths[0]} and {paths[1]}", file=sys.stderr)
+    return evaluation_exit_code(results)
+
+
+if __name__ == "__main__":
+    run_cli(amain)

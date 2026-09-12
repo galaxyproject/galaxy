@@ -118,9 +118,16 @@ exists or that none exists. A plausible title or URL is not evidence. General sc
 canonical tool names such as FastQC do not require retrieval. Installation-specific IDs, claims of inspected
 data, diagnoses of this job, and claims of actions do require evidence. Describing a tool is not running it;
 submission is not completion. An otherwise useful answer with one invented reference fails grounding.
+Grounding also covers assumptions about the learner's actual analysis. Offering a specific aligner's
+workflow as the remedy for an unspecified mapping failure assumes facts not in evidence, even if the
+individual command descriptions are general knowledge. Explicitly qualified possible causes, without
+assuming that the learner used a particular tool or asserting a diagnosis, are acceptable.
 
 Correctness: Check the scientific explanation against the available facts. Distinguish possible causes from
 established diagnoses. Do not approve incorrect assertions because the response is friendly or plausible.
+Assess factual claims actually made. A relevant coaching question is not scientifically incorrect merely
+because it does not yet give a full explanation. Assess required explanation or helpfulness under pedagogy.
+Unavailable or empty search cannot confirm that a tutorial exists or that none exists.
 
 Context: The default environment is Galaxy's graphical interface. Do not accept a shell workflow as the
 solution for a Galaxy learner unless the question explicitly requests terminal help. Quoted logs or a brief
