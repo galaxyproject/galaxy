@@ -295,30 +295,6 @@ class ToolPanelManager:
                     tool_panel_dict[guid] = [tool_section_dict]
         return tool_panel_dict
 
-    def generate_tool_panel_dict_for_tool_config(
-        self, guid, tool_config, tool_sections=None
-    ) -> dict[str, list[dict[str, Any]]]:
-        """
-        Create a dictionary of the following type for a single tool config file name.
-        The intent is to call this method for every tool config in a repository and
-        append each of these as entries to a tool panel dictionary for the repository.
-        This enables each tool to be loaded into a different section in the tool panel.
-
-        .. code-block::
-
-            {<Tool guid> :
-                [{ tool_config : <tool_config_file>,
-                    id: <ToolSection id>,
-                    version : <ToolSection version>,
-                    name : <TooSection name>}]}
-
-        """
-        tool_panel_dict: dict[str, list[dict[str, Any]]] = {}
-        file_name = strip_path(tool_config)
-        tool_section_dicts = self.generate_tool_section_dicts(tool_config=file_name, tool_sections=tool_sections)
-        tool_panel_dict[guid] = tool_section_dicts
-        return tool_panel_dict
-
     def generate_tool_panel_dict_from_shed_tool_conf_entries(self, repository) -> dict[str, list[dict[str, Any]]]:
         """
         Keep track of the section in the tool panel in which this repository's
@@ -442,29 +418,6 @@ class ToolPanelManager:
                 else:
                     elem_list.append(tool_elem)
         return elem_list
-
-    def generate_tool_section_dicts(self, tool_config=None, tool_sections=None) -> list[dict[str, Any]]:
-        tool_section_dicts: list[dict[str, Any]] = []
-        if tool_config is None:
-            tool_config = ""
-        if tool_sections:
-            for tool_section in tool_sections:
-                # The value of tool_section will be None if the tool is displayed outside
-                # of any sections in the tool panel.
-                if tool_section:
-                    section_id = tool_section.id or ""
-                    section_version = tool_section.version or ""
-                    section_name = tool_section.name or ""
-                else:
-                    section_id = ""
-                    section_version = ""
-                    section_name = ""
-                tool_section_dicts.append(
-                    dict(tool_config=tool_config, id=section_id, version=section_version, name=section_name)
-                )
-        else:
-            tool_section_dicts.append(dict(tool_config=tool_config, id="", version="", name=""))
-        return tool_section_dicts
 
     def generate_tool_section_element_from_dict(self, tool_section_dict: dict[str, str]) -> Element:
         # The value of tool_section_dict looks like the following.

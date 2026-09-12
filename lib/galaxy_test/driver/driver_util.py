@@ -84,8 +84,8 @@ DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 60)
 log = logging.getLogger("test_driver")
 
 
-# Global variable to pass database contexts around - only needed for older
-# Tool Shed twill tests that didn't utilize the API for such interactions.
+# Global variable to pass database contexts around - only needed for the numbered
+# Tool Shed tests that assert against the database instead of the API.
 install_context = None
 
 
@@ -304,7 +304,7 @@ backends:
     tool_dependency_dir = os.environ.get("GALAXY_TOOL_DEPENDENCY_DIR")
     if tool_dependency_dir:
         config["tool_dependency_dir"] = tool_dependency_dir
-    # Used by shed's twill dependency stuff
+    # Used by the shed's tool dependency tests.
     # TODO: read from Galaxy's config API.
     os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir or os.path.join(tmpdir, "dependencies")
 

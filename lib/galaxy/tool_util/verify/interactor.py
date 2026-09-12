@@ -363,7 +363,7 @@ class GalaxyInteractorApi:
         min_count = attributes.get("min")
         max_count = attributes.get("max")
         hid = self.__output_id(output_data)
-        # TODO: Twill version verifies dataset is 'ok' in here.
+        # TODO: verify the dataset is in the 'ok' state in here.
         try:
             self.verify_output_dataset(
                 history_id=history_id,

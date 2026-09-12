@@ -14,7 +14,6 @@ from galaxy.tool_util.data import (
 )
 from galaxy.util import (
     Element,
-    SubElement,
 )
 from galaxy.util.tool_shed import xml_util
 
@@ -76,39 +75,6 @@ class ShedToolDataTableManager(BaseShedToolDataTableManager):
 
     def __init__(self, app: InstallationTarget):
         self.app = app
-
-    def generate_repository_info_elem(
-        self, tool_shed: str, repository_name: str, changeset_revision: str, owner: str, parent_elem=None, **kwd
-    ) -> Element:
-        """Create and return an ElementTree repository info Element."""
-        if parent_elem is None:
-            elem = Element("tool_shed_repository")
-        else:
-            elem = SubElement(parent_elem, "tool_shed_repository")
-        tool_shed_elem = SubElement(elem, "tool_shed")
-        tool_shed_elem.text = tool_shed
-        repository_name_elem = SubElement(elem, "repository_name")
-        repository_name_elem.text = repository_name
-        repository_owner_elem = SubElement(elem, "repository_owner")
-        repository_owner_elem.text = owner
-        changeset_revision_elem = SubElement(elem, "installed_changeset_revision")
-        changeset_revision_elem.text = changeset_revision
-        # add additional values
-        # TODO: enhance additional values to allow e.g. use of dict values that will recurse
-        for key, value in kwd.items():
-            new_elem = SubElement(elem, key)
-            new_elem.text = value
-        return elem
-
-    def generate_repository_info_elem_from_repository(self, tool_shed_repository, parent_elem=None, **kwd):
-        return self.generate_repository_info_elem(
-            tool_shed_repository.tool_shed,
-            tool_shed_repository.name,
-            tool_shed_repository.installed_changeset_revision,
-            tool_shed_repository.owner,
-            parent_elem=parent_elem,
-            **kwd,
-        )
 
     def get_tool_index_sample_files(self, sample_files: list[str]) -> list[str]:
         """

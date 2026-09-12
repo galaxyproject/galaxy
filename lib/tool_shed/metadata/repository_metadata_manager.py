@@ -21,7 +21,6 @@ from galaxy.tool_shed.metadata.metadata_generator import (
     InvalidFileT,
 )
 from galaxy.util import inflector
-from galaxy.web.form_builder import SelectField
 from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
@@ -281,18 +280,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             self.sa_session.add(repository_metadata)
             session = self.sa_session()
             session.commit()
-
-    def build_repository_ids_select_field(
-        self, name="repository_ids", multiple=True, display="checkboxes", my_writable=False
-    ):
-        """Generate the current list of repositories for resetting metadata."""
-        repositories_select_field = SelectField(name=name, multiple=multiple, display=display)
-        for repository in self.get_repositories_for_setting_metadata(my_writable=my_writable, order=True):
-            owner = str(repository.user.username)
-            option_label = f"{str(repository.name)} ({owner})"
-            option_value = f"{self.app.security.encode_id(repository.id)}"
-            repositories_select_field.add_option(option_label, option_value)
-        return repositories_select_field
 
     def _clean_repository_metadata(self, changeset_revisions, dry_run: bool = False):
         assert self.repository
