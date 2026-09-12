@@ -6,6 +6,10 @@ import time
 
 import boto3
 from botocore.client import Config
+from botocore.exceptions import (
+    BotoCoreError,
+    ClientError,
+)
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -364,29 +368,40 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
 def start_seaweedfs(container_name):
     ports = [(OBJECT_STORE_PORT, 8333)]
     docker_run("chrislusf/seaweedfs:latest", container_name, "server", "-s3", ports=ports)
+    wait_seaweedfs_ready()
+
+
+def wait_seaweedfs_ready(bucket: str = "galaxy", timeout: float = 60) -> None:
+    """Block until the SeaweedFS S3 gateway accepts requests and ``bucket`` exists.
+
+    The gateway comes up a few seconds after the container does, and the object store
+    initialization in Galaxy does not retry, so wait for the whole master -> volume -> filer -> s3
+    chain to be up by creating the bucket through it.
+    """
     s3 = boto3.client(
         "s3",
-        endpoint_url=f"http://127.0.0.1:{OBJECT_STORE_PORT}",
+        endpoint_url=f"http://{OBJECT_STORE_HOST}:{OBJECT_STORE_PORT}",
         aws_access_key_id=OBJECT_STORE_ACCESS_KEY,
         aws_secret_access_key=OBJECT_STORE_SECRET_KEY,
         region_name="us-east-1",
-        config=Config(signature_version="s3v4"),
+        config=Config(signature_version="s3v4", retries={"max_attempts": 1}, connect_timeout=2, read_timeout=5),
     )
-
-    # Retry bucket creation with exponential backoff
-    for attempt in range(5):
+    deadline = time.monotonic() + timeout
+    while True:
         try:
-            s3.head_bucket(Bucket="galaxy")
-            break  # Bucket exists
-        except Exception:
-            try:
-                s3.create_bucket(Bucket="galaxy")
-                break  # Bucket created
-            except Exception as e:
-                if attempt < 4:
-                    time.sleep(2**attempt)  # Exponential backoff: 1, 2, 4, 8 seconds
-                else:
-                    raise TimeoutError(f"Failed to create SeaweedFS bucket after {attempt + 1} attempts: {e}")
+            s3.create_bucket(Bucket=bucket)
+            return
+        except ClientError as e:
+            if e.response["Error"]["Code"] in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
+                return
+            if e.response["ResponseMetadata"]["HTTPStatusCode"] < 500:
+                raise
+            last_error: Exception = e
+        except BotoCoreError as e:
+            last_error = e
+        if time.monotonic() > deadline:
+            raise TimeoutError(f"SeaweedFS S3 gateway not ready after {timeout}s: {last_error}") from last_error
+        time.sleep(0.5)
 
 
 def start_onezone(oz_container_name):
