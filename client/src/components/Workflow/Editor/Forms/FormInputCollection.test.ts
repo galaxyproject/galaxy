@@ -1,19 +1,12 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type Wrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type Vue from "vue";
 
+import FormCollectionType from "./FormCollectionType.vue";
+import FormColumnDefinitions from "./FormColumnDefinitions.vue";
 import FormInputCollection from "./FormInputCollection.vue";
-
-function stubComponent(name: string, props: string[]) {
-    return { default: { name, props, render: (h: (tag: string) => unknown) => h("div") } };
-}
-
-vi.mock("@/components/Form/FormElement.vue", () => stubComponent("FormElement", ["id", "value"]));
-vi.mock("./FormCollectionType.vue", () => stubComponent("FormCollectionType", ["value", "optional"]));
-vi.mock("./FormColumnDefinitions.vue", () => stubComponent("FormColumnDefinitions", ["value", "collectionType"]));
-vi.mock("./FormDatatype.vue", () => stubComponent("FormDatatype", ["id", "value", "datatypes"]));
-vi.mock("./FormRecordFieldDefinitions.vue", () => stubComponent("FormRecordFieldDefinitions", ["value"]));
+import FormElement from "@/components/Form/FormElement.vue";
 
 const localVue = getLocalVue();
 
@@ -43,7 +36,7 @@ describe("FormInputCollection", () => {
     let wrapper: Wrapper<Vue>;
 
     beforeEach(() => {
-        wrapper = mount(FormInputCollection as object, {
+        wrapper = shallowMount(FormInputCollection as object, {
             propsData: {
                 step: stepWithCollectionType("list"),
                 datatypes: [],
@@ -53,20 +46,21 @@ describe("FormInputCollection", () => {
     });
 
     afterEach(() => {
+        wrapper.destroy();
         vi.useRealTimers();
     });
 
     it("shows the values stored on the step", () => {
-        expect(wrapper.findComponent({ name: "FormCollectionType" }).props("value")).toBe("list");
+        expect(wrapper.findComponent(FormCollectionType).props("value")).toBe("list");
     });
 
     it("sends a later edit together with an earlier one the step has not echoed yet", async () => {
         vi.useFakeTimers();
-        wrapper.findComponent({ name: "FormCollectionType" }).vm.$emit("onChange", "sample_sheet:paired");
+        wrapper.findComponent(FormCollectionType).vm.$emit("onChange", "sample_sheet:paired");
         await wrapper.vm.$nextTick();
-        expect(wrapper.findComponent({ name: "FormColumnDefinitions" }).exists()).toBe(true);
+        expect(wrapper.findComponent(FormColumnDefinitions).exists()).toBe(true);
 
-        wrapper.findComponent({ name: "FormColumnDefinitions" }).vm.$emit("onChange", CONDITION_COLUMN);
+        wrapper.findComponent(FormColumnDefinitions).vm.$emit("onChange", CONDITION_COLUMN);
         vi.advanceTimersByTime(500);
         await wrapper.vm.$nextTick();
 
@@ -76,15 +70,21 @@ describe("FormInputCollection", () => {
     });
 
     it("keeps the edited value when the step echoes an older one", async () => {
-        wrapper.findComponent({ name: "FormCollectionType" }).vm.$emit("onChange", "sample_sheet");
-        wrapper.findComponent({ name: "FormCollectionType" }).vm.$emit("onChange", "sample_sheet:paired");
+        wrapper.findComponent(FormCollectionType).vm.$emit("onChange", "sample_sheet");
+        wrapper.findComponent(FormCollectionType).vm.$emit("onChange", "sample_sheet:paired");
         await wrapper.setProps({ step: stepWithCollectionType("sample_sheet") });
 
-        expect(wrapper.findComponent({ name: "FormCollectionType" }).props("value")).toBe("sample_sheet:paired");
+        expect(wrapper.findComponent(FormCollectionType).props("value")).toBe("sample_sheet:paired");
         const optionalField = wrapper
-            .findAllComponents({ name: "FormElement" })
+            .findAllComponents(FormElement)
             .wrappers.find((field) => field.props("id") === "optional");
-        optionalField?.vm.$emit("input", true);
-        expect(lastEmittedState(wrapper).collection_type).toBe("sample_sheet:paired");
+        expect(optionalField).toBeDefined();
+        const emittedCount = wrapper.emitted("onChange")!.length;
+        optionalField!.vm.$emit("input", true);
+        expect(wrapper.emitted("onChange")).toHaveLength(emittedCount + 1);
+        expect(lastEmittedState(wrapper)).toMatchObject({
+            collection_type: "sample_sheet:paired",
+            optional: true,
+        });
     });
 });
