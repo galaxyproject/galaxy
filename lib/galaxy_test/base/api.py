@@ -14,6 +14,7 @@ import pytest
 import requests
 from typing_extensions import Protocol
 
+from galaxy.celery import CELERY_APP_DEFAULTS
 from galaxy.util.properties import get_from_env
 from .api_asserts import (
     assert_error_code_is,
@@ -82,10 +83,7 @@ class UsesCeleryTasks:
 
     @pytest.fixture(scope="session")
     def celery_parameters(self):
-        return {
-            "task_create_missing_queues": True,
-            "task_default_queue": "galaxy.internal",
-        }
+        return CELERY_APP_DEFAULTS
 
 
 class HasAnonymousGalaxyInteractor(Protocol):
