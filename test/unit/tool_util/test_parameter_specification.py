@@ -6,6 +6,7 @@ from typing import (
     Optional,
 )
 
+import pytest
 import yaml
 
 from galaxy.exceptions import RequestParameterInvalidException
@@ -16,6 +17,7 @@ from galaxy.tool_util.parameters import (
     RequestInternalToolState,
     RequestToolState,
     ToolParameterBundleModel,
+    UnmodelableToolInputs,
     validate_internal_job,
     validate_internal_landing_request,
     validate_internal_request,
@@ -37,6 +39,7 @@ from galaxy.tool_util.parameters.json import (
 from galaxy.tool_util.unittest_utils.parameters import (
     parameter_bundle_for_file,
     parameter_bundle_for_framework_tool,
+    parameter_bundle_for_internal_tool,
 )
 from galaxy.tool_util_models.parameters import (
     _INFINITY_SENTINEL,
@@ -80,6 +83,19 @@ def test_framework_tool_checks():
     parameter_spec = framework_tool_checks()
     for file in parameter_spec.keys():
         _test_file(file, parameter_spec, parameter_bundle_for_framework_tool(f"{file}.xml"))
+
+
+@pytest.mark.parametrize(
+    "relpath",
+    ["lib/galaxy/tools/data_fetch.xml", "tools/data_source/upload.xml"],
+)
+def test_upload_tools_have_no_parameter_model(relpath: str):
+    # These declare upload_dataset, which has no parameter model. The factory has to decline
+    # outright: a bundle built from the inputs it *can* model rejects the tool's real requests,
+    # since state models forbid extras: an input the bundle leaves out is refused, not ignored.
+    with pytest.raises(UnmodelableToolInputs) as exc_info:
+        parameter_bundle_for_internal_tool(relpath)
+    assert "upload_dataset" in str(exc_info.value)
 
 
 def test_single():

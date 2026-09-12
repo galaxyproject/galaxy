@@ -493,6 +493,25 @@ def tool_parameter_bundle_from_json(json: Dict[str, Any]) -> ToolParameterBundle
     return ToolParameterBundleModel(**json)
 
 
+# Legacy input constructs with no parameter model representation. Only the two upload tools
+# (upload1 and __DATA_FETCH__) use them, and neither can be described by a partial model: dropping
+# these inputs and modelling the rest yields a bundle that *rejects* the tool's real requests,
+# because the generated state models are built with extra="forbid".
+UNMODELABLE_INPUT_TYPES = frozenset({"upload_dataset"})
+
+
+class UnmodelableToolInputs(Exception):
+    """A tool declares inputs the parameter model has no representation for.
+
+    Separate from a model that failed to build: there is nothing here to generate, so callers
+    should leave the tool without a parameter model rather than settle for an incomplete one.
+    """
+
+    def __init__(self, input_description: str):
+        self.input_description = input_description
+        super().__init__(f"Cannot generate a tool parameter model for {input_description} inputs")
+
+
 def input_models_for_tool_source(tool_source: ToolSource) -> ToolParameterBundleModel:
     pages = tool_source.parse_input_pages()
     profile = parse_profile_version(tool_source)
@@ -515,6 +534,11 @@ def input_models_for_page(page_source: PageSource, profile: float) -> List[ToolP
         if input_type == "display":
             # not a real input... just skip this. Should this be handled in the parser layer better?
             continue
+        if input_type in UNMODELABLE_INPUT_TYPES:
+            raise UnmodelableToolInputs(input_type)
+        if input_type == "conditional" and input_source.get("value_from"):
+            # whens are resolved at runtime from app state, so there is nothing static to model
+            raise UnmodelableToolInputs("conditional with value_from")
         tool_parameter_model = from_input_source(input_source, profile)
         input_models.append(tool_parameter_model)
     return input_models
