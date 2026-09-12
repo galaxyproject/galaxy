@@ -6,6 +6,12 @@ from unittest import mock
 import pytest
 
 from galaxy.managers.chat import ChatManager
+from galaxy.managers.tutor_analytics import TutorAnalyticsManager
+from galaxy.schema.agents import AgentResponse
+from galaxy.schema.fields import Security
+from galaxy.schema.schema import ChatPayload
+from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.webapps.galaxy.api.chat import ChatAPI
 
 
 def _make_trans(user_id=1):
@@ -332,3 +338,81 @@ class TestGetExchangeMessagesAttribution:
             }
         )
         assert self._assistant_turn(message)["agent_type"] == "gtn_training"
+
+
+class TestJobChatPersistence:
+    @pytest.fixture
+    def job_chat(self, monkeypatch):
+        monkeypatch.setattr(Security, "security", IdEncodingHelper(id_secret="testing"), raising=False)
+        trans = _make_trans()
+
+        def assign_identity(obj):
+            if isinstance(obj, _FakeChatExchange):
+                obj.id = 31
+            else:
+                obj.chat_exchange_id = 31
+                obj.create_time = None
+
+        trans.sa_session.add.side_effect = assign_identity
+        api = ChatAPI(
+            config=mock.Mock(),
+            chat_manager=ChatManager(),
+            job_manager=mock.Mock(),
+            agent_service=mock.Mock(),
+            workflow_manager=mock.Mock(),
+        )
+        api.chat_manager.get = mock.Mock(return_value=None)
+        api.job_manager.get_accessible_job.return_value = mock.Mock(id=7)
+        api._get_agent_response_full = mock.AsyncMock(
+            return_value=AgentResponse(
+                content="Check which reference index was selected.",
+                agent_type="teaching_assistant",
+                confidence="high",
+            )
+        )
+        return api, trans
+
+    async def test_job_tutor_round_trip_preserves_attribution_and_feedback(self, job_chat):
+        api, trans = job_chat
+        payload = ChatPayload(query="Help me understand this failed job")
+        result = await api.query(job_id=7, payload=payload, agent_type="auto", trans=trans, user=trans.user)
+
+        assert result.error_code == 0
+        exchange = trans.sa_session.add.call_args_list[0].args[0]
+        trans.sa_session.commit.assert_called_once()
+        stored = json.loads(exchange.messages[0].message)
+        assert stored["query"] == payload.query
+        assert stored["agent_type"] == "teaching_assistant"
+        assert stored["agent_response"] == result.agent_response.model_dump()
+
+        api.chat_manager.get.return_value = exchange
+        cached = await api.query(job_id=7, payload=payload, agent_type="auto", trans=trans, user=trans.user)
+        assert cached.response == result.response
+        assert cached.agent_response == result.agent_response
+        assert cached.exchange_id == result.exchange_id
+        api._get_agent_response_full.assert_awaited_once()
+
+        exchange.messages[0].feedback = 0
+        analytics = TutorAnalyticsManager()
+        assert analytics._aggregate(exchange.messages, [])["tutor_feedback"]["negative"] == 1
+        assert analytics._downvoted_tutor_queries(exchange.messages) == [payload.query]
+        with mock.patch.object(api.chat_manager, "get_exchange_by_id", return_value=exchange):
+            messages = api.chat_manager.get_exchange_messages(trans, exchange.id)
+        assert messages[0]["content"] == payload.query
+        assert messages[1]["agent_type"] == "teaching_assistant"
+        assert messages[1]["content"] == result.response
+
+    @pytest.mark.parametrize("content", ["Check the reference index.", '{"response": "An example"}', "[]", "null"])
+    async def test_cached_legacy_job_responses_remain_plain_text(self, job_chat, content):
+        api, trans = job_chat
+        exchange = _FakeChatExchange(message=content)
+        exchange.id = 31
+        api.chat_manager.get.return_value = exchange
+
+        result = await api.query(
+            job_id=7, payload=ChatPayload(query="Why did this fail?"), agent_type="auto", trans=trans, user=trans.user
+        )
+
+        assert result.response == content
+        assert result.agent_response is None
+        api._get_agent_response_full.assert_not_awaited()

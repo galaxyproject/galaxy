@@ -181,9 +181,22 @@ class ChatAPI:
             job = await anyio.to_thread.run_sync(partial(self.job_manager.get_accessible_job, trans, job_id))
             if job and not regenerate:
                 existing_response = await anyio.to_thread.run_sync(partial(self.chat_manager.get, trans, job.id))
-                if existing_response and existing_response.messages[0]:
+                if existing_response and existing_response.messages:
+                    cached_content = existing_response.messages[0].message
+                    cached_agent_response = None
+                    cached_turn = safe_loads(cached_content)
+                    # Older job exchanges contain plain text, including JSON examples.
+                    if (
+                        isinstance(cached_turn, dict)
+                        and isinstance(cached_turn.get("query"), str)
+                        and isinstance(cached_turn.get("response"), str)
+                        and isinstance(cached_turn.get("agent_type"), str)
+                    ):
+                        cached_content = cached_turn["response"]
+                        cached_agent_response = cached_turn.get("agent_response")
                     return ChatResponse(
-                        response=existing_response.messages[0].message,
+                        response=cached_content,
+                        agent_response=cached_agent_response,
                         error_code=0,
                         error_message="",
                         exchange_id=existing_response.id,
@@ -259,8 +272,15 @@ class ChatAPI:
                 result["response"] = answer
 
             if job:
+                agent_resp = result.get("agent_response")
+                conversation_data = {
+                    "query": query_text,
+                    "response": result.get("response", ""),
+                    "agent_type": agent_resp.agent_type if agent_resp else agent_type,
+                    "agent_response": agent_resp.model_dump() if agent_resp else None,
+                }
                 exchange = await anyio.to_thread.run_sync(
-                    partial(self.chat_manager.create, trans, job.id, str(result["response"]))
+                    partial(self.chat_manager.create, trans, job.id, json.dumps(conversation_data))
                 )
                 result["exchange_id"] = exchange.id
             elif trans.user:

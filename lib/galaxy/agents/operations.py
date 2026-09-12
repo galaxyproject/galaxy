@@ -316,13 +316,13 @@ class AgentOperationsManager:
         result = self.tools_service._create(self.trans, payload)
         return self._encode_ids_in_response(result)
 
-    def get_job_status(self, job_id: str) -> dict[str, Any]:
+    def get_job_status(self, job_id: str, *, full: bool = False) -> dict[str, Any]:
         decoded_job_id = self.trans.security.decode_id(job_id)
 
         job_details = self.jobs_service.show(
             trans=self.trans,
             id=decoded_job_id,
-            full=False,
+            full=full,
         )
 
         return {"job": self._encode_ids_in_response(job_details), "job_id": job_id}

@@ -415,6 +415,21 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         assert "job" in result
         assert result["job_id"] == "encoded_job_id"
+        mock_service.show.assert_called_once_with(trans=self.trans, id=123, full=False)
+
+    def test_get_full_job_status_includes_stderr(self):
+        mock_service = mock.MagicMock()
+        mock_service.show.return_value = {"id": 123, "state": "error", "stderr": "No index found"}
+
+        with mock.patch.object(
+            type(self.agent_ops), "jobs_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            job_id = self.trans.security.encode_id(123)
+            result = self.agent_ops.get_job_status(job_id, full=True)
+
+        mock_service.show.assert_called_once_with(trans=self.trans, id=123, full=True)
+        assert result["job"]["stderr"] == "No index found"
+        assert result["job"]["id"] == job_id
 
     def test_list_file_source_templates_filters_hidden(self):
         visible = mock.MagicMock(hidden=False)

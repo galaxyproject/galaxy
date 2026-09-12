@@ -109,6 +109,36 @@ class TestTeachingAssistantAgent:
         fallback = agent._get_fallback_content()
         assert "training.galaxyproject.org" in fallback
 
+    @pytest.mark.parametrize("job_id", [123, "encoded-job"])
+    def test_prompt_exposes_encoded_job_id(self, job_id):
+        self.mock_trans.security.encode_id.return_value = "encoded-job"
+        agent = TeachingAssistantAgent(self.deps)
+        context = {"job_id": job_id}
+
+        prompt = agent._prepare_prompt("Help me understand this failure", context)
+
+        assert "job_id: encoded-job" in prompt
+        assert context["job_id"] == job_id
+        if isinstance(job_id, int):
+            self.mock_trans.security.encode_id.assert_called_once_with(job_id)
+        else:
+            self.mock_trans.security.encode_id.assert_not_called()
+
+    async def test_error_analysis_passes_stderr_to_specialist(self):
+        agent = TeachingAssistantAgent(self.deps)
+        agent.ops.get_job_status = mock.Mock(
+            return_value={"job": {"tool_id": "hisat2", "state": "error", "exit_code": 1, "stderr": "No index found"}}
+        )
+        agent._call_agent_from_tool = mock.AsyncMock(return_value="Check which reference index was selected.")
+        ctx = mock.Mock()
+
+        result = await agent.agent._function_toolset.tools["analyze_error"].function(ctx, "encoded-job")
+
+        agent.ops.get_job_status.assert_called_once_with("encoded-job", full=True)
+        assert "Stderr: No index found" in result
+        assert "stderr=No index found" in agent._call_agent_from_tool.call_args.args[1]
+        assert "Check which reference index was selected." in result
+
     def test_agent_has_tools(self):
         """The pydantic-ai agent should have registered tools."""
         agent = TeachingAssistantAgent(self.deps)

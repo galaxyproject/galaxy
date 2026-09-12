@@ -139,7 +139,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         async def analyze_error(ctx, job_id: str) -> str:
             """Get error details for a failed job. Returns raw analysis for pedagogical reframing."""
             try:
-                status = teaching_assistant.ops.get_job_status(job_id)
+                status = teaching_assistant.ops.get_job_status(job_id, full=True)
             except Exception as e:
                 return f"Could not retrieve job info: {e}"
             job_info = status.get("job", {})
@@ -282,6 +282,9 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         if context:
             # Filter out conversation_history from context display (it's handled separately)
             display_context = {k: v for k, v in context.items() if k != "conversation_history" and v}
+            if isinstance(display_context.get("job_id"), int):
+                # The shared context uses database IDs; tutor operations require encoded IDs.
+                display_context["job_id"] = self.deps.trans.security.encode_id(display_context["job_id"])
             if display_context:
                 context_str = "\n".join([f"{k}: {v}" for k, v in display_context.items()])
                 prompt_parts.insert(0, f"Context:\n{context_str}\n")
