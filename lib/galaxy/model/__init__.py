@@ -5607,6 +5607,16 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     quota_source_label = property(get_quota_source_label)
 
+    @property
+    def is_skipped(self) -> bool:
+        """Whether this is a placeholder standing in for a skipped step output.
+
+        Deliberately narrower than the extension check skip detection does - an
+        expression tool output is expression.json too, only set_skipped also
+        sets the blurb.
+        """
+        return self.extension == "expression.json" and self.blurb == "skipped"
+
     def set_skipped(self, object_store_populator: "ObjectStorePopulator", replace_dataset: bool) -> None:
         assert self.dataset
         object_store_populator.set_object_store_id(self)

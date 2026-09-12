@@ -1,0 +1,29 @@
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list
+  when:
+    type: boolean
+outputs:
+  picked:
+    outputSource: pick/output
+steps:
+  branch:
+    tool_id: cat
+    in:
+      input1:
+        source: input_collection
+      when:
+        source: when
+    when: $(inputs.when)
+  pick:
+    type: pick_value
+    in:
+      input_0:
+        source: branch/out_file1
+    state:
+      mode: first_or_skip
+    out:
+      output:
+        change_datatype: txt
