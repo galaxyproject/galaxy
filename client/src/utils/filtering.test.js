@@ -139,10 +139,9 @@ describe("filtering", () => {
     test("parse filter text as query dictionary", () => {
         filterTexts.forEach((filterText) => {
             const queryDict = HistoryFilters.getQueryDict(filterText);
-            // both fixtures quote the name (`name:'name of item'`), so it routes to the
-            // exact-match `name-eq` handler rather than `name-contains`
-            expect(queryDict["name-eq"]).toBe("name of item");
-            expect(queryDict["name-contains"]).toBeUndefined();
+            // both fixtures quote the name (`name:'name of item'`) but the value has a space
+            expect(queryDict["name-contains"]).toBe("name of item");
+            expect(queryDict["name-eq"]).toBeUndefined();
             expect(queryDict["hid-gt"]).toBe("10");
             expect(queryDict["hid-lt"]).toBe("100");
             expect(queryDict["create_time-gt"]).toBe(1609459200);
@@ -378,7 +377,110 @@ describe("a lone quoted bare token routes autoFilterKey through exact match", ()
         expect(F.getQueryDict("foo 'Grep1'")["search-eq"]).toBeUndefined();
     });
 
-    test("getFilterText writes the folded value back as plain (unlabeled) text", () => {
-        expect(F.getFilterText({ search: "Grep1" }, false, "'Grep1'")).toBe("Grep1");
+    test("getFilterText writes the folded value back unlabeled, keeping its exact-match quotes", () => {
+        expect(F.getFilterText({ search: "Grep1" }, false, "'Grep1'")).toBe("'Grep1'");
+        // an unquoted bare token stays unquoted
+        expect(F.getFilterText({ search: "Grep1" }, false, "Grep1")).toBe("Grep1");
+    });
+
+    test("the exact-match quotes survive applying another filter alongside the bare token", () => {
+        // regression: the `key === unspecifiedTextKey` branch used to write the value before the
+        // quoting could be applied, so adding a sibling filter silently dropped the exact match
+        // (JobsFilters uses this shape: quoted bare text for an exact tool search, plus state:)
+        const cf = new Filtering(
+            {
+                search: { type: String, handler: contains("search"), menuItem: true },
+                search_eq: { handler: equals("search"), menuItem: false },
+                state: { type: String, handler: equals("state"), menuItem: true },
+            },
+            undefined,
+            true,
+            "search",
+        );
+        expect(cf.applyFiltersToText({ state: "ok" }, "'Grep1'")).toBe("'Grep1' state:ok");
+    });
+});
+
+describe("quote matching + unspecified text + autoFilterKey combined (JobsFilters-shaped)", () => {
+    const JF = new Filtering(
+        {
+            tool_id: { type: String, handler: contains("tool_id"), menuItem: true },
+            tool_id_eq: { handler: equals("tool_id"), menuItem: false },
+            state: { type: String, handler: equals("state"), menuItem: true },
+        },
+        undefined,
+        true,
+        "tool_id",
+    );
+
+    test("unquoted unspecified text is a plain, case-folded contains search", () => {
+        expect(JF.getQueryDict("grep1")).toEqual({ "tool_id-contains": "grep1" });
+    });
+
+    test("an explicit key:value is unaffected by quoting rules for unspecified text", () => {
+        expect(JF.getQueryDict("tool_id:foo")).toEqual({ "tool_id-contains": "foo" });
+        expect(JF.getQueryDict("tool_id:'Foo'")).toEqual({ "tool_id-eq": "Foo" });
+    });
+
+    test("a quoted bare token is an exact match, case preserved", () => {
+        expect(JF.getQueryDict("'Grep1'")).toEqual({ "tool_id-eq": "Grep1" });
+    });
+
+    test("adding state: alongside a quoted bare token keeps the exact match (regression)", () => {
+        const text = JF.applyFiltersToText({ state: "ok" }, "'Grep1'");
+        expect(text).toBe("'Grep1' state:ok");
+        expect(JF.getQueryDict(text)).toEqual({ "tool_id-eq": "Grep1", "state-eq": "ok" });
+    });
+
+    test("adding state: alongside an unquoted bare token stays a plain search", () => {
+        const text = JF.applyFiltersToText({ state: "ok" }, "grep1");
+        expect(text).toBe("grep1 state:ok");
+        expect(JF.getQueryDict(text)).toEqual({ "tool_id-contains": "grep1", "state-eq": "ok" });
+    });
+
+    test("unspecified text alongside an explicit key:value does not itself become an exact match", () => {
+        // two bare/keyed tokens for the same autoFilterKey -- only a LONE quoted bare token is exact
+        expect(JF.getQueryDict("grep1 tool_id:foo")["tool_id-eq"]).toBeUndefined();
+    });
+});
+
+/**
+ * Quoting a value for `getFilterText` to keep it as one token (because it contains whitespace) must not
+ * be re-read as an exact-match request on the next parse, and a quoted state must follow whichever
+ * occurrence of a repeated key actually survives.
+ */
+describe("quoting for whitespace grouping is syntactic, not an exact-match signal", () => {
+    test("getFilterText -> getQueryDict round-trip: a multi-word contains value stays contains", () => {
+        const text = HistoryFilters.getFilterText({
+            name: "foo bar",
+            ...HistoryFilters.defaultFilters,
+        });
+        expect(text).toBe("name:'foo bar'");
+        expect(HistoryFilters.getQueryDict(text)).toMatchObject({ "name-contains": "foo bar" });
+        expect(HistoryFilters.getQueryDict(text)["name-eq"]).toBeUndefined();
+    });
+
+    test("a single-word quoted value stays an unambiguous exact match", () => {
+        const text = HistoryFilters.getFilterText({
+            name: "GREP",
+            ...HistoryFilters.defaultFilters,
+        });
+        // no source text and no whitespace -> nothing forces quoting here, so this stays unquoted
+        expect(text).toBe("name:GREP");
+        // but a user who explicitly quotes a single word still gets the exact match
+        expect(HistoryFilters.getQueryDict("name:'GREP'")).toMatchObject({ "name-eq": "GREP" });
+    });
+
+    test("duplicate keys: the surviving value's quote-state wins, not any earlier occurrence", () => {
+        // last `name:` wins the value (existing behavior); it must also decide exact-vs-contains
+        expect(HistoryFilters.getQueryDict("name:'Exact' name:partial")).toMatchObject({
+            "name-contains": "partial",
+        });
+        expect(HistoryFilters.getQueryDict("name:'Exact' name:partial")["name-eq"]).toBeUndefined();
+
+        expect(HistoryFilters.getQueryDict("name:partial name:'Exact'")).toMatchObject({
+            "name-eq": "Exact",
+        });
+        expect(HistoryFilters.getQueryDict("name:partial name:'Exact'")["name-contains"]).toBeUndefined();
     });
 });

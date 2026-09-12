@@ -182,8 +182,11 @@ interface FilterToken {
     /** Value with surrounding quotes stripped (`quoteStrings`) or kept verbatim (`!quoteStrings`);
      * original case is always preserved at this layer. */
     value: string;
-    /** The value was wrapped in a matching quote pair (an exact, case-sensitive match request). */
+    /** The value was wrapped in a matching quote pair. The token's case should be preserved and
+     * not lower cased. It does NOT by itself mean an exact match; see `exactMatch`. */
     quoted: boolean;
+    /** An exact match request: the value was quoted AND has no whitespace (is single-word). */
+    exactMatch: boolean;
     /** The token had no `key:value` shape -- unspecified text destined for `autoFilterKey`. */
     isRawText: boolean;
     /** The token used `is:key` syntax (means the boolean filter `key` is `true`). */
@@ -431,31 +434,42 @@ export default class Filtering<T> {
         const { pairs, leadingText } = this.splitPairs(filterText);
         const tokens: FilterToken[] = [];
         if (leadingText) {
-            tokens.push({ value: leadingText, quoted: false, isRawText: true, isBool: false });
+            tokens.push({ value: leadingText, quoted: false, exactMatch: false, isRawText: true, isBool: false });
         }
         for (const pair of pairs) {
             const parts = this.splitKeyOpValue(pair);
             if (!parts) {
-                tokens.push({ value: pair, quoted: false, isRawText: true, isBool: false });
+                tokens.push({ value: pair, quoted: false, exactMatch: false, isRawText: true, isBool: false });
                 continue;
             }
             const { field, op, value } = parts;
             if (field === "is" && op === ":") {
                 // `is:key` syntax -- the value names the boolean filter being set to true
-                tokens.push({ key: value, op, value, quoted: false, isRawText: false, isBool: true });
+                tokens.push({
+                    key: value,
+                    op,
+                    value,
+                    quoted: false,
+                    exactMatch: false,
+                    isRawText: false,
+                    isBool: true,
+                });
                 continue;
             }
+            const quoted = this.quoteStrings && isQuoted(value);
             tokens.push({
                 key: this.normalizeFieldKey(field, op),
                 op,
                 value,
-                quoted: this.quoteStrings && isQuoted(value),
+                quoted,
+                // a quoted *multi-word* value is ambiguous -- see `FilterToken.exactMatch`
+                exactMatch: quoted && !stripQuotes(value).includes(" "),
                 isRawText: false,
                 isBool: false,
             });
         }
         // A lone quoted bare token (e.g. `'Grep1'` typed on its own) is an exact-match request for
-        // `autoFilterKey`: tag it with that key + `quoted` so it routes like a keyed quoted value.
+        // `autoFilterKey`: tag it with that key so it routes like a keyed quoted value.
         const rawTokens = tokens.filter((t) => t.isRawText);
         if (
             this.quoteStrings &&
@@ -465,6 +479,7 @@ export default class Filtering<T> {
         ) {
             rawTokens[0]!.key = this.autoFilterKey;
             rawTokens[0]!.quoted = true;
+            rawTokens[0]!.exactMatch = !stripQuotes(rawTokens[0]!.value).includes(" ");
         }
         return tokens;
     }
@@ -522,6 +537,34 @@ export default class Filtering<T> {
     }
 
     /**
+     * The set of keys whose *surviving* value came from an `FilterToken.exactMatch`.
+     * For a repeated key (`name:'Exact' name:partial`) only the last occurrence wins the value in
+     * `parseTokensToDict`, so its exact-match status must win here too as an earlier quoted
+     * occurrence must not leak exact-match routing onto a later, unquoted value for the same key.
+     * MultiTags keys accumulate instead of overwriting, so every occurrence contributes
+     * independently there, same as today.
+     */
+    private exactMatchByKey(tokens: FilterToken[]): Set<string> {
+        const exactMatch = new Map<string, boolean>();
+        for (const token of tokens) {
+            // a raw-text token is only relevant here if `tokenize` tagged it with `autoFilterKey`
+            // (a lone quoted bare token); an untagged raw-text token has no `key` and is skipped
+            if (token.isBool || token.key === undefined) {
+                continue;
+            }
+            const isMultiTags = this.validFilters[token.key]?.type === "MultiTags";
+            if (isMultiTags) {
+                exactMatch.set(token.key, (exactMatch.get(token.key) ?? false) || token.exactMatch);
+            } else {
+                // scalar key: the last token for this key determines both the value and its
+                // exact-match status, matching `parseTokensToDict`'s last-one-wins overwrite
+                exactMatch.set(token.key, token.exactMatch);
+            }
+        }
+        return new Set([...exactMatch.entries()].filter(([, v]) => v).map(([k]) => k));
+    }
+
+    /**
      * The valid filter key whose backend query should be used for an exact, case-sensitive match
      * of `key` — a sibling `${key}_eq` filter if one is declared (e.g. `name` -> `name_eq`),
      * otherwise `key` itself.
@@ -544,7 +587,7 @@ export default class Filtering<T> {
         const hasDefaults = this.containsDefaults(filters);
         // Tokenize the source text once to recover intent that `getFiltersForText` discards:
         // whether `autoFilterKey`'s value was unspecified text (write it back as plain text) and
-        // which keys the user quoted (re-emit them quoted so the exact-match intent survives).
+        // which keys the user quoted for an exact match (re-emit them quoted so the intent survives).
         const sourceTokens = sourceFilterText !== undefined ? this.tokenize(sourceFilterText) : [];
         const unspecifiedTextKey =
             sourceFilterText !== undefined &&
@@ -552,7 +595,10 @@ export default class Filtering<T> {
             !sourceTokens.some((t) => !t.isRawText && !t.isBool && t.key === this.autoFilterKey)
                 ? this.autoFilterKey
                 : undefined;
-        const quotedKeys = new Set(sourceTokens.filter((t) => t.quoted && t.key !== undefined).map((t) => t.key!));
+        // Only an unambiguous exact-match quoting (single word, see `FilterToken.exactMatch`) is
+        // re-emitted as quoted here -- a multi-word value gets re-quoted anyway below because it
+        // has a space, but that quoting is purely syntactic and must not imply exact match.
+        const exactMatchKeys = this.exactMatchByKey(sourceTokens);
 
         let newFilterText = "";
         Object.entries(filters).forEach(([key, value]) => {
@@ -563,8 +609,9 @@ export default class Filtering<T> {
                     newFilterText += " ";
                 }
                 if (key === unspecifiedTextKey) {
-                    // write unspecified text back as plain text, not `key:value`
-                    newFilterText += `${value}`;
+                    // write unspecified text back as plain text, not `key:value` -- but keep it
+                    // quoted if it was an unambiguous exact-match request (a lone quoted bare token)
+                    newFilterText += exactMatchKeys.has(key) ? `'${stripQuotes(value)}'` : `${value}`;
                 } else if (this.validFilters[key]?.type === Boolean && this.validFilters[key]?.boolType === "is") {
                     if (value === true) {
                         newFilterText += `is:${key}`;
@@ -576,10 +623,12 @@ export default class Filtering<T> {
                     newFilterText += `${convertedValues.map((v) => `${this.toAliasKey(key)}${v}`).join(" ")}`;
                 } else if (
                     this.quoteStrings &&
-                    (quotedKeys.has(key) || isQuoted(value) || String(value).includes(" "))
+                    (exactMatchKeys.has(key) || isQuoted(value) || String(value).includes(" "))
                 ) {
-                    // re-emit quoted: the user quoted it in the source text, it's already a
-                    // quoted literal (e.g. from setFilterValue), or it contains a space
+                    // re-emit quoted: the user quoted it in the source text for an exact match,
+                    // it's already a quoted literal (e.g. from setFilterValue), or it contains a
+                    // space and needs quoting to survive re-tokenizing (purely syntactic, no
+                    // exact-match intent implied by this branch alone)
                     newFilterText += `${this.toAliasKey(key)}'${stripQuotes(value)}'`;
                 } else {
                     newFilterText += `${this.toAliasKey(key)}${value}`;
@@ -713,10 +762,13 @@ export default class Filtering<T> {
 
     /** Returns a dictionary with query key and values.
      *
-     * A quoted filter value (`name:'GREP'`) is an exact, case-sensitive match: it is routed
-     * through the filter's sibling `${key}_eq` handler if one exists (`name-eq`, which the
-     * backend compares with `==`), rather than the default (`name-contains`, a case-insensitive
-     * substring match). The parsed value keeps its original case with the quotes stripped.
+     * An single-word, quoted filter value (`name:'GREP'`) is an exact, case-sensitive match: it
+     * is routed through the filter's sibling `${key}_eq` handler if one exists (`name-eq`, which
+     * the backend compares with `==`), rather than the default (`name-contains`, a case-insensitive
+     * substring match). A *multi-word* quoted value (`name:'foo bar'`) is NOT treated as an
+     * exact-match request, since quoting a value is also how `getFilterText` keeps a value with a
+     * space as one token, so quoting alone is ambiguous once whitespace is involved.
+     * The parsed value keeps its original case with the quotes stripped either way.
      *
      * @param filterText Raw filter text string
      * @returns Dictionary with query key and values
@@ -724,12 +776,10 @@ export default class Filtering<T> {
     getQueryDict(filterText: string) {
         const queryDict: Record<string, T> = {};
         const tokens = this.tokenize(filterText);
-        const quotedKeys = new Set(
-            tokens.filter((token) => token.quoted && token.key !== undefined).map((token) => token.key!),
-        );
+        const exactMatchKeys = this.exactMatchByKey(tokens);
         const filters = Object.entries(this.parseFilterText(tokens, true, true));
         for (const [key, value] of filters) {
-            const queryKey = quotedKeys.has(key) ? this.exactMatchKeyFor(key) : key;
+            const queryKey = exactMatchKeys.has(key) ? this.exactMatchKeyFor(key) : key;
             const handler = this.validFilters[queryKey]?.handler;
             const query = handler?.query;
             const converter = handler?.converter;
