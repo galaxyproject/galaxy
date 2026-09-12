@@ -268,6 +268,8 @@ class ToolSource(metaclass=ABCMeta):
             "GALAXY_SLOTS",
             "GALAXY_MEMORY_MB",
             "GALAXY_MEMORY_MB_PER_SLOT",
+            "GALAXY_MEMORY_GB",
+            "GALAXY_MEMORY_GB_PER_SLOT",
             "HOME",
             "_GALAXY_JOB_HOME_DIR",
             "_GALAXY_JOB_TMP_DIR",
