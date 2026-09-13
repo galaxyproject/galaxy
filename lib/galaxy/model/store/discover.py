@@ -323,7 +323,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
     @staticmethod
-    def set_datasets_metadata(datasets, datasets_attributes=None):
+    def set_datasets_metadata(datasets, datasets_attributes=None, overwrite: bool = True):
         datasets_attributes = datasets_attributes or [{} for _ in datasets]
         for primary_data, dataset_attributes in zip(datasets, datasets_attributes):
             # add tool/metadata provided information
@@ -348,7 +348,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
                     primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
                 else:
-                    primary_data.set_meta()
+                    primary_data.set_meta(overwrite=overwrite)
             except Exception:
                 if primary_data.state == galaxy.model.HistoryDatasetAssociation.states.OK:
                     primary_data.state = galaxy.model.HistoryDatasetAssociation.states.FAILED_METADATA
@@ -519,7 +519,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             name,
             add_datasets_timer,
         )
-        self.set_datasets_metadata(datasets=element_datasets["datasets"])
+        self.set_datasets_metadata(datasets=element_datasets["datasets"], overwrite=not bool(metadata_source_name))
 
     def add_tags_to_datasets(self, datasets, tag_lists):
         if any(tag_lists):
@@ -754,7 +754,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         return self._permission_provider
 
     @property
-    def metadata_source_provider(self) -> UnusedMetadataSourceProvider:
+    def metadata_source_provider(self) -> MetadataSourceProvider:
         return self._metadata_source_provider
 
     @property

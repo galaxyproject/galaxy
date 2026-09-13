@@ -15,6 +15,7 @@ from typing import (
     Union,
 )
 
+from galaxy.job_execution.output_format import resolve_format_source
 from galaxy.model import (
     Dataset,
     DatasetInstance,
@@ -207,6 +208,23 @@ def collect_dynamic_outputs(
             dataset_collectors = [
                 dataset_collector(description) for description in output_collection_def.dataset_collector_descriptions
             ]
+            if output_collection_def.format_source:
+                job = job_context.job
+                input_collections = {}
+                if job:
+                    input_collections = {
+                        association.name: association.dataset_collection
+                        for association in job.input_dataset_collections
+                    }
+                default_format = resolve_format_source(
+                    output_collection_def.format_source,
+                    job_context.input_datasets,
+                    input_collections,
+                    output_collection_def.default_format,
+                )
+                for collector in dataset_collectors:
+                    if collector.default_ext is None:
+                        collector.default_ext = default_format
             output_name = output_collection_def.name
             filenames = job_context.find_files(output_name, collection, dataset_collectors)
             job_context.populate_collection_elements(
@@ -247,6 +265,14 @@ class BaseJobContext(ModelPersistenceContext):
     job_working_directory: str
     allows_unnamed_outputs: bool
     allows_external_output_paths: bool
+
+    @property
+    def input_datasets(self) -> dict[str, Optional[DatasetInstance]]:
+        inputs: dict[str, Optional[DatasetInstance]] = {}
+        if job := self.job:
+            for association in job.input_datasets + job.input_library_datasets:
+                inputs.setdefault(association.name, association.dataset)
+        return inputs
 
     def add_dataset_collection(self, collection):
         pass
@@ -298,7 +324,6 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         max_discovered_files: Optional[int],
         job: Optional["Job"] = None,
     ):
-        # TODO: use a metadata source provider... (pop from inputs and add parameter)
         # Missing capability keys identify params written by Galaxy versions
         # that allowed these behaviors unconditionally. Preserve those jobs
         # while ensuring all newly generated params carry explicit decisions.
@@ -317,6 +342,10 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.discovered_file_count = 0
         self._job = job
         self.allows_unnamed_outputs = metadata_params.get("allows_unnamed_outputs", True)
+
+    @property
+    def metadata_source_provider(self) -> MetadataSourceProvider:
+        return MetadataSourceProvider(self.input_datasets)
 
     @property
     def job(self):

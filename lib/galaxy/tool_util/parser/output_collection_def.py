@@ -46,12 +46,12 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
     if num_discover_dataset_blocks == 0 and legacy:
         collectors = [DEFAULT_DATASET_COLLECTOR_DESCRIPTION]
     else:
-        default_format = elem.attrib.get("format")
+        default_format = (
+            None if elem.tag == "collection" and elem.attrib.get("format_source") else elem.attrib.get("format")
+        )
         collectors = []
         for e in primary_dataset_elems:
-            description_attributes = e.attrib
-            if default_format and "format" not in description_attributes and "ext" not in description_attributes:
-                description_attributes["format"] = default_format
+            description_attributes = _inherit_default_format(e.attrib, default_format)
             collectors.append(dataset_collection_description(**description_attributes))
 
     return _validate_collectors(collectors)
@@ -61,8 +61,20 @@ def dataset_collector_descriptions_from_output_dict(as_dict):
     discover_datasets_dicts = as_dict.get("discover_datasets") or []
     if is_dict(discover_datasets_dicts):
         discover_datasets_dicts = [discover_datasets_dicts]
+    default_format = (
+        None if as_dict.get("type") == "collection" and as_dict.get("format_source") else as_dict.get("format")
+    )
+    discover_datasets_dicts = [
+        _inherit_default_format(description, default_format) for description in discover_datasets_dicts
+    ]
     dataset_collector_descriptions = dataset_collector_descriptions_from_list(discover_datasets_dicts)
     return _validate_collectors(dataset_collector_descriptions)
+
+
+def _inherit_default_format(description, default_format):
+    if default_format and not description.get("format") and not description.get("ext"):
+        return {**description, "format": default_format}
+    return description
 
 
 def _validate_collectors(collectors):
