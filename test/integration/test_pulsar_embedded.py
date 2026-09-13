@@ -29,6 +29,7 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
         config["enable_celery_tasks"] = False
         config["metadata_strategy"] = "directory"
+        config["retry_metadata_internally"] = False
         config["cleanup_job"] = "never"
 
     def test_tool_eval_failure(self):
@@ -80,6 +81,10 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
                 "but it exists in Galaxy's job working directory"
             )
 
+    def test_handler_metadata_runs_after_output_staging(self):
+        """Exercise Pulsar output staging followed by handler-side metadata."""
+        self._run_tool_test("metadata_columns")
+
 
 instance = integration_util.integration_module_instance(TestEmbeddedPulsarIntegrationInstance)
 
@@ -104,7 +109,6 @@ test_tools = integration_util.integration_tool_runner(
         "composite_output_tests",
         "detect_errors",
         "tool_directory_copy",
-        "metadata_columns",
         "create_directory_index",
         "collection_split_on_column",
     ]
