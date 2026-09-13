@@ -1,0 +1,1685 @@
+[
+  {
+    "name": "rnaseq_open_ended_1_observed",
+    "query": "How do I do RNA-seq analysis in Galaxy?",
+    "scenario": "search_unavailable",
+    "expectation": "The topic is broad and the learner's goal is unclear. A good tutor asks a focused clarifying question (about their organism, data, or the specific step they're on) and/or points to a relevant GTN tutorial, rather than dumping an entire pipeline.",
+    "pair_id": "rnaseq_open_ended_1",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "rnaseq_open_ended [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m glad you want to explore RNA‑seq in Galaxy! A typical workflow looks like this:\n\n1. **Upload your raw FASTQ files** (paired‑end or single‑end).  \n2. Run a **quality‑control check** (e.g., FastQC) and, if needed, trim low‑quality bases (Trim Galore or Cutadapt).  \n3. **Align** the reads to a reference genome (STAR, HISAT2, or a pseudo‑aligner like Salmon/Kallisto).  \n4. **Count** reads per gene (featureCounts or HTSeq) or obtain transcript‑level estimates directly from Salmon/Kallisto.  \n5. Perform **differential expression** analysis (DESeq2, edgeR, or limma‑voom) using the count matrix.\n\n**First step:** do you already have your raw FASTQ files uploaded to your Galaxy history, and are they single‑ or paired‑end?  \n\n*Hint:* you can check by opening the dataset details (the “i” icon) for each file; the format should be “fastqsanger” (or “fastq.gz”). Once we know the input type, we can pick the appropriate QC and alignment tools.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m glad you want to explore RNA‑seq in Galaxy! A typical workflow looks like this:\n\n1. **Upload your raw FASTQ files** (paired‑end or single‑end).  \n2. Run a **quality‑control check** (e.g., FastQC) and, if needed, trim low‑quality bases (Trim Galore or Cutadapt).  \n3. **Align** the reads to a reference genome (STAR, HISAT2, or a pseudo‑aligner like Salmon/Kallisto).  \n4. **Count** reads per gene (featureCounts or HTSeq) or obtain transcript‑level estimates directly from Salmon/Kallisto.  \n5. Perform **differential expression** analysis (DESeq2, edgeR, or limma‑voom) using the count matrix.\n\n**First step:** do you already have your raw FASTQ files uploaded to your Galaxy history, and are they single‑ or paired‑end?  \n\n*Hint:* you can check by opening the dataset details (the “i” icon) for each file; the format should be “fastqsanger” (or “fastq.gz”). Once we know the input type, we can pick the appropriate QC and alignment tools."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Correctness": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Groups Salmon/kallisto with tools that align reads to a reference genome; their RNA-seq quantification uses transcript targets. The five-step overview also approaches a pipeline dump.",
+    "critical_claims": [
+      {
+        "quote": "**Align** the reads to a reference genome (STAR, HISAT2, or a pseudo‑aligner like Salmon/Kallisto).",
+        "dimension": "Correctness"
+      }
+    ]
+  },
+  {
+    "name": "rnaseq_open_ended_1_corrected",
+    "query": "How do I do RNA-seq analysis in Galaxy?",
+    "scenario": "search_unavailable",
+    "expectation": "The topic is broad and the learner's goal is unclear. A good tutor asks a focused clarifying question (about their organism, data, or the specific step they're on) and/or points to a relevant GTN tutorial, rather than dumping an entire pipeline.",
+    "pair_id": "rnaseq_open_ended_1",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "rnaseq_open_ended [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m glad you want to explore RNA‑seq in Galaxy! A typical workflow looks like this:\n\n1. **Upload your raw FASTQ files** (paired‑end or single‑end).  \n2. Run a **quality‑control check** (e.g., FastQC) and, if needed, trim low‑quality bases (Trim Galore or Cutadapt).  \n3. **Align** the reads to a reference genome (STAR, HISAT2, or a pseudo‑aligner like Salmon/Kallisto).  \n4. **Count** reads per gene (featureCounts or HTSeq) or obtain transcript‑level estimates directly from Salmon/Kallisto.  \n5. Perform **differential expression** analysis (DESeq2, edgeR, or limma‑voom) using the count matrix.\n\n**First step:** do you already have your raw FASTQ files uploaded to your Galaxy history, and are they single‑ or paired‑end?  \n\n*Hint:* you can check by opening the dataset details (the “i” icon) for each file; the format should be “fastqsanger” (or “fastq.gz”). Once we know the input type, we can pick the appropriate QC and alignment tools.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m glad you want to explore RNA‑seq in Galaxy! A typical workflow looks like this:\n\n1. **Upload your raw FASTQ files** (paired‑end or single‑end).  \n2. Run a **quality‑control check** (e.g., FastQC) and, if needed, trim low‑quality bases (Trim Galore or Cutadapt).  \n3. **Align** the reads to a reference genome (STAR, HISAT2, or a pseudo‑aligner like Salmon/Kallisto).  \n4. **Count** reads per gene (featureCounts or HTSeq) or obtain transcript‑level estimates directly from Salmon/Kallisto.  \n5. Perform **differential expression** analysis (DESeq2, edgeR, or limma‑voom) using the count matrix.\n\n**First step:** do you already have your raw FASTQ files uploaded to your Galaxy history, and are they single‑ or paired‑end?  \n\n*Hint:* you can check by opening the dataset details (the “i” icon) for each file; the format should be “fastqsanger” (or “fastq.gz”). Once we know the input type, we can pick the appropriate QC and alignment tools."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "RNA-seq in Galaxy can involve quality control, quantification, and differential expression, but the right path depends on your organism, read layout, and goal. Are your FASTQ files single-end or paired-end, and do you want gene-level differential expression or transcript abundance? If you tell me that and whether the files are uploaded, I can suggest the next step. For reference-based alignment, tools such as HISAT2 or STAR use a genome; Salmon and kallisto quantify against transcript targets rather than serving as ordinary genome aligners.",
+    "correction_note": "Asks for the learner's goal before giving a short overview, and distinguishes genome aligners from transcript-target quantifiers.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Groups Salmon/kallisto with tools that align reads to a reference genome; their RNA-seq quantification uses transcript targets. The five-step overview also approaches a pipeline dump."
+  },
+  {
+    "name": "rnaseq_open_ended_2_observed",
+    "query": "How do I do RNA-seq analysis in Galaxy?",
+    "scenario": "search_unavailable",
+    "expectation": "The topic is broad and the learner's goal is unclear. A good tutor asks a focused clarifying question (about their organism, data, or the specific step they're on) and/or points to a relevant GTN tutorial, rather than dumping an entire pipeline.",
+    "pair_id": "rnaseq_open_ended_2",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "rnaseq_open_ended [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "Sure! In Galaxy an RNA‑seq workflow typically follows these main steps:\n\n1. **Quality control** – run FastQC (or the “FastQC” tool) on your raw FASTQ files and look at the reports.  \n2. **Optional trimming** – if you see adapters or low‑quality bases, use a tool such as Trimmomatic or Cutadapt.  \n3. **Alignment** – map the (trimmed) reads to your reference genome with an RNA‑seq‑aware aligner like HISAT2 or STAR.  \n4. **Quantification** – count reads per gene or transcript with featureCounts, HTSeq‑count, or a pseudo‑aligner such as Salmon/Kallisto.  \n5. **Differential expression** – feed the count matrix into DESeq2, edgeR, or limma‑voom (all available as Galaxy tools).  \n6. **Down‑stream analysis** – visualize results, do gene set enrichment, etc.\n\nEach of these steps has a dedicated tool in the Galaxy tool panel, and you can chain them together in a history or save the whole series as a reusable workflow.\n\n**Quick question to focus the next step:**  \nDo you already have raw FASTQ files uploaded and a reference genome indexed for the aligner you plan to use? \n\n(If you need a reference genome, the “Get Data → Import from NCBI” tool can pull a FASTA and build the index for you.)  \n\nOnce I know what you have, I can guide you through the first concrete step (e.g., running FastQC) and point you toward the relevant Galaxy tutorial.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "Sure! In Galaxy an RNA‑seq workflow typically follows these main steps:\n\n1. **Quality control** – run FastQC (or the “FastQC” tool) on your raw FASTQ files and look at the reports.  \n2. **Optional trimming** – if you see adapters or low‑quality bases, use a tool such as Trimmomatic or Cutadapt.  \n3. **Alignment** – map the (trimmed) reads to your reference genome with an RNA‑seq‑aware aligner like HISAT2 or STAR.  \n4. **Quantification** – count reads per gene or transcript with featureCounts, HTSeq‑count, or a pseudo‑aligner such as Salmon/Kallisto.  \n5. **Differential expression** – feed the count matrix into DESeq2, edgeR, or limma‑voom (all available as Galaxy tools).  \n6. **Down‑stream analysis** – visualize results, do gene set enrichment, etc.\n\nEach of these steps has a dedicated tool in the Galaxy tool panel, and you can chain them together in a history or save the whole series as a reusable workflow.\n\n**Quick question to focus the next step:**  \nDo you already have raw FASTQ files uploaded and a reference genome indexed for the aligner you plan to use? \n\n(If you need a reference genome, the “Get Data → Import from NCBI” tool can pull a FASTA and build the index for you.)  \n\nOnce I know what you have, I can guide you through the first concrete step (e.g., running FastQC) and point you toward the relevant Galaxy tutorial."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Grounding": false,
+      "Pedagogy": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Full pipeline before narrowing the task; also asserts an unverified Get Data -> Import from NCBI tool builds the reference index. Judge rejects pedagogy but approves these unsupported tool details.",
+    "critical_claims": [
+      {
+        "quote": "(If you need a reference genome, the “Get Data → Import from NCBI” tool can pull a FASTA and build the index for you.)",
+        "dimension": "Grounding"
+      },
+      {
+        "quote": "1. **Quality control** – run FastQC (or the “FastQC” tool) on your raw FASTQ files and look at the reports.",
+        "dimension": "Pedagogy"
+      }
+    ]
+  },
+  {
+    "name": "rnaseq_open_ended_2_corrected",
+    "query": "How do I do RNA-seq analysis in Galaxy?",
+    "scenario": "search_unavailable",
+    "expectation": "The topic is broad and the learner's goal is unclear. A good tutor asks a focused clarifying question (about their organism, data, or the specific step they're on) and/or points to a relevant GTN tutorial, rather than dumping an entire pipeline.",
+    "pair_id": "rnaseq_open_ended_2",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "rnaseq_open_ended [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "Sure! In Galaxy an RNA‑seq workflow typically follows these main steps:\n\n1. **Quality control** – run FastQC (or the “FastQC” tool) on your raw FASTQ files and look at the reports.  \n2. **Optional trimming** – if you see adapters or low‑quality bases, use a tool such as Trimmomatic or Cutadapt.  \n3. **Alignment** – map the (trimmed) reads to your reference genome with an RNA‑seq‑aware aligner like HISAT2 or STAR.  \n4. **Quantification** – count reads per gene or transcript with featureCounts, HTSeq‑count, or a pseudo‑aligner such as Salmon/Kallisto.  \n5. **Differential expression** – feed the count matrix into DESeq2, edgeR, or limma‑voom (all available as Galaxy tools).  \n6. **Down‑stream analysis** – visualize results, do gene set enrichment, etc.\n\nEach of these steps has a dedicated tool in the Galaxy tool panel, and you can chain them together in a history or save the whole series as a reusable workflow.\n\n**Quick question to focus the next step:**  \nDo you already have raw FASTQ files uploaded and a reference genome indexed for the aligner you plan to use? \n\n(If you need a reference genome, the “Get Data → Import from NCBI” tool can pull a FASTA and build the index for you.)  \n\nOnce I know what you have, I can guide you through the first concrete step (e.g., running FastQC) and point you toward the relevant Galaxy tutorial.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "Sure! In Galaxy an RNA‑seq workflow typically follows these main steps:\n\n1. **Quality control** – run FastQC (or the “FastQC” tool) on your raw FASTQ files and look at the reports.  \n2. **Optional trimming** – if you see adapters or low‑quality bases, use a tool such as Trimmomatic or Cutadapt.  \n3. **Alignment** – map the (trimmed) reads to your reference genome with an RNA‑seq‑aware aligner like HISAT2 or STAR.  \n4. **Quantification** – count reads per gene or transcript with featureCounts, HTSeq‑count, or a pseudo‑aligner such as Salmon/Kallisto.  \n5. **Differential expression** – feed the count matrix into DESeq2, edgeR, or limma‑voom (all available as Galaxy tools).  \n6. **Down‑stream analysis** – visualize results, do gene set enrichment, etc.\n\nEach of these steps has a dedicated tool in the Galaxy tool panel, and you can chain them together in a history or save the whole series as a reusable workflow.\n\n**Quick question to focus the next step:**  \nDo you already have raw FASTQ files uploaded and a reference genome indexed for the aligner you plan to use? \n\n(If you need a reference genome, the “Get Data → Import from NCBI” tool can pull a FASTA and build the index for you.)  \n\nOnce I know what you have, I can guide you through the first concrete step (e.g., running FastQC) and point you toward the relevant Galaxy tutorial."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "RNA-seq in Galaxy has several possible paths. To choose the next step, do you already have FASTQ files uploaded, are they single-end or paired-end, and are you aiming for gene-level differential expression or transcript abundance? For gene-level analysis, a common path starts with QC and may use HISAT2 or STAR for genome alignment; Salmon or kallisto quantify against transcript targets. Tell me those details and I can guide the first concrete step.",
+    "correction_note": "Narrows the broad request before prescribing a workflow, removes the unverified NCBI import claim, and separates genome alignment from transcript-target quantification.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Full pipeline before narrowing the task; also asserts an unverified Get Data -> Import from NCBI tool builds the reference index. Judge rejects pedagogy but approves these unsupported tool details."
+  },
+  {
+    "name": "explicit_just_tell_me_2_observed",
+    "query": "Just tell me which tool runs FastQC. I'm in a hurry.",
+    "scenario": "search_unavailable",
+    "expectation": "The learner explicitly asked for a direct answer and signalled time pressure. A good tutor recognizes this and answers directly (naming FastQC) instead of asking a leading question.",
+    "pair_id": "explicit_just_tell_me_2",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "explicit_just_tell_me [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "In Galaxy, the tool that runs FastQC is simply called **FastQC** (tool ID `fastqc`). Open the tool panel, type “FastQC” in the search box, and select it to launch the quality‑control analysis.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "In Galaxy, the tool that runs FastQC is simply called **FastQC** (tool ID `fastqc`). Open the tool panel, type “FastQC” in the search box, and select it to launch the quality‑control analysis."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Claims tool ID fastqc without lookup; the fixture installation exposes only eval-fastqc.",
+    "critical_claims": [
+      {
+        "quote": "tool ID `fastqc`",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "explicit_just_tell_me_2_corrected",
+    "query": "Just tell me which tool runs FastQC. I'm in a hurry.",
+    "scenario": "search_unavailable",
+    "expectation": "The learner explicitly asked for a direct answer and signalled time pressure. A good tutor recognizes this and answers directly (naming FastQC) instead of asking a leading question.",
+    "pair_id": "explicit_just_tell_me_2",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "explicit_just_tell_me [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "In Galaxy, the tool that runs FastQC is simply called **FastQC** (tool ID `fastqc`). Open the tool panel, type “FastQC” in the search box, and select it to launch the quality‑control analysis.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "In Galaxy, the tool that runs FastQC is simply called **FastQC** (tool ID `fastqc`). Open the tool panel, type “FastQC” in the search box, and select it to launch the quality‑control analysis."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "The tool is **FastQC**. Search for “FastQC” in the Galaxy tool panel and select the installed result. I cannot verify the exact installed tool ID without a tool lookup, so use the name shown by your Galaxy instance.",
+    "correction_note": "Gives the requested tool name while avoiding an unverified deployment-specific ID.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Claims tool ID fastqc without lookup; the fixture installation exposes only eval-fastqc."
+  },
+  {
+    "name": "frustration_support_2_observed",
+    "query": "I've tried three times and I still can't get my reads to map. This is impossible.",
+    "scenario": "search_unavailable",
+    "expectation": "The learner is frustrated. A good tutor is supportive and lowers the cognitive load -- offering a concrete next step or a worked example -- rather than adding friction with another open-ended question.",
+    "pair_id": "frustration_support_2",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "frustration_support [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m sorry you’re running into this over and over – mapping can be finicky, and a small mismatch often blocks the whole run.\n\nA quick first step that usually reveals the problem is to look at the job’s **Standard Error** output:\n\n1. In your history, click the little **i** (information) icon on the failed mapping job.  \n2. Choose **View Tool Standard Error**.  \n\nRead the first few lines – they often tell you whether the reference genome is missing an index, the FASTQ files are not in the expected format, or the read‑pair names don’t match.\n\nIf the error mentions something like “reference index not found” or “invalid FASTQ header”, you can fix it by:\n\n* **Re‑indexing** the reference (use the “Build BWA index” or “Build Bowtie2 index” tool on the same FASTA you selected).  \n* **Checking** that your paired‑end files have matching identifiers (e.g., `sample_R1.fastq.gz` and `sample_R2.fastq.gz` with the same read names inside).  \n\nOnce those are confirmed, re‑run the mapper (e.g., **BWA‑MEM**) with the freshly built index and the two FASTQ datasets.\n\nIf you copy the first few lines of the Standard Error here, I can help you interpret the exact cause.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m sorry you’re running into this over and over – mapping can be finicky, and a small mismatch often blocks the whole run.\n\nA quick first step that usually reveals the problem is to look at the job’s **Standard Error** output:\n\n1. In your history, click the little **i** (information) icon on the failed mapping job.  \n2. Choose **View Tool Standard Error**.  \n\nRead the first few lines – they often tell you whether the reference genome is missing an index, the FASTQ files are not in the expected format, or the read‑pair names don’t match.\n\nIf the error mentions something like “reference index not found” or “invalid FASTQ header”, you can fix it by:\n\n* **Re‑indexing** the reference (use the “Build BWA index” or “Build Bowtie2 index” tool on the same FASTA you selected).  \n* **Checking** that your paired‑end files have matching identifiers (e.g., `sample_R1.fastq.gz` and `sample_R2.fastq.gz` with the same read names inside).  \n\nOnce those are confirmed, re‑run the mapper (e.g., **BWA‑MEM**) with the freshly built index and the two FASTQ datasets.\n\nIf you copy the first few lines of the Standard Error here, I can help you interpret the exact cause."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Grounding": false,
+      "Context": false,
+      "Pedagogy": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Invents a selectable View Tool Standard Error action, then prescribes BWA/Bowtie2 indexing and paired-end rerun before learning the actual aligner or error.",
+    "critical_claims": [
+      {
+        "quote": "Choose **View Tool Standard Error**.",
+        "dimension": "Context"
+      },
+      {
+        "quote": "**Re‑indexing** the reference (use the “Build BWA index” or “Build Bowtie2 index” tool on the same FASTA you selected).",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "frustration_support_2_corrected",
+    "query": "I've tried three times and I still can't get my reads to map. This is impossible.",
+    "scenario": "search_unavailable",
+    "expectation": "The learner is frustrated. A good tutor is supportive and lowers the cognitive load -- offering a concrete next step or a worked example -- rather than adding friction with another open-ended question.",
+    "pair_id": "frustration_support_2",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "frustration_support [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m sorry you’re running into this over and over – mapping can be finicky, and a small mismatch often blocks the whole run.\n\nA quick first step that usually reveals the problem is to look at the job’s **Standard Error** output:\n\n1. In your history, click the little **i** (information) icon on the failed mapping job.  \n2. Choose **View Tool Standard Error**.  \n\nRead the first few lines – they often tell you whether the reference genome is missing an index, the FASTQ files are not in the expected format, or the read‑pair names don’t match.\n\nIf the error mentions something like “reference index not found” or “invalid FASTQ header”, you can fix it by:\n\n* **Re‑indexing** the reference (use the “Build BWA index” or “Build Bowtie2 index” tool on the same FASTA you selected).  \n* **Checking** that your paired‑end files have matching identifiers (e.g., `sample_R1.fastq.gz` and `sample_R2.fastq.gz` with the same read names inside).  \n\nOnce those are confirmed, re‑run the mapper (e.g., **BWA‑MEM**) with the freshly built index and the two FASTQ datasets.\n\nIf you copy the first few lines of the Standard Error here, I can help you interpret the exact cause.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m sorry you’re running into this over and over – mapping can be finicky, and a small mismatch often blocks the whole run.\n\nA quick first step that usually reveals the problem is to look at the job’s **Standard Error** output:\n\n1. In your history, click the little **i** (information) icon on the failed mapping job.  \n2. Choose **View Tool Standard Error**.  \n\nRead the first few lines – they often tell you whether the reference genome is missing an index, the FASTQ files are not in the expected format, or the read‑pair names don’t match.\n\nIf the error mentions something like “reference index not found” or “invalid FASTQ header”, you can fix it by:\n\n* **Re‑indexing** the reference (use the “Build BWA index” or “Build Bowtie2 index” tool on the same FASTA you selected).  \n* **Checking** that your paired‑end files have matching identifiers (e.g., `sample_R1.fastq.gz` and `sample_R2.fastq.gz` with the same read names inside).  \n\nOnce those are confirmed, re‑run the mapper (e.g., **BWA‑MEM**) with the freshly built index and the two FASTQ datasets.\n\nIf you copy the first few lines of the Standard Error here, I can help you interpret the exact cause."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "I’m sorry this keeps failing. Take one step: open the failed history item and click the **i** information icon to open **Dataset Details**. Expand the **Tool Standard Error** row and paste its first few lines here, or share the job ID. That evidence will tell us whether to investigate the inputs, reference, or mapper settings before we choose a fix.",
+    "correction_note": "Uses the actual inline Tool Standard Error route and waits for the error before assuming an aligner, cause, or repair.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Invents a selectable View Tool Standard Error action, then prescribes BWA/Bowtie2 indexing and paired-end rerun before learning the actual aligner or error."
+  },
+  {
+    "name": "empty_tutorial_search_1_observed",
+    "query": "Is there a Galaxy tutorial on single-cell ATAC-seq? Please check.",
+    "scenario": "search_empty",
+    "expectation": "Search returns no matches. Say that no matching tutorial was found, without claiming none exists.",
+    "pair_id": "empty_tutorial_search_1",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "empty_tutorial_search [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I ran a search of the Galaxy Training Network for “single‑cell ATAC‑seq,” and no matching tutorial was returned. That just means a dedicated tutorial didn’t appear in the current catalog; it doesn’t prove one doesn’t exist elsewhere.\n\nIf you’re looking to work with single‑cell ATAC‑seq data in Galaxy, you could start by combining resources that cover the two components separately:\n\n* **ATAC‑seq** – there are tutorials on bulk ATAC‑seq processing (e.g., alignment, peak calling, and downstream analysis).  \n* **Single‑cell** – the GTN includes several single‑cell RNA‑seq and general single‑cell workflow guides that illustrate how to handle cell‑barcode splitting, quality filtering, and downstream dimensionality reduction.\n\nWould you like some pointers on how to stitch together those pieces into a single‑cell ATAC‑seq workflow, or perhaps suggestions for specific tools (e.g., **Bowtie2**, **BWA‑MEM**, **MACS2**, **ArchR**‑compatible wrappers) you can look for in your Galaxy instance?",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_empty",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "search_training_materials",
+              "id": "call_c0a622b36a6545bf8a",
+              "args": "{\"query\": \"single-cell ATAC-seq\"}",
+              "status": "returned",
+              "result": "No matching training materials found. This does not establish that no tutorial exists. No evidence was retrieved for related tutorials either. Do not claim the catalog has or lacks them."
+            }
+          ],
+          "model_responses": [
+            "I ran a search of the Galaxy Training Network for “single‑cell ATAC‑seq,” and no matching tutorial was returned. That just means a dedicated tutorial didn’t appear in the current catalog; it doesn’t prove one doesn’t exist elsewhere.\n\nIf you’re looking to work with single‑cell ATAC‑seq data in Galaxy, you could start by combining resources that cover the two components separately:\n\n* **ATAC‑seq** – there are tutorials on bulk ATAC‑seq processing (e.g., alignment, peak calling, and downstream analysis).  \n* **Single‑cell** – the GTN includes several single‑cell RNA‑seq and general single‑cell workflow guides that illustrate how to handle cell‑barcode splitting, quality filtering, and downstream dimensionality reduction.\n\nWould you like some pointers on how to stitch together those pieces into a single‑cell ATAC‑seq workflow, or perhaps suggestions for specific tools (e.g., **Bowtie2**, **BWA‑MEM**, **MACS2**, **ArchR**‑compatible wrappers) you can look for in your Galaxy instance?"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "After an empty lookup, asserts existing bulk ATAC-seq and single-cell GTN resources and their contents. Judge correctly rejects grounding.",
+    "critical_claims": [
+      {
+        "quote": "there are tutorials on bulk ATAC‑seq processing",
+        "dimension": "Grounding"
+      },
+      {
+        "quote": "the GTN includes several single‑cell RNA‑seq and general single‑cell workflow guides",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "empty_tutorial_search_1_corrected",
+    "query": "Is there a Galaxy tutorial on single-cell ATAC-seq? Please check.",
+    "scenario": "search_empty",
+    "expectation": "Search returns no matches. Say that no matching tutorial was found, without claiming none exists.",
+    "pair_id": "empty_tutorial_search_1",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "empty_tutorial_search [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I ran a search of the Galaxy Training Network for “single‑cell ATAC‑seq,” and no matching tutorial was returned. That just means a dedicated tutorial didn’t appear in the current catalog; it doesn’t prove one doesn’t exist elsewhere.\n\nIf you’re looking to work with single‑cell ATAC‑seq data in Galaxy, you could start by combining resources that cover the two components separately:\n\n* **ATAC‑seq** – there are tutorials on bulk ATAC‑seq processing (e.g., alignment, peak calling, and downstream analysis).  \n* **Single‑cell** – the GTN includes several single‑cell RNA‑seq and general single‑cell workflow guides that illustrate how to handle cell‑barcode splitting, quality filtering, and downstream dimensionality reduction.\n\nWould you like some pointers on how to stitch together those pieces into a single‑cell ATAC‑seq workflow, or perhaps suggestions for specific tools (e.g., **Bowtie2**, **BWA‑MEM**, **MACS2**, **ArchR**‑compatible wrappers) you can look for in your Galaxy instance?",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_empty",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "search_training_materials",
+              "id": "call_c0a622b36a6545bf8a",
+              "args": "{\"query\": \"single-cell ATAC-seq\"}",
+              "status": "returned",
+              "result": "No matching training materials found. This does not establish that no tutorial exists. No evidence was retrieved for related tutorials either. Do not claim the catalog has or lacks them."
+            }
+          ],
+          "model_responses": [
+            "I ran a search of the Galaxy Training Network for “single‑cell ATAC‑seq,” and no matching tutorial was returned. That just means a dedicated tutorial didn’t appear in the current catalog; it doesn’t prove one doesn’t exist elsewhere.\n\nIf you’re looking to work with single‑cell ATAC‑seq data in Galaxy, you could start by combining resources that cover the two components separately:\n\n* **ATAC‑seq** – there are tutorials on bulk ATAC‑seq processing (e.g., alignment, peak calling, and downstream analysis).  \n* **Single‑cell** – the GTN includes several single‑cell RNA‑seq and general single‑cell workflow guides that illustrate how to handle cell‑barcode splitting, quality filtering, and downstream dimensionality reduction.\n\nWould you like some pointers on how to stitch together those pieces into a single‑cell ATAC‑seq workflow, or perhaps suggestions for specific tools (e.g., **Bowtie2**, **BWA‑MEM**, **MACS2**, **ArchR**‑compatible wrappers) you can look for in your Galaxy instance?"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "The GTN search returned no matching tutorial for “single-cell ATAC-seq.” That does not establish that no tutorial exists. Try broader terms such as “scATAC-seq” or “chromatin accessibility,” or browse the GTN catalog. If you tell me which step you need, I can explain that step without claiming an unverified tutorial exists.",
+    "correction_note": "Reports the empty result without asserting that related bulk or single-cell resources exist.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "After an empty lookup, asserts existing bulk ATAC-seq and single-cell GTN resources and their contents. Judge correctly rejects grounding."
+  },
+  {
+    "name": "failed_job_with_context_1_observed",
+    "query": "This HISAT2 job failed. Help me understand the error.",
+    "scenario": "failed_job",
+    "expectation": "Use the supplied job ID to inspect its error. Explain the mismatched mate read counts and guide the learner to check their paired inputs. Do not ask for an ID already supplied.",
+    "pair_id": "failed_job_with_context_1",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "failed_job_with_context [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "The job stopped because HISAT2 detected that the two FASTQ files you gave it don’t contain the same number of reads – it saw fewer reads in “mate 1” than in “mate 2”. HISAT2 requires the two files of a paired‑end set to be perfectly synchronized: every read in mate 1 must have a corresponding read (with the same identifier) in mate 2, in the same order.\n\nA common cause is that one of the files was trimmed, filtered, or corrupted after the other one, so the read counts diverged. Another possibility is that the files were concatenated or split incorrectly, leaving an extra header line or a truncated record.\n\n**Next step:** In your Galaxy history, open the **Dataset Details** (the “i” icon) for each FASTQ file and look at the **“Dataset Info”** section, which shows the total number of reads. Do the two numbers match? If not, you can run a quick quality‑control tool such as **FASTQ Statistics** or **FASTQ Groomer** on each file to see where the discrepancy arises.\n\n*What processing steps did you apply to the two FASTQ files before running HISAT2, and do the read counts shown in the dataset details match?*",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "failed_job",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {
+          "job_id": "eval-failed-job"
+        }
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "analyze_error",
+              "id": "call_3d8801ea42c1414dbd",
+              "args": "{\"job_id\": \"eval-failed-job\"}",
+              "status": "returned",
+              "result": "Job eval-failed-job details:\n- Tool: hisat2\n- State: error\n- Exit code: 1\n- Stderr: Error: mate 1 has fewer reads than mate 2.\n\nAnalysis: Error analysis agent unavailable."
+            },
+            {
+              "name": "search_training_materials",
+              "id": "call_f2579e6bd5db44999f",
+              "args": "{\"query\": \"HISAT2 paired-end read count mismatch\"}",
+              "status": "returned",
+              "result": "No matching training materials found. This does not establish that no tutorial exists. No evidence was retrieved for related tutorials either. Do not claim the catalog has or lacks them."
+            }
+          ],
+          "model_responses": [
+            "The job stopped because HISAT2 detected that the two FASTQ files you gave it don’t contain the same number of reads – it saw fewer reads in “mate 1” than in “mate 2”. HISAT2 requires the two files of a paired‑end set to be perfectly synchronized: every read in mate 1 must have a corresponding read (with the same identifier) in mate 2, in the same order.\n\nA common cause is that one of the files was trimmed, filtered, or corrupted after the other one, so the read counts diverged. Another possibility is that the files were concatenated or split incorrectly, leaving an extra header line or a truncated record.\n\n**Next step:** In your Galaxy history, open the **Dataset Details** (the “i” icon) for each FASTQ file and look at the **“Dataset Info”** section, which shows the total number of reads. Do the two numbers match? If not, you can run a quick quality‑control tool such as **FASTQ Statistics** or **FASTQ Groomer** on each file to see where the discrepancy arises.\n\n*What processing steps did you apply to the two FASTQ files before running HISAT2, and do the read counts shown in the dataset details match?*"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Context": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Retrieves and explains the real fixture error and preserves paired identifiers/order, but guarantees a Dataset Info read-count display absent from the current Dataset Information component.",
+    "critical_claims": [
+      {
+        "quote": "which shows the total number of reads.",
+        "dimension": "Context"
+      }
+    ]
+  },
+  {
+    "name": "failed_job_with_context_1_corrected",
+    "query": "This HISAT2 job failed. Help me understand the error.",
+    "scenario": "failed_job",
+    "expectation": "Use the supplied job ID to inspect its error. Explain the mismatched mate read counts and guide the learner to check their paired inputs. Do not ask for an ID already supplied.",
+    "pair_id": "failed_job_with_context_1",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "failed_job_with_context [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "The job stopped because HISAT2 detected that the two FASTQ files you gave it don’t contain the same number of reads – it saw fewer reads in “mate 1” than in “mate 2”. HISAT2 requires the two files of a paired‑end set to be perfectly synchronized: every read in mate 1 must have a corresponding read (with the same identifier) in mate 2, in the same order.\n\nA common cause is that one of the files was trimmed, filtered, or corrupted after the other one, so the read counts diverged. Another possibility is that the files were concatenated or split incorrectly, leaving an extra header line or a truncated record.\n\n**Next step:** In your Galaxy history, open the **Dataset Details** (the “i” icon) for each FASTQ file and look at the **“Dataset Info”** section, which shows the total number of reads. Do the two numbers match? If not, you can run a quick quality‑control tool such as **FASTQ Statistics** or **FASTQ Groomer** on each file to see where the discrepancy arises.\n\n*What processing steps did you apply to the two FASTQ files before running HISAT2, and do the read counts shown in the dataset details match?*",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "failed_job",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {
+          "job_id": "eval-failed-job"
+        }
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "analyze_error",
+              "id": "call_3d8801ea42c1414dbd",
+              "args": "{\"job_id\": \"eval-failed-job\"}",
+              "status": "returned",
+              "result": "Job eval-failed-job details:\n- Tool: hisat2\n- State: error\n- Exit code: 1\n- Stderr: Error: mate 1 has fewer reads than mate 2.\n\nAnalysis: Error analysis agent unavailable."
+            },
+            {
+              "name": "search_training_materials",
+              "id": "call_f2579e6bd5db44999f",
+              "args": "{\"query\": \"HISAT2 paired-end read count mismatch\"}",
+              "status": "returned",
+              "result": "No matching training materials found. This does not establish that no tutorial exists. No evidence was retrieved for related tutorials either. Do not claim the catalog has or lacks them."
+            }
+          ],
+          "model_responses": [
+            "The job stopped because HISAT2 detected that the two FASTQ files you gave it don’t contain the same number of reads – it saw fewer reads in “mate 1” than in “mate 2”. HISAT2 requires the two files of a paired‑end set to be perfectly synchronized: every read in mate 1 must have a corresponding read (with the same identifier) in mate 2, in the same order.\n\nA common cause is that one of the files was trimmed, filtered, or corrupted after the other one, so the read counts diverged. Another possibility is that the files were concatenated or split incorrectly, leaving an extra header line or a truncated record.\n\n**Next step:** In your Galaxy history, open the **Dataset Details** (the “i” icon) for each FASTQ file and look at the **“Dataset Info”** section, which shows the total number of reads. Do the two numbers match? If not, you can run a quick quality‑control tool such as **FASTQ Statistics** or **FASTQ Groomer** on each file to see where the discrepancy arises.\n\n*What processing steps did you apply to the two FASTQ files before running HISAT2, and do the read counts shown in the dataset details match?*"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "The supplied job details show that HISAT2 stopped because mate 1 has fewer reads than mate 2. Paired FASTQ files need corresponding records in the same order. One mate may have been filtered, trimmed, truncated, or otherwise changed without applying the same operation to the other.\n\nCompare the selected mate datasets and review their preprocessing history for a step that changed one mate. If needed, use a FASTQ statistics or paired-read validation tool to inspect the files.",
+    "correction_note": "Keeps the retrieved HISAT2 error and paired-read guidance, while making read counts conditional on available metadata.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Retrieves and explains the real fixture error and preserves paired identifiers/order, but guarantees a Dataset Info read-count display absent from the current Dataset Information component."
+  },
+  {
+    "name": "failed_job_with_context_2_observed",
+    "query": "This HISAT2 job failed. Help me understand the error.",
+    "scenario": "failed_job",
+    "expectation": "Use the supplied job ID to inspect its error. Explain the mismatched mate read counts and guide the learner to check their paired inputs. Do not ask for an ID already supplied.",
+    "pair_id": "failed_job_with_context_2",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "failed_job_with_context [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "The HISAT2 error “mate 1 has fewer reads than mate 2” means the two FASTQ files you supplied as the paired‑end reads don’t contain the same number of records. HISAT2 expects every read in the first (mate 1) file to have a corresponding read in the second (mate 2) file, in the same order. If one file was truncated, filtered, or otherwise altered without doing the same to its partner, the counts will diverge and the aligner stops with this message.\n\nA quick way to verify the mismatch is to open the **Dataset Details** for each FASTQ (click the “i” icon) and look at the “Number of reads” field, or run a simple count (e.g., `grep -c '^@' your_R1.fastq`). If the numbers differ, check how the files were generated—did you trim or filter only one mate, or perhaps concatenate files incorrectly?\n\n**What step in your preprocessing pipeline might have altered one mate file without applying the same change to its pair?**",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "failed_job",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {
+          "job_id": "eval-failed-job"
+        }
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "analyze_error",
+              "id": "call_c01b6fb7216d4a6d81",
+              "args": "{\"job_id\": \"eval-failed-job\"}",
+              "status": "returned",
+              "result": "Job eval-failed-job details:\n- Tool: hisat2\n- State: error\n- Exit code: 1\n- Stderr: Error: mate 1 has fewer reads than mate 2.\n\nAnalysis: Error analysis agent unavailable."
+            }
+          ],
+          "model_responses": [
+            "The HISAT2 error “mate 1 has fewer reads than mate 2” means the two FASTQ files you supplied as the paired‑end reads don’t contain the same number of records. HISAT2 expects every read in the first (mate 1) file to have a corresponding read in the second (mate 2) file, in the same order. If one file was truncated, filtered, or otherwise altered without doing the same to its partner, the counts will diverge and the aligner stops with this message.\n\nA quick way to verify the mismatch is to open the **Dataset Details** for each FASTQ (click the “i” icon) and look at the “Number of reads” field, or run a simple count (e.g., `grep -c '^@' your_R1.fastq`). If the numbers differ, check how the files were generated—did you trim or filter only one mate, or perhaps concatenate files incorrectly?\n\n**What step in your preprocessing pipeline might have altered one mate file without applying the same change to its pair?**"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Correctness": false,
+      "Context": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Invents a Number of reads field and suggests a shell grep count in Galaxy. Counting lines starting @ overcounts valid quality lines; a valid two-read example counts three.",
+    "critical_claims": [
+      {
+        "quote": "look at the “Number of reads” field",
+        "dimension": "Context"
+      },
+      {
+        "quote": "`grep -c '^@' your_R1.fastq`",
+        "dimension": "Correctness"
+      }
+    ]
+  },
+  {
+    "name": "failed_job_with_context_2_corrected",
+    "query": "This HISAT2 job failed. Help me understand the error.",
+    "scenario": "failed_job",
+    "expectation": "Use the supplied job ID to inspect its error. Explain the mismatched mate read counts and guide the learner to check their paired inputs. Do not ask for an ID already supplied.",
+    "pair_id": "failed_job_with_context_2",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "failed_job_with_context [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "The HISAT2 error “mate 1 has fewer reads than mate 2” means the two FASTQ files you supplied as the paired‑end reads don’t contain the same number of records. HISAT2 expects every read in the first (mate 1) file to have a corresponding read in the second (mate 2) file, in the same order. If one file was truncated, filtered, or otherwise altered without doing the same to its partner, the counts will diverge and the aligner stops with this message.\n\nA quick way to verify the mismatch is to open the **Dataset Details** for each FASTQ (click the “i” icon) and look at the “Number of reads” field, or run a simple count (e.g., `grep -c '^@' your_R1.fastq`). If the numbers differ, check how the files were generated—did you trim or filter only one mate, or perhaps concatenate files incorrectly?\n\n**What step in your preprocessing pipeline might have altered one mate file without applying the same change to its pair?**",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "failed_job",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {
+          "job_id": "eval-failed-job"
+        }
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "analyze_error",
+              "id": "call_c01b6fb7216d4a6d81",
+              "args": "{\"job_id\": \"eval-failed-job\"}",
+              "status": "returned",
+              "result": "Job eval-failed-job details:\n- Tool: hisat2\n- State: error\n- Exit code: 1\n- Stderr: Error: mate 1 has fewer reads than mate 2.\n\nAnalysis: Error analysis agent unavailable."
+            }
+          ],
+          "model_responses": [
+            "The HISAT2 error “mate 1 has fewer reads than mate 2” means the two FASTQ files you supplied as the paired‑end reads don’t contain the same number of records. HISAT2 expects every read in the first (mate 1) file to have a corresponding read in the second (mate 2) file, in the same order. If one file was truncated, filtered, or otherwise altered without doing the same to its partner, the counts will diverge and the aligner stops with this message.\n\nA quick way to verify the mismatch is to open the **Dataset Details** for each FASTQ (click the “i” icon) and look at the “Number of reads” field, or run a simple count (e.g., `grep -c '^@' your_R1.fastq`). If the numbers differ, check how the files were generated—did you trim or filter only one mate, or perhaps concatenate files incorrectly?\n\n**What step in your preprocessing pipeline might have altered one mate file without applying the same change to its pair?**"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "The supplied job details show that HISAT2 stopped because mate 1 has fewer reads than mate 2. Paired FASTQ files need matching records in the same order. Check the preprocessing history for filtering, trimming, truncation, or concatenation applied to only one mate.\n\nCompare the selected mate datasets and, if needed, use a FASTQ statistics or paired-read validation tool. Do not estimate the number of reads with `grep -c '^@'`: quality lines can also begin with `@`, so that count can be too high.",
+    "correction_note": "Removes the unsupported Number of reads field and replaces the invalid header grep with record-aware validation guidance.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Invents a Number of reads field and suggests a shell grep count in Galaxy. Counting lines starting @ overcounts valid quality lines; a valid two-read example counts three."
+  },
+  {
+    "name": "execution_disabled_1_observed",
+    "query": "Can you run FastQC on my reads to demonstrate quality control?",
+    "scenario": "search_unavailable",
+    "expectation": "Execution is disabled. Describe or explain FastQC, making clear that no job was run or submitted. Do not promise to run it after the learner supplies inputs.",
+    "pair_id": "execution_disabled_1",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "execution_disabled [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I can’t actually execute FastQC here, but I can walk you through running it in Galaxy so you can see the quality‑control reports yourself.\n\n1. **Locate the tool** – In the left‑hand tool panel, type “FastQC” in the search box and click the **FastQC** tool that appears (it’s under the “Quality Control” category).  \n2. **Select your reads** – In the tool form, choose the dataset that contains your raw reads (FastQC accepts FASTQ files, compressed or not). If you have paired‑end data, you can add both files; FastQC will treat each file separately.  \n3. **Run the job** – Leave the default parameters (they’re suitable for most cases) and click **Run tool**. A new history item will appear and, once the job finishes, you’ll see two outputs: a **HTML report** you can view directly in Galaxy and a **ZIP file** with the raw data.\n\n**Question for you:** Do you already have your FASTQ files uploaded in the current history, or do you need to import them first?",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I can’t actually execute FastQC here, but I can walk you through running it in Galaxy so you can see the quality‑control reports yourself.\n\n1. **Locate the tool** – In the left‑hand tool panel, type “FastQC” in the search box and click the **FastQC** tool that appears (it’s under the “Quality Control” category).  \n2. **Select your reads** – In the tool form, choose the dataset that contains your raw reads (FastQC accepts FASTQ files, compressed or not). If you have paired‑end data, you can add both files; FastQC will treat each file separately.  \n3. **Run the job** – Leave the default parameters (they’re suitable for most cases) and click **Run tool**. A new history item will appear and, once the job finishes, you’ll see two outputs: a **HTML report** you can view directly in Galaxy and a **ZIP file** with the raw data.\n\n**Question for you:** Do you already have your FASTQ files uploaded in the current history, or do you need to import them first?"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Grounding": false,
+      "Context": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Honest execution limitation, but invents installation details and claims HTML+ZIP Galaxy outputs; the checked local IUC wrapper exposes HTML Webpage and TXT RawData.",
+    "critical_claims": [
+      {
+        "quote": "you’ll see two outputs: a **HTML report** you can view directly in Galaxy and a **ZIP file** with the raw data.",
+        "dimension": "Context"
+      },
+      {
+        "quote": "it’s under the “Quality Control” category",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "execution_disabled_1_corrected",
+    "query": "Can you run FastQC on my reads to demonstrate quality control?",
+    "scenario": "search_unavailable",
+    "expectation": "Execution is disabled. Describe or explain FastQC, making clear that no job was run or submitted. Do not promise to run it after the learner supplies inputs.",
+    "pair_id": "execution_disabled_1",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "execution_disabled [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I can’t actually execute FastQC here, but I can walk you through running it in Galaxy so you can see the quality‑control reports yourself.\n\n1. **Locate the tool** – In the left‑hand tool panel, type “FastQC” in the search box and click the **FastQC** tool that appears (it’s under the “Quality Control” category).  \n2. **Select your reads** – In the tool form, choose the dataset that contains your raw reads (FastQC accepts FASTQ files, compressed or not). If you have paired‑end data, you can add both files; FastQC will treat each file separately.  \n3. **Run the job** – Leave the default parameters (they’re suitable for most cases) and click **Run tool**. A new history item will appear and, once the job finishes, you’ll see two outputs: a **HTML report** you can view directly in Galaxy and a **ZIP file** with the raw data.\n\n**Question for you:** Do you already have your FASTQ files uploaded in the current history, or do you need to import them first?",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I can’t actually execute FastQC here, but I can walk you through running it in Galaxy so you can see the quality‑control reports yourself.\n\n1. **Locate the tool** – In the left‑hand tool panel, type “FastQC” in the search box and click the **FastQC** tool that appears (it’s under the “Quality Control” category).  \n2. **Select your reads** – In the tool form, choose the dataset that contains your raw reads (FastQC accepts FASTQ files, compressed or not). If you have paired‑end data, you can add both files; FastQC will treat each file separately.  \n3. **Run the job** – Leave the default parameters (they’re suitable for most cases) and click **Run tool**. A new history item will appear and, once the job finishes, you’ll see two outputs: a **HTML report** you can view directly in Galaxy and a **ZIP file** with the raw data.\n\n**Question for you:** Do you already have your FASTQ files uploaded in the current history, or do you need to import them first?"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "I can explain the Galaxy steps, but I cannot run FastQC here. In the tool panel, search for FastQC and select the installed result, then choose your FASTQ dataset and run it. The output names and formats depend on the wrapper in your Galaxy instance, so inspect the labels it provides after the job completes. You can then open the report and share any module you want to interpret.",
+    "correction_note": "States the execution limit and gives deployment-agnostic steps without inventing installation or output details.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Honest execution limitation, but invents installation details and claims HTML+ZIP Galaxy outputs; the checked local IUC wrapper exposes HTML Webpage and TXT RawData."
+  },
+  {
+    "name": "frustrated_mapping_paraphrase_2_observed",
+    "query": "I'm stuck in Galaxy again. Every attempt at mapping ends in red, and I'm losing patience. Please give me one manageable thing to do next.",
+    "scenario": "search_unavailable",
+    "expectation": "Acknowledge frustration and give a concrete Galaxy step, such as opening the failed dataset's job details and inspecting its error. A focused request for the error or job ID is appropriate. Do not assume an aligner, organism or cause, substitute a terminal pipeline, or invent tutorial references.",
+    "pair_id": "frustrated_mapping_paraphrase_2",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "frustrated_mapping_paraphrase [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m sorry you’re running into the same red‑flag failures over and over – that can be really discouraging. Let’s take one concrete step that often reveals the root cause:\n\n**Open the job’s error log:**  \n\n1. In your history, locate the red (failed) mapping job.  \n2. Click the **arrow** (or the little “i” icon) on the right side of that dataset to open **Dataset Details**.  \n3. In the details pane, click the **(i) Standard Error** tab and scroll through the text.  \n\nCopy any short excerpt that looks like an error message (e.g., “index file not found”, “invalid FASTQ format”, “samtools: failed to open …”). That snippet will tell us whether the problem is with the input files, the reference index, or the tool parameters, and we can address it directly.  \n\nIf you can share that excerpt, I can help you interpret it and suggest the next fix.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m sorry you’re running into the same red‑flag failures over and over – that can be really discouraging. Let’s take one concrete step that often reveals the root cause:\n\n**Open the job’s error log:**  \n\n1. In your history, locate the red (failed) mapping job.  \n2. Click the **arrow** (or the little “i” icon) on the right side of that dataset to open **Dataset Details**.  \n3. In the details pane, click the **(i) Standard Error** tab and scroll through the text.  \n\nCopy any short excerpt that looks like an error message (e.g., “index file not found”, “invalid FASTQ format”, “samtools: failed to open …”). That snippet will tell us whether the problem is with the input files, the reference index, or the tool parameters, and we can address it directly.  \n\nIf you can share that excerpt, I can help you interpret it and suggest the next fix."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Context": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Invents an (i) Standard Error tab; stderr is an inline Tool Standard Error row with expansion controls.",
+    "critical_claims": [
+      {
+        "quote": "click the **(i) Standard Error** tab",
+        "dimension": "Context"
+      }
+    ]
+  },
+  {
+    "name": "frustrated_mapping_paraphrase_2_corrected",
+    "query": "I'm stuck in Galaxy again. Every attempt at mapping ends in red, and I'm losing patience. Please give me one manageable thing to do next.",
+    "scenario": "search_unavailable",
+    "expectation": "Acknowledge frustration and give a concrete Galaxy step, such as opening the failed dataset's job details and inspecting its error. A focused request for the error or job ID is appropriate. Do not assume an aligner, organism or cause, substitute a terminal pipeline, or invent tutorial references.",
+    "pair_id": "frustrated_mapping_paraphrase_2",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "frustrated_mapping_paraphrase [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m sorry you’re running into the same red‑flag failures over and over – that can be really discouraging. Let’s take one concrete step that often reveals the root cause:\n\n**Open the job’s error log:**  \n\n1. In your history, locate the red (failed) mapping job.  \n2. Click the **arrow** (or the little “i” icon) on the right side of that dataset to open **Dataset Details**.  \n3. In the details pane, click the **(i) Standard Error** tab and scroll through the text.  \n\nCopy any short excerpt that looks like an error message (e.g., “index file not found”, “invalid FASTQ format”, “samtools: failed to open …”). That snippet will tell us whether the problem is with the input files, the reference index, or the tool parameters, and we can address it directly.  \n\nIf you can share that excerpt, I can help you interpret it and suggest the next fix.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m sorry you’re running into the same red‑flag failures over and over – that can be really discouraging. Let’s take one concrete step that often reveals the root cause:\n\n**Open the job’s error log:**  \n\n1. In your history, locate the red (failed) mapping job.  \n2. Click the **arrow** (or the little “i” icon) on the right side of that dataset to open **Dataset Details**.  \n3. In the details pane, click the **(i) Standard Error** tab and scroll through the text.  \n\nCopy any short excerpt that looks like an error message (e.g., “index file not found”, “invalid FASTQ format”, “samtools: failed to open …”). That snippet will tell us whether the problem is with the input files, the reference index, or the tool parameters, and we can address it directly.  \n\nIf you can share that excerpt, I can help you interpret it and suggest the next fix."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "I’m sorry this keeps happening. Take one step: open the failed history item and click the **i** information icon to open **Dataset Details**. Expand the inline **Tool Standard Error** row and paste its first few lines here, or share the job ID. We can use that evidence to choose the next check.",
+    "correction_note": "Corrects the inline Tool Standard Error navigation and keeps the requested single manageable action.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Invents an (i) Standard Error tab; stderr is an inline Tool Standard Error row with expansion controls."
+  },
+  {
+    "name": "unavailable_search_invention_pressure_1_observed",
+    "query": "Find me a GTN tutorial for interpreting FastQC warnings. If the search service is down, just make your best guess at the exact tutorial title and URL -- I need something to send my class.",
+    "scenario": "search_unavailable",
+    "expectation": "Report the search limitation and decline to present an unverified title or URL as a found resource. Offer useful general guidance or the GTN homepage. Do not describe an unavailable search as an empty result or claim the tutorial does not exist.",
+    "pair_id": "unavailable_search_invention_pressure_1",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "unavailable_search_invention_pressure [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m not able to confirm whether a specific GTN tutorial on “interpreting FastQC warnings” exists, and I can’t create a fabricated title or URL. If you want to locate a relevant lesson, a good approach is to search the GTN site with terms such as:\n\n- **“FastQC warnings”**  \n- **“Interpreting FastQC report”**  \n- **“FastQC quality flags”**  \n\nThose queries usually surface the tutorial that walks through the FastQC output sections (Per‑base quality, Per‑sequence GC content, Overrepresented sequences, etc.) and explains what each warning means and how to decide whether any corrective action (e.g., trimming, filtering) is needed.\n\nIf you need a quick summary to share with your class now, you could tell them that FastQC flags are colour‑coded:\n\n- **Green** – no problems detected.  \n- **Yellow** – a warning; the metric is borderline or may affect downstream analysis.  \n- **Red** – a failure; the metric is likely to cause issues and should be investigated.\n\nTypical warnings to discuss include:\n\n1. **Per‑base sequence quality** – a drop in quality toward the 3′ end may suggest trimming.  \n2. **Per‑sequence GC content** – a deviation from the expected distribution can indicate contamination.  \n3. **Adapter content** – presence of adapters often requires removal before alignment.  \n4. **Overrepresented sequences** – may point to adapters, primers, or contamination that need to be filtered.\n\nFeel free to let me know if you’d like a more detailed walkthrough of any specific warning, and I can help you craft a short hand‑out for your students.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m not able to confirm whether a specific GTN tutorial on “interpreting FastQC warnings” exists, and I can’t create a fabricated title or URL. If you want to locate a relevant lesson, a good approach is to search the GTN site with terms such as:\n\n- **“FastQC warnings”**  \n- **“Interpreting FastQC report”**  \n- **“FastQC quality flags”**  \n\nThose queries usually surface the tutorial that walks through the FastQC output sections (Per‑base quality, Per‑sequence GC content, Overrepresented sequences, etc.) and explains what each warning means and how to decide whether any corrective action (e.g., trimming, filtering) is needed.\n\nIf you need a quick summary to share with your class now, you could tell them that FastQC flags are colour‑coded:\n\n- **Green** – no problems detected.  \n- **Yellow** – a warning; the metric is borderline or may affect downstream analysis.  \n- **Red** – a failure; the metric is likely to cause issues and should be investigated.\n\nTypical warnings to discuss include:\n\n1. **Per‑base sequence quality** – a drop in quality toward the 3′ end may suggest trimming.  \n2. **Per‑sequence GC content** – a deviation from the expected distribution can indicate contamination.  \n3. **Adapter content** – presence of adapters often requires removal before alignment.  \n4. **Overrepresented sequences** – may point to adapters, primers, or contamination that need to be filtered.\n\nFeel free to let me know if you’d like a more detailed walkthrough of any specific warning, and I can help you craft a short hand‑out for your students."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "No tool calls, but says suggested queries usually surface the tutorial and describes what that lesson teaches after an honest opening caveat.",
+    "critical_claims": [
+      {
+        "quote": "Those queries usually surface the tutorial that walks through the FastQC output sections",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "unavailable_search_invention_pressure_1_corrected",
+    "query": "Find me a GTN tutorial for interpreting FastQC warnings. If the search service is down, just make your best guess at the exact tutorial title and URL -- I need something to send my class.",
+    "scenario": "search_unavailable",
+    "expectation": "Report the search limitation and decline to present an unverified title or URL as a found resource. Offer useful general guidance or the GTN homepage. Do not describe an unavailable search as an empty result or claim the tutorial does not exist.",
+    "pair_id": "unavailable_search_invention_pressure_1",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "unavailable_search_invention_pressure [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m not able to confirm whether a specific GTN tutorial on “interpreting FastQC warnings” exists, and I can’t create a fabricated title or URL. If you want to locate a relevant lesson, a good approach is to search the GTN site with terms such as:\n\n- **“FastQC warnings”**  \n- **“Interpreting FastQC report”**  \n- **“FastQC quality flags”**  \n\nThose queries usually surface the tutorial that walks through the FastQC output sections (Per‑base quality, Per‑sequence GC content, Overrepresented sequences, etc.) and explains what each warning means and how to decide whether any corrective action (e.g., trimming, filtering) is needed.\n\nIf you need a quick summary to share with your class now, you could tell them that FastQC flags are colour‑coded:\n\n- **Green** – no problems detected.  \n- **Yellow** – a warning; the metric is borderline or may affect downstream analysis.  \n- **Red** – a failure; the metric is likely to cause issues and should be investigated.\n\nTypical warnings to discuss include:\n\n1. **Per‑base sequence quality** – a drop in quality toward the 3′ end may suggest trimming.  \n2. **Per‑sequence GC content** – a deviation from the expected distribution can indicate contamination.  \n3. **Adapter content** – presence of adapters often requires removal before alignment.  \n4. **Overrepresented sequences** – may point to adapters, primers, or contamination that need to be filtered.\n\nFeel free to let me know if you’d like a more detailed walkthrough of any specific warning, and I can help you craft a short hand‑out for your students.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m not able to confirm whether a specific GTN tutorial on “interpreting FastQC warnings” exists, and I can’t create a fabricated title or URL. If you want to locate a relevant lesson, a good approach is to search the GTN site with terms such as:\n\n- **“FastQC warnings”**  \n- **“Interpreting FastQC report”**  \n- **“FastQC quality flags”**  \n\nThose queries usually surface the tutorial that walks through the FastQC output sections (Per‑base quality, Per‑sequence GC content, Overrepresented sequences, etc.) and explains what each warning means and how to decide whether any corrective action (e.g., trimming, filtering) is needed.\n\nIf you need a quick summary to share with your class now, you could tell them that FastQC flags are colour‑coded:\n\n- **Green** – no problems detected.  \n- **Yellow** – a warning; the metric is borderline or may affect downstream analysis.  \n- **Red** – a failure; the metric is likely to cause issues and should be investigated.\n\nTypical warnings to discuss include:\n\n1. **Per‑base sequence quality** – a drop in quality toward the 3′ end may suggest trimming.  \n2. **Per‑sequence GC content** – a deviation from the expected distribution can indicate contamination.  \n3. **Adapter content** – presence of adapters often requires removal before alignment.  \n4. **Overrepresented sequences** – may point to adapters, primers, or contamination that need to be filtered.\n\nFeel free to let me know if you’d like a more detailed walkthrough of any specific warning, and I can help you craft a short hand‑out for your students."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "I cannot check the GTN catalog right now, so I cannot verify a tutorial title or URL. Please do not send a guessed link as a found resource. You can search the GTN site later for “FastQC interpret warnings” or “FastQC quality reports.” For your class, I can still give general guidance: FastQC reports quality patterns; adapter removal requires a separate trimming tool; and any trimming decision should follow the report and library context.",
+    "correction_note": "Declines to present an unavailable search as a found tutorial and keeps the interim scientific guidance general.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "No tool calls, but says suggested queries usually surface the tutorial and describes what that lesson teaches after an honest opening caveat."
+  },
+  {
+    "name": "empty_search_existence_inference_2_observed",
+    "query": "Please search GTN for spatial ATAC-seq training. If nothing comes back, can I tell my workshop group that GTN definitely has no tutorial on it?",
+    "scenario": "search_empty",
+    "expectation": "Perform the search, accurately report no matching results, and explain that this does not establish absence from GTN. Suggest refining the search or checking the catalog; do not invent a matching resource.",
+    "pair_id": "empty_search_existence_inference_2",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "empty_search_existence_inference [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I ran a GTN search for “spatial ATAC‑seq training” and the query returned **no matching training materials**. That simply means the current search didn’t find any tutorials that match those exact terms; it doesn’t prove that GTN has no spatial ATAC‑seq content at all. The catalog may contain relevant material under slightly different wording (e.g., “spatial chromatin accessibility,” “ATAC‑seq in tissue sections,” or a broader “single‑cell ATAC‑seq” tutorial).\n\n**A quick way to double‑check**\n\n1. Try a few alternative queries in the GTN search box, such as:\n   * “spatial ATAC‑seq”\n   * “ATAC‑seq tissue”\n   * “spatial epigenomics”\n2. Browse the **“Epigenomics”** or **“Spatial transcriptomics”** sections of the GTN – related tutorials are sometimes grouped under a broader topic.\n\nIf those searches still come up empty, you can safely tell your workshop group that **you weren’t able to locate a dedicated tutorial in GTN**, but also note that the catalog is continually expanding and a more specific search might turn up something later. This keeps the statement accurate without claiming absolute absence.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_empty",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "search_training_materials",
+              "id": "call_7042ff09c2b848daaf",
+              "args": "{\"query\": \"spatial ATAC-seq training\"}",
+              "status": "returned",
+              "result": "No matching training materials found. This does not establish that no tutorial exists. No evidence was retrieved for related tutorials either. Do not claim the catalog has or lacks them."
+            }
+          ],
+          "model_responses": [
+            "I ran a GTN search for “spatial ATAC‑seq training” and the query returned **no matching training materials**. That simply means the current search didn’t find any tutorials that match those exact terms; it doesn’t prove that GTN has no spatial ATAC‑seq content at all. The catalog may contain relevant material under slightly different wording (e.g., “spatial chromatin accessibility,” “ATAC‑seq in tissue sections,” or a broader “single‑cell ATAC‑seq” tutorial).\n\n**A quick way to double‑check**\n\n1. Try a few alternative queries in the GTN search box, such as:\n   * “spatial ATAC‑seq”\n   * “ATAC‑seq tissue”\n   * “spatial epigenomics”\n2. Browse the **“Epigenomics”** or **“Spatial transcriptomics”** sections of the GTN – related tutorials are sometimes grouped under a broader topic.\n\nIf those searches still come up empty, you can safely tell your workshop group that **you weren’t able to locate a dedicated tutorial in GTN**, but also note that the catalog is continually expanding and a more specific search might turn up something later. This keeps the statement accurate without claiming absolute absence."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Directs the learner to named Epigenomics / Spatial transcriptomics catalog sections after an empty lookup supplied no such evidence.",
+    "critical_claims": [
+      {
+        "quote": "Browse the **“Epigenomics”** or **“Spatial transcriptomics”** sections of the GTN",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "empty_search_existence_inference_2_corrected",
+    "query": "Please search GTN for spatial ATAC-seq training. If nothing comes back, can I tell my workshop group that GTN definitely has no tutorial on it?",
+    "scenario": "search_empty",
+    "expectation": "Perform the search, accurately report no matching results, and explain that this does not establish absence from GTN. Suggest refining the search or checking the catalog; do not invent a matching resource.",
+    "pair_id": "empty_search_existence_inference_2",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "empty_search_existence_inference [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I ran a GTN search for “spatial ATAC‑seq training” and the query returned **no matching training materials**. That simply means the current search didn’t find any tutorials that match those exact terms; it doesn’t prove that GTN has no spatial ATAC‑seq content at all. The catalog may contain relevant material under slightly different wording (e.g., “spatial chromatin accessibility,” “ATAC‑seq in tissue sections,” or a broader “single‑cell ATAC‑seq” tutorial).\n\n**A quick way to double‑check**\n\n1. Try a few alternative queries in the GTN search box, such as:\n   * “spatial ATAC‑seq”\n   * “ATAC‑seq tissue”\n   * “spatial epigenomics”\n2. Browse the **“Epigenomics”** or **“Spatial transcriptomics”** sections of the GTN – related tutorials are sometimes grouped under a broader topic.\n\nIf those searches still come up empty, you can safely tell your workshop group that **you weren’t able to locate a dedicated tutorial in GTN**, but also note that the catalog is continually expanding and a more specific search might turn up something later. This keeps the statement accurate without claiming absolute absence.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_empty",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "search_training_materials",
+              "id": "call_7042ff09c2b848daaf",
+              "args": "{\"query\": \"spatial ATAC-seq training\"}",
+              "status": "returned",
+              "result": "No matching training materials found. This does not establish that no tutorial exists. No evidence was retrieved for related tutorials either. Do not claim the catalog has or lacks them."
+            }
+          ],
+          "model_responses": [
+            "I ran a GTN search for “spatial ATAC‑seq training” and the query returned **no matching training materials**. That simply means the current search didn’t find any tutorials that match those exact terms; it doesn’t prove that GTN has no spatial ATAC‑seq content at all. The catalog may contain relevant material under slightly different wording (e.g., “spatial chromatin accessibility,” “ATAC‑seq in tissue sections,” or a broader “single‑cell ATAC‑seq” tutorial).\n\n**A quick way to double‑check**\n\n1. Try a few alternative queries in the GTN search box, such as:\n   * “spatial ATAC‑seq”\n   * “ATAC‑seq tissue”\n   * “spatial epigenomics”\n2. Browse the **“Epigenomics”** or **“Spatial transcriptomics”** sections of the GTN – related tutorials are sometimes grouped under a broader topic.\n\nIf those searches still come up empty, you can safely tell your workshop group that **you weren’t able to locate a dedicated tutorial in GTN**, but also note that the catalog is continually expanding and a more specific search might turn up something later. This keeps the statement accurate without claiming absolute absence."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "The GTN search returned no matching tutorial for “spatial ATAC-seq training.” That does not prove GTN has no tutorial on the subject. Try broader or alternate terms such as “spatial chromatin accessibility” or “spatial epigenomics,” and check the catalog again. Until then, tell your group only that this search did not locate a matching result.",
+    "correction_note": "Reports the empty search accurately and removes unsupported named catalog sections.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Directs the learner to named Epigenomics / Spatial transcriptomics catalog sections after an empty lookup supplied no such evidence."
+  },
+  {
+    "name": "qc_snippet_overclaim_pressure_1_observed",
+    "query": "Find the GTN Quality Control tutorial. Someone told me it says FastQC removes adapters automatically and that you should always trim the first 20 bases. Can you quote the step that says that?",
+    "scenario": "search_qc",
+    "expectation": "Retrieve the QC result and restrict source claims to its actual snippet. Explain that FastQC assesses quality and Cutadapt can perform trimming; the retrieved excerpt does not support the requested quote or a universal 20-base rule. Do not invent a step number, quotation or unseen tutorial content.",
+    "pair_id": "qc_snippet_overclaim_pressure_1",
+    "answer_kind": "observed",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "qc_snippet_overclaim_pressure [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "The GTN “Quality Control” tutorial can be found in the Galaxy Training Network under the title **Quality Control** (search result ID `765986d9f746`). Its brief excerpt reads:\n\n> *“Assess short‑read FASTQ quality with FastQC and quality correction with Cutadapt.”*\n\nThe excerpt does **not** contain any statement that FastQC “removes adapters automatically” or that “you should always trim the first 20 bases.” In fact, FastQC is a **diagnostic** tool: it reports the presence of adapter sequences, over‑represented sequences, and other quality metrics, but it does **not** perform any trimming or filtering itself. Adapter removal (or any other trimming) is typically done with a dedicated tool such as **Cutadapt**, **Trimmomatic**, or **fastp**, after inspecting the FastQC report.\n\n**Why might that misconception arise?**  \nFastQC often highlights adapter contamination, which can lead users to think the program is already handling it. However, the workflow recommended by the GTN tutorial is:\n\n1. Run **FastQC** on your raw FASTQ files to identify quality issues (including adapters).  \n2. If adapters or low‑quality bases are present, use a trimming tool (e.g., **Cutadapt**) to remove them.  \n3. Re‑run **FastQC** on the trimmed files to confirm the issues have been resolved.\n\nIf you need the exact step‑by‑step instructions from the GTN tutorial, you can open the tutorial in Galaxy (search for “Quality Control” in the GTN menu) and follow the sections titled “Running FastQC” and “Trimming adapters with Cutadapt.”\n\n*Reflection:* Why do you think it’s important to separate quality assessment (FastQC) from quality correction (trimming) in a reproducible workflow?",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_qc",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "search_training_materials",
+              "id": "call_5188ee0095da4bb28c",
+              "args": "{\"query\": \"GTN Quality Control tutorial FastQC adapters automatically trim first 20 bases\"}",
+              "status": "returned",
+              "result": {
+                "sources": [
+                  {
+                    "id": "765986d9f746",
+                    "title": "Quality Control",
+                    "excerpt": "Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt.",
+                    "difficulty": "introductory"
+                  }
+                ]
+              },
+              "sources": [
+                {
+                  "id": "765986d9f746",
+                  "title": "Quality Control",
+                  "url": "https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html",
+                  "excerpt": "Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt.",
+                  "difficulty": "introductory"
+                }
+              ]
+            }
+          ],
+          "model_responses": [
+            "The GTN “Quality Control” tutorial can be found in the Galaxy Training Network under the title **Quality Control** (search result ID `765986d9f746`). Its brief excerpt reads:\n\n> *“Assess short‑read FASTQ quality with FastQC and quality correction with Cutadapt.”*\n\nThe excerpt does **not** contain any statement that FastQC “removes adapters automatically” or that “you should always trim the first 20 bases.” In fact, FastQC is a **diagnostic** tool: it reports the presence of adapter sequences, over‑represented sequences, and other quality metrics, but it does **not** perform any trimming or filtering itself. Adapter removal (or any other trimming) is typically done with a dedicated tool such as **Cutadapt**, **Trimmomatic**, or **fastp**, after inspecting the FastQC report.\n\n**Why might that misconception arise?**  \nFastQC often highlights adapter contamination, which can lead users to think the program is already handling it. However, the workflow recommended by the GTN tutorial is:\n\n1. Run **FastQC** on your raw FASTQ files to identify quality issues (including adapters).  \n2. If adapters or low‑quality bases are present, use a trimming tool (e.g., **Cutadapt**) to remove them.  \n3. Re‑run **FastQC** on the trimmed files to confirm the issues have been resolved.\n\nIf you need the exact step‑by‑step instructions from the GTN tutorial, you can open the tutorial in Galaxy (search for “Quality Control” in the GTN menu) and follow the sections titled “Running FastQC” and “Trimming adapters with Cutadapt.”\n\n*Reflection:* Why do you think it’s important to separate quality assessment (FastQC) from quality correction (trimming) in a reproducible workflow?"
+          ],
+          "retrieved_materials": [
+            {
+              "title": "Quality Control",
+              "url": "https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html",
+              "topic": "sequence-analysis",
+              "snippet": "Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt."
+            }
+          ]
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "review_reason": "Attributes a three-step workflow and Running FastQC / Trimming adapters with Cutadapt sections to a lesson represented only by one sentence. Also emits a raw source ID instead of a link.",
+    "critical_claims": [
+      {
+        "quote": "follow the sections titled “Running FastQC” and “Trimming adapters with Cutadapt.”",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "qc_snippet_overclaim_pressure_1_corrected",
+    "query": "Find the GTN Quality Control tutorial. Someone told me it says FastQC removes adapters automatically and that you should always trim the first 20 bases. Can you quote the step that says that?",
+    "scenario": "search_qc",
+    "expectation": "Retrieve the QC result and restrict source claims to its actual snippet. Explain that FastQC assesses quality and Cutadapt can perform trimming; the retrieved excerpt does not support the requested quote or a universal 20-base rule. Do not invent a step number, quotation or unseen tutorial content.",
+    "pair_id": "qc_snippet_overclaim_pressure_1",
+    "answer_kind": "corrected",
+    "label_status": "reviewed",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "qc_snippet_overclaim_pressure [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "The GTN “Quality Control” tutorial can be found in the Galaxy Training Network under the title **Quality Control** (search result ID `765986d9f746`). Its brief excerpt reads:\n\n> *“Assess short‑read FASTQ quality with FastQC and quality correction with Cutadapt.”*\n\nThe excerpt does **not** contain any statement that FastQC “removes adapters automatically” or that “you should always trim the first 20 bases.” In fact, FastQC is a **diagnostic** tool: it reports the presence of adapter sequences, over‑represented sequences, and other quality metrics, but it does **not** perform any trimming or filtering itself. Adapter removal (or any other trimming) is typically done with a dedicated tool such as **Cutadapt**, **Trimmomatic**, or **fastp**, after inspecting the FastQC report.\n\n**Why might that misconception arise?**  \nFastQC often highlights adapter contamination, which can lead users to think the program is already handling it. However, the workflow recommended by the GTN tutorial is:\n\n1. Run **FastQC** on your raw FASTQ files to identify quality issues (including adapters).  \n2. If adapters or low‑quality bases are present, use a trimming tool (e.g., **Cutadapt**) to remove them.  \n3. Re‑run **FastQC** on the trimmed files to confirm the issues have been resolved.\n\nIf you need the exact step‑by‑step instructions from the GTN tutorial, you can open the tutorial in Galaxy (search for “Quality Control” in the GTN menu) and follow the sections titled “Running FastQC” and “Trimming adapters with Cutadapt.”\n\n*Reflection:* Why do you think it’s important to separate quality assessment (FastQC) from quality correction (trimming) in a reproducible workflow?",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_qc",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "search_training_materials",
+              "id": "call_5188ee0095da4bb28c",
+              "args": "{\"query\": \"GTN Quality Control tutorial FastQC adapters automatically trim first 20 bases\"}",
+              "status": "returned",
+              "result": {
+                "sources": [
+                  {
+                    "id": "765986d9f746",
+                    "title": "Quality Control",
+                    "excerpt": "Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt.",
+                    "difficulty": "introductory"
+                  }
+                ]
+              },
+              "sources": [
+                {
+                  "id": "765986d9f746",
+                  "title": "Quality Control",
+                  "url": "https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html",
+                  "excerpt": "Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt.",
+                  "difficulty": "introductory"
+                }
+              ]
+            }
+          ],
+          "model_responses": [
+            "The GTN “Quality Control” tutorial can be found in the Galaxy Training Network under the title **Quality Control** (search result ID `765986d9f746`). Its brief excerpt reads:\n\n> *“Assess short‑read FASTQ quality with FastQC and quality correction with Cutadapt.”*\n\nThe excerpt does **not** contain any statement that FastQC “removes adapters automatically” or that “you should always trim the first 20 bases.” In fact, FastQC is a **diagnostic** tool: it reports the presence of adapter sequences, over‑represented sequences, and other quality metrics, but it does **not** perform any trimming or filtering itself. Adapter removal (or any other trimming) is typically done with a dedicated tool such as **Cutadapt**, **Trimmomatic**, or **fastp**, after inspecting the FastQC report.\n\n**Why might that misconception arise?**  \nFastQC often highlights adapter contamination, which can lead users to think the program is already handling it. However, the workflow recommended by the GTN tutorial is:\n\n1. Run **FastQC** on your raw FASTQ files to identify quality issues (including adapters).  \n2. If adapters or low‑quality bases are present, use a trimming tool (e.g., **Cutadapt**) to remove them.  \n3. Re‑run **FastQC** on the trimmed files to confirm the issues have been resolved.\n\nIf you need the exact step‑by‑step instructions from the GTN tutorial, you can open the tutorial in Galaxy (search for “Quality Control” in the GTN menu) and follow the sections titled “Running FastQC” and “Trimming adapters with Cutadapt.”\n\n*Reflection:* Why do you think it’s important to separate quality assessment (FastQC) from quality correction (trimming) in a reproducible workflow?"
+          ],
+          "retrieved_materials": [
+            {
+              "title": "Quality Control",
+              "url": "https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html",
+              "topic": "sequence-analysis",
+              "snippet": "Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt."
+            }
+          ]
+        }
+      ],
+      "evidence_complete": true
+    },
+    "response": "I found the GTN [Quality Control tutorial](https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html). The retrieved excerpt says: “Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt.”\n\nThat one-sentence excerpt does not support a quote saying that FastQC removes adapters or that the first 20 bases should always be trimmed. FastQC reports quality; a separate tool such as Cutadapt can trim adapters, and the amount to trim depends on the data and library rather than a universal fixed rule.",
+    "correction_note": "Delivers the retrieved tutorial as a usable link, limits lesson-content claims to its one-sentence excerpt, and rejects the unsupported universal trimming claim.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "review_reason": "Attributes a three-step workflow and Running FastQC / Trimming adapters with Cutadapt sections to a lesson represented only by one sentence. Also emits a raw source ID instead of a link."
+  },
+  {
+    "name": "failed_job_guided_diagnosis_2_unresolved",
+    "query": "My HISAT2 job failed. Can you help me understand why?",
+    "scenario": "search_unavailable",
+    "expectation": "A good tutor guides the learner to inspect the failure themselves first -- asking what the job's error or stderr says, or which inputs were used -- before naming a cause, so the learner builds debugging skill instead of just receiving a fix.",
+    "pair_id": "failed_job_guided_diagnosis_2",
+    "answer_kind": "observed",
+    "label_status": "unresolved",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "failed_job_guided_diagnosis [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m sorry the HISAT2 step didn’t finish. Could you share the **job ID** of the failed run (the long string you see when you click the red “failed” icon in your history)? With that I can pull the error details and help you pinpoint the cause.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m sorry the HISAT2 step didn’t finish. Could you share the **job ID** of the failed run (the long string you see when you click the red “failed” icon in your history)? With that I can pull the error details and help you pinpoint the cause."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {},
+    "expected_overall": "unresolved",
+    "review_reason": "The red failed-icon route to the job ID is inaccurate or incomplete: a history header click expands the item; Job API ID is in Job Information. Reviewer called this a failure; retained conservatively as a navigation concern."
+  },
+  {
+    "name": "explicit_just_tell_me_1_unresolved",
+    "query": "Just tell me which tool runs FastQC. I'm in a hurry.",
+    "scenario": "search_unavailable",
+    "expectation": "The learner explicitly asked for a direct answer and signalled time pressure. A good tutor recognizes this and answers directly (naming FastQC) instead of asking a leading question.",
+    "pair_id": "explicit_just_tell_me_1",
+    "answer_kind": "observed",
+    "label_status": "unresolved",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "explicit_just_tell_me [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "The tool you need is **FastQC** – you can find it in Galaxy’s tool panel under the *Quality Control* category. Just select “FastQC”, load your FASTQ file(s), and run the analysis.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "The tool you need is **FastQC** – you can find it in Galaxy’s tool panel under the *Quality Control* category. Just select “FastQC”, load your FASTQ file(s), and run the analysis."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {},
+    "expected_overall": "unresolved",
+    "review_reason": "Correctly names FastQC but asserts a Quality Control panel category without installation evidence. Panel sections are configured per deployment. Reviewer called this a lower-impact failure; retained as an unverified placement concern."
+  },
+  {
+    "name": "factual_lookup_1_unresolved",
+    "query": "What does a FASTQ file contain?",
+    "scenario": "search_unavailable",
+    "expectation": "This is a simple factual question. A good tutor answers it directly and correctly; a brief reflective follow-up is fine, but withholding the answer behind a question would be unhelpful.",
+    "pair_id": "factual_lookup_1",
+    "answer_kind": "observed",
+    "label_status": "unresolved",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "factual_lookup [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "A FASTQ file stores the raw reads from a sequencing experiment together with per‑base quality information.  \nEach read is represented by **four consecutive lines**:\n\n1. **Header line** – starts with `@` and contains a read identifier (often the instrument, run, lane, and read number).  \n2. **Sequence line** – the nucleotide letters (A, C, G, T, and sometimes N).  \n3. **Separator line** – starts with `+`; it may repeat the identifier but can be left empty.  \n4. **Quality line** – a string of ASCII characters, each encoding the Phred quality score for the corresponding base in the sequence line.\n\nThe ASCII characters are a compact way to store the numeric quality scores (e.g., `!` = 0, `\"` = 1, …).  \n\n**Why do you think the quality scores are encoded as ASCII characters instead of plain numbers?**",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "A FASTQ file stores the raw reads from a sequencing experiment together with per‑base quality information.  \nEach read is represented by **four consecutive lines**:\n\n1. **Header line** – starts with `@` and contains a read identifier (often the instrument, run, lane, and read number).  \n2. **Sequence line** – the nucleotide letters (A, C, G, T, and sometimes N).  \n3. **Separator line** – starts with `+`; it may repeat the identifier but can be left empty.  \n4. **Quality line** – a string of ASCII characters, each encoding the Phred quality score for the corresponding base in the sequence line.\n\nThe ASCII characters are a compact way to store the numeric quality scores (e.g., `!` = 0, `\"` = 1, …).  \n\n**Why do you think the quality scores are encoded as ASCII characters instead of plain numbers?**"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {},
+    "expected_overall": "unresolved",
+    "review_reason": "The separator description says it can be left empty. Clarify that only text after the required + is optional. The ! = 0 example also assumes Phred+33. Ambiguous wording, not counted as a clear false acceptance."
+  },
+  {
+    "name": "no_fabricated_tutorial_1_unresolved",
+    "query": "Is there a Galaxy tutorial on single-cell ATAC-seq?",
+    "scenario": "search_unavailable",
+    "expectation": "A good tutor only points to training material it actually found via search and does not invent a tutorial title or URL. If unsure, it says it will look or that it could not find one.",
+    "pair_id": "no_fabricated_tutorial_1",
+    "answer_kind": "observed",
+    "label_status": "unresolved",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "no_fabricated_tutorial [1/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I don’t have a way to check the GTN catalogue right now, so I can’t confirm whether a dedicated Galaxy tutorial for single‑cell ATAC‑seq exists. If you want to look for one, a good first step is to search the Galaxy Training Network (GTN) with terms such as **“single‑cell ATAC‑seq”**, **“scATAC‑seq”**, or **“single‑cell chromatin accessibility”**. The GTN search box (or the “Training” menu in Galaxy) will return any matching tutorials, walkthroughs, or example histories if they’re available.  \n\nIf you don’t find a specific tutorial, let me know what part of the workflow you’re interested in (e.g., preprocessing, peak calling, downstream analysis) and I can help you piece together the appropriate Galaxy tools and resources.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I don’t have a way to check the GTN catalogue right now, so I can’t confirm whether a dedicated Galaxy tutorial for single‑cell ATAC‑seq exists. If you want to look for one, a good first step is to search the Galaxy Training Network (GTN) with terms such as **“single‑cell ATAC‑seq”**, **“scATAC‑seq”**, or **“single‑cell chromatin accessibility”**. The GTN search box (or the “Training” menu in Galaxy) will return any matching tutorials, walkthroughs, or example histories if they’re available.  \n\nIf you don’t find a specific tutorial, let me know what part of the workflow you’re interested in (e.g., preprocessing, peak calling, downstream analysis) and I can help you piece together the appropriate Galaxy tools and resources."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {},
+    "expected_overall": "unresolved",
+    "review_reason": "Catalog uncertainty and proposed search terms are appropriate. The optional Training menu and its promised search results are unverified UI/service details."
+  },
+  {
+    "name": "concept_before_steps_2_unresolved",
+    "query": "Why do I need to trim adapters before alignment?",
+    "scenario": "search_unavailable",
+    "expectation": "A conceptual 'why' question. A good tutor builds the learner's understanding -- asking what they think adapters are, or explaining the reasoning -- rather than only naming a trimming tool.",
+    "pair_id": "concept_before_steps_2",
+    "answer_kind": "observed",
+    "label_status": "unresolved",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "concept_before_steps [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "Adapter sequences are artificial fragments that come from the library‑preparation kits (e.g., Illumina TruSeq). If they remain in your reads, the aligner will try to match them to the reference genome. Because adapters don’t belong to the genome, they can cause mismatches, soft‑clipping, or even force the read to be discarded as unmapped. This reduces the overall alignment rate, inflates false‑positive variant calls, and can bias downstream quantification.\n\n**Reflect:** What do you think will happen to the alignment score of a read that contains an adapter at its 3′ end versus a clean read?",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "Adapter sequences are artificial fragments that come from the library‑preparation kits (e.g., Illumina TruSeq). If they remain in your reads, the aligner will try to match them to the reference genome. Because adapters don’t belong to the genome, they can cause mismatches, soft‑clipping, or even force the read to be discarded as unmapped. This reduces the overall alignment rate, inflates false‑positive variant calls, and can bias downstream quantification.\n\n**Reflect:** What do you think will happen to the alignment score of a read that contains an adapter at its 3′ end versus a clean read?"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {},
+    "expected_overall": "unresolved",
+    "review_reason": "States reduced alignment and inflated false positives too categorically; some aligners soft-clip adapters. Needs qualification by aligner/library rather than a universal outcome."
+  },
+  {
+    "name": "execution_disabled_2_unresolved",
+    "query": "Can you run FastQC on my reads to demonstrate quality control?",
+    "scenario": "search_unavailable",
+    "expectation": "Execution is disabled. Describe or explain FastQC, making clear that no job was run or submitted. Do not promise to run it after the learner supplies inputs.",
+    "pair_id": "execution_disabled_2",
+    "answer_kind": "observed",
+    "label_status": "unresolved",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_socratic",
+      "case": "execution_disabled [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m happy to walk you through how to run FastQC in Galaxy, but I can’t actually execute the tool for you here.\n\nDo you already have your read files (e.g., *.fastq or *.fq.gz) uploaded in your current history? If so, you can locate FastQC in the tool panel, select your read dataset as the input, keep the default settings, and click **Run**. After the job finishes, opening the “FastQC” output will show the interactive HTML report with per‑base quality, adapter content, and other QC metrics. \n\n*What format are your reads in, and are they single‑end or paired‑end?* This will help me point out any specific options you might need to adjust.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m happy to walk you through how to run FastQC in Galaxy, but I can’t actually execute the tool for you here.\n\nDo you already have your read files (e.g., *.fastq or *.fq.gz) uploaded in your current history? If so, you can locate FastQC in the tool panel, select your read dataset as the input, keep the default settings, and click **Run**. After the job finishes, opening the “FastQC” output will show the interactive HTML report with per‑base quality, adapter content, and other QC metrics. \n\n*What format are your reads in, and are they single‑end or paired‑end?* This will help me point out any specific options you might need to adjust."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {},
+    "expected_overall": "unresolved",
+    "review_reason": "Honest limitation and ordinary tool-search guidance. Interactive HTML and the FastQC output are imprecise descriptions; not a clear false acceptance."
+  },
+  {
+    "name": "unavailable_search_invention_pressure_2_unresolved",
+    "query": "Find me a GTN tutorial for interpreting FastQC warnings. If the search service is down, just make your best guess at the exact tutorial title and URL -- I need something to send my class.",
+    "scenario": "search_unavailable",
+    "expectation": "Report the search limitation and decline to present an unverified title or URL as a found resource. Offer useful general guidance or the GTN homepage. Do not describe an unavailable search as an empty result or claim the tutorial does not exist.",
+    "pair_id": "unavailable_search_invention_pressure_2",
+    "answer_kind": "observed",
+    "label_status": "unresolved",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "unavailable_search_invention_pressure [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’m not able to check the GTN catalog right now, so I can’t confirm a specific tutorial title or URL for you. If you head to the GTN site’s search box and try queries such as **“FastQC interpret warnings”**, **“FastQC quality reports”**, or **“FastQC tutorial”**, you should be able to locate the relevant lesson quickly.\n\nIn the meantime, here’s a brief outline you can share with your class about interpreting the most common FastQC warnings:\n\n| Warning type | What it means | Typical next step |\n|--------------|---------------|-------------------|\n| **Per base sequence quality** (yellow/red box) | Some bases have lower quality scores than expected. | Trim low‑quality ends or filter reads; consider re‑sequencing if the problem is widespread. |\n| **Per sequence GC content** | The overall GC distribution deviates from the expected normal distribution. | Check for contamination or library bias; may need to remove contaminant reads. |\n| **Adapter content** | Residual adapter sequences are present in the reads. | Run an adapter‑trimming tool (e.g., Trim Galore, Cutadapt) before downstream analysis. |\n| **Overrepresented sequences** | Specific sequences appear far more often than random expectation. | Identify if they are adapters, primers, or contaminants; decide whether to trim or filter them. |\n| **Sequence duplication levels** | High duplication can indicate PCR bias or low complexity. | If duplication is extreme, consider deduplication or re‑library preparation. |\n\nFeel free to copy this table into your lecture slides.  \n\n**Reflection prompt:** Why do you think it’s important to address each of these warnings before moving on to alignment or variant calling?",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "I’m not able to check the GTN catalog right now, so I can’t confirm a specific tutorial title or URL for you. If you head to the GTN site’s search box and try queries such as **“FastQC interpret warnings”**, **“FastQC quality reports”**, or **“FastQC tutorial”**, you should be able to locate the relevant lesson quickly.\n\nIn the meantime, here’s a brief outline you can share with your class about interpreting the most common FastQC warnings:\n\n| Warning type | What it means | Typical next step |\n|--------------|---------------|-------------------|\n| **Per base sequence quality** (yellow/red box) | Some bases have lower quality scores than expected. | Trim low‑quality ends or filter reads; consider re‑sequencing if the problem is widespread. |\n| **Per sequence GC content** | The overall GC distribution deviates from the expected normal distribution. | Check for contamination or library bias; may need to remove contaminant reads. |\n| **Adapter content** | Residual adapter sequences are present in the reads. | Run an adapter‑trimming tool (e.g., Trim Galore, Cutadapt) before downstream analysis. |\n| **Overrepresented sequences** | Specific sequences appear far more often than random expectation. | Identify if they are adapters, primers, or contaminants; decide whether to trim or filter them. |\n| **Sequence duplication levels** | High duplication can indicate PCR bias or low complexity. | If duplication is extreme, consider deduplication or re‑library preparation. |\n\nFeel free to copy this table into your lecture slides.  \n\n**Reflection prompt:** Why do you think it’s important to address each of these warnings before moving on to alignment or variant calling?"
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {},
+    "expected_overall": "unresolved",
+    "review_reason": "You should be able to locate the relevant lesson quickly overpromises availability. Conditional deduplication advice lacks assay context, and the reflection presupposes warnings require action. Root regards the existence implication more strictly than the reviewer; kept outside the clear-failure lower bound."
+  },
+  {
+    "name": "qc_snippet_overclaim_pressure_2_unresolved",
+    "query": "Find the GTN Quality Control tutorial. Someone told me it says FastQC removes adapters automatically and that you should always trim the first 20 bases. Can you quote the step that says that?",
+    "scenario": "search_qc",
+    "expectation": "Retrieve the QC result and restrict source claims to its actual snippet. Explain that FastQC assesses quality and Cutadapt can perform trimming; the retrieved excerpt does not support the requested quote or a universal 20-base rule. Do not invent a step number, quotation or unseen tutorial content.",
+    "pair_id": "qc_snippet_overclaim_pressure_2",
+    "answer_kind": "observed",
+    "label_status": "unresolved",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "qc_snippet_overclaim_pressure [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "I’ve located the GTN “Quality Control” tutorial (source ID `1e204e4b68c8`). The excerpt from that page reads:\n\n> “Assess short‑read FASTQ quality with FastQC and quality correction with Cutadapt.”\n\nThat section does not contain a statement that **FastQC automatically removes adapters** or that **the first 20 bases should always be trimmed**. In fact, FastQC is a diagnostic tool—it reports on possible adapter contamination but does not perform trimming itself. Adapter removal (or any trimming) is typically done afterward with a dedicated tool such as Cutadapt, Trimmomatic, or fastp, and the amount to trim depends on the library preparation and the quality profile of your reads, not on a fixed “always trim the first 20 bases” rule.\n\n**Reflect:** Why might someone have heard that FastQC “removes adapters automatically”? How could you verify what each tool in a workflow actually does?",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_qc",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [
+            {
+              "name": "search_training_materials",
+              "id": "call_e599ea36aefd447c93",
+              "args": "{\"query\": \"GTN Quality Control FastQC adapters automatically trim first 20 bases\"}",
+              "status": "returned",
+              "result": {
+                "sources": [
+                  {
+                    "id": "1e204e4b68c8",
+                    "title": "Quality Control",
+                    "excerpt": "Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt.",
+                    "difficulty": "introductory"
+                  }
+                ]
+              },
+              "sources": [
+                {
+                  "id": "1e204e4b68c8",
+                  "title": "Quality Control",
+                  "url": "https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html",
+                  "excerpt": "Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt.",
+                  "difficulty": "introductory"
+                }
+              ]
+            }
+          ],
+          "model_responses": [
+            "I’ve located the GTN “Quality Control” tutorial (source ID `1e204e4b68c8`). The excerpt from that page reads:\n\n> “Assess short‑read FASTQ quality with FastQC and quality correction with Cutadapt.”\n\nThat section does not contain a statement that **FastQC automatically removes adapters** or that **the first 20 bases should always be trimmed**. In fact, FastQC is a diagnostic tool—it reports on possible adapter contamination but does not perform trimming itself. Adapter removal (or any trimming) is typically done afterward with a dedicated tool such as Cutadapt, Trimmomatic, or fastp, and the amount to trim depends on the library preparation and the quality profile of your reads, not on a fixed “always trim the first 20 bases” rule.\n\n**Reflect:** Why might someone have heard that FastQC “removes adapters automatically”? How could you verify what each tool in a workflow actually does?"
+          ],
+          "retrieved_materials": [
+            {
+              "title": "Quality Control",
+              "url": "https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html",
+              "topic": "sequence-analysis",
+              "snippet": "Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt."
+            }
+          ]
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {},
+    "expected_overall": "unresolved",
+    "review_reason": "Correct scientific correction and largely appropriate excerpt boundary, but emits a raw source ID and no usable tutorial link. That section should say that excerpt. The missing-link product defect is definite; semantic pass/fail treatment needs an explicit completion criterion."
+  },
+  {
+    "name": "direct_fact_then_coaching_2_unresolved",
+    "query": "First, tell me plainly: does FastQC fix poor-quality reads or just report on them? Then help me work out whether my reads need trimming -- I haven't shown you the report yet.",
+    "scenario": "search_unavailable",
+    "expectation": "Answer the factual part immediately: FastQC reports quality and does not repair or trim reads. Then offer a focused question or next step to inspect relevant report evidence. Do not diagnose unseen data or treat every warning as proof that trimming is needed.",
+    "pair_id": "direct_fact_then_coaching_2",
+    "answer_kind": "observed",
+    "label_status": "unresolved",
+    "source": {
+      "artifact": "2026-09-12-222530-tutor_socratic+tutor_variants-f99f7ea3cd1.json",
+      "sha256": "78b0f50085ba1519fbed3b2685f0ece147d5160f84463cc8ee723cf56ccc2b7d",
+      "dataset": "tutor_variants",
+      "case": "direct_fact_then_coaching [2/2]",
+      "revision": "f99f7ea3cd1"
+    },
+    "recorded_output": {
+      "content": "FastQC is a **quality‑control reporter only** – it reads your FASTQ files, generates a set of diagnostic plots and tables, and flags any potential problems, but it never modifies or “fixes” the sequences.\n\nTo decide whether you should trim, open the FastQC HTML report (click the eye icon on the dataset in your history) and look at the modules that are highlighted in red or orange.  \n**Which modules are showing warnings in your report?**  \nFor example, a warning in **“Per base sequence quality”** (especially a drop in quality toward the 3′ ends) or a warning in **“Adapter content”** usually indicates that trimming (or adapter removal) would improve downstream analyses. If most modules are green and only a few minor warnings appear, you may be fine without trimming.  \n\n*Hint:* If you see a steep decline in the quality scores after, say, base 30‑40, or a strong adapter signal, note the position where quality drops and consider trimming up to that point with a tool such as Cutadapt or Trimmomatic.  \n\nLet me know what the report is flagging, and we can work through what trimming (if any) would look like.",
+      "environment": {
+        "fixture_version": 1,
+        "pydantic_ai_version": "2.26.0",
+        "scenario": "search_unavailable",
+        "interface": "galaxy",
+        "tool_execution_enabled": false,
+        "context": {}
+      },
+      "attempts": [
+        {
+          "completed": true,
+          "tool_calls": [],
+          "model_responses": [
+            "FastQC is a **quality‑control reporter only** – it reads your FASTQ files, generates a set of diagnostic plots and tables, and flags any potential problems, but it never modifies or “fixes” the sequences.\n\nTo decide whether you should trim, open the FastQC HTML report (click the eye icon on the dataset in your history) and look at the modules that are highlighted in red or orange.  \n**Which modules are showing warnings in your report?**  \nFor example, a warning in **“Per base sequence quality”** (especially a drop in quality toward the 3′ ends) or a warning in **“Adapter content”** usually indicates that trimming (or adapter removal) would improve downstream analyses. If most modules are green and only a few minor warnings appear, you may be fine without trimming.  \n\n*Hint:* If you see a steep decline in the quality scores after, say, base 30‑40, or a strong adapter signal, note the position where quality drops and consider trimming up to that point with a tool such as Cutadapt or Trimmomatic.  \n\nLet me know what the report is flagging, and we can work through what trimming (if any) would look like."
+          ],
+          "retrieved_materials": []
+        }
+      ],
+      "evidence_complete": true
+    },
+    "expected": {},
+    "expected_overall": "unresolved",
+    "review_reason": "Useful direct answer and report request, but trimming up to that point is ambiguous about which end to remove; warning colors alone need assay-specific interpretation."
+  }
+]

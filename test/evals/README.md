@@ -210,8 +210,17 @@ PYTHONPATH=lib:test .venv/bin/python -m evals.run_evals \
 ```
 
 Calibration replays fixed answers; it does not ask a candidate model to regenerate
-them. Its declared tool evidence is a fixture, not a recovered trace from the old
-run. `CalibrationMatch` compares the evaluator's decisions with reference labels;
+them. The legacy `tutor-calibration.json` uses declared tool fixtures. The separate
+`tutor-regressions.json` preserves captured outputs from f99f7ea3cd1: twelve
+failures paired with corrected answers, plus nine unresolved concerns. Corrected
+answers override only delivered prose; their original tool traces and drafts stay
+intact and their edited origin is explicit. All labels are development reviews,
+not educator judgments. `--examples PATH [PATH ...]` selects a corpus; the default
+loads both. `--labels reviewed` selects the labelled subset for a regression gate;
+the default includes unresolved examples, whose missing reference verdicts prevent
+a successful calibration exit. They are never silently treated as good answers.
+
+`CalibrationMatch` compares the evaluator's decisions with reference labels;
 `FalseAcceptance` counts approvals of known failures, and `FalseRejection` counts
 rejections of valid examples. A disagreement or incomplete judgment makes the
 calibration CLI fail. The examples were reviewed during development and still
