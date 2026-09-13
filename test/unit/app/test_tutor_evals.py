@@ -23,6 +23,8 @@ from test.evals.run_evals import (
     render_markdown,
 )
 from test.evals.tutor import (
+    _fixture_deps,
+    _FixtureTutor,
     JOB_ID,
     QC_URL,
     run_tutor_case,
@@ -60,6 +62,27 @@ def tutor_deps(model_function):
         get_agent=None,
         model_factory=lambda: FunctionModel(model_function),
     )
+
+
+@pytest.mark.parametrize("search_available", [False, True])
+@pytest.mark.parametrize("execution_enabled", [False, True])
+async def test_tutor_receives_current_capabilities_with_history(search_available, execution_enabled):
+    def model(messages, info):
+        assert f"GTN search: {'Available' if search_available else 'Unavailable'}" in info.instructions
+        assert f"Tool execution: {'Enabled' if execution_enabled else 'Disabled'}" in info.instructions
+        return ModelResponse(parts=[TextPart("What are you working on?")])
+
+    deps = _fixture_deps(tutor_deps(model))
+    tutor = _FixtureTutor(deps, "search_qc")
+    # Capabilities can change after construction, and old system prompts can arrive in history.
+    if not search_available:
+        tutor.gtn_db = None
+    deps.config.tutor_allow_tool_execution = execution_enabled
+    deps.trans.user.preferences = {"learning_state": "not-json"}
+    response = await tutor.process(
+        "Help me get started", context={"conversation_history": [{"role": "assistant", "content": "Hello"}]}
+    )
+    assert not response.metadata.get("fallback")
 
 
 @pytest.mark.parametrize(

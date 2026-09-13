@@ -78,12 +78,20 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
 
         teaching_assistant = self
 
+        @agent.instructions
+        def runtime_capabilities() -> str:
+            return teaching_assistant._build_capability_context()
+
         @agent.tool
         async def search_training_materials(ctx, query: str) -> str:
             """Search GTN training materials for relevant tutorials."""
             if teaching_assistant.gtn_db is None:
                 return "Training material search is not available right now."
-            results = teaching_assistant.gtn_db.search(query, limit=5)
+            try:
+                results = teaching_assistant.gtn_db.search(query, limit=5)
+            except Exception:
+                log.exception("Training material search failed")
+                return "Training material search failed. No sources were retrieved; tutorial availability is unknown."
             if not results:
                 return "No matching training materials found."
             formatted = []
@@ -101,7 +109,11 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             """Suggest an ordered set of tutorials for a topic, easiest first."""
             if teaching_assistant.gtn_db is None:
                 return "Tutorial search is not available right now."
-            results = teaching_assistant.gtn_db.search(topic, limit=8)
+            try:
+                results = teaching_assistant.gtn_db.search(topic, limit=8)
+            except Exception:
+                log.exception("Tutorial search failed")
+                return "Tutorial search failed. No sources were retrieved; tutorial availability is unknown."
             if not results:
                 return f"No tutorials found for '{topic}'."
             difficulty_order = {"introductory": 0, "beginner": 0, "intermediate": 1, "advanced": 2}
@@ -258,6 +270,19 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             return "No learning state available."
 
         return f"**Scaffolding level:** {state.get('scaffolding_level', 3)} (1=max support, 5=minimal)"
+
+    def _build_capability_context(self) -> str:
+        search = (
+            "Available. Search before recommending specific tutorials; a search can still fail or return no matches."
+            if self.gtn_db is not None
+            else "Unavailable. You cannot verify specific tutorials here. Offer general guidance without inventing references."
+        )
+        execution = (
+            "Enabled. demonstrate_concept can submit a job with valid inputs and an active history; submission is not completion."
+            if self._tool_execution_allowed()
+            else "Disabled. You can explain tools and inspect available details, but cannot run an analysis or promise to run one."
+        )
+        return f"Current capabilities:\nGTN search: {search}\nTool execution: {execution}"
 
     def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
         """Prepare prompt with learning context included."""

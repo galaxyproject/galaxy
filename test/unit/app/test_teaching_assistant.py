@@ -176,6 +176,18 @@ class TestTeachingAssistantAgent:
         assert "demonstrate_concept" in tool_names
         assert "save_learning_note" not in tool_names
 
+    @pytest.mark.parametrize("tool_name", ["search_training_materials", "suggest_tutorials"])
+    async def test_search_failure_is_not_an_empty_result(self, tool_name):
+        agent = TeachingAssistantAgent(self.deps)
+        agent.gtn_db = mock.Mock()
+        agent.gtn_db.search.side_effect = RuntimeError("private database path")
+
+        result = await agent.agent._function_toolset.tools[tool_name].function(mock.Mock(), "RNA-seq")
+
+        assert "search failed" in result
+        assert "availability is unknown" in result
+        assert "private database path" not in result
+
 
 class TestLearningStateManager:
     """Unit tests for LearningStateManager."""
