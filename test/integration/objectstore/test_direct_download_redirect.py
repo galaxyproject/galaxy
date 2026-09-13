@@ -172,6 +172,4 @@ class TestDirectDownloadRedirectIntegration(BaseObjectStoreIntegrationTestCase):
 
 @integration_util.skip_unless_docker()
 class TestCloudDirectDownloadRedirectIntegration(TestDirectDownloadRedirectIntegration):
-    """The same redirect behavior through the cloudbridge-based cloud object store."""
-
     object_store_config = CLOUD_DIRECT_DOWNLOAD_CONFIG
